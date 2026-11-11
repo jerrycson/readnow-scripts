@@ -122,6 +122,8 @@
     { k: 'cartAnim', group: '움직임', label: '장바구니 담기 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(CART_ANIMS), off: '움직임 없음' } },
     { k: 'wishAnim', group: '움직임', label: '찜 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(WISH_ANIMS), off: '움직임 없음' } },
     { k: 'turn3d', group: '움직임', label: '책장 넘길 때 3D로 돌기(끄면 옆으로 밀기)', type: 'check', def: true },
+    { k: 'turnFx', group: '움직임', label: '책장이 돌 때 먼지·종이 날림(가벼운 효과 · 움직임 줄이기 설정이면 안 함)', type: 'check', def: true },
+    { k: 'peek', group: '움직임', label: '화살표에 다가가면 책장이 살짝 고개 돌려 다음 책장 이름을 엿보게', type: 'check', def: true },
     { k: 'turnMs', group: '움직임', label: '책장 도는 시간(ms)', type: 'number', def: 900, min: 250, max: 2500, step: 50 },
     { k: 'tip', group: '움직임', label: '책등에 마우스를 올리면 앞·뒤 표지와 책 정보', type: 'check', def: true },
     { k: 'tipMs', group: '움직임', label: '정보가 뜨기까지(ms)', type: 'number', def: 280, min: 0, max: 1500, step: 20 },
@@ -241,8 +243,9 @@
     const ft = fit(nt, Ht, 22); const fa = na ? Math.min(ft * 0.8, fit(na, Ha, 14)) : 0; return { ft, fa }; }
   /* ── (shelf3) 책등 글 자리 — 디자인마다 장식(띠·동그라미·이름표·라벨)이 없는 곳 [위 %, 아래 %, 옆 %] · 글은 이 안에서만(넘치면 화면이 재서 글을 줄이거나 줄 수를 늘림)
    *  정범님 11/11(리드 화면 확인): '장식이 글을 가림' — 장식은 글 뒤 또는 글 없는 자리 */
-  const ZONE_D = { 2: [8, 8], 3: [10, 10], 7: [7, 7, 9], 9: [17, 17, 8], 11: [6, 13], 13: [24, 22], 14: [6, 12], 15: [6, 25], 16: [6, 24], 19: [19, 5], 20: [23, 15], 21: [6, 6, 11], 22: [6, 13], 23: [15, 5], 25: [9, 5], 26: [6, 10], 27: [6, 21],
-    28: [18, 18], 29: [6, 5, 17], 34: [6, 28], 36: [17, 5], 37: [6, 15], 38: [6, 39], 41: [10, 5], 42: [10, 10], 44: [11, 21, 13], 45: [9, 9], 47: [6, 17], 50: [9, 9] };
+  /*  배경 위치 %는 '(칸 높이 − 그림 높이) × %'라서 라벨 등은 실제로 그 자리 위쪽에 그려짐 — 그 범위로 셈(예 37 라벨 = 82~93%) */
+  const ZONE_D = { 2: [8, 8], 3: [10, 10], 7: [7, 7, 9], 9: [17, 17, 8], 11: [6, 13], 13: [24, 22], 14: [6, 15], 15: [6, 25], 16: [6, 24], 19: [19, 5], 20: [23, 15], 21: [6, 6, 11], 22: [6, 13], 23: [15, 5], 25: [9, 5], 26: [6, 13], 27: [6, 21],
+    28: [18, 18], 29: [6, 5, 17], 34: [6, 31], 36: [17, 5], 37: [6, 20], 38: [6, 39], 41: [12, 5], 42: [12, 12], 44: [14, 17, 13], 45: [11, 11], 47: [6, 17], 50: [9, 9] };
   const zoneOf = (d) => { const z = ZONE_D[d] || []; return { zt: z[0] || 6, zb: z[1] || 5, zs: z[2] || 6 }; };
   /* 책등 하나의 모든 것(화면이 쓰는 꼴) — A(조합)는 저장된 것 또는 assign() 결과 */
   function dress(it, A, c) { c = c || DEF; const z = sizeOf(it, c); const col = COLORS[A.ci - 1]; const base = col.hex; const R = rng(hash(((it && it.id) || '') + '|ink'));
@@ -305,8 +308,8 @@
    *  반지름 = 정N각형 변심거리(W/2 ÷ tan(π/N)) — 이웃 책장 모서리가 맞닿음 · N=2는 등 맞댐 · N=1은 돌지 않음 */
   function ring(N, W) { N = Math.max(1, N | 0); const step = 360 / N; const R = N >= 3 ? (W / 2) / Math.tan(Math.PI / N) : N === 2 ? W * 0.5 : 0; return { N, step, R: Math.round(R), persp: Math.round(clamp(R || W, 700, 2600)) }; }
   const mod = (a, n) => ((a % n) + n) % n;
-  /* 나침반 이름: 지금 책장이 북쪽일 때 i번 책장의 방위(4개면 북·서·남·동 — 다음 책장이 서쪽) */
-  function compass(i, cur, N) { const a = mod((i - cur) * (360 / N), 360); const D = ['북', '북서', '서', '남서', '남', '남동', '동', '북동']; return D[Math.round(a / 45) % 8]; }
+  /* 나침반 이름: 지금 책장이 북쪽일 때 i번 책장의 방위(4개면 북·동·남·서 — (shelf3 · 정범님 11/12: 도는 방향을 뒤집음) 다음 책장이 동쪽(오른쪽) → 오른쪽 화살표·] ·왼쪽으로 쓸기로 다가옴) */
+  function compass(i, cur, N) { const a = mod((cur - i) * (360 / N), 360); const D = ['북', '북서', '서', '남서', '남', '남동', '동', '북동']; let k = Math.round(a / 45) % 8; if (k === 0 && a > 0.01) k = a > 180 ? 7 : 1; /* 책장이 많아도 옆 책장이 '북'으로 안 나오게 */ return D[k]; }
   /* ── (shelf3) 할인가·배지 — 우리숍 손님 화면(shop-core saleOf·BADGE)과 같은 뜻 · 서가 책장 칸에도 */
   const BADGE = { sale: '할인', new: 'NEW', pick: '추천', rare: '희귀', last: '마지막 1권', hot: '인기' };
   const saleOf = (x) => { if (x && x.p0 > x.p && x.p > 0) return { pct: Math.round((1 - x.p / x.p0) * 100), from: 'p0', was: x.p0 }; return x && x.lp > 0 && x.p > 0 && x.p < x.lp ? { pct: Math.round((1 - x.p / x.lp) * 100), from: 'lp', was: x.lp } : null; };

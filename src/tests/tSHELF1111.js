@@ -39,7 +39,7 @@ const items = BQS.demoItems(1000);
   S2.pure(ok, BQS, items, ROOT);
   const thin = BQS.look({ id: 'x', pg: 60 }, c), thick = BQS.look({ id: 'x', pg: 900 }, c); ok(thin.w < thick.w && thick.w <= c.wMax, '쪽수가 많을수록 두꺼운 책');
   ok(/text=/.test(BQS.fontUrl('jua', '가나다가')) && decodeURIComponent(BQS.fontUrl('jua', '가나다가').split('text=')[1]) === '가나다', '글꼴은 그 책장에 쓰인 글자만 받음(text=)'); }
-{ const g = BQS.ring(4, 1000); ok(g.step === 90 && g.R === 500 && BQS.compass(1, 0, 4) === '서' && BQS.compass(2, 0, 4) === '남' && BQS.compass(3, 0, 4) === '동' && BQS.compass(0, 0, 4) === '북', '4개 = 북·서·남·동(다음 책장이 서쪽 → 오른쪽 화살표로 북쪽으로 옴)');
+{ const g = BQS.ring(4, 1000); ok(g.step === 90 && g.R === 500 && BQS.compass(1, 0, 4) === '동' && BQS.compass(2, 0, 4) === '남' && BQS.compass(3, 0, 4) === '서' && BQS.compass(0, 0, 4) === '북', '4개 = 북·동·남·서(정범님 11/12 뒤집음: 다음 책장이 동쪽(오른쪽) → 오른쪽 화살표로 북쪽으로 옴)');
   ok(BQS.ring(1, 900).R === 0 && BQS.ring(80, 1000).R > 10000 && BQS.mod(-1, 5) === 4 && BQS.mod(7, 5) === 2, 'N개 일반화(1개는 안 돎 · 끝과 끝이 이어짐)'); }
 { let w = []; w = BQS.wishToggle(w, items[0]).wish; w = BQS.wishToggle(w, items[1]).wish; const r = BQS.wishToggle(w, items[0]); ok(w.length === 2 && w[0].id === items[1].id && !r.on && r.wish.length === 1 && BQS.wishHas(w, items[0].id), '찜: 넣기(최근 먼저) · 다시 누르면 빼기'); }
 console.log('② 클라우드 /shop/shelf');
