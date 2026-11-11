@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.263의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.264의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.263' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.263', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.264' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.264', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -101,7 +101,7 @@
       if (eff(c, 'caution').on) out.push('<span class="rnb rnb-cau">주의</span>');
       if (eff(c, 'vip').on) out.push('<span class="rnb rnb-vip">VIP</span>');
       if (rc.bad) out.push(`<span class="rnb rnb-bl">불만족 ${rc.bad}</span>`);
-      if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
+      if (strongSel(c).length) out.push('<span class="rnb rnb-fs" title="허위매물 판매자 — 알라딘 판매자 정보와 일치 (블랙리스트 고객과 다름 · 정범님 11/11)">🕵 허위매물 판매자</span>');
       else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
       { /* (정범님 11/03) '이 주문 전' 기준 — 예전엔 이 주문까지 센 전체 주문 수(2 이상이면 재구매)라, 이 주문이 고객 기록에 들어오기 전·후로 같은 고객이 '첫 구매'↔'재구매'로 달라졌음 · 웹앱 출고 카드와 같은 기준 */
         const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const ex = b.prior && ono && b.prior[ono]; const prior = ex != null ? ex : Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0)); /* ex = 그 고객 주문 기록으로 센 정확한 값(판매관리 지난 주문 — 그 뒤에 산 주문은 빼고) */
@@ -163,7 +163,7 @@
       .rncard .act{margin-top:6px;border-top:1px solid #D6DDDA;padding-top:6px} .rncard textarea{width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D6DDDA;border-radius:5px;font:inherit;padding:4px}
       .rncard .ab{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0} .rncard .ab button{border:1px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer} .rncard .ab button:first-child{background:#2F5D50;color:#fff}
       .rncard a{display:block;text-align:center;padding:4px;border:1px solid #2F5D50;border-radius:5px;color:#2F5D50;text-decoration:none;font-weight:bold}
-      .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
+      .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-fs{background:#EFE6FA;color:#5B2E91} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
       .rnfloat{position:fixed;z-index:2147483646}`;
     function style() { if (globalThis.__rnById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
     /* (정범님 11/03) 판매관리 지난 주문: 고객 기록의 주문 수에는 그 주문 '뒤'에 산 주문도 들어 있음 → 재구매 고객만 그 고객 주문 기록을 한 번 읽어(고객마다 한 번 · 이 화면에서만) 그 주문보다 앞선 판매 주문만 셈 */

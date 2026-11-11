@@ -3,6 +3,7 @@
 //   ② 🛠 처리할 일 🟦 예스24 맡기기(y24w) — 맡김 → 번외 받음 → 예스24 열기 → 찾기 → 바꿈 → 다시 읽어 확인 → 끝 (번외 상태 글로 단계)
 //   ③ 📤 예스24 자동 올림(y24auto) — 맡김 → 번외 받음 → 대량 등록 화면 열기 → 엑셀 넣음 → [등록] 누름 → 등록상품 목록에서 확인 → 끝
 //   ④ 🪑 번외 알라딘 자리 — 웹앱 c2AlSeatGive가 고칠 칸 검사(c2SeatPatchOk: dev·wait의 '<PC>~col2' 하나뿐)
+//   ⑤ (11/11 seatfix1) 번외 대신 읽기 c2RelayTick — 로그인 전 /web/hello · 주소마다 처음 못 닿아도 5분 뒤 다시 · 웹앱 판(v) 실음
 // 실행: pw/ 안(harness.js·seed.js 옆) RN_PORT=<포트> node tFIN1111.js · RN_SHOT=<폴더>면 사진 · 시험 자료에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
@@ -47,6 +48,16 @@ const run = require('./harness.js'); const seed = require('./seed.js');
     const d = await p.evaluate(() => ({ good: c2SeatPatchOk({ dev: { 'HOME~col2': { in: true } }, wait: { 'HOME~col2': null } }, 'HOME~col2'), other: c2SeatPatchOk({ dev: { 'HOME~col2': { in: true }, 'JS-MAIN': { in: false } } }, 'HOME~col2'), key: c2SeatPatchOk({ holdUntil: 1 }, 'HOME~col2'), fn: typeof c2AlSeatGive }));
     ok(d.good && !d.other && !d.key && d.fn === 'function', '자리 문서에 적는 것은 dev·wait의 HOME~col2 하나뿐(다른 기기 칸·다른 칸이 섞이면 적지 않음)', d);
     await p.evaluate(() => document.getElementById('fin_box').remove());
+    console.log('⑤ (11/11 seatfix1 · 정범님 HOME 웹앱 = jerrycson.github.io 주소) 번외 대신 읽기 — 로그인 전 알림 · 주소마다 처음 못 닿아도 5분 뒤 다시 · 웹앱 판 실음');
+    const calls = []; await p.route(/^http:\/\/127\.0\.0\.1:8797\//, (r) => { const u = new URL(r.request().url()); calls.push(u.pathname + u.search); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(u.pathname === '/relay/pending' ? { ok: true, want: [], sample: 0, pool: 0, fields: [], out: [], hot: false, pc: 'HOME', pcSrc: 'web', ver: '0.1.23' } : { ok: true }) }); });
+    const tk = async (pre) => p.evaluate(async (pre) => { const u0 = S.user; if (pre.out) S.user = null; try { if (pre.seen) localStorage.setItem('rn-c2seen', '1'); else localStorage.removeItem('rn-c2seen'); } catch (e) {} if (pre.tried != null) S._c2rTried = pre.tried ? Date.now() - pre.tried : 0; S.c2.st = null;
+      clearTimeout(S._c2rT); try { await c2RelayTick(); } finally { clearTimeout(S._c2rT); S.user = u0; } return APP_VER; }, pre);
+    calls.length = 0; const av = await tk({ out: true, seen: true }); ok(calls.length === 1 && calls[0].startsWith('/web/hello?u=0&v=' + av), '구글 로그인 전 — 번외에 「열려 있고 로그인 전」만 알림(판 실음 · 문서·계정 없음)', calls);
+    calls.length = 0; await tk({ out: true, seen: false, tried: 0 }); ok(calls.length === 0, '번외를 본 적 없는 주소는 로그인 전 알림도 안 함', calls);
+    calls.length = 0; await tk({ seen: false, tried: 6 * 60e3 }); ok(calls.some((c) => c.startsWith('/relay/pending?') && c.includes('&v=' + av) && c.includes('&u=1')), '이 주소에서 처음 못 닿았어도 5분 지나면 다시 물음(예전엔 그 탭에서 다시 묻지 않음) · 웹앱 판 실음', calls);
+    calls.length = 0; await tk({ seen: false }); ok(calls.length === 0, '5분 안에는 다시 묻지 않음(연결 거절 기록이 쌓이지 않게)', calls);
+    calls.length = 0; await tk({ seen: true }); ok(calls.some((c) => c.startsWith('/relay/pending?')), '번외를 본 주소는 늘 물음', calls);
+    await p.unroute(/^http:\/\/127\.0\.0\.1:8797\//);
   });
   console.log(bad ? `❌ tFIN1111 ${bad}개 실패` : '✓ tFIN1111 통과'); process.exit(bad ? 1 : 0);
 })();

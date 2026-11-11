@@ -11,7 +11,7 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
 const fs = require('fs'); const path = require('path'); const vm = require('vm');
 const findUp = (rel) => { for (const d of [path.join(__dirname, '../..'), path.join(__dirname, '..'), __dirname, process.env.RN_REPO || '']) { const f = path.join(d, rel); if (d && fs.existsSync(f)) return f; } throw new Error(rel + ' 못 찾음 — RN_REPO=<readnow-scripts>'); };
 const src = fs.readFileSync(findUp('cloud/index.js'), 'utf8'); const a = src.indexOf('CONS-START'); const b = src.indexOf('/* CONS-END */'); const code = src.slice(src.indexOf('*/', a) + 2, b);
-const ctx = { Math, Date, JSON, Object, Array, Number, String, Set, Map, isFinite }; vm.runInNewContext(code + ';this.consBuild = consBuild; this.consRows = consRows; this.consBreaks = consBreaks;', ctx);
+const ctx = { Math, Date, JSON, Object, Array, Number, String, Set, Map, isFinite }; vm.runInNewContext(code + ';this.consBuild = consBuild; this.consRows = consRows; this.consBreaks = consBreaks; this.consCatFill = consCatFill; this.consCatName = consCatName; this.consSsFill = consSsFill;', ctx);
 global.window = global.window || {}; require(findUp('readnow-shipping-core.js')); const SH = global.window.ReadnowShipping; const hol = (k) => SH.holName(k);
 /* 지어낸 판매 장부 — 2026-01-01 ~ 2026-11-10 */
 const add = (k, n) => new Date(Date.parse(k + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); const dowOf = (k) => (new Date(k + 'T12:00:00Z').getUTCDay() + 6) % 7;
@@ -44,7 +44,26 @@ ok(!/buyer|recipient|phone|address|010-|customer|orderNo/i.test(J) && J.length <
 const E0 = ctx.consBuild({ lines: [], wx: {}, hol, today: '2026-11-11' }); ok(E0.empty && E0.why, '판매 장부가 비면 까닭');
 const R3 = ctx.consBuild({ lines, wx: {}, hol, today: '2026-11-11' }); ok(R3.eff.filter((g) => g.cat === 'wx').every((g) => g.conf === '자료 부족' && g.e == null) && R3.sig.find((s) => s.k === 'wx').conf === '자료 부족', '날씨가 없으면 날씨 효과는 자료 부족(지어내지 않음)', R3.sig.find((s) => s.k === 'wx'));
 const BR = ctx.consBreaks('2026-09-01', '2026-10-15', hol); ok(BR.B.some((x) => x.myeong && x.from <= '2026-09-25' && x.to >= '2026-09-25'), '긴 연휴 찾기 — 2026 추석(명절)', BR.B);
-{ const cl = src; ok(/consStudy\(\)/.test(cl.slice(cl.indexOf('async function dailyJobs'), cl.indexOf('async function dailyJobs') + 9000)) && /x\.ss == null \? null : x\.ss/.test(cl) && /\|wx_sum\)\\\//.test(cl), '클라우드 — /daily에서 하루 한 번 · wx_sum에 일조 칸 · 진단으로 wx_sum 읽기', null); }
+{ const cl = src; ok(/consStudy\(\)/.test(cl.slice(cl.indexOf('async function dailyJobs'), cl.indexOf('async function dailyJobs') + 9000)) && /x\.ss == null \? null : x\.ss/.test(cl) && /okPath = \(p0\) => \/\^\([^)]*\|wx_sum\|/.test(cl) /* (판 내기 합침) 진단 칸 차례가 바뀌어도(wx_sum 뒤에 날짜별 연구 문서) 읽기 목록 안에 있으면 됨 */, '클라우드 — /daily에서 하루 한 번 · wx_sum에 일조 칸 · 진단으로 wx_sum 읽기', null); }
+(async () => { console.log('①-2 분야 기억·일조 채우기(11/11 cons2 — prd_books 문서 번호는 bk_… · ISBN 칸으로 찾음)');
+  ok(ctx.consCatName([{ path: ['국내도서', '소설/시/희곡', '한국소설'] }]) === '국내도서 > 소설/시/희곡' && ctx.consCatName([['국내도서', '어린이']]) === '국내도서 > 어린이' && ctx.consCatName([{ path: ['국내도서'] }]) === null && ctx.consCatName(null) === null, '분류 꼴 둘 다({path}·배열) · 1단계뿐이면 모름');
+  const books = { '9791100000001': [{ path: ['국내도서', '소설/시/희곡'] }], '9791100000002': [['국내도서', '어린이']] }; let asked = []; const lookup = async (part) => { asked.push(...part); const R = new Map(); part.forEach((k) => { const nm = ctx.consCatName(books[k]); if (nm) R.set(k, nm); }); return R; };
+  const want = new Set(['9791100000001', '9791100000002', '9791100000003', '(8936477196)']);
+  const old = { L: ['모름'], m: { '9791100000001': 0, '9791100000002': 0, '9791100000003': 0 }, at: '2026-11-11T07:20:05Z' }; /* 실제 7:20 모습 — 전부 '모름'(0)으로 박힘 */
+  const F1 = await ctx.consCatFill({ want, cc: old, today: '2026-11-11', lookup });
+  ok(F1.changed && F1.doc.cv === 2 && F1.got === 2 && F1.cats['9791100000001'] === '국내도서 > 소설/시/희곡' && F1.cats['9791100000002'] === '국내도서 > 어린이' && !F1.doc.L.includes('모름') && !asked.includes('(8936477196)'), "옛 기억(전부 '모름')은 버리고 ISBN 칸으로 다시 찾음 · ISBN 모양이 아닌 것은 묻지 않음", F1);
+  ok(F1.doc.u['9791100000003'] === '2026-11-11' && F1.left === 0 && F1.doc.m['9791100000003'] == null, "못 찾은 책은 '모름'으로 박지 않고 u에 본 날만", F1.doc);
+  asked = []; const F2 = await ctx.consCatFill({ want, cc: F1.doc, today: '2026-11-12', lookup }); ok(!F2.changed && asked.length === 0 && F2.cats['9791100000002'] === '국내도서 > 어린이', '다음 날엔 다시 안 읽음(기억 그대로)', { asked, F2: F2.asked });
+  books['9791100000003'] = [{ path: ['국내도서', '경제경영'] }]; asked = []; const F3 = await ctx.consCatFill({ want, cc: F1.doc, today: '2026-11-19', lookup }); ok(F3.changed && asked.join() === '9791100000003' && F3.cats['9791100000003'] === '국내도서 > 경제경영' && !F3.doc.u['9791100000003'], "못 찾은 책은 7일 뒤 다시 물음(그사이 수집기가 도서 정보를 채웠으면 잡힘)", F3);
+  const F4 = await ctx.consCatFill({ want: new Set(['9791100000001']), cc: F3.doc, today: '2026-11-19', lookup }); ok(Object.keys(F4.cats).join() === '9791100000001' && !Object.keys(F4.doc.u).length, '1년 밖으로 나간 ISBN은 기억에서 뺌(문서 작게)', F4.doc);
+  const F5 = await ctx.consCatFill({ want: new Set(['9791100000009']), cc: { cv: 2, L: [], m: {} }, today: '2026-11-19', lookup: async () => { throw new Error('quota'); } }); ok(F5.err && F5.left === 1 && !F5.doc.u['9791100000009'], '찾다 실패하면 멈추고 다음에 다시(모름으로 남기지 않음)', F5);
+  /* 7:20 실제와 같은 모양으로 셈 — 분야가 다시 차면 catCover가 오름 */ const L2 = lines.slice(0, 400); const want2 = new Set(L2.map((r) => String(r).split('\u0001')[1])); const bk2 = {}; [...want2].forEach((k, i) => { bk2[k] = [{ path: ['국내도서', i % 2 ? '어린이' : '소설/시/희곡'] }]; });
+  const F6 = await ctx.consCatFill({ want: want2, cc: { L: ['모름'], m: Object.fromEntries([...want2].map((k) => [k, 0])) }, today: '2026-11-11', lookup: async (part) => new Map(part.map((k) => [k, ctx.consCatName(bk2[k])])) });
+  const B0 = ctx.consBuild({ lines: L2, wx, hol, today: '2026-11-11', cats: {} }); const B1 = ctx.consBuild({ lines: L2, wx, hol, today: '2026-11-11', cats: F6.cats }); ok(B0.catCover === 0 && B1.catCover > 0.9 && B1.cats.length === 2, `분야 기억을 고치면 catCover 0 → ${B1.catCover}`, { b0: B0.catCover, b1: B1.catCover });
+  const up = ctx.consSsFill({ 20251001: [0, 20, 15, 10, 60], 20251002: [1, 20, 15, 10, 60, 7.5], 20251003: [0, 20, 15, 10, 60, null], 20251004: [0, 1, 1, 1, 1] }, { 20251001: 9.1, 20251002: 1, 20251003: 2.2 });
+  ok(JSON.stringify(up) === JSON.stringify({ 20251001: [0, 20, 15, 10, 60, 9.1], 20251003: [0, 20, 15, 10, 60, 2.2] }), '일조 채우기 — 빈 날만 wx_days 값으로(있는 날·wx_days에 없는 날은 그대로)', up);
+  { const cs = src.slice(src.indexOf('async function consStudy'), src.indexOf('async function consStudy') + 5000); ok(/where\('isbn13', 'in', part\)/.test(cs) && !/doc\('isbn_' \+ x\)/.test(cs) && /consSsFill\(/.test(cs) && /ssFill: nowIso\(\)/.test(cs), "클라우드 셈 — prd_books를 isbn13 칸으로 찾음('isbn_'+ISBN 문서 번호를 쓰지 않음) · 일조 채우기 한 번", null); }
+})().then(() => { if (process.argv.includes('--pure')) { console.log(bad ? `❌ tCONS1111 ① ${bad}개 실패` : '✓ tCONS1111 ① 통과'); process.exit(bad ? 1 : 0); } else next(); }); function next() {
 if (process.argv.includes('--pure')) { console.log(bad ? `❌ tCONS1111 ① ${bad}개 실패` : '✓ tCONS1111 ① 통과'); process.exit(bad ? 1 : 0); }
 const SHOT = process.env.RN_SHOT || null;
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); let dlg = 0; p.on('dialog', (d) => { dlg++; d.dismiss().catch(() => {}); });
@@ -76,3 +95,4 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); l
   ok(/<svg/.test(V.m) && /구매평 수/.test(V.m) && /불만족 비율/.test(V.m) && V.src, '달마다 구매평 수·불만족 비율 선 그래프 · 연구 화면에 들어감', V.m.slice(0, 120));
   ok(dlg === 0, '브라우저 팝업 없음');
   console.log(bad ? `❌ tCONS1111 ${bad}개 실패` : '✓ tCONS1111 모두 통과'); if (bad) process.exitCode = 1; });
+}
