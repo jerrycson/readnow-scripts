@@ -1,2 +1,2 @@
-col2=2026-11-10&doc=app_settings/kpipa
-# 275158098
+doc=app_settings/oop_study,app_settings/sp_obs,app_settings/buyback_stats,app_settings/research_pulse
+# 1268314890
