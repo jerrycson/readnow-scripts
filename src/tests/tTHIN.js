@@ -8,7 +8,7 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
 const PORT = process.env.RN_PORT || 8765; let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
 const stub = fs.readFileSync(path.join(__dirname, 'fbstub.js'), 'utf8'); const seed = require('./seed.js');
 const MOB = { viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' };
-const PLAIN = ['home', 'search', 'orders']; const HEAD = ['settings', 'pending']; /* 머리줄 단추로 가는 화면(⚙ 설정·연결 확정)도 PC와 같게 */ /* 고르기 없이 휴대폰도 PC와 같은 화면(큰 자료 없음) — 정적 검사 tools/thin-check.js 의 PLAIN과 같게 */
+const PLAIN = ['home', 'search', 'orders', 'research', 'channels', 'ledger']; /* (4시간 점검 11/11) 🔬 연구·🛒 판매처·🧾 통합 장부(11/11 새 탭) — release-guard.js PLAIN에 이유가 적힌 묶음 카드 탭 */ const HEAD = ['settings', 'pending']; /* 머리줄 단추로 가는 화면(⚙ 설정·연결 확정)도 PC와 같게 */ /* 고르기 없이 휴대폰도 PC와 같은 화면(큰 자료 없음) — 정적 검사 tools/thin-check.js 의 PLAIN과 같게 */
 const open = async (b, mob) => { const ctx = await b.newContext(mob ? MOB : { viewport: { width: 1400, height: 900 } }); const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/ERR_TUNNEL|Failed to load resource|js-profiling/.test(m.text())) errs.push('CONSOLE ' + m.text().slice(0, 200)); });
   await p.route(/^https?:\/\/(?!localhost)/, (r) => r.fulfill({ status: 404, body: '' })); await p.route(/gstatic\.com\/firebasejs\//, (r) => r.fulfill({ body: '/*stub*/', contentType: 'application/javascript' })); await p.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ body: stub, contentType: 'application/javascript' }));
@@ -22,7 +22,7 @@ const open = async (b, mob) => { const ctx = await b.newContext(mob ? MOB : { vi
       const add = (el) => { if (skip(el)) return; const k = sig(el); if (!k) return; if (!out.has(k)) out.set(k, (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40)); };
       for (const c of m.children) { if (skip(c)) continue; const kids = [...c.children].filter((k) => !skip(k) && (k.matches('button, a, .card, details.sec, .mk-card, .pj-card, .allcard') )); if (kids.length >= 2 && !c.matches('details.sec')) kids.forEach(add); else add(c); }
       return out; };
-    window.__thinGo = async (tab) => { S.tab = tab; S.detail = null; S.q = ''; S.limit = 30; renderTabs(); renderMainNow(); const W = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 20; i++) { await W(250); if (!(S.prodBusy || S.pmBusy || S.sellersBusy)) break; } renderMainNow(); await W(500); return /화면을 그리다 오류/.test(document.querySelector('#main').innerText); };
+    window.__thinGo = async (tab) => { S.tab = tab; S.detail = null; S.q = ''; S.limit = 30; renderTabs(); renderMainNow(); try { afterRender(); } catch (e) {} /* (4시간 점검 11/11) 실제 renderMain처럼 마무리까지 — 🏠 홈 🧭 모든 화면 지도는 afterRender가 붙임 */ const W = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 20; i++) { await W(250); if (!(S.prodBusy || S.pmBusy || S.sellersBusy)) break; } renderMainNow(); try { afterRender(); } catch (e) {} await W(500); return /화면을 그리다 오류/.test(document.querySelector('#main').innerText); };
   });
   return { p, errs, ctx }; };
 (async () => { const b = await chromium.launch(); const pc = await open(b, 0), ph = await open(b, 1);
