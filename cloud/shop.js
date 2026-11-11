@@ -15,7 +15,7 @@
  *  넣지 않는 것: SKU(서가·매입처 칸이 들어 있음)·매입가·판매자 분류·시장 지표·손님 정보 · 미끼(DUPES)·19금·판매중 아님·값 없음은 목록에서 뺌
  *  읽기 비용: 처음(또는 FULL_H시간마다) 판매중 상품 전체 + 그 도서 정보 한 번 → 그 뒤 DELTA_MIN분마다 바뀐 상품(uploadedAt)만 · 도서 정보는 새 책만 */
 'use strict';
-const crypto = require('crypto'); const zlib = require('zlib');
+const crypto = require('crypto'); const zlib = require('zlib'); const BQP = require('./shop-promo.js'); /* (11/11 shopc1) 🏷 우리숍 판매가 규칙·배지·묶음 할인·쿠폰 */
 const IMG_BASE = 'https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/';
 const SHOP_ORIGINS = ['https://booksqueen.com', 'https://www.booksqueen.com', 'https://booksqueen.web.app', 'https://booksqueen.firebaseapp.com'];
 const DEF = { open: 0, name: '북스퀸', shipFee: 3500, freeOver: 0, payDays: 2, maxItems: 20, fullH: 12, deltaMin: 10 };
@@ -61,13 +61,15 @@ const norm = (x) => String(x || '').toLowerCase().replace(/[\s\-_.,·:;!?'"()[\]
 const kstDay = (iso) => { const t = Date.parse(iso || ''); return Number.isFinite(t) ? new Date(t + 9 * 3600e3).toISOString().slice(0, 10) : null; };
 function listItems(all, o, held, sold, now) {
   o = o || {}; const X = sold || new Set(); if (X.size) all = all.filter((x) => !X.has(x.id)); const q = String(o.q || '').trim(); const toks = q.split(/\s+/).map(norm).filter(Boolean); const dig = q.replace(/\D/g, '');
-  let L = all.filter((x) => (!o.c || x.c === o.c) && (!o.g || x.g === o.g));
+  const pMin = Math.max(0, parseInt(o.pmin, 10) || 0), pMax = Math.max(0, parseInt(o.pmax, 10) || 0); /* (11/11 shopc1) 값 범위·할인만·배지 거르기 — 값은 규칙을 얹은 우리숍 판매가 */
+  let L = all.filter((x) => (!o.c || x.c === o.c) && (!o.g || x.g === o.g) && (!pMin || x.p >= pMin) && (!pMax || x.p <= pMax) && (!o.sale || (x.p0 && x.p < x.p0)) && (!o.bd || (x.bd || []).includes(o.bd)));
   if (toks.length) L = L.filter((x) => { if (dig.length >= 10 && x.isbn && x.isbn.includes(dig)) return true; const h = norm(x.t + ' ' + (x.a || '') + ' ' + (x.pb || '')); return toks.every((k) => h.includes(k)); });
-  const srt = o.s === 'low' ? (a, b) => a.p - b.p : o.s === 'high' ? (a, b) => b.p - a.p : (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
+  const offOf = (x) => (x.p0 && x.p < x.p0 ? 1 - x.p / x.p0 : 0); const byNew = (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
+  const srt = o.s === 'low' ? (a, b) => a.p - b.p : o.s === 'high' ? (a, b) => b.p - a.p : o.s === 'off' ? (a, b) => offOf(b) - offOf(a) || byNew(a, b) : byNew;
   L = L.slice().sort(srt); const p = Math.max(0, Math.min(500, parseInt(o.p, 10) || 0)); const H = held || new Set();
   const t0 = now || Date.now(); const today = kstDay(new Date(t0).toISOString()); const wk0 = kstDay(new Date(t0 - 6 * 864e5).toISOString()); let nT = 0, nW = 0;
   for (const x of L) { const d = kstDay(x.at); if (!d) continue; if (d === today) nT++; if (d >= wk0) nW++; }
-  return { total: L.length, p, more: (p + 1) * PAGE < L.length, today: nT, wk: nW, day: today, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, d: kstDay(x.at), st: H.has(x.id) ? 'o' : 's' })) };
+  return { total: L.length, p, more: (p + 1) * PAGE < L.length, today: nT, wk: nW, day: today, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, d: kstDay(x.at), st: H.has(x.id) ? 'o' : 's', ...(x.p0 ? { p0: x.p0 } : {}), ...(x.bd ? { bd: x.bd } : {}), ...(x.pe ? { pe: x.pe } : {}) })) };
 }
 /* 손님 주문 입력 검사 — 순수 셈 · 돌려줌 { ok, err, v } */
 const PHONE = /^01[016789]\d{7,8}$/;
@@ -84,9 +86,10 @@ function checkOrder(b, cfg) {
   if (!/^\d{5}$/.test(zip)) return err('우편번호 5자리를 적어 주세요'); if (a1.length < 5) return err('주소를 적어 주세요');
   if (!(b.agree && b.agree.privacy && b.agree.terms)) return err('개인정보 수집·이용과 구매 조건에 동의해 주세요');
   const dep = s(b.depositor, 20) || name; const em = s(b.buyer && b.buyer.email, 80).toLowerCase(); if (em && !EMAIL.test(em)) return err('메일 주소를 다시 확인해 주세요(비워 두어도 됩니다)');
-  return { ok: true, v: { ids, buyer: { name, phone: ph, ...(em ? { email: em } : {}) }, rcv: { name: rn, phone: rp, zip, addr1: a1, addr2: a2, memo: s(r.memo, 100) || null }, depositor: dep } };
+  const cp = s(b.cp, 30).toUpperCase().replace(/[^A-Z0-9]/g, '') || null; const ex = b.expect != null && Number.isFinite(+b.expect) ? Math.round(+b.expect) : null; /* (11/11 shopc1) 쿠폰 번호 · 손님 화면이 본 합계(서버 셈과 다르면 주문하지 않고 새 값을 알림) */
+  return { ok: true, v: { ids, buyer: { name, phone: ph, ...(em ? { email: em } : {}) }, rcv: { name: rn, phone: rp, zip, addr1: a1, addr2: a2, memo: s(r.memo, 100) || null }, depositor: dep, cp, expect: ex } };
 }
-const shipFeeOf = (sum, cfg) => { const f = num((cfg || DEF).shipFee); const fo = num((cfg || DEF).freeOver); return fo && sum >= fo ? 0 : f; };
+const shipFeeOf = (sum, cfg) => { const f = num((cfg || DEF).shipFee); const fo = num((cfg || DEF).freeOver); return fo && sum >= fo ? 0 : f; }; /* (shopc1) 주문 값은 BQP.quote(묶음 할인·쿠폰 뒤 책값 기준)가 셈 — 이건 옛 시험·바깥 쓰임 그대로 */
 const maskName = (n) => { const a = [...String(n || '')]; return a.length <= 1 ? '*' : a[0] + '*'.repeat(Math.max(1, a.length - 2)) + (a.length > 2 ? a[a.length - 1] : ''); };
 const B32 = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const orderNo = (now, rnd) => { const d = new Date(now + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, ''); const r = rnd || crypto.randomBytes(5); let x = ''; for (let i = 0; i < 5; i++) x += B32[r[i] % B32.length]; return 'BQ' + d + '-' + x; };
@@ -98,12 +101,12 @@ function shelfPub(v) { if (!v || typeof v !== 'object' || Array.isArray(v)) retu
     if (typeof x === 'number' && Number.isFinite(x)) o[k] = x; else if (typeof x === 'boolean') o[k] = x; else if (typeof x === 'string') o[k] = s(x, k === 'picks' ? 8000 : 200).replace(/[<>]/g, '');
     else if (Array.isArray(x)) o[k] = x.filter((y) => typeof y === 'string' || typeof y === 'number').slice(0, 60).map((y) => s(y, 30)); }
   return o; }
-function pubCfg(c, meta) {
+function pubCfg(c, meta, promo) {
   c = { ...DEF, ...(c || {}) }; const bz = c.biz || {}; const bank = c.bank || {}; const bankOk = !!(bank.name && bank.acct && bank.holder);
   return { open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
     pay: c.open && bankOk ? { how: 'bank', bank: s(bank.name, 20), acct: s(bank.acct, 30), holder: s(bank.holder, 20) } : { how: 'wait' }, pg: 0 /* 카드·간편결제(PG)는 계약 뒤 — 자리만 */,
     biz: { name: s(bz.name, 40) || null, ceo: s(bz.ceo, 20) || null, addr: s(bz.addr, 120) || null, tel: s(bz.tel, 20) || null, email: s(bz.email, 60) || null, no: s(bz.no, 20) || null, mo: s(bz.mo, 40) || null, cpo: s(bz.cpo, 20) || null, host: 'Google Firebase(구글)' },
-    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], at: meta ? meta.at : null };
+    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
 }
 
 /* ══ (11/11 shop2) 🔎 검색 노출 — 책마다 미리 만든 HTML · sitemap.xml (순수 셈 · 시험 tSHOP1111)
@@ -154,16 +157,33 @@ function sitemapXml(items, o) { o = o || {}; const base = o.base || BASE; const 
   const urls = (n === 1 ? [`<url><loc>${base}/</loc><changefreq>daily</changefreq></url>`] : []).concat(part.map((x) => `<url><loc>${base}/b/${hx(encodeURIComponent(x.id))}</loc>${/^\d{4}-\d\d-\d\d/.test(day(x.at)) ? `<lastmod>${day(x.at)}</lastmod>` : ''}</url>`));
   return head + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}</urlset>`; }
 
+/* (11/11 shopc1) 📚 함께 보면 좋은 책 — 근거(약속 42): 알라딘 '이 분야 다른 책'·AbeBooks 'More from this author'·쿠팡 '함께 보면 좋은 상품' — 우리 실물 중 ① 같은 지은이 ② 같은 분야 값이 비슷한 것 · 같은 책(ISBN)·주문 중·팔림 뺌 · 최대 8 */
+function relItems(it, all, H, X) { H = H || new Set(); X = X || new Set(); if (!it) return []; const ok = (x) => x && x.id !== it.id && !(it.isbn && x.isbn === it.isbn) && !H.has(x.id) && !X.has(x.id); const out = []; const seen = new Set();
+  const take = (L) => { for (const x of L) { if (out.length >= 8) break; if (seen.has(x.t)) continue; seen.add(x.t); out.push(x); } }; seen.add(it.t);
+  if (it.a) take(all.filter((x) => ok(x) && x.a && norm(x.a) === norm(it.a)).sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))));
+  if (it.c && out.length < 8) take(all.filter((x) => ok(x) && x.c === it.c).sort((a, b) => Math.abs(a.p - it.p) - Math.abs(b.p - it.p) || String(a.id).localeCompare(String(b.id))));
+  return out.map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, ...(x.p0 ? { p0: x.p0 } : {}), ...(x.bd ? { bd: x.bd } : {}) })); }
+/* (11/11 shopc1) 🔎 찾기 자동완성 — 낱말(2글자부터)이 들어간 제목 6 · 지은이 3 · 출판사 2 (권수와 함께) · 팔린 책 뺌 */
+function suggest(all, q0, X) { const q = norm(q0); X = X || new Set(); if (q.length < 2) return { s: [] }; const T = new Map(), A = new Map(), P = new Map(); const bump = (m, k) => { if (k) m.set(k, (m.get(k) || 0) + 1); };
+  for (const x of all) { if (!x || X.has(x.id)) continue; if (norm(x.t).includes(q)) bump(T, x.t); if (x.a && norm(x.a).includes(q)) bump(A, x.a); if (x.pb && norm(x.pb).includes(q)) bump(P, x.pb); }
+  const top = (m, n, k) => [...m.entries()].sort((a, b) => (norm(a[0]).startsWith(q) ? 0 : 1) - (norm(b[0]).startsWith(q) ? 0 : 1) || b[1] - a[1] || a[0].length - b[0].length).slice(0, n).map(([v, c]) => ({ v, k, n: c }));
+  return { s: [...top(T, 6, 't'), ...top(A, 3, 'a'), ...top(P, 2, 'pb')] }; }
+
 function makeShop({ db, C, FV, log }) {
-  const CAT = { items: new Map(), books: new Map(), gone: new Map(), sp: new Map(), full: 0, delta: 0, busy: null, err: null }; const SHELF = { key: '', parts: [] }; /* (11/11 shelf1) sp = 상품 → 알라딘 판매지수(밖으로는 순위만) · SHELF = 서가 책장 묶음 기억 */
+  const CAT = { items: new Map(), books: new Map(), gone: new Map(), sp: new Map(), pv: new Map(), full: 0, delta: 0, busy: null, err: null }; /* (11/11 shopc1) pv = 상품 → 숨은 칸 { sku, cp(분류 경로), k(종류) } — 할인 규칙 고르기에만 · 밖으로 안 나감 */ const SHELF = { key: '', parts: [] }; /* (11/11 shelf1) sp = 상품 → 알라딘 판매지수(밖으로는 순위만) · SHELF = 서가 책장 묶음 기억 */
   let CFG = { v: null, at: 0 }; let HELD = { v: new Set(), x: new Set(), at: 0 }; const RL = new Map();
   const cfg = async () => { if (CFG.v && Date.now() - CFG.at < 60e3) return CFG.v; try { const d = await C('app_settings').doc('shop').get(); CFG = { v: { ...DEF, ...(d.exists ? d.data() : {}) }, at: Date.now() }; } catch (e) { CFG = { v: CFG.v || { ...DEF }, at: Date.now() - 50e3 }; } return CFG.v; };
   const held = async (force) => { if (!force && Date.now() - HELD.at < 20e3) return HELD.v; try { const ss = await C('shop_holds').where('on', '==', 1).get(); const v = new Set(); const x = new Set(); const now = Date.now(); ss.forEach((d) => { const h = d.data() || {}; if (!holdOn(h, now)) return; (h.sold ? x : v).add(d.id); }); HELD = { v, x, at: now }; } catch (e) { HELD.at = Date.now() - 10e3; } return HELD.v; };
   const soldX = async () => { await held(); return HELD.x || new Set(); }; /* (11/11 shop2) 다른 판매처에서 팔림(🤖 자동 내림이 적음) */
+  /* (11/11 shopc1) 🏷 판매가 규칙 — app_settings/shop_promo 1분 기억 · VIEW = 규칙을 얹은 공개 요약(목록이 바뀌거나 규칙이 바뀌거나 1분 지나면 다시 셈 — 기간 시작·끝이 1분 안에 반영) */
+  let PROMO = { v: null, at: 0, ver: 0 }; const VIEW = { key: '', m: new Map() };
+  const promo = async (force) => { if (!force && PROMO.v && Date.now() - PROMO.at < 60e3) return PROMO.v; try { const d = await C('app_settings').doc('shop_promo').get(); PROMO = { v: BQP.promoOf(d.exists ? d.data() : {}), at: Date.now(), ver: PROMO.ver + 1 }; } catch (e) { PROMO = { v: PROMO.v || BQP.promoOf({}), at: Date.now() - 50e3, ver: PROMO.ver + (PROMO.v ? 0 : 1) }; } return PROMO.v; };
+  const vw = async () => { const P = await promo(); const now = Date.now(); const key = [CAT.meta && CAT.meta.at, CAT.items.size, PROMO.ver, Math.floor(now / 60e3)].join('|'); if (VIEW.key === key) return VIEW.m;
+    const m = new Map(); for (const [k, x] of CAT.items) m.set(k, BQP.applyOne(x, CAT.pv.get(k), P, now)); VIEW.key = key; VIEW.m = m; return m; };
   async function booksFor(ids) { const need = [...new Set(ids.filter((x) => x && !CAT.books.has(x)))]; for (let i = 0; i < need.length; i += 200) { const ss = await db.getAll(...need.slice(i, i + 200).map((x) => C('prd_books').doc(String(x)))); const part = need.slice(i, i + 200); let ms = []; try { ms = await db.getAll(...part.map((x) => C('prd_book_metrics').doc(String(x)))); } catch (e) {} const SPM = new Map(); ms.forEach((d) => { if (d.exists) { const v = (d.data() || {}).salesPoint; if (v != null && !isNaN(+v)) SPM.set(d.id, +v); } });
       ss.forEach((d) => CAT.books.set(d.id, d.exists ? slimB({ ...d.data(), ...(SPM.has(d.id) ? { _sp: SPM.get(d.id) } : {}) }) : null)); } }
   const slimB = (b) => ({ title: b.title, author: b.author, contributors: (b.contributors || []).slice(0, 2).map((c) => ({ name: c && c.name })), publisher: b.publisher, pubDate: b.pubDate, categories: (b.categories || []).slice(0, 1), images: b.images && (b.images.front || b.images.spine || b.images.back) ? { front: b.images.front || null, spine: b.images.spine || null, back: b.images.back || null } : null, cover: b.cover, priceList: b.priceList, isbn13: b.isbn13, adult: b.adult, pages: b.pages || null, sp: b._sp != null ? b._sp : (b.salesPoint != null ? +b.salesPoint || 0 : null) }); /* (11/11 shelf1) 📚 서가 책장 — 책등·뒤표지 그림·쪽수(책 두께)·판매지수(순서만 공개) */
-  const put = (id, l) => { const bk0 = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(id, l, bk0); const k = String(id); if (it) { CAT.items.set(k, it); if (bk0 && bk0.sp != null) CAT.sp.set(k, bk0.sp); else CAT.sp.delete(k); CAT.gone.delete(k); } else { const was = CAT.items.get(k); if (was) goneAdd(k, was); CAT.items.delete(k); } };
+  const put = (id, l) => { const bk0 = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(id, l, bk0); const k = String(id); if (it) { CAT.items.set(k, it); { const cp = s((bk0 && bk0.categories && bk0.categories[0] && (bk0.categories[0].path || bk0.categories[0].name)) || '', 160); const sku = s(l.sku, 40); CAT.pv.set(k, { sku, cp, k: BQP.kindOf(cp, sku) }); } if (bk0 && bk0.sp != null) CAT.sp.set(k, bk0.sp); else CAT.sp.delete(k); CAT.gone.delete(k); } else { const was = CAT.items.get(k); if (was) goneAdd(k, was); CAT.items.delete(k); CAT.pv.delete(k); } };
   /* (11/11 shop2) 팔렸거나 내린 책 — '품절' 화면용 요약(공개 요약 그대로 · 30일 · 최대 GONE_MAX) */
   const goneAdd = (k, it) => { CAT.gone.set(k, { ...it, goneAt: new Date().toISOString() }); if (CAT.gone.size > GONE_MAX) { const old = CAT.gone.keys().next().value; CAT.gone.delete(old); } };
   async function build() { if (CAT.busy) return CAT.busy; CAT.busy = (async () => { try { const c = await cfg(); const now = Date.now(); const full = !CAT.full || now - CAT.full > (c.fullH || DEF.fullH) * 3600e3;
@@ -172,7 +192,7 @@ function makeShop({ db, C, FV, log }) {
       let ss; const since = new Date((full ? now : CAT.delta) - 5 * 60e3); /* 5분 겹쳐 읽음(쓰기 시각 어긋남) */
       if (full) ss = await C('prd_listings').where('status', '==', '판매중').select(...F).get(); else ss = await C('prd_listings').where('uploadedAt', '>', since).select(...F).get();
       const docs = []; ss.forEach((d) => docs.push([d.id, d.data() || {}])); await booksFor(docs.map(([, l]) => l.bookId && String(l.bookId)).filter(Boolean));
-      if (full) { const seen = new Set(docs.map(([id]) => String(id))); for (const [k, it] of CAT.items) if (!seen.has(k)) goneAdd(k, it); CAT.items.clear(); } for (const [id, l] of docs) put(id, l); if (full) CAT.full = now; CAT.delta = now; CAT.err = null;
+      if (full) { const seen = new Set(docs.map(([id]) => String(id))); for (const [k, it] of CAT.items) if (!seen.has(k)) goneAdd(k, it); CAT.items.clear(); CAT.pv.clear(); } for (const [id, l] of docs) put(id, l); if (full) CAT.full = now; CAT.delta = now; CAT.err = null;
       const cats = {}; for (const x of CAT.items.values()) if (x.c) cats[x.c] = (cats[x.c] || 0) + 1;
       CAT.meta = { n: CAT.items.size, at: new Date(now).toISOString(), cats: Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 30) };
       C('app_settings').doc('shop_pub').set({ n: CAT.items.size, at: CAT.meta.at, full: new Date(CAT.full).toISOString(), read: docs.length, cats: CAT.meta.cats.slice(0, 12).map(([k, n]) => k + ' ' + n) }, { merge: true }).catch(() => {});
@@ -187,36 +207,41 @@ function makeShop({ db, C, FV, log }) {
     const chk = checkOrder(body, c); if (!chk.ok) return [400, chk]; const v = chk.v;
     const refs = v.ids.map((id) => C('prd_listings').doc(id)); const now = Date.now(); const no = orderNo(now); const tok = crypto.randomBytes(16).toString('hex');
     const pc = pubCfg(c, null); const due = new Date(now + pc.payDays * 864e5).toISOString();
+    const P = await promo(); if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) return [400, { ok: false, err: f.why, cp: 1 }]; } /* (11/11 shopc1) 쿠폰 번호가 틀리면 주문 전에 알림 */
     let out = null;
     await db.runTransaction(async (tx) => { out = null;
       const ls = await tx.getAll(...refs); const hs = await tx.getAll(...v.ids.map((id) => C('shop_holds').doc(id)));
       const bad = []; const lines = [];
       ls.forEach((d, i) => { const l = d.exists ? d.data() : null; const b = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(v.ids[i], l, b); const h = hs[i].exists ? hs[i].data() : null;
         if (!it) return bad.push({ id: v.ids[i], why: '방금 팔렸거나 판매를 멈춘 책' }); if (holdOn(h, now)) return bad.push({ id: v.ids[i], t: it.t, why: h.sold ? '방금 다른 곳에서 팔린 책' : '다른 분이 먼저 주문한 책' });
-        lines.push({ lid: v.ids[i], t: it.t, g: it.g, p: it.p, lp: it.lp, isbn: it.isbn, im: it.im, sku: s(l.sku, 40) || null, qty: 1 }); });
+        const pv0 = CAT.pv.get(v.ids[i]) || {}; const sku = s(l.sku, 40); const ap = BQP.applyOne(it, { sku, cp: pv0.cp || '', k: BQP.kindOf(pv0.cp, sku) }, P, now); /* (shopc1) 손님 화면과 같은 규칙으로 값을 다시 셈 */
+        lines.push({ lid: v.ids[i], t: it.t, g: it.g, p: ap.p, lp: it.lp, isbn: it.isbn, im: it.im, sku: sku || null, qty: 1, ...(ap.p0 ? { p0: ap.p0, rid: ap.rid } : {}) }); });
       if (bad.length) { out = [409, { ok: false, err: '주문할 수 없는 책이 있습니다', bad }]; return; }
-      const sum = lines.reduce((a, x) => a + x.p, 0); const fee = shipFeeOf(sum, pc); const total = sum + fee;
+      const q = BQP.quote(lines.map((x) => ({ id: x.lid, p: x.p })), P, pc, v.cp, now); if (v.cp && q.cpErr) { out = [400, { ok: false, err: q.cpErr, cp: 1 }]; return; }
+      lines.forEach((x, i) => { if (q.lines[i].p !== x.p) { x.pp = x.p; x.p = q.lines[i].p; } }); /* 묶음 할인·쿠폰은 책마다 나눠 깎음(pp = 깎기 전 우리숍 판매가) — 책값 합 = 낸 책값 */
+      const sum = q.sum; const fee = q.fee; const total = q.total;
+      if (v.expect != null && v.expect !== total) { out = [409, { ok: false, err: '그사이 값이 바뀌었습니다(할인 기간이 끝났거나 새로 시작) — 바뀐 값을 확인하고 다시 주문해 주세요', price: { items: lines.map((x) => ({ id: x.lid, p: x.pp || x.p })), sum, fee, total, disc: q.disc } }]; return; }
       const ref = C('shop_orders').doc(no);
-      tx.set(ref, { no, ch: 'shop', st: 'new', at: new Date(now).toISOString(), due, items: lines, sum, shipFee: fee, total, pay: { how: pc.pay.how, ...(pc.pay.how === 'bank' ? { bank: pc.pay.bank, acct: pc.pay.acct, holder: pc.pay.holder } : {}) }, depositor: v.depositor,
+      tx.set(ref, { no, ch: 'shop', st: 'new', at: new Date(now).toISOString(), due, items: lines, sum, shipFee: fee, total, ...(q.disc ? { sum0: q.sum0, disc: { total: q.disc, bundle: q.bundle || 0, coupon: q.coupon || null } } : {}), pay: { how: pc.pay.how, ...(pc.pay.how === 'bank' ? { bank: pc.pay.bank, acct: pc.pay.acct, holder: pc.pay.holder } : {}) }, depositor: v.depositor,
         buyer: v.buyer, rcv: v.rcv, agree: { privacy: new Date(now).toISOString(), terms: new Date(now).toISOString(), ver: '2026-11-11' }, tokH: hashTok(tok), ipk: ik, ua: s(req.headers['user-agent'], 120),
         hist: [{ at: new Date(now).toISOString(), by: '손님', what: `주문 접수 ${lines.length}권 · ${total}원` }], uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' });
       for (const x of lines) tx.set(C('shop_holds').doc(x.lid), { on: 1, no, at: new Date(now).toISOString(), t: x.t, uploadedAt: FV.serverTimestamp() });
-      out = [200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })) }]; });
+      out = [200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, disc: q.disc || 0, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })) }]; });
     HELD.at = 0; if (out && out[0] === 200) log && log(`🛍 우리숍 주문 접수 ${no} · ${out[1].items.length}권`); return out || [500, { ok: false, err: '주문을 저장하지 못했습니다 — 잠시 뒤 다시' }];
   }
   async function lookup(no, tok) { no = s(no, 30); if (!/^BQ\d{8}-[A-Z0-9]{5}$/.test(no) || !/^[0-9a-f]{32}$/.test(String(tok || ''))) return null; const d = await C('shop_orders').doc(no).get(); if (!d.exists) return null; const o = d.data() || {};
     const a = Buffer.from(String(o.tokH || '')), b = Buffer.from(hashTok(tok)); if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null; return { ref: d.ref, o }; }
   const ST = { new: '주문 접수 — 입금을 기다립니다', paid: '입금 확인 — 포장 준비 중', ship: '출고 준비 중', sent: '보냈습니다', done: '끝', cancel: '취소됨' };
-  const view = (o) => ({ ok: true, no: o.no, at: o.at, st: o.st, stTxt: ST[o.st] || o.st, due: o.due, total: o.total, sum: o.sum, shipFee: o.shipFee, pay: o.st === 'new' ? o.pay : { how: (o.pay || {}).how }, name: maskName(o.buyer && o.buyer.name), dep: maskName(o.depositor),
+  const view = (o) => ({ ok: true, no: o.no, at: o.at, st: o.st, stTxt: ST[o.st] || o.st, due: o.due, total: o.total, sum: o.sum, shipFee: o.shipFee, disc: (o.disc && o.disc.total) || 0, pay: o.st === 'new' ? o.pay : { how: (o.pay || {}).how }, name: maskName(o.buyer && o.buyer.name), dep: maskName(o.depositor),
     items: (o.items || []).map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })), inv: o.inv && o.inv.no ? { courier: o.inv.courier || null, no: o.inv.no } : null, cxl: o.st === 'cancel' ? (o.cxl || {}).why || null : null });
 
   /* (11/11 shop2) 책 한 권 HTML — 판매중·주문 중은 목록 요약 · 팔린 책은 기억(CAT.gone) → 없으면 상품 문서를 한 번 봄(같은 번호는 10분 기억) */
   const MISS = new Map();
   async function seoPage(res, id) { const html = (code, body, cache) => { res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': cache || 'public, max-age=300, s-maxage=600' }); res.end(body); return true; };
     const nf = () => html(404, `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width, initial-scale=1"><title>없는 책 | 북스퀸</title><link rel="stylesheet" href="/shop.css?v=0.1.0"></head><body><main class="wrap"><h1>찾는 책이 없습니다</h1><p><a class="btn" href="/#/">책 둘러보기</a></p></main></body></html>`, 'public, max-age=120');
-    if (!/^[\w.-]{1,80}$/.test(id)) return nf(); await ready(); const c = await cfg(); const H = await held(); const X = await soldX();
-    const same = (it) => (it.isbn ? [...CAT.items.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id) && !H.has(x.id)) : []);
-    let it = CAT.items.get(id); let st = it ? (X.has(id) ? 'x' : H.has(id) ? 'o' : 's') : null;
+    if (!/^[\w.-]{1,80}$/.test(id)) return nf(); await ready(); const c = await cfg(); const H = await held(); const X = await soldX(); const V = await vw(); /* (shopc1) 값은 규칙을 얹은 우리숍 판매가 */
+    const same = (it) => (it.isbn ? [...V.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id) && !H.has(x.id)) : []);
+    let it = V.get(id); let st = it ? (X.has(id) ? 'x' : H.has(id) ? 'o' : 's') : null;
     if (!it && CAT.gone.has(id)) { it = CAT.gone.get(id); st = 'x'; }
     if (!it) { const m = MISS.get(id); if (m && Date.now() - m < 600e3) return nf(); if (limited('seo-miss', 300, 60e3)) return nf();
       try { const d = await C('prd_listings').doc(id).get(); const l = d.exists ? d.data() || {} : null; const pub = l && pubItem(id, { ...l, status: '판매중', active: true, qty: 1 }, null); /* 미끼·19금·값 없음은 품절 화면도 안 만듦 */
@@ -237,17 +262,22 @@ function makeShop({ db, C, FV, log }) {
       if (path.startsWith('/shop/b/') && req.method === 'GET') return await seoPage(res, decodeURIComponent(path.slice(8)).slice(0, 80));
       { const m = /^\/shop\/sitemap(?:-(\d+))?\.xml$/.exec(path); if (m) { await ready(); const X = await soldX(); const H = await held(); const xml = sitemapXml([...CAT.items.values()].filter((x) => !X.has(x.id) && !H.has(x.id)), { n: m[1] ? +m[1] : 0 }); if (!xml) return send(404, { ok: false, err: '없는 쪽' });
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800, s-maxage=3600' }); res.end(xml); return true; } }
-      if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60'); }
-      if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...CAT.items.values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30'); }
-      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size].join('|');
-        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...CAT.items.values()], H, X, CAT.sp)); SHELF.key = key; SHELF.gz = new Map(); }
+      if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta, await promo()), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60'); }
+      if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...(await vw()).values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30'); }
+      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, VIEW.key].join('|'); /* (shopc1) 값 = 우리숍 판매가(규칙 얹음) */
+        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...V.values()], H, X, CAT.sp)); SHELF.key = key; SHELF.gz = new Map(); }
         const k = Math.max(0, Math.min(SHELF.parts.length - 1, parseInt(q.k, 10) || 0)); const P = SHELF.parts[k] || { rows: [] };
         const body = JSON.stringify({ ok: true, v: 1, n: SHELF.parts.reduce((a, x) => a + x.rows.length, 0), k, kn: SHELF.parts.length, at: CAT.meta && CAT.meta.at, pre: SHELF_PRE, cols: SHELF_COLS, rows: P.rows });
         const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || '')); const hd = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Robots-Tag': 'noindex', Vary: 'Accept-Encoding, Origin' };
         if (gz) { let z = SHELF.gz.get(k); if (!z) { z = zlib.gzipSync(body, { level: 6 }); SHELF.gz.set(k, z); } res.writeHead(200, { ...hd, 'Content-Encoding': 'gzip' }); res.end(z); } else { res.writeHead(200, hd); res.end(body); } return true; }
-      if (path === '/shop/item') { await ready(); const H = await held(); const X = await soldX(); const it0 = CAT.items.get(s(q.id, 80)); const it = it0 && !X.has(it0.id) ? it0 : null; if (!it) return send(404, { ok: false, err: '판매가 끝났거나 없는 책입니다' });
-        const same = it.isbn ? [...CAT.items.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id)).slice(0, 6).map((x) => ({ id: x.id, g: x.g, p: x.p, st: H.has(x.id) ? 'o' : 's' })) : [];
-        return send(200, { ok: true, item: { ...it, st: H.has(it.id) ? 'o' : 's' }, same }, 'public, max-age=30'); }
+      if (path === '/shop/item') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); const it0 = V.get(s(q.id, 80)); const it = it0 && !X.has(it0.id) ? it0 : null; if (!it) return send(404, { ok: false, err: '판매가 끝났거나 없는 책입니다' });
+        const same = it.isbn ? [...V.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id)).slice(0, 6).map((x) => ({ id: x.id, g: x.g, p: x.p, st: H.has(x.id) ? 'o' : 's' })) : [];
+        return send(200, { ok: true, item: { ...it, st: H.has(it.id) ? 'o' : 's' }, same, rel: relItems(it, [...V.values()], H, X) }, 'public, max-age=30'); }
+      if (path === '/shop/suggest') { await ready(); return send(200, { ok: true, ...suggest([...(await vw()).values()], q.q, await soldX()) }, 'public, max-age=120'); } /* (11/11 shopc1) 🔎 찾기 자동완성 */
+      if (path === '/shop/quote' && req.method === 'POST') { await ready(); const b = await readBody(req); const c = await cfg(); const pc = pubCfg(c, null); const P = await promo(); const V = await vw(); const H = await held(); const X = await soldX(); /* (11/11 shopc1) 🧮 장바구니 값(묶음 할인·쿠폰·배송비) — 잡아 두지 않음 · 주문 때 다시 셈 */
+        const ids = [...new Set((Array.isArray(b.items) ? b.items : []).map((x) => s(x, 80)).filter(Boolean))].slice(0, pc.maxItems); const bad = []; const L = [];
+        for (const id of ids) { const x = V.get(id); if (!x || X.has(id)) bad.push({ id, why: '방금 팔렸거나 판매를 멈춘 책' }); else if (H.has(id)) bad.push({ id, t: x.t, why: '다른 분이 먼저 주문한 책' }); else L.push({ id, p: x.p, p0: x.p0 || null, t: x.t }); }
+        const r = BQP.quote(L, P, pc, s(b.cp, 30), Date.now()); return send(200, { ok: true, ...r, items: L.map((x) => ({ id: x.id, p: x.p, p0: x.p0 })), bad }); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
       if (path === '/shop/cancel' && req.method === 'POST') { const body = await readBody(req); const r = await lookup(body.no, body.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다' });
@@ -261,7 +291,11 @@ function makeShop({ db, C, FV, log }) {
   const readBody = (req) => new Promise((ok, no) => { const ch = []; let n = 0; req.on('data', (c) => { n += c.length; if (n > 32e3) { no(Object.assign(new Error('너무 큼'), { code: 413 })); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { ok(ch.length ? JSON.parse(Buffer.concat(ch).toString('utf8')) : {}); } catch (e) { ok({}); } }); req.on('error', no); });
   let CHK = null; /* (11/11 shop3) 🔍 문 열기 전 점검 — 5분 기억(관리 기기 여럿이 열어도 한 번) */
   async function check(force) { if (!force && CHK && Date.now() - CHK.t < 5 * 60e3) return CHK.v; try { await build(); } catch (e) {} const it = [...CAT.items.values()].find((x) => x && x.ph && x.ph.length) || [...CAT.items.values()][0] || null; const v = await selfCheck({ item: it }); v.n = CAT.items.size; CHK = { t: Date.now(), v }; return v; }
-  return { handle, build, check, _cat: CAT };
+  /* (11/11 shopc1) 👀 관리 웹앱 🏷 할인·배지 미리 보기 — 지금 판매중 우리숍 상품 전부에 규칙을 얹어 봄(쓰기 없음) · index.js /shop-promo(관리자 로그인만) */
+  async function promoPreview(b) { b = b || {}; await ready(); const P = await promo(true); const items = [...CAT.items.values()]; const kinds = {}; for (const x of items) { const k = (CAT.pv.get(x.id) || {}).k || 'etc'; kinds[k] = (kinds[k] || 0) + 1; }
+    const live = P.rules.filter((r) => BQP.ruleSt(r) === 'on').length; if (!b.rule) return { n: items.length, kinds, live, at: CAT.meta && CAT.meta.at };
+    return { ...BQP.preview(items, (id) => CAT.pv.get(id), P, b.rule, Date.now()), kinds0: kinds, live, at: CAT.meta && CAT.meta.at }; }
+  return { handle, build, check, promoPreview, _cat: CAT };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억
@@ -283,4 +317,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
