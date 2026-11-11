@@ -246,6 +246,13 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   async function autoRe() { const R = o.relogin; if (!R) return ''; if (!mine()) return notMineMsg(); if (Y.already) return `「이미 로그인된 예스24」 화면(${Y.already.n}번 · 처음 ${new Date(Y.already.first + 9 * 3600e3).toISOString().slice(11, 16)}) — 되풀이 로그인하지 않고 멈춤 · 맡은 PC에서 [🔐 예스24 로그인]을 한 번 누르면 풀림`; if (!feedOk()) return '이 PC 수집기(다리)가 안 보임'; if (ppStop(Y.drops, now(), C().ppN)) { if (!Y.ppNoted || now() - Y.ppNoted > 3600e3) { Y.ppNoted = now(); note('⛔ 예스24 로그인이 로그인 뒤 30분 안에 3번 풀림 — 다른 곳(정범님 크롬·다른 PC 번외)에서 같은 계정으로 로그인해 서로 끊는 것으로 의심 · 스스로 다시 로그인을 3시간 멈춤 · 예스24 읽기는 한 PC에서만 켜 두세요'); } return '로그인 뒤 금방 다시 풀림 3번 — 다른 곳 로그인과 서로 끊기는 것으로 의심해 멈춤(3시간)'; } const w = R.why('y24', { hold: holdOn() }); if (w) return w;
     Y.inLogin = true; Y.loginDlg = ''; let r; try { r = await R.run('y24', { name: '예스24 판매관리', shape: true, loginUrl: BASE + '/', nav, ev, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, Y.br.sid), key: (k) => keyPress(Y.br.sid), lastMsg: () => Y.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/', 30); return !isLoginSt(await ev(JS_STATE)); } }); } finally { Y.inLogin = false; }
     if (r.ok) { setLogin('ok'); Y.keepAt = now(); Y.ord.next = now() + 3000; return 'ok'; } return r.why; }
+  /* (11/11 y24ops4 · 진단 11/11 23:45 — HOME 세션이 다른 곳 로그인에 끊겨 「이미 로그인된 예스24」에서 멈춤 · 정범님이 HOME 앞에 없으면 아무도 못 풂) 🔐 원격 '다시 로그인 한 번'
+   *  웹앱(아무 기기)에서 사람이 두 번 눌러 col2_y24_cmd {k:'relogin'} → 맡은 PC 수집기 → POST /y24/re1 → 「이미 로그인된」 멈춤·핑퐁 멈춤을 풀고 저장된 계정으로 스스로 다시 로그인을 한 번
+   *  · 저장된 계정이 없으면 아무것도 안 풂(사람이 그 PC 옆 창에서) · 다른 곳 세션이 아직 살아 있으면 다시 「이미 로그인된」에서 멈춤(한 번뿐 · 되풀이 없음 · 남의 세션을 끊는 단추는 누르지 않음) */
+  function reOnce(by) { if (isLogger()) return { ok: false, err: '로거 PC에서는 예스24 로그인을 하지 않습니다(약속 0)' }; if (!mine()) return { ok: false, err: notMineMsg() }; if (!enabled()) return { ok: false, err: '번외 예스24가 꺼져 있음' };
+    const r = reState(); if (!r.has) return { ok: false, err: '이 PC 번외 ⚙ › 🔐 스스로 다시 로그인에 저장된 예스24 계정 없음 — 이 PC 옆 창 [🔐 예스24 로그인]으로' }; if (!r.on) return { ok: false, err: '스스로 다시 로그인을 꺼 둠(번외 ⚙ › 🔐)' };
+    if (Y.login === 'ok') return { ok: true, msg: '이미 로그인 됨 — 할 일 없음', already: true }; const was = Y.already; Y.already = null; Y.drops = []; Y.reWhy = null; note(`🔐 ${String(by || '').slice(0, 40)} 원격 요청 — 저장된 계정으로 예스24 다시 로그인 한 번${was ? `(「이미 로그인된」 멈춤 ${was.n}번을 풂)` : ''}`); kick(200);
+    return { ok: true, msg: '저장된 계정으로 다시 로그인을 곧 한 번 해 봄 — 다른 곳 세션이 아직 살아 있으면 다시 「이미 로그인된」에서 멈춤' }; }
   /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인') 🔐 ⚙ › 🔐 [확인하고 저장] — 넣은 아이디·비밀번호로 이 PC 번외 예스24 크롬에서 실제로 로그인해 봄 → 맞을 때만 저장(부른 쪽)
    *  · 지금 세션이 살아 있으면 따로 된 임시 창(쿠키가 따로인 브라우저 맥락 · 닫으면 사라짐)에서 해 봄 — 살아 있는 세션 쿠키를 덮거나 로그아웃하지 않음
    *  · 세션이 풀려 있으면 그 자리(본 창)에서 로그인 = 확인과 다시 로그인을 한 번에 · 출고 중·로거·꺼짐이면 확인하지 않고 까닭 */
@@ -325,6 +332,6 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   REG.cur = () => !!REG.R.cur;
   /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지·판매재개) — helper/col2-y24w.js(웹앱 🛠 처리할 일에서 맡김 → 이 숨은 크롬이 등록상품 관리 화면에서 사람처럼 고치고 다시 읽어 확인) */
   W = require('./col2-y24w.js').makeY24W({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login });
-  return { start, kick, feed, sum, login, verify, close, runNow, reg: REG, w: W, learn: { set: learnSet, state: () => LN.state(), LN }, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct, mainSum, opsNum, goodsSum } };
+  return { start, kick, feed, sum, login, reOnce, verify, close, runNow, reg: REG, w: W, learn: { set: learnSet, state: () => LN.state(), LN }, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct, mainSum, opsNum, goodsSum } };
 }
 module.exports = { makeY24, ppStop, holderOf, isHolder, HOLD_DEF, ALREADY_RE, ordShift, hdrFresh, pickMenus, cutAct, SAFE, DANGER, SECRET, OPS_PAGES, mainSum, opsNum, goodsSum };

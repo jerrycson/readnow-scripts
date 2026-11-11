@@ -92,6 +92,16 @@ console.log('③ 보내기(y24WSend)');
     const f = new Function('firebase', 'GM_xmlhttpRequest', 'window', 'C2Y', blk + '\nreturn { wRelay };')(fb, GM, {}, 'x'); await f.wRelay('HOME', { on: true, mine: true });
     ok(D.c.st === 'done' && D.c.res.stop && /멈춤/.test(D.c.res.msg), '번외가 거절(409 멈춤)하면 그 까닭을 그대로 문서에(예전 gx는 200 아니면 까닭을 버림)', D.c); }
 
+  { /* (y24ops4) 원격 '다시 로그인 한 번' — k:'relogin' → 번외 /y24/re1 */ const blk = cutOf(CS, "    const W_CMD = 'col2_y24_cmd'", '    G.__rnC2yWRelay = wRelay;'); const D = { a: { k: 'relogin', st: 'new', holder: 'HOME', by: 'PHONE', at: iso(1) }, b: { k: 'relogin', st: 'new', holder: 'HOME', by: 'PHONE', at: iso(1) } }; const reqs = [];
+    const ref = (id) => ({ id, get: async () => ({ exists: !!D[id], data: () => D[id] }), set: async (v) => { D[id] = { ...D[id], ...v }; } });
+    const fb = { firestore: () => ({ collection: () => ({ doc: ref, where: (k, o2, v) => ({ limit: () => ({ get: async () => ({ docs: Object.keys(D).filter((i) => D[i][k] === v).map((i) => ({ id: i, ref: ref(i), data: () => D[i] })) }) }) }) }), runTransaction: async (fn) => fn({ get: (r) => r.get(), set: (r, v) => { D[r.id] = { ...D[r.id], ...v }; } }) }) };
+    let n = 0; const GM = (q) => { reqs.push(q.url); n++; const body = n === 1 ? { ok: true, msg: '저장된 계정으로 다시 로그인을 곧 한 번 해 봄' } : { ok: false, err: '저장된 예스24 계정 없음' }; setTimeout(() => q.onload({ status: n === 1 ? 200 : 409, responseText: JSON.stringify(body) }), 0); };
+    const f = new Function('firebase', 'GM_xmlhttpRequest', 'window', 'C2Y', blk + '\nreturn { wRelay };')(fb, GM, {}, 'http://127.0.0.1:8797'); await f.wRelay('HOME', { on: true, mine: true });
+    ok(reqs.filter((u) => /\/y24\/re1$/.test(u)).length === 2 && D.a.st === 'done' && D.a.res.state === 'done' && /HOME: 저장된 계정/.test(D.a.res.msg) && D.b.res.state === 'fail' && /계정 없음/.test(D.b.res.msg), "원격 '다시 로그인 한 번' → 맡은 PC 번외 /y24/re1 · 결과(됨·계정 없음)를 문서에", [D.a, D.b]); }
+  { const H = fs.readFileSync(path.join(ROOT, 'lab', 'col2', 'helper', 'col2-y24.js'), 'utf8'); const HH = fs.readFileSync(path.join(ROOT, 'lab', 'col2', 'helper', 'readnow-col2-helper.js'), 'utf8'); const fnS = cutOf(H, '  function reOnce(by)', "  /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인')");
+    ok(/if \(isLogger\(\)\)/.test(fnS) && /if \(!mine\(\)\)/.test(fnS) && /if \(!r\.has\)/.test(fnS) && /Y\.already = null; Y\.drops = \[\];/.test(fnS) && !/click|Input\.dispatch/.test(fnS), "번외 reOnce: 로거·맡지 않은 PC·저장 계정 없음은 거절 · 멈춤만 풀고 스스로 다시 로그인에 맡김(누르는 단추 없음)");
+    ok(/p === '\/y24\/re1'/.test(HH) && /reOnce,/.test(H), '번외 도우미 길 POST /y24/re1');
+    ok(/data-y24re1="1"/.test(T) && /if \(t\.dataset\.y24re1\) \{ if \(!y24Arm\(t,/.test(T), '🧰 예스24 운영: 맡은 PC 세션이 풀리면 「🔐 HOME 다시 로그인 한 번(원격)」(두 번 누름)'); }
   console.log('⑥ 글 검사');
   { const g = cut('function ledY24Guard()', '/* 맡김 — 돌려줌'); ok(!/rn-c2seen/.test(g.split('function ledY24HereWhy')[0]) && !/MJ-MAIN\(등록·출고 PC\) — 예스24 맡기기 안 함/.test(g), '장부 맡기기 지킴에서 「번외 없는 기기」「MJ-MAIN」 막이가 빠짐(원격 길)');
     ok(/const y24ok = !ledY24HereWhy\(\);/.test(T) && /function ledY24HereWhy\(\)[\s\S]{0,600}rn-c2seen/.test(T), '🤖 자동 내림은 예전 지킴(번외 있는 PC만 · 여러 기기가 겹쳐 맡지 않게)');
