@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "shipcalc 판 시험 중(1.78.532)",
- "since": "2026-11-12T16:33:22Z",
- "beat": "2026-11-12T16:35:56Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: adapt9 셋째 클라우드 판(발견 넘김 다듬기)",
-  "at": "2026-11-12T16:34:48Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "shelf8 서가 0.2.6→0.2.7 · 클라우드 0.35.174 push 3b398872·97b651bf · 우리숍·클라우드 배포 성공",
-  "at": "2026-11-12T16:33:11Z"
+  "done": "shipcalc 웹앱 1.78.532 · 수집기 1.89.286 · pricing 0.17.14 · shipping 0.7.16 · 감시기 0.10.49 push 06519e30",
+  "at": "2026-11-12T16:37:14Z"
  },
- "host": "vm-shipcalc"
+ "host": null
 }
