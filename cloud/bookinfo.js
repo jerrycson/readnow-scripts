@@ -9,7 +9,7 @@
  *     img/preview/isbn_<ISBN>/<n>.jpg · 하루 처음엔 많이, 다 모아 갈수록 적게(pvBudget — 남은 수 기준 자동) · 한 장 900KB · 한 권 16쪽 상한
  *  순수 함수(파서·속도·차례·예산·적응)는 아래에서 내보내 시험(src/tests/tBOOKINFO1112.js)이 그대로 씀 */
 'use strict';
-const VER = '0.1.5'; // (0.1.5) 아무 출처도 답 못 한 책은 실패로 세지 않음(6시간 뒤) · 0.1.4가 30일 뒤로 미룬 빈 책 되돌림 // (0.1.4) 미리보기만 붙은 책을 새 책 차례로 · 그려 읽기 자리 있으면 예스24 먼저 · 알라딘 하루 1,500(간격 5초~) · 그려 읽기 하루 1,200 // (0.1.3) 알라딘 따로 받은 칸이 짧은 구조 데이터·제목 글 값을 바꿈 · 제목 없는 책소개 // (0.1.2) 교보 새 틀 전용(section id) · 알라딘 따로 불러오는 칸(getContents · 자리 이름은 화면에서) · 책 3권 함께 · 간격 자리 먼저 잡기 // (0.1.1) 예스24 번호를 모르면 교보(받아 둔 번호 → 교보 검색)를 먼저 · 그려 읽기는 그 뒤 · 제목 안 태그도 읽음 · 진단 화면 꼴(bkpage)
+const VER = '0.1.6'; // (0.1.6) 느림만으로 커지는 간격은 최소 간격의 4배까지(막힘은 그대로 두 배) // (0.1.5) 아무 출처도 답 못 한 책은 실패로 세지 않음(6시간 뒤) · 0.1.4가 30일 뒤로 미룬 빈 책 되돌림 // (0.1.4) 미리보기만 붙은 책을 새 책 차례로 · 그려 읽기 자리 있으면 예스24 먼저 · 알라딘 하루 1,500(간격 5초~) · 그려 읽기 하루 1,200 // (0.1.3) 알라딘 따로 받은 칸이 짧은 구조 데이터·제목 글 값을 바꿈 · 제목 없는 책소개 // (0.1.2) 교보 새 틀 전용(section id) · 알라딘 따로 불러오는 칸(getContents · 자리 이름은 화면에서) · 책 3권 함께 · 간격 자리 먼저 잡기 // (0.1.1) 예스24 번호를 모르면 교보(받아 둔 번호 → 교보 검색)를 먼저 · 그려 읽기는 그 뒤 · 제목 안 태그도 읽음 · 진단 화면 꼴(bkpage)
 
 /* ── 칸 이름 (웹앱·우리숍·서가가 같이 씀) ── */
 const FIELDS = [ /* [칸, 이름, 최대 글자] */
@@ -160,7 +160,7 @@ const PACE_DEF = { yes24: { gap: 3000, min: 1500, max: 60000, slowMs: 4000, cap:
 function paceInit(src, o) { const d = { ...(PACE_DEF[src] || PACE_DEF.yes24), ...(o || {}) }; return { ...d, lat: null, errRun: 0, pauseUntil: 0, pauseN: 0, ok: 0, err: 0 }; }
 function paceStep(p, ev, now) { p = { ...p }; now = now || Date.now(); const ms = +ev.ms || 0; p.lat = p.lat == null ? ms : Math.round(p.lat * 0.8 + ms * 0.2);
   const hard = !ev.ok && (ev.status === 429 || ev.status === 403 || ev.status === 503 || ev.status === 418 || ev.timeout);
-  if (ev.ok) { p.ok++; p.errRun = 0; p.pauseN = Math.max(0, p.pauseN - 0.1); p.gap = ms > p.slowMs ? Math.min(p.max, Math.round(p.gap * 1.25)) : Math.max(p.min, Math.round(p.gap * 0.95)); }
+  if (ev.ok) { p.ok++; p.errRun = 0; p.pauseN = Math.max(0, p.pauseN - 0.1); p.latMin = p.latMin == null ? ms : Math.min(p.latMin * 1.01 + 1, ms); /* 이 사이트 평소 응답(천천히 잊음) */ const slow = ms > Math.max(p.slowMs, 3 * (p.latMin || 0)); p.gap = slow ? Math.min(p.min * 4, p.max, Math.max(p.gap, Math.round(p.gap * 1.1))) : Math.max(p.min, Math.round(p.gap * 0.95)); } /* (0.1.6) 느림만으로는 최소 간격의 4배까지만 — 0.1.5는 우리 쪽(클라우드)이 바빠 모든 사이트가 느릴 때 간격이 40~70초로 커져 시간당 100권 아래였음 · 막힘(429·403·503·시간 초과)은 그대로 두 배 */
   else { p.err++; p.errRun++; p.gap = Math.min(p.max, Math.round(p.gap * (hard ? 2 : 1.3))); if (p.errRun >= 4 || (hard && p.errRun >= 2)) { p.pauseN = Math.min(6, Math.floor(p.pauseN) + 1); p.pauseUntil = now + Math.min(6 * 3600e3, 15 * 60e3 * 2 ** (p.pauseN - 1)); p.errRun = 0; } }
   return p; }
 const paceWait = (p, last, now) => { now = now || Date.now(); if (p.pauseUntil > now) return p.pauseUntil - now; return Math.max(0, (last || 0) + p.gap - now); };

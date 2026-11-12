@@ -79,7 +79,7 @@ console.log('④ 출처 합치기 — 먼저 온 출처 값을 지키고 빈 칸
 
 console.log('⑤ ⏱ 속도 스스로 조절');
 { let p = B.paceInit('yes24'); const g0 = p.gap; for (let i = 0; i < 20; i++) p = B.paceStep(p, { ok: true, ms: 800 }, 1e9); ok(p.gap < g0 && p.gap >= p.min, `빠르고 오류 없음 → 간격 줄임 ${g0}→${p.gap}ms (최소 ${p.min})`);
-  const g1 = p.gap; p = B.paceStep(p, { ok: true, ms: 9000 }, 1e9); ok(p.gap > g1, `느려지면 늘림 ${g1}→${p.gap}`);
+  const g1 = p.gap; p = B.paceStep(p, { ok: true, ms: 9000 }, 1e9); ok(p.gap > g1, `느려지면 늘림 ${g1}→${p.gap}`); { let s2 = p; for (let i = 0; i < 60; i++) s2 = B.paceStep(s2, { ok: true, ms: 9000 }, 1e9); ok(s2.gap <= s2.min * 4, `느림만으로는 최소 간격 4배까지(${s2.gap}ms ≤ ${s2.min * 4})`); }
   const g2 = p.gap; p = B.paceStep(p, { ok: false, status: 429, ms: 100 }, 1e9); ok(p.gap === Math.min(p.max, g2 * 2), `429 → 두 배 ${g2}→${p.gap}`);
   p = B.paceStep(p, { ok: false, status: 503, ms: 100 }, 1e9); ok(p.pauseUntil === 1e9 + 15 * 60e3, '막힘 두 번 → 15분 쉼'); ok(B.paceWait(p, 0, 1e9) === 15 * 60e3, '쉬는 동안 기다림');
   let q = B.paceInit('kyobo'); for (let i = 0; i < 4; i++) q = B.paceStep(q, { ok: false, status: 500, ms: 50 }, 5e9); ok(q.pauseUntil > 5e9, '보통 오류 4번 잇달아 → 쉼');
