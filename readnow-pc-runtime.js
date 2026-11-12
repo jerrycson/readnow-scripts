@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.277의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.278의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.277' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.277', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.278' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.278', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -635,11 +635,31 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnSgShip = () => { try { const h = hold(); return h.on ? { on: true, until: h.until, why: String(h.why || '').slice(0, 120) } : { on: false }; } catch (e) { return null; } }; /* PC 도우미(127.0.0.1:8898)에 알림 — 도우미가 스스로 새 판 받기·되살리기를 미룸(until = 최대 시간 · 수집기 탭이 죽어도 그때까지) */
   window.__rnShipGuardFeed = (data, src) => { const at = (data && data._at) || Date.now(); const cur = gv(GK, null); if (cur && src === 'web' && (cur.at || 0) > at) return; sv(GK, { holds: (data && data.holds) || {}, cfg: (data && data.cfg) || {}, at, src: src || 'fs' }); cache = null; };
   window.__rnShipLocal = (id, why, end) => { const o = gv(LK, {}) || {}; if (end) { if (!o[id]) return false; delete o[id]; } else { if (o[id]) return false; o[id] = { why: String(why || '출고').slice(0, 80), t0: Date.now(), tab: TAB }; } sv(LK, o); cache = null; return true; };
+  /* (정범님 11/12 오후 shipq1) 🔕 출고 시간 방해 금지 — 웹앱 app_settings/ship_quiet { on, from, to }(기본 꺼짐 · 13:00~15:00 · 한국 시각)
+   *  · 켜져 있고 지금이 그 시간대면: ⚡ 새 수집기 판 바꾸기 · 메모리 정리 새로고침(수집 중·쉬는 때·바쁜 중) · 새 판으로 가는 안전한 새로고침을 그 시간대 끝까지 미룸 → 끝나면 이어 감
+   *  · 수집·맡긴 일 같은 다른 일은 막지 않음(그건 실제 출고 중 🚚 출고 보호만) · 사람이 보낸 🛰 원격 업데이트도 막지 않음
+   *  · 메모리가 한계의 memPct(기본 85% — 근거: 없음, 11/08 HOME 탭이 97%에서 죽음 · 칸 memPct로 바꿈) 넘으면 탭이 죽기 전에 정리(미루지 않음)
+   *  · 값은 수집기가 Firestore에서 직접 듣고(rnu 로그인 탭) + 웹앱 탭의 data-rn-sq로도 받아 GM rn-sq-cfg(이 PC 공용)에 둠 */
+  function sqDecide(c, now) { const hm = (v, d) => { const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(String(v == null ? '' : v).trim()); return m ? { s: `${m[1].padStart(2, '0')}:${m[2]}`, n: +m[1] * 60 + +m[2] } : hm(d); };
+    c = c || {}; const f = hm(c.from, '13:00'), t = hm(c.to, '15:00'); const base = { cfgOn: !!c.on, from: f.s, to: t.s, on: false, until: 0 }; if (!c.on || f.n === t.n) return base;
+    const k = new Date(now + 9 * 3600e3); const m = k.getUTCHours() * 60 + k.getUTCMinutes(); const day0 = now - (m * 60 + k.getUTCSeconds()) * 1e3 - k.getUTCMilliseconds(); /* 한국 날짜 0시 */
+    const inW = f.n < t.n ? m >= f.n && m < t.n : m >= f.n || m < t.n; if (!inW) return base;
+    const until = day0 + (t.n + (f.n > t.n && m >= f.n ? 1440 : 0)) * 60e3; return { ...base, on: true, until }; } /* ⟦sqDecide 끝⟧ */
+  const QK = 'rn-sq-cfg'; const QCB = new Map(); const sqMemNoted = {};
+  window.__rnSqFeed = (c, src) => { const at = Date.parse((c && c.at) || '') || 0; const cur = gv(QK, null); if (cur && (Date.parse(cur.at || '') || 0) > at) return; sv(QK, c ? { on: !!c.on, from: c.from, to: c.to, at: c.at || null, memPct: +c.memPct || null, src: src || 'fs' } : { on: false, at: null, src: src || 'fs' }); };
+  window.__rnSqOn = () => { try { return sqDecide(gv(QK, null), Date.now()); } catch (e) { return { on: false }; } };
+  /* 미룸 — 시간대 안이면 true(한 번만 기록) · fn = 끝나면 이 탭이 다시 할 일(없으면 그 일이 스스로 다시 봄) · o.mem = 메모리 정리(o.ratio가 memPct를 넘으면 미루지 않음) */
+  window.__rnSqWait = (k, name, fn, o) => { o = o || {}; const q = window.__rnSqOn(); if (!q.on) return false;
+    if (o.mem) { const hi = Math.max(50, Math.min(98, +((gv(QK, null) || {}).memPct) || 85)) / 100; if (+o.ratio >= hi) { if (!sqMemNoted[k] || Date.now() - sqMemNoted[k] > 30 * 60e3) { sqMemNoted[k] = Date.now(); L('warn', `🔕 출고 시간 방해 금지(${q.from}~${q.to}) 중이지만 메모리 ${Math.round(o.ratio * 100)}% — 탭이 죽기 전에 ${name}(기준 ${Math.round(hi * 100)}%)`); } return false; } }
+    if (!QCB.has(k)) { QCB.set(k, { k, name, fn: typeof fn === 'function' ? fn : null, reload: !!o.reload, at: Date.now() }); L('info', `🔕 출고 시간 방해 금지(${q.from}~${q.to}) — ${name} 미룸(${q.to} 뒤 이어 감)`); } return true; };
+  window.__rnSqDefN = () => QCB.size;
   /* 5초마다: 최대 시간 지난 칸 기록 · 풀렸으면 미룬 것 이어 감 · 웹앱 화면 다리(data-rn-sgdoc 받기 · data-rn-shiphold 알리기) */
-  const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname); let lastFeed = '', lastNow = '';
+  const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname); let lastFeed = '', lastNow = '', lastSq = '';
   async function sgTick() { try {
     if (APP) { const a = document.documentElement.getAttribute('data-rn-sgdoc'); if (a && a !== lastFeed) { lastFeed = a; try { const v = JSON.parse(a); window.__rnShipGuardFeed({ holds: v.holds, cfg: v.cfg, _at: +v.at || Date.now() }, 'web'); } catch (e) {} } }
     { /* (shipsafe2) 이 탭이 맡은 출고 칸은 5분마다 맥박(beat) — 1시간보다 긴 출고(송장 입력이 길 때)도 끝까지 보호 · 탭이 죽으면 맥박이 끊겨 1시간 뒤 풀림 */ const loc = gv(LK, {}) || {}; const own = Object.keys(loc).filter((id) => loc[id] && loc[id].tab === TAB && Date.now() - (+loc[id].beat || +loc[id].t0 || 0) > 5 * 60e3); if (own.length) { for (const id of own) loc[id].beat = Date.now(); sv(LK, loc); cache = null; try { window.__rnSgBeat && window.__rnSgBeat(own); } catch (e) {} } }
+    if (APP) { const a = document.documentElement.getAttribute('data-rn-sq'); if (a && a !== lastSq) { lastSq = a; try { window.__rnSqFeed(JSON.parse(a), 'web'); } catch (e) {} } } /* (shipq1) 🔕 웹앱 탭 → 이 PC GM */
+    if (QCB.size && !window.__rnSqOn().on && !(window.__rnSgOn && window.__rnSgOn())) { const plan = sgResumePlan([...QCB.values()]); const n = QCB.size; QCB.clear(); L('info', `🔕 출고 시간 방해 금지 끝 — 미룬 ${n}가지 이어 감`); for (const it of plan) { if (!it.fn) continue; try { await it.fn(); } catch (e) { L('err', `🔕 이어 가기 실패 — ${it.name}: ${e.message}`); } await new Promise((r) => setTimeout(r, 1500)); } }
     if (APP) { const u = document.documentElement.getAttribute('data-rn-sgupdnow'); if (u && u !== lastNow) { lastNow = u; try { const v = JSON.parse(u); if (v && Date.now() - (+v.at || 0) < 120e3) { sv('rn-sg-updnow', { at: +v.at, by: String(v.by || '웹앱').slice(0, 40) }); L('info', `🚚 출고 전에 업데이트 먼저(웹앱에서 고름) — 받아 둔 새 수집기 판으로 지금 바꿈(쉬는 사이를 기다리지 않음)`); } } catch (e) {} } } /* (shipsafe2) 웹앱 '업데이트 먼저 하고 출고' → 이 PC 수집기 탭(새 판 지킴이)이 바로 바꿈 */
     const h = hold();
     for (const x of h.expired || []) if (!expNoted[x.id]) { expNoted[x.id] = 1; const P = String(pcName()).trim().toUpperCase(); if (x.pc === P || P === MJ) L('warn', `🚚 출고 보호 최대 시간(${h.maxH}시간) 지나 풀림 — '${x.why}'(${x.pc || '?'}) 끝 소식이 오지 않음`); }

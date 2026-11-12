@@ -6,7 +6,7 @@ const pick = (...L) => L.find((p) => fs.existsSync(p));
 const F = pick(path.join(__dirname, '..', '..', 'local', 'readnow-alps.js'), path.join(__dirname, '..', 'local', 'readnow-alps.js')); const s = fs.readFileSync(F, 'utf8');
 const C = pick(path.join(__dirname, '..', '..', 'cloud', 'index.js'), path.join(__dirname, '..', 'cloud', 'index.js')); const cs = fs.readFileSync(C, 'utf8');
 let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
-const ver = (s.match(/const VERSION = '([\d.]+)'/) || [])[1]; ok(ver === '0.5.6', '도우미 판 0.5.6 ' + ver);
+const ver = (s.match(/const VERSION = '([\d.]+)'/) || [])[1]; const vN = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); ok(vN(ver) >= vN('0.5.6'), '도우미 판 0.5.6 이상(rel11: 0.5.7 출고 시간 방해 금지 화면) ' + ver);
 ok(/async function runJob\(job\) \{[^\n]*const c = \{ \.\.\.cfg\(\), \.\.\.\(job\.paperCheck != null \? \{ paperCheck: !!job\.paperCheck \} : \{\}\) \};/.test(s), '일의 paperCheck가 이 PC 설정을 덮음(칸이 없으면 PC 설정 그대로)');
 ok(/ok: c\.paperCheck \? true : \(job\.paperCheck === false \? 'nocheck' : false\)/.test(s), "종이 확인 없이 적은 인쇄 끝 = ok 'nocheck'(참 값)");
 { const m = s.match(/if \(c\.paperCheck\) \{ const uc = Object\.entries\(J\.printed \|\| \{\}\)\.filter\(\(\[k, v\]\) => !v \|\| !v\.ok\)/); ok(!!m, "다음 일(종이 확인 켬)의 되돌림 거름이 '!v.ok'라 'nocheck' 줄은 되돌리지 않음(같은 송장 두 장 막기)");
