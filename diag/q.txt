@@ -1,2 +1,2 @@
-mem=1
-# 18051152
+doc=ml_sales/_meta,app_settings/value_model,app_settings/value_factors,app_settings/freeship_stats,app_settings/badge_study,app_settings/buyback_stats,app_settings/extras_study,app_settings/ratio_study,app_settings/cons_study,app_settings/ml_state
+# 65065641
