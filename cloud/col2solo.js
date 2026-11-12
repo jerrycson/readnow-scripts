@@ -77,6 +77,11 @@ function makeSolo({ db, C, FV, log, mods, now }) {
   /* ② 넘긴 일(운영 칸) — 웹앱 c2HoWrite·c2HoWriteMode와 같은 규칙(넘김 표 lab/col2/shadow/col2-handoff.js) */
   async function hoWrite(o, pc, hoDoc, X, HOF) { const k = String(o.job || ''); const J = HOF.JOBS[k]; if (!J) return '넘김 표에 없는 일';
     const w = HOF.writeOk(hoDoc, o, pc); if (!w.ok) return w.why; const v = w.v; const id = String(o.id); const by = '번외 ' + pc; const W2 = { writer: by, uploadedAt: FV.serverTimestamp() }; const t = iso(); const ref = C(J.col).doc(id);
+    if (J.mode === 'plan') { /* (11/12 handoff2) 로거 칸 일 — 웹앱 c2HoPlanW와 같음: 운영 문서를 다시 읽고(HOF.reads) 규칙 파일 plan()이 낸 쓰기만 한 묶음으로 · 칸 밖이면 거절(HOF.planCheck) */
+      if (!HOF.plan || !HOF.reads || !HOF.planCheck) return '넘김 규칙 파일이 옛 판(plan 없음)'; const docs = {}; for (const [c, d] of HOF.reads(k, id)) { const g = await C(c).doc(String(d)).get(); docs[c + '/' + d] = g.exists ? g.data() || {} : null; }
+      const W = HOF.plan(k, id, v, docs, { now: t, day: new Date(now() + 9 * 3600e3).toISOString().slice(0, 10) }); const bad = HOF.planCheck(k, W); if (bad) return bad;
+      const fv = (o0) => { const r = {}; for (const [kk, x] of Object.entries(o0 || {})) { const ob = x && typeof x === 'object' && !Array.isArray(x); r[kk] = ob && Array.isArray(x.$au) ? FV.arrayUnion(...x.$au) : ob && Array.isArray(x.$ar) ? FV.arrayRemove(...x.$ar) : x; } return r; };
+      const bt = db.batch(); for (const w of W) { const ref2 = C(w.c).doc(String(w.id)); const full = w.bare ? fv(w.v) : { ...fv(w.v), ...W2 }; if (w.set) bt.set(ref2, full); else bt.set(ref2, full, { merge: true }); } await bt.commit(); return true; }
     if (!J.mode) { const up = { ...v, ...W2 }; if (J.hist && o.hist && typeof o.hist === 'object') up.history = FV.arrayUnion({ at: String(o.hist.at || t), type: String(o.hist.type || ''), old: o.hist.old ?? null, by }); await ref.set(up, { merge: true }); return true; }
     if (J.mode === 'once') { if (!v.rates || !(+v.rates.USD > 0)) return '환율 값이 없음'; const ex = await ref.get(); if (ex.exists) return true;
       await ref.set({ date: v.date || id, rates: v.rates, src: v.src, warn: v.warn || null, at: t, by, ...W2 }); const kd = new Date(now() + 9 * 3600e3); const day = kd.toISOString().slice(0, 10);
@@ -150,7 +155,7 @@ function makeSolo({ db, C, FV, log, mods, now }) {
     if (b.op !== 'sync') return [400, { ok: false, err: '모르는 일: ' + String(b.op).slice(0, 20) }];
     const md = await mods(); const F = Array.isArray(b.fields) ? b.fields.filter((f) => /^\w{1,40}$/.test(String(f))).slice(0, 40) : null; const errs = [];
     try { res.st = await putSt(pc, b); } catch (e) { errs.push('상태: ' + (e.code || e.message)); }
-    let hoDoc = { jobs: {} }; try { const d = await C('app_settings').doc('col2_handoff').get(); const v = d.exists ? d.data() || {} : {}; hoDoc = { jobs: tsFix(v.jobs || {}) }; res.handoff = hoDoc; } catch (e) { errs.push('넘김 문서: ' + (e.code || e.message)); }
+    let hoDoc = { jobs: {} }; try { const d = await C('app_settings').doc('col2_handoff').get(); const v = d.exists ? d.data() || {} : {}; hoDoc = { jobs: tsFix(v.jobs || {}) }; res.handoff = { jobs: Object.fromEntries(Object.entries(hoDoc.jobs).filter(([k]) => !!(md.HOF && md.HOF.JOBS[k] && md.HOF.JOBS[k].lg) === !!lg)) }; } /* (11/12 handoff2 · 약속 0) 로거엔 로거 칸 일만 · 사무실엔 사무실 일만 */ catch (e) { errs.push('넘김 문서: ' + (e.code || e.message)); }
     if (Array.isArray(b.out) && b.out.length) { if (!md.HOF) errs.push('넘김 표 파일을 못 받음'); res.ack = await putOut(pc, b.out, hoDoc, md.X, md.HOF || { JOBS: {}, writeOk: () => ({ ok: false, why: '넘김 표 없음' }) }); }
     if (b.handBeat && typeof b.handBeat === 'object' && md.HOF) for (const [k, tb] of Object.entries(b.handBeat).slice(0, 20)) { if (!md.HOF.mine(hoDoc, k, pc) || !(+tb > 0) || +tb > now() + 60e3) continue; const x = hoDoc.jobs[k] || {}; const was = Date.parse(x.beat || '') || 0; if (+tb - was < 30 * 60e3) continue;
       try { await C('app_settings').doc('col2_handoff').set({ jobs: { [k]: { beat: new Date(+tb).toISOString() } } }, { merge: true }); } catch (e) {} }

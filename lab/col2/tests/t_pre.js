@@ -75,9 +75,9 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   ok(!HOF.writeOk(HD, { ...o1, job: 'ext.ebay', c: 'ext_basic' }, 'HOME').ok && !HOF.writeOk(HD, { ...o1, job: 'ext.ridi', c: 'ext_ebook' }, 'HOME').ok, '넘긴 일·정한 칸만 씀(다른 칸·넘기지 않은 출처는 거절)');
 
   console.log('⑤ 넘김 표 · 수집기 본문');
-  const H = fs.readFileSync(path.join(L.PROD_REPO, 'src/app.html'), 'utf8'); const i0 = H.indexOf('const C2HO_JOBS = '); const i1 = H.indexOf("mode: 'ext', src: s, beatMaxH: 8 };", i0);
-  const W = new Function(H.slice(i0, i1 + "mode: 'ext', src: s, beatMaxH: 8 };".length) + '\nreturn C2HO_JOBS;')();
-  ok(Object.keys(W).length === Object.keys(HOF.JOBS).length && Object.entries(W).every(([k, j]) => HOF.JOBS[k] && HOF.JOBS[k].col === j.col && HOF.JOBS[k].idRe === j.idRe && (HOF.JOBS[k].src || null) === (j.src || null) && HOF.JOBS[k].beatMaxH === j.beatMaxH), '웹앱 넘김 표 = 번외 넘김 표(외부 정보 14곳 더함)', Object.keys(W));
+  const H = fs.readFileSync(path.join(L.PROD_REPO, 'src/app.html'), 'utf8'); const i0 = H.indexOf('const C2HO_JOBS = '); const i1 = H.indexOf("\n", H.indexOf("C2HO_JOBS.shopSum = ", i0)); /* (11/12 handoff2) 로거 칸 일 두 줄까지 */
+  const W = new Function(H.slice(i0, i1) + '\nreturn C2HO_JOBS;')();
+  ok(Object.keys(W).length === Object.keys(HOF.JOBS).length && Object.entries(W).every(([k, j]) => HOF.JOBS[k] && HOF.JOBS[k].col === j.col && HOF.JOBS[k].idRe === j.idRe && (HOF.JOBS[k].src || null) === (j.src || null) && HOF.JOBS[k].beatMaxH === j.beatMaxH && (HOF.JOBS[k].mode || null) === (j.mode || null) && !!HOF.JOBS[k].lg === !!j.lg && JSON.stringify(HOF.JOBS[k].fields) === JSON.stringify(j.fields)), '웹앱 넘김 표 = 번외 넘김 표(외부 정보 15곳 · 로거 칸 2 더함)', Object.keys(W));
   { const i2 = H.indexOf('const C2HO_PCPLAN = '); const WP = new Function(H.slice(i2, H.indexOf('};', i2) + 2) + '\nreturn C2HO_PCPLAN;')(); ok(JSON.stringify(WP) === JSON.stringify(HOF.PC_PLAN), '맡길 PC 차림표: 웹앱 = 번외 표', WP);
     const T2 = (pc, d, can, n) => ({ d, pc, ver: '0.1.28', at: new Date().toISOString(), tasks: { nbMarket: { name: '시세', n, same: 0, un: 0, pass: { can } } } });
     const cd = HOF.candidates([T2('HOME', '2026-11-11', true, 46), T2('JS-MAIN', '2026-11-11', true, 33)]).find((x) => x.k === 'nbMarket'); const cd2 = HOF.candidates([T2('HOME', '2026-11-11', true, 46), T2('JS-MAIN', '2026-11-11', false, 33)]).find((x) => x.k === 'nbMarket');
@@ -86,7 +86,7 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
     const T3 = (pc, ver, h) => ({ d: '2026-11-12', pc, ver, at: new Date(Date.now() - h * 3600e3).toISOString(), tasks: { 'ext.ebay': { name: 'eBay', n: 40, same: 40, un: 0, pass: { can: true } } } });
     const e1 = HOF.candidates([T3('HOME', '0.1.25', 0.2), T3('JS-MAIN', '0.1.28', 0.5)]).find((x) => x.k === 'ext.ebay'); const e2 = HOF.candidates([T3('HOME', '0.1.25', 0.2), T3('JS-MAIN', '0.1.28', 5)]).find((x) => x.k === 'ext.ebay');
     ok(e1.pc === 'JS-MAIN' && e2.pc === null && /0\.1\.26 이상 필요/.test(e2.no) && /5시간째 소식 없음/.test(e2.no), '외부 정보는 0.1.26 이상·3시간 안 소식 있는 PC만 · 없으면 맡을 PC 없음 + 까닭', { e1, e2 }); }
-  ok(!HOF.JOBS['ext.ttb'] && !HOF.JOBS['ext.lib'] && HOF.EXT_HO.every(([s, , col]) => X0.GROUPS[X0.SOURCES[s].grp].col === col), 'TTB(서비스 끝)·도서관 정보나루(사무실 IP 미등록)는 뺌 · 칸은 운영 공용 파일 묶음과 같음');
+  ok(!HOF.JOBS['ext.ttb'] && HOF.JOBS['ext.lib'] && HOF.JOBS['ext.lib'].col === 'ext_lib' && HOF.EXT_HO.every(([s, , col]) => X0.GROUPS[X0.SOURCES[s].grp].col === col), 'TTB(서비스 끝)는 뺌 · (11/12 handoff2) 도서관 정보나루는 넣음(넘길 수 있음이 난 PC만) · 칸은 운영 공용 파일 묶음과 같음');
   const SRC = fs.readFileSync(path.join(L.PROD_REPO, 'src/readnow-collector.src.js'), 'utf8'); const head = SRC.slice(0, SRC.indexOf('// ==/UserScript=='));
   ok(/const hoSkip = \(src, x\) => !!hoX\[src\] && \/\^97\[89\]\\d\{10\}\$\/\.test/.test(SRC) && (SRC.match(/&& !hoSkip\(src, x\)/g) || []).length === 2 && /c2HoLive\('ext\.' \+ s, 8\)/.test(SRC), '수집기 본문: 넘긴 출처는 ISBN 있는 책만 건너뜀(두 고르는 곳 모두) · 8시간 소식 없으면 운영이 다시');
   ok(!/hoSkip|hoX/.test(head), '수집기 머리(@match·@grant·@connect·@require)는 안 바꿈');
