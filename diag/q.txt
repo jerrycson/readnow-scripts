@@ -1,2 +1,2 @@
-doc=app_settings/adapt_cfg,app_settings/adapt_health,app_settings/adapt_sel
-# 1932313099
+bfill=1&doc=app_settings/adapt_cfg
+# 1832325166
