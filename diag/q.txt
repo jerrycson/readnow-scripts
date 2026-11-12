@@ -1,2 +1,2 @@
-cmdsince=2026-11-12T04:50:00Z&types=regLookup,lookup&regq=9788971991480&asCode=1&br=1
-# 2372910989
+doc=col2_naver/state,app_settings/platforms
+# 636523552
