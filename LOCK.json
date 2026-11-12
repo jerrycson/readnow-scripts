@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "📖 책 정보 0.1.4(bookinfo1 · 클라우드)",
+ "since": "2026-11-12T18:23:32Z",
+ "beat": "2026-11-12T18:23:32Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 책 정보 0.1.3(bookinfo1)",
   "at": "2026-11-12T18:14:16Z"
  },
- "host": null
+ "host": "vm-bookinfo1"
 }
