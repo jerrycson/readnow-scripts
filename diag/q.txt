@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto&col2=2026-11-12
-# 21025114
+logs=1&pc=HOME&from=202611121800
+# 130848445
