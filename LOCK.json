@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fold2 — 탭마다 화면 모두 기본 접기",
+ "since": "2026-11-12T09:47:33Z",
+ "beat": "2026-11-12T09:47:33Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "fix3 셋째 웹앱 1.78.510·수집기 1.89.281 (227702b7)",
   "at": "2026-11-12T09:33:18Z"
  },
- "host": null
+ "host": "vm"
 }
