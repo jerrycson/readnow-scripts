@@ -1,2 +1,2 @@
-col2=1&doc=col2_ctl/LOGGER,app_settings/col2_handoff
-# 3043823221
+run=1&bkinfo=1&reload=1
+# 2766724290
