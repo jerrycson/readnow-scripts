@@ -92,10 +92,11 @@ console.log('⑧ 💾 저장 — 가짜 Firestore·가짜 인터넷으로 한 �
   store.set('ext_basic/' + ISBN, { src: { yes24: { d: { id: '111' } } } });
   const db = { getAll: async (...a) => Promise.all(a.filter((x) => x && x.get).map((r) => r.get())) };
   const urls = []; const fetchFn = async (u) => { urls.push(u); if (/Goods\/111/.test(u)) return { ok: true, status: 200, url: u, text: async () => Y24, headers: { get: () => 'text/html' } }; return { ok: false, status: 404, url: u, text: async () => '', headers: { get: () => null } }; };
-  const M = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), fetchFn, bucket: () => ({ file: (p) => ({ save: async () => files.push(p) }) }) });
+  const AGC = []; const M = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), fetchFn, ag: async (id, seed, mid, r) => AGC.push({ id, mid, r, seed }), rnd: () => 0.5, bucket: () => ({ file: (p) => ({ save: async () => files.push(p) }) }) });
   const r = await M.tick(8000); const d = store.get('bk_info/' + ISBN); ok(r.n === 1 && d && d.t && d.t.intro && d.t.toc && d.t.auth && d.full, `한 권 저장(${d && d.f && d.f.join('·')})`);
   ok(urls.length === 1 && /Goods\/111/.test(urls[0]), '받아 둔 예스24 번호로 바로 상품 화면만(검색 요청 0 · 다 차서 교보·알라딘 안 물음)');
   ok(d.b.pages === 320 && d.srcs.yes24.ok && d.srcs.yes24.via === 'ext' && d.nx > Date.now() + 100 * 864e5, '기본 정보 · 출처 기록 · 다시 볼 때(180일)');
+  ok(AGC.length === 1 && AGC[0].id === 'bkinfo_yes24' && AGC[0].mid === 'id' && AGC[0].r.n === 1 && AGC[0].r.ok === 1 && AGC[0].seed.methods.some((m) => m.id === 'rsc'), `🔄 적응 틀 장부에 성적(출처·길·성공): ${JSON.stringify(AGC.map((x) => [x.id, x.mid, x.r]))}`);
   const r2 = await M.tick(3000); ok(r2.n === 0, '다 찬 책은 다시 묻지 않음');
   store.set('prd_listings/L2', { isbn13: '9788900000009', status: '판매중', active: true, firstSeenAt: '2026-11-12T01:00:00Z', bookId: 'B2', title: '번호 모르는 책' }); M.state.cands = null; M.state.q = null; const n0 = urls.length;
   await M.tick(3000); ok(!store.get('bk_info/9788900000009') && M.state.have.get('9788900000009').nx > Date.now() + 5 * 3600e3 && urls.length - n0 <= 1, '예스24 번호를 모르고 그려 읽기도 없으면: 쓰지 않고 6시간 뒤(실패로 세지 않음 · 알라딘으로 넘기지 않음)');
