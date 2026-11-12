@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fix3 둘째 — 번외 첫 확인 중 거절 다시 맡기",
+ "since": "2026-11-12T09:15:13Z",
+ "beat": "2026-11-12T09:15:13Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "voice2 클라우드 0.35.150 (8776361b)",
   "at": "2026-11-12T09:12:19Z"
  },
- "host": null
+ "host": "vm"
 }
