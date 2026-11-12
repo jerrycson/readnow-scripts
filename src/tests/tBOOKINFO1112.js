@@ -59,6 +59,18 @@ console.log('③ 교보·알라딘·그 밖 — 일반 길(제목 글·구조 �
   const a = B.parseGeneric('aladin', AL, ISBN, {}); ok(a.ok && a.t.intro === '알라딘 소개 글\n둘째 줄' && a.t.toc === '가. 하나\n나. 둘', `알라딘: ${JSON.stringify(a.t)}`);
   ok(!B.parseGeneric('kyobo', KB.replace(ISBN, '1'), ISBN, {}).ok, '교보: 다른 책 받지 않음'); }
 
+console.log('③-2 교보 새 틀(section id) · 알라딘 따로 불러오는 칸');
+{ const KBN = `<html><head><meta property="og:title" content="새 틀 책 | 교보문고"></head><body><section id="bookBasicInfo"><h2>기본정보</h2><table><tr><th>ISBN</th><td>${ISBN}</td></tr><tr><th>발행(출시)일자</th><td>2023년 04월 01일</td></tr><tr><th>쪽수/크기</th><td>648쪽 | 152 * 215 mm</td></tr></table></section>
+  <section id="bookIntro"><h2>책 소개</h2><div id="bookSimpleIntro">짧은 머리 글입니다. 기념판</div><div id="bookDescription">긴 소개 글이 여기에 있습니다. 둘째 문장도 있습니다.</div></section><div id="contentTable" data-anchor-pending="true"><div style="x"></div></div><div id="authorInfo"><h2>작가정보</h2><p>작가는 서울에서 태어났다. 소설을 쓴다.</p></div></body></html>`;
+  const r = B.parseKyobo(KBN, ISBN, {}); ok(r.ok && r.t.intro === '짧은 머리 글입니다. 기념판\n\n긴 소개 글이 여기에 있습니다. 둘째 문장도 있습니다.' && r.from.intro === 'site', `교보 새 틀: 책소개(머리 글 + 소개) ${JSON.stringify(r.t.intro)}`);
+  ok(!r.t.toc && r.t.auth === '작가는 서울에서 태어났다. 소설을 쓴다.', '교보 새 틀: 늦게 오는 빈 틀(목차)은 비움 · 들어 있는 칸(작가정보)은 읽음');
+  ok(r.b.pages === 648 && r.b.size === '152*215mm' && r.b.pubDate === '2023-04-01' && r.b.title === '새 틀 책', `교보 새 틀: 기본 정보 ${JSON.stringify(r.b)}`);
+  const AL0 = `<div class="pContent" id="8900000001_Introduce"></div><div class="pContent" id="8900000001_AuthorInfo"></div><div class="pContent" id="8900000001_PublisherDesc"></div><div class="pContent" id="8900000001_ShopInfo"></div>`; ok(JSON.stringify(B.alParts(AL0)) === JSON.stringify({ Introduce: '8900000001', AuthorInfo: '8900000001', PublisherDesc: '8900000001' }), '알라딘: 화면에서 칸 자리 이름 읽음(필요한 셋)');
+  const I = B.alPart('Introduce', '<div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책소개</div><div class="Ere_prod_mconts_R">알라딘 책소개 글</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">목차</div><div class="Ere_prod_mconts_R">1부<br>2부</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책속에서</div><div class="Ere_prod_mconts_R">한 대목</div></div>');
+  ok(I.intro === '알라딘 책소개 글' && I.toc === '1부\n2부' && I.inbook === '한 대목', `알라딘 Introduce: 책소개·목차·책속에서 ${JSON.stringify(I)}`);
+  const A = B.alPart('AuthorInfo', '<div>저자 및 역자소개</div><div>지은이 : 김작가<br>서울 사람</div><div>옮긴이 : 이번역<br>번역가</div>'); ok(/^지은이 : 김작가\n서울 사람/.test(A.auth || '') && /^옮긴이 : 이번역\n번역가/.test(A.trans || ''), `알라딘 AuthorInfo: 지은이·옮긴이 나눔 ${JSON.stringify(A)}`);
+  ok(B.alPart('PublisherDesc', '<div class="Ere_prod_mconts_LS">출판사 제공 책소개</div><div>출판사 홍보 글</div>').pubrev === '출판사 홍보 글', '알라딘 PublisherDesc → 출판사 서평'); }
+
 console.log('④ 출처 합치기 — 먼저 온 출처 값을 지키고 빈 칸만 채움');
 { const y = B.parseYes24(Y24, ISBN, {}); const k = { ok: true, src: 'kyobo', t: { intro: '다른 소개', pubintro: '교보 출판사 소개' }, b: { pages: 999, kdc: '813' } };
   const m = B.merge(B.merge(null, y), k); ok(m.t.intro === y.t.intro && m.t.pubintro === '교보 출판사 소개' && m.from.pubintro === 'kyobo' && m.from.intro === 'yes24', '글 칸');
