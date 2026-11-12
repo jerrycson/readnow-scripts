@@ -10,7 +10,7 @@ const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 700)); } else console.log('  ✓', m); };
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
-const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledAudit, omniPick, omniBl, omniStill, omniReMap, omniRk, OMNI_BL_MS, OMNI_RE_MAX };')();
+const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledAudit, omniPick, omniBl, omniStill, omniReMap, omniRk, OMNI_BL_MS, OMNI_RE_MAX, OMNI_RE_GAP_MS };')();
 console.log('① 순수 셈');
 { const from = '2026-11-12T03:00:00Z';
   const I = { now: '2026-11-12T05:00:00Z', days: 30,
@@ -36,9 +36,12 @@ console.log('① 순수 셈');
   ok(F.omniStill(f, { live: true, qty: 3, alq: 1 }).go && !!F.omniStill(f, { live: true, qty: 3, alq: 2 }).wait && !!F.omniStill(f, { live: true, qty: 3, alq: null }).wait && !!F.omniStill(f, { live: true, qty: 1, alq: 1 }).shut, '알라딘에 맞춤 — 알라딘 수량이 바뀌었으면 이번엔 안 보냄(다음 셈) · 예스24가 이미 같으면 닫음');
   ok(F.omniStill(b1, null).go, '지금 값을 모르면(자료 없음) 장부 셈 그대로');
   /* (리드 덧붙임) 번외·로거가 늦게 받아 거절한 맡김 → 엔진이 새 열쇠로 다시(같은 열쇠 중복 막기 유지) */
-  const L = { a: { st: 'sent' }, b: { st: 'sent' }, c: { st: 'fail' }, d: { st: 'sent' }, 'd#2': { st: 'sent' }, e: { st: 'sent' }, 'e#2': { st: 'dup' }, 'e#3': { st: 'sent' }, f: { st: 'sent' }, 'f#2': { st: 'sent' }, g: { st: 'claim' } };
-  const RM = F.omniReMap(L, (k) => ['a', 'c', 'd#2', 'e#3', 'g'].includes(k));
-  ok(RM.a === 'a#2' && !RM.b && !RM.c && RM.d === 'd#3' && !RM.e && RM.f === 'f#2' && RM.g === 'g#2' && F.OMNI_RE_MAX === 3, '다시 맡길 열쇠: 거절·끊김 → 열쇠#2 · 두 번째도 거절 → #3 · 3번째까지만 · 맡기기 전 실패는 사람 손 · 다시 맡긴 것이 괜찮으면 그 열쇠로 막음', RM);
+  const L = { a: { st: 'sent' }, b: { st: 'sent' }, c: { st: 'fail' }, d: { st: 'sent' }, 'd#2': { st: 'sent' }, e: { st: 'sent' }, 'e#2': { st: 'dup' }, 'e#3': { st: 'sent' }, 'e#4': { st: 'sent' }, 'e#5': { st: 'sent' }, f: { st: 'sent' }, 'f#2': { st: 'sent' }, g: { st: 'claim' } };
+  const RM = F.omniReMap(L, (k) => ['a', 'c', 'd#2', 'e#5', 'g'].includes(k));
+  ok(RM.a === 'a#2' && !RM.b && !RM.c && RM.d === 'd#3' && !RM.e && RM.f === 'f#2' && RM.g === 'g#2' && F.OMNI_RE_MAX === 5, '다시 맡길 열쇠: 거절·끊김 → 열쇠#2 · 두 번째도 거절 → #3 · 5번째까지만 · 맡기기 전 실패는 사람 손 · 다시 맡긴 것이 괜찮으면 그 열쇠로 막음', RM);
+  { /* (y24chk 11/12) 번외가 '못 함'으로 끝낸 맡김은 30분 뒤에 다시 — 같은 고장에 1분마다 걸려 상한을 2분 만에 다 쓰던 것 */ const t1 = Date.parse('2026-11-12T08:48:00Z'); const L2 = { h: { ch: 'yes24', st: 'sent', at: '2026-11-12T08:46:23Z', doneAt: '2026-11-12T08:46:26Z' }, i: { ch: 'yes24', st: 'sent', at: '2026-11-12T08:46:23Z' }, 'i#3': { ch: 'yes24', st: 'sent', at: '2026-11-12T08:48:59Z', doneAt: '2026-11-12T08:48:59Z' }, j: { ch: 'aladin', st: 'sent', at: '2026-11-12T08:47:00Z' }, k: { ch: 'yes24', st: 'claim', at: '2026-11-12T08:40:00Z' } };
+    const R1 = F.omniReMap(L2, () => true, t1), R2 = F.omniReMap(L2, () => true, t1 + 31 * 60e3), R3 = F.omniReMap(L2, () => true, Date.parse('2026-11-12T09:30:00Z'));
+    ok(R1.h === 'h' && R2.h === 'h#2' && R3['i'] === 'i#4' && F.omniReMap(L2, () => true, Date.parse('2026-11-12T09:10:00Z')).i === 'i#3' && R1.j === 'j#2' && R1.k === 'k#2' && F.OMNI_RE_GAP_MS === 30 * 60e3, "예스24 번외 '못 함' 뒤 다시 맡기기는 30분 간격(그 전엔 같은 열쇠로 막음) · 상한에 닿은 #3도 #4로(새 판 뒤) · 끊김·알라딘은 예전처럼 곧바로", { R1, R2, R3 }); }
   const b1T = g('B1'); const rk0 = F.omniRk(b1T, b1); const P2 = F.omniPick(TD, { from, bl: 1, done: new Set([rk0]) }).map((p) => p.T.key); const P3 = F.omniPick(TD, { from, bl: 1, done: new Set([rk0]), re: { [rk0]: rk0 + '#2' } }).find((p) => p.T.key === 'B1');
   ok(!P2.includes('B1') && P3 && P3.rk === rk0 + '#2', '고르기: 맡긴 열쇠는 다시 안 고름 · 다시 맡길 열쇠가 있으면 새 열쇠로 고름', { P2, rk: P3 && P3.rk }); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tLED3_1112 ${bad}개 실패` : '✓ tLED3_1112 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }

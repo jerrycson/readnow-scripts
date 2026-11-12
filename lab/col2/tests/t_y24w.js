@@ -62,6 +62,18 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
 
 (async () => {
   console.log('① 순수 셈');
+  { /* (0.1.37 y24chk · 11/12 진단) 실제 예스24 응답 칸 이름(REM_CNT 재고수량 · MAN_NO 판매자상품코드 · GOODS_STAT_GB 판매상태 · SALE_PR 판매가 — 11/12 /api/Product/ProductList 원문) 그대로 찾는지 · 칸 이름을 못 찾으면 편집기를 건드리지 않음 */
+    const vm = require('vm'); const J = W._js;
+    const real = [{ GOODS_NO: 300000101, EAN: '9788900000201', SHOP_PR: 10000, SALE_PR: 8000, GOODS_STAT_GB: '02', GOODS_STAT_GB_NM: '판매중', REM_CNT: 3, MAN_NO: 'A01SKUR', USED_SALE_PR: 0 }];
+    const mkCtx = (rows) => { const R = rows.map((x) => ({ ...x })); let cur = null, shown = 0; const ds = { getRowCount: () => R.length, getJsonRow: (r) => ({ ...R[r] }), getValue: (r, f) => R[r][f] };
+      const gv = { getDataSource: () => ds, getItemIndex: (r) => r, setCurrent: (c) => { cur = c; }, showEditor: () => { shown++; }, commit: () => {}, setValue: (i, f, v) => { R[i][f] = v; }, columnByField: (f) => ({ fieldName: f, editable: true }) };
+      const doc = { getElementById: (id) => (id === 'productGrid' ? {} : null), querySelectorAll: () => [] }; const ctx = vm.createContext({ document: doc, getComputedStyle: () => ({}), HTMLInputElement: function () {}, HTMLTextAreaElement: function () {}, Event: function () {} }); ctx.window = ctx; ctx.window.__rnY24GV = gv; return { ctx, R, st: () => ({ cur, shown }) }; };
+    const A = mkCtx(real); const f = vm.runInContext(J.JS_FIND('300000101', 'A01SKUR'), A.ctx); const h = f && f.hit && f.hit[0];
+    ok(f && f.ok && f.hit.length === 1 && h.kQ === 'REM_CNT' && h.qty === 3 && h.kS === 'MAN_NO' && h.self === 'A01SKUR' && h.st === '02' && h.stNm === '판매중' && h.kP === 'SALE_PR' && h.price === 8000, '실제 응답 칸 이름(REM_CNT·MAN_NO·GOODS_STAT_GB·SALE_PR)으로 우리 줄을 찾음', JSON.stringify(f));
+    const q = vm.runInContext(J.JS_QTY(h.r, h.kQ, 1), A.ctx); ok(q && q.ok && A.R[0].REM_CNT === 1, '실제 칸 이름이면 재고수량 칸이 1로 바뀜(아직 저장 전)', JSON.stringify(q));
+    const B = mkCtx([{ GOODS_NO: 300000102, GOODS_STAT_GB: '02', ENTR_GOODS_CD: 'A01SKUS' }]); const q2 = vm.runInContext(J.JS_QTY(0, undefined, 1), B.ctx);
+    ok(q2 && !q2.ok && /칸 이름을 못 찾음/.test(q2.why) && B.st().shown === 0 && B.st().cur === null && Object.keys(B.R[0]).length === 3, "재고 칸 이름을 못 찾으면 편집기·표를 아예 건드리지 않음(예전: fieldName undefined로 편집기를 열고 'NaN')", JSON.stringify(q2));
+    const s2 = vm.runInContext(J.JS_SELF(0, undefined, 'X1'), B.ctx); ok(s2 && !s2.ok && s2.ro && B.st().shown === 0, '판매자상품코드 칸 이름을 못 찾으면 채우지 않음(건너뜀)'); }
   { const c = W.checkJob; const R0 = { ok1: null, rk: {} }; const a = row('300000001', 'A01SKU1', 'qty', 2), b = row('300000002', 'A01SKU2', 'stop');
     ok(c(job([a]), R0) === '' && /1건짜리/.test(c(job([a, b]), R0)) && c(job([a, b]), { ...R0, ok1: 1 }) === '', '처음엔 1건짜리만 · 첫 성공 뒤 여러 건');
     ok(/수량은 1~999/.test(c(job([row('300000001', 'A01SKU1', 'qty', 0)]), R0)) && /종류/.test(c(job([row('300000001', 'A01SKU1', 'del')]), R0)) && /상품번호/.test(c(job([row('x1', 'A01SKU1', 'stop')]), R0)) && /자체코드/.test(c(job([row('300000001', '', 'stop')]), R0)) && /30줄/.test(c(job(Array.from({ length: 31 }, (_, i) => row(String(300000100 + i), 'S' + i, 'stop'))), { ok1: 1 })), '수량 1~999 · 종류(수량·판매중지·판매재개만) · 상품번호·자체코드 검사 · 30줄까지');
