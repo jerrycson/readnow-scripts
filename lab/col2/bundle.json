@@ -36,6 +36,7 @@
   "helper/col2-nv.js",
   "helper/col2-settings.js",
   "helper/col2-y24learn.js",
-  "helper/col2-solo.js"
+  "helper/col2-solo.js",
+  "helper/col2-load.js"
  ]
 }
