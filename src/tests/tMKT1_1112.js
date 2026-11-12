@@ -17,6 +17,7 @@ ok(/if \(regMktHold\(it, f\)\) \{ bad\.push\(`\$\{nm\(it\)\}: ⏳ 시장 지표 
 ok(/Array\.isArray\(r\.page1\) && r\.page1\.length \/\* \(mkt1\)/.test(T) && /Array\.isArray\(x\.page1\) && x\.page1\.length \/\* \(mkt1\) \*\//.test(T), '첫 페이지가 빈 24시간 조회 기록은 다시 쓰지 않음(묶음·고른 상품 둘 다)');
 ok(/setTimeout\(\(\) => \{ try \{ regMktRecheck\(\); \} catch \(e\) \{\} \}, 0\);/.test(T), '등록 화면 열 때 다시 읽기 차례 확인');
 ok(/id: 'card-mktwait'/.test(T), '📖 등록 백과 항목');
+ok(/function regMktFbFix\(\)/.test(T) && /const regFbCIs = /.test(T), '표시 없이 남은 정가 × 2도 잡음(regFbCIs·regMktFbFix)');
 (async () => {
   if (!process.env.RN_PORT) { console.log(bad ? `❌ tMKT1_1112 ${bad}개 실패` : '✓ tMKT1_1112 코드 꼴 통과 (화면 시험은 RN_PORT를 주면)'); process.exit(bad ? 1 : 0); }
   const H = require(path.join(process.cwd(), 'harness.js')); const SEED = require(path.join(process.cwd(), 'seed.js'));
@@ -54,6 +55,10 @@ ok(/id: 'card-mktwait'/.test(T), '📖 등록 백과 항목');
     await p.evaluate(() => { REG_MKT_RE.at.delete('m2'); regMktRecheck(); }); await p.waitForTimeout(1500);
     const b = await st(p, 'm2');
     ok(b.n1 === 3 && b.price === null && b.fb === null && b.stage === 'sel', '결정 대기에 있던 정가 × 2(24,000원)는 지우고 선택 대기로', b);
+    console.log('⑤ 「모두 결정 대기로」로 넘어가 기본값 표시 없이 정가 × 2가 남은 상품(시장 지표는 있음)');
+    const m4 = await p.evaluate(async (PG) => { const d = { stage: 'pick', method: 'bulk', alReg: 1, isbn: '9791100009904', itemId: '994', grade: 2, qty: 1, price: 24000, ws: regWsCur(), createdAt: new Date().toISOString(), code: 'MKTCMN', codeManual: true, info: { title: '시장 시험 책 m4', isbn13: '9791100009904', itemId: '994', categories: [{ path: ['국내도서', '과학'] }], page1: PG, priceList: 12000, usedTotal: 140, mktChk: { at: new Date().toISOString(), n: 3, tries: 1 } } }; await db.collection('reg_items').doc('m4').set(d); S.regItems.set('m4', { id: 'm4', ...d }); const d5 = { ...d, isbn: '9791100009905', itemId: '995', price: 24000, priceManual: true, info: { ...d.info, itemId: '995' } }; await db.collection('reg_items').doc('m5').set(d5); S.regItems.set('m5', { id: 'm5', ...d5 }); regMktRecheck(); await new Promise((r) => setTimeout(r, 900)); const a = S.regItems.get('m4'), b = S.regItems.get('m5'); return { a: [a.stage, a.price ?? null], b: [b.stage, b.price] }; }, PG);
+    ok(m4.a[0] === 'sel' && m4.a[1] === null, '표시 없는 정가 × 2(24,000원)도 지우고 선택 대기로', m4);
+    ok(m4.b[0] === 'pick' && m4.b[1] === 24000, '직접 정한 24,000원(✎ 직접)은 그대로', m4);
   });
   await H(async (p) => { await seed(p, 'empty');
     console.log('⑤ 다시 읽어도 0줄 — 세 번째에 확인으로 둠');
