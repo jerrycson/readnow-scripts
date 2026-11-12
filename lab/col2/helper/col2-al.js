@@ -16,6 +16,7 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const AC = require('../shadow/col2-al-compare.js'); const RLM = require('./col2-relogin.js'); const { dlgOk: DLG, ACT_SRC, JS_ACT } = RLM;
+const CK = require('./col2-cklift.js'); const { CDP } = require('./col2-cdp.js'); /* (11/12 cookie1) 🔁 평소 크롬의 알라딘 로그인 쿠키를 번외 프로필로 가져오기 */
 const JS_STATE = `(()=>({h:location.hostname,p:location.pathname,pw:!!document.querySelector('input[type=password]'),out:!!document.querySelector('a[href*="wC2Cuser_logout"]'),rs:document.readyState}))()`;
 const KINDS = ['chk', 'confirm', 'deliv', 'list', 'qna'];
 const LIST_ST = ['판매중', '판매중지', '일시판매중지'];
@@ -346,10 +347,44 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
+
+  /* ── (11/12 cookie1 · 정범님 '평소 크롬의 알라딘 로그인 상태를 번외 프로필로 옮기는 길') 🔁 평소 크롬의 알라딘(·네이버) 로그인 가져오기 ──
+   *  번외 전용 프로필은 알라딘이 늘 '새 기기'로 봐 42FB로 막힘 → 알라딘이 '아는 기기'인 평소 크롬의 로그인 쿠키를 번외 프로필(col2-al-chrome)로 옮김.
+   *  크롬 쿠키는 암호화돼 있고 크롬 127+는 앱-바운드(v20)라 바깥에서 못 풂 → 평소 크롬이 '스스로' 풀게: 닫힌 평소 크롬 프로필을 잠깐 화면 없이 띄워 CDP로 평문 쿠키를 받아 번외에 심음.
+   *  쿠키 '값'은 메모리에서만 · 기록·파일·진단 어디에도 안 남김(개수·호스트·이름만) · 로거 PC는 안 함(약속 0) · 알라딘에 아무 요청도 보내지 않음(쿠키만). */
+  const importNaver = () => (cfg().alImport && cfg().alImport.naver === false ? false : true);
+  async function injectCookies(cookies) { const b = A.br; if (!b || !b.cdp) throw new Error('번외 크롬이 준비되지 않음');
+    const toSet = CK.toSetParams(cookies); if (toSet.length) await b.cdp.send('Storage.setCookies', { cookies: toSet }); return toSet.length; }
+  async function importFromChrome(x) { x = x || {};
+    if (isLogger()) return { ok: false, err: '로거 PC에서는 알라딘 계정·쿠키를 다루지 않습니다(약속 0 — 로거에 계정·쿠키 금지)' };
+    if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음 — 먼저 켜 주세요' };
+    if (!enabled()) return { ok: false, err: '알라딘 샵매니저 읽기가 꺼져 있음 — 옆 창 ⚙ 설정에서 켜 주세요' };
+    if (holdOn()) return { ok: false, err: '🚚 출고 중 — 끝난 뒤에 해 주세요(약속 0-1)' };
+    if (A.plain) A.plainStop = true; /* 스스로 다시 로그인 창이 떠 있으면 그만둠 — 사람 일이 먼저 */
+    for (let k = 0; k < 60 && A.busy; k++) await sleep(500); if (A.busy) return { ok: false, err: '번외가 다른 일을 하는 중 — 잠시 뒤 다시' };
+    A.busy = true;
+    try { const exe = o.chromeExe(); if (!exe) return { ok: false, err: '크롬을 못 찾음' };
+      const userDir = CK.regUserDir(cfg(), process.env); if (!userDir) return { ok: false, err: '평소 크롬 사용자 폴더(User Data)를 찾지 못함 — ⚙ 설정에서 평소 크롬 경로를 넣어 주세요' };
+      const naver = importNaver(); const hosts = ['aladin.co.kr'].concat(naver ? ['naver.com'] : []);
+      note(`🔁 평소 크롬에서 알라딘${naver ? '·네이버' : ''} 로그인 쿠키 가져오기 — 평소 크롬이 닫혀 있는지 확인하고 읽는 중(쿠키 값은 메모리에서만 · 기록·파일에 안 남김)`, { k: 'al', m: '알라딘' });
+      const rd = await CK.readChromeCookies({ exe, userDir, profileDir: (cfg().alImport && cfg().alImport.profile) || 'Default', hosts, CDP, note: (m) => note(m, { k: 'al', m: '알라딘' }), env: process.env, timeoutMs: TEST ? 8000 : 20000 });
+      if (!rd.ok) { if (rd.needClose) note('🔁 평소 크롬이 아직 열려 있음 — 모두 닫고 다시 눌러 주세요', { k: 'al', l: 'warn', m: '알라딘' }); return { ok: false, needClose: !!rd.needClose, err: rd.why }; }
+      const al = rd.cookies.filter((c) => /(^|\.)aladin\.co\.kr$/i.test(String(c.domain || '').replace(/^\./, '')));
+      if (!al.length) return { ok: false, err: '평소 크롬에 알라딘 로그인 쿠키가 없습니다 — 먼저 평소 크롬에서 알라딘 샵매니저에 로그인한 뒤 다시(평소 크롬이 기본 Default 프로필이 아니면 ⚙ 설정에서 프로필 이름을 넣어 주세요)' };
+      const sumAl = CK.summarize(al); const nv = rd.cookies.length - al.length;
+      await ensure('평소 크롬 로그인 가져오기'); const nSet = await injectCookies(rd.cookies);
+      note(`🔁 평소 크롬 쿠키를 번외 프로필에 심음 — 알라딘 ${sumAl.n}개(${Object.keys(sumAl.hosts).join(', ')})${naver ? ` · 네이버 ${nv}개` : ''} · 심은 ${nSet}개 (이름: ${sumAl.names.slice(0, 12).join(', ')}${sumAl.names.length > 12 ? ' 외' : ''})`, { k: 'al', m: '알라딘' });
+      A.landed = false; const okLogin = await chkScm(); /* 샵매니저 첫 화면으로 로그인 확인 */
+      if (okLogin) { setLogin('ok'); A.landed = true; A.next.chk = now() + C().chkMin * 60e3;
+        return { ok: true, msg: `✅ 평소 크롬의 알라딘 로그인을 번외로 가져왔습니다 — 샵매니저 로그인 확인됨(알라딘 쿠키 ${sumAl.n}개${naver ? ` · 네이버 ${nv}개(번외가 네이버 길로 스스로 다시 로그인할 때 씀)` : ''}). 이제 평소 크롬을 다시 열어도 됩니다.`, al: sumAl.n, nv }; }
+      setLogin('need', '평소 크롬 쿠키를 가져왔지만 번외 샵매니저가 아직 로그인 화면 — 평소 크롬에서 지금 샵매니저에 로그인돼 있는지 확인하고 다시');
+      return { ok: false, err: `쿠키를 가져왔지만(알라딘 ${sumAl.n}개) 번외에서 샵매니저 로그인이 확인되지 않았습니다 — 평소 크롬에서 샵매니저에 로그인된 상태인지 확인하고 다시 해 주세요(평소 크롬이 로그인돼 있지 않았거나, 알라딘이 세션을 기기에 더 묶어 둔 경우일 수 있음)`, al: sumAl.n }; }
+    catch (e) { return { ok: false, err: '가져오기 실패: ' + String(e.message || e).slice(0, 160) }; }
+    finally { A.busy = false; } }
   function sum() { return { todo: A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };
-  return { start, kick, feed, sum, login, verify, close, runNow, seatAsk, wseat, seatHot, seatTell, tellTxt, MARK, A };
+  return { start, kick, feed, sum, login, verify, close, runNow, seatAsk, wseat, seatHot, seatTell, tellTxt, importFromChrome, MARK, A };
 }
 module.exports = { makeAl, prefsFix, humanArgs, humanArgsOk, HUMAN_OK, HUMAN_BAD, trailOf, trailWhy, profLook, chromeUs };

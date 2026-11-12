@@ -747,6 +747,7 @@ const srv = http.createServer((req, res) => {
     if (p === '/cred/reset') return body((o) => { if (!CRED.PF[o.pf]) return J(400, { ok: false, err: '모르는 플랫폼' }); RLG.reset(String(o.pf)); (o.pf === 'y24' ? Y24 : AL).kick(300); J(200, { ok: true, relogin: RLG.sum() }); });
     return J(404, { ok: false }); }
   if (p === '/al/login') return body(async (o) => { const r = await AL.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
+  if (p === '/al/import') return body(async (o) => { const r = await AL.importFromChrome(o || {}); J(200, { ...r, state: status() }); }); /* (11/12 cookie1) 🔁 평소 크롬의 알라딘 로그인 쿠키를 번외 프로필로 가져오기 — 쿠키 값은 메모리에만 */
   if (p === '/al/run') return body(async (o) => { const r = await AL.runNow(String(o.what || 'confirm')); J(200, { ...r, state: status() }); });
   if (p === '/y24/reg/put') return body((o) => { const r = Y24.reg.put(o); J(r.code, r.body); }, 4 * 1048576);
   if (p === '/y24/reg/ack') return body((o) => J(200, Y24.reg.ack(o.ids)));
