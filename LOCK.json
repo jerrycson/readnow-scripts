@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "hands1 번외 손발 길 판 내기(번외·수집기 본문)",
+ "since": "2026-11-12T16:55:54Z",
+ "beat": "2026-11-12T16:55:54Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "shipcalc2 웹앱 1.78.534 · 클라우드 0.35.177 · pricing 0.17.15 · shipping 0.7.17 push 877e7d78",
   "at": "2026-11-12T16:55:45Z"
  },
- "host": null
+ "host": "vm-hands1"
 }
