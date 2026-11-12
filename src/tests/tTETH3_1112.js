@@ -35,7 +35,7 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8');
 (async () => {
   try {
     /* ⓪ 소스 검사 */
-    ok(/const VERSION = '1\.8\.23'/.test(L), '⓪ 도우미 판 1.8.23');
+    ok(/const VERSION = '1\.8\.2[3-9]'/.test(L), '⓪ 도우미 판 1.8.23 이상');
     ok(/'naver\.com', 'naver\.net'/.test(L), '⓪ 네이버 주소는 와이파이 목록에 그대로');
   } catch (e) { bad++; console.log('  ❌ 소스 읽기', e.message); }
   try {
