@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "shipcalc2 시험 중(1.78.534)",
- "since": "2026-11-12T16:53:38Z",
- "beat": "2026-11-12T16:54:38Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "shopsrv 클라우드 0.35.176 · 우리숍 shop.js 0.1.13 🛍 우리숍 전용 서버 readnow-shop push 84092da2 (공개는 정범님 한 줄 남음 · 숍은 readnow-cloud로 대신 넘김)",
-  "at": "2026-11-12T16:53:34Z"
+  "done": "shipcalc2 웹앱 1.78.534 · 클라우드 0.35.177 · pricing 0.17.15 · shipping 0.7.17 push 877e7d78",
+  "at": "2026-11-12T16:55:20Z"
  },
- "host": "vm-shipcalc"
+ "host": null
 }
