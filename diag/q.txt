@@ -1,2 +1,2 @@
-perf=400
-# 517913358
+shpauto=80&doc=app_settings/main,app_settings/ship_auto
+# 1970827173
