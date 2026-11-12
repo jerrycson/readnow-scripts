@@ -1,2 +1,2 @@
-@mirror mirror/20261112-061129-6957.json
-# 11318333
+doc=app_settings/ship_quiet,app_settings/board_mirror&cmds=cancelOrder&n=40
+# 2868422860
