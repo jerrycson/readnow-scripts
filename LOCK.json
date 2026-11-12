@@ -1,13 +1,13 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-11-12T20:49:12Z",
- "beat": "2026-11-12T20:51:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "클라우드 책 정보 0.1.6(bookinfo1)",
-  "at": "2026-11-12T20:37:02Z"
+  "who": "kpsum",
+  "done": "요약 2개 넣음 · 남은 0개",
+  "at": "2026-11-12T20:55:07Z"
  },
- "host": "vm"
+ "host": null
 }
