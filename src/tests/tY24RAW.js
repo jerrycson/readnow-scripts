@@ -12,8 +12,9 @@ const store = { y24_raw: {}, y24_raw_idx: {} }; let nid = 0;
 const fsx = { collection: (n) => ({ doc: (id) => { id = id || 'auto' + ++nid; return { id, get: async () => ({ data: () => store[n][id] }), set: async (o) => { store[n][id] = { ...(store[n][id] || {}), ...o }; } }; } }) };
 const FV = { increment: (x) => x, serverTimestamp: () => 'ts' };
 const window = {};
-const mk = new Function('shape', 'SECRET', 'GM_getValue', 'GM_setValue', 'G', 'window', code + '\nreturn { PIIK, maskJ, y24RawKey, y24RawTake };');
-const M = mk(shape, SECRET, GM_getValue, GM_setValue, G, window);
+const onY = false; /* (11/12 tfix) 11/10부터 덩어리 안에 '⬆ 예스24 창이 직접 올림'(if (onY) { … }) 이 들어옴 — 이 시험은 원문 고르기·가림만 보므로 알라딘 탭 쪽(onY 아님)으로 돌림 */
+const mk = new Function('shape', 'SECRET', 'GM_getValue', 'GM_setValue', 'G', 'window', 'onY', code + '\nreturn { PIIK, maskJ, y24RawKey, y24RawTake };');
+const M = mk(shape, SECRET, GM_getValue, GM_setValue, G, window, onY);
 let bad = 0; const ok = (c, m, info) => { console.log((c ? '  ✓ ' : '  ❌ ') + m + (c ? '' : ' ' + JSON.stringify(info || '').slice(0, 300))); if (!c) bad++; };
 (async () => {
   const menus = { Data: Array.from({ length: 30 }, (_, i) => ({ MenuId: 'M' + i, MenuName: '상품 관리 ' + i, MenuPath: '/Product/List' + i })) };
@@ -36,4 +37,5 @@ let bad = 0; const ok = (c, m, info) => { console.log((c ? '  ✓ ' : '  ❌ ') 
   ok(M.PIIK('MenuName') === false && M.PIIK('ProductName') === false && M.PIIK('ReceiverName') === true && M.PIIK('ordrNm') === true && M.PIIK('SellerId') === false, '칸 이름 판정(메뉴·상품 이름은 살림 · 수령인·주문인 이름은 가림)');
   { const m = M.maskJ({ rows: [{ Name: '박손님', Tel: '02-123-4567', Title: '책' }, { Name: '상품 묶음', Count: 3 }] }); ok(m.rows[0].Name === '＊' && m.rows[0].Title === '책' && m.rows[1].Name === '상품 묶음', "전화·주소 칸과 같이 있는 'Name'은 가림 · 혼자 있는 'Name'은 살림", m); }
   console.log(bad ? `❌ tY24RAW 실패 ${bad}` : '✓ tY24RAW 통과');
+  process.exit(bad ? 1 : 0); /* (11/12 tfix) 덩어리 끝 Firebase 열쇠 사본 훅(11/10)이 5초마다 기다리는 타이머를 남겨 시험이 끝나지 않던 것 */
 })();

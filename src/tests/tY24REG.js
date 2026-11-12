@@ -105,7 +105,7 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
       await y24WantSet([rid], true); o.wantLid = (y24W()[rid] || {}).lid === l1.id; S._y24R = null; o.wantRow = y24RegRows().some((r) => r.lid === l1.id && r.want === rid); S._bt_y24reg.f.k = 'want'; openY24Reg(); await Wt(400); o.wantPick = S._y24Pick.has(l1.id) || y24RegRows().some((r) => r.lid === l1.id && r.k !== 'ok'); o.wantTab = sh.querySelectorAll('.y24rc').length >= 1 && /등록에서 고름/.test(sh.textContent);
       o.chipOn = / on"/.test(y24wChip(S.regItems.get(rid))) && /예스24/.test(y24wChip(S.regItems.get(rid), true)); await y24WantSet([rid], false); o.wantOff = (y24W()[rid] || {}).on === 0 && !!(y24W()[rid] || {}).by; S.regChk = new Set();
       S.regT = 'done'; openRegister(); await Wt(900); o.regOpen = !!document.querySelector('#sheet .rgc2, #sheet [data-rgcid], #sheet .rgtools, #sheet .btabs'); history.back(); await Wt(300);
-      o.go = GO_PAGES.some((g) => g[0] === 'ledger') && GO_PAGES.some((g) => g[0] === 'y24Reg'); o.feat = FEAT.filter((f) => /📤 예스24에 새로 올리기|🧾 통합 장부/.test(f.t)).length;
+      o.go = GO_PAGES.some((g) => g[0] === 'ledger') && GO_PAGES.some((g) => g[0] === 'y24Reg'); o.feat = FEAT.filter((f) => /^(📤 예스24에 새로 올리기|🧾 통합 장부) —/.test(f.t)).length; /* (11/12 tfix) 11/11 nav1부터 '🧾 통합 장부 탭'·'🛒 판매처 탭 — 🧾 통합 장부…' 탭 항목도 같은 글을 품음 — 기능 항목 둘만 셈 */
       return o; } catch (e) { return { err: e.message + ' · ' + JSON.stringify(o).slice(0, 400) }; } });
     if (o && o.err) { ok(false, '화면 시험 오류: ' + o.err); return; }
     if (!o) { ok(false, '화면 시험이 중간에 멈춤(ERRORS 보기)'); return; }
