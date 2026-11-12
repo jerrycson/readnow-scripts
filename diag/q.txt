@@ -1,2 +1,4 @@
-col2=2026-11-12
-# 593631427
+shpauto=40
+list=rn_status
+heads=1
+# 1681514908
