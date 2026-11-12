@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "shop9 2회 우리숍 별점·요약·답글·팔로잉(클라우드+웹앱+손님 화면)",
+ "since": "2026-11-12T15:32:16Z",
+ "beat": "2026-11-12T15:32:16Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "found1 웹앱 1.78.526 · 클라우드 0.35.168 📚 발견 모음 push 2adb5d65 · 클라우드 손 배포 성공",
   "at": "2026-11-12T15:31:59Z"
  },
- "host": null
+ "host": "vm-shop9"
 }
