@@ -108,5 +108,17 @@ const mkVS = (F, extra) => V.makeVoiceStudy({ C: F.C, FieldPath: F.FieldPath, lo
   const SRCMW = fs.readFileSync(path.join(ROOT, 'cloud', 'memwatch.js'), 'utf8'); ok(!/customer|이름|phone|tel/.test(SRCMW.replace(/\/\*[\s\S]*?\*\//g, '')) && /split\('\?'\)\[0\]/.test(SRCMW), '주소는 쿼리를 떼고 앞 두 칸만(손님 정보 없음)');
   ok(/COPY \*\.js \.\//.test(fs.readFileSync(path.join(ROOT, 'cloud', 'Dockerfile'), 'utf8')), '새 파일 memwatch.js도 이미지에 들어감(COPY *.js)');
 
+
+  console.log('⑥ 🧯 무거운 일 죽음 고리 끊기(HV)');
+  { const a = SRC.indexOf('const HV_BOOT'); const b = SRC.indexOf('const BUSYX = new Set();'); ok(a > 0 && b > a, 'HV 구역 찾음');
+    const mk = (data, boot) => { const F = mkFS(data); const L = []; const f = new Function('C', 'log', 'nowIso', 'BUSYX', 'Date0', SRC.slice(a, b).replace('const HV_BOOT = new Date().toISOString();', 'const HV_BOOT = Date0;') + '\nreturn HV;'); return { HV: f(F.C, (...m) => L.push(m.join(' ')), () => new Date().toISOString(), new Set(), boot), L }; };
+    const hd = { app_settings: {} }; const A1 = mk(hd, 'boot1'); let ran = 0; const r1 = await A1.HV('valueLearn', async () => { ran++; return { n: 1 }; }); ok(r1.n === 1 && ran === 1 && hd.app_settings.heavy_run.valueLearn.endAt && hd.app_settings.heavy_run.valueLearn.crashN === 0, '보통은 그대로 돌고 끝 시각을 남김');
+    hd.app_settings.heavy_run.valueLearn = { startAt: new Date().toISOString(), boot: 'boot1', endAt: null, crashN: 0 }; /* 앞 판이 도중에 죽음 */
+    const A2 = mk(hd, 'boot2'); const r2 = await A2.HV('valueLearn', async () => { ran++; return {}; }); const v2 = hd.app_settings.heavy_run.valueLearn; ok(r2.skip === 'crashRest' && ran === 1 && v2.died && v2.crashN === 1 && Date.parse(v2.restUntil) - Date.now() > 5.9 * 3600e3 && /도중 클라우드가 죽었음/.test(A2.L.join('')), '앞 판이 이 일 도중 죽었으면 6시간 쉼(일은 안 돎)', v2);
+    const r3 = await mk(hd, 'boot3').HV('valueLearn', async () => { ran++; return {}; }); ok(r3.skip === 'crashRest' && ran === 1, '쉬는 동안은 다음 판도 건너뜀');
+    hd.app_settings.heavy_run.valueLearn.restUntil = new Date(Date.now() - 1000).toISOString(); const r4 = await mk(hd, 'boot4').HV('valueLearn', async () => { ran++; return { ok: 1 }; }); ok(r4.ok === 1 && ran === 2 && hd.app_settings.heavy_run.valueLearn.crashN === 0, '쉼이 끝나면 다시 돌고, 끝까지 가면 횟수 0');
+    const r5 = await mk(hd, 'boot4').HV('valueFactors', async () => { throw new Error('보통 오류'); }).catch((e) => e.message); ok(r5 === '보통 오류' && hd.app_settings.heavy_run.valueFactors.endAt && !hd.app_settings.heavy_run.valueFactors.died, '보통 오류는 죽음으로 안 봄(끝 시각·오류 글)');
+    ok(/HV\('valueLearn', valueLearn\)/.test(SRC) && /bx\('learn', \(\) => HV\('mlLedger', mlLedger\)/.test(SRC) && /HV\('sellerLearnStudy', sellerLearnStudy\)/.test(SRC), '뜬 뒤 90초 배우기 사슬·3시간 사슬·판매자 배우기가 HV로 감쌈');
+    ok(/--max-old-space-size=1300/.test(fs.readFileSync(path.join(ROOT, 'cloud', 'Dockerfile'), 'utf8')), '힙 한도 1300MB(V8 기본 1GB에서)'); }
   console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e && e.stack); process.exit(1); });

@@ -41,13 +41,13 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   ok(r1 && r1.n === W1.n && doc && doc.n === W1.n && doc.by === 'cloud' && !doc.partial && doc.src.c2Docs === 12 && doc.src.opDocs === 2 && JSON.stringify(doc.tp) === JSON.stringify(D.tp) && doc.ours.n === 2 && doc.writer === 'cloud', '3개씩 나눠 읽어도 같은 요약 · 우리 숍 구매평은 수만(문의 글은 뺌)', { r1, src: doc && doc.src });
   ok((await VS.run(false, false)).skip === 1, '20시간 안엔 다시 안 셈(하루 한 번)');
   ok(data.app_settings.voice_study_run && data.app_settings.voice_study_run.ok === true, '끝나면 voice_study_run.ok = true');
-  ok(/CMD \["node", "--expose-gc", "index.js"\]/.test(fs.readFileSync(path.join(ROOT, 'cloud', 'Dockerfile'), 'utf8')), '클라우드는 --expose-gc로 뜸(셈 사이 메모리 치움)');
+  ok(/CMD \["node", "--expose-gc"(, "--max-old-space-size=\d+")?, "index.js"\]/.test(fs.readFileSync(path.join(ROOT, 'cloud', 'Dockerfile'), 'utf8')), '클라우드는 --expose-gc로 뜸(셈 사이 메모리 치움)');
   data.app_settings.voice_study_run = { ok: false, startAt: new Date().toISOString() }; delete data.app_settings.voice_study; ok((await VS.run(false, false)).skip === 'crash' && !data.app_settings.voice_study, '지난번이 끝나지 않은 채 다시 떴으면(멈춤 의심) 스스로는 하루 쉼(멈춤 고리 막이)');
   const rF = await VS.run(true, false); ok(rF.n === W1.n && data.app_settings.voice_study_run.ok === true, '사람이 부른 것(force·진단 voice=save)은 그대로 셈');
   const big = V.makeAcc({ lex: V.lexOf(null), waMax: 50 }); for (let i = 0; i < 300; i++) big.c2({ sc: '9000001', kind: 'r', items: [{ d: '2026-10-01', r: 'bad', c: '낱말' + String.fromCharCode(44032 + i) + String.fromCharCode(44100 + i) + ' 먼지투성이' }] }); const bs = big.result([]); ok(bs.n === 300 && bs.pruned > 0, '낱말 표가 상한을 넘으면 1번 나온 낱말은 버림(셈은 그대로)', { n: bs.n, p: bs.pruned });
 
   const r3 = await VS.run(true, true, { budgetMs: -1 }); ok(r3.partial === true && data.app_settings.voice_study.partial === false, "시간 상한을 넘기면 거기까지 'partial' · 진단(dry)은 쓰지 않음", { p: r3.partial });
-  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);[^\n]*\nconst BUSYX[^\n]*\nsetTimeout\(\(\) => VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 30분마다 확인 — 처음 전체는 나눠 이어 셈 · 다 센 뒤 20시간 막이)');
+  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);[\s\S]{0,5000}?\nconst BUSYX[^\n]*\nsetTimeout\(\(\) => VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 30분마다 확인 — 처음 전체는 나눠 이어 셈 · 다 센 뒤 20시간 막이)');
   ok(/if \(q\.voice\) \{ try \{ out\.voice = await VOICE\.run\(true, q\.voice !== 'save'/.test(SRC), '진단 voice=1(계산만) · voice=save(저장)');
 
   console.log('② 판매자 상품 수');
