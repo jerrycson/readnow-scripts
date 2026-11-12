@@ -136,6 +136,13 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     const s1 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvst:661:stop:0:20261111', k: 'status', originNo: '661', to: 'SUSPENSION' } }); ok(s1.j && s1.j.ok && s1.j.queued, '판매중지 맡김 받음');
     const pl = await until(async () => { const r = await H.api('POST', '/nv/feed', {}); return (r.j.out || []).find((x) => x.c === 'nv_listings' && x.id === '661' && x.v.st === 'SUSPENSION') || null; }, 40);
     ok(F.S.statusCh.length >= 1 && pl && pl.v.st === 'SUSPENSION' && pl.v.live === false && pl.v.qty === 0, '판매중지 맞음 → 매물 줄 곧바로 고침(판매중지 · live 아님 · 0권)', JSON.stringify({ v: pl && pl.v, n: F.S.statusCh.length }));
+    /* (0.1.36 pend2 · 맡긴 일의 규칙) 만료·늦게 받은 판매 상태 맡김은 받지 않음(로거가 꺼졌다 켜져도 옛 명령을 안 보냄) · 시각이 맞으면 예전처럼 받음 */
+    { const n0 = F.S.statusCh.length; const T0 = Date.now();
+      const e1 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvst:662:stop:0:20261112', k: 'status', originNo: '662', to: 'SUSPENSION', exp: new Date(T0 - 60e3).toISOString(), sendAt: new Date(T0 - 7 * 3600e3).toISOString() } });
+      const e2 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvst:663:stop:0:20261112', k: 'status', originNo: '663', to: 'SUSPENSION', exp: new Date(T0 + 3600e3).toISOString(), sendAt: new Date(T0 - 31 * 60e3).toISOString() } });
+      const e3 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvst:664:stop:0:20261112', k: 'status', originNo: '664', to: 'SUSPENSION', exp: new Date(T0 + 3600e3).toISOString(), sendAt: new Date(T0 - 60e3).toISOString() } });
+      await wait(1500); const ids = F.S.statusCh.slice(n0).map((x) => String(x.no || x.originNo || x.url || JSON.stringify(x)));
+      ok(e1.j && e1.j.ok === false && e1.j.expired && /만료/.test(e1.j.err || '') && e2.j && e2.j.ok === false && e2.j.late && /늦게/.test(e2.j.err || '') && e3.j && e3.j.ok && e3.j.queued && !ids.some((x) => /662|663/.test(x)), '만료된 맡김·보낸 지 30분 넘은 맡김은 받지 않음(네이버 0건) · 시각이 맞는 맡김은 받음', { e1: e1.j, e2: e2.j, e3: e3.j, ids }); }
     /* (naver2) 등록 — 빠진 칸이면 사진도 안 올리고 거절 · 다 있으면 우리 사진 저장소 주소만 내려받아 올리고 → 등록 */
     const BK = { title: '등록 시험 책', isbn13: '9788900000011', author: '저자1', publisher: '출판사', pubDate: '2020-03-15', grade: '상', price: 8000, qty: 1, sku: 'SKU9' }; const G0 = { leafCategoryId: '50005000', deliveryCompany: 'HYUNDAI', baseFee: 3000, asTel: '000-0000-0000' };
     const IMG = 'https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/p%2F1.jpg?alt=media&token=t';

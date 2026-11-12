@@ -114,6 +114,11 @@ function nvErr(http, j) { const c = String((j && j.code) || ''); const tr = j &&
   return { code: c || String(http || 'NET'), msg: (j && j.message ? String(j.message).slice(0, 160) : `응답 ${http || '없음'}`) + tr }; }
 const tail4 = (s) => { s = String(s || ''); return s.length > 4 ? '…' + s.slice(-4) : '…'; };
 
+/* (0.1.36 pend2 · 정범님 11/12 맡긴 일의 규칙) 웹앱이 맡긴 일에 붙인 시각 — exp = 만료(넘으면 사람 확인) · sendAt = 웹앱이 다시 세고 보낸 때(30분 넘게 묵으면 다시 세야 함)
+ *  돌려줌 null = 받음 · { expired | late, err } = 받지 않음 · 시각이 없는 옛 맡김(발주 확인·발송·등록 등)은 예전처럼 받음 */
+const NV_LATE_MS = 30 * 60e3; /* 근거: 수집기 예스24 쓰기의 '30분 넘게 묵은 new는 늦음'과 같음 */
+function jobLate(j, t) { const ex = Date.parse((j && j.exp) || ''); if (ex && ex < t) return { expired: true, err: '만료된 맡김(정한 시간 지남) — 받지 않음 · 웹앱에서 사람 확인' };
+  const sa = Date.parse((j && j.sendAt) || ''); if (sa && t - sa > NV_LATE_MS) return { late: true, err: '늦게 받은 맡김(웹앱이 보낸 지 30분 넘음) — 받지 않음 · 웹앱이 할 일을 다시 세어 보내야 함' }; return null; }
 function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const now = () => Date.now();
   const NC = () => ({ ...(o.base || {}), ...((o.cfg() || {}).nvcfg || {}) }); /* col2-config NAVER + col2.json nvcfg */
   const BASE = () => String(TEST && process.env.RN_COL2_NV ? process.env.RN_COL2_NV : NC().base).replace(/\/$/, '');
@@ -315,6 +320,7 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   function setWrite(on, by) { if (on && !(st.test && st.test.ok)) return { ok: false, err: '연결 시험이 맞은 뒤에 켤 수 있음' }; st.write = { on: !!on, by: String(by || '').slice(0, 40), at: now() }; save(); note(`🟩 네이버 실제 쓰기 ${on ? '켬' : '끔'} — ${st.write.by}`, { k: 'sys', l: on ? 'warn' : 'ok', m: '네이버' }); return { ok: true, write: st.write }; }
   function jobPut(j, by) { if (!wOn()) return { ok: false, err: '네이버 실제 쓰기가 꺼져 있음(⚙ 🟩 칸에서 두 번 눌러 켬)' }; const id = String((j && j.id) || ''); if (!/^[\w.:|-]{4,120}$/.test(id)) return { ok: false, err: '할 일 열쇠 없음' };
     if (M.jd[id]) return { ok: true, dup: true, res: M.jd[id] }; if (M.jobs.some((x) => x.id === id)) return { ok: true, dup: true, queued: true };
+    { const g = jobLate(j, now()); if (g) return { ok: false, ...g }; } /* (0.1.36 pend2 · 맡긴 일의 규칙) 만료·늦게 받은 맡김은 받지 않음 — 로거가 꺼졌다 켜져도 옛 명령을 보내지 않음 */
     const k = String(j.k || ''); if (!/^(confirm|dispatch|status|reg|price|claim)$/.test(k)) return { ok: false, err: '모르는 할 일' };
     if (k === 'price' && !(/^\d{1,20}$/.test(String(j.originNo || '')) && Number.isInteger(+j.price) && +j.price >= 100 && +j.price <= 10000000)) return { ok: false, err: '판매가 바꾸기 — 원상품번호·판매가(100원 이상 정수)가 필요' }; /* (0.1.23 naver3) */
     if (k === 'claim' && !(/^[\w-]{2,40}$/.test(String(j.po || '')) && /^(cancel|return|exchange)$/.test(String(j.act || '')))) return { ok: false, err: '요청 승인 — 상품 주문 번호·종류(취소·반품·교환 수거)가 필요' }; /* (0.1.23 naver3) */
@@ -336,7 +342,8 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     for (const c of (r.j && r.j.contents) || []) for (const ch of c.channelProducts || []) if (ch && String(ch.sellerManagementCode || '') === sku && String(ch.statusType || '') !== 'DELETE') return { originNo: String(c.originProductNo || ch.originProductNo || ''), chNo: ch.channelProductNo ? String(ch.channelProductNo) : null };
     return {}; }
   async function jobRun(j) { M.step = '쓰기 ' + j.k; let r;
-    if (j.k === 'confirm') r = await call('POST', '/v1/pay-order/seller/product-orders/confirm', { productOrderIds: (j.ids || []).map(String).slice(0, 30) });
+    if (j.exp && Date.parse(j.exp) < now()) r = { ok: false, err: '만료된 맡김 — 번외 줄에서 정한 시간을 넘겨 보내지 않음(웹앱에서 사람 확인)' }; /* (0.1.36 pend2) 쿨다운·쓰기 꺼짐으로 줄에서 오래 기다린 것 */
+    else if (j.k === 'confirm') r = await call('POST', '/v1/pay-order/seller/product-orders/confirm', { productOrderIds: (j.ids || []).map(String).slice(0, 30) });
     else if (j.k === 'dispatch') r = await call('POST', '/v1/pay-order/seller/product-orders/dispatch', { dispatchProductOrders: (j.rows || []).slice(0, 30).map((d) => ({ productOrderId: String(d.po), deliveryMethod: 'DELIVERY', deliveryCompanyCode: String(d.co), trackingNumber: String(d.no), dispatchDate: kstIso(now()) })) });
     else if (j.k === 'status') r = await call('PUT', `/v1/products/origin-products/${encodeURIComponent(String(j.originNo))}/change-status`, { statusType: String(j.to || 'SUSPENSION'), ...(j.stock != null ? { stockQuantity: +j.stock } : {}) });
     else if (j.k === 'price') r = await call('PATCH', '/v1/products/origin-products/multi-update', { multiProductUpdateRequestVos: [{ originProductNo: +j.originNo, multiUpdateTypes: ['SALE_PRICE'], productSalePrice: { salePrice: Math.round(+j.price) } }] }); /* (0.1.23 naver3) 판매가만 — 원문 RAW_API.md multi-update */
@@ -391,4 +398,4 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   function feed(o2) { for (const k of (o2 && o2.ack) || []) { const i = M.q.findIndex((x) => x.k === k); if (i >= 0) { M.q.splice(i, 1); M.qk.delete(k); } } return { ok: true, st: sum(), out: M.q.slice(0, 150), jres: M.jres }; }
   return { start, tick, kick, sum, cmd, feed, keyReady, M, st, pullInq, pullStl };
 }
-module.exports = { makeNv, nvOrd, nvPrd, nvBody, nvErr, kstIso, nvClaimOf, nvInq, nvQna, nvStlDay, nvStlCase, nvUrlOk, NV_API, netKind, netPick, netParse, ipv4 };
+module.exports = { makeNv, jobLate, nvOrd, nvPrd, nvBody, nvErr, kstIso, nvClaimOf, nvInq, nvQna, nvStlDay, nvStlCase, nvUrlOk, NV_API, netKind, netPick, netParse, ipv4 };
