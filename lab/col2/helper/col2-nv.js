@@ -330,6 +330,11 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     const go = () => raw('POST', '/v1/product-images/upload', { body: fd, headers: { Authorization: 'Bearer ' + M.tok }, ms: 60000 }); let r = await go(); if (r.http === 401) { const t2 = await token(true); if (t2.ok) r = await go(); }
     if (!r.ok) { const e = r.cool ? { msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: '사진 올리기 실패 — ' + e.msg, later: !!(e.later || e.rate || r.cool) }; }
     const out = ((r.j && r.j.images) || []).map((x) => x && x.url).filter(Boolean); return out.length ? { ok: true, urls: out } : { ok: false, err: '사진 올리기 응답에 주소 없음' }; }
+  /* (0.1.34 rel10) 판매자 관리 코드(SKU)로 네이버 상품 찾기 — 원문 POST /v1/products/search searchKeywordType SELLER_CODE · 읽기만 · 돌려줌 {originNo, chNo}(있음) | {}(없음) | {err, net?}(못 물음) */
+  async function skuFind(sku) { sku = String(sku || '').trim(); if (!sku) return {}; const r = await call('POST', '/v1/products/search', { searchKeywordType: 'SELLER_CODE', sellerManagementCode: sku, page: 1, size: 50 });
+    if (!r.ok) return { err: String(r.err || '').slice(0, 120) || '읽기 실패', net: !!r.net };
+    for (const c of (r.j && r.j.contents) || []) for (const ch of c.channelProducts || []) if (ch && String(ch.sellerManagementCode || '') === sku && String(ch.statusType || '') !== 'DELETE') return { originNo: String(c.originProductNo || ch.originProductNo || ''), chNo: ch.channelProductNo ? String(ch.channelProductNo) : null };
+    return {}; }
   async function jobRun(j) { M.step = '쓰기 ' + j.k; let r;
     if (j.k === 'confirm') r = await call('POST', '/v1/pay-order/seller/product-orders/confirm', { productOrderIds: (j.ids || []).map(String).slice(0, 30) });
     else if (j.k === 'dispatch') r = await call('POST', '/v1/pay-order/seller/product-orders/dispatch', { dispatchProductOrders: (j.rows || []).slice(0, 30).map((d) => ({ productOrderId: String(d.po), deliveryMethod: 'DELIVERY', deliveryCompanyCode: String(d.co), trackingNumber: String(d.no), dispatchDate: kstIso(now()) })) });
@@ -338,12 +343,14 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     else if (j.k === 'claim') r = await call('POST', `/v1/pay-order/seller/product-orders/${encodeURIComponent(String(j.po))}/claim/${j.act === 'exchange' ? 'exchange/collect' : j.act}/approve`, null); /* (0.1.23 naver3) 취소 요청 승인 · 반품 요청 승인 · 교환 수거 완료 승인 — 원문 seller-approve-* */
     else if (j.k === 'reg') { const g = { ...(NC().reg || {}), ...(j.g || {}) }; let book = { ...(j.book || {}) }; const m0 = nvBody({ ...book, images: book.images && book.images.length ? book.images : ['x'] }, g); /* 사진 말고 빠진 칸이 있으면 사진을 올리지 않음 */
       if (!m0.ok) r = { ok: false, err: '빠진 칸: ' + m0.miss.join('·') }; else { if (!(book.images && book.images.length)) { M.step = '사진 올리기'; const u = await upImgs(j.imgs); if (u.ok) book.images = u.urls; else r = { ok: false, err: u.err, later: u.later }; }
-        if (!r) { const b = nvBody(book, g); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else r = await call('POST', '/v2/products', b.body); } } }
+        if (!r) { const b = nvBody(book, g); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else { M.step = '같은 SKU 찾기'; const ex = await skuFind(book.sku); /* (0.1.34 rel10 · 11/11 정밀 점검 1-2) 등록 전 같은 판매자 관리 코드(SKU)가 이미 네이버에 있으면 새로 올리지 않음(이중 등록 0) */
+            if (ex && ex.net) r = { ok: false, net: true, err: ex.err }; else if (ex && ex.originNo) r = { ok: true, j: { originProductNo: ex.originNo, smartstoreChannelProductNo: ex.chNo }, already: true }; else if (ex && ex.err) r = { ok: false, err: '같은 SKU 확인 실패 — 등록하지 않음(' + ex.err + ')', later: true };
+            else { M.step = '쓰기 reg'; r = await call('POST', '/v2/products', b.body); if (!r.ok && !r.net && 'http' in r && r.code !== 'COOL' && r.code !== 'BLOCKED' && (!r.http || r.http >= 500)) r = { ...r, later: false, unsure: true, err: '네이버 답을 못 받음(' + String(r.err || '').slice(0, 80) + ') — 등록됐을 수 있어 같은 일을 다시 보내지 않음 · 판매자센터에서 확인해 주세요' }; } } } } } /* 시간 넘음·5xx = 네이버가 받았을 수 있음 → '확인 필요'(한 일 장부에 남겨 같은 열쇠를 다시 안 보냄) */
     if (r && r.net && r.sent) r = { ok: false, err: '보냈으나 응답이 와이파이 주소가 아닌 소켓으로 와 결과를 버림 — 네이버 판매자센터에서 실제로 됐는지 확인해 주세요(같은 일을 저절로 다시 보내지 않음)', unsure: true }; /* (naver4) 두 번 보내 겹치지 않게 */
     else if (r && r.net) { M.step = ''; return { wait: true, why: r.err }; } /* (nvfix1) 길이 와이파이가 아니게 됨 — 이 할 일은 끝·실패로 남기지 않고 줄 맨 앞에서 기다림(같은 할 일 두 번 안 함 장부도 그대로) */
     /* 원문: 발주 확인·발송 처리 응답 data.successProductOrderIds / failProductOrderInfos */
     const d = (r && r.j && r.j.data) || {}; const fails = (d.failProductOrderInfos || []).map((x) => `${x.productOrderId}: ${x.message || x.code || ''}`).slice(0, 5);
-    const res = r.ok && !fails.length ? { st: 'done', at: now(), ok: true, ...(j.k === 'reg' ? { originNo: r.j && r.j.originProductNo ? String(r.j.originProductNo) : null, chNo: r.j && r.j.smartstoreChannelProductNo ? String(r.j.smartstoreChannelProductNo) : null } : {}) } : { st: 'fail', at: now(), ok: false, err: (r.ok ? '일부 실패 — ' + fails.join(' · ') : r.err).slice(0, 300), later: !!r.later, ...(r.unsure ? { unsure: true } : {}) };
+    const res = r.ok && !fails.length ? { st: 'done', at: now(), ok: true, ...(j.k === 'reg' ? { originNo: r.j && r.j.originProductNo ? String(r.j.originProductNo) : null, chNo: r.j && r.j.smartstoreChannelProductNo ? String(r.j.smartstoreChannelProductNo) : null } : {}), ...(r.already ? { already: true } : {}) } : { st: 'fail', at: now(), ok: false, err: (r.ok ? '일부 실패 — ' + fails.join(' · ') : r.err).slice(0, 300), later: !!r.later, ...(r.unsure ? { unsure: true } : {}) };
     if (res.ok && j.k === 'dispatch') { for (const x of j.rows || []) M.inv[String(x.co) + ':' + String(x.no)] = String(x.po); wr(INVF, M.inv); }
     /* (0.1.22 naver2) 판매 상태가 맞게 바뀌면 그 매물 줄을 곧바로 고쳐 넘김(6시간 목록 읽기를 기다리지 않음 — 🧾 🛠 처리할 일·🤖 자동 내림이 반영을 바로 봄) · 지문을 지워 다음 목록 읽기가 네이버 값으로 다시 덮음 */
     if (res.ok && j.k === 'status' && j.originNo) { const to = String(j.to || 'SUSPENSION'); const on = to === 'SALE'; push('nv_listings', String(j.originNo), { originNo: String(j.originNo), st: to, live: on && !(j.stock != null && +j.stock <= 0), ...(j.stock != null ? { qty: +j.stock } : on ? {} : { qty: 0 }), ch: 'naver', chgAt: new Date().toISOString(), chgBy: 'job' }); delete st.sig['p' + String(j.originNo)]; save(); }
@@ -351,7 +358,7 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     if (res.ok && j.k === 'claim') nextOrd = 0; /* (naver3) 승인 뒤 주문을 곧바로 다시 읽음(클레임 상태가 바로 보이게) */
     if (res.ok && j.k === 'reg') nextPrd = 0; /* (naver2) 등록이 맞으면 다음 돌기에 상품 목록을 다시 읽음(통합 장부에 바로 붙게) */
     if (res.ok && (j.k === 'dispatch' || j.k === 'confirm')) nextOrd = 0; /* (naver2) 발주 확인·발송 처리가 맞으면 다음 돌기에 주문을 곧바로 다시 읽음(📦 오늘 출고 단계가 10분 기다리지 않음) */
-    if (!res.later) { M.jd[j.id] = res; wr(JDF, M.jd); } M.jres[j.id] = res; push('col2_naver_jobs', j.id.replace(/[^\w.-]/g, '_').slice(0, 140), { id: j.id, k: j.k, by: j.by, ...res }); M.step = '';
+    if (!res.later || res.unsure) { M.jd[j.id] = res; wr(JDF, M.jd); } M.jres[j.id] = res; push('col2_naver_jobs', j.id.replace(/[^\w.-]/g, '_').slice(0, 140), { id: j.id, k: j.k, by: j.by, ...res }); M.step = '';
     note(`🟩 네이버 쓰기 ${j.k} — ${res.ok ? '맞음' : '실패: ' + res.err}`, { k: res.ok ? 'sys' : 'err', l: res.ok ? 'ok' : 'warn', m: '네이버' }); return res; }
 
   /* ── 돌기 ── */

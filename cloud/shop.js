@@ -36,6 +36,8 @@ const pd = (v) => { const d = String(v || '').replace(/[^\d]/g, ''); return d.le
 const tsIso = (v) => { if (!v) return null; if (typeof v.toDate === 'function') return v.toDate().toISOString(); const t = Date.parse(v); return t ? new Date(t).toISOString() : null; };
 
 /* 판매중인 우리 상품 한 줄 → 손님에게 보일 요약(아니면 null) */
+/* (rel10 · 11/11 정밀 점검 1-3) '품절' 화면은 실제로 팔린 책만 — 판매중지·일시판매중지·보류·삭제(숨긴 재고)는 일반 '없는 책' 화면(제목·등급·값을 밖에 보이지 않음) */
+const soldLike = (l) => !!l && (String(l.status || '') === '판매완료' || !!l.soldAt || (String(l.status || '') === '판매중' && l.qty === 0));
 function pubItem(id, l, b) {
   if (!l) return null; b = b || {};
   if (String(l.status || '') !== '판매중' || l.active === false || l.qty === 0) return null;
@@ -218,7 +220,7 @@ function makeShop({ db, C, FV, log, bucket }) {
   async function booksFor(ids) { const need = [...new Set(ids.filter((x) => x && !CAT.books.has(x)))]; for (let i = 0; i < need.length; i += 200) { const ss = await db.getAll(...need.slice(i, i + 200).map((x) => C('prd_books').doc(String(x)))); const part = need.slice(i, i + 200); let ms = []; try { ms = await db.getAll(...part.map((x) => C('prd_book_metrics').doc(String(x)))); } catch (e) {} const SPM = new Map(); ms.forEach((d) => { if (d.exists) { const v = (d.data() || {}).salesPoint; if (v != null && !isNaN(+v)) SPM.set(d.id, +v); } });
       ss.forEach((d) => CAT.books.set(d.id, d.exists ? slimB({ ...d.data(), ...(SPM.has(d.id) ? { _sp: SPM.get(d.id) } : {}) }) : null)); } }
   const slimB = (b) => ({ title: b.title, author: b.author, contributors: (b.contributors || []).slice(0, 2).map((c) => ({ name: c && c.name })), publisher: b.publisher, pubDate: b.pubDate, categories: (b.categories || []).slice(0, 1), categoryName: b.categoryName || null, images: b.images && (b.images.front || b.images.spine || b.images.back) ? { front: b.images.front || null, spine: b.images.spine || null, back: b.images.back || null } : null, cover: b.cover, priceList: b.priceList, isbn13: b.isbn13, adult: b.adult, pages: b.pages || null, size: b.size || null, sp: b._sp != null ? b._sp : (b.salesPoint != null ? +b.salesPoint || 0 : null) }); /* (11/11 shelf1) 📚 서가 책장 — 책등·뒤표지 그림·쪽수(책 두께)·판매지수(순서만 공개) */
-  const put = (id, l) => { const bk0 = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(id, l, bk0); const k = String(id); if (it) { CAT.items.set(k, it); if (l.bookId) CAT.bk.set(k, String(l.bookId)); { const cp = s((bk0 && bk0.categories && bk0.categories[0] && (bk0.categories[0].path || bk0.categories[0].name)) || '', 160); const sku = s(l.sku, 40); CAT.pv.set(k, { sku, cp, k: BQP.kindOf(cp, sku) }); } if (bk0 && bk0.sp != null) CAT.sp.set(k, bk0.sp); else CAT.sp.delete(k); CAT.gone.delete(k); } else { const was = CAT.items.get(k); if (was) goneAdd(k, was); CAT.items.delete(k); CAT.pv.delete(k); CAT.bk.delete(k); } };
+  const put = (id, l) => { const bk0 = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(id, l, bk0); const k = String(id); if (it) { CAT.items.set(k, it); if (l.bookId) CAT.bk.set(k, String(l.bookId)); { const cp = s((bk0 && bk0.categories && bk0.categories[0] && (bk0.categories[0].path || bk0.categories[0].name)) || '', 160); const sku = s(l.sku, 40); CAT.pv.set(k, { sku, cp, k: BQP.kindOf(cp, sku) }); } if (bk0 && bk0.sp != null) CAT.sp.set(k, bk0.sp); else CAT.sp.delete(k); CAT.gone.delete(k); } else { const was = CAT.items.get(k); if (was && soldLike(l)) goneAdd(k, was); else if (!soldLike(l)) CAT.gone.delete(k); /* (rel10) 숨긴 재고는 품절 화면 기억에도 안 남김 */ CAT.items.delete(k); CAT.pv.delete(k); CAT.bk.delete(k); } };
   /* (11/11 shop2) 팔렸거나 내린 책 — '품절' 화면용 요약(공개 요약 그대로 · 30일 · 최대 GONE_MAX) */
   const goneAdd = (k, it) => { CAT.gone.set(k, { ...it, goneAt: new Date().toISOString() }); if (CAT.gone.size > GONE_MAX) { const old = CAT.gone.keys().next().value; CAT.gone.delete(old); } };
   async function build() { if (CAT.busy) return CAT.busy; CAT.busy = (async () => { try { const c = await cfg(); const now = Date.now(); const full = !CAT.full || now - CAT.full > (c.fullH || DEF.fullH) * 3600e3;
@@ -281,7 +283,7 @@ function makeShop({ db, C, FV, log, bucket }) {
     let it = V.get(id); let st = it ? (X.has(id) ? 'x' : H.has(id) ? 'o' : 's') : null;
     if (!it && CAT.gone.has(id)) { it = CAT.gone.get(id); st = 'x'; }
     if (!it) { const m = MISS.get(id); if (m && Date.now() - m < 600e3) return nf(); if (limited('seo-miss', 300, 60e3)) return nf();
-      try { const d = await C('prd_listings').doc(id).get(); const l = d.exists ? d.data() || {} : null; const pub = l && pubItem(id, { ...l, status: '판매중', active: true, qty: 1 }, null); /* 미끼·19금·값 없음은 품절 화면도 안 만듦 */
+      try { const d = await C('prd_listings').doc(id).get(); const l = d.exists ? d.data() || {} : null; const pub = l && soldLike(l) && pubItem(id, { ...l, status: '판매중', active: true, qty: 1 }, null); /* (rel10) 팔린 책만 — 숨긴 재고는 404 */ /* 미끼·19금·값 없음은 품절 화면도 안 만듦 */
         if (!pub) { MISS.set(id, Date.now()); if (MISS.size > 5000) MISS.clear(); return nf(); } it = { ...pub, ph: [] }; st = 'x'; goneAdd(id, it); } catch (e) { return nf(); } }
     return html(200, bookPage(it, { st, cfg: c, same: same(it) }), st === 'x' ? 'public, max-age=3600, s-maxage=86400' : undefined); }
 
@@ -368,4 +370,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { soldLike, shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
