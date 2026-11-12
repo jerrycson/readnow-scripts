@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fix3 셋째 — 상품 패널 기록 줄",
+ "since": "2026-11-12T09:31:14Z",
+ "beat": "2026-11-12T09:31:14Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "fix3 둘째 웹앱 1.78.509 (d12d9c76)",
   "at": "2026-11-12T09:18:51Z"
  },
- "host": null
+ "host": "vm"
 }
