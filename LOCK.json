@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "recheck1 사후 확인 판 1.78.514",
- "since": "2026-11-12T10:13:39Z",
- "beat": "2026-11-12T10:14:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "soldfill2 클라우드 0.35.153 (fe6ddb45)",
-  "at": "2026-11-12T10:10:29Z"
+  "done": "recheck1 웹앱 1.78.514 사후 확인 (dd5785c9)",
+  "at": "2026-11-12T10:14:46Z"
  },
- "host": "vm-recheck1"
+ "host": null
 }
