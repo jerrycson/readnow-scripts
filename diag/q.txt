@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto,app_settings/platforms&pend=1&n=10&cmds=prdEdit
-# 2264615399
+mem=1
+# 18051152

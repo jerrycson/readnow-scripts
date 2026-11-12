@@ -31,7 +31,7 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   const D = V.docOf(C1, '2026-11-12'); const Dj = JSON.stringify(D); ok(!/ab\d|zz|사과드립니다|먼지투성이 책/.test(Dj) && D.by === 'cloud' && D.tp.length === 10 && D.cands.every((c) => Object.keys(c).join() === 'w,c,lift'), '저장 꼴 = 숫자·낱말만(글 원문·아이디 없음) · by cloud', Dj.slice(0, 300));
 
   console.log('  매일 일 — 가짜 Firestore(조각을 나눠 읽기)');
-  const mkFS = (data) => { const reads = { n: 0 }; const Q = (n, o) => ({ orderBy: () => Q(n, o), select: () => Q(n, o), where: (k, op2, v) => Q(n, { ...o, w: [k, v] }), limit: (x) => Q(n, { ...o, lim: x }), startAfter: (d) => Q(n, { ...o, after: d.id }),
+  const mkFS = (data) => { const reads = { n: 0 }; const Q = (n, o) => ({ orderBy: () => Q(n, o), select: () => Q(n, o), where: (k, op2, v) => Q(n, { ...o, w: [k, v] }), limit: (x) => Q(n, { ...o, lim: x }), startAfter: (d) => Q(n, { ...o, after: typeof d === 'string' ? d : d.id }), /* (voice2) 문서 이름 글로도 */
       get: async () => { let L = Object.entries(data[n] || {}).sort((a, b) => (a[0] < b[0] ? -1 : 1)); if (o.w) L = L.filter(([, v]) => v[o.w[0]] === o.w[1]); if (o.after) L = L.filter(([id]) => id > o.after); if (o.lim) L = L.slice(0, o.lim); reads.n++; const docs = L.map(([id, v]) => ({ id, data: () => JSON.parse(JSON.stringify(v)) })); return { size: docs.length, docs, forEach: (f) => docs.forEach(f) }; } });
     const C = (n) => ({ ...Q(n, {}), doc: (id) => ({ get: async () => ({ exists: !!(data[n] || {})[id], data: () => (data[n] || {})[id] }), set: async (v) => { (data[n] = data[n] || {})[id] = JSON.parse(JSON.stringify(v)); } }) }); return { C, reads }; };
   const data = { col2_voice: Object.fromEntries(c2.map((v, i) => [`${v.sc}_${v.kind}${String(i).padStart(4, '0')}`, v])), seller_reviews: Object.fromEntries(op.map((v, i) => ['sr' + i, v])), app_settings: { voice_lex: { add: { cond: ['먼지'] } } },
@@ -47,7 +47,7 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   const big = V.makeAcc({ lex: V.lexOf(null), waMax: 50 }); for (let i = 0; i < 300; i++) big.c2({ sc: '9000001', kind: 'r', items: [{ d: '2026-10-01', r: 'bad', c: '낱말' + String.fromCharCode(44032 + i) + String.fromCharCode(44100 + i) + ' 먼지투성이' }] }); const bs = big.result([]); ok(bs.n === 300 && bs.pruned > 0, '낱말 표가 상한을 넘으면 1번 나온 낱말은 버림(셈은 그대로)', { n: bs.n, p: bs.pruned });
 
   const r3 = await VS.run(true, true, { budgetMs: -1 }); ok(r3.partial === true && data.app_settings.voice_study.partial === false, "시간 상한을 넘기면 거기까지 'partial' · 진단(dry)은 쓰지 않음", { p: r3.partial });
-  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);\nsetTimeout\(\(\) => VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*2 \* 3600e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 2시간마다 확인 · 20시간 막이)');
+  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);[^\n]*\nconst BUSYX[^\n]*\nsetTimeout\(\(\) => VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 30분마다 확인 — 처음 전체는 나눠 이어 셈 · 다 센 뒤 20시간 막이)');
   ok(/if \(q\.voice\) \{ try \{ out\.voice = await VOICE\.run\(true, q\.voice !== 'save'/.test(SRC), '진단 voice=1(계산만) · voice=save(저장)');
 
   console.log('② 판매자 상품 수');
