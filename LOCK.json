@@ -1,17 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: teth3 도우미 1.8.23 판 내기",
-  "at": "2026-11-12T13:41:32Z"
- },
+ "holder": "lead",
+ "what": "teth3 도우미 1.8.23 판 내기",
+ "since": "2026-11-12T13:45:37Z",
+ "beat": "2026-11-12T13:45:37Z",
+ "ask": null,
  "last": {
   "who": "daily",
   "done": "🔬 정밀 점검 11/12 끝 — 웹앱 1.78.521 · 수집기 1.89.283 · 도우미 1.8.23 · 번외 0.1.40 · 보고 a8a9df09",
   "at": "2026-11-12T13:45:05Z"
  },
- "host": null
+ "host": "vm-teth3"
 }
