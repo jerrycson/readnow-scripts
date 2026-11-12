@@ -1,2 +1,2 @@
-doc=prd_jobs/net_2026-11-12
-# 2571125746
+doc=app_settings/omni_auto,app_settings/omni_recheck
+# 18474233
