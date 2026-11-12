@@ -16,7 +16,7 @@
   const SAME = { on: !window.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '') };
   const RETRY_ST = [429, 502, 503, 504]; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const base = get && SAME.on ? location.origin : API; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
-    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': 'application/json' } }) }); let j = null; try { j = await r.json(); } catch (e) {}
+    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && window.BQA && window.BQA.tok() ? { Authorization: 'Bearer ' + window.BQA.tok() } : {}) } }) }); /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */ let j = null; try { j = await r.json(); } catch (e) {}
       if (get && base !== API && (!j || typeof j !== 'object') && r.status !== 429 && r.status < 500) { SAME.on = false; return api1(path, opt); } /* 같은 주소 넘김이 아직 없음(HTML 404 등) → 클라우드 주소로 */
       if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || (r.status === 429 ? '사람이 많아 잠시 기다리는 중입니다' : '연결이 잠시 안 됩니다')); e.j = j; e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000 || (j && j.retry ? j.retry * 1000 : 0); throw e; } return j; }
     catch (e) { if (e.name === 'AbortError') { const x = new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); x.slow = 1; throw x; } if (e instanceof TypeError) { const x = new Error('인터넷 연결을 확인해 주세요'); x.net = 1; throw x; } throw e; } finally { clearTimeout(t); } }
@@ -66,7 +66,7 @@
         <h2>새로 들어온 책 <span id="nwh">${freshHead(L)}</span><a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2><div id="nwg">${newGrid(L)}</div>
         ${seen.length ? `<h2>최근 본 책 <small class="hint">이 기기에만</small></h2><div class="grid">${seen.map((x) => cardH(x)).join('')}</div>` : ''}
         <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`;
-      FR.items = L.items.slice(0, 12); FR.at = Date.now(); freshArm(); }
+      FR.items = L.items.slice(0, 12); FR.at = Date.now(); freshArm(); if (window.BQA) window.BQA.home($('#hc')); }
     catch (e) { if (!$('#hc')) return; $('#hc').innerHTML = errBox(e); bindAgain(home); } }
 
   async function list(q) { const p0 = { q: q.q || '', c: q.c || '', g: q.g || '', s: q.s || 'new', pr: q.pr || '', sale: q.sale || '' }; const rg = B.rangeOf(p0.pr); /* (11/11 shopc1) 값 범위·할인만·할인 많은 차례 */
@@ -91,15 +91,16 @@
 
   async function item(id) { main().innerHTML = `<div class="det sk"><div class="gal"><div class="ph"></div></div><div class="info"><i></i><i></i><i></i></div></div>`;
     try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); if (B.route(location.hash).arg !== id) return; const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id); const so = B.saleOf(x); const lt = B.leftTxt(x.pe);
-      document.title = x.t + ' — ' + (c.name || '북스퀸'); LS.set('bq-seen', B.seenAdd(LS.get('bq-seen', []), x)); /* (shopc1) 최근 본 책 */
+      document.title = x.t + ' — ' + (c.name || '북스퀸'); LS.set('bq-seen', B.seenAdd(LS.get('bq-seen', []), x)); if (window.BQA) window.BQA.seenSync(); /* (shopc1) 최근 본 책 */
       main().innerHTML = `<div class="det"><div class="gal" id="gal">${pics.length ? pics.map((u, i) => `<div class="ph"><img src="${esc(u)}" alt="${i ? '실물 사진 ' + i : '표지'}" ${i ? 'loading="lazy"' : ''}></div>`).join('') : '<div class="ph"><span class="noim">📕</span></div>'}</div>${pics.length > 1 ? `<div class="dots">${pics.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
-        <div class="info">${x.bd && x.bd.length ? `<div class="bds in">${B.badgeH(x.bd, 6)}</div>` : ''}<h1>${esc(x.t)}</h1><div class="meta">${[x.a, x.pb, x.pd ? x.pd.replace('-', '년 ') + '월' : ''].filter(Boolean).map(esc).join(' · ')}</div>
+        <div class="info">${x.bd && x.bd.length ? `<div class="bds in">${B.badgeH(x.bd, 6)}</div>` : ''}<h1>${esc(x.t)}</h1><div class="meta">${[x.a, x.pb, x.pd ? x.pd.replace('-', '년 ') + '월' : ''].filter(Boolean).map(esc).join(' · ')}</div><div id="bqaStar" class="bqa-star"></div>
         <div class="price">${so && so.from === 'p0' ? `<s>${won(so.was)}</s> <span class="off sale">${so.pct}% 할인</span>${lt ? ` <small class="left">⏰ ${esc(lt)}</small>` : ''}<br>` : x.lp && off ? `<s>${won(x.lp)}</s> <span class="off">${off}%</span><br>` : ''}<b>${won(x.p)}</b>${so && so.from === 'p0' && x.lp ? `<small class="hint"> · 정가 ${won(x.lp)}</small>` : ''}</div>
         <div class="gbox">${gTag(x.g)} <b>${esc(G[0])}</b> <span>${esc(G[1])}</span></div>
         <ul class="facts"><li>📦 <b>한 권뿐인 실물</b> — 사진 속 그 책을 보냅니다</li><li>🚚 배송비 ${c.shipFee ? won(c.shipFee) : '없음'}${c.freeOver ? ` · ${won(c.freeOver)} 넘으면 무료` : ''}</li>${c.promo && c.promo.bundle ? `<li>📚 ${c.promo.bundle.n}권 넘게 담으면 ${c.promo.bundle.pct ? c.promo.bundle.pct + '%' : won(c.promo.bundle.won)} 할인</li>` : ''}${x.isbn ? `<li>🔢 ISBN ${esc(x.isbn)}</li>` : ''}${x.c ? `<li>🗂 <a href="#/list?${B.qs({ c: x.c })}">${esc(x.c)}</a></li>` : ''}</ul>
         ${(r.same || []).length ? `<div class="same"><b>같은 책 다른 매물</b>${r.same.map((y) => `<a href="#/b/${encodeURIComponent(y.id)}">${gTag(y.g)} ${won(y.p)}${y.st === 'o' ? ' <small>주문 중</small>' : ''}</a>`).join('')}</div>` : ''}
         <div class="buy">${x.st === 'o' ? '<button class="btn wide" disabled>다른 분이 주문한 책입니다</button>' : !c.open ? '<button class="btn wide" disabled>문을 연 뒤에 주문할 수 있습니다</button>' : inCart ? '<a class="btn wide ghost" href="#/cart">장바구니에 담겨 있음 — 보러 가기</a>' : '<button class="btn ghost" id="add">장바구니</button><button class="btn" id="now">바로 주문</button>'}<button type="button" class="btn ghost wishb${wish().some((w) => w.id === x.id) ? ' on' : ''}" id="wsh" aria-pressed="${wish().some((w) => w.id === x.id)}" aria-label="찜">${wish().some((w) => w.id === x.id) ? '♥' : '♡'}</button></div></div></div>
-        ${(r.rel || []).length ? `<h2>함께 보면 좋은 책</h2><div class="grid rel">${r.rel.map((y) => cardH(y)).join('')}</div>` : ''}`;
+        ${(r.rel || []).length ? `<h2>함께 보면 좋은 책</h2><div class="grid rel">${r.rel.map((y) => cardH(y)).join('')}</div>` : ''}<section id="bqa" class="bqa" aria-label="손님 리뷰"></section>`; /* (shop9) ⭐ 리뷰·밑줄 */
+      { const bu = $('.det .buy'); if (bu) bu.insertAdjacentHTML('afterend', '<div id="bqaAct" class="bqa-actbar"></div>'); } if (window.BQA) window.BQA.item({ ...x, st: x.st }, c);
       const gal = $('#gal'); if (gal && pics.length > 1) gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); $$('.dots i').forEach((d, k) => d.classList.toggle('on', k === i)); };
       const add = (go) => { const r2 = B.cartAdd(cart(), x, c.maxItems); if (r2.why) toast(r2.why); else { setCart(r2.cart); toast('장바구니에 담았습니다'); } if (go) location.hash = '#/order'; else item(id); };
       /* (shelf4 · 원칙 56) 책 한 권 화면에서 바로 찜(알라딘·교보 상품 화면의 ♡) — 서가·찜 목록과 같은 저장 */
@@ -171,7 +172,7 @@
     $('#of').onsubmit = async (e) => { e.preventDefault(); const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
       const go = $('#go'); go.disabled = true; go.textContent = '주문 넣는 중…'; $('#oerr').hidden = true;
-      try { const r = await api('/shop/order', { method: 'POST', body: JSON.stringify(B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, cart())) }); /* (shopc1) expect = 손님이 본 합계 — 서버 셈과 다르면 주문하지 않음 */ const mine = LS.get('bq-orders', []).filter((x) => x.no !== r.no); mine.unshift({ no: r.no, t: r.t, at: new Date().toISOString(), total: r.total, n: r.items.length }); LS.set('bq-orders', mine.slice(0, 20));
+      try { const r = await api('/shop/order', { method: 'POST', auth: 1, body: JSON.stringify(B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, cart())) }); /* (shopc1) expect = 손님이 본 합계 — 서버 셈과 다르면 주문하지 않음 */ const mine = LS.get('bq-orders', []).filter((x) => x.no !== r.no); mine.unshift({ no: r.no, t: r.t, at: new Date().toISOString(), total: r.total, n: r.items.length }); LS.set('bq-orders', mine.slice(0, 20));
         setCart([]); try { sessionStorage.removeItem('bq-odraft'); } catch (e2) {} location.hash = `#/done/${encodeURIComponent(r.no)}?t=${r.t}&new=1`; }
       catch (er) { go.disabled = false; go.textContent = `${won(Q.total)} 주문하기`; const bad = er.j && er.j.bad;
         if (er.j && er.j.price) { await reQ(cpOk); go.textContent = `${won(Q.total)} 주문하기`; } if (er.j && er.j.cp) { cpOk = ''; const box = $('[data-f="cp"]'); if (box) { box.classList.add('bad'); $('em', box).textContent = er.message; } } if (bad && bad.length) { const ids = new Set(bad.map((x) => x.id)); setCart(cart().filter((x) => !ids.has(x.id))); if (cart().length) { await reQ(cpOk); go.textContent = `${won(Q.total)} 주문하기`; } else go.disabled = true; } /* (shelf2) 뺀 뒤 줄·합계·단추 값도 새로 */
@@ -194,12 +195,12 @@
 
   async function policy(k) { let c = {}; try { c = await cfg(); } catch (e) {} const z = c.biz || {}; const v = (x) => (x ? esc(x) : '<i>준비 중</i>'); const nm = esc(z.name || c.name || '북스퀸');
     const P = { privacy: ['개인정보 처리방침', `<p>${nm}(이하 '가게')는 개인정보 보호법 제30조에 따라 손님의 개인정보를 아래처럼 처리합니다.</p>
-      <h3>1. 모으는 것과 쓰는 곳</h3><p>주문 때: 주문하시는 분·받는 분의 이름, 휴대폰 번호, 주소(우편번호·상세 주소), 배송 메모, 입금하실 분 이름, 메일 주소(선택 — 적으셨을 때만) — 주문 확인·입금 확인·주문 알림(접수·입금 확인·보냄)·배송·교환·환불·문의 답에만 씁니다. 회원 가입은 없습니다.</p>
-      <h3>2. 보관 기간</h3><p>전자상거래 등에서의 소비자보호에 관한 법률에 따라 계약·청약철회·대금 결제·재화 공급 기록 5년, 소비자 불만·분쟁 처리 기록 3년 보관한 뒤 지체 없이 파기합니다.</p>
+      <h3>1. 모으는 것과 쓰는 곳</h3><p>주문 때: 주문하시는 분·받는 분의 이름, 휴대폰 번호, 주소(우편번호·상세 주소), 배송 메모, 입금하실 분 이름, 메일 주소(선택 — 적으셨을 때만) — 주문 확인·입금 확인·주문 알림(접수·입금 확인·보냄)·배송·교환·환불·문의 답에만 씁니다.<br>회원 가입(선택) 때: 메일(로그인·알림)·별명·비밀번호(되돌릴 수 없는 암호 꼴로만 저장)·소개 글(적으셨을 때만) — 로그인·마이페이지·리뷰·알림 신청에만 씁니다. 별명·소개·리뷰·밑줄·공개로 둔 북리스트는 다른 손님에게 보이고, 메일·주문·찜·알림 신청은 본인만 봅니다. 가입하지 않아도 주문할 수 있습니다.</p>
+      <h3>2. 보관 기간</h3><p>회원 정보는 탈퇴할 때까지(탈퇴하면 메일·별명 묶음을 바로 풀고 쓴 글은 화면에서 뺍니다) · 전자상거래 등에서의 소비자보호에 관한 법률에 따라 계약·청약철회·대금 결제·재화 공급 기록 5년, 소비자 불만·분쟁 처리 기록 3년 보관한 뒤 지체 없이 파기합니다.</p>
       <h3>3. 맡기는 곳(위탁)</h3><p>택배사(배송) · Google Firebase(주문 기록 보관 서버) — 결제 대행사(PG)·알림 보내기 서비스(문자·메일)를 쓰게 되면 이 칸에 더합니다.</p>
       <h3>4. 손님의 권리</h3><p>언제든 열람·정정·삭제·처리 정지를 요구하실 수 있습니다 — 아래 연락처로 말씀해 주세요.</p>
-      <h3>5. 파기</h3><p>보관 기간이 끝난 기록은 다시 살릴 수 없게 지웁니다.</p><h3>6. 쿠키·기기 저장</h3><p>이 화면은 장바구니와 '내 주문' 조회 주소만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.</p>
-      <h3>7. 개인정보 보호책임자</h3><p>${v(z.cpo || z.ceo)} · ${v(z.tel)} · ${v(z.email)}</p><p class="hint">시행 2026-11-11</p>`],
+      <h3>5. 파기</h3><p>보관 기간이 끝난 기록은 다시 살릴 수 없게 지웁니다.</p><h3>6. 쿠키·기기 저장</h3><p>이 화면은 장바구니·찜·최근 본 책·'내 주문' 조회 주소와 로그인 열쇠(로그인했을 때)만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.</p>
+      <h3>7. 개인정보 보호책임자</h3><p>${v(z.cpo || z.ceo)} · ${v(z.tel)} · ${v(z.email)}</p><p class="hint">시행 2026-11-12(회원·리뷰 더함)</p>`],
       terms: ['이용약관 · 구매 조건', `<h3>헌책 거래</h3><p>모든 책은 한 권뿐인 중고 실물입니다. 등급(최상·상·중·하)과 사진으로 상태를 알려 드리며, 사진과 설명에 없는 큰 흠이 있으면 교환·환불해 드립니다.</p>
       <h3>주문과 결제</h3><p>주문서를 보내면 그 책은 바로 '주문 중'으로 잡힙니다. 무통장 입금은 ${esc(String(c.payDays || 2))}일 안에 해 주세요 — 기한이 지나면 주문이 취소될 수 있습니다. 드물게 다른 곳에서 먼저 팔린 경우 바로 연락드리고 받은 돈을 모두 돌려 드립니다.</p>
       <h3>청약철회(교환·환불)</h3><p>책을 받은 날부터 7일 안에 청약철회를 하실 수 있습니다(전자상거래법 제17조). 손님 변심일 때 돌려보내는 배송비는 손님이, 책 상태가 설명과 다를 때는 가게가 냅니다. 손님 잘못으로 책이 훼손되면 철회가 어려울 수 있습니다.</p>
@@ -211,7 +212,7 @@
       <div class="biz">상호 ${v(z.name || c.name)} · 대표 ${v(z.ceo)} · 사업자등록번호 ${v(z.no)} · 통신판매업 신고 ${v(z.mo)}<br>주소 ${v(z.addr)} · 전화 ${v(z.tel)} · 메일 ${v(z.email)} · 호스팅 ${esc(z.host || 'Google Firebase')}</div>`; }
   /* ══ (11/11 shelf1) 📚 서가 책장 #/shelf · ♡ 찜 목록 #/wish — 책장 화면(shelf.js·shelf.css)은 처음 열 때만 받음(첫 화면 가볍게)
    *  자료: /shop/shelf(판매중 전부 · 4,000권씩) → 클라우드가 아직 옛 판이면 /shop/list 쪽을 모아 대신(분야·등록일 없이) · #/shelf?demo=1200 시범 자료 · ?cfg=… 관리 화면 미리 보기(저장 안 함) */
-  const wish = () => LS.get('bq-wish', []); const setWish = (w) => { LS.set('bq-wish', w); wishBadge(); };
+  const wish = () => LS.get('bq-wish', []); const setWish = (w, quiet) => { LS.set('bq-wish', w); wishBadge(); if (!quiet && window.BQA) window.BQA.wishSync(); }; /* (shop9) 로그인했으면 계정 찜에도 */
   function wishBadge() { const n = wish().length; const b = $('#wishN'); if (b) { b.textContent = n; b.hidden = !n; } }
   const SHL = { h: null, items: null, at: 0, js: null };
   /* (shelf5) 첫 로딩이 가끔 한 번 실패('책장 화면을 받지 못했습니다') — 휴대폰 망이 잠깐 끊기거나 새 판을 올리는 몇 초 사이 파일 하나가 안 오면 곧바로 실패로 끝냈음
@@ -251,10 +252,11 @@
     main().querySelectorAll('[data-wd]').forEach((b) => (b.onclick = () => { setWish(wish().filter((x) => x.id !== b.dataset.wd)); wishPage(); }));
     main().querySelectorAll('[data-wc]').forEach((b) => (b.onclick = async () => { let c = {}; try { c = await cfg(); } catch (e) {} if (!c.open) return toast('문을 연 뒤에 담을 수 있습니다'); const x = wish().find((y) => y.id === b.dataset.wc); const r = B.cartAdd(cart(), x, c.maxItems); if (r.why) return toast(r.why); setCart(r.cart); toast('장바구니에 담았습니다'); })); }
   cfg().then((c) => { const n = $('#navShelf'); if (n && c && c.shelf && c.shelf.on === false) n.hidden = true; }).catch(() => {});
-  async function render() { listKeep(); if (moreIO) { moreIO.disconnect(); moreIO = null; } LST.cur = location.hash; const R = B.route(location.hash); document.title = (ST.cfg && ST.cfg.name) || '북스퀸 — 헌책방'; if (SHL.h) { SHL.h.destroy(); SHL.h = null; } document.body.classList.remove('shelf-on'); window.scrollTo(0, 0); $$('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === R.name));
-    if (R.name === 'shelf') return shelfPage(R.q); if (R.name === 'wish') return wishPage(); if (R.name === 'list') return list(R.q); if (R.name === 'b') return item(R.arg); if (R.name === 'cart') return cartPage(); if (R.name === 'order') return orderPage(); if (R.name === 'done') return done(R.arg, R.q); if (R.name === 'my') return my(); if (R.name === 'p') return policy(R.arg); return home(); }
+  async function render() { listKeep(); if (moreIO) { moreIO.disconnect(); moreIO = null; } LST.cur = location.hash; const R = B.route(location.hash); document.title = (ST.cfg && ST.cfg.name) || '북스퀸 — 헌책방'; if (SHL.h) { SHL.h.destroy(); SHL.h = null; } document.body.classList.remove('shelf-on'); window.scrollTo(0, 0); $$('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === R.name || (a.dataset.r === 'me' && ['login', 'u', 'l', 'my'].includes(R.name))));
+    if (window.BQA && window.BQA.routes[R.name]) return window.BQA.routes[R.name](R); /* (shop9) 👤 로그인·마이페이지·손님 서재·북리스트 */ if (R.name === 'shelf') return shelfPage(R.q); if (R.name === 'wish') return wishPage(); if (R.name === 'list') return list(R.q); if (R.name === 'b') return item(R.arg); if (R.name === 'cart') return cartPage(); if (R.name === 'order') return orderPage(); if (R.name === 'done') return done(R.arg, R.q); if (R.name === 'my') return my(); if (R.name === 'p') return policy(R.arg); return home(); }
   /* (11/11 shop4) 사진이 안 열리면(실제 배포본 점검: Storage 작은 사진 *_t.webp가 ORB로 막힘) → 큰 사진으로 한 번 더 → 그래도 안 되면 📕 (깨진 그림 아이콘 0) */
   document.addEventListener('error', (e) => { const i = e.target; if (!i || i.tagName !== 'IMG') return; const big = i.src.replace(/_t\.(webp|jpe?g|png)(?=\?|$)/i, '.$1');
     if (!i.dataset.fb && big !== i.src) { i.dataset.fb = '1'; i.src = big; return; } if (i.dataset.fb === 'x') return; i.dataset.fb = 'x'; const n = document.createElement('span'); n.className = 'noim'; n.textContent = '📕'; i.replaceWith(n); }, true);
+  window.BQX = { api, toast, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
   window.addEventListener('hashchange', render); badge(); wishBadge(); foot(); cfg().catch(() => {}); render();
 })();
