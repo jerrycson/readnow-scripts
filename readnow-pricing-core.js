@@ -135,6 +135,7 @@
 
   // ───────────────────────── 남는 돈과 하한선 ─────────────────────────
   // 한 권 팔았을 때 손에 남는 돈 (매입원가 빼기 전): 판매가 − 수수료 − 주문당 비용(택배 − 고객 배송비 + 포장재) ÷ 주문당 평균 권수
+  // (0.17.14) ⚠ 이 하한 셈(sellNet·minPriceFor)은 아직 택배비 마진(손님 배송비 > 택배비)을 0으로 봄 — 값을 올리고 내리는 엔진 하한이라 정범님 결정 전 그대로 · 🏷 매입 후보 판정(bbNetParts)만 마진을 더함
   function sellNet(p, ctx, S) {
     if (!S || S.feeRate == null || S.packPerOrder == null || S.courierPerOrder == null || S.booksPerOrder == null) S = mergeD(S); /* (0.15.3) 설정 일부만 넘겨도 기본값을 채움 — 예전엔 NaN → 최소가 1,000만 원 */ const pol = (ctx && ctx.policy) || {}; const custShip = pol.freeOver != null && p >= pol.freeOver ? 0 : (pol.fee || 0);
     const orderCost = S.packPerOrder + Math.max(0, S.courierPerOrder - custShip);
@@ -174,12 +175,17 @@
   /* 직접 팔아 남는 돈(순이익)의 구성 — sellNet과 같은 셈(반올림) · o = { policy: { fee, freeOver }, D: { feeRate, packPerOrder, courierPerOrder, booksPerOrder } (없으면 DEFAULTS) } */
   function bbNetParts(P, o) { P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && v !== '' && Number.isFinite(+v) ? +v : d);
     const fr = num(D.feeRate, DEFAULTS.feeRate), pk = num(D.packPerOrder, DEFAULTS.packPerOrder), cr = num(D.courierPerOrder, DEFAULTS.courierPerOrder), bpo = Math.max(1, num(D.booksPerOrder, DEFAULTS.booksPerOrder));
-    const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = Math.max(0, cr - cust), per = Math.round((pk + shipNet) / bpo);
-    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, net }; }
+    /* (0.17.14 · 정범님 11/12 밤 '택배비를 빼는 게 아니야 — 택배비 마진이 있다면 더하고, 우리 부담일 때 빼는 거야') 택배비 몫 = 손님이 낸 배송비 − 실제 평균 택배비
+     *  양수 = 택배비 마진(순이익에 더함) · 음수 = 우리 부담(무료배송 등 — 순이익에서 뺌) · 예전: 우리 부담만 빼고 마진은 0으로 버림(max(0, 택배 − 손님 배송비)) → 손님 배송비 2,800원·택배 2,500원이면 300원을 놓쳤음
+     *  ship = 택배비 몫(주문당 권수로 나눔 · 반올림) · shipNet = 예전 이름(우리가 내는 택배비 − 손님 배송비 · 음수 = 마진) */
+    const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = cr - cust, per = Math.round((pk + shipNet) / bpo), pkPer = Math.round(pk / bpo), ship = Math.round((cust - cr) / bpo);
+    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net }; }
   /* 🏷 매입 후보 판정 — o = { margin: 기준 차액, policy, D, list: 정가(주면 매입가 거르기) } → null(셀 수 없음) · { in, below, P, buy, k, net, gain, parts, calc } · 무시한 매입가면 { in: false, ignored: { buy, list, why }, calc: 까닭 } */
   function bbNear(P, buy, o) { P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
     const V = bbValid(buy, o.list); if (V && !V.ok) return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: V.list, why: V.why }, calc: V.why };
     const net = x.net, gain = net - buy; const R = { in: gain < k, below: gain <= 0, P, buy, k, net, gain, parts: x, ...(V && V.noList ? { noList: true } : {}) };
+    /* (0.17.14 · 정범님 11/12 밤 '(있다면) 매입가') 우리 매입원가(o.cost)를 알면 순이익에서도 뺀 값(profit)과 알라딘에 팔 때 남는 돈(bbProfit = 매입가 − 원가)을 함께 둠 — 원가는 두 쪽에 똑같이 들어가 차(gain)는 그대로 */
+    if (+o.cost > 0) { R.cost = Math.round(+o.cost); R.profit = net - R.cost; R.bbProfit = buy - R.cost; }
     /* (0.17.10 🔬 정밀 점검 11/06) 까닭 글(calc)은 처음 읽을 때 만듦 — 경영 계산(bizCalc)·휴대폰 매입 탭이 상품 2.6만 개마다 bbNear를 불러 글을 미리 만들던 것(원 표시 10만 번 · 느린 함수 1위) · 읽는 쪽은 그대로 R.calc */
     Object.defineProperty(R, 'calc', { enumerable: true, configurable: true, get() { const s = `순이익 ${bbW(net)} − 알라딘 매입가 ${bbW(buy)} = 차 ${gain < 0 ? '−' + bbW(-gain) : bbW(gain)} ${gain < k ? '<' : '≥'} 기준 ${bbW(k)}`; Object.defineProperty(R, 'calc', { value: s, enumerable: true, writable: true, configurable: true }); return s; } }); return R; }
   /* 매입가 하한가 — o.floorMargin 켬: 매입 후보가 아니게 되는(순이익 − 매입가 ≥ 기준 차액) 가장 낮은 가격(가격 단위 올림) · 끔(기본): 예전 하한(minPriceFor — 순이익 = 매입가) · 무시한 매입가·셀 수 없으면 null */

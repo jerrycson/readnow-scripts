@@ -6,11 +6,11 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   // ① 판정 하나 — 직접 팔아 남는 돈(판매가 − 수수료 − 포장·택배비) − 매입가 < 기준 차액(기본 500원)이면 후보 · 셈 식 표시 · 중 ⚠ (정범님 11/05 '막연히 % 말고 근거로')
   const j = await p.evaluate(() => { const buy = 3800; let lo = null; for (let P = 3000; P < 20000; P++) { const J = bbNearJ(P, buy, '상'); if (!J.in) { lo = P; break; } } const A = bbNearJ(lo - 1, buy, '상'), B = bbNearJ(lo, buy, '상'), c = bbNearJ(3000, buy, '상'), d = bbNearJ(2200, 2000, '중'); const pp = bbNetParts(6000);
     const cons = [3500, 4300, 4800, 5000, 6000, 9000].every((P) => { const J = bbNearJ(P, buy, '상'); return J.in === (J.net - buy < 500) && J.gain === J.net - buy; });
-    return { def: bbMargin(), lo, A: [A.in, A.gain, A.tag], B: [B.in, B.gain, B.tag], c: [c.in, c.below, c.tag, c.formula], d: [d.in, d.warn], pp, f6: bbNearJ(6000, buy, '상').formula, cons, net6: bbSellNet(6000) }; });
+    return { def: bbMargin(), lo, A: [A.in, A.gain, A.tag], B: [B.in, B.gain, B.tag], c: [c.in, c.below, c.tag, c.formula], d: [d.in, d.warn, d.gradeOut, d.tag], pp, f6: bbNearJ(6000, buy, '상').formula, cons, net6: bbSellNet(6000) }; });
   ok(j.def === 500 && j.A[0] && j.A[1] < 500 && !j.B[0] && j.B[1] >= 500 && /기준/.test(j.A[2]) && /직접 판매/.test(j.B[2]), `기본 기준 차액 500원 · 경계: 판매가 ${j.lo - 1}원(더 남는 돈 ${j.A[1]})은 후보 · ${j.lo}원(${j.B[1]})은 직접 판매`, j);
-  ok(j.cons && j.pp && j.net6 === j.pp.net && j.pp.fee === 600 && /판매가 6,000원 − 수수료 600원\(10%\) − 포장·택배/.test(j.f6) && /남는 돈/.test(j.f6) && /알라딘 매입가 3,800원/.test(j.f6), '셈 식: 판매가 − 수수료(10%) − 포장·택배(포장 + 택배 − 손님 배송비) = 남는 돈 · 매입가와 차액 — 판정 엔진 sellNet과 같은 값', { f6: j.f6, pp: j.pp });
+  ok(j.cons && j.pp && j.net6 === j.pp.net && j.pp.fee === 600 && /판매가 6,000원 − 수수료 600원\(10%\) − 포장 394원 − 택배비 우리 부담 2,500원\(평균 택배비 2,500원 − 손님 배송비 0원\)/.test(j.f6) && /남는 돈/.test(j.f6) && /알라딘 매입가 3,800원/.test(j.f6), '셈 식: 판매가 − 수수료(10%) − 포장 ± 택배비 몫(정범님 11/12 밤 — 우리 부담이면 뺌) = 남는 돈 · 매입가와 차액 — 판정 엔진 sellNet과 같은 값(손님 배송비 0원)', { f6: j.f6, pp: j.pp });
   ok(j.c[0] && j.c[1] && /매입이 나음/.test(j.c[2]), '직접 팔면 매입가보다 덜 남음 → 「매입이 나음(n원 더 받음)」', j.c);
-  ok(j.d[0] && /⚠ 중/.test(j.d[1]) && /알라딘이 매입하지 않을 수 있음/.test(j.d[1]), '중도 판정에 넣고 ⚠ 중 — 알라딘이 매입하지 않을 수 있음', j.d);
+  ok(!j.d[0] && j.d[2] === '중' && /매입 조건 밖\(중\)/.test(j.d[3]), "(정범님 11/12 밤 '중 상태는 알라딘이 매입하지 않으니 빼라') 우리 상태 중 → 매입 후보 아님 · 「매입 조건 밖(중)」", j.d);
   // ② 모든 곳 같은 판정 — 수동 일괄(bbNearX) · 등록 추천 탭(regBbrJ) · 등록 칸(regBbNear) · 상품 상세 · 경영 ⑤
   const al = await p.evaluate((lo) => { const l = [...S.plist.values()].find((x) => x.grade === '상' && x.active); S.pmetrics = S.pmetrics || new Map(); S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { 상: 3800 } });
     const PIN = lo - 300, POUT = lo + 300; const xIn = { l, goal: PIN, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xOut = { l, goal: POUT, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xNoHit = { l, goal: PIN, target: PIN };
@@ -21,13 +21,13 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(al.rIn && !al.rOut && al.cIn && !al.cOut, "📥 등록 '알라딘 매입 추천' 탭·'알라딘 매입이 나을 수 있음' 칸 = 같은 판정", al);
   ok(al.pd && al.pdOut, '상품 상세 🏷 알라딘 매입 줄에 판정(기준 안/넘음) 표시', al);
   // 경영 ⑤ — 같은 판정
-  const bz2 = await p.evaluate(() => { const L = [...S.plist.values()].filter((x) => x.active).slice(0, 4); return L.map((l, i) => { const bb = Math.round(l.price / [1.1, 1.6, 0.9, 2.2][i]); const J = bbNearJ(l.price, bb, l.grade); return J && J.in === (J.net - bb < bbMargin()); }); });
+  const bz2 = await p.evaluate(() => { const L = [...S.plist.values()].filter((x) => x.active).slice(0, 4); return L.map((l, i) => { const bb = Math.round(l.price / [1.1, 1.6, 0.9, 2.2][i]); const J = bbNearJ(l.price, bb, l.grade); return J && (J.gradeOut ? !J.in && ['중', '하'].includes(l.grade) : J.in === (J.net - bb < bbMargin())); }); });
   ok(bz2.every(Boolean), '경영 ⑤ 알라딘 매입가에 가깝게 파는 상품 — 같은 판정(남는 돈 − 매입가 < 기준 차액)', bz2);
   // ③ 알라딘 매입 후보 셈(bbuyCompute) — 같은 판정 · 중 포함 · 예전 규칙 수 함께
   const bc = await p.evaluate(async () => { S.pmLoaded = true; S.sellersLoaded = true; const L = [...S.plist.values()].filter((x) => x.active); const set = (l, buy, mk) => S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { [l.grade]: buy }, usedFirstPage: [{ price: mk, grade: l.grade, sellerCode: '0', sellerName: '알라딘', ship: 0, soldOut: false }], lastCheckedAt: new Date().toISOString() });
     const a = L.find((l) => l.grade === '상'), b = L.find((l) => l.grade === '중'), c = L.filter((l) => l.grade === '상')[1]; S.pmetrics = new Map(); set(a, 4000, 4400); set(b, 3000, 3300); set(c, 4000, 9000);
-    S.bbuyRes = null; await bbuyCompute(true); const H = S.bbuyRes.hit; const g = (l) => H.get(l.usedCode); return { a: g(a) && { in: g(a).near.in, mkt: g(a).mkt }, b: g(b) && { warn: g(b).near.warn }, c: !!g(c), all: [...H.values()].every((h) => h.near && h.near.in && h.near.gain < 500), old: S.bbuyRes.old, pct: S.bbuyRes.pct }; });
-  ok(bc.a && bc.a.in && bc.b && /중/.test(bc.b.warn) && !bc.c && bc.all && bc.pct === 500 && typeof bc.old === 'number', `🏷 알라딘 매입 후보 = 직접 팔아도 500원 넘게 안 남는 책 · 중 포함(⚠) · 기준 넘으면 빠짐 · 예전 하한가 규칙 수(${bc.old})도 함께`, bc);
+    S.bbuyRes = null; await bbuyCompute(true); const H = S.bbuyRes.hit; const g = (l) => H.get(l.usedCode); return { a: g(a) && { in: g(a).near.in, mkt: g(a).mkt }, b: !!g(b), c: !!g(c), all: [...H.values()].every((h) => h.near && h.near.in && h.near.gain < 500), old: S.bbuyRes.old, pct: S.bbuyRes.pct }; });
+  ok(bc.a && bc.a.in && !bc.b && !bc.c && bc.all && bc.pct === 500 && typeof bc.old === 'number', `🏷 알라딘 매입 후보 = 직접 팔아도 500원 넘게 안 남는 책 · 중은 뺌(정범님 11/12 밤) · 기준 넘으면 빠짐 · 예전 하한가 규칙 수(${bc.old})도 함께`, bc);
   // ④ 설정 — 관리자만 · 등록 ⚙ 와 알라딘 매입 ⚙ 같은 값 · 바꾸면 모든 곳
   await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; S.user = S.user || { email: 'tester@x' }; });
   await p.evaluate(() => openAladinSell({ t: 'cand' })); await p.waitForTimeout(600);

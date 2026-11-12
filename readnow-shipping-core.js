@@ -210,7 +210,7 @@
    *   ⑤ (선택·기본 끔) 첫 페이지에 유효 매물이 하나도 없어 판매가를 견줄 수 없음
    *   ⑥ (정범님 10/28 · 기본 켬) 저가·YLW 상품 = 관리코드가 lowSku(기본 'YLW')로 시작하거나 판매가가 lowPrice원(기본 4,000) 이하 → ② 25% 규칙 대신
    *      알라딘 매입가(그 상품 · 우리 등급 — 주문 뒤 읽은 온라인 중고 화면의 '알라딘 중고 매입가' 표 = shp_enrich mkt.buyback)를 알면 웹앱 '매입 후보'와 같은 판정(bbNear):
-   *      순이익(판매가 − 수수료 − 포장·택배비 + 손님 배송비) − 매입가 < 기준 차액(기본 500원 · app_settings/main.bbMargin)이면 매입 후보 → 검토(bbLow) · 아니면 통과
+   *      순이익(판매가 − 수수료 − 포장비 ± 택배비 몫(손님 배송비 − 평균 택배비)) − 매입가 < 기준 차액(기본 500원 · app_settings/main.bbMargin)이면 매입 후보 → 검토(bbLow) · 아니면 통과
    *      (정범님 11/05 밤 '매입가 후보 안에 들지 않는 한 무조건 자동 결정' — 예전엔 판매가 < 매입가일 때만 검토라 웹앱이 매입 후보라 하는 책도 통과했음 · 넘겨받는 x.bb = { margin, policy, D })
    *      매입가를 모르면(알라딘이 안 사는 책·그 등급 칸 없음·표를 못 읽음) = 매입가 후보 아님 → 25% 기준 안 쓰고 통과(정범님 11/05 밤 바로잡음 — 예전엔 25% 규칙으로 봤음)
    *      (정범님 11/09) 우리 상품 상태가 '중'(알라딘이 사지 않는 등급 — 판정 엔진 bbGradeOut)이면 '알라딘 매입' 조건에 해당하지 않음 → 매입가를 알아도 매입 후보 판정을 하지 않고 통과(rule 'bbGrade' · 25% 기준 안 씀)
@@ -243,7 +243,7 @@
   function bbOf(m, grade) { const x = bbPick(m, grade); return x ? x.v : null; }
   /* (정범님 11/05 밤 '매입가 후보 안에 들지 않는 한 무조건 자동 결정') 🏷 알라딘 매입 후보 판정 — 한 곳
    *  웹앱 📥 등록·🏷 알라딘 매입·수동 일괄·상품 상세·경영(bbNearJ)과 자동 발송요청 저가·관리코드 규칙(autoShipDecide ⑥)이 같이 부름 — 같은 책이면 같은 답
-   *  직접 팔아 남는 돈(순이익) = 판매가 × (1 − 수수료율) − (포장비 + 택배비 − 손님 배송비) ÷ 주문당 권수 — 판정 엔진 sellNet과 같은 셈(반올림)
+   *  직접 팔아 남는 돈(순이익) = 판매가 × (1 − 수수료율) − 포장비 ÷ 주문당 권수 + 택배비 몫((손님 배송비 − 평균 택배비) ÷ 주문당 권수 — 마진이면 더함·우리 부담이면 뺌 · 정범님 11/12 밤) — 판정 엔진 bbNetParts와 같은 셈(반올림)
    *  더 남는 돈(차) = 순이익 − 알라딘 매입가 · 차 < 기준 차액(기본 500원 · app_settings/main.bbMargin)이면 매입 후보 · 차 ≤ 0이면 '매입이 나음'
    *  o = { margin: 기준 차액(원), policy: { fee: 손님 배송비, freeOver: 무료배송 기준 } (crm_system/shopPolicy.current), D: { feeRate, packPerOrder, courierPerOrder, booksPerOrder } (판정 엔진 DEFAULTS) }
    *  D가 없으면 판정 엔진 DEFAULTS와 같은 값(BB_NET_DEF) · policy가 없으면 손님 배송비 0원으로 셈(가장 보수적 — 더 자주 후보) */
@@ -251,8 +251,8 @@
   function bbMarginOf(v) { return v != null && v !== '' && Number.isFinite(+v) && +v >= 0 && +v <= 100000 ? Math.round(+v) : BB_MARGIN_DEF; }
   function bbNetParts(P, o) { const Q = PRC(); if (Q) return Q.bbNetParts(P, o); P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && Number.isFinite(+v) ? +v : d);
     const fr = num(D.feeRate, BB_NET_DEF.feeRate), pk = num(D.packPerOrder, BB_NET_DEF.packPerOrder), cr = num(D.courierPerOrder, BB_NET_DEF.courierPerOrder), bpo = Math.max(1, num(D.booksPerOrder, BB_NET_DEF.booksPerOrder));
-    const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = Math.max(0, cr - cust), per = Math.round((pk + shipNet) / bpo);
-    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, net }; }
+    const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = cr - cust, per = Math.round((pk + shipNet) / bpo), pkPer = Math.round(pk / bpo), ship = Math.round((cust - cr) / bpo); /* (0.7.16 · 정범님 11/12 밤) 택배비 몫 = 손님 배송비 − 평균 택배비(마진이면 더함 · 우리 부담이면 뺌) — 판정 엔진 0.17.14와 같은 셈 */
+    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net }; }
   /* o.list = 정가(주면 정가보다 큰 매입가는 무시 → { in: false, ignored }) */
   function bbNear(P, buy, o) { const Q = PRC(); if (Q) return Q.bbNear(P, buy, o); P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
     const L = +o.list; if (L > 0 && buy > L) { const why = `알라딘 매입가 ${W0(buy)}이 정가 ${W0(L)}보다 큼 — 잘못 읽은 값으로 보고 무시`; return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: L, why }, calc: why }; }
