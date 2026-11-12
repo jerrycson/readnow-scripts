@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24chk 다섯째 웹앱 1.78.519",
+ "since": "2026-11-12T12:15:56Z",
+ "beat": "2026-11-12T12:15:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24chk 넷째 웹앱 1.78.518 (f602d89d)",
   "at": "2026-11-12T12:03:33Z"
  },
- "host": null
+ "host": "vm"
 }
