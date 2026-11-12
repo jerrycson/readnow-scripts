@@ -3,7 +3,11 @@
  "what": "adapt9 🔄 적응 틀 판 내기(웹앱·클라우드·공용 적응 엔진)",
  "since": "2026-11-12T15:12:17Z",
  "beat": "2026-11-12T15:12:17Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: 우리숍 전용 서버 readnow-shop 판 내기(shopsrv)",
+  "at": "2026-11-12T15:15:19Z"
+ },
  "last": {
   "who": "lead",
   "done": "spfull 둘째 클라우드 0.35.166 push bc775622",
