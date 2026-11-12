@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "클라우드 배포 워크플로 묶음 나누기(deployfix)",
+ "since": "2026-11-12T16:03:22Z",
+ "beat": "2026-11-12T16:03:22Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "front2 웹앱 1.78.531 · 클라우드 0.35.173 · 공용 판매자 배우기 0.3.1 · 노선표 0.14.178 · 수집기 1.89.285 끌올 강화 push ba1b4090",
   "at": "2026-11-12T16:03:16Z"
  },
- "host": null
+ "host": "vm-deployfix"
 }
