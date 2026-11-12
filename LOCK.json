@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "adapt10 둘째 판 — PC·번외 장부 쓰기 고침",
+ "since": "2026-11-12T18:43:16Z",
+ "beat": "2026-11-12T18:43:16Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 책 정보 0.1.4(bookinfo1)",
   "at": "2026-11-12T18:24:08Z"
  },
- "host": null
+ "host": "vm-adapt10"
 }
