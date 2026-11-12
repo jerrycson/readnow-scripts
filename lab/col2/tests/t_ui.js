@@ -42,6 +42,16 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     ok(/이 PC: MJ-TEST · 🏢 사무실/.test(hd.t) && hd.b.every(Boolean) && hd.sw <= 380, '머리띠 = 이 PC 이름·종류 · 🗒 ❓ ⚙ ▁ · 380 폭 안(가로 넘침 없음)', JSON.stringify(hd));
     ok(JSON.stringify(await order()) === JSON.stringify(['now', 'y24', 'go', 'al', 'reads', 'work']), '처음 칸 = 지금 · 예스24 · 바로 가기 · 🟧 알라딘 읽기 · 최근 읽기 · 작업 창(옛 칸 둘은 숨김 — 지우지 않음)', (await order()).join(','));
     ok(await p.evaluate(() => !document.querySelector('[data-card="work"]').open && !document.querySelector('[data-card="reads"]').open && !document.querySelector('[data-card="now"]').open && !!document.getElementById('glance') && !!document.getElementById('fRead') && !!document.getElementById('fPause')), '점검용 칸(작업 창·최근 읽기)은 처음엔 접힘 · (11/11) 앞면은 한눈 카드(▶ 지금 읽기 · ⏸ 멈춤) · 자세한 상태 칸도 접힘');
+    console.log('  · (11/12 col2ui2) 큰 상태 줄 · 주요 카드 · 🔧 자세히 접기');
+    { await p.waitForFunction(() => document.getElementById('glLv').textContent !== '확인 중', null, { timeout: 6000 }).catch(() => {});
+      const g = await p.evaluate(() => ({ lv: document.getElementById('glLv').textContent, cls: document.getElementById('glance').className, pc: document.getElementById('glPc').textContent, ver: document.getElementById('glVer').textContent, now: document.getElementById('glNow').textContent,
+        mc: ['mcAl', 'mcY24', 'mcNv', 'mcJobs', 'mcLoad'].map((i) => { const e = document.getElementById(i); return i + ':' + (!!e && !e.hidden && e.getBoundingClientRect().height > 0); }), more: document.getElementById('more').open, inMore: !!document.querySelector('#more #cards [data-card="now"]'), cardsVis: document.querySelector('[data-card="now"] > summary').checkVisibility() }));
+      ok(/✅ 정상|🖐 사람 손 필요|⏸ 쉬는 중|⛔ 멈춤/.test(g.lv) && /gl big (ok|human|rest|stop)/.test(g.cls) && g.pc === 'MJ-TEST' && /번외 /.test(g.ver) && g.now, '맨 위 큰 상태 줄 = 전체 상태(색)·이 PC·번외 판·지금 하는 일', JSON.stringify(g));
+      ok(g.mc.join() === 'mcAl:true,mcY24:true,mcNv:false,mcJobs:true,mcLoad:true', '주요 카드 밖에 — 🟧 알라딘 · 🟦 예스24 · 📋 맡긴 일 · 🔋 부하(🟩 네이버는 로거·맡은 PC만)', g.mc.join());
+      ok(!g.more && g.inMore && g.cardsVis === false, '나머지 칸(자세한 상태·바로 가기·작업 창 …)은 🔧 자세히 안 — 처음엔 접힘(지우지 않음)', JSON.stringify([g.more, g.inMore, g.cardsVis]));
+      const lgBtn = await p.evaluate(() => ({ al: document.getElementById('mAlB').textContent, y: document.getElementById('mY24B').textContent }));
+      ok(!/로그인/.test(lgBtn.al + lgBtn.y), '사람 손이 필요 없으면 카드에 큰 로그인 단추 없음', JSON.stringify(lgBtn));
+      await p.click('#more > summary'); await wait(400); ok(await p.evaluate(() => document.getElementById('more').open && document.querySelector('[data-card="now"] > summary').checkVisibility()), '🔧 자세히 누르면 펼침'); }
     console.log('  · 🔗 바로 가기');
     await p.evaluate(() => { document.querySelector('[data-card="go"]').open = true; }); /* (11/11 col2ui1) 바로 가기 칸은 처음엔 접힘 */ await wait(300);
     const goIds = await p.evaluate(() => [...document.querySelectorAll('#gobox [data-go]')].map((b) => b.dataset.go));
@@ -100,6 +110,8 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     const cfgF = JSON.parse(fs.readFileSync(path.join(HOME, 'col2.json'), 'utf8')); ok(cfgF.ui && cfgF.ui.keys.log === 'Alt+K', 'PC마다 저장 — 도우미 col2.json 의 ui');
     console.log('③ 로거 PC');
     await H.api('POST', '/cfg', { pc: 'LOGGER-1', pcSrc: 'pc' }); await p.reload(); await p.waitForFunction(() => /로거/.test(document.getElementById('hdP').textContent), null, { timeout: 8000 }).catch(() => {}); await wait(800);
+    { const m = await p.evaluate(() => ({ y: document.getElementById('mcY24').hidden, nv: document.getElementById('mcNv').hidden, ch: document.getElementById('mAlCh').textContent, k: document.getElementById('glKind').textContent, more: document.getElementById('more').open }));
+      ok(m.y && !m.nv && /공개 화면만/.test(m.ch) && /로거/.test(m.k) && m.more, '로거: 🟦 예스24 카드 없음 · 🟩 네이버 카드 보임 · 🟧 알라딘 = 공개 화면만 · 🔧 자세히 연 상태는 기억', JSON.stringify(m)); }
     const lgo = await p.evaluate(() => [...document.querySelectorAll('#gobox [data-go],#gobox [data-gq]')].map((b) => b.dataset.go || b.dataset.gq));
     ok(/🛰 로거/.test(await p.textContent('#hdP')) && !(await order()).includes('y24') && lgo.length && lgo.every((i) => GO.LINKS.find((l) => l.id === i) && !GO.LINKS.find((l) => l.id === i).shop), '로거: 예스24 칸 없음 · 바로 가기는 알라딘 공개 화면·설명서만', lgo.join(','));
     const gr = await H.api('POST', '/go', { id: 'al-shop' }); ok(gr.st === 403 && goLog().length === 2, '로거에서 우리 숍 열기는 도우미가 거절(약속 0) · 크롬에 안 넘김', gr.j && gr.j.err);
