@@ -18,7 +18,7 @@
   ];
   /* 기본값은 col2-config.js(COL2)와 각 일 파일 기본값에서 — 여기 적은 숫자는 그 파일에 기본값이 없을 때만(시험 t_settings가 일 파일 글과 견줌) */
   const AL_DEF = { chkMin: 20, confirmMin: 30, delivMin: 30, listMin: 60, qnaMin: 120, gapA: 3000, gapB: 6000, hourCap: 30, dayCap: 300, cool429Min: 30, nightFrom: 1, nightTo: 5 }; /* col2-al.js C() 기본값과 같음 */
-  const Y24_DEF = { ordMin: 5, prdH: 24, tourH: 24 }; /* col2-y24.js C() 기본값과 같음 */
+  const Y24_DEF = { ordMin: 5, prdH: 24, tourH: 24, takeover: true, tkHour: 3 }; /* col2-y24.js C() 기본값과 같음 */
   const RLG_DEF = { perHour: 3, perDay: 10, gapMin: 5, failStop: 2 }; /* col2-relogin.js DEF와 같음 */
   /* 표 한 줄: k 이름 · g 묶음 · t 이름표 · sc 범위 · ty int|num|bool|time · lo~hi(저장 값 단위) · mul(보이는 값 = 저장 값 ÷ mul) · u 단위 · f 자주(often)/가끔(some)/드묾(rare)
    *  · p = col2.json 안 경로 · dk = 기본값 찾는 곳(COL2 경로 'PACE.dayCap' 또는 'AL.chkMin' 같은 일 파일 기본값) · i = ⓘ 설명(숨김) */
@@ -71,6 +71,8 @@
     S('on', 'pc', '번외 수집', 'pc', 'bool', 0, 1, ['on'], 'X.off', { f: 'often', i: '끄면 숨은 크롬을 닫고 모든 그림자 일을 멈춤 · 운영 수집기는 그대로' }),
     S('auto', 'pc', '공개 화면 자동 읽기', 'pc', 'bool', 0, 1, ['auto'], 'AUTO.on', { i: '웹앱이 넘긴 표본 책을 차례로 그림자 읽기' }),
     S('y24', 'pc', '🟦 예스24 판매관리 읽기', 'pc', 'bool', 0, 1, ['y24'], 'X.on', { f: 'often' }),
+    S('y24cfg.takeover', 'pc', '🟦 예스24 다른 곳 로그인 이어받기', 'pc', 'bool', 0, 1, ['y24cfg', 'takeover'], 'Y24.takeover', { f: 'often', i: '(11/12) 다른 곳(휴대폰·다른 크롬)에서 판매관리에 로그인해 이 PC 세션이 끊기면 「이미 로그인된 예스24」 화면에서 저장된 계정으로 그 세션을 끊고 이 PC가 다시 가져옴 · 예스24를 맡은 PC만 · 출고 중엔 안 함 · 끄면 예전처럼 멈추고 사람을 기다림' }),
+    S('y24cfg.tkHour', 'pc', '🟦 예스24 이어받기 한 시간', 'pc', 'int', 1, 10, ['y24cfg', 'tkHour'], 'Y24.tkHour', { u: '번', f: 'rare', i: '서로 끊기를 되풀이하지 않게 한 시간에 이만큼까지만 이어받음' }),
     S('y24Jobs', 'pc', '🟦 예스24 맡긴 일도 여기서', 'pc', 'bool', 0, 1, ['y24Jobs'], 'X.on', { i: '주문접수확인·발송처리를 이 PC 번외가 함' }),
     S('al', 'pc', '🟧 알라딘 샵매니저 읽기', 'pc', 'bool', 0, 1, ['al'], 'X.off', { f: 'often', i: '읽기만 · 기본 꺼짐' }),
     S('alOwn', 'pc', '🏠 알라딘 로그인 자리 이어받기', 'pc', 'bool', 0, 1, ['alOwn'], 'X.off', { i: '켜면 이 PC 운영 수집기는 알라딘 로그인 자리를 놓고, 번외가 그 자리로 샵매니저 읽기를 맡음(번외가 30분 넘게 안 보이면 운영이 되찾음) · 로거 PC는 늘 끔' }),
