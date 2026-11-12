@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "benchrel: 수집기 netFlush 빈 jobs 고침 판 내기",
- "since": "2026-11-12T23:43:38Z",
- "beat": "2026-11-12T23:43:38Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 2개 넣음 · 남은 0개",
-  "at": "2026-11-12T20:55:07Z"
+  "who": "lead",
+  "done": "수집기 1.89.292 netFlush 빈 jobs 고침 · a4155410",
+  "at": "2026-11-12T23:48:00Z"
  },
- "host": "vm-benchrel"
+ "host": null
 }
