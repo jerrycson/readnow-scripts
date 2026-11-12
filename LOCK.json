@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "col2ui 번외 화면",
- "since": "2026-11-12T10:15:03Z",
- "beat": "2026-11-12T10:15:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "recheck1 웹앱 1.78.514 사후 확인 (dd5785c9)",
-  "at": "2026-11-12T10:14:46Z"
+  "done": "번외 0.1.37 col2ui2 옆 창 새 모양 (fb9001f3)",
+  "at": "2026-11-12T10:17:40Z"
  },
- "host": "vm"
+ "host": null
 }
