@@ -1,2 +1,2 @@
-doc=app_settings/research_pulse
-# 3101917903
+@mirror mirror/20261112-061129-6957.json
+# 11318333
