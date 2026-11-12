@@ -99,8 +99,14 @@ console.log('⑧ 💾 저장 — 가짜 Firestore·가짜 인터넷으로 한 �
   const r2 = await M.tick(3000); ok(r2.n === 0, '다 찬 책은 다시 묻지 않음');
   store.set('prd_listings/L2', { isbn13: '9788900000009', status: '판매중', active: true, firstSeenAt: '2026-11-12T01:00:00Z', bookId: 'B2', title: '번호 모르는 책' }); M.state.cands = null; M.state.q = null; const n0 = urls.length;
   await M.tick(3000); ok(!store.get('bk_info/9788900000009') && M.state.have.get('9788900000009').nx > Date.now() + 5 * 3600e3 && urls.length - n0 <= 1, '예스24 번호를 모르고 그려 읽기도 없으면: 쓰지 않고 6시간 뒤(실패로 세지 않음 · 알라딘으로 넘기지 않음)');
+  /* 예스24 번호를 모르는 책 → 교보 검색(표지 칸 ISBN 같은 상품만) → 교보 상품 화면 · 그려 읽기 없이 */
+  const ISB3 = '9788900000017'; store.set('prd_listings/L3', { isbn13: ISB3, status: '판매중', active: true, firstSeenAt: '2026-11-12T02:00:00Z', bookId: 'B3', title: '교보 책' }); M.state.cands = null; M.state.q = null;
+  const KBP = `<html>${ISB3}<h2 class="title_heading"><span>책 소개</span></h2><div class="intro_bottom"><div class="info_text">교보 소개입니다</div></div><h2 class="title_heading"><span>목차</span></h2><ul><li>1부</li><li>2부</li></ul><h2 class="title_heading"><span>작가정보</span></h2><div class="writer_info_box"><p>작가 소개 글</p></div></html>`;
+  const f0 = fetchFn; const urls2 = []; M.state.pace = {}; const M2 = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), bucket: () => ({ file: () => ({ save: async () => {} }) }), fetchFn: async (u) => { urls2.push(u); if (/search\.kyobobook/.test(u)) return { ok: true, status: 200, url: u, text: async () => `<div data-kbbfn-pid="S000111" data-kbbfn-bid="9788999999999"></div><div data-kbbfn-pid="S000222" data-kbbfn-bid="${ISB3}"></div>`, headers: { get: () => 'text/html' } }; if (/detail\/S000222/.test(u)) return { ok: true, status: 200, url: u, text: async () => KBP, headers: { get: () => 'text/html' } }; return f0(u); } });
+  await M2.tick(20000); const d3 = store.get('bk_info/' + ISB3); ok(d3 && d3.t.intro === '교보 소개입니다' && d3.t.toc === '1부\n2부' && d3.t.auth === '작가 소개 글' && d3.srcs.kyobo.via === 'search' && d3.srcs.kyobo.id === 'S000222', `예스24 번호 모름 → 교보 검색(같은 ISBN 상품만 · 추천 S000111 안 잡음) → 교보 화면: ${d3 && JSON.stringify(d3.srcs.kyobo)}`);
+  ok(!urls2.some((u) => /aladin/.test(u) && u.includes(ISB3)) && d3.full, '교보로 다 차면 알라딘 안 물음(교보에도 없는 책만 알라딘)');
   const pvr = await M.pvTick(); const d2 = store.get('bk_info/' + ISBN); ok(pvr.share === 1 && d2.pv && d2.pv.from === 'listing' && d2.pvN === 1 && !files.length, '미리보기: 같은 책 매물 것을 함께 씀(받기 0)');
-  const dg = await M.diag(); ok(dg.cands.act === 2 && dg.haveAct === 1 && dg.fullAct === 1 && dg.pvAct === 1 && dg.fields.intro === 1, `진단 숫자: ${JSON.stringify({ act: dg.cands.act, have: dg.haveAct, full: dg.fullAct, pv: dg.pvAct })}`);
+  const dg = await M.diag(); ok(dg.cands.act === 3 && dg.haveAct >= 1 && dg.fullAct === 1 && dg.pvAct === 1 && dg.fields.intro === 1, `진단 숫자: ${JSON.stringify({ act: dg.cands.act, have: dg.haveAct, full: dg.fullAct, pv: dg.pvAct })}`);
   const pub = B.pubOf(d2); ok(pub.t.intro && pub.b.pages === 320 && pub.pv.length === 1, '공개 요약(우리숍) 꼴');
 
   console.log('⑨ 우리숍·웹앱이 같은 칸 이름을 씀');
