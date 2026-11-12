@@ -1,2 +1,2 @@
-doc=col2_y24_cmd/y24w-2611120846241kg,col2_y24_cmd/y24w-261112084759j0c,col2_y24_cmd/y24w-261112084859qde
-# 2615930
+run=1&mem=1&doc=app_settings/heavy_run
+# 200123233
