@@ -1,2 +1,2 @@
-doc=app_settings/seller_learn
-# 905030389
+col2=2026-11-12
+# 1798820813
