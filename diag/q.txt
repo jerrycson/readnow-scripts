@@ -1,2 +1,2 @@
-vlearn=1&mem=1&run=1
-# 77352074
+run=1&soldfill=903578&reset=gone&from=2026-11-12T09:50
+# 219021654
