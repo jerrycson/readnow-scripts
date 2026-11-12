@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "rel12 장부 엔진 — push",
- "since": "2026-11-12T07:03:38Z",
- "beat": "2026-11-12T07:07:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "mkt1 둘째 — 웹앱 1.78.503 · 4d193da6",
-  "at": "2026-11-12T07:02:10Z"
+  "done": "rel12 장부 엔진 — 웹앱 1.78.504 · fc481c7e",
+  "at": "2026-11-12T07:07:44Z"
  },
- "host": "vm"
+ "host": null
 }
