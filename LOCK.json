@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cres1 클라우드 연구",
+ "since": "2026-11-12T07:23:11Z",
+ "beat": "2026-11-12T07:23:11Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rel12 장부 엔진 — 웹앱 1.78.504 · fc481c7e",
   "at": "2026-11-12T07:07:44Z"
  },
- "host": null
+ "host": "vm"
 }
