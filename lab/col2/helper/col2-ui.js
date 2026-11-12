@@ -111,7 +111,24 @@ details.grp{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:
 .srow .sl{min-width:0;font-size:12.5px}.srow .sv{display:flex;align-items:center;gap:3px;justify-self:end}.srow .sv input[type=number]{width:72px;text-align:right}.srow .sv input[type=time]{width:92px}.srow .sd{grid-column:1/-1;font-size:11px;color:var(--sub)}.srow .se{grid-column:1/-1;font-size:11px}.srow .se:empty{display:none}.srow .ibt{grid-column:1/-1}
 .bdg{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:999px;border:1px solid var(--line);margin-left:3px}.bdg.all{border-color:var(--pri);color:var(--pri)}.bdg.pc{border-color:var(--warn);color:var(--warn)}
 .srow .rs{padding:0 5px;font-size:11px;margin:0}.sgh{font-size:11.5px;color:var(--sub);margin:6px 0 0;font-weight:700}
-.lg{font-size:11.5px;padding:2px 0;border-bottom:1px dashed var(--line)}`;
+.lg{font-size:11.5px;padding:2px 0;border-bottom:1px dashed var(--line)}
+/* (11/12 col2ui2) 큰 상태 줄 · 주요 카드 · 🔧 자세히 — 로거 도우미 1.8.21 꼴 */
+.gl.big{border:0;color:#fff;padding:10px 12px;gap:4px;background:#5B6B66}.gl.big.ok{background:#2F7D4F}.gl.big.human{background:#C46A12}.gl.big.rest{background:#A8861B}.gl.big.stop{background:#B0322A}
+.bigrow{display:grid;grid-template-columns:1fr;gap:4px 14px}.bc{display:flex;flex-direction:column;min-width:0}.bc b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bc .bs{font-size:12.5px;opacity:.92;overflow-wrap:anywhere}
+.bst{flex-direction:row;align-items:center;gap:8px}@media (max-width:559px){.bc:not(.bst){flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:0 8px}.bc b{font-size:13.5px}}.bst b{font-size:20px}.gl.big .gdot{width:13px;height:13px;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+@media (min-width:560px){.bigrow{grid-template-columns:minmax(150px,1fr) minmax(150px,1fr) minmax(200px,1.4fr)}.bst b{font-size:22px}}
+#top>.glerr{margin:0 0 8px}#top>.front{margin:0 0 4px}
+.mgrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px}@media (min-width:640px){.mgrid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}}#top>.front{max-width:960px}
+.mc{background:var(--card);border:1px solid var(--line);border-radius:var(--r,10px);padding:9px 11px;display:flex;flex-direction:column;gap:6px;min-width:0;box-shadow:0 1px 2px rgba(0,0,0,.04);border-top:4px solid var(--line)}.mc[hidden]{display:none}
+.mc.al{border-top-color:#E8833A}.mc.y24{border-top-color:#2F6FD0}.mc.nv{border-top-color:#2DB400}.mc.jb{border-top-color:#7A6AA8}.mc.ld{border-top-color:#8A9A95}
+.mh{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.mh>b{font-size:15px;margin-right:auto}.mh .ch{font-size:12.5px;font-weight:700}
+.todo{font-size:16px;font-weight:700;line-height:1.4;color:var(--no);background:var(--noSoft);border-radius:8px;padding:6px 8px}.todo[hidden]{display:none}
+.ml{font-size:12.5px;overflow-wrap:anywhere}.ml:empty{display:none}.mbtn:empty{display:none}.mbtn{display:flex;flex-wrap:wrap;gap:6px}
+button.big{font-size:15px;font-weight:700;padding:9px 12px;border-radius:9px;margin:0;flex:1 1 auto}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tiles:empty{display:none}.tl{background:var(--bg);border-radius:8px;padding:5px 6px;display:flex;flex-direction:column;align-items:flex-start;min-width:0}.tl b{font-size:20px;line-height:1.15}.tl span{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.tl.wa b{color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}.bar.big{height:12px;border-radius:6px}.bar i.mid{background:var(--warn)}.bar i.hot{background:var(--no)}.mc .glbar .bar{height:10px;border-radius:5px}.mc .glt b{font-size:14px}
+details.more{margin:6px 8px 8px;border:1px solid var(--line);border-radius:var(--r,10px);background:var(--card)}details.more>summary{cursor:pointer;padding:8px 10px;font-weight:700;font-size:13.5px;list-style:none}details.more>summary::-webkit-details-marker{display:none}details.more>summary::before{content:'▸ ';color:var(--sub)}details.more[open]>summary::before{content:'▾ '}details.more>summary .k{font-weight:400}
+details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:0 8px;align-items:start}}`;
 
   /* side({ api, ls, ver }) — 옆 창(상태 창 /) 골격 · 칸 내용(HTML)은 도우미 statusHtml 이 그려 둠 · 여기선 다룸·고침·설정 */
   function side(o) {
@@ -171,7 +188,7 @@ details.grp{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:
         $('alb').innerHTML = want === 'hu' ? '<button class="p" id="allg">✅ 로그인 다 함 — 창 닫고 확인</button>' : want === 'lg' ? '<button class="p" id="allg">🔐 알라딘 로그인 (처음 한 번)</button>' : want === 'run' ? '<button data-a="confirm">📦 주문확인요청 지금</button><button data-a="list">📋 상품 목록 지금</button>' : '';
         const lg = $('allg'); if (lg) lg.onclick = async () => { msg('…'); const j = await post('/al/login', { why: '옆 창 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
         $('alb').querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => { const j = await post('/al/run', { what: b.dataset.a }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); })); }
-      const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
+      liftAlX(); const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
     function drawY24(s) { const y = s.y24 || {}; let h; if (y.logger) h = '<span class="k">로거 PC — 예스24 판매관리 읽기 안 함(약속 0)</span>'; else if (y.mine === false) h = '<span class="k">🔒 예스24는 ' + E(y.holder || 'HOME') + '이(가) 맡음 — 이 PC 번외는 예스24 일을 하지 않음(바꾸기: 웹앱 ⚙ 설정 › 🟦 예스24)</span>'; else if (!y.on) h = '<span class="wa">꺼 둠</span> <span class="k">' + E(s.on ? '(⚙ 설정 › 일 켜기·끄기에서 켬)' : '(번외 수집이 꺼져 있음)') + '</span>';
       else if (y.login === 'need') h = '<span class="no">🔐 예스24 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 예스24 창이 앞으로 나옵니다 — 그 창에서 로그인하면 저절로 숨고 읽기를 이어 갑니다(아이디·비밀번호는 저장하지 않음)' + (y.loginMsg ? ' · 까닭: ' + E(y.loginMsg) : '') + '</span>' + (y.reWhy ? '<br><span class="wa">스스로 다시 로그인을 안 하는 까닭: ' + E(y.reWhy.why) + '</span>' : '') + (y.already ? '<br><span class="no">⛔ 「이미 로그인된 예스24」 화면 ' + E(y.already.n) + '번 — 되풀이 로그인하지 않고 멈춤 · 아래 단추로 사람이 한 번</span>' : '');
       else if (y.login === 'wait') h = '<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김 · 입력이 없으면 저장된 계정으로 번외가 스스로 로그인</span>';
@@ -198,36 +215,82 @@ details.grp{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:
       const y = s.y24 || {}, a = s.al || {}, ch = s.chrome || {}, p = s.pace || {}, R = s.relogin || {}, off = kind === 'logger';
       if (s.pause) P.push({ l: 'warn', w: '⏸ 잠깐 멈춤', t: hhmm(s.pause) + '에 저절로 다시 켬', fix: '지금 켜기', go: () => post('/pause', { min: 0 }) });
       else if (!s.on) P.push({ l: 'err', w: '번외 수집 꺼짐', t: '켜야 읽음 — 운영 수집기는 그대로', fix: '켜기', go: () => post('/cfg', { on: true, src: 'pc' }) });
-      if (s.on && !off && y.on && y.login === 'need') P.push({ l: 'err', w: '예스24 로그인 풀림', t: (R.y24 && R.y24.has ? '저장된 계정으로 스스로 다시 해 보거나, ' : '') + '한 번 로그인하면 이어 읽음', fix: '로그인', go: () => post('/y24/login', { why: '한눈 카드 [고치기]' }) });
+      if (s.on && !off && y.on && y.login === 'need') P.push({ l: 'err', h: 1, w: '예스24 로그인 풀림', t: (R.y24 && R.y24.has ? '저장된 계정으로 스스로 다시 해 보거나, ' : '') + '한 번 로그인하면 이어 읽음', fix: '로그인', go: () => post('/y24/login', { why: '한눈 카드 [고치기]' }) });
       if (s.on && !off && a.on && a.pp) P.push({ l: 'err', w: '알라딘 읽기 멈춤(핑퐁 의심)', t: '기록을 보고 까닭 확인', fix: '기록 보기', go: async () => { if (root.__jw && root.__jw.setOpen) root.__jw.setOpen(true); return { ok: true, msg: '기록창' }; } });
-      else if (s.on && !off && a.on && a.login === 'need') P.push({ l: 'err', w: '알라딘 샵매니저 로그인 풀림', t: a.seat ? '한 번 로그인하면 이어 읽음' : '로그인 자리가 나면 이어 감', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
-      for (const pf of ['y24', 'al']) { const r = R[pf]; if (!off && r && r.stop) P.push({ l: 'err', w: (pf === 'al' ? '알라딘' : '예스24') + ' 스스로 다시 로그인 멈춤', t: '저장된 계정을 확인하고 [다시 해 보기]', fix: '계정 보기', go: async () => { openGrp('cred'); return { ok: true, msg: '계정 칸' }; } }); }
+      else if (s.on && !off && a.on && a.todo) P.push({ l: 'err', h: 1, w: '알라딘 — 사람이 할 일', t: '🟧 알라딘 카드의 큰 단추를 눌러 주세요', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) }); /* (11/12 col2ui2) 사람이 해야 하는 순간이면 큰 상태 줄이 주황 */
+      else if (s.on && !off && a.on && a.login === 'human') P.push({ l: 'warn', h: 1, w: '알라딘 — 평범한 크롬 창에서 로그인 기다림', t: '그 창에서 로그인하고 닫거나 [✅ 로그인 다 함]', fix: '✅ 로그인 다 함', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
+      else if (s.on && !off && a.on && a.login === 'need') P.push({ l: 'err', h: 1, w: '알라딘 샵매니저 로그인 풀림', t: a.seat ? '한 번 로그인하면 이어 읽음' : '로그인 자리가 나면 이어 감', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
+      for (const pf of ['y24', 'al']) { const r = R[pf]; if (!off && r && r.stop) P.push({ l: 'err', h: 1, w: (pf === 'al' ? '알라딘' : '예스24') + ' 스스로 다시 로그인 멈춤', t: '저장된 계정을 확인하고 [다시 해 보기]', fix: '계정 보기', go: async () => { openGrp('cred'); return { ok: true, msg: '계정 칸' }; } }); }
       if (s.on && ch.coolUntil) P.push({ l: 'err', w: '숨은 크롬이 자꾸 꺼짐', t: String(ch.coolUntil).slice(11, 16) + '까지 쉼 — 다시 열어 볼 수 있음', fix: '다시 열기', go: () => post('/win/reopen', { why: '한눈 카드 [고치기]' }) });
       if (s.on && p.coolMs) P.push({ l: 'warn', w: '알라딘 「요청 많음」', t: Math.ceil(p.coolMs / 60000) + '분 쉬고 저절로 다시' });
+      if (s.on && !s.pause && s.busy && s.busy.why) P.push({ l: 'warn', w: '쉬는 중', t: String(s.busy.why).slice(0, 90) }); /* (11/12 col2ui2) CPU 바쁨·출고 보호 */
       if (s.relay && s.relay.err) P.push({ l: 'warn', w: '웹앱이 결과를 못 올림', t: '이 PC 웹앱이 열려 있는지 확인' });
       return P.sort((x, z) => (x.l === 'err' ? 0 : 1) - (z.l === 'err' ? 0 : 1)); }
     const chipOf = (el, l, t) => { if (!el) return; el.className = 'ch ' + l; el.querySelector('i').textContent = t; };
-    function drawGlance(s) { const g = $('glance'); if (!g) return; const P = probs(s); const lv = !s ? 'err' : P.some((x) => x.l === 'err') ? 'err' : P.length ? 'warn' : 'ok';
-      $('glDot').className = 'gdot ' + lv; $('glPc').textContent = (s && s.pc) || '이 PC'; $('glKind').textContent = kind === 'logger' ? '🛰 로거' : '🏢 사무실';
-      const y = (s && s.y24) || {}, a = (s && s.al) || {}, nv = s && s.naver; const C = (k) => g.querySelector(`.ch[data-s="${k}"]`);
-      if (kind === 'logger') chipOf(C('al'), s && s.on ? 'ok' : '', '공개 화면만');
-      else if (a.on) chipOf(C('al'), a.login === 'ok' ? 'ok' : a.login === 'need' || a.pp ? 'err' : 'warn', a.pp ? '멈춤' : a.login === 'ok' ? '로그인' : a.login === 'need' ? '로그인 필요' : '확인 중');
-      else chipOf(C('al'), s && s.on ? 'ok' : '', '공개 화면');
-      const cy = C('y24'); cy.hidden = kind === 'logger'; if (!y.on) chipOf(cy, '', '꺼 둠'); else chipOf(cy, y.login === 'ok' ? 'ok' : y.login === 'need' ? 'err' : 'warn', y.login === 'ok' ? '로그인' : y.login === 'need' ? '로그인 필요' : y.login === 'wait' ? '로그인 창 열림' : '확인 중');
-      const cn = C('nv'); cn.hidden = !nv; if (nv) chipOf(cn, !nv.on ? '' : nv.login === 'ok' || nv.ok ? 'ok' : nv.login === 'need' ? 'err' : 'warn', !nv.on ? '꺼 둠' : nv.login === 'need' ? '로그인 필요' : nv.login === 'ok' || nv.ok ? '돎' : '확인 중');
+    /* (11/12 col2ui2 정범님 '로거 도우미처럼 직관적·한눈에') 큰 상태 줄 — 정상(초록) · 사람 손 필요(주황) · 쉬는 중(노랑) · 멈춤(빨강) */
+    const LV = { ok: '✅ 정상', human: '🖐 사람 손 필요', rest: '⏸ 쉬는 중', stop: '⛔ 멈춤' };
+    function bigLv(s, P) { if (!s) return 'stop'; if (P.some((x) => x.h)) return 'human'; if (P.some((x) => x.l === 'err')) return 'stop'; if (P.length || s.busy) return 'rest'; return 'ok'; }
+    function drawGlance(s) { const g = $('glance'); if (!g) return; const P = probs(s); const bl = bigLv(s, P);
+      g.className = 'gl big ' + bl; $('glDot').className = 'gdot ' + ({ ok: 'ok', human: 'warn', rest: 'warn', stop: 'err' })[bl]; $('glLv').textContent = LV[bl]; $('glPc').textContent = (s && s.pc) || '이 PC'; $('glKind').textContent = kind === 'logger' ? '🛰 로거' : '🏢 사무실';
+      const y = (s && s.y24) || {}, a = (s && s.al) || {};
       const p = (s && s.pace) || {}; const n = +p.dayN || 0, cap = +p.dayCap || 0; $('glN').textContent = `${n.toLocaleString('ko-KR')} / ${cap ? cap.toLocaleString('ko-KR') : '—'}장`; const bi = $('glBar'); bi.style.width = (cap ? Math.min(100, Math.round((n / cap) * 100)) : 0) + '%'; bi.className = cap && n >= cap ? 'full' : '';
-      const au = (s && s.auto) || {}; let now = !s ? '도우미를 찾는 중' : s.pause ? '⏸ 잠깐 멈춤 — ' + hhmm(s.pause) + '에 다시 켬' : !s.on ? '꺼짐' : s.reading ? '📖 알라딘 공개 화면 읽는 중' : cap && n >= cap ? '✓ 오늘 몫을 다 읽음 — 내일 이어 감' : au.msg ? String(au.msg).split(' — ')[0].slice(0, 70) : '돌고 있음';
-      if (s && s.on && !s.pause && au.nextMs != null && !s.reading && !(cap && n >= cap)) { const sec = Math.ceil(au.nextMs / 1000); now += ` · 다음 ${sec >= 120 ? Math.round(sec / 60) + '분' : sec + '초'} 뒤`; } $('glNow').textContent = now;
+      const au = (s && s.auto) || {}; let now = !s ? '도우미를 찾는 중' : s.pause ? '⏸ 잠깐 멈춤 — ' + hhmm(s.pause) + '에 다시 켬' : !s.on ? '꺼짐' : s.busy && s.busy.why ? String(s.busy.why).slice(0, 70) : s.reading ? '📖 알라딘 공개 화면 읽는 중' : cap && n >= cap ? '✓ 오늘 몫을 다 읽음 — 내일 이어 감' : au.msg ? String(au.msg).split(' — ')[0].slice(0, 70) : '돌고 있음';
+      if (s && s.on && !s.pause && !s.busy && au.nextMs != null && !s.reading && !(cap && n >= cap)) { const sec = Math.ceil(au.nextMs / 1000); now += ` · 다음 ${sec >= 120 ? Math.round(sec / 60) + '분' : sec + '초'} 뒤`; } $('glNow').textContent = now;
       const e = $('glErr'), top = P[0]; e.hidden = !top; if (top) { e.className = 'glerr' + (top.l === 'err' ? '' : ' warn'); $('glErrW').textContent = top.w + (P.length > 1 ? ` (외 ${P.length - 1})` : ''); $('glErrT').textContent = top.t; $('glFix').hidden = !top.go; $('glFix').textContent = top.fix || '고치기';
         $('glFix').onclick = async () => { msg('…'); try { const j = await top.go(); msg(j && j.ok === false ? '✗ ' + (j.err || '') : '✓ ' + ((j && j.msg) || top.fix)); } catch (er) { msg('✗ ' + er.message); } load(); }; e.title = P.map((x) => x.w + ' — ' + x.t).join('\n'); }
-      /* 앞면 단추 넷 — 로그인 · 지금 읽기 · 잠깐 멈춤 · 자세히 */
-      const need = !s || kind === 'logger' ? null : y.on && y.login === 'need' ? 'y24' : a.on && a.login === 'need' ? 'al' : null; const fl = $('fLogin');
+      /* 앞면 단추 넷 — 로그인 · 지금 읽기 · 잠깐 멈춤 · 설정 */
+      const need = !s || kind === 'logger' ? null : y.on && y.login === 'need' ? 'y24' : a.on && (a.login === 'need' || a.todo) ? 'al' : null; const fl = $('fLogin');
       fl.disabled = !need; fl.textContent = need ? '🔐 ' + (need === 'y24' ? '예스24' : '알라딘') + ' 로그인' : '🔐 로그인 ✓'; fl.title = need ? '그 사이트 창이 앞으로 나옴 — 직접 로그인하면 저절로 숨음' : kind === 'logger' ? '로거 PC는 로그인 일을 안 함' : '로그인이 필요한 곳 없음';
       fl.onclick = async () => { if (!need) return; const j = await post(need === 'y24' ? '/y24/login' : '/al/login', { why: '앞면 [로그인]' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
       const fp = $('fPause'); const ps = !!(s && s.pause), offN = !!(s && !s.on && !s.pause); fp.textContent = ps ? '▶ 다시 켜기' : offN ? '▶ 켜기' : '⏸ 30분 멈춤'; fp.className = ps || offN ? 'p' : ''; fp.title = ps ? '잠깐 멈춤을 풀고 곧바로 다시 켬' : offN ? '번외 수집 켜기' : '30분 동안 숨은 크롬을 닫고 쉼 — 그 뒤 저절로 다시 켬';
       fp.onclick = async () => { const j = ps ? await post('/pause', { min: 0 }) : offN ? await post('/cfg', { on: true, src: 'pc' }) : await post('/pause', { min: 30 }); msg(j && j.ok === false ? '✗ ' + (j.err || '') : '✓ ' + (ps ? '다시 켬' : offN ? '켰습니다' : '30분 멈춤 — 그 뒤 저절로 다시 켬')); load(); };
       const fr = $('fRead'); fr.disabled = !s || !s.on; fr.title = '쉬는 중이면 기다리지 않고 지금 다음 차례를 읽음(속도·하루 한도는 그대로)';
-      fr.onclick = async () => { const j = await post('/read/now', {}); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); }; }
+      fr.onclick = async () => { const j = await post('/read/now', {}); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
+      drawMain(s); }
+    /* ── (11/12 col2ui2) 주요 카드 — 🟧 알라딘 · 🟦 예스24 · 🟩 네이버(로거) · 📋 맡긴 일 · 🔋 부하 · 큰 숫자·막대·색 칩 · 단추는 사람 손이 필요할 때 큰 것 하나 ── */
+    const tile = (v, t, l) => `<div class="tl${l ? ' ' + l : ''}"><b>${E(v)}</b><span>${E(t)}</span></div>`;
+    const ago = (t) => { if (!t) return '아직'; const m = Math.max(0, Math.round((Date.now() - +new Date(t)) / 60000)); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : hhmm(+new Date(t)); };
+    function bigBtn(box, key, html, fn) { if (box.dataset.w === key) return; box.dataset.w = key; box.innerHTML = html; const b = box.querySelector('button'); if (b && fn) b.onclick = fn; }
+    /* (11/12 col2ui2 · cookie1과 합침) 🟧 알라딘 칸(자세히 안)이 그리는 「🔁 평소 크롬의 알라딘 로그인 가져오기」(#alimp)는 주요 카드 바깥으로 옮김 — 새로 그려지면 옛 것은 치움 */
+    function liftAlX() { const box = $('mAlX'); if (!box) return; const L = [...doc.querySelectorAll('[id="alimp"]')]; const fresh = L.find((e) => !box.contains(e)); if (fresh) { box.innerHTML = ''; box.appendChild(fresh); } else if (!L.length) box.innerHTML = ''; }
+    function drawMain(s) { if (!$('mainCards')) return; const lg = kind === 'logger', a = (s && s.al) || {}, y = (s && s.y24) || {}, nv = s && s.nv, jb = (s && s.jobs) || {}, ld = (s && s.load) || {};
+      const alGo = async () => { msg('…'); const j = await post('/al/login', { why: '🟧 알라딘 카드 큰 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
+      /* 🟧 알라딘 */
+      const ac = $('mAlCh'), at = $('mAlTodo'), aL = [], aB = $('mAlB');
+      if (!s) chipOf(ac, '', '—'); else if (lg) chipOf(ac, s.on ? 'ok' : '', '공개 화면만(로그인 없음)');
+      else if (!a.on) chipOf(ac, s.on ? 'ok' : '', '공개 화면 · 샵매니저 꺼 둠');
+      else chipOf(ac, a.pp ? 'err' : a.login === 'ok' ? 'ok' : a.login === 'need' ? 'err' : 'warn', a.pp ? '⛔ 멈춤(핑퐁 의심)' : a.login === 'ok' ? '로그인 ✓' : a.login === 'need' ? '🔐 로그인 필요' : a.login === 'human' ? '평범한 창에서 로그인 기다림' : a.login === 'wait' ? '로그인 창 열림' : '확인 중');
+      at.hidden = !(a.on && a.todo && !lg); if (!at.hidden) at.textContent = a.todo;
+      if (lg) aL.push('<span class="k">로거 PC — 우리 숍 로그인 일은 하지 않음(약속 0)</span>');
+      else if (a.on) { const d = a.day || {}; aL.push('<span class="' + (a.seat ? 'ok' : 'wa') + '">🪑 로그인 자리 ' + (a.seat ? '받음' : '아직 없음') + '</span>' + (a.login === 'ok' ? ' · 샵매니저 오늘 <b>' + (d.n || 0) + '</b>장(같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) + ')' : '')); }
+      $('mAlL').innerHTML = aL.join('<br>');
+      const aw = !s || lg || !a.on ? '' : a.login === 'human' ? 'hu' : a.login !== 'ok' || a.pp || a.todo ? 'lg' : '';
+      liftAlX();
+      bigBtn(aB, aw, aw === 'hu' ? '<button class="p big" id="mAlLg">✅ 로그인 다 함 — 창 닫고 확인</button>' : aw === 'lg' ? '<button class="p big" id="mAlLg">🔐 알라딘 로그인</button>' : '', alGo);
+      /* 🟦 예스24 — 로거엔 없음 */
+      $('mcY24').hidden = lg; if (!lg) { const yc = $('mY24Ch'); const w = y.w || {}, yj = y.jobs || {}, tk = y.tk || {};
+        if (!s) chipOf(yc, '', '—'); else if (y.mine === false) chipOf(yc, '', '🔒 ' + (y.holder || 'HOME') + ' 맡음'); else if (!y.on) chipOf(yc, '', '꺼 둠');
+        else chipOf(yc, y.login === 'ok' ? 'ok' : y.login === 'need' ? 'err' : 'warn', y.login === 'ok' ? '로그인 ✓' : y.login === 'need' ? '🔐 로그인 필요' : y.login === 'wait' ? '로그인 창 열림' : '확인 중');
+        const on = y.on && y.mine !== false; $('mY24T').innerHTML = on ? tile(w.wait || 0, '쓰기 대기', (w.wait || 0) ? 'wa' : '') + tile(yj.wait || 0, '맡긴 일 대기', (yj.wait || 0) ? 'wa' : '') + tile(tk.okN || 0, '오늘 이어받음', '') : '';
+        const yl = []; if (on) { yl.push('🔁 다른 곳 로그인 이어받기 ' + (tk.on ? '<span class="ok">켬</span>' : '<span class="wa">꺼 둠</span>') + (tk.why && y.login === 'need' ? ' <span class="k">· ' + E(tk.why) + '</span>' : ''));
+          yl.push('🧾 최근 처리: 주문 ' + E(ago(y.ord && y.ord.at)) + (y.ord && y.ord.n ? ' ' + y.ord.n + '건' : '') + ' · 등록상품 ' + (y.prd && y.prd.at ? E(ago(y.prd.at)) + ' ' + (y.prd.n || 0) + '권' : '아직') + (w.msg ? '<br><span class="k">✍ ' + E(String(w.msg).slice(0, 80)) + '</span>' : '')); }
+        $('mY24L').innerHTML = yl.join('<br>');
+        const yw = s && on && y.login === 'need' ? 'lg' : ''; bigBtn($('mY24B'), yw, yw ? '<button class="p big" id="mY24Lg">🔐 예스24 로그인</button>' : '', async () => { msg('…'); const j = await post('/y24/login', { why: '🟦 예스24 카드 큰 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); }); }
+      /* 🟩 네이버 — 로거 PC만(그 PC가 맡을 때) · 와이파이로만 나감 */
+      const nvOn = !!(nv && nv.on); $('mcNv').hidden = !(lg || nvOn); if (!$('mcNv').hidden) { const nt = nv && nv.net;
+        chipOf($('mNvCh'), !nvOn ? '' : !nt ? 'warn' : nt.ok ? 'ok' : 'err', !nvOn ? '꺼 둠' : !nt ? '📶 와이파이 확인 중' : nt.ok ? '📶 와이파이' : '🛑 와이파이 아님');
+        $('mNvT').innerHTML = nvOn ? tile((nv.ord && nv.ord.n) || 0, '주문', '') + tile(nv.q || 0, '올릴 대기', nv.q ? 'wa' : '') + tile(nv.calls || 0, '부른 수', '') : '';
+        $('mNvL').innerHTML = !nvOn ? '<span class="k">' + E((nv && nv.why) || '네이버 일 꺼 둠') + '</span>' : '🧾 주문 ' + E(ago(nv.ord && nv.ord.at)) + ' · 상품 ' + E(ago(nv.prd && nv.prd.at)) + ' · 쓰기 ' + (nv.write && nv.write.on ? '<span class="ok">켬</span>' : '<span class="k">꺼 둠</span>') + (nt && !nt.ok && nt.why ? '<br><span class="no">' + E(nt.why) + '</span>' : nt && nt.ok && nt.name ? '<br><span class="k">나가는 길: ' + E(nt.name) + '</span>' : ''); }
+      /* 📋 맡긴 일 */
+      const mine = jb.mine || [], dn = mine.reduce((t, x) => t + (+x.n || 0), 0);
+      chipOf($('mJbCh'), jb.err ? 'err' : jb.wait ? 'warn' : mine.length ? 'ok' : '', jb.err ? '못 읽음' : mine.length ? mine.length + '가지 맡음' : '맡은 일 없음');
+      $('mJbT').innerHTML = tile(mine.length, '맡은 일', '') + tile(dn, '오늘 처리', '') + tile(jb.wait || 0, '대기', jb.wait ? 'wa' : '');
+      $('mJbL').innerHTML = mine.length ? '<div class="chips">' + mine.slice(0, 8).map((x) => `<span class="ch ${x.can ? 'ok' : ''}" title="${E(x.k)}">${E(String(x.name || x.k).slice(0, 18))} <i>${+x.n || 0}${x.rate != null ? ' · ' + Math.round(x.rate * 100) + '%' : ''}</i></span>`).join('') + (mine.length > 8 ? ` <span class="k">외 ${mine.length - 8}</span>` : '') + '</div>' : '<span class="k">이 PC가 맡은 그림자 일이 아직 없음</span>';
+      /* 🔋 부하 */
+      const pct = ld.pct == null ? null : Math.round(+ld.pct); const bz = s && s.busy;
+      chipOf($('mLdCh'), ld.hot ? 'err' : bz ? 'warn' : pct == null ? '' : pct >= 80 ? 'err' : pct >= 50 ? 'warn' : 'ok', ld.hot ? '🪫 쉬는 중' : bz ? '⏸ 쉬는 중' : pct == null ? '재는 중' : '일함');
+      $('mLdN').textContent = pct == null ? '재는 중' : pct + '%'; const lb = $('mLdBar'); lb.style.width = (pct || 0) + '%'; lb.className = pct == null ? '' : pct >= 80 ? 'hot' : pct >= 50 ? 'mid' : '';
+      $('mLdL').innerHTML = bz && bz.why ? '<span class="wa">' + E(String(bz.why).slice(0, 90)) + '</span>' : '<span class="k">CPU가 바쁘면 번외가 먼저 쉼 · 출고 중에도 쉼</span>' + (ld.ps ? '<br><span class="k">최근 한 시간 창 다루기 ' + ld.ps + '번</span>' : ''); }
     if ($('fMore')) $('fMore').onclick = () => openOv('set', true);
     if ($('glBarBox')) $('glBarBox').onclick = () => openGrp('limit');
     /* ⓘ 설명 — 눌러야 보임(뒤에 오는 .ibt · 없으면 같은 줄 안의 .ibt) */
@@ -373,12 +436,14 @@ details.grp{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:
       if (inField && plain) return;
       const act = ['help', 'set', 'mini', 'go', 'reload'].find((a) => K[a] === c); if (!act) return; e.preventDefault(); e.stopImmediatePropagation();
       if (act === 'help' || act === 'set') openOv(act); else if (act === 'mini') setMini(!UI.mini, '단축키'); else if (act === 'reload') { load(); msg('↻ 새로 봄'); }
-      else if (act === 'go') { if (UI.mini) setMini(false, '바로 가기 단축키'); const el = cardOf('go'); if (el) { if (UI.cards.go.hide) { UI.cards.go.hide = false; apply(); save(); } el.open = true; el.scrollIntoView({ block: 'nearest' }); const q = $('goq'); if (q) q.focus(); } } }, true);
+      else if (act === 'go') { if (UI.mini) setMini(false, '바로 가기 단축키'); const el = cardOf('go'); if (el) { if ($('more')) $('more').open = true; if (UI.cards.go.hide) { UI.cards.go.hide = false; apply(); save(); } el.open = true; el.scrollIntoView({ block: 'nearest' }); const q = $('goq'); if (q) q.focus(); } } }, true);
     /* 자리·크기 알림(작은 단추일 때는 안 함 — 원래 크기를 덮지 않게) */
     let lastR = ''; setInterval(() => { if (UI.mini) return; const v = { x: screenX, y: screenY, w: outerWidth, h: outerHeight }; const k = JSON.stringify(v); if (k !== lastR && v.w > 200 && v.h > 150) { lastR = k; post('/win/hrect', v).catch(() => {}); } }, 15000);
     /* 고침 — 보일 때 4초 · 작은 단추이거나 창이 가려졌을 때 30초(메모리·CPU 아낌) */
     setInterval(() => { const slow = UI.mini || doc.hidden; if (edit && Date.now() - edit < 60000) return; edit = 0; if (Date.now() - lastLoad >= (slow ? 30000 : 4000) - 50) load(); }, 1000);
     apply(); drawGo(); doc.body.classList.toggle('mini', UI.mini); drawMini();
+    /* (11/12 col2ui2) 🔧 자세히(접기) — 처음엔 접힘 · 연 상태는 이 PC 기기 저장(rn3-more) */
+    const mo = $('more'); if (mo) { mo.open = !!ls.get('more', false); mo.addEventListener('toggle', () => { ls.set('more', mo.open); if (mo.open) load(); }); }
     /* 도우미에 저장된 이 PC 설정이 더 새것이면 그것으로 */
     api('GET', '/ui').then((j) => { if (j && j.ok) { const n = normalize(j.ui); if (n.at >= UI.at) { const was = UI.mini; UI = n; ls.set('ui', UI); apply(); drawGo(); doc.body.classList.toggle('mini', UI.mini); if (was !== UI.mini || UI.mini) setMini(UI.mini, '처음'); } else save(); } }).catch(() => {});
     load();

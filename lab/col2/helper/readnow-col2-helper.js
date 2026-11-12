@@ -352,7 +352,7 @@ const JOBS = makeJobs({ home: HOME, VERSION, PASS: COL2.PASS, BUSY: COL2.BUSY, O
   want: (c, id) => { const r = relayGet({ c, id }); return r.code === 200 ? r.body : { err: r.body.err }; }, out: (c, id, v) => outReplace(c, id, v), note: (m, o) => note(m, o), voice: VOICE, handed: (k) => hoMine(k), opOut: (job, c, id, v, x) => opOut(job, c, id, v, x), beat: (job) => { if (!hoMine(job)) return false; HO.beat[job] = now(); return true; } /* (🔬 정밀 점검 11/11) 넘긴 일을 돌렸으면 값이 같아도 소식(beat)을 남김 — 없으면 켠 시각에서 8시간 뒤 운영이 넘김을 풀고 다시 떠맡았음 */ });
 const prodPlan = () => TK.plan(isLoggerPc() ? 'logger' : 'office', CFG.jobs || {}).includes('product'); /* 공개 상품 화면 그림자(0.1.2~)는 그림자 일 켜기와 상관없이 — 로거는 하지 않음 */
 /* 상태에 싣는 그림자 일 요약(작게) — 일마다 오늘 견줌·같음 비율·넘길 수 있음 */
-function jobsSum() { try { const v = JOBS.view(); return { voice: VOICE.view(), kind: v.kind, d: v.d, wait: v.wait, mine: v.tasks.filter((t) => t.mine).map((t) => ({ k: t.k, q: t.q, n: t.today ? t.today.n : 0, rate: t.today ? t.today.pass.rate : null, can: !!(t.today && t.today.pass.can) })) }; } catch (e) { return { err: e.message }; } }
+function jobsSum() { try { const v = JOBS.view(); return { voice: VOICE.view(), kind: v.kind, d: v.d, wait: v.wait, mine: v.tasks.filter((t) => t.mine).map((t) => ({ k: t.k, name: t.name || t.k, q: t.q, n: t.today ? t.today.n : 0, rate: t.today ? t.today.pass.rate : null, can: !!(t.today && t.today.pass.can) })) }; } catch (e) { return { err: e.message }; } }
 
 function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const CFG0 = CFG; const out = { ...CFG };
   if (o.on === true && out.pauseUntil && o.src === 'pc') out.pauseUntil = 0; /* (11/11) 손으로 켜면 잠깐 멈춤 풀림 */
@@ -579,14 +579,24 @@ function logPageHtml() { return `<!doctype html><html lang="ko"><meta charset="u
 function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📊 번외 수집기</title>
 <style>${SMALL_CSS}</style>
 <h1 id="hd"><span id="hdT">📊 <small id="hdP">🖥 이 PC: …</small></span><button id="jwBtn" class="jwb" title="🗒 기록창 열기 (Alt+L)">🗒 기록</button><button id="helpBtn" class="jwb" title="❓ 설명서">❓</button><button id="setBtn" class="jwb" title="⚙ 설정">⚙</button><button id="miniBtn" class="jwb" title="▁ 작은 단추로 줄이기">▁</button></h1>
-<div class="b" id="top"><section class="gl" id="glance" aria-label="한눈에">
-<div class="gl1"><span class="gdot" id="glDot"></span><b id="glPc">이 PC</b><span class="k" id="glKind"></span><span class="glsp"></span><span class="k" id="glVer">col2 ${VERSION}</span></div>
-<div class="glch" id="glCh"><span class="ch" data-s="al" title="알라딘">알라딘 <i>—</i></span><span class="ch" data-s="y24" title="예스24 판매관리">예스24 <i>—</i></span><span class="ch" data-s="nv" title="네이버" hidden>네이버 <i>—</i></span></div>
-<div class="glbar" id="glBarBox" title="알라딘 공개 화면 오늘 읽은 장 수 / 하루 한도(⚙ 자세히 › 📏 한도·속도에서 바꿈)"><div class="glt"><span>오늘 읽음</span><b id="glN">— / —</b></div><div class="bar"><i id="glBar"></i></div></div>
-<div class="glnow" id="glNow">읽는 중…</div>
+<div class="b" id="top"><!-- (11/12 col2ui2 정범님 '너무 복잡하고 어수선 — 로거 도우미처럼 한눈에') 맨 위 큰 상태 줄 · 주요 카드 · 나머지는 아래 🔧 자세히(접기) -->
+<section class="gl big" id="glance" aria-label="한눈에"><div class="bigrow">
+<div class="bc bst"><span class="gdot" id="glDot"></span><b id="glLv">확인 중</b></div>
+<div class="bc"><b>🖥 <span id="glPc">이 PC</span></b><span class="bs"><span id="glKind"></span> · <span id="glVer">번외 ${VERSION}</span></span></div>
+<div class="bc bnow"><b>⚙ 지금 하는 일</b><span class="bs" id="glNow">읽는 중…</span></div></div></section>
 <div class="glerr" id="glErr" hidden><div class="glet"><b id="glErrW"></b><span id="glErrT"></span></div><button class="p" id="glFix">고치기</button></div>
-<div class="front" id="front"><button id="fLogin" type="button">🔐 로그인</button><button id="fRead" type="button" class="p">▶ 지금 읽기</button><button id="fPause" type="button">⏸ 잠깐 멈춤</button><button id="fMore" type="button">⚙ 자세히</button></div>
-</section></div>
+<div class="front" id="front"><button id="fLogin" type="button">🔐 로그인</button><button id="fRead" type="button" class="p">▶ 지금 읽기</button><button id="fPause" type="button">⏸ 잠깐 멈춤</button><button id="fMore" type="button">⚙ 설정</button></div>
+<div id="m" class="k" style="min-height:1.3em"></div>
+<div class="mgrid" id="mainCards">
+<section class="mc al" id="mcAl"><div class="mh"><b>🟧 알라딘</b><span class="ch" id="mAlCh"><i>—</i></span></div><div class="todo" id="mAlTodo" hidden></div><div class="ml" id="mAlL"></div>
+<div class="glbar" id="glBarBox" title="알라딘 공개 화면 오늘 읽은 장 수 / 하루 한도(⚙ 설정 › 📏 한도·속도에서 바꿈)"><div class="glt"><span>공개 화면 오늘 읽음</span><b id="glN">— / —</b></div><div class="bar"><i id="glBar"></i></div></div>
+<div class="mbtn" id="mAlB"></div><div class="mbtn" id="mAlX"></div></section>
+<section class="mc y24" id="mcY24"><div class="mh"><b>🟦 예스24</b><span class="ch" id="mY24Ch"><i>—</i></span></div><div class="tiles" id="mY24T"></div><div class="ml" id="mY24L"></div><div class="mbtn" id="mY24B"></div></section>
+<section class="mc nv" id="mcNv" hidden><div class="mh"><b>🟩 네이버</b><span class="ch" id="mNvCh"><i>—</i></span></div><div class="tiles" id="mNvT"></div><div class="ml" id="mNvL"></div></section>
+<section class="mc jb" id="mcJobs"><div class="mh"><b>📋 맡긴 일</b><span class="ch" id="mJbCh"><i>—</i></span></div><div class="tiles" id="mJbT"></div><div class="ml" id="mJbL"></div></section>
+<section class="mc ld" id="mcLoad"><div class="mh"><b>🔋 이 PC 부하</b><span class="ch" id="mLdCh"><i>—</i></span></div><div class="glt"><span>CPU(최근 1분 · PC 전체)</span><b id="mLdN">—</b></div><div class="bar big"><i id="mLdBar"></i></div><div class="ml" id="mLdL"></div></section>
+</div></div>
+<details class="more" id="more"><summary>🔧 자세히 · 칸별 상태 · 바로 가기 · 작업 창 · 기록 <span class="k">— 덜 쓰는 기능은 모두 여기</span></summary>
 <div class="b" id="cards">
 <details class="c card" data-card="now"><summary>▶ 자세한 상태 <span class="cs"></span></summary><div id="stop"></div><div id="st">읽는 중…</div><button class="p" id="onb">켜기</button> <span class="k">col2 ${VERSION} · 시험 환경(운영과 따로)</span></details>
 <details class="c card" data-card="y24" open><summary>🟦 예스24 판매관리 읽기 <span class="cs"></span></summary><div class="k">화면을 열지 않음 · 숨은 크롬</div><div id="y24">—</div><div id="y24b"></div></details>
@@ -599,7 +609,7 @@ function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="ut
 <div style="margin-top:4px">🪟 작업 창(보일 때)<br><input class="n" id="wx"> <input class="n" id="wy"> <input class="n" id="ww"> <input class="n" id="wh"> <button data-s="win">저장</button></div>
 <div>📊 이 창<br><input class="n" id="hx"> <input class="n" id="hy"> <input class="n" id="hw"> <input class="n" id="hh"> <button data-s="hwin">저장</button></div>
 <div class="k">작업 창을 보이게 한 뒤 옮기거나 크기를 바꾸고 🙈 숨기기를 누르면 그 자리·크기가 저장됩니다 · 이 창은 옮기면 저절로 저장</div></details>
-</div><div id="m" class="k b" style="min-height:1.4em;padding-top:0"></div>
+</div></details>
 <button id="miniIc" title="눌러서 펼치기"><span class="dot"></span>📊<small></small></button>
 <div id="ovSet" class="ov2"><div class="oh"><b>⚙ 자세히 — 설정</b><button data-ovx="set">닫기</button></div><div class="obody"><div id="setm" class="k" style="min-height:1.3em"></div>
 <div class="gh">⭐ 자주 바꾸는 것</div><div id="setOften" class="sgrid"></div>

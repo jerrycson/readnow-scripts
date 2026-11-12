@@ -15,7 +15,7 @@
  *   · 안내 '수정할 값을 더블 클릭 … 수정이 완료 되시면 반드시 수정항목 저장을 클릭' · 표 머리 '재고수량 *'·'판매상태 *'(수정 가능 칸) · 단추 [판매상태/기간 변경]·[수정항목 저장]
  *   · 창 '판매상태/기간 변경' — 라디오 goodsStatGb 02 판매중 · 08 판매중지 · 04 판매완료 · 07 판매종료 · [변경]·[취소] · '재고수량0인 상품을 판매중으로 변경하면 재고수량은 1로 자동변환'
  *   · 응답 칸 GOODS_NO·ENTR_GOODS_CD(판매자상품코드 = 우리 SKU)·ORD_REMAIN_CNT(재고수량)·SALE_STATE_GB(판매상태) — GUIDE.md 1-1
- *   (0.1.37 y24chk · 11/12 진단) 실제 응답(/api/Product/ProductList 11/12 원문) 칸 이름은 REM_CNT(재고수량)·MAN_NO(판매자상품코드 = 우리 SKU)·GOODS_STAT_GB(판매상태)·SALE_PR(판매가)
+ *   (0.1.38 y24chk · 11/12 진단) 실제 응답(/api/Product/ProductList 11/12 원문) 칸 이름은 REM_CNT(재고수량)·MAN_NO(판매자상품코드 = 우리 SKU)·GOODS_STAT_GB(판매상태)·SALE_PR(판매가)
  *     — 예전 이름만 찾던 정규식이 재고 칸을 못 찾아 11/12 17:46~18:27 수량 맡김 5번이 모두 '재고수량 칸이 바뀌지 않음(NaN)'으로 저장 없이 끝남 → 두 이름 다 찾음 · 칸 이름을 못 찾으면 편집기를 아예 건드리지 않음
  *   (11/11 y24ops1) 판매가: 그 줄 판매가 칸(표에서 고칠 수 있는 칸일 때만 · 아니면 아무것도 안 누르고 사람에게) → [수정항목 저장] → 다시 읽어 확인 · 판매중인 상품만 · 한 번에 50% 넘게 바뀌면 안 누름
  * 지킴: 같은 맡김·같은 할 일(rk) 두 번 안 함(이 PC 기록 y24-w.json) · 같은 상품번호가 맡김 줄에 이미 있으면 거절 · 처음 성공(목록에서 확인)이 없으면 1건짜리 맡김만 · 한 번에 30줄까지
@@ -197,4 +197,4 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     catch (e) { return end(j, { state: 'fail', rows, msg: '예스24 쓰기 오류 — ' + String(e.message || e).slice(0, 140) }); } }
   return { put, ack, resume, state, pick, once, cur, dialog, R };
 }
-module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN, PRICE_JUMP, _js: { JS_FIND, JS_QTY, JS_SELF } }; /* _js = 시험이 화면 쪽 짧은 코드를 가짜 표로 바로 돌려 봄(0.1.37) */
+module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN, PRICE_JUMP, _js: { JS_FIND, JS_QTY, JS_SELF } }; /* _js = 시험이 화면 쪽 짧은 코드를 가짜 표로 바로 돌려 봄(0.1.38) */

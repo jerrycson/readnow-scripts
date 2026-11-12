@@ -62,7 +62,7 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
 
 (async () => {
   console.log('① 순수 셈');
-  { /* (0.1.37 y24chk · 11/12 진단) 실제 예스24 응답 칸 이름(REM_CNT 재고수량 · MAN_NO 판매자상품코드 · GOODS_STAT_GB 판매상태 · SALE_PR 판매가 — 11/12 /api/Product/ProductList 원문) 그대로 찾는지 · 칸 이름을 못 찾으면 편집기를 건드리지 않음 */
+  { /* (0.1.38 y24chk · 11/12 진단) 실제 예스24 응답 칸 이름(REM_CNT 재고수량 · MAN_NO 판매자상품코드 · GOODS_STAT_GB 판매상태 · SALE_PR 판매가 — 11/12 /api/Product/ProductList 원문) 그대로 찾는지 · 칸 이름을 못 찾으면 편집기를 건드리지 않음 */
     const vm = require('vm'); const J = W._js;
     const real = [{ GOODS_NO: 300000101, EAN: '9788900000201', SHOP_PR: 10000, SALE_PR: 8000, GOODS_STAT_GB: '02', GOODS_STAT_GB_NM: '판매중', REM_CNT: 3, MAN_NO: 'A01SKUR', USED_SALE_PR: 0 }];
     const mkCtx = (rows) => { const R = rows.map((x) => ({ ...x })); let cur = null, shown = 0; const ds = { getRowCount: () => R.length, getJsonRow: (r) => ({ ...R[r] }), getValue: (r, f) => R[r][f] };

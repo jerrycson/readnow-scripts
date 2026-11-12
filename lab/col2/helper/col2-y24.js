@@ -180,7 +180,7 @@ function makeY24(o) { let REG = null, W = null;
     if (!Y.alNoted || t - Y.alNoted > 3600e3) { Y.alNoted = t; if (!tkWhy()) note(`🔁 「이미 로그인된 예스24」 화면이 뜸(${Y.already.where}) — 같은 계정이 다른 곳에서 로그인해 이 PC 세션이 끊김 · 저장된 계정으로 곧 이어받음(다른 곳 세션을 끊고 ${pcName()}가 다시 가져감)`); else note(`⛔ 「이미 로그인된 예스24」 화면이 뜸(${Y.already.where}) — 되풀이 로그인하지 않고 멈춤 · 까닭: 같은 예스24 계정이 다른 곳(다른 PC 번외·사람 크롬)에서 로그인돼 이 PC 세션이 끊김 · 예스24를 맡은 PC(${holder()})에서 옆 창 [🔐 예스24 로그인]을 한 번 누르면 풀림`); }
     if (Y.login === 'ok' && !Y.inLogin) setLogin('need', '「이미 로그인된 예스24」 화면 — 다른 곳 로그인으로 세션이 끊김'); }
   function pageSeen(u) { let pth = ''; try { pth = new URL(u).pathname; } catch (e) {} if (ALREADY_RE.test(pth)) alreadySeen('창 주소 ' + pth.slice(0, 40)); const lg = isLoginUrl(u); Y.pg = { login: lg, p: pth.slice(0, 60), at: now() }; if (lg && Y.login === 'ok' && !Y.inLogin) { const at = Y.pg.at; setTimeout(() => { if (Y.pg && Y.pg.at === at && Y.pg.login && Y.login === 'ok' && !Y.inLogin) setLogin('need', '창 주소가 로그인 화면으로 바뀜(' + pth.slice(0, 40) + ')'); }, TEST ? 1200 * SC : 6000); } }
-  /* (0.1.37 y24chk · 11/12 진단) 창 주소가 로그인 화면을 '잠깐' 지나간 것만으로 '다른 곳 로그인에 끊김'으로 세지 않음 — 17:48:00 번외 쓰기가 등록상품 화면을 연 같은 순간(0.4초 차) '끊김'이 하나 세였는데 세션은 살아 있어 15초 뒤 같은 맡김이 표의 칸까지 감(다시 로그인 0번)
+  /* (0.1.38 y24chk · 11/12 진단) 창 주소가 로그인 화면을 '잠깐' 지나간 것만으로 '다른 곳 로그인에 끊김'으로 세지 않음 — 17:48:00 번외 쓰기가 등록상품 화면을 연 같은 순간(0.4초 차) '끊김'이 하나 세였는데 세션은 살아 있어 15초 뒤 같은 맡김이 표의 칸까지 감(다시 로그인 0번)
    *  → 6초 뒤에도 그 창이 그대로 로그인 화면일 때만 '로그인 필요'·끊김 셈(진짜로 풀렸으면 6초 늦게 알 뿐 · 다른 길의 JS_STATE 판정은 그대로) · 근거: 없음 — 화면 하나가 다 열리는 시간 */
   /* 그 창에서 사람이 지금 입력하는 중인가 — 마지막 진짜 키·마우스가 humanSec초(기본 90) 안이면 참 · 그 창을 막 띄운 뒤 humanSec초 동안도 참(사람이 자리에 올 때까지) */
   const humanMs = () => (C().humanSec == null ? 90 : +C().humanSec) * 1000 * (TEST ? SC : 1);
