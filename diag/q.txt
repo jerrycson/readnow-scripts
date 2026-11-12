@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261112-194946.json
+run=1&bkinfo=1&reload=1
+# 130010104
