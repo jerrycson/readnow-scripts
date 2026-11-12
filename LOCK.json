@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "soldfill4 주력 팔린 상품 먼저",
+ "since": "2026-11-12T11:16:42Z",
+ "beat": "2026-11-12T11:16:42Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24chk 셋째 웹앱 1.78.517 (43dfba6d)",
   "at": "2026-11-12T11:13:19Z"
  },
- "host": null
+ "host": "vm-soldfill"
 }
