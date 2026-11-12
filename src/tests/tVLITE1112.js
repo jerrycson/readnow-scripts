@@ -78,6 +78,16 @@ function near(a, b, tol, p) { p = p || ''; if (typeof a === 'number' && typeof b
   { const T = await runOnce('new', { D: 3, S: 1, R: 50, sold: 5, bench: 10, twice: true }); ok(T.r2 && T.r2.skip === 'busy' && T.r && T.r.n > 0, '같은 때 두 번 부르면 뒤의 것은 skip busy'); }
   ok(/if \(q\.vlearn\)/.test(SRC) && /HV\('valueLearn', \(\) => valueLearn\(true\)\)/.test(SRC) && /HV\('valueLearn', valueLearn\)/.test(SRC), '진단 vlearn=1(HV로 지금 한 번) · 3시간 사슬은 그대로 HV');
   ok(/v\.rebuilt && ML\.REBUILT_W/.test(SRC) && !/const dm = await C\('ml_days'\)\.where\('day', '>=', since\)\.get\(\)/.test(SRC.slice(SRC.indexOf('async function valueLearn0('), SRC.indexOf('/* (0.19.0) 🔭'))), '하루 모습을 한 번에 받지 않음');
+  /* ⑥ (0.35.157) HV가 건너뛴 회차는 heavy_run·바쁜 일 이름표를 건드리지 않음 */
+  { const a = SRC.indexOf('const HV_BOOT'), b = SRC.indexOf('const BUSYX = new Set();'); ok(a > 0 && b > a && SRC.slice(a, b).includes('HV_ON'), 'HV 구역 찾음(HV_ON)');
+    const hd = { app_settings: {} }; const F = mkFS(hd); let writes = 0; const C2 = (n) => { const c = F.C(n); return { ...c, doc: (id) => { const d = c.doc(id); return { ...d, set: async (v, o) => { writes++; return d.set(v, o); } }; } }; };
+    const BUSYX = new Set(); const env = { VL_BUSY: null }; const HV = new Function('C', 'log', 'nowIso', 'BUSYX', 'env', 'let VL_BUSY = null; const setVL = (v) => { VL_BUSY = v; };\n' + SRC.slice(a, b) + '\nreturn { HV, setVL };')(C2, () => {}, () => new Date().toISOString(), BUSYX, env);
+    let go; const slow = new Promise((z) => (go = z)); const p1 = HV.HV('valueLearn', () => slow.then(() => ({ n: 1 }))); await new Promise((z) => setTimeout(z, 20));
+    const st1 = JSON.stringify(hd.app_settings.heavy_run.valueLearn); const w1 = writes; const r2 = await HV.HV('valueLearn', async () => ({ n: 2 }));
+    ok(r2.skip === 'busy' && writes === w1 && JSON.stringify(hd.app_settings.heavy_run.valueLearn) === st1 && !hd.app_settings.heavy_run.valueLearn.endAt && BUSYX.has('hv:valueLearn'), '도는 중에 또 부르면 skip busy · heavy_run은 시작 그대로(endAt 없음) · hv:valueLearn 이름표 그대로');
+    go(); const r1 = await p1; ok(r1.n === 1 && hd.app_settings.heavy_run.valueLearn.endAt && !BUSYX.has('hv:valueLearn'), '앞 회차가 끝나면 endAt·이름표 지움(예전대로)');
+    HV.setVL('2026-11-12T00:00:00Z'); const w2 = writes; const r3 = await HV.HV('valueLearn', async () => ({ n: 3 })); ok(r3.skip === 'busy' && writes === w2 && !BUSYX.has('hv:valueLearn'), 'HV 밖에서 바로 부른 판매가치 배우기(VL_BUSY)가 돌 때도 heavy_run을 안 건드리고 건너뜀');
+    HV.setVL(null); const r4 = await HV.HV('valueLearn', async () => ({ n: 4 })); ok(r4.n === 4, '끝난 뒤엔 다시 돎'); }
   /* ⑤ 메모리 — 실제 크기(44일 × 8조각 × 2,000줄) · 따로 뜬 노드에서(--expose-gc) */
   const big = { D: 44, S: 8, R: 2000, sold: 120, bench: 6000, seed: 11, mem: true }; const ch = (k) => { try { return JSON.parse(cp.execFileSync(process.execPath, ['--expose-gc', '--max-old-space-size=3000', __filename, '--child', k, JSON.stringify(big)], { encoding: 'utf8', maxBuffer: 16 << 20, timeout: 600e3 })); } catch (e) { return { err: String(e.message).slice(0, 300) }; } };
   const nB = ch('new'); console.log('   새 방식:', JSON.stringify(nB)); ok(nB && nB.peakMB != null && nB.peakMB < 120, `새 방식 셈이 늘린 힙 최고 ${nB && nB.peakMB}MB < 120MB (줄 ${nB && nB.lm && nB.lm.rows})`);
