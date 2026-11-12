@@ -3,7 +3,11 @@
  "what": "우리숍 전용 서버 readnow-shop 판 내기(shopsrv)",
  "since": "2026-11-12T16:39:35Z",
  "beat": "2026-11-12T16:39:35Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: shipcalc2 매입 판정 택배 계약 택배비 판 내기",
+  "at": "2026-11-12T16:50:34Z"
+ },
  "last": {
   "who": "lead",
   "done": "handoff2 웹앱 1.78.533 · 번외 0.1.41 · 클라우드 0.35.175 🔀 묶음째 넘기기 push 3d3bbcef",
