@@ -1,4 +1,3 @@
-col2=2026-11-12
-shpauto=40
-logs=1&pc=JS-MAIN&from=202611120500
-# 2560722601
+adapt=1
+spbatch=dry
+# 2890917117
