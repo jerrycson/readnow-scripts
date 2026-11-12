@@ -41,6 +41,12 @@ module.exports = async function ({ base, ok, ADM }) {
   await p.goto(base + '/index.html#/'); await p.waitForSelector('.bqa-newrv', { timeout: 8000 }).catch(() => {}); await p.screenshot({ path: SHOT + 'm_home.png', fullPage: true }); ok(await wide(p), '휴대폰 첫 화면 옆 넘침 없음');
   await p.goto(base + '/index.html#/me?t=al'); await p.waitForSelector('#mt .bqa-nt', { timeout: 8000 }); ok(await wide(p), '휴대폰 마이페이지 옆 넘침 없음'); await p.screenshot({ path: SHOT + 'm_me_alerts.png', fullPage: true });
   await p.goto(base + '/index.html#/p/privacy'); await p.waitForSelector('.doc'); ok(/회원 가입\(선택\)/.test(await p.textContent('.doc')), '개인정보 처리방침에 회원 항목');
+  /* (shop9 2회) 카드 별점 · 리뷰 요약 · 가게 답글 · 팔로잉·추천 */
+  { const rl = await ADM({ op: 'rvList', days: 30 }); const lo = rl.L.filter((r) => r.k === 'i9788900000002' && !r.hid && !r.test).sort((a, b) => a.st - b.st)[0]; if (lo) await ADM({ op: 'rvReply', id: lo.rid, tx: '불편을 드려 죄송합니다' }); }
+  await q.goto(base + '/index.html#/list?s=new'); await q.waitForSelector('.grid .card'); await q.waitForTimeout(400); ok(await q.locator('.card .crv').count() >= 1, '목록 카드에 ★ 별점(수)'); await q.screenshot({ path: SHOT + 'pc_list_stars.png' });
+  await q.goto(base + '/index.html#/b/aladin_U2'); await q.waitForSelector('#bqa .bqa-sum', { timeout: 8000 }); ok(await q.locator('.bqa-sm .chip').count() >= 1 && await q.locator('.bqa-pn').count() >= 1, '리뷰 요약: 자주 쓴 말·좋은 평/아쉬운 평');
+  await q.selectOption('#bqaS', 'lo'); await q.waitForTimeout(600); ok(/가게 답글/.test(await q.textContent('#bqa')), '🏪 가게 답글 보임'); await (await q.$('#bqa')).screenshot({ path: SHOT + 'pc_review_summary_reply.png' });
+  await q.goto(base + '/index.html#/me?t=fol'); await q.waitForSelector('#mt .hint', { timeout: 8000 }); await q.waitForTimeout(500); ok(/팔로잉/.test(await q.textContent('#mt')), '👥 팔로우 칸: 팔로잉 목록'); await q.screenshot({ path: SHOT + 'pc_me_fol2.png', fullPage: true });
   ok(!dlg.length && !errs.length, '브라우저 창(alert·confirm) 0 · 화면 오류 0', { dlg, errs });
   await b.close();
 };
