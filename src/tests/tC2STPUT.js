@@ -17,7 +17,7 @@ const body = CS.slice(i, j);
   console.log('① 웹앱이 안 오면 대신 씀');
   ST = { ok: true, pc: 'HOME', kind: 'office', ver: '0.1.28', on: true, msg: '작업 창 숨김 · 일할 준비', auto: { dayN: 120, dayCap: 1600 }, upd: { at: '2026-11-12 01:10', msg: '새 판 없음(GitHub 0.1.28)' }, relay: { pullAt: clock - 30 * 60e3 }, solo: { live: false } };
   await stPut('HOME'); const w = writes[0];
-  ok(writes.length === 1 && w.c === 'col2_ctl' && w.id === 'HOME' && w.o && w.o.merge, 'col2_ctl/HOME에 merge로 한 번', writes);
+  ok(writes.length === 1 && w.c === 'col2_ctl' && w.id === 'HOME' && w.o && Array.isArray(w.o.mergeFields) && w.o.mergeFields.includes('st'), 'col2_ctl/HOME에 한 번 · (fix3) st는 통째로(mergeFields — 옛 st.y24가 남지 않게)', writes);
   ok(w && w.v.st.ver === '0.1.28' && w.v.st.dayN === 120 && w.v.st.dayCap === 1600 && /수집기 다리/.test(w.v.by) && w.v.via === 'col' && w.v.st.upd && /새 판 없음/.test(w.v.st.upd.msg), '판·오늘 몫·새 판 받기 결과·by 수집기 다리', w && w.v);
   ok(w && !/rn-cred|password|token|key/i.test(JSON.stringify(w.v)), '키·계정 칸 없음');
   console.log('② 비킴');
@@ -28,7 +28,7 @@ const body = CS.slice(i, j);
   clock += 6 * 60e3; ST = null; await stPut('HOME'); ok(writes.length === 1, '도우미가 답하지 않으면 안 씀(💓 hlp:false는 따로)');
   clock += 6 * 60e3; ST = { ok: true, pc: 'JS-MAIN', kind: 'office', ver: '0.1.28', on: true, auto: {}, relay: {}, solo: null }; await stPut('JS-MAIN'); ok(writes.length === 2 && writes[1].id === 'JS-MAIN', '웹앱이 한 번도 안 왔어도(pullAt 없음) 씀');
   console.log('③ 글 검사');
-  ok(/if \(!y\.logger\) stPut\(pc\)\.catch/.test(CS), '사무실 PC 다리 한 바퀴에서 부름(로거 크롬은 앞에서 이미 빠짐)');
+  ok(/if \(!y\.logger\) stPut\(pc, y\)\.catch/.test(CS), '사무실 PC 다리 한 바퀴에서 부름(로거 크롬은 앞에서 이미 빠짐)');
   let head0 = ''; try { head0 = cp.execSync('git -C ' + JSON.stringify(ROOT) + ' show origin/main:src/readnow-collector.src.js', { maxBuffer: 64e6 }).toString(); } catch (e) {}
   const hd = (s) => s.split('\n').filter((l) => /^\/\/ @(match|grant|connect|require|include|noframes|run-at)/.test(l)).join('\n').replace(/\?v=[\d.]+/g, '');
   ok(!head0 || hd(head0) === hd(CS), '수집기 머리 그대로');

@@ -114,8 +114,8 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.waitForTimeout(600);
   const A0 = await p.evaluate(() => { const c = document.querySelector('#omni_card'); return { card: !!c, on: !!(c && c.querySelector('#omni_on').checked), txt: c ? c.textContent : '', rc: !!document.querySelector('#omni_rc'), tabs: [...document.querySelectorAll('[data-ledview]')].map((b) => b.textContent.trim()) }; });
   ok(A0.card && A0.on && /켬/.test(A0.txt) && A0.rc && /실사 목록/.test(A0.tabs.join('|')) && /주문 모음/.test(A0.tabs.join('|')) && /처리할 일/.test(A0.tabs.join('|')), '🛠 처리할 일 위 🤖 자동 내림 카드(켬) · 🔍 재고 맞추기 카드 · 보기 칸(전체·처리할 일·(led3) 🔍 실사 목록·📋 주문 모음)', A0);
-  /* 돌기 한 번 — 이 기기엔 번외 없음 → 알라딘 쪽만 */
-  await p.evaluate(async () => { await omniTick(); }); await p.waitForTimeout(600); const C1 = await cmds();
+  /* 돌기 한 번 — 이 기기엔 번외 없음 → 알라딘 쪽만 · (11/12 fix3) 다른 번외 PC(PC-Y)가 방금 돎 = 예스24 쪽은 그 PC가(번외 PC 맥박이 없을 때만 원격 길 — tFIX3_1112) */
+  await p.evaluate(async () => { await db.collection('app_settings').doc('omni_auto').set({ hb: { 'PC-Y': { at: new Date().toISOString(), y24: 1 } } }, { merge: true }); await omniLoad(true); await omniTick(); }); await p.waitForTimeout(600); const C1 = await cmds();
   const L1 = await p.evaluate(async () => { await omniLoad(true); return Object.values(S.omni.log); });
   ok(C1.length === 1 && C1[0].listingKey === 'aladin_U215983410' && C1[0].ch && C1[0].ch.state === '판매중지', '예스24 주문 → 1분 돌기에서 알라딘 판매중지 저절로 맡김 1건(🛠 맡기기와 같은 길 · shp_cmds prdEdit)', C1.map((c) => [c.listingKey, c.ch]));
   ok(L1.length === 1 && L1[0].st === 'sent' && L1[0].ch === 'aladin' && L1[0].dev !== undefined && !C2.puts.length, '기록(app_settings/omni_auto) — 누가·어느 기기·맡김 · 번외 없는 기기는 예스24 쪽을 안 함', L1);

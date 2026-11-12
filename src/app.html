@@ -9443,7 +9443,7 @@ function omniRecon(I) { I = I || {}; const bySku = new Map(); for (const l of I.
  *  I = { on(자동 내림 켬), hb: { 기기: { at, y24 } }, cloud: { at, err, idle }(클라우드가 알라딘 쪽을 대신 보는 기록), now, min(분) } → null(문제 없음) 또는 { k: 'pc'|'y24', lv, t, why, mp, my, cloudOk } */
 const OMNI_HB_MIN = 15; /* 근거: 없음 — PC 맥박은 4분마다 · 세 번 넘게 빠지면(15분) '웹앱 열린 PC 없음' */
 function omniAlarm(I) { I = I || {}; if (!I.on) return null; const now = Date.parse(I.now || new Date().toISOString()); const lim = I.min || OMNI_HB_MIN;
-  const hb = Object.entries(I.hb || {}).map(([dev, v]) => ({ dev, at: Date.parse((v || {}).at || 0) || 0, y24: !!(v && v.y24) })).filter((x) => x.at).sort((a, b) => b.at - a.at);
+  const hb = Object.entries(I.hb || {}).map(([dev, v]) => ({ dev, at: Date.parse((v || {}).at || 0) || 0, y24: !!(v && (v.y24 || v.y24r)) })).filter((x) => x.at).sort((a, b) => b.at - a.at); /* (11/12 fix3) y24r = 번외 없는 PC가 원격 길(맡은 PC 수집기 다리)로 예스24 쪽을 맡는 중 — 예스24 쪽이 멈춘 것 아님 */
   const mins = (t) => (t ? Math.max(0, Math.floor((now - t) / 60e3)) : null); const pc = hb[0] ? hb[0].at : 0; const yy = (hb.find((x) => x.y24) || {}).at || 0; const mp = mins(pc), my = mins(yy);
   const cl = (I.cloud && Date.parse(I.cloud.at || 0)) || 0; const cloudOk = !!cl && now - cl < lim * 60e3 && !I.cloud.err; const ago = (m, who) => (m == null ? `${who} 기록 없음` : m >= 120 ? `${Math.floor(m / 60)}시간째 없음` : `${m}분째 없음`);
   if (mp == null || mp >= lim) return { k: 'pc', lv: cloudOk ? 'amber' : 'red', mp, my, cloudOk, last: hb[0] ? hb[0].dev : null,
@@ -9453,6 +9453,12 @@ function omniAlarm(I) { I = I || {}; if (!I.on) return null; const now = Date.pa
     t: `🤖 자동 내림의 예스24 쪽 멈춤 — 번외 수집기 켜진 PC ${ago(my, '돌린')} · 알라딘·현금·우리숍 주문 뒤 예스24 판매중지가 저절로 안 됨`,
     why: `예스24 판매중지는 번외 수집기(예스24 로그인)가 있는 PC만 맡음 — 웹앱 PC는 ${hb[0].dev} ${mp}분 전 돎(번외 없음) · 번외 PC에서 웹앱을 열면 밀린 일은 🛠 처리할 일에서 맡김` };
   return null; }
+/* (11/12 fix3 · verify3 17:29 — 밀린 일 2건(예스24 쪽)을 17:17 뒤 아무도 안 맡김: 예스24 쪽은 번외 있는 PC(맥박 y24)만 맡았는데 JS-MAIN 16:47 뒤·HOME 어제 24:10 뒤 웹앱 맥박 없음 · 살아 있던 MJ-MAIN은 y24 0이라 건너뜀)
+ *  🟦 예스24 쪽 원격 길 — 이 기기에 번외가 없어도 '다른 기기 중 예스24 쪽 맥박(y24)이 OMNI_HB_MIN 안에 없으면' 맡은 PC(기본 HOME) 수집기 다리(col2_y24_cmd)로 맡김(사람이 누르는 맡기기와 같은 길 · ledY24Go hold)
+ *  · 같은 할 일은 omni_auto.c 트랜잭션(omniClaim)으로 한 기기만 · 맡은 PC가 못 받으면 공용 맡긴 일 줄(대기 · 보내기 직전 다시 셈) · 로거·출고 중·예스24 꺼 둠은 앞에서 빠짐(ledY24Guard)
+ *  hb = omni_auto.hb { 기기: { at, y24 } } · me = 이 기기 이름(자기 맥박은 안 셈) → true = 이 기기가 원격 길로 맡음 */
+function omniY24Far(hb, me, nowMs, min) { const lim = (min || OMNI_HB_MIN) * 60e3; const now = nowMs == null ? Date.now() : nowMs; const m = String(me || '').trim().toUpperCase();
+  return !Object.entries(hb || {}).some(([d, v]) => String(d).trim().toUpperCase() !== m && v && v.y24 && now - (Date.parse(v.at || 0) || 0) < lim); }
 /* (11/11 naver1) 🟩 네이버 주문 어댑터(LED_ORD_AD.naver) — crm_naver_orders 한 줄(상품 주문 하나 · col2-nv.js nvOrd 꼴) → 장부 주문 꼴 · 시각은 UTC ISO로(다른 판매처와 같은 줄 세움)
  *  수수료 = 결제·채널·네이버 쇼핑 매출 연동 수수료 합(주문마다 실제 값) · 취소·반품 끝남은 cancel · 손님 이름·주소는 옮기지 않음 */
 function ledNvOrd(v) { if (!v || !v.id) return null; let at = null; try { at = v.at ? new Date(v.at).toISOString() : null; } catch (e) {} const amt = +v.amt || 0;
@@ -10313,16 +10319,18 @@ async function omniMark(rk, patch) { const ref = omniDoc(); try { await db.runTr
 /* 이 기기가 돌 수 있나 — '' = 돎 · 그 밖 = 까닭 */
 function omniWhy() { if (!db || !S.user) return '로그인 전'; if (PHONE_THIN) return '휴대폰(얇게 모드)에서는 돌지 않음 — PC가 맡음'; const g = ledGuard(); if (g) return g; if (!omniPf()) return '판매처 설정을 아직 안 읽음'; if (!S.prodLoaded) return '상품 기록을 아직 안 읽음'; if (!(S.y24.loaded && S.y24o.loaded)) return '예스24 목록·주문을 아직 안 읽음(다 읽은 뒤에만 — 자료가 덜 오면 맡기지 않음)'; return ''; }
 async function omniTick() { clearTimeout(S._omniT); S._omniT = setTimeout(omniTick, 60e3); if (S._omniBusy || !db || !S.user || PHONE_THIN) return;
-  const y24ok = !ledY24HereWhy(); if (y24ok) { try { if (!S.y24.un) y24Watch(); y24LkWatch(); y24RegWatch(); y24oWatch(); } catch (e) {} } /* 번외 수집기가 있는 PC는 스스로 예스24 목록·주문을 들음(자동 내림의 예스24 쪽은 이 PC만 함) */
+  const y24ok = !ledY24HereWhy(); if (y24ok || S._omniY24rem) { try { if (!S.y24.un) y24Watch(); y24LkWatch(); y24RegWatch(); y24oWatch(); } catch (e) {} } /* 번외 수집기가 있는 PC는 스스로 예스24 목록·주문을 들음 · (11/12 fix3) 원격 길로 맡는 PC도(지난 돌기 y24rem — 보내기 직전 다시 셈이 지금 값을 보게) */
   if (!omniPf()) await omniLoad(true); const why = omniWhy(); S._omniWhy = why; if (why) return; S._omniBusy = 1;
   try { await omniLoad(); const day = kst(new Date()); if (!S.omni.recon || S.omni.recon.day !== day) await omniReconRun(false);
     let C = omniCfg(); if (!C.from) { await omniLoad(true); C = omniCfg(); } /* (11/11 omni2) 켠 시각을 새로 정하기 전에 설정을 다시 읽음(홈 알림이 먼저 읽어 둔 옛 값으로 덮지 않게) */ if (!C.on) { S._omniWhy = '자동 내림 꺼 둠'; return; }
-    await omniBeat(y24ok); /* (11/11 omni2) 💓 이 기기가 돈다는 맥박(4분마다) — 웹앱 열린 PC 없음 경보 · 클라우드 대신 판단 */
+    let y24rem = false; try { y24rem = !y24ok && !ledY24Guard() && omniY24Far(S.omni.hb, String(deviceName() || 'PC').slice(0, 40)); } catch (e) {} S._omniY24rem = y24rem; /* (11/12 fix3) 예스24 쪽 PC 맥박이 없으면 이 기기가 원격 길로 */
+    await omniBeat(y24ok, y24rem); /* (11/11 omni2) 💓 이 기기가 돈다는 맥박(4분마다) — 웹앱 열린 PC 없음 경보 · 클라우드 대신 판단 */
     if (!C.from) { const now = new Date().toISOString(); await db.collection('app_settings').doc('platforms').set({ omni: { autoDown: { on: 1, from: now, by: 'auto', at: now } } }, { merge: true }); S._omniPf = { ...(S._omniPf || {}), omni: { autoDown: { on: 1, from: now, by: 'auto', at: now } } }; if (S.app && S.app.platforms) S.app.platforms.omni = S._omniPf.omni; return; } /* 처음: 지금부터 들어오는 주문만(밀린 할 일은 사람이) */
     const TD = ledTodoNow(); const done = new Set(Object.keys(S.omni.log || {})); const pk = ledY24Pk(); const re = omniReNow(TD); /* (11/12 led3) 늦게 받아 거절·끊김으로 끝난 맡김 → 새 열쇠로 다시 */
     if (!C.bl.at && omniPick(TD, { from: C.from, done, pk, bl: 1, re, lim: OMNI_BL_ALL }).some((P) => P.bl)) { await omniBlSet({ at: new Date().toISOString(), go: new Date(Date.now() + OMNI_BL_MS).toISOString(), stop: 0, by: 'auto', n: omniBlList(TD, C).length }); C = omniCfg(); } /* (11/12 led3) 밀린 일이 처음 보이면 미리보기 1시간(그 사이 ⏸ 멈추기) */
     const blGo = omniBl(C.bl) === 'go';
-    const picks = omniPick(TD, { from: C.from, done, pk, re, bl: blGo }).filter((P) => (P.a.ch !== 'yes24' || y24ok) && (P.a.ch !== 'naver' || !nvWriteWhy())); /* (naver2) 🟩 네이버는 ⚙ 실제 쓰기가 켜지고 로거 번외가 살아 있을 때만(아니면 맡기지 않고 🛠에 남김) */ if (!picks.length) return;
+    const picks0 = omniPick(TD, { from: C.from, done, pk, re, bl: blGo }); const picks = picks0.filter((P) => (P.a.ch !== 'yes24' || y24ok || y24rem) && (P.a.ch !== 'naver' || !nvWriteWhy())); /* (11/12 fix3) 예스24 쪽: 이 PC 번외(y24ok) 또는 원격 길(y24rem) */
+    try { const cn = (L) => L.reduce((o, P) => ((o[P.a.ch] = (o[P.a.ch] || 0) + 1), o), {}); const tx = (o) => Object.entries(o).map(([k, n]) => `${k} ${n}`).join(',') || '0'; S._omniSum = `${new Date(Date.now() + 9 * 3600e3).toISOString().slice(11, 16)} 밀린 일 ${blGo ? 'go' : omniBl(C.bl)}(${tx(cn(omniBlList(TD, C)))}) · 고름 ${tx(cn(picks))} · 건너뜀 ${tx(cn(picks0.filter((P) => !picks.includes(P))))} · 예스24 길 ${y24ok ? '이 PC 번외' : y24rem ? '원격(맡은 PC)' : '없음'}`; } catch (e) {} /* (11/12 fix3) 맥박에 붙여 진단이 '어느 판매처 몇 건을 왜 못 맡았나'를 봄(숫자만 · 글 한 줄 — merge로 옛 칸이 섞이지 않게) */ /* (naver2) 🟩 네이버는 ⚙ 실제 쓰기가 켜지고 로거 번외가 살아 있을 때만(아니면 맡기지 않고 🛠에 남김) */ if (!picks.length) return;
     const R = { ok: [], bad: [] }; for (const P of picks) { if (P.bl) { const v = omniStill(P.a, omniCur(P.T, P.a)); if (v.wait) continue; if (v.shut) { try { if (await omniClaim(P.rk, omniInfo(P.T, P.a))) await omniMark(P.rk, { st: 'shut', msg: `다시 셈 — ${v.shut} · 닫음` }); } catch (e) {} continue; } } /* (11/12 led3) 밀린 일은 보내기 직전 지금 판매처 값으로 다시 셈 */ const r = await omniDo(P); if (r) (r.st === 'fail' ? R.bad : R.ok).push(r); }
     if (R.ok.length || R.bad.length) { toast(`🤖 자동 내림 — ${R.ok.map((r) => `${r.nm} ${r.t}`).slice(0, 3).join(' · ')}${R.ok.length > 3 ? ` 외 ${R.ok.length - 3}` : ''}${R.bad.length ? ` · ⚠ 못 맡김 ${R.bad.length}(🛠 처리할 일에 남음)` : ''}`, R.bad.length ? 1 : 0); S._led = null; try { ledRedraw(); } catch (e) {} } }
   catch (e) { S._omniWhy = '오류: ' + errKo(e); } finally { S._omniBusy = 0; S._omniAt = Date.now(); } }
@@ -10415,7 +10423,7 @@ async function omniAlStop(it) { const l = S.plist.get(it.id); if (!l) return '�
   if (ch.state) { try { await setStopReason(l, 'elsewhere', `🔍 재고 맞추기 — ${it.why}`, true); } catch (e) {} } return ''; }
 /* (11/11 omni2) 💓 맥박 · 🔔 홈 알림(못 맡김 n건 · 웹앱 열린 PC 없음) */
 const OMNI_HB_MS = 4 * 60e3; /* 근거: 없음 — 맥박 간격(문서 한 장 merge 쓰기 · PC 한 대 하루 360번) */
-async function omniBeat(y24ok) { if (Date.now() - (S._omniHbAt || 0) < OMNI_HB_MS) return; S._omniHbAt = Date.now(); const dev = String(deviceName() || 'PC').slice(0, 40); const at = new Date().toISOString(); const v = { at, y24: y24ok ? 1 : 0, by: (S.user && S.user.email) || '' };
+async function omniBeat(y24ok, y24rem) { if (Date.now() - (S._omniHbAt || 0) < OMNI_HB_MS) return; S._omniHbAt = Date.now(); const dev = String(deviceName() || 'PC').slice(0, 40); const at = new Date().toISOString(); const v = { at, y24: y24ok ? 1 : 0, y24r: y24rem ? 1 : 0, ver: APP_VER, sum: S._omniSum || null, by: (S.user && S.user.email) || '' }; /* (11/12 fix3) y24r = 원격 길로 예스24 쪽을 맡음 · ver = 웹앱 판 · sum = 지난 돌기의 밀린 일·맡김·건너뜀 판매처별 수(숫자만) */
   try { await omniDoc().set({ hb: { [dev]: v } }, { merge: true }); S.omni.hb = { ...(S.omni.hb || {}), [dev]: v }; } catch (e) { S._omniHbAt = 0; } }
 const omniAlarmNow = () => (S.omni && S.omni.at ? omniAlarm({ on: omniCfg().on, hb: S.omni.hb, cloud: S.omni.cloud, now: new Date().toISOString() }) : null);
 /* 24시간 안 자동 내림 기록 중 사람 손이 필요한 것 — 상품 기록이 없는 기기(휴대폰)는 '못 맡김·끊김'만 */
@@ -10928,7 +10936,10 @@ const Y24H_DEF = 'HOME', Y24H_STALE = 30 * 60e3;
 /* (11/11 y24ops3) col2_ctl/<PC> 한 문서 → { id, at, run, y } — 웹앱이 적는 st(번외 상태 · 그 PC 웹앱을 열어 둔 때만)와 수집기가 적는 y24hb(웹앱이 닫혀 있어도 · 💓) 중 새것
  *  · y24hb.hlp === false = 그 PC 번외 도우미가 답하지 않음(꺼짐·안 깔림) */
 function c2CtlRow(id, v) { v = v || {}; const st = v.st || {}; const a1 = Date.parse(v.at || st.at || 0) || 0; const hb = v.y24hb || null; const a2 = hb ? Date.parse(hb.at || 0) || 0 : 0;
-  if (hb && a2 > a1) { const y = hb.hlp === false ? { hlp: false, login: null, msg: hb.msg || '번외 도우미가 답하지 않음', holder: hb.holder || null } : { ...hb }; return { id, at: hb.at, run: hb.hlp !== false, y, hb: 1 }; }
+  /* (11/12 fix3 · verify3 17:29 'HOME 예스24 로그인 다시 need') 수집기 다리(col2rep6 · by '수집기 다리 …')가 5분마다 v.at만 새로 쓰고 st.y24는 그대로라(웹앱이 마지막으로 쓴 00:12 0.1.25 'need') 다리가 💓보다 늦게 쓴 순간마다 옛 'need'가 보였음
+   *  → 다리가 쓴 문서이거나 st.y24가 💓보다 옛것이면 💓(번외가 지금 보낸 상태)를 씀 */
+  const bridge = /^수집기 다리/.test(String(v.by || ''));
+  if (hb && (a2 > a1 || bridge)) { const y = hb.hlp === false ? { hlp: false, login: null, msg: hb.msg || '번외 도우미가 답하지 않음', holder: hb.holder || null } : { ...hb }; return { id, at: hb.at, run: hb.hlp !== false, y, hb: 1 }; }
   return { id, at: v.at || st.at || null, run: !!st.running, y: st.y24 || null }; }
 const y24HNm = (v) => String(v == null ? '' : v).trim().toUpperCase().slice(0, 40);
 function y24HolderOf(pl) { return y24HNm(pl && pl.y24Holder) || Y24H_DEF; }
