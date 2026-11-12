@@ -92,6 +92,9 @@ async function run(cfgX, seedX, tgX) { global.FieldPath = { documentId: () => '_
     const G2 = await run({ spBatch: { goneFirst: ['2'] } }, S3, TG); const f2 = G2.store['app_settings/adapt_cfg'].spBatchGone.first;
     ok(G2.r.goneFirst.cand === 0 && f2['2'].doneAt && G2.w.g_3 && G2.w.g_3.isbn, '다 채우거나 7일 쉼뿐이면 그 판매자는 7일 건너뛰고 지금 차례(사라진 날 차례)로', { gf: G2.r.goneFirst, f2 });
     const G3 = await run({ spBatch: { goneFirst: ['2'] }, spBatchGone: { first: { 2: { doneAt: new Date().toISOString() } } } }, S2, TG); ok(G3.r.goneFirst.shops.length === 0 && G3.r.goneFirst.scan === 0, '7일 안 끝낸 판매자는 받지도 않음', G3.r.goneFirst);
+    { const S4 = S2.concat([['3_a', { sc: '3', coverKey: 'K000000301', title: '둘째 주력 팔린 책', goneDay: dAgo(6) }], ['3_b', { sc: '3', coverKey: 'K000000302', title: '둘째 주력 팔린 책 2', goneDay: dAgo(7) }]]);
+      const G6 = await run({ spBatch: { goneFirst: ['2', '3'], goneFirstPage: 2, goneFirstScan: 10 } }, S4, TG.concat([{ sc: '3' }])); const f6 = G6.store['app_settings/adapt_cfg'].spBatchGone.first;
+      ok(G6.r.goneFirst.shops.join() === '2,3' && G6.r.goneFirst.scan === 7 && G6.r.goneFirst.bySc['3'] >= 1 && f6['2'].lastId && f6['3'].lastId === null, '회차마다 주력 판매자 모두에서 조금씩(받는 문서를 판매자 수로 나눔 — 첫 판매자가 회차를 다 쓰지 않음)', { gf: G6.r.goneFirst, f6 }); }
     const G4 = await run({ spBatch: { goneFirst: [] } }, S2, TG); ok(!G4.r.goneFirst && G4.r.gone >= 4, '빈 배열이면 예전 동작(주력 먼저 없음)', { gf: G4.r.goneFirst, gone: G4.r.gone });
     const G5 = await run({ spBatch: { maxQ: 1 } }, S2, TG); ok(!G5.r.goneFirst, '기본 목록(주력 10곳)은 대상 판매자에 있을 때만 — 시험 판매자 1·2는 해당 없음'); }
   { const R4 = await run({ spBatch: { gone: false } }); ok(R4.r.gone === 0 && !R4.w.g_3 && R4.w.s_0 && R4.w.s_0.sp === 100, '끄기 adapt_cfg.spBatch.gone = false → 팔린 상품 넣지 않음(판매 중은 그대로)', R4.r.gone); }
