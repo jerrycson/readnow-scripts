@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "tfix: 같은 탭 칸 카드 스크롤 고침 웹앱 판 + 시험 7개 맞춤",
+ "since": "2026-11-12T13:46:51Z",
+ "beat": "2026-11-12T13:46:51Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "도우미 1.8.23 (teth3) c9706b0e",
   "at": "2026-11-12T13:45:56Z"
  },
- "host": null
+ "host": "vm-tfix"
 }
