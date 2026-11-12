@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "확인 고침 판(rel9 · 클라우드 0.35.136 · 서가 0.2.4)",
+ "since": "2026-11-12T01:04:54Z",
+ "beat": "2026-11-12T01:04:54Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "번외 0.1.30 긴급 판(hot1 · 0b61030e) — 번외만 · 웹앱·수집기·머리 그대로",
   "at": "2026-11-12T00:47:40Z"
  },
- "host": null
+ "host": "vm"
 }
