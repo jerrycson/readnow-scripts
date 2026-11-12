@@ -1,2 +1,2 @@
-shelfjobs=1&recentUp=prd_listings&mins=240
-# 54665079
+doc=app_settings/research_pulse
+# 3101917903
