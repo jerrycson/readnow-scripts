@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto,app_settings/omni_recheck
-# 18474233
+vlearn=1&mem=1&run=1
+# 1501011379
