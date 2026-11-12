@@ -6,8 +6,9 @@ const fs = require('fs'); const path = require('path'); const http = require('ht
 
 function pure(ok, BQS, items, ROOT) {
   const css = fs.readFileSync(path.join(ROOT, 'shop/shelf.css'), 'utf8'); const has = (re) => re.test(css);
+  const rectCss = !/\[data-s="\d+"\][^{]*\.sk \{[^}]*(clip-path|border-radius: (50%|calc))/.test(css) && !/\[data-s="\d+"\][^{]*\.sk \{[^}]*border-radius: [3-9]px/.test(css); /* (shelf8) 직사각형만 */
   const cb = BQS.combos(); const dCss = [...new Set([...css.matchAll(/\.sp\[data-d="(\d+)"\]/g)].map((m) => +m[1]))].length + 1, pCss = [...new Set([...css.matchAll(/\.sp\[data-p="(\d+)"\]/g)].map((m) => +m[1]))].length + 1, sCss = ([...new Set([...css.matchAll(/\[data-s="(\d+)"\]/g)].map((m) => +m[1]))].length + 1) /* (shelf7) :is([data-s="11"], …) 묶음 규칙도 셈 */ * ([...new Set([...css.matchAll(/\.sp\[data-h="(\d+)"\]/g)].map((m) => +m[1]))].length + 1);
-  ok(cb.core === 57 * 98 * 72 * 68 * 115 /* (shelf7) 디자인 57 · 색 98 · 무늬 72 · 모양 115(몸 23 × 머리 5) — 덧붙이기만 */ && cb.C === 98 && cb.P === 72 && cb.S === 115 && cb.uq && cb.uq.N >= 1e8 && cb.total === cb.core * 4 * 2 && dCss === cb.D && pCss === cb.P && sCss === cb.S, `책등 조합 ${cb.total.toLocaleString('ko-KR')}가지 = 디자인 ${cb.D}(CSS ${dCss}) × 색 ${cb.C} × 무늬 ${cb.P}(CSS ${pCss}) × 글꼴 ${cb.F} × 모양 ${cb.S}(몸×머리 CSS ${sCss}) × 장식색 ${cb.A} × 글 방향 ${cb.O} — 목록 곱 ${cb.core.toLocaleString('ko-KR')} · 겉으로 뚜렷한 고유 ${cb.uq && cb.uq.N.toLocaleString('ko-KR')}(1억 넘음)`);
+  ok(cb.core === 57 * 98 * 72 * 68 * 115 /* (shelf7) 디자인 57 · 색 98 · 무늬 72 · 모양 115(몸 23 × 머리 5) — 덧붙이기만 */ && cb.C === 98 && cb.P === 72 && cb.S === 115 && cb.uq && cb.uq.Nall >= 1e8 && cb.total === cb.core * 4 * 2 && dCss === cb.D && pCss === cb.P && rectCss /* (shelf8) 모양 번호는 그대로 두되 그림은 모두 직사각형 */, `책등 조합 ${cb.total.toLocaleString('ko-KR')}가지 = 디자인 ${cb.D}(CSS ${dCss}) × 색 ${cb.C} × 무늬 ${cb.P}(CSS ${pCss}) × 글꼴 ${cb.F} × 모양 ${cb.S}(몸×머리 CSS ${sCss}) × 장식색 ${cb.A} × 글 방향 ${cb.O} — 목록 곱 ${cb.core.toLocaleString('ko-KR')} · 겉으로 뚜렷한 고유 ${cb.uq && cb.uq.Nall.toLocaleString('ko-KR')}(조합 ${cb.uq && cb.uq.N.toLocaleString('ko-KR')} × 크기 묶음 ${cb.uq && cb.uq.Z} · 1억 넘음) · 몸 모양 CSS에 깎기·둥글리기 없음`);
   ok(BQS.CASES.every(([k]) => k === 'oak' || has(new RegExp('\\.bqs\\.wood-' + k + '\\b'))) && BQS.SCHEMA.find((p) => p.k === 'wood').opts.steel === '철제 앵글', '책장 종류 14가지 모두 CSS 그림 있음(참나무 = 기본) · 설정 「책장 종류」');
   const c = BQS.cfgOf({}); const L = items.slice(0, 300).map((x) => BQS.look(x, c));
   ok(L.every((x) => BQS.CODE_RE.test(x.code)) && L.every((x, i) => JSON.stringify(BQS.decode(x.code)) === JSON.stringify(BQS.assign(items[i], c))), '모양 글(세대.출처.디자인.색.무늬.글꼴.모양.장식.방향) ↔ 조합 그대로 오감');
@@ -28,7 +29,7 @@ function pure(ok, BQS, items, ROOT) {
   ok(s46.h < sA4.h && sA4.h === 100 && s46.w < sA4.w && sPg.w > sPg2.w && s46.real && !BQS.sizeOf({ id: 'q' }, c).real, `판형: 46판 키 ${s46.h}% < A4 100% · 두께 ${s46.w}px < ${sA4.w}px · 판형 없으면 쪽수(600쪽 ${sPg.w}px > 100쪽 ${sPg2.w}px)`);
   const t1 = BQS.textFit('섬', '갑', 24, 130), t2 = BQS.textFit('아주 길고 긴 제목이 붙은 책의 이야기 모음 두 번째', '지은이 가나다라', 24, 130);
   ok(t1.ft > t2.ft && t2.ft < 9 && t1.ft >= 14 && t2.fa > 0, `글 맞추기: 짧은 제목 ${t1.ft}px · 긴 제목 ${t2.ft}px(× 확대가 9px 아래면 줄임)`);
-  ok(BQS.SCHEMA.find((p) => p.k === 'lookGen').hide && BQS.cfgOf({ popMode: 'zz' }).popMode === 'spine' && BQS.cfgOf({}).fullText && BQS.cfgOf({}).lookKeep, '설정: 책등 누르면 기본 = 책등 표면 단추 · 글 전체 · 영구 모양 · 세대 칸은 숨김');
+  ok(BQS.SCHEMA.find((p) => p.k === 'lookGen').hide && BQS.cfgOf({ popMode: 'zz' }).popMode === 'open' && BQS.cfgOf({}).fullText && BQS.cfgOf({}).lookKeep, '설정: 책등 누르면 기본 = 책이 뽑혀 펼쳐짐(shelf8) · 글 전체 · 영구 모양 · 세대 칸은 숨김');
 }
 
 async function cloud(ok, BQS, SH) {

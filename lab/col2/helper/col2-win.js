@@ -20,6 +20,8 @@ public static class RnCol2Win {
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr h);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  public static string Title(IntPtr h) { var s = new StringBuilder(512); GetWindowText(h, s, 512); return s.ToString(); }
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);
@@ -51,10 +53,15 @@ $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen; $wa = [System.Win
 $out = @{ ok = $true; act = $Act; vs = @{ x = $vs.X; y = $vs.Y; w = $vs.Width; h = $vs.Height }; wa = @{ x = $wa.X; y = $wa.Y; w = $wa.Width; h = $wa.Height } }
 $out.scr = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $b = $_.WorkingArea; @{ x = $b.X; y = $b.Y; w = $b.Width; h = $b.Height } })
 $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
-Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like ('*' + $Mark + '*') } | ForEach-Object { [void]$pids.Add([uint32]$_.ProcessId) }
+<# (11/12 hands1 정범님 'HOME 알라딘은 평소 크롬을 손발로') @hands = 평소 크롬(따로 된 프로필 --user-data-dir 없이 뜬 크롬 = 정범님 크롬)의 창 가운데 제목에 '리드나우 손발'(운영 수집기 탭이 붙임)이 든 창만 · 운영 작업 창은 운영 도우미 몫이라 안 건드림
+   · 찾기·숨기기·띄우기·앞으로만 — 끄기(kill)·닫기(close)는 평소 크롬에 절대 안 함 #>
+$hands = ($Mark -eq '@hands'); if ($hands -and ($Act -eq 'kill' -or $Act -eq 'close')) { $out.ok = $false; $out.err = '평소 크롬은 끄거나 닫지 않음'; $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
+if ($hands) { Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $c = [string]$_.CommandLine; -not ($c -like '*--user-data-dir*' -or $c -like '*--headless*' -or $c -like '*--remote-debugging*') } | ForEach-Object { [void]$pids.Add([uint32]$_.ProcessId) } }
+else { Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like ('*' + $Mark + '*') } | ForEach-Object { [void]$pids.Add([uint32]$_.ProcessId) } }
 if ($Act -eq 'kill') { $k = 0; foreach ($q in $pids) { try { Stop-Process -Id $q -Force -ErrorAction Stop; $k++ } catch {} }; foreach ($q in $pids) { try { Wait-Process -Id $q -Timeout 5 -ErrorAction SilentlyContinue } catch {} }
   $left = @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like ('*' + $Mark + '*') }).Count; $out.killed = $k; $out.left = $left; $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
 $L = @(); if ($pids.Count) { $L = @([RnCol2Win]::Find($pids)) }
+if ($hands) { $L = @($L | Where-Object { [RnCol2Win]::Title($_) -like '*리드나우 손발*' }) }
 <# (11/10) 보이는 창을 먼저 — 크롬의 보이지 않는 창(제목만 있는 숨은 창)을 먼저 집어 닫기·앞으로를 엉뚱한 창에 하지 않게 #>
 if ($L.Count -gt 1) { $L = @(@($L | Where-Object { [RnCol2Win]::IsWindowVisible($_) }) + @($L | Where-Object { -not [RnCol2Win]::IsWindowVisible($_) })) }
 $out.n = $L.Count; $out.list = @($L | Select-Object -First 4 | ForEach-Object { Info $_ })
@@ -78,11 +85,12 @@ $out | ConvertTo-Json -Compress -Depth 5
 const WIN_HASH = (() => { const m = /\$rnSrc = @'([\s\S]*?)\n'@/.exec(PS_RAW({ showW: 0, showH: 0 })); return crypto.createHash('sha1').update(m ? m[1] : 'x').digest('hex').slice(0, 12); })();
 
 function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () => process.env.RN_COL2_PS || 'powershell.exe';
+  /* (11/12 hands1) mark '@hands' = 평소 크롬의 손발 창(제목 표시로 찾음) — find|hide|show|front만(kill·close는 여기서도 거절) */
   /* act: find|hide|show|front(11/12 login2 · 앞으로만)|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기 · 0.1.3 끝날 때까지 5초 기다리고 남은 수 left) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
   /* (11/10 정범님 '더뎌진 느낌') PowerShell은 한 번에 2개까지만(지킴이·예스24·기록창이 겹쳐 CPU가 튀지 않게) — 나머지는 차례를 기다림 */
   let busy = 0; const q = []; const MAX = 2; const T = []; /* (11/12 rel9) 최근 한 시간 PowerShell 켠 때 — 상태 st.load.ps(시간당 횟수)로 col2_ctl에 */
   const pump = () => { while (busy < MAX && q.length) { const [f, res] = q.shift(); busy++; f().then((r) => { busy--; res(r); pump(); }); } };
-  function run(act, mark, a) { return new Promise((res) => { q.push([() => run1(act, mark, a), res]); pump(); }); }
+  function run(act, mark, a) { if (mark === '@hands' && !/^(find|hide|show|front)$/.test(String(act))) return Promise.resolve({ ok: false, err: '평소 크롬은 끄거나 닫지 않음' }); return new Promise((res) => { q.push([() => run1(act, mark, a), res]); pump(); }); }
   function run1(act, mark, a) { a = a || {}; return new Promise((res) => {
     try { const want = '﻿' + PS_SRC(D).replace(/\r?\n/g, '\r\n'); let cur = null; try { cur = fs.readFileSync(psFile, 'utf8'); } catch (e) {} if (cur !== want) fs.writeFileSync(psFile, want, 'utf8'); } catch (e) { return res({ ok: false, err: '창 다루기 파일을 못 씀: ' + e.message }); }
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Act', act, '-Mark', mark];

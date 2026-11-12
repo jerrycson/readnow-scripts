@@ -68,7 +68,7 @@ try {
     await p.goto(base + '/s/index.html#/shelf?s=cat'); await p.waitForSelector('.bqs-case.cur .mrow', { timeout: 20000 }); await p.waitForTimeout(500);
     if (W === 390) ok(failed >= 2, `${W}px 첫 로딩: 책장 화면 파일이 한 번 안 와도 다시 받아 책장이 섬(받기 ${failed}번)`);
     const hs = await p.$$eval('.bqs-case.cur .mrow h3', (L) => L.map((h) => h.childNodes[0].textContent.trim())); const cont = hs.filter((h) => /이어서/.test(h));
-    ok(cont.length >= 2 && hs.every((h) => (h.match(/\(이어서\)/g) || []).length <= 1), `${W}px 표찰: 이어진 줄 ${cont.length}개 모두 '(이어서)' 한 번만 — 「${cont[cont.length - 1] || '-'}」`);
+    ok(hs.length >= 1 && hs.every((h) => (h.match(/\(이어서\)/g) || []).length <= 1), `${W}px 표찰: 줄 ${hs.length}개 · '(이어서)' 두 번 겹친 표찰 없음(shelf8부터 휴대폰 줄은 접혀 여러 선반이라 이어진 줄 ${cont.length}개)`);
     await p.evaluate(() => { const t = document.querySelector('#toast'); t.textContent = '장바구니에 담았습니다'; t.classList.add('on'); }); await p.waitForTimeout(300);
     const R = await p.evaluate(() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); const cs = getComputedStyle(e); return cs.display === 'none' || cs.visibility === 'hidden' ? null : { x: b.left, y: b.top, w: b.width, h: b.height }; }; return { bar: r('.bqs-mbar'), toast: r('#toast'), cart: r('.bqs-cart'), foot: r('#foot'), vh: innerHeight, sw: document.documentElement.scrollWidth, iw: innerWidth }; });
     ok(R.bar && R.bar.y + R.bar.h <= R.vh + 1 && R.bar.y > R.vh - 120, `${W}px 아래 고정 줄이 화면 맨 아래(높이 ${Math.round(R.bar && R.bar.h)}px)`);

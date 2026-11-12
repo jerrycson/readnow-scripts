@@ -5,7 +5,7 @@
  * 실행: node tests/t_own.js */
 const L = require('./lib.js'); const { ok, wait } = L; const fs = require('fs'), path = require('path');
 (async () => {
-  const H = await L.startHelper({ cfg: { on: true, auto: false, headless: true, pc: 'HOME', pcSrc: 'pc', watch: { tickSec: 60 } } });
+  const H = await L.startHelper({ cfg: { on: true, auto: false, headless: true, pc: 'HOME', hands: false, pcSrc: 'pc', watch: { tickSec: 60 } } });
   const st = async () => (await H.api('GET', '/status')).j; const feed = () => H.api('POST', '/al/feed', { by: 'HOME', seat: { ok: false, why: '시험' }, hold: { on: false }, opLostAt: 0, cfg: { off: false } });
   try {
     console.log('① 이어받기 켬');
@@ -18,7 +18,7 @@ const L = require('./lib.js'); const { ok, wait } = L; const fs = require('fs'),
     console.log('② 끔 · 로거 · 화면');
     r = await H.api('POST', '/cfg', { alOwn: false, src: 'pc' }); f = await feed(); ok(r.j.alOwn === false && f.j.al.own === false, '끄면 al.own 거짓 → 운영이 곧바로 되찾음');
     await H.api('POST', '/cfg', { pc: 'LOGGER-1', pcSrc: 'pc' }); r = await H.api('POST', '/cfg', { alOwn: true, src: 'pc' }); f = await feed(); ok(r.j.alOwn === false && f.j.al.own === false, '로거 PC는 켜지지 않음(약속 0)');
-    await H.api('POST', '/cfg', { pc: 'HOME', pcSrc: 'pc' });
+    await H.api('POST', '/cfg', { pc: 'HOME', hands: false, pcSrc: 'pc' });
     const html = (await H.req('GET', '/')).b + (await H.req('GET', '/s/col2-ui.js')).b; ok(/id="tg_alown"/.test(html) && /tg_alown', S\.alOwn, 'alOwn'/.test(html), '옆 창 ⚙ › 일 켜기·끄기에 🏠 단추 하나(탭을 닫는 수작업 없음)');
     console.log('③ 출고 뒤 한꺼번에 받은 쓰기');
     const ev = (i, late) => ({ id: 'start_' + i + (late ? 'L' : 'N'), k: 'start', at: Date.now() - i * 1000, in: { ono: 'O-' + i }, rq: [{ m: 'GET', u: '/scm/worder_process.aspx?cmd=StartDelivery&ono=O-' + i, q: { cmd: 'StartDelivery', ono: 'O-' + i } }], ok: true, http: 200, ...(late ? { late: 1 } : {}) });

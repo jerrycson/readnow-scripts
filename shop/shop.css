@@ -116,6 +116,8 @@ label.f.good input { border-color: #2f7d4f; }
 .buy .wishb { flex: 0 0 52px; font-size: 22px; padding: 0; } .buy .wishb.on { color: #c62828; border-color: #c62828; }
 .agree .ck.all { padding: 10px 12px; border: 1px solid var(--line, #ddd); border-radius: 10px; margin-bottom: 8px; background: #fffaf0; } .agree .ck.all small { opacity: .7; font-weight: 400; }
 
+/* (shelf8) 서가에서 펼친 책 → 상세: 그 책 자리로 돌아가기 */
+.backshelf { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 12px; padding: 8px 14px; border-radius: 999px; background: #1d2b45; color: #f6ead0; text-decoration: none; font-weight: 700; font-size: 14px; } .backshelf small { font-weight: 500; opacity: .75; font-size: 12px; }
 /* (bookinfo1 11/12) 📖 책 정보 — 기본 정보 표 + 접는 칸 */
 .bkinfo { margin: 18px 0 8px; } .bkinfo h2 { margin-bottom: 8px; }
 .bkb { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; } .bkb th { text-align: left; font-weight: 600; width: 6.5em; padding: 5px 8px; color: var(--sub, #666); white-space: nowrap; vertical-align: top; } .bkb td { padding: 5px 8px; } .bkb tr + tr { border-top: 1px solid var(--line, #eee); }

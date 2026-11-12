@@ -21,7 +21,7 @@ function fakeScm() { const S = { sess: new Set(), log: [], keep: false }; const 
 (async () => {
   const A = await fakeScm(); const D = fs.mkdtempSync(path.join(require('os').tmpdir(), 'col2t_'));
   const alcfg = { chkMin: 600, confirmMin: 600, delivMin: 600, listMin: 600, qnaMin: 600, gapA: 100, gapB: 200, plainSec: 3 };
-  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: false, al: true, alOwn: true, auto: false, headless: true, pc: 'HOME', pcSrc: 'pc', alcfg, relogin: { gapMin: 0, perHour: 20, perDay: 50 }, watch: { tickSec: 60, handoffMs: 200 } },
+  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: false, al: true, alOwn: true, auto: false, headless: true, pc: 'HOME', hands: false, pcSrc: 'pc', alcfg, relogin: { gapMin: 0, perHour: 20, perDay: 50 }, watch: { tickSec: 60, handoffMs: 200 } },
     env: { RN_COL2_ALSCM: A.base, RN_COL2_AL_SCALE: '1', RN_COL2_CORE_DIR: L.PROD_REPO } });
   const st = async () => (await H.api('GET', '/status')).j; const al = async () => (await st()).al;
   const feed = () => H.api('POST', '/al/feed', { by: '시험 수집기', seat: { ok: true }, hold: { on: false } });

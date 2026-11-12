@@ -84,7 +84,7 @@ function bridge(H, DB) { const got = []; let stop = false, pulls = 0;
       G.window = G; G.globalThis = G; G.top = G; G.location = { hostname: 'www.aladin.co.kr' }; G.__rnPcName = { get: () => o.pc || 'LOGGER' }; G.__rnRole = () => 'lead'; G.__rnLog = () => {}; G.__rnC2lgPd = o.pd || null;
       vm.createContext(G); vm.runInContext(NB, G); return { G, FS, H, db, txN: () => txN, tick: async () => { T += 11 * 60e3; await G.__rnC2nvTick(); await new Promise((r) => setTimeout(r, 30)); } }; };
     const ON = { on: true, pub: 'SPKI1', cred: { has: false }, test: null, write: { on: false }, ord: {}, prd: {}, net: null, ipReg: null };
-    { const X = mk({ pc: 'HOME', st: ON }); await X.tick(); ok(!X.H.calls.length && !Object.keys(X.FS).length, '로거가 아닌 PC — 번외도 Firestore도 건드리지 않음', X.H.calls); }
+    { const X = mk({ pc: 'HOME', hands: false, st: ON }); await X.tick(); ok(!X.H.calls.length && !Object.keys(X.FS).length, '로거가 아닌 PC — 번외도 Firestore도 건드리지 않음', X.H.calls); }
     { const X = mk({ st: 404, pd: { at: T, webAt: 0, ver: '0.1.21' } }); await X.tick(); const s = (X.FS.col2_naver || {}).state || {}; ok(s.via === 'col' && /옛 판\(0\.1\.21/.test(s.off || '') && /0\.1\.22 이상/.test(s.off) && s.colVer === '1.89.264' && !(X.FS.col2_naver || {}).pub, '번외가 옛 판(0.1.21 · /nv/st 없음) — 상태에 까닭만(off) · 열쇠 없음', s); }
     { const { net, ...OLD } = ON; void net; const X = mk({ st: OLD }); X.FS.col2_naver_cmd = { c1: { k: 'cred', st: 'new', env: { ct: 'x' }, at: '2026-11-11T07:59:00Z' } }; await X.tick(); const s = (X.FS.col2_naver || {}).state || {};
       ok(!(X.FS.col2_naver || {}).pub && X.FS.col2_naver_cmd.c1.st === 'new' && !X.H.cmd.length && /와이파이 확인이 없음/.test(s.off || ''), '(정범님 \'와이파이만\') 와이파이 문이 없는 번외 — 받는 열쇠 안 올림 · 봉투 안 넘김 · 까닭(off)', s); }
