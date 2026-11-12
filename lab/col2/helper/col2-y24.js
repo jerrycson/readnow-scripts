@@ -65,12 +65,13 @@ function cutAct(src) { const a = String(src || '').indexOf('/* ◆y24Act 시작'
 /* 화면 쪽 짧은 코드(그 탭에서 Runtime.evaluate) */
 const JS_STATE = `(()=>({h:location.hostname,p:location.pathname,pw:!!document.querySelector('input[type=password]'),rs:document.readyState}))()`;
 /* (11/12 login1 · 정범님 '번외가 3일째 예스24 로그인조차 못 함') 🔁 「이미 로그인된 예스24」 화면에서 '다른 곳 세션을 끊고 이 PC로 로그인'(이어받기) 단추 — 그 화면(주소에 AlreadyLogined 또는 화면 글 '이미 로그인')에서만 누름
- *  · 단추 글 꼴은 진단에 남김(btns · 값 없음) — 실제 글을 아직 못 봐서 넓게: 기존·다른 곳·이전 + 로그아웃·해제·끊·종료 / 강제·계속·이어서 로그인 / 로그인·확인·예(이 화면 안에서만) · 취소·아니오·돌아가기·닫기·찾기·가입은 절대 안 누름 */
+ *  · 단추 글 꼴은 진단에 남김(btns · 값 없음) — 기존·다른 곳·이전 + 로그아웃·해제·끊·종료 / 강제·계속·이어서 로그인 / 로그아웃 후 로그인 · 취소·아니오·돌아가기·닫기·찾기·가입은 절대 안 누름
+ *  · (auditfix 11/13 · 정밀 점검 11/12 ⑤) 넷째 후보(그냥 '로그인·확인·예·네')는 뺌 — 화면 글을 아직 못 본 채 '다른 곳 로그인 유지하고 돌아가기'가 '확인'이면 뜻과 반대로 누름 · 그런 화면은 누르지 않고 단추 글(btns)만 남겨 멈춤 → 글을 본 뒤 정확한 낱말로 */
 const TAKE_PAGE = String.raw`/AlreadyLogined/i.test(location.pathname)||/이미\s*(다른\s*(곳|기기|PC|브라우저)에서\s*)?로그인(되어|된|중)/.test((document.body&&document.body.innerText||'').slice(0,4000))`;
 const JS_TAKE = (click) => `(()=>{const pg=${TAKE_PAGE};const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden'&&!e.disabled;
 const tx=(x)=>(x.innerText||x.value||x.alt||x.title||x.getAttribute('aria-label')||'').replace(/\\s+/g,' ').trim().slice(0,40);const NO=/취소|아니오|아니요|돌아가|이전\\s*화면|닫기|찾기|가입|메인으로|홈으로|고객센터/;
 const B=[...document.querySelectorAll('button,a,input[type=button],input[type=submit],[role=button]')].filter((x)=>vis(x)&&tx(x));const btns=B.map(tx).slice(0,10);if(!pg)return{page:false,btns:[]};
-const R=[/(기존|다른\\s*(곳|기기|PC|브라우저)|이전).{0,12}(로그아웃|해제|끊|종료)/,/(강제|계속|이어서|그래도)\\s*로그인/,/로그아웃\\s*(후|하고)\\s*로그인/,/^(로그인|로그인\\s*하기|확인|예|네)$/];
+const R=[/(기존|다른\\s*(곳|기기|PC|브라우저)|이전).{0,12}(로그아웃|해제|끊|종료)/,/(강제|계속|이어서|그래도)\\s*로그인/,/로그아웃\\s*(후|하고)\\s*로그인/];
 let b=null,k=-1;for(let i=0;i<R.length&&!b;i++){b=B.find((x)=>R[i].test(tx(x))&&!NO.test(tx(x)));if(b)k=i}
 if(!b)return{page:true,none:true,btns};const t=tx(b);if(${click ? 'true' : 'false'})b.click();return{page:true,did:${click ? 'true' : 'false'},btn:t,k,btns}})()`;
 const isLoginUrl = (u) => { try { return /login/i.test(new URL(u).pathname); } catch (e) { return false; } };
