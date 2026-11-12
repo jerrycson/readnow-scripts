@@ -123,14 +123,17 @@ ok(/id: 'desc-btn'/.test(T) && /<b>📝 빠른 설명 단추<\/b>/.test(T) && /<
     ok(/북카페 도서 입니다/.test(r2), '한눈에 줄 설명 칸에 ✍ 북카페 글', r2);
     console.log('⑦ 고른 상품 일괄 단추 줄 — 스크롤 뒤에도 보임');
     const more = async () => p.evaluate(async () => { const B = S.regItems.get('d1'); for (let k = 10; k < 40; k++) { const id = 'm' + k; const d = { ...B, id: undefined, createdAt: new Date(Date.parse('2026-11-12T02:00:00Z') + k * 60e3).toISOString(), info: { ...B.info, title: '채움 책 ' + k, isbn13: '979110000' + (7000 + k) } }; delete d.id; await db.collection('reg_items').doc(id).set(d); S.regItems.set(id, { id, ...d }); } S.regChk = new Set(['d1']); regRerender(); });
-    const stick = (p) => p.evaluate(async () => { const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight; await new Promise((r) => setTimeout(r, 300)); const b = document.querySelector('[data-rgselbar]'); const h = sh.querySelector(':scope > .sh'); if (!b || !h) return null; const br = b.getBoundingClientRect(), hr = h.getBoundingClientRect(); const row = b.querySelector('.rgselrow'); return { st: sh.scrollTop, top: Math.round(br.top), hb: Math.round(hr.bottom), on: b.classList.contains('rgsel-on'), rowVis: !!row && row.getBoundingClientRect().height > 0, sum: (b.querySelector('[data-rgselsum]') || {}).offsetHeight || 0, txt: b.textContent.replace(/\s+/g, ' ').slice(0, 80) }; });
+    const stick = (p) => p.evaluate(async () => { const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight; await new Promise((r) => setTimeout(r, 300)); const b = document.querySelector('[data-rgselbar]'); const h = sh.querySelector(':scope > .sh'); if (!b || !h) return null; const br = b.getBoundingClientRect(), hr = h.getBoundingClientRect(); const row = b.querySelector('.rgselrow'); return { st: sh.scrollTop, top: Math.round(br.top), hb: Math.round(hr.bottom), on: b.classList.contains('rgsel-on'), rowVis: !!row && row.getBoundingClientRect().height > 0, sum: (b.querySelector('[data-rgselsum]') || {}).offsetHeight || 0, sw: b.scrollWidth, cw: b.clientWidth, rsw: row ? row.scrollWidth : 0, rcw: row ? row.clientWidth : 0, hit: (() => { const pl = document.querySelector('.rgpill'); if (!pl || getComputedStyle(pl).display === 'none') return 0; const q = pl.getBoundingClientRect(); return [...b.querySelectorAll('.rgselrow > *')].filter((c) => { const r = c.getBoundingClientRect(); return r.width && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top; }).length; })(), pill: (() => { const pl = document.querySelector('.rgpill'); return pl ? getComputedStyle(pl).display : ''; })(), txt: b.textContent.replace(/\s+/g, ' ').slice(0, 80) }; });
     await more(); await p.waitForTimeout(1200);
     let k1 = await stick(p);
     ok(k1 && k1.on && k1.st > 500 && Math.abs(k1.top - k1.hb) <= 3 && k1.rowVis && /고른 1개/.test(k1.txt), '📋 한눈에: 스크롤 뒤에도 일괄 단추 줄이 머리줄 바로 아래에 보임', k1);
+    ok(k1 && k1.sw <= k1.cw && k1.rsw <= k1.rcw, '붙은 줄 가로 넘침 없음(scrollWidth<=clientWidth · 여러 줄 허용)', k1);
+    ok(k1 && k1.hit === 0, '떠 있는 🔎 검색창 단추와 붙은 줄 단추가 겹치지 않음', k1);
     await shotEl(p, '#sheet', 'mjreg2_selbar_glance_scrolled');
     await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'full'); regRerender(); }); await p.waitForTimeout(1500);
     k1 = await stick(p);
     ok(k1 && k1.on && k1.st > 500 && Math.abs(k1.top - k1.hb) <= 3 && k1.rowVis, '🔎 자세히: 스크롤 뒤에도 일괄 단추 줄이 보임', k1);
+    ok(k1 && k1.sw <= k1.cw && k1.rsw <= k1.rcw && k1.hit === 0, '🔎 자세히: 가로 넘침 없음 · 검색창 단추와 안 겹침', k1);
     await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'compact'); S.regChk = new Set(); regRerender(); }); await p.waitForTimeout(1200);
     k1 = await stick(p);
     ok(k1 && !k1.on, '아무것도 안 고르면 붙지 않음(예전처럼)', k1);
