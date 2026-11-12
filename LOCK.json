@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "⬆ 앞 페이지 올리기 판(front1)",
- "since": "2026-11-12T15:01:25Z",
- "beat": "2026-11-12T15:01:25Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: perf9 웹앱 무게 판(새 판 모아 바꾸기·켜기 기록·무게 칸)",
-  "at": "2026-11-12T15:07:22Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "shop9 웹앱 1.78.523 · 클라우드 0.35.164 우리숍 계정·리뷰 push 8d81402b",
-  "at": "2026-11-12T15:01:15Z"
+  "done": "front1 웹앱 1.78.524 · 클라우드 0.35.165 ⬆ 앞 페이지 올리기 push d4ea56c5",
+  "at": "2026-11-12T15:10:59Z"
  },
- "host": "vm-front1"
+ "host": null
 }
