@@ -29,7 +29,7 @@ function world(spec) { global.FieldPath = { documentId: () => '__name__' };
     o.get = async () => { let L = BI.filter((d) => filt(d.v)).sort((a, b) => (a.id < b.id ? -1 : 1)); if (o._after) L = L.filter((d) => d.id > o._after); L = L.slice(0, o._lim); S.reads += L.length; return { docs: L.map(mk), empty: !L.length }; }; return o; };
   const store = {}; const C2 = (name) => ({ doc: (id) => ({ id, get: async () => (name === 'bench_items' && byId.has(id) ? mk(byId.get(id)) : { id, exists: !!store[name + '/' + id], data: () => store[name + '/' + id] }), set: async (v) => { const o0 = store[name + '/' + id] || {}; const n0 = { ...o0 }; for (const [k, x] of Object.entries(v)) n0[k] = x && typeof x === 'object' && !Array.isArray(x) && o0[k] && typeof o0[k] === 'object' && !Array.isArray(o0[k]) ? { ...o0[k], ...x } : x; store[name + '/' + id] = n0; } }),
     where: (k, op, v) => (name !== 'bench_items' ? { select: () => ({ limit: () => ({ get: async () => ({ docs: [], empty: true }) }), get: async () => ({ docs: [], empty: true }) }) } : k === 'goneDay' ? qObj((x) => x.goneDay && x.goneDay >= v) : qObj((x) => x[k] === v)) });
-  const sets = []; const db = { batch: () => ({ set: (ref, v) => { sets.push([ref.id, v]); const d = byId.get(ref.id); if (d) Object.assign(d.v, v); }, commit: async () => {} }), getAll: async () => [] };
+  const sets = []; const db = { batch: () => ({ set: (ref, v) => { sets.push([ref.id, v]); const d = byId.get(ref.id); if (d) Object.assign(d.v, v); }, commit: async () => {} }), getAll: async (...refs) => Promise.all(refs.slice(0, refs.length - (refs.length && refs[refs.length - 1] && refs[refs.length - 1].fieldMask ? 1 : 0)).map((r) => r.get())) };
   const urls = []; const pg = { evaluate: async (fn, ...a) => { const sv = global.fetch; global.fetch = async (u) => { urls.push(u); const w = decodeURIComponent((u.match(/SearchWord=([^&]*)/) || [])[1] || ''); const L = w.split(' ').map((k) => byKey.get(k)).filter(Boolean); return { ok: true, status: 200, url: 'https://www.aladin.co.kr/search', text: async () => listPage(L) }; }; try { return await fn(...a); } finally { global.fetch = sv; } } };
   global.window = { ReadnowAdapt: A }; global.DOMParser = new JSDOM('<html></html>').window.DOMParser;
   const mkT = new Function('A', 'C', 'db', 'getPage', 'jsleep', 'nowIso', 'kDay', 'W', 'ADC', 'adaptMod', 'FieldPath', cut(CSRC, 'let spBatchNextAt = 0;', '\n/* (정범님 11/11 밤 ②') + '\nreturn spBatchTick;');
@@ -51,14 +51,16 @@ function world(spec) { global.FieldPath = { documentId: () => '__name__' };
     const h = W.store['app_settings/adapt_cfg'].spBatchSellHist; ok(Array.isArray(h) && h[0].day === '2026-11-12' && h[0].ticks === 4 && h[0].fill === 30 && h[0].adv === 30 && h[0].wraps === 1 && r4.sell.known === 30 && r4.sell.rateFull === 1 && r4.sell.rateFilled === 1, '날마다 기록(spBatchSellHist) — 회차·채움 수·나아간 문서 수·바퀴 · 숍 전체 채움률(rateFull)', { h, s: r4.sell });
     ok(r1.sell.rateFull === 1 && r1.sell.known === 10 && r2.sell.known === 20, '채움률은 본 것 기준 · 이번 회차에 채운 것까지 셈(첫 회차 10개 중 10)', [r1.sell, r2.sell]); }
 
-  console.log('② 검색 몫이 모자라면 못 찾은 후보를 건너뛰지 않음');
-  { const W = world([['1', 40]]); W.setCfg([{ sc: '1' }], { spBatch: { sellScan: 40, sellWant: 40, maxQ: 1, kMax: 12, gone: false, front: false } });
+  console.log('② 검색 몫이 모자라면 못 한 후보는 이어 할 목록(carry)으로 — 자리는 늘 나아감');
+  { const W = world([['1', 60]]); W.setCfg([{ sc: '1' }], { spBatch: { sellScan: 40, sellWant: 40, maxQ: 1, kMax: 12, gone: false, front: false } });
     const r1 = await W.tick({ force: true }); const c1 = W.cur()['1']; const filled = W.BI.filter((d) => d.v.isbn).length;
-    ok(r1.q === 1 && filled > 0 && filled < 40 && c1.un === 40 - filled && c1.lastId != null && W.byId.get(c1.lastId) && !W.byId.get(W.BI[W.BI.findIndex((d) => d.id === c1.lastId) + 1].id).v.isbn, '검색 1쪽만 — 자리는 아직 못 찾은 첫 후보 바로 앞까지만', { filled, c1 });
-    for (let i = 0; i < 6; i++) await W.tick({ force: true }); ok(W.BI.filter((d) => d.v.isbn).length === 40, '몇 회차 뒤 40개 모두 채움(건너뛴 것 없음)', W.BI.filter((d) => !d.v.isbn).map((d) => d.id));
-    const W2 = world([['1', 5]]); W2.setCfg([{ sc: '1' }], { spBatch: { sellScan: 10, sellWant: 10, maxQ: 1, sellStayMax: 2, gone: false, front: false, on: false } });
-    await W2.tick({ force: true }); await W2.tick({ force: true }); const s2 = W2.cur()['1']; ok(s2.lastId === null && s2.stayN === 2 && s2.rounds === 0, '검색이 꺼져 처리 못 하면 같은 자리에 머묾(stayN)', s2);
-    await W2.tick({ force: true }); const s3 = W2.cur()['1']; ok(s3.forced && s3.rounds === 1 && s3.stayN === 0, 'sellStayMax 넘게 묶이면 그래도 넘김(못 찾는 상품에 영영 묶이지 않음)', s3); }
+    ok(r1.q === 1 && filled > 0 && filled < 40 && c1.lastId === '1_039' && c1.carry.length === 40 - filled && c1.carry.every((c) => c[1] === 1) && r1.sell.adv === 40, '검색 1쪽만 — 자리는 읽은 데(1_039)까지 · 못 찾은 후보는 이어 할 목록(번호·횟수)', { filled, c1 });
+    const r2 = await W.tick({ force: true }); const c2 = W.cur()['1']; const f2 = W.BI.filter((d) => d.v.isbn).length;
+    ok(c2.carryIn === 40 - filled && c2.cand === 40 && c2.scan === filled && c2.lastId === '1_0' + (39 + filled) && f2 > filled && c2.carry[0][1] === 2, '다음 회차는 이어 할 목록 먼저 · 모자란 후보 몫만큼만 더 읽음', { c2, f2 });
+    for (let i = 0; i < 8; i++) await W.tick({ force: true }); ok(W.BI.filter((d) => d.v.isbn).length === 60, '몇 회차 뒤 60개 모두 채움(건너뛴 것 없음)', W.BI.filter((d) => !d.v.isbn).map((d) => d.id));
+    const W2 = world([['1', 5]]); W2.setCfg([{ sc: '1' }], { spBatch: { sellScan: 10, sellWant: 10, maxQ: 1, sellCarryMax: 2, gone: false, front: false, on: false } });
+    await W2.tick({ force: true }); await W2.tick({ force: true }); const s2 = W2.cur()['1']; ok(s2.carry.length === 5 && s2.carry.every((c) => c[1] === 2), '검색이 꺼져 처리 못 하면 이어 할 목록에 남고 횟수가 늚', s2);
+    const r3 = await W2.tick({ force: true }); const s3 = W2.cur()['1']; ok(s3.carry.length === 0 && s3.forced === 5 && r3.sell.forced === 5, 'sellCarryMax 넘게 못 하면 목록에서 뺌(다음 바퀴에 다시 · 못 찾는 상품에 영영 묶이지 않음)', s3); }
 
   console.log('③ 주력 10곳 비중 — 읽기·후보·검색 쪽');
   { const W = world([[MAIN, 50], ['2', 50]]); W.setCfg([{ sc: MAIN }, { sc: '2' }], { spBatch: { sellScan: 100, sellWant: 100, maxQ: 10, kMax: 12, gone: false, front: false } });
