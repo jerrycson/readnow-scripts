@@ -1,2 +1,2 @@
-shpauto=80&doc=app_settings/main,app_settings/ship_auto
-# 1970827173
+doc=app_settings/adapt_cfg,app_settings/adapt_health,app_settings/adapt_sel
+# 1932313099
