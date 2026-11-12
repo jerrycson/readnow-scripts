@@ -1,2 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611121210
-# 1290124604
+doc=app_settings/platforms
+# 159834426
