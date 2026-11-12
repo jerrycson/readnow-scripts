@@ -188,7 +188,7 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
         $('alb').innerHTML = want === 'hu' ? '<button class="p" id="allg">✅ 로그인 다 함 — 창 닫고 확인</button>' : want === 'lg' ? '<button class="p" id="allg">🔐 알라딘 로그인 (처음 한 번)</button>' : want === 'run' ? '<button data-a="confirm">📦 주문확인요청 지금</button><button data-a="list">📋 상품 목록 지금</button>' : '';
         const lg = $('allg'); if (lg) lg.onclick = async () => { msg('…'); const j = await post('/al/login', { why: '옆 창 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
         $('alb').querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => { const j = await post('/al/run', { what: b.dataset.a }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); })); }
-      const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
+      liftAlX(); const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
     function drawY24(s) { const y = s.y24 || {}; let h; if (y.logger) h = '<span class="k">로거 PC — 예스24 판매관리 읽기 안 함(약속 0)</span>'; else if (y.mine === false) h = '<span class="k">🔒 예스24는 ' + E(y.holder || 'HOME') + '이(가) 맡음 — 이 PC 번외는 예스24 일을 하지 않음(바꾸기: 웹앱 ⚙ 설정 › 🟦 예스24)</span>'; else if (!y.on) h = '<span class="wa">꺼 둠</span> <span class="k">' + E(s.on ? '(⚙ 설정 › 일 켜기·끄기에서 켬)' : '(번외 수집이 꺼져 있음)') + '</span>';
       else if (y.login === 'need') h = '<span class="no">🔐 예스24 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 예스24 창이 앞으로 나옵니다 — 그 창에서 로그인하면 저절로 숨고 읽기를 이어 갑니다(아이디·비밀번호는 저장하지 않음)' + (y.loginMsg ? ' · 까닭: ' + E(y.loginMsg) : '') + '</span>' + (y.reWhy ? '<br><span class="wa">스스로 다시 로그인을 안 하는 까닭: ' + E(y.reWhy.why) + '</span>' : '') + (y.already ? '<br><span class="no">⛔ 「이미 로그인된 예스24」 화면 ' + E(y.already.n) + '번 — 되풀이 로그인하지 않고 멈춤 · 아래 단추로 사람이 한 번</span>' : '');
       else if (y.login === 'wait') h = '<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김 · 입력이 없으면 저장된 계정으로 번외가 스스로 로그인</span>';
@@ -251,6 +251,8 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
     const tile = (v, t, l) => `<div class="tl${l ? ' ' + l : ''}"><b>${E(v)}</b><span>${E(t)}</span></div>`;
     const ago = (t) => { if (!t) return '아직'; const m = Math.max(0, Math.round((Date.now() - +new Date(t)) / 60000)); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : hhmm(+new Date(t)); };
     function bigBtn(box, key, html, fn) { if (box.dataset.w === key) return; box.dataset.w = key; box.innerHTML = html; const b = box.querySelector('button'); if (b && fn) b.onclick = fn; }
+    /* (11/12 col2ui2 · cookie1과 합침) 🟧 알라딘 칸(자세히 안)이 그리는 「🔁 평소 크롬의 알라딘 로그인 가져오기」(#alimp)는 주요 카드 바깥으로 옮김 — 새로 그려지면 옛 것은 치움 */
+    function liftAlX() { const box = $('mAlX'); if (!box) return; const L = [...doc.querySelectorAll('[id="alimp"]')]; const fresh = L.find((e) => !box.contains(e)); if (fresh) { box.innerHTML = ''; box.appendChild(fresh); } else if (!L.length) box.innerHTML = ''; }
     function drawMain(s) { if (!$('mainCards')) return; const lg = kind === 'logger', a = (s && s.al) || {}, y = (s && s.y24) || {}, nv = s && s.nv, jb = (s && s.jobs) || {}, ld = (s && s.load) || {};
       const alGo = async () => { msg('…'); const j = await post('/al/login', { why: '🟧 알라딘 카드 큰 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
       /* 🟧 알라딘 */
@@ -263,6 +265,7 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
       else if (a.on) { const d = a.day || {}; aL.push('<span class="' + (a.seat ? 'ok' : 'wa') + '">🪑 로그인 자리 ' + (a.seat ? '받음' : '아직 없음') + '</span>' + (a.login === 'ok' ? ' · 샵매니저 오늘 <b>' + (d.n || 0) + '</b>장(같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) + ')' : '')); }
       $('mAlL').innerHTML = aL.join('<br>');
       const aw = !s || lg || !a.on ? '' : a.login === 'human' ? 'hu' : a.login !== 'ok' || a.pp || a.todo ? 'lg' : '';
+      liftAlX();
       bigBtn(aB, aw, aw === 'hu' ? '<button class="p big" id="mAlLg">✅ 로그인 다 함 — 창 닫고 확인</button>' : aw === 'lg' ? '<button class="p big" id="mAlLg">🔐 알라딘 로그인</button>' : '', alGo);
       /* 🟦 예스24 — 로거엔 없음 */
       $('mcY24').hidden = lg; if (!lg) { const yc = $('mY24Ch'); const w = y.w || {}, yj = y.jobs || {}, tk = y.tk || {};

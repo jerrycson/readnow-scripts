@@ -51,6 +51,8 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
       ok(!g.more && g.inMore && g.cardsVis === false, '나머지 칸(자세한 상태·바로 가기·작업 창 …)은 🔧 자세히 안 — 처음엔 접힘(지우지 않음)', JSON.stringify([g.more, g.inMore, g.cardsVis]));
       const lgBtn = await p.evaluate(() => ({ al: document.getElementById('mAlB').textContent, y: document.getElementById('mY24B').textContent }));
       ok(!/로그인/.test(lgBtn.al + lgBtn.y), '사람 손이 필요 없으면 카드에 큰 로그인 단추 없음', JSON.stringify(lgBtn));
+      { const mv = await p.evaluate(async () => { const b = document.createElement('button'); b.id = 'alimp'; b.textContent = '🔁 평소 크롬의 알라딘 로그인 가져오기'; document.getElementById('alb').appendChild(b); await window.__side.load(); return { inMain: !!document.querySelector('#mAlX #alimp'), n: document.querySelectorAll('[id="alimp"]').length }; });
+        ok(mv.inMain && mv.n === 1, '(cookie1과 합침) 🟧 칸이 그린 「🔁 평소 크롬의 알라딘 로그인 가져오기」는 주요 🟧 알라딘 카드 바깥으로 옮김(하나만)', JSON.stringify(mv)); }
       await p.click('#more > summary'); await wait(400); ok(await p.evaluate(() => document.getElementById('more').open && document.querySelector('[data-card="now"] > summary').checkVisibility()), '🔧 자세히 누르면 펼침'); }
     console.log('  · 🔗 바로 가기');
     await p.evaluate(() => { document.querySelector('[data-card="go"]').open = true; }); /* (11/11 col2ui1) 바로 가기 칸은 처음엔 접힘 */ await wait(300);

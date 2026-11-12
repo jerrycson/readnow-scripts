@@ -590,7 +590,7 @@ function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="ut
 <div class="mgrid" id="mainCards">
 <section class="mc al" id="mcAl"><div class="mh"><b>🟧 알라딘</b><span class="ch" id="mAlCh"><i>—</i></span></div><div class="todo" id="mAlTodo" hidden></div><div class="ml" id="mAlL"></div>
 <div class="glbar" id="glBarBox" title="알라딘 공개 화면 오늘 읽은 장 수 / 하루 한도(⚙ 설정 › 📏 한도·속도에서 바꿈)"><div class="glt"><span>공개 화면 오늘 읽음</span><b id="glN">— / —</b></div><div class="bar"><i id="glBar"></i></div></div>
-<div class="mbtn" id="mAlB"></div></section>
+<div class="mbtn" id="mAlB"></div><div class="mbtn" id="mAlX"></div></section>
 <section class="mc y24" id="mcY24"><div class="mh"><b>🟦 예스24</b><span class="ch" id="mY24Ch"><i>—</i></span></div><div class="tiles" id="mY24T"></div><div class="ml" id="mY24L"></div><div class="mbtn" id="mY24B"></div></section>
 <section class="mc nv" id="mcNv" hidden><div class="mh"><b>🟩 네이버</b><span class="ch" id="mNvCh"><i>—</i></span></div><div class="tiles" id="mNvT"></div><div class="ml" id="mNvL"></div></section>
 <section class="mc jb" id="mcJobs"><div class="mh"><b>📋 맡긴 일</b><span class="ch" id="mJbCh"><i>—</i></span></div><div class="tiles" id="mJbT"></div><div class="ml" id="mJbL"></div></section>
