@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "번외 0.1.33 — 알라딘 로그인 한 줄을 지금 글에(login1)",
+ "since": "2026-11-12T03:09:49Z",
+ "beat": "2026-11-12T03:09:49Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "번외 0.1.32(login1) — 예스24 「이미 로그인된」 이어받기 · 알라딘 자동 네이버 길 평범한 창 · 7d0fe66d · 머리 그대로",
   "at": "2026-11-12T02:30:57Z"
  },
- "host": null
+ "host": "vm"
 }
