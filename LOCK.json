@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 판: 예스24 판매관리 새 칸 이름 (y24adm)",
- "since": "2026-11-12T12:32:53Z",
- "beat": "2026-11-12T12:32:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24chk 다섯째 웹앱 1.78.519 (951e38f7)",
-  "at": "2026-11-12T12:16:04Z"
+  "done": "y24adm 웹앱 1.78.520 (758d890d)",
+  "at": "2026-11-12T12:35:54Z"
  },
- "host": "vm-y24adm"
+ "host": null
 }
