@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "spfull 둘째 클라우드 판",
- "since": "2026-11-12T15:11:07Z",
- "beat": "2026-11-12T15:11:07Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: shop9 2회 우리숍 별점·요약·답글·팔로잉(클라우드+웹앱+손님 화면)",
-  "at": "2026-11-12T15:12:02Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "front1 웹앱 1.78.524 · 클라우드 0.35.165 ⬆ 앞 페이지 올리기 push d4ea56c5",
-  "at": "2026-11-12T15:10:59Z"
+  "done": "spfull 둘째 클라우드 0.35.166 push bc775622",
+  "at": "2026-11-12T15:12:06Z"
  },
- "host": "vm-spfull"
+ "host": null
 }
