@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cres1 클라우드 0.35.145 구매평 셈 메모리 급한 고침",
+ "since": "2026-11-12T08:09:54Z",
+ "beat": "2026-11-12T08:09:54Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "cres1 클라우드 0.35.144 · 750ac7c4",
   "at": "2026-11-12T07:48:02Z"
  },
- "host": null
+ "host": "vm"
 }
