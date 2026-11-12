@@ -1,4 +1,3 @@
-shpauto=40
-list=rn_status
-heads=1
-# 1681514908
+doc=app_settings/ship_auto,app_settings/seller_learn,app_settings/seller_aud
+col2=2026-11-12
+# 2553806
