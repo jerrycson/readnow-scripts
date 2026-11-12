@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "rel11 출고 토글 — 시험",
- "since": "2026-11-12T05:57:34Z",
- "beat": "2026-11-12T06:06:50Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: login2 번외 로그인",
-  "at": "2026-11-12T06:02:20Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "pend1 판 웹앱 1.78.499 · d6368672 · 머리 그대로",
-  "at": "2026-11-12T05:41:56Z"
+  "done": "rel11 판 웹앱 1.78.500 · 수집기 1.89.278 · 클라우드 0.35.140 · 인쇄 1.2.5 · ALPS 0.5.7 · 2893e94c · 머리 그대로",
+  "at": "2026-11-12T06:07:54Z"
  },
- "host": "rel11-vm"
+ "host": null
 }
