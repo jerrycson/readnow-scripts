@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "📖 책 정보 진단 줄 겹침 고침(bookinfo1 · 클라우드만)",
- "since": "2026-11-12T17:17:19Z",
- "beat": "2026-11-12T17:17:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "spfull 넷째 클라우드 0.35.180 push cdbfa008",
-  "at": "2026-11-12T17:08:12Z"
+  "done": "클라우드 진단 줄 겹침 고침(bookinfo1)",
+  "at": "2026-11-12T17:17:37Z"
  },
- "host": "vm-bookinfo1"
+ "host": null
 }
