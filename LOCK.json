@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "spfull 클라우드 판(판매 중 상품 숍 전체 돌기)",
+ "since": "2026-11-12T14:38:31Z",
+ "beat": "2026-11-12T14:38:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "tfix 웹앱 1.78.522 (2d5043ff) · 시험 7개 맞춤",
   "at": "2026-11-12T13:53:15Z"
  },
- "host": null
+ "host": "vm-spfull"
 }
