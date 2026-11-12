@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "perf9 웹앱 무게 판(새 판 모아 바꾸기·켜기 기록·무게 칸)",
+ "since": "2026-11-12T15:53:52Z",
+ "beat": "2026-11-12T15:53:52Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "spfull 셋째 클라우드 0.35.172 push ca3b2965",
   "at": "2026-11-12T15:53:36Z"
  },
- "host": null
+ "host": "vm-perf9"
 }
