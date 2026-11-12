@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "서가 8차(shelf8) 판 — 서가 0.2.6 · 클라우드",
- "since": "2026-11-12T16:05:17Z",
- "beat": "2026-11-12T16:11:30Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: hands1 번외 손발 길 판 내기(번외·수집기 본문)",
-  "at": "2026-11-12T16:25:35Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "클라우드 배포 워크플로 묶음 나눔(deployfix) 5d990444·d6365f0b",
-  "at": "2026-11-12T16:05:13Z"
+  "done": "shelf8 서가 0.2.6→0.2.7 · 클라우드 0.35.174 push 3b398872·97b651bf · 우리숍·클라우드 배포 성공",
+  "at": "2026-11-12T16:33:11Z"
  },
- "host": "vm-shelf8"
+ "host": null
 }
