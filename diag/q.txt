@@ -1,2 +1,2 @@
-doc=prd_jobs/net_2026-11-12
-# 250219147
+doc=app_settings/adapt_cfg,app_settings/adapt_health,app_settings/adapt_sel
+# 1077030149
