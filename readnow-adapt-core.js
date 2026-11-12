@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.1.5'; // (0.1.5 adapt5) SP 묶음 k≤12·170자·posN/posHit·성적 칸 대문자 · ebookHas // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
+  const VERSION = '0.1.5'; // (0.1.6 adapt9) 🔄 목표·방법 적응 틀(agRecord·agJudge·agPick·agDecide·agDiff·agClassify·agLabelCands·agTrial·agAdapt·agSummary) — 모든 엔진 공용 · 약속 64 // (0.1.5 adapt5) SP 묶음 k≤12·170자·posN/posHit·성적 칸 대문자 · ebookHas // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
 
   /* ── 도움 함수 ── */
   const txt = (el) => (el ? String(el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -582,6 +582,115 @@
   /* 하루 요약 한 줄(리드가 매일 봄) — 종류마다 점수·깨진 칸·죽은 길·지문 바뀜 */
   function dailyLine(H) { const parts = []; for (const [k, v] of Object.entries((H && H.kinds) || {})) { const j = v.judge || {}; parts.push(`${(KINDS[k] && KINDS[k].label) || (k === 'al_list' ? '알라딘 목록 화면' : k)} ${v.health ? Math.round(v.health.score * 100) : '-'}점${j.broken && j.broken.length ? ` · 깨짐 ${j.broken.join(',')}` : ''}${j.deadPaths && j.deadPaths.length ? ` · 죽은 길 ${j.deadPaths.map((d) => d.field + '/' + d.how).join(',')}` : ''}${v.fp && v.fp.changed ? ' · 화면 구조 바뀜' : ''}${v.guard && v.guard.bad && v.guard.bad.length ? ` · 운영 파서 어긋남 ${v.guard.bad.join(',')}` : ''}`); } return parts.join(' │ '); }
 
-  const api = { VERSION, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, spBatchPlan3, spMultiLearn, spKeepDays, spKeepPerH, kCode, idKeyOf, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
+  /* ══ (0.1.6 adapt9 · 정범님 11/12 밤 · 약속 64) 🔄 목표·방법 적응 틀 — 전제: '상대(알라딘·예스24 등)는 방식을 바꾼다'
+   *  목표(무엇을 얻나)는 고정하고 방법(어디서·어떤 표기·어떤 경로로)만 바꿈. 엔진마다 '목표 장부' 하나(g):
+   *   methods[방법] = 날짜별 성적 d[[날, 시도, 성공, 비용, 시간ms]](21일) · 최근 회차 rr[[시도, 성공, 시각]](6번) · st: champ(지금 쓰는 길) | cand(후보) | arch(예전 챔피언 — 지우지 않음, 돌아갈 수 있게) | off
+   *  agStep / agAdapt 흐름: ① 판정 agJudge(챔피언 최근 회차 성공률 vs 평소·목표) → ② 떨어지면 바뀐 것 찾기 agDiff·agClassify(잘 되던 원문 표본 vs 지금 원문: 표기·자리·경로·막힘·빈 답)
+   *   → ③ 새 방법 후보 agLabelCands(아는 값이 있는 자리 앞 글 · 같은 뜻 다른 표기 AG_SYN · '이름표 : 숫자' 꼴) → ④ 작은 표본 시험 agTrial(새 요청 없음 — 받아 둔 원문으로)
+   *   → ⑤ 통계로 고르기 agDecide(윌슨 하한 성공률 · 비용당 성공 · 연속 2번 이겨야 바꿈(고수) — 챔피언이 무너졌으면 표본 3개로 바로) → ⑥ 채택, 옛 방법은 보관(arch)
+   *  탐색/활용 agPick: 대부분 챔피언 · ε(평소 6% · 떨어질 때 35%) 만큼 다른 길 — 100%여도 3% 밑으로 내리지 않음(더 싼 길·되돌아온 옛 길을 늘 찾음)
+   *  바뀜·채택·되돌림·회복은 줄 { at, src:'엔진', eng, engL, kind, t, ev } → 부르는 쪽이 '발견 모음'에 넘김(클라우드 findsPush)
+   *  순수 함수 · 저장·네트워크 없음 · reduce 안 씀(알라딘 화면 prototype.js) */
+  const AG_DEF = { eps: 0.06, epsMin: 0.03, epsDrop: 0.35, minN: 12, drop: 0.2, low: 0.5, z: 1.28, effGain: 0.15, rateTie: 0.03, wins: 2, days: 21, win3: 3, ev: 30, arch: 8, target: 0.9, smp: 1200 };
+  const agNow = (t) => (t == null ? Date.now() : typeof t === 'number' ? t : Date.parse(t) || Date.now());
+  const agDay = (t) => new Date(agNow(t) + 9 * 3600e3).toISOString().slice(0, 10);
+  const r3 = (x) => (x == null || !isFinite(x) ? null : Math.round(x * 1000) / 1000);
+  const pct = (x) => (x == null ? '-' : Math.round(x * 100) + '%');
+  function agNew(id, o) { o = o || {}; return { id: String(id), label: o.label || String(id), goal: o.goal || '', unit: o.unit || '건', target: o.target != null ? +o.target : AG_DEF.target, methods: {}, champ: null, arch: [], ev: [], smp: {}, flag: null, at: null, v: 1 }; }
+  function agMethod(g, mid, o) { o = o || {}; mid = String(mid); let m = g.methods[mid]; if (!m) { m = g.methods[mid] = { id: mid, label: o.label || mid, how: o.how || null, from: o.from || 'seed', st: 'cand', d: [], rr: [], win: 0, at: o.at || null }; if (o.re) m.re = o.re; if (o.lbl) m.lbl = o.lbl; } return m; }
+  /* 목표 장부를 만들거나 씨앗(seed: label·goal·unit·target·methods[]·champ)으로 이름·방법을 맞춤 — 성적은 그대로 */
+  function agEnsure(map, id, seed) { let g = map[id]; if (!g || typeof g !== 'object' || !g.methods) g = map[id] = agNew(id, seed); if (seed) { if (seed.label) g.label = seed.label; if (seed.goal) g.goal = seed.goal; if (seed.unit) g.unit = seed.unit; if (seed.target != null) g.target = +seed.target; for (const m of seed.methods || []) agMethod(g, m.id, m); if (!g.champ && seed.champ && g.methods[seed.champ]) { g.champ = seed.champ; g.methods[seed.champ].st = 'champ'; } } return g; }
+  /* 한 회차 결과 넣기 — r = { n 시도, ok 성공, cost 비용(요청 쪽 수 등 · 없으면 n), ms, meta(새 방법이면 그 설명) } */
+  function agRecord(g, mid, r, now) { r = r || {}; const t = agNow(now); const m = agMethod(g, mid, r.meta); const n = Math.max(0, +r.n || 0); if (!n) return m; const ok = Math.min(n, Math.max(0, +r.ok || 0)); const cost = r.cost != null ? Math.max(0, +r.cost || 0) : n; const ms = Math.max(0, +r.ms || 0); const day = agDay(t);
+    let b = m.d.length ? m.d[m.d.length - 1] : null; if (!b || b[0] !== day) { b = [day, 0, 0, 0, 0]; m.d.push(b); if (m.d.length > AG_DEF.days) m.d.splice(0, m.d.length - AG_DEF.days); } b[1] += n; b[2] += ok; b[3] += cost; b[4] += ms;
+    m.rr.push([n, ok, new Date(t).toISOString()]); if (m.rr.length > 6) m.rr.splice(0, m.rr.length - 6); if (m.brk) { m.post = m.post || [0, 0, 0]; m.post[0] += n; m.post[1] += ok; m.post[2] += cost; } g.at = new Date(t).toISOString(); return m; }
+  const agWilson = (ok, n, z) => { if (!(n > 0)) return { lo: 0, hi: 1 }; const p = ok / n, z2 = z * z, d = 1 + z2 / n, c = p + z2 / (2 * n), s = z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n)); return { lo: Math.max(0, (c - s) / d), hi: Math.min(1, (c + s) / d) }; };
+  /* 성적 — 최근 3일 칸(모자라면 21일 전체) · 무너진 뒤 보관된 길은 무너진 뒤 성적(post)만 */
+  function agStat(m, o) { o = o || AG_DEF; if (!m) return { n: 0, ok: 0, cost: 0, r: null, eff: null }; let n = 0, ok = 0, cost = 0;
+    if (m.brk) { const P = m.post || [0, 0, 0]; n = P[0]; ok = P[1]; cost = P[2]; }
+    else { const L = m.d || []; const take = (k) => { n = 0; ok = 0; cost = 0; for (let i = Math.max(0, L.length - k); i < L.length; i++) { n += L[i][1]; ok += L[i][2]; cost += L[i][3]; } }; take(o.win3 || 3); if (n < (o.minN || 12)) take(L.length); }
+    return { n, ok, cost, r: n ? ok / n : null, eff: cost ? ok / cost : null }; }
+  const agRecent = (m, k) => { let n = 0, ok = 0; const L = (m && m.rr) || []; for (let i = Math.max(0, L.length - (k || 3)); i < L.length; i++) { n += L[i][0]; ok += L[i][1]; } return { n, ok, r: n ? ok / n : null }; };
+  /* 평소 = 최근 회차를 뺀 날짜 칸 */
+  const agBase = (m, k) => { const S = agStat(m); const R = agRecent(m, k); const n = S.n - R.n, ok = S.ok - R.ok; return n > 0 ? { n, ok, r: ok / n } : { n: 0, ok: 0, r: null }; };
+  /* ① 판정 — ok | low(목표 밑) | drop(평소보다 크게 떨어짐) | broken(무너짐) | new(챔피언 없음) | idle(기록 없음) */
+  function agJudge(g, o) { o = { ...AG_DEF, ...(o || {}) }; const m = g && g.champ ? g.methods[g.champ] : null; if (!m) return { st: 'new' }; const R = agRecent(m, 3); if (!R.n) return { st: 'idle' }; const B = agBase(m, 3); const ref = B.n >= Math.min(o.minN, 6) ? B.r : g.target; const r = R.r;
+    let st = 'ok'; if (R.n >= 3 && r < o.low * ref) st = 'broken'; else if (R.n >= 3 && ref - r > o.drop) st = 'drop'; else if (R.n >= 3 && r < g.target * 0.8) st = 'low';
+    return { st, r: r3(r), base: r3(B.r), ref: r3(ref), n: R.n }; }
+  /* 탐색/활용 — 이번 회차에 쓸 방법 하나 · rnd(0~1)를 넣으면 시험에서 같은 답 */
+  function agPick(g, rnd, o) { o = { ...AG_DEF, ...(o || {}) }; rnd = rnd == null ? Math.random() : +rnd; const L = Object.values((g && g.methods) || {}).filter((m) => m.st !== 'off'); if (!L.length) return null; const ch = g.champ && g.methods[g.champ] && g.methods[g.champ].st !== 'off' ? g.methods[g.champ] : null;
+    const j = agJudge(g, o); let eps = j.st === 'broken' || j.st === 'drop' ? o.epsDrop : o.eps; eps = Math.max(o.epsMin, eps); if (!ch) eps = 1; const others = L.filter((m) => m !== ch);
+    if (!others.length || rnd >= eps) return { mid: (ch || L[0]).id, why: ch ? '고수' : '처음', eps: r3(eps) };
+    let tot = 0; for (const m of L) tot += agStat(m, o).n; let best = null, bv = -1; for (const m of others) { const S = agStat(m, o); const u = S.n > 0 ? S.r + Math.sqrt((2 * Math.log(tot + 2)) / S.n) : 9; const v = m.st === 'arch' ? u * 0.9 : u; if (v > bv) { bv = v; best = m; } }
+    return { mid: best.id, why: '탐색', eps: r3(eps) }; }
+  const AG_KO = { broken: '옛 방법이 무너짐', better: '성공률이 확실히 높음', cheaper: '성공률은 같고 비용당 성공이 더 좋음' };
+  function agLine(g, kind, t, ev, now) { const L = { at: new Date(agNow(now)).toISOString(), src: '엔진', eng: g.id, engL: g.label, kind, t, ...(ev ? { ev } : {}) }; g.ev = (g.ev || []).concat([{ at: L.at, kind, t }]).slice(-AG_DEF.ev); return L; }
+  /* ⑤ 통계로 고르기 — 바꿀 때만 줄을 돌려줌 */
+  function agDecide(g, now, o) { o = { ...AG_DEF, ...(o || {}) }; const lines = []; const L = Object.values(g.methods || {}).filter((m) => m.st !== 'off'); const ch = g.champ ? g.methods[g.champ] : null;
+    if (!ch || ch.st === 'off') { let c = null, cr = -1; for (const m of L) { const S = agStat(m, o); if (S.n && S.ok && S.r > cr) { c = m; cr = S.r; } } if (c) { c.st = 'champ'; g.champ = c.id; c.since = new Date(agNow(now)).toISOString(); g.ev = (g.ev || []).concat([{ at: c.since, kind: '시작', t: `처음 방법 '${c.label}' (성공률 ${pct(cr)})` }]).slice(-o.ev); } return lines; }
+    const j = agJudge(g, o); const CS = agStat(ch, o); const chR = CS.r == null ? 0 : CS.r; const chE = CS.eff || 0; const rec = agRecent(ch, 3); const broken = j.st === 'broken'; let pick = null, why = null, ps = -1;
+    for (const m of L) { if (m === ch) continue; const S = agStat(m, o); if (!S.n) { m.win = 0; continue; } const w = agWilson(S.ok, S.n, o.z); let win = null;
+      if (broken && S.n >= 3 && S.r >= 0.6 && w.lo > (rec.r || 0) + 0.1) win = 'broken';
+      else if (S.n >= o.minN && w.lo > chR + 0.02) win = 'better';
+      else if (S.n >= o.minN && CS.n >= o.minN && Math.abs(S.r - chR) <= o.rateTie && S.eff != null && S.eff >= chE * (1 + o.effGain) && w.lo >= chR - 0.05) win = 'cheaper';
+      if (win) { m.win = (m.win || 0) + 1; if (win === 'broken' || m.win >= o.wins) { const sc = w.lo + (S.eff || 0) * 0.001; if (sc > ps) { pick = m; why = win; ps = sc; } } } else m.win = 0; }
+    if (pick) { const at = new Date(agNow(now)).toISOString(); const back = pick.st === 'arch'; const S = agStat(pick, o); ch.st = 'arch'; if (broken) { ch.brk = at; ch.post = [0, 0, 0]; } g.arch = (g.arch || []).concat([{ id: ch.id, label: ch.label, at, why, r: r3(broken ? rec.r : chR), n: broken ? rec.n : CS.n }]).slice(-o.arch);
+      pick.st = 'champ'; pick.win = 0; pick.since = at; if (pick.brk) { delete pick.brk; delete pick.post; } g.champ = pick.id;
+      const t = `🔄 ${g.label}: 방법 '${ch.label}' → '${pick.label}'${back ? '(예전 방법으로 되돌림)' : ''} — ${AG_KO[why]} · 새 방법 성공률 ${pct(S.r)}(${Math.round(S.n)}${g.unit}) · 옛 방법 ${pct(broken ? rec.r : chR)}${why === 'cheaper' ? ` · 비용당 성공 ${r3(chE)} → ${r3(S.eff)}` : ''}`;
+      lines.push(agLine(g, back ? '되돌림' : '채택', t, { from: ch.id, to: pick.id, why, newR: r3(S.r), newN: S.n, oldR: r3(broken ? rec.r : chR) }, now)); }
+    return lines; }
+
+  /* ② 바뀐 것 찾기 — 두 원문(잘 되던 것 a · 지금 b)의 낱말·class 이름 차이 */
+  const agToks = (s) => { const S = String(s || ''); const w = new Set(), c = new Set(); for (const m of S.matchAll(/class\s*=\s*["']([^"']+)["']/gi)) for (const x of m[1].split(/\s+/)) if (x) c.add(x); const t = S.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' '); for (const m of t.matchAll(/[가-힣]{2,}|[A-Za-z][A-Za-z]+(?:\s[A-Z][a-z]+)?/g)) w.add(m[0]); return { w, c }; };
+  const jac = (A, B) => { if (!A.size && !B.size) return 1; let i = 0; for (const x of A) if (B.has(x)) i++; return i / (A.size + B.size - i); };
+  function agDiff(a, b) { const A = agToks(a), B = agToks(b); const lostW = [...A.w].filter((x) => !B.w.has(x)), gainW = [...B.w].filter((x) => !A.w.has(x)), lostC = [...A.c].filter((x) => !B.c.has(x)), gainC = [...B.c].filter((x) => !A.c.has(x));
+    return { lostW: lostW.slice(0, 12), gainW: gainW.slice(0, 12), lostC: lostC.slice(0, 12), gainC: gainC.slice(0, 12), jw: r3(jac(A.w, B.w)), jc: r3(jac(A.c, B.c)), nA: String(a || '').length, nB: String(b || '').length }; }
+  const AG_KIND = { label: '표기 바뀜(같은 자리 다른 이름)', place: '자리 바뀜(화면 구조·칸 이름)', path: '경로 바뀜(주소 넘겨짐·로그인)', block: '막힘(요청 많음·로봇 확인)', empty: '빈 답(자료 없음)', page: '화면이 통째로 바뀜', none: '원문은 같음(값 쪽 문제)', unknown: '까닭 아직 모름(원문 표본 없음)' };
+  function agClassify(a, b, info) { info = info || {}; const B = String(b == null ? '' : b); const st = +info.status || 0;
+    if (st === 429 || st === 403 || /captcha|자동\s*입력\s*방지|비정상적인\s*접근|too many requests|access denied/i.test(B)) return { k: 'block', ko: AG_KIND.block };
+    if (info.redirect || /\/login\/|wlogin\.aspx|로그인이\s*필요/i.test(B)) return { k: 'path', ko: AG_KIND.path };
+    if (!B.replace(/<[^>]+>/g, '').trim() || B.length < 40) return { k: 'empty', ko: AG_KIND.empty };
+    if (!a) return { k: 'unknown', ko: AG_KIND.unknown }; const D = agDiff(a, b);
+    if (!D.lostW.length && !D.gainW.length && !D.lostC.length && !D.gainC.length) return { k: 'none', ko: AG_KIND.none, d: D };
+    if (D.jw < 0.35) return { k: 'page', ko: AG_KIND.page, d: D };
+    if (D.lostW.length && D.gainW.length && (D.jc >= 0.8 || !D.lostC.length)) return { k: 'label', ko: AG_KIND.label, d: D };
+    if (D.lostC.length || D.gainC.length) return { k: 'place', ko: AG_KIND.place, d: D };
+    return { k: 'label', ko: AG_KIND.label, d: D }; }
+  /* 원문 표본 — 방법마다 잘 되던 것(good)·안 되던 것(bad) 하나씩 · 1,200자까지 */
+  function agSample(g, mid, raw, good, now, info) { if (raw == null) return; const s = String(raw).slice(0, AG_DEF.smp); const z = (g.smp[mid] = g.smp[mid] || {}); z[good ? 'good' : 'bad'] = { at: new Date(agNow(now)).toISOString(), s, ...(info ? { info } : {}) }; const ks = Object.keys(g.smp); if (ks.length > 5) for (const k of ks) if (k !== g.champ && k !== mid && Object.keys(g.smp).length > 5) delete g.smp[k]; }
+
+  /* ③ 새 방법 후보 — 같은 뜻 다른 표기 · 아는 값 자리 · '이름표 : 숫자' */
+  const AG_SYN = { salesPoint: ['Sales Point', 'SalesPoint', '세일즈포인트', '세일즈 포인트', '판매지수', '판매 지수'], priceSales: ['판매가', '할인가', '구매가', '판매 가격'], priceList: ['정가', '정상가'], usedMin: ['중고 최저가', '최저가'], pages: ['쪽수', '페이지', '면수'], rating: ['평점', '별점'], reviews: ['구매평', '리뷰', '100자평', '한줄평'], items: ['상품 수', '상품수', '전체 상품', '등록 상품'] };
+  const reEsc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const agLblRe = (l) => reEsc(String(l).trim()).replace(/\s+/g, '\\s*') + '\\s*[:：]?\\s*(\\d[\\d,]*)';
+  const agPlain = (s) => String(s == null ? '' : s).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/\s+/g, ' ').trim();
+  function agApply(m, s) { if (!m || !m.re) return null; let re; try { re = new RegExp(m.re); } catch (e) { return null; } const x = agPlain(s).match(re); return x ? toInt(x[1]) : null; }
+  function agLabelCands(samples, spec, o) { o = o || {}; spec = spec || {}; const syn = spec.syn || AG_SYN[spec.field] || []; const S = (samples || []).filter((x) => x && x.s != null); const cnt = new Map();
+    const add = (lbl, src, i) => { lbl = String(lbl || '').replace(/\s+/g, ' ').trim(); if (lbl.length < 2 || lbl.length > 16) return; const z = cnt.get(lbl) || { lbl, src, hit: new Set() }; z.hit.add(i); if (src === 'known') z.src = 'known'; cnt.set(lbl, z); };
+    const pre = (s, k, i) => { const p = s.slice(Math.max(0, k - 28), k); const m = p.match(/([가-힣A-Za-z][가-힣A-Za-z ]{0,14}[가-힣A-Za-z]|[가-힣A-Za-z]{2})\s*[:：]?\s*$/); if (!m) return; const ws = m[1].trim().split(' '); add(m[1], 'known', i); if (ws.length > 1) { add(ws[ws.length - 1], 'known', i); add(ws.slice(-2).join(' '), 'known', i); } };
+    S.forEach((x, i) => { const s = agPlain(x.s);
+      if (x.v != null && isFinite(+x.v)) { for (const f of [...new Set([String(Math.round(+x.v)), fmtInt(Math.round(+x.v))])]) { let k = -1; while ((k = s.indexOf(f, k + 1)) >= 0) { const a = s[k - 1] || '', b = s[k + f.length] || ''; if (/[\d,]/.test(a) || /\d/.test(b) || (b === ',' && /\d/.test(s[k + f.length + 1] || ''))) continue; pre(s, k, i); } } }
+      for (const w of syn) { try { if (new RegExp(agLblRe(w)).test(s)) add(w, 'syn', i); } catch (e) {} }
+      if (o.scan) for (const m of s.matchAll(/([가-힣A-Za-z][가-힣A-Za-z ]{0,14}[가-힣A-Za-z])\s*[:：]\s*(\d[\d,]*)/g)) add(m[1], 'scan', i); });
+    return [...cnt.values()].map((z) => ({ id: 'lbl:' + z.lbl, label: `이름표 '${z.lbl}'`, how: 'label', lbl: z.lbl, re: agLblRe(z.lbl), src: z.src, hit: z.hit.size })).sort((a, b) => b.hit - a.hit || (a.src === 'known' ? -1 : 1)).slice(0, o.max || 8); }
+  /* ④ 작은 표본 시험 — 받아 둔 원문으로(새 요청 0) · 아는 값이 있으면 같아야 성공 · range 밖은 실패 */
+  function agTrial(g, cands, samples, spec, now) { spec = spec || {}; const S = (samples || []).filter((x) => x && x.s != null); const out = []; if (!S.length) return out;
+    for (const c of cands || []) { if (!c || !c.re || (g.champ && c.id === g.champ)) continue; let ok = 0; for (const x of S) { const v = agApply(c, x.s); if (v == null) continue; if (spec.range && (v < spec.range[0] || v > spec.range[1])) continue; if (x.v != null && Math.round(+x.v) !== v) continue; ok++; }
+      agRecord(g, c.id, { n: S.length, ok, cost: S.length, meta: { ...c, from: c.from || 'found', at: new Date(agNow(now)).toISOString() } }, now); out.push({ id: c.id, ok, n: S.length }); }
+    return out; }
+  /* ①~⑥ 한 번에 — samples(지금 원문 [{s, v?(아는 값)}])·spec(field·type·range·syn)·info(status 등)을 주면 떨어졌을 때 스스로 후보를 찾아 시험·채택 · 늘(100%여도) 하루 한 번은 같은 뜻 다른 표기를 찾아 후보 성적을 쌓음 */
+  function agAdapt(g, o) { o = o || {}; const now = agNow(o.now); const lines = []; const j = agJudge(g); const day = agDay(now); const bad = j.st === 'broken' || j.st === 'drop' || j.st === 'low';
+    if (bad && (!g.flag || g.flag.st !== j.st || g.flag.day !== day)) { const ch = g.champ ? g.methods[g.champ] : null; const sm = (g.smp || {})[g.champ] || {}; const cur = o.raw != null ? o.raw : sm.bad ? sm.bad.s : (o.samples && o.samples[0] ? o.samples[0].s : null); const cl = agClassify(sm.good ? sm.good.s : null, cur, o.info || (sm.bad && sm.bad.info));
+      const dd = cl.d ? [cl.d.lostW.length ? `사라진 낱말 ${cl.d.lostW.slice(0, 4).map((x) => `'${x}'`).join('·')}` : '', cl.d.gainW.length ? `새 낱말 ${cl.d.gainW.slice(0, 4).map((x) => `'${x}'`).join('·')}` : '', cl.d.lostC.length ? `사라진 칸 이름 ${cl.d.lostC.slice(0, 3).join('·')}` : ''].filter(Boolean).join(' · ') : '';
+      g.flag = { st: j.st, day, at: new Date(now).toISOString(), k: cl.k }; lines.push(agLine(g, '바뀜', `🔎 ${g.label}: 목표 달성률 ${pct(j.ref)} → ${pct(j.r)}(${ch ? `방법 '${ch.label}'` : '방법 없음'}) — ${cl.ko}${dd ? ' · ' + dd : ''}`, { judge: j, k: cl.k, d: cl.d || null }, now)); }
+    else if (!bad && g.flag && j.st === 'ok') { lines.push(agLine(g, '회복', `✅ ${g.label}: 목표 달성률 ${pct(j.r)}로 돌아옴(방법 '${(g.methods[g.champ] || {}).label || '-'}')`, { judge: j }, now)); g.flag = null; }
+    let tried = null; const explore = !g.lastX || g.lastX !== day; if (o.samples && o.samples.length && (bad || explore || o.force)) { const cands = agLabelCands(o.samples, o.spec, { scan: bad || o.scan }); const arch = Object.values(g.methods).filter((m) => m.re && m.id !== g.champ).map((m) => ({ id: m.id, label: m.label, how: m.how, lbl: m.lbl, re: m.re, from: m.from })); const seen = new Set(); const all = cands.concat(arch).filter((c) => !seen.has(c.id) && seen.add(c.id)); tried = agTrial(g, all, o.samples, o.spec, now); g.lastX = day; }
+    for (const L of agDecide(g, now)) lines.push(L); return { judge: j, tried, lines }; }
+  /* 웹앱 🔬 연구 탭에 보일 작은 요약(문서 작게) */
+  function agSummary(g) { if (!g || !g.methods) return null; const ch = g.champ ? g.methods[g.champ] : null; const S = ch ? agStat(ch) : null; const j = agJudge(g); const R = ch ? agRecent(ch, 3) : null;
+    const others = Object.values(g.methods).filter((m) => m !== ch && m.st !== 'off').map((m) => { const s = agStat(m); return { id: m.id, label: m.label, st: m.st, r: r3(s.r), n: Math.round(s.n), eff: r3(s.eff) }; }).sort((a, b) => (b.r || 0) - (a.r || 0)).slice(0, 3);
+    const last = (g.ev || []).filter((e) => e.kind !== '시작').slice(-1)[0] || null; return { id: g.id, label: g.label, goal: g.goal, unit: g.unit, st: j.st, champ: ch ? { id: ch.id, label: ch.label, r: r3(S.r), n: Math.round(S.n), eff: r3(S.eff), since: ch.since || null, recent: R ? r3(R.r) : null } : null, cands: others, arch: (g.arch || []).length, last, at: g.at }; }
+
+  const api = { VERSION, AG_DEF, AG_SYN, AG_KIND, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, spBatchPlan3, spMultiLearn, spKeepDays, spKeepPerH, kCode, idKeyOf, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowAdapt = api;
 })(typeof window !== 'undefined' ? window : this);
