@@ -99,7 +99,7 @@
   async function item(id) { main().innerHTML = `<div class="det sk"><div class="gal"><div class="ph"></div></div><div class="info"><i></i><i></i><i></i></div></div>`;
     try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); if (B.route(location.hash).arg !== id) return; const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id); const so = B.saleOf(x); const lt = B.leftTxt(x.pe);
       document.title = x.t + ' — ' + (c.name || '북스퀸'); LS.set('bq-seen', B.seenAdd(LS.get('bq-seen', []), x)); if (window.BQA) window.BQA.seenSync(); /* (shopc1) 최근 본 책 */
-      main().innerHTML = `<div class="det"><div class="gal" id="gal">${pics.length ? pics.map((u, i) => `<div class="ph"><img src="${esc(u)}" alt="${i ? '실물 사진 ' + i : '표지'}" ${i ? 'loading="lazy"' : ''}></div>`).join('') : '<div class="ph"><span class="noim">📕</span></div>'}</div>${pics.length > 1 ? `<div class="dots">${pics.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
+      const rs = shelfRet(); main().innerHTML = `${rs && rs.id === x.id ? '<a class="backshelf" href="#/shelf" data-backshelf="1">← 서가 책장의 이 책 자리로 <small>Esc · 뒤로가기</small></a>' : ''}<div class="det"><div class="gal" id="gal">${pics.length ? pics.map((u, i) => `<div class="ph"><img src="${esc(u)}" alt="${i ? '실물 사진 ' + i : '표지'}" ${i ? 'loading="lazy"' : ''}></div>`).join('') : '<div class="ph"><span class="noim">📕</span></div>'}</div>${pics.length > 1 ? `<div class="dots">${pics.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
         <div class="info">${x.bd && x.bd.length ? `<div class="bds in">${B.badgeH(x.bd, 6)}</div>` : ''}<h1>${esc(x.t)}</h1><div class="meta">${[x.a, x.pb, x.pd ? x.pd.replace('-', '년 ') + '월' : ''].filter(Boolean).map(esc).join(' · ')}</div><div id="bqaStar" class="bqa-star"></div>
         <div class="price">${so && so.from === 'p0' ? `<s>${won(so.was)}</s> <span class="off sale">${so.pct}% 할인</span>${lt ? ` <small class="left">⏰ ${esc(lt)}</small>` : ''}<br>` : x.lp && off ? `<s>${won(x.lp)}</s> <span class="off">${off}%</span><br>` : ''}<b>${won(x.p)}</b>${so && so.from === 'p0' && x.lp ? `<small class="hint"> · 정가 ${won(x.lp)}</small>` : ''}</div>
         <div class="gbox">${gTag(x.g)} <b>${esc(G[0])}</b> <span>${esc(G[1])}</span></div>
@@ -232,7 +232,7 @@
     const waitOn = () => (navigator.onLine === false ? new Promise((r) => { const f = () => { window.removeEventListener('online', f); r(); }; window.addEventListener('online', f); setTimeout(f, 20000); }) : Promise.resolve());
     const go = (n) => one(n).catch((e) => { if (n >= 2) { const x = new Error(`책장 화면을 받지 못했습니다(${String(u0).split('?')[0]} · ${e.message}) — 인터넷 연결을 확인한 뒤 다시 해 보기를 눌러 주세요`); x.res = u0; throw x; } return waitOn().then(() => new Promise((r) => setTimeout(r, n ? 2000 : 800))).then(() => go(n + 1)); });
     return go(0); };
-  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.5' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.5' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.5' }))).catch((e) => { SHL.js = null; throw e; }));
+  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.7' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.7' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.7' }))).catch((e) => { SHL.js = null; throw e; }));
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
     try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const J0 = await (SHL.p0 || k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); SHL.p0 = null; /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */ all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
@@ -248,13 +248,14 @@
     const S = window.BQS; const raw = { ...((c && c.shelf) || {}), ...(q.cfg ? S.previewCfg(q.cfg) : {}) }; const sc = S.cfgOf(raw);
     if (!sc.on && !q.cfg && !q.demo) { main().innerHTML = '<div class="empty">서가 책장은 지금 쉬는 중입니다<br><a href="#/list?s=new">책 찾기로</a></div>'; return; }
     const demo = Math.max(0, Math.min(20000, parseInt(q.demo, 10) || 0));
-    SHL.h = window.BQShelf.mount(main(), { cfg: raw, sort: q.s, start: q.i != null ? { i: +q.i } : null, shop: { open: !!(c && c.open) || !!demo }, toast,
+    SHL.h = window.BQShelf.mount(main(), { cfg: raw, sort: q.s, start: q.i != null || q.f ? { ...(q.i != null ? { i: +q.i } : {}), f: q.f || null } : null, /* (shelf8) f = 상세에서 돌아올 책 */ shop: { open: !!(c && c.open) || !!demo }, toast,
       load: (prog, early) => (demo ? Promise.resolve(S.demoItems(demo)) : shelfItems(prog, early)),
       cart: { n: () => cart().length, has: (id) => cart().some((y) => y.id === id), add: (x) => { if (demo) return '시범 자료라 담지 않습니다(움직임만 보기는 ⚙ 보기에서)'; const r = B.cartAdd(cart(), x, c.maxItems); if (r.why) return r.why; setCart(r.cart); return null; } },
       saveLooks: demo ? null : (L, g) => api('/shop/spines', { method: 'POST', body: JSON.stringify({ g, L }) }).catch(() => {}), /* (shelf2) 책등 모양 영구 저장 — 먼저 정한 것이 이김 */
       get fontApi() { return SAME.on ? location.origin : null; }, /* (shelf6) 글꼴도 같은 주소(CDN 1년 캐시)로 — 넘김이 아직 없으면 클라우드 주소 */
       wish: { get: wish, set: setWish }, open: (id) => { if (!demo) location.hash = '#/b/' + encodeURIComponent(id); else toast('시범 자료 — 자세히 화면 없음'); },
-      onState: (s) => { const h = '#/shelf?' + B.qs({ s: s.s, i: s.i, demo: demo || '', cfg: q.cfg || '' }); if (location.hash !== h) history.replaceState(null, '', h); } });
+      item: demo ? null : (id) => api('/shop/item?' + B.qs({ id })).then((r) => r && r.item), /* (shelf8) 펼친 책 아래 기본 정보·책소개·목차·샘플 쪽 */
+      onState: (s) => { const h = '#/shelf?' + B.qs({ s: s.s, i: s.i, f: s.f || '', demo: demo || '', cfg: q.cfg || '' }); if (location.hash !== h) history.replaceState(null, '', h); } });
     if (demo) main().insertAdjacentHTML('afterbegin', `<div class="bar info">🧪 시범 자료 ${demo.toLocaleString('ko-KR')}권 — 실제 책이 아닙니다</div>`); if (q.cfg) main().insertAdjacentHTML('afterbegin', '<div class="bar info">👀 설정 미리 보기 — 저장하지 않은 설정으로 보고 있습니다</div>'); }
   function wishPage() { const L = wish(); main().innerHTML = `<h1 class="pt">♡ 찜 목록 <small>이 기기에 저장 · ${L.length}권</small></h1>${L.length ? `<div class="grid">${L.map((x) => `<div class="wcard">${cardH(x)}<div class="wact"><button class="btn ghost" data-wc="${esc(x.id)}">장바구니</button><button class="btn ghost" data-wd="${esc(x.id)}" aria-label="찜 빼기: ${esc(x.t)}">✕</button></div></div>`).join('')}</div>` : '<div class="empty">아직 찜한 책이 없습니다<br><a href="#/shelf">📚 서가 책장에서 둘러보기</a></div>'}`;
     main().querySelectorAll('[data-wd]').forEach((b) => (b.onclick = () => { setWish(wish().filter((x) => x.id !== b.dataset.wd)); wishPage(); }));
@@ -265,6 +266,12 @@
   /* (11/11 shop4) 사진이 안 열리면(실제 배포본 점검: Storage 작은 사진 *_t.webp가 ORB로 막힘) → 큰 사진으로 한 번 더 → 그래도 안 되면 📕 (깨진 그림 아이콘 0) */
   document.addEventListener('error', (e) => { const i = e.target; if (!i || i.tagName !== 'IMG') return; const big = i.src.replace(/_t\.(webp|jpe?g|png)(?=\?|$)/i, '.$1');
     if (!i.dataset.fb && big !== i.src) { i.dataset.fb = '1'; i.src = big; return; } if (i.dataset.fb === 'x') return; i.dataset.fb = 'x'; const n = document.createElement('span'); n.className = 'noim'; n.textContent = '📕'; i.replaceWith(n); }, true);
+  /* (shelf8 · 정범님 11/12) 서가에서 펼친 책 → 상세로 왔으면: 맨 위 '← 서가 책장으로' · Esc · 뒤로가기 모두 그 책 자리로(서가가 bq-shelf-ret으로 스크롤·책을 되살림) */
+  const shelfRet = () => { try { const r = JSON.parse(sessionStorage.getItem('bq-shelf-ret') || 'null'); return r && r.go && Date.now() - r.t < 3 * 3600e3 ? r : null; } catch (e) { return null; } };
+  const backToShelf = (r) => { if (history.length > 1 && LST.fromShelf) history.back(); else location.hash = '#/shelf?' + B.qs({ s: r.s, i: r.i, f: r.id }); };
+  document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || e.defaultPrevented) return; const R = B.route(location.hash); const r = shelfRet(); if (R.name !== 'b' || !r || r.id !== R.arg) return; if (document.querySelector('.lb, .modal, dialog[open]')) return; e.preventDefault(); backToShelf(r); });
+  document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-backshelf]'); if (!a) return; e.preventDefault(); const r = shelfRet(); if (r) backToShelf(r); });
+  window.addEventListener('hashchange', (e) => { try { LST.fromShelf = /#\/shelf/.test(new URL(e.oldURL).hash) && /#\/b\//.test(location.hash); } catch (er) { LST.fromShelf = false; } });
   window.BQX = { api, toast, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
   window.addEventListener('hashchange', render); badge(); wishBadge(); foot(); cfg().catch(() => {}); render();
 })();

@@ -1,2 +1,2 @@
-bkinfo=1&bkinfo2=kyobo
-# 1901428115
+spfull=1
+# 63377921

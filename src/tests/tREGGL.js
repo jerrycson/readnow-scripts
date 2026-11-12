@@ -119,11 +119,11 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '기준 넘는 값(직접 팔면 500원 넘게 더 남음)으로 치면 그 자리에서 사라짐');
   await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', '4300'); await p.press('.rgrow[data-rgexp="g07"] input.rgr-pin', 'Tab'); await p.waitForTimeout(1300);
   ok(await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn') && !(S._regOpen && S._regOpen.has('g07'))), '다시 4,300으로 저장하면 띠가 남음 · 자세히는 열리지 않음');
-  // 중 — 판정에 넣고 ⚠ (중 매입가 2,000 · 근삿값 2,300)
+  // 중 — (11/12 밤) 판정에서 뺌 (중 매입가 2,000이 있어도 띠 없음)
   await p.evaluate(async () => { await regUpd('g07', { grade: 3, price: window.__out3 }); }); await p.waitForTimeout(80); const gOff = await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
   await p.evaluate(async () => { await regUpd('g07', { price: 2200 }); }); await p.waitForTimeout(120); const g3 = await p.evaluate(() => { const n = document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'); return n ? n.textContent : null; });
   await p.evaluate(async () => { await regUpd('g07', { grade: 2, price: 4300 }); }); await p.waitForTimeout(120); const gOn = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
-  ok(gOff && g3 && /매입 중 2,000원/.test(g3) && /⚠ 중: 알라딘이 안 살 수 있음/.test(g3) && gOn, '중도 판정에 듦(2,200 — 중 매입가 2,000과 견줌) · ⚠ 중 경고 · 상태·값을 바꾸면 그 줄 띠만 바로', { gOff, g3, gOn });
+  ok(gOff && g3 == null && gOn, "(정범님 11/12 밤 '중 상태는 알라딘이 매입하지 않으니 빼라') 중은 매입 띠가 안 뜸(2,200 · 중 매입가 2,000이어도) · 상태·값을 바꾸면 그 줄 띠만 바로", { gOff, g3, gOn });
   // 매입가가 새로 들어오면 나타남
   await p.evaluate(async () => { const t = new Date().toISOString(); const d = { stage: 'sel', grade: 2, qty: 1, price: 1000, ws: regWsCur(), createdAt: t, info: { title: '매입가 나중 책', isbn13: '9791100000198', categories: [{ path: ['국내도서', '소설/시/희곡'] }], page1: [], priceList: 15000, at: t } }; await db.collection('reg_items').doc('g10').set(d); S.regItems.set('g10', { id: 'g10', ...d }); regRerender(); }); await p.waitForTimeout(900);
   const bA = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g10"] .rgbbn')); await p.evaluate(async () => { const it = S.regItems.get('g10'); await regUpd('g10', { info: { ...it.info, buyback: { 상: 3800 } } }); }); await p.waitForTimeout(80);
