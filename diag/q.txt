@@ -1,2 +1,2 @@
-col2=2026-11-12
-# 2235326715
+doc=app_settings/seller_aud,app_settings/voice_study,app_settings/peer_w
+# 55614809
