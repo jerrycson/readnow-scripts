@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "📖 책 정보 적응 장부·원문 진단(bookinfo1 · 클라우드)",
+ "since": "2026-11-12T17:31:27Z",
+ "beat": "2026-11-12T17:31:27Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 진단 줄 겹침 고침(bookinfo1)",
   "at": "2026-11-12T17:17:37Z"
  },
- "host": null
+ "host": "vm-bookinfo1"
 }
