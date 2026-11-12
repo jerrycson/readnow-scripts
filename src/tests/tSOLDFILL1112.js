@@ -76,6 +76,7 @@ async function run(cfgX, seedX) {
   { const R5 = await run(null, [['g_tried', { sc: '1', coverKey: 'K000000001', title: '7일 쉬는 팔린 책', goneDay: dAgo(4), listTryAt: new Date(Date.now() - 864e5).toISOString(), listTryV: 5 }]]); ok(!R5.urls.some((u) => /K000000001/.test(u)), '팔린 상품도 못 찾은 것은 7일 쉼(listTryAt) — 날마다 같은 검색 되풀이 없음'); }
 
   ok(/if \(q\.soldfill\) \{/.test(CSRC) && /out\.soldfill = \{ sc, days/.test(CSRC), '진단 soldfill=<판매자 번호> — 팔린 상품 칸마다 채운 수(값은 안 보냄)');
+  ok(/if \(q\.reset === 'gone'\) \{[\s\S]{0,200}spBatchGone: \{ lastId: null, resetAt: nowIso\(\), resetFrom:/.test(CSRC), '진단 reset=gone — 팔린 상품 읽는 자리만 비움(옛 자리는 resetFrom에)');
   console.log('② 두 번 팔린 상품 — goneHist');
   const gl = cut(COL, 'for (const x of gone) { B.set(C(\'bench_items\')', '\n');
   ok(/goneDay: ymd\(x\.missDay\)/.test(gl) && /goneHist: AU\(\{ d: ymd\(x\.missDay\), c: day/.test(gl), '사라질 때마다 goneHist에 쌓음(arrayUnion) · goneDay는 예전처럼 마지막 날');
