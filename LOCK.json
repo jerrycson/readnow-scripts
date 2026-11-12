@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "mkt1 둘째 — 정가×2 남은 값",
+ "since": "2026-11-12T06:58:16Z",
+ "beat": "2026-11-12T06:58:16Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "mkt1 시장 지표 — 웹앱 1.78.502 · 클라우드 0.35.141 · 373dcf53",
   "at": "2026-11-12T06:44:48Z"
  },
- "host": null
+ "host": "vm"
 }
