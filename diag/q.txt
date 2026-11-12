@@ -1,2 +1,2 @@
-doc=app_settings/seller_aud,app_settings/voice_study,app_settings/peer_w
-# 55614809
+regq=9788988907344&asCode=1&br=1&regitems=200
+# 113095870
