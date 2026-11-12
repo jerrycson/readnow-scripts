@@ -1,2 +1,2 @@
-doc=prd_jobs/net_2026-11-08,prd_jobs/net_2026-11-10,prd_jobs/net_2026-11-11
-# 322012226
+doc=col2_jday/2026-11-13_LOGGER,col2_jday/2026-11-12_LOGGER,col2_jday/2026-11-11_LOGGER,prd_jobs/pcBeat
+# 1566520226
