@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "handoff2 번외로 넘기기 묶음째 판 내기(웹앱·번외·클라우드)",
- "since": "2026-11-12T16:37:29Z",
- "beat": "2026-11-12T16:37:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "shipcalc 웹앱 1.78.532 · 수집기 1.89.286 · pricing 0.17.14 · shipping 0.7.16 · 감시기 0.10.49 push 06519e30",
-  "at": "2026-11-12T16:37:14Z"
+  "done": "handoff2 웹앱 1.78.533 · 번외 0.1.41 · 클라우드 0.35.175 🔀 묶음째 넘기기 push 3d3bbcef",
+  "at": "2026-11-12T16:39:30Z"
  },
- "host": "vm-handoff2"
+ "host": null
 }
