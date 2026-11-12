@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24chk 웹앱 1.78.515 · 번외 0.1.38 예스24 쓰기 칸 이름",
+ "since": "2026-11-12T10:36:12Z",
+ "beat": "2026-11-12T10:36:12Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "soldfill3 클라우드 0.35.155 (2b3d4733)",
   "at": "2026-11-12T10:24:57Z"
  },
- "host": null
+ "host": "vm"
 }
