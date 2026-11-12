@@ -57,14 +57,19 @@
     '모던 블록', '사선 나눔', '동그라미 둘', '아래 톱니 띠', '금장 띠', '전집 번호', '좌우 두 색', '가운데 굵은 띠', '세 줄 띠', '위 이름표 · 아래 띠',
     '두 겹 금박 테두리', '아래 세모', '위 아치', '가운데 마름모', '위 가는 테 세 겹', '아래 출판사 네모', '무지개 띠', '가죽 머리·꼬리', '양옆 금줄', '아래로 짙어짐',
     '위로 짙어짐', '빛 번짐', '바랜 빛', '아래 큰 원', '가운데 원', '위 별 장식', '도서관 청구기호 라벨', '띠지', '비닐 커버 광택', '위 사선 띠',
-    '체스판 머리', '위아래 톱니', '두 색 대각', '가운데 흰 창', '금박 점선', '세 칸 나눔', '위 가는 줄 · 아래 굵은 줄', '리본 매듭', '안쪽 점선 칼선', '가죽 덧댄 모서리'];
+    '체스판 머리', '위아래 톱니', '두 색 대각', '가운데 흰 창', '금박 점선', '세 칸 나눔', '위 가는 줄 · 아래 굵은 줄', '리본 매듭', '안쪽 점선 칼선', '가죽 덧댄 모서리',
+    /* (shelf7) 덧붙인 7 — 곁색(--c2) 칸이 크게 보이는 것 */ '양옆 굵은 띠', '위 세로 줄무늬 덮개', '아래 언덕', '아래 가로 줄무늬', '위 세모 깃발', 'ㄱ자 모서리 띠', '아래 바둑 띠'];
   /* ── 무늬 40 = 겉감 결(책등 위에 한 겹 더 — .sp[data-p="번호"] .sk::before) · 덧붙이기만 */
   const PATTERNS = ['민결', '천 결', '리넨', '가죽 결', '마블', '잔 점', '큰 물방울', '가는 세로줄', '굵은 세로줄', '가로 줄무늬', '사선 줄무늬', '체크', '깅엄', '타탄', '헤링본', '물결', '비늘', '마름모 격자', '벌집', '별빛',
     '잔꽃', '나뭇잎', '지그재그', '동심원', '물결 반원', '바구니 짜임', '벽돌', '종이 결', '바랜 얼룩', '금빛 반짝이', '줄 노트', '모눈종이', '십자', '세모', '굵은 사선 띠', '빗살', '구름', '한지 섬유', '코르덴', '빛 결',
-    /* (shelf3 · 정범님 11/11: 무늬 50) 덧붙인 10 */ '돋을 점', '가는 격자', '대나무 마디', '청해파(파도 비늘)', '세로 나뭇결', '바랜 물 얼룩', '가는 사선 망', '사방 꽃 연속', '책 천 굵은 결', '먼지 낀 결'];
+    /* (shelf3 · 정범님 11/11: 무늬 50) 덧붙인 10 */ '돋을 점', '가는 격자', '대나무 마디', '청해파(파도 비늘)', '세로 나뭇결', '바랜 물 얼룩', '가는 사선 망', '사방 꽃 연속', '책 천 굵은 결', '먼지 낀 결',
+    /* (shelf7 · 정범님 11/12) 덧붙인 22 — 멀리서도 보이는 굵은 무늬(위 50개는 옅은 결이라 10묶음으로만 셈) */ '굵은 가로 띠', '굵은 세로 띠', '굵은 사선 띠', '큰 바둑판', '큰 먹 물방울', '마름모 체크', '지그재그', '물결 비늘 테', '고리', '두 줄 레일',
+    '채운 비늘', '굵은 벽돌', '먹 사선 격자', '세로 물결', '사다리', '가로 점선', '짙어지는 가로 띠', '십자 별', '네모 칸', '네 잎 점', '굵은 역사선 띠', '큰 흰 물방울'];
   /* ── 모양 50 = 책 몸 10(모서리·등 굴림·홈·닳음 — .sp[data-s="번호"] .sk) × 머리 5(헤드밴드·금박 머리선·닳은 머리 — .sp[data-h="번호"] .hd) · 덧붙이기만
    *  모양 번호 s = (몸-1)×5 + 머리 (1~50) */
-  const BODIES = ['반듯', '둥근 등', '둥근 모서리', '양장 홈 줄', '낡아 깎인 모서리', '얇은 문고판', '천 장정 테', '반짝이 비닐', '머리가 좁은 책', '오래 읽은 책'];
+  const BODIES = ['반듯', '둥근 등', '둥근 모서리', '양장 홈 줄', '낡아 깎인 모서리', '얇은 문고판', '천 장정 테', '반짝이 비닐', '머리가 좁은 책', '오래 읽은 책',
+    /* (shelf7) 덧붙인 13 = 머리 실루엣(둥근 모서리·깎인 모서리·아치·V 홈·비스듬) × 겉면(민·양장 홈 줄·반짝이) 가운데 없던 것 · 모양 번호 s = (몸-1)×5 + 머리 그대로(최대 115) */
+    '둥근 모서리 · 홈 줄', '둥근 모서리 · 반짝이', '깎인 모서리 · 홈 줄', '깎인 모서리 · 반짝이', '아치 머리', '아치 머리 · 홈 줄', '아치 머리 · 반짝이', 'V 홈 머리', 'V 홈 머리 · 홈 줄', 'V 홈 머리 · 반짝이', '비스듬한 머리', '비스듬한 머리 · 홈 줄', '비스듬한 머리 · 반짝이'];
   const HEADS = ['머리 그대로', '빨강·흰 헤드밴드', '파랑·금 헤드밴드', '금박 머리선', '닳아 바랜 머리'];
   const SHAPES = []; BODIES.forEach((b) => HEADS.forEach((h) => SHAPES.push(b + ' · ' + h)));
   const shapeOf = (s) => ({ body: Math.floor((s - 1) / HEADS.length) + 1, head: ((s - 1) % HEADS.length) + 1 });
@@ -89,8 +94,28 @@
     ['purple', 1, '가지', '#4a2f4f'], ['purple', 6, '라벤더', '#a99bc7'], ['purple', 2, '자주', '#7a2e5c'], ['purple', 2, '포도', '#6a3a9a'],
     ['pink', 4, '진달래', '#c95d8a'], ['pink', 6, '바랜 장미', '#b98a8f'], ['pink', 7, '복숭아', '#f2c2b8'],
     ['brown', 0, '초콜릿', '#4a2414'], ['brown', 2, '가죽', '#7b4a2a'], ['brown', 3, '계피', '#b0683a'], ['brown', 4, '모카', '#6f5a4a'], ['brown', 5, '크라프트', '#b8916a'], ['brown', 7, '낡은 종이', '#d9c3a0'],
-    ['gray', 0, '숯', '#4a4a4a'], ['gray', 3, '쥐색', '#77736b'], ['gray', 5, '은회', '#aaa69d'], ['gray', 8, '한지', '#efe8d6']];
+    ['gray', 0, '숯', '#4a4a4a'], ['gray', 3, '쥐색', '#77736b'], ['gray', 5, '은회', '#aaa69d'], ['gray', 8, '한지', '#efe8d6'],
+    /* (shelf7 · 정범님 11/12 '겉으로 뚜렷한 색') 덧붙인 28색 — 위 70색 가운데 서로 CIEDE2000 ΔE 15 넘게 다른 것은 22색뿐이라, 그 22색과 ΔE 15 넘게 떨어진 색을 멀리 있는 것부터 채움(UQ.PAL 50색) */
+    ['purple', 5, '전기 보라', '#c038f8'], ['yellow', 4, '라임', '#b8f800'], ['gray', 0, '흑녹', '#081000'], ['gray', 4, '회보라', '#807098'], ['navy', 4, '울트라마린', '#0028f8'], ['yellow', 2, '청포도', '#88a808'], ['yellow', 8, '연연두', '#e8f8c8'],
+    ['pink', 4, '자홍', '#f82098'], ['purple', 8, '연보라', '#d8c8f8'], ['yellow', 2, '올리브 금', '#a08000'], ['pink', 0, '흑자주', '#300020'], ['gray', 5, '세이지', '#a0a080'], ['green', 2, '에메랄드', '#009050'], ['red', 6, '수박', '#f87870'],
+    ['yellow', 0, '짙은 올리브', '#383800'], ['navy', 6, '수레국화', '#7878f0'], ['purple', 6, '난초', '#f080f8'], ['gray', 2, '흑연', '#484850'], ['orange', 5, '로즈 그레이', '#a88880'], ['orange', 2, '적갈', '#982800'], ['teal', 4, '아쿠아', '#00f8d8'],
+    ['green', 4, '네온 초록', '#00f868'], ['navy', 1, '감청', '#000088'], ['red', 8, '벚꽃', '#f8c8c8'], ['orange', 0, '흑갈', '#200800'], ['yellow', 4, '황금 주황', '#e89010'], ['purple', 2, '마젠타', '#a000a0'], ['gray', 3, '말린 장미', '#785860']];
   const COLORS = C20.map(([fam, t, name, hx]) => { const F = FAMS.find((x) => x[0] === fam); return { hex: hx || hsl(F[2], t >= 6 ? F[3] * 0.78 : F[3], TONES[t]), fam, t, name }; });
+
+  /* ── (shelf7 · 정범님 11/12) 겉으로 뚜렷한 고유 모양 = 디자인 묶음 × 색 짝(바탕 + 곁색) × 무늬 묶음 × 모양 묶음(몸 × 머리) — 글꼴·장식색·글 방향·미세 색은 덤(고유 셈에서 뺌)
+   *  · 비슷해 보이는 것은 한 묶음으로 침(사진으로 직접 보고 정함 — src/tests/tSHELF7_1112.js가 사진을 남김) · 같은 표가 cloud/shop-uniq.js에도 있음(시험이 같은지 봄 · 둘 다 덧붙이기만)
+   *  · PAL = 바탕·곁색으로 쓰는 50색(COLORS 번호) — 서로 CIEDE2000 ΔE 15 넘게 다름 · GONLY = 곁색을 장식색(--g) 자리에 보이는 디자인 */
+  const UQ = {
+    PAL: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 20, 28, 44, 45, 50, 68, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98],
+    GONLY: [3, 7, 10, 15, 21, 24, 25, 26, 29, 35, 36, 45, 47, 48, 49],
+    NOSEC: [1, 9, 16, 27, 32, 33, 37, 39, 44] /* 곁색이 안 보이는 디자인(민무늬·흰 종이·무지개 등) — 바탕색만 셈 */,
+    DG: [[1, 32, 33, 39], [9, 44], [16], [27], [37], [7, 21, 49], [5, 31], [6, 30], [14, 41, 42], [15, 47], [19, 25], [22, 50], [3, 45], [28, 46], [34, 53],
+      [2], [4], [8], [10], [11], [12], [13], [17], [18], [20], [23], [24], [26], [29], [35], [36], [38], [40], [43], [48], [51], [52], [54], [55], [56], [57]],
+    PG: [[1, 2, 3, 15, 28, 38, 40, 42, 47, 50], [4, 5, 29, 46], [6, 20, 21, 30, 41, 48], [7, 22, 37], [8, 9, 39, 45, 49], [10, 31, 43], [11, 35, 36], [12, 13, 14, 26, 27, 32, 33], [17, 18, 19, 23, 34, 44], [16, 24, 25],
+      [51, 67], [52], [53, 71], [54], [55], [56, 63], [57], [58, 61], [59], [60], [62, 69], [64], [65], [66], [68], [70], [72]],
+    BG: [[1, 2, 6, 7], [3], [4], [5, 9], [8], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20], [21], [22], [23]],
+    HG: [[1], [2, 3, 4], [5]],
+    NOB: [10] /* '오래 읽은 책'은 색을 바래게 해 색 칸과 헷갈림 — 옛 책등은 그대로 두고 새로 정할 때는 안 씀 */ };
   /* 색 묶음(설정) = 20색 가운데 고르는 거름 */
   const PALS = { mix: () => true, classic: (x) => (['red', 'green', 'navy', 'brown', 'purple', 'teal'].includes(x.fam) && x.t <= 3) || (x.fam === 'gray' && x.t <= 1), vivid: (x) => x.fam !== 'gray' && x.t >= 3 && x.t <= 6,
     earth: (x) => ['brown', 'olive', 'orange', 'yellow'].includes(x.fam) || (x.fam === 'gray'), pastel: (x) => x.t >= 5, mono: (x) => x.fam === 'gray' || (x.fam === 'navy' && x.t <= 1) };
@@ -136,9 +161,9 @@
     { k: 'lookGen', group: '책등', label: '책등 모양 세대', type: 'number', def: 0, min: 0, max: 9999, hide: true, help: '「책등 모양 모두 다시 정하기」 단추가 1씩 올림 — 옛 세대 모양은 지우지 않고 안 씀' },
     { k: 'fullText', group: '책등', label: '책등에 제목·지은이를 되도록 전체로(크게 보면 전체 · 작게 보면 줄임)', type: 'check', def: true },
     { k: 'minFs', group: '책등', label: '전체로 쓸 때 가장 작은 글자(px)', type: 'number', def: 9, min: 6, max: 14, step: 0.5, help: '이보다 작아지면 줄여(…) 씀' },
-    { k: 'designs', group: '책등', label: '쓸 책등 디자인(비우면 50가지 모두)', type: 'multi', def: [], opts: num1(DESIGNS) },
-    { k: 'pats', group: '책등', label: '쓸 무늬(비우면 50가지 모두)', type: 'multi', def: [], opts: num1(PATTERNS) },
-    { k: 'shapes', group: '책등', label: '쓸 책 모양(비우면 50가지 모두 = 몸 10 × 머리 5)', type: 'multi', def: [], opts: num1(SHAPES) },
+    { k: 'designs', group: '책등', label: '쓸 책등 디자인(비우면 ' + DESIGNS.length + '가지 모두)', type: 'multi', def: [], opts: num1(DESIGNS) },
+    { k: 'pats', group: '책등', label: '쓸 무늬(비우면 ' + PATTERNS.length + '가지 모두)', type: 'multi', def: [], opts: num1(PATTERNS) },
+    { k: 'shapes', group: '책등', label: '쓸 책 모양(비우면 ' + SHAPES.length + '가지 모두 = 몸 ' + BODIES.length + ' × 머리 ' + HEADS.length + ')', type: 'multi', def: [], opts: num1(SHAPES) },
     { k: 'palette', group: '책등', label: '색 묶음', type: 'select', def: 'mix', opts: { mix: '고루 섞기(70색)', classic: '고전 천 색', vivid: '선명한 색', earth: '흙빛', pastel: '파스텔', mono: '흑백' } },
     { k: 'orient', group: '책등', label: '글 방향', type: 'select', def: 'rand', opts: { rand: '책마다 랜덤', v: '세로쓰기(한 글자씩 세움)', h: '가로쓰기(눕혀 씀)' } },
     { k: 'wMin', group: '책등', label: '가장 얇은 책(px)', type: 'number', def: 20, min: 12, max: 40 },
@@ -243,23 +268,29 @@
   /* ── 고르기: 설정의 거름(쓸 디자인·무늬·모양·글꼴·색 묶음) 안에서 · 추천 목록이 있으면 4번 중 3번은 그 안에서 */
   const range = (n) => Array.from({ length: n }, (_, i) => i + 1);
   const allowed = (c) => ({ D: c.designs && c.designs.length ? c.designs.map(Number) : range(DESIGNS.length), P: c.pats && c.pats.length ? c.pats.map(Number) : range(PATTERNS.length), S: c.shapes && c.shapes.length ? c.shapes.map(Number) : range(SHAPES.length),
-    F: (c.fonts && c.fonts.length ? c.fonts : FONTS.map((f) => f.id)).map((id) => FONTS.findIndex((f) => f.id === id) + 1).filter((i) => i > 0), C: COLORS.map((x, i) => i).filter((i) => (PALS[c.palette] || PALS.mix)(COLORS[i])) });
+    F: (c.fonts && c.fonts.length ? c.fonts : FONTS.map((f) => f.id)).map((id) => FONTS.findIndex((f) => f.id === id) + 1).filter((i) => i > 0), C: ((L) => (L.length ? L : UQ.PAL.map((n) => n - 1)))(UQ.PAL.map((n) => n - 1).filter((i) => (PALS[c.palette] || PALS.mix)(COLORS[i]))) }); /* (shelf7) 새로 정하는 바탕색은 서로 뚜렷한 50색(UQ.PAL)에서만 */
+  /* (shelf7) 묶음을 고르게 — 옅은 결 무늬처럼 한 묶음에 여럿 있는 것이 더 자주 뽑히지 않게(묶음 먼저 · 그 안에서 하나) */
+  const pickCls = (R, pref, all, G) => { const P = (pref || []).filter((x) => all.includes(x)); if (P.length && R() < 0.75) return P[Math.floor(R() * P.length)]; const L = G.map((g) => g.filter((x) => all.includes(x))).filter((g) => g.length); if (!L.length) return all[Math.floor(R() * all.length)]; const g = L[Math.floor(R() * L.length)]; return g[Math.floor(R() * g.length)]; };
+  const pickShape = (R, pref, all) => { const P = (pref || []).filter((x) => all.includes(x)); if (P.length && R() < 0.75) return P[Math.floor(R() * P.length)]; const L = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).map((g) => g.flatMap((b) => UQ.HG.map((hs) => hs.map((h) => (b - 1) * HEADS.length + h).filter((x) => all.includes(x)))).filter((x) => x.length)).filter((g) => g.length);
+    if (!L.length) return all[Math.floor(R() * all.length)]; const g = L[Math.floor(R() * L.length)]; const hs = g[Math.floor(R() * g.length)]; return hs[Math.floor(R() * hs.length)]; };
   const pickIn = (R, pref, all) => { const P = (pref || []).filter((x) => all.includes(x)); return P.length && R() < 0.75 ? P[Math.floor(R() * P.length)] : all[Math.floor(R() * all.length)]; };
   /* 책 한 권의 조합 정하기 → { g, src, d, ci, p, fi, s, a, o } (cc = 앞표지 대표색 #rrggbb · 없으면 null) */
   function assign(it, c, cc) { c = c || DEF; const A = allowed(c); const R = rng(hash(((it && it.id) || '') + '|' + (c.seed || 0) + '|' + (c.lookGen || 0)));
     const th = c.themeOn !== false ? themeOf(it) : null; let src = it && it.sp && c.spineImg ? 's' : cc && c.coverColor ? 'c' : th ? 't' : 'r';
     let ci; if (cc && c.coverColor) ci = nearest(cc, A.C); else if (th && (th.fam || th.tone)) { const L = A.C.filter((i) => (!th.fam || th.fam.includes(COLORS[i].fam)) && (!th.tone || th.tone.includes(COLORS[i].t))); ci = (L.length ? L : A.C)[Math.floor(R() * (L.length || A.C.length))]; }
     else ci = A.C[Math.floor(R() * A.C.length)];
-    const shp = th && th.shape ? th.shape.flatMap((b) => range(HEADS.length).map((h) => (b - 1) * HEADS.length + h)) : null; let d = pickIn(R, th && th.des, A.D); const p = pickIn(R, th && th.pat, A.P), s = pickIn(R, shp, A.S);
+    const shp = th && th.shape ? th.shape.flatMap((b) => range(HEADS.length).map((h) => (b - 1) * HEADS.length + h)) : null; let d = pickIn(R, th && th.des, A.D); const p = pickCls(R, th && th.pat, A.P, UQ.PG), s = pickShape(R, shp, A.S);
     /* (shelf4) 글꼴: 앞표지 제목 글꼴 갈래(클라우드 셈 it.fg) → 그 갈래 안에서 · 없으면 제목 낱말·분야(themeOf) · 디자인은 글꼴 갈래와 어울리는 것으로 한 번 더 고름 */
     const fg = it && GENRES[it.fg] ? it.fg : null; const gF = fg ? fontsOfGenre(fg).filter((i) => A.F.includes(i)) : []; const fi = gF.length ? gF[Math.floor(R() * gF.length)] : pickIn(R, th && th.font, A.F);
     { const fgen = FGEN[fi - 1]; const dg = dgenOf(d); if (dg && !DFIT[dg].includes(fgen)) { const ok = A.D.filter((x) => { const g2 = dgenOf(x); return !g2 || DFIT[g2].includes(fgen); }); if (ok.length) d = ok[Math.floor(R() * ok.length)]; } }
     const a = Math.floor(R() * ACCENTS.length); const o = c.orient === 'rand' ? (R() < 0.62 ? 'v' : 'h') : c.orient;
-    return { g: c.lookGen || 0, src, d, ci: ci + 1, p, fi, s, a: a + 1, o }; }
-  const CODE_RE = /^(\d{1,4})\.([scrt])\.(\d{1,2})\.(\d{1,3})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.(\d)\.([vh])$/;
-  const encode = (A) => [A.g, A.src, A.d, A.ci, A.p, A.fi, A.s, A.a, A.o].join('.');
-  function decode(code) { const m = CODE_RE.exec(String(code || '')); if (!m) return null; const A = { g: +m[1], src: m[2], d: +m[3], ci: +m[4], p: +m[5], fi: +m[6], s: +m[7], a: +m[8], o: m[9] };
-    if (!A.d || A.d > DESIGNS.length || !A.ci || A.ci > COLORS.length || !A.p || A.p > PATTERNS.length || !A.fi || A.fi > FONTS.length || !A.s || A.s > SHAPES.length || !A.a || A.a > ACCENTS.length) return null; return A; }
+    const KL = UQ.PAL.filter((n) => n !== ci + 1); const k = KL[Math.floor(R() * KL.length)]; /* (shelf7) 곁색 = 바탕과 다른 뚜렷한 색(띠·덮개·금박 자리) */
+    return { g: c.lookGen || 0, src, d, ci: ci + 1, p, fi, s, a: a + 1, o, k }; }
+  /* (shelf7) 끝에 '.곁색'(COLORS 번호)이 붙을 수 있음 — 없으면 옛 책등(곁색 = 바탕을 짙게·옅게) · 모양 번호는 세 자리까지 */
+  const CODE_RE = /^(\d{1,4})\.([scrt])\.(\d{1,2})\.(\d{1,3})\.(\d{1,2})\.(\d{1,2})\.(\d{1,3})\.(\d)\.([vh])(?:\.(\d{1,3}))?$/;
+  const encode = (A) => [A.g, A.src, A.d, A.ci, A.p, A.fi, A.s, A.a, A.o].concat(A.k ? [A.k] : []).join('.');
+  function decode(code) { const m = CODE_RE.exec(String(code || '')); if (!m) return null; const A = { g: +m[1], src: m[2], d: +m[3], ci: +m[4], p: +m[5], fi: +m[6], s: +m[7], a: +m[8], o: m[9] }; if (m[10]) A.k = +m[10];
+    if (!A.d || A.d > DESIGNS.length || !A.ci || A.ci > COLORS.length || !A.p || A.p > PATTERNS.length || !A.fi || A.fi > FONTS.length || !A.s || A.s > SHAPES.length || !A.a || A.a > ACCENTS.length || (m[10] && (!A.k || A.k > COLORS.length))) return null; return A; }
   /* ── 크기: 판형 '가로x세로x두께'(mm · 클라우드 sz) → 키(선반 높이의 %)·두께(px) · 없으면 쪽수 · 그것도 없으면 랜덤(같은 책은 늘 같음)
    *  근거: 국내 판형 46판 127×188 · 신국판 152×225 · 크라운판 176×248 · 46배판 188×257 · A4 210×297 → 297mm = 선반 높이 100% · 종이 한 쪽 ≈ 0.06mm + 표지 2mm */
   const SZ_RE = /^(\d{2,3})x(\d{2,3})(?:x(\d{1,3}))?$/;
@@ -277,25 +308,33 @@
    *  정범님 11/11(리드 화면 확인): '장식이 글을 가림' — 장식은 글 뒤 또는 글 없는 자리 */
   /*  배경 위치 %는 '(칸 높이 − 그림 높이) × %'라서 라벨 등은 실제로 그 자리 위쪽에 그려짐 — 그 범위로 셈(예 37 라벨 = 82~93%) */
   const ZONE_D = { 2: [8, 8], 3: [10, 10], 7: [7, 7, 9], 9: [17, 17, 8], 11: [6, 13], 13: [24, 22], 14: [6, 15], 15: [6, 25], 16: [6, 24], 19: [19, 5], 20: [23, 15], 21: [6, 6, 11], 22: [6, 13], 23: [15, 5], 25: [9, 5], 26: [6, 13], 27: [6, 21],
-    28: [18, 18], 29: [6, 5, 17], 34: [6, 31], 36: [17, 5], 37: [6, 20], 38: [6, 39], 41: [12, 5], 42: [12, 12], 44: [14, 17, 13], 45: [11, 11], 47: [6, 17], 50: [9, 9] };
+    28: [18, 18], 29: [6, 5, 17], 34: [6, 31], 36: [17, 5], 37: [6, 20], 38: [6, 39], 41: [12, 5], 42: [12, 12], 44: [14, 17, 13], 45: [11, 11], 47: [6, 17], 50: [9, 9],
+    51: [6, 5, 9], 52: [31, 5], 53: [6, 27], 54: [6, 40], 55: [29, 5], 56: [15, 5, 9], 57: [6, 12] /* (shelf7) */ };
+  const C2T = [4, 5, 6, 8, 12, 13, 17, 18, 23, 30, 31, 34, 40, 43, 46, 51, 56]; /* (shelf7) 곁색 칸이 글 자리에 걸치는 디자인 */
   const zoneOf = (d) => { const z = ZONE_D[d] || []; return { zt: z[0] || 6, zb: z[1] || 5, zs: z[2] || 6 }; };
   /* 책등 하나의 모든 것(화면이 쓰는 꼴) — A(조합)는 저장된 것 또는 assign() 결과 */
   function dress(it, A, c) { c = c || DEF; const z = sizeOf(it, c); const col = COLORS[A.ci - 1]; const base = col.hex; const R = rng(hash(((it && it.id) || '') + '|ink'));
-    const c2 = lum(base) > 0.4 ? shade(base, -0.28) : shade(base, 0.32); const k = A.d === 9 || A.d === 44 ? '#1b1712' : inkFor(base, R());
-    const g = ['#d9b45a', '#cfd3d8', lum(base) > 0.35 ? '#1b1712' : '#f4efe4', lum(base) > 0.4 ? shade(base, -0.45) : shade(base, 0.55)][A.a - 1]; const f = FONTS[A.fi - 1];
+    const kc = A.k && COLORS[A.k - 1] ? COLORS[A.k - 1].hex : null; /* (shelf7) 곁색이 정해진 책등 — 띠·덮개(--c2), 장식색만 쓰는 디자인은 장식(--g)도 곁색 */
+    const c2 = kc || (lum(base) > 0.4 ? shade(base, -0.28) : shade(base, 0.32)); const k = A.d === 9 || A.d === 44 ? '#1b1712' : inkFor(base, R());
+    const g = kc && UQ.GONLY.includes(A.d) ? kc : ['#d9b45a', '#cfd3d8', lum(base) > 0.35 ? '#1b1712' : '#f4efe4', lum(base) > 0.4 ? shade(base, -0.45) : shade(base, 0.55)][A.a - 1]; const f = FONTS[A.fi - 1];
     const skH = (c.rowH - 24) * z.h / 100; const T = textFit(it && it.t, it && it.a, z.w, skH);
     /* (shelf4 · 정범님 11/12 '일률적·붕 뜬 느낌') 제목 맵시 tk: 금박(g) · 먹(i) · 흰 글씨(w) · 글 상자 띠(tp — 밋밋한 디자인에서만 · 띠색과 글자 대비 4.5 넘을 때) */
-    const tk = k === '#f1d488' || (A.a === 1 && A.d !== 9 && A.d !== 44 && lum(base) < 0.18 && contrast(base, '#e8c66a') >= 4.5) ? 'g' : lum(k) < 0.2 ? 'i' : 'w'; let kk = tk === 'g' ? (k === '#f1d488' ? k : '#e8c66a') : k;
+    let tk = k === '#f1d488' || (A.a === 1 && A.d !== 9 && A.d !== 44 && lum(base) < 0.18 && contrast(base, '#e8c66a') >= 4.5) ? 'g' : lum(k) < 0.2 ? 'i' : 'w'; let kk = tk === 'g' ? (k === '#f1d488' ? k : '#e8c66a') : k;
     const plain = [1, 4, 5, 6, 30, 31, 32, 33, 40].includes(A.d); const pc = lum(kk) > 0.5 ? shade(base, -0.42) : shade(base, 0.5); let tp = plain && A.d !== 9 && A.d !== 44 && R() < 0.45 && contrast(pc, kk) >= 4.5 ? pc : null;
     /* 바탕과 글자 대비가 6 아래(중간 밝기 바탕 · 가는 글꼴이면 흐려 보임 — 리드 화면 '길의 끝에서')면 어느 디자인이든 글 상자 띠로 대비 7 넘게 */
     const paper = A.d === 9 || A.d === 44; /* 문고판·흰 창 = 글이 흰 종이 위 — 대비 손질 안 함 */ const need = paper ? 0 : THIN.includes(f.id) || f.wt <= 300 ? 6.5 : 4.5; /* 가는 글꼴은 더 높은 대비 */
     if (!paper && !tp && contrast(base, kk) < need + 1 && tk !== 'g') { const pure = contrast(base, '#0d0b09') >= contrast(base, '#ffffff') ? '#0d0b09' : '#ffffff'; if (contrast(base, pure) > contrast(base, kk)) kk = pure; } /* 먼저 아주 짙은 먹·흰 글씨로 */
     if (!tp && contrast(base, kk) < need) { const want = lum(kk) > 0.5 ? [shade(base, -0.6), '#1d1a16'] : [shade(base, 0.7), '#f6efdf']; tp = want.find((x) => contrast(x, kk) >= 7) || want[1]; }
-    const sh = shapeOf(A.s); return { tk, tp, thin: THIN.includes(f.id) ? 1 : 0, code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, fg: FGEN[A.fi - 1] || 'go', c: base, c2, k: kk, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real, ...zoneOf(A.d) }; }
+    /* (shelf7) 곁색이 뚜렷한 색이라 글 자리를 덮는 디자인(위·아래 큰 덮개·반반·대각·가운데 띠)에서는 글자가 바탕과 곁색 둘 다에서 읽혀야 함 — 둘 다 되는 먹·흰 글씨로 · 안 되면 글 상자 띠 */
+    if (kc && !paper && C2T.includes(A.d)) { const ok2 = (x) => contrast(base, x) >= Math.min(need, 4.5) && contrast(kc, x) >= 3.2; if (!ok2(kk)) { const alt = ['#0d0b09', '#ffffff', '#1b1712', '#fbf7ee'].find(ok2); if (alt) { kk = alt; tk = lum(alt) < 0.2 ? 'i' : 'w'; } else if (!tp) tp = lum(kk) > 0.5 ? '#1d1a16' : '#f6efdf'; } }
+    const sh = shapeOf(A.s); return { tk, tp, thin: THIN.includes(f.id) ? 1 : 0, code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, kx: A.k || 0, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, fg: FGEN[A.fi - 1] || 'go', c: base, c2, k: kk, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real, ...zoneOf(A.d) }; }
   /* 옛 부름(look) 그대로 — 저장된 조합이 없을 때 새로 정함 */
   function look(it, c, cc) { c = c || DEF; return dress(it, assign(it, c, cc || (it && it.cc) || null), c); }
   /* 조합 수 — 실제로 만든 목록 길이를 곱함(정범님 11/11: 1억 넘게) */
-  function combos() { const D = DESIGNS.length, C = COLORS.length, P = PATTERNS.length, F = FONTS.length, S = SHAPES.length, A = ACCENTS.length, O = 2; return { D, C, P, F, S, A, O, core: D * C * P * F * S, total: D * C * P * F * S * A * O }; }
+  /* (shelf7) uq = 겉으로 뚜렷한 고유 모양 수(디자인 묶음 × 색 짝 × 무늬 묶음 × 모양 묶음 · 클라우드 cloud/shop-uniq.js space()와 같은 셈 — 시험이 견줌) · 옛 칸(D·C·P·F·S·core·total)은 목록 길이 곱 그대로 */
+  function combos() { const D = DESIGNS.length, C = COLORS.length, P = PATTERNS.length, F = FONTS.length, S = SHAPES.length, A = ACCENTS.length, O = 2; return { D, C, P, F, S, A, O, core: D * C * P * F * S, total: D * C * P * F * S * A * O, uq: uqCount() }; }
+  function uqCount() { const n = UQ.PAL.length; let dc = 0, ds = 0; for (const g of UQ.DG) { const sec = g.some((d) => !UQ.NOSEC.includes(d)); dc += sec ? n * (n - 1) : n; if (sec) ds++; }
+    const B = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).length; return { D: UQ.DG.length, Dsec: ds, C: n, pairs: n * (n - 1), P: UQ.PG.length, B, H: UQ.HG.length, S: B * UQ.HG.length, N: dc * UQ.PG.length * B * UQ.HG.length }; }
   /* ── 한글 첫소리 · 상품명 묶음 */
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'; const CHO1 = { ㄲ: 'ㄱ', ㄸ: 'ㄷ', ㅃ: 'ㅂ', ㅆ: 'ㅅ', ㅉ: 'ㅈ' };
   const initial = (t) => { const s = String(t || '').replace(/^[\s"'(\[{<〈《「『【]+/, ''); const ch = s.charCodeAt(0); if (ch >= 0xac00 && ch <= 0xd7a3) { const c = CHO[Math.floor((ch - 0xac00) / 588)]; return CHO1[c] || c; } if (/[a-z]/i.test(s[0] || '')) return 'A–Z'; if (/[0-9]/.test(s[0] || '')) return '숫자'; if (/[ㄱ-ㅎ]/.test(s[0] || '')) return CHO1[s[0]] || s[0]; return '기호·그 밖'; };
@@ -383,11 +422,13 @@
     /* (11/12 verify1) 둘째 주소 = 같은 글꼴(r=1 · 서버는 r을 안 봄) — 첫 요청이 클라우드 앞문 'Rate exceeded'(429)로 거절되면 브라우저가 둘째 주소로 한 번 더 받음(11/12 09:47 휴대폰 서가에서 /shop/font 429 1건) */
     const u = `${String(api || FONT_API).replace(/\/+$/, '')}/shop/font?f=${encodeURIComponent(f.id)}&t=${encodeURIComponent(t)}`;
     return `@font-face{font-family:'${String(alias || f.id).replace(/['\\]/g, '')}';src:url(${u}) format('woff2'),url(${u}&r=1) format('woff2');font-weight:${f.wt};font-style:normal;font-display:swap}`; };
+  /* (shelf7) 우리 클라우드 글꼴 주소·굵기 — 손님 화면이 FontFace로 직접 받아 429면 기다렸다 다시 받음(fontCss와 같은 주소) */
+  const fontSrc = (id, text, api) => { const f = fontById(id); if (!f.bq) return null; const t = fontText(text); if (!t) return null; return { url: `${String(api || FONT_API).replace(/\/+$/, '')}/shop/font?f=${encodeURIComponent(f.id)}&t=${encodeURIComponent(t)}`, wt: f.wt }; };
   const fontUrl = (id, text) => { const f = fontById(id); return 'https://fonts.googleapis.com/css2?family=' + f.name.replace(/ /g, '+') + (f.ax ? ':' + f.ax : '') + '&display=swap&text=' + encodeURIComponent([...new Set(String(text || ''))].sort().join('').slice(0, 900)); };
   /* 설정 미리 보기 주소(관리 화면 → 손님 화면 #/shelf?cfg=… · 저장 안 하고 그 화면만) */
   const b64e = (s) => { try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.1', UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

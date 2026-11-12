@@ -125,14 +125,20 @@
       const step = () => { if (st.dead || tok !== fitTok || c.dataset.fz !== key) return; fitSpines(rest.splice(0, 60)); if (rest.length) idleF(step); else delete sec.dataset.fitBusy; }; idleF(step); };
     let sideT = 0; const fitSides = () => { clearTimeout(sideT); const idle = root.requestIdleCallback || ((f) => setTimeout(f, 200)); sideT = setTimeout(() => idle(() => { if (!st.dead && !st.busy) [...ring.children].forEach((c) => fitCase(c)); }), 250); };
     let fitT = 0; const refit = (fontChanged) => { if (fontChanged) sec.dataset.fk = (+sec.dataset.fk || 0) + 1; clearTimeout(fitT); fitT = setTimeout(() => { fitT = 0; fitCase(curCase()); fitSides(); }, 150); };
+    const FQ = []; let fRun = 0; const FST = { ok: 0, fail: 0, retry: 0, gave: 0 }; /* (shelf7) 글꼴 받기 줄·셈(api.fontState) */
     const cutAll = () => refit();
     try { if (document.fonts && document.fonts.addEventListener) { const fl = () => refit(true); document.fonts.addEventListener('loadingdone', fl); offs.push(() => document.fonts.removeEventListener('loadingdone', fl)); } } catch (e) {}
     /* ── 책등 모양 영구 저장(정범님 11/11): 서버에 정해진 것(x.lk) → 이 기기에 정한 것 → 새로 정함(앞표지 대표색을 기다려야 하면 잠깐 임시 모양 · 저장 안 함) */
     const LKC = new Map(); const LKL = LS.get('lk', {}) || {}; const LQ = []; let lkT = 0; const gen = C0.lookGen || 0;
     const CC = { ok: !!(root.document && root.HTMLCanvasElement), fail: 0, okN: 0, got: new Map(), done: new Set(), q: [], run: 0 };
     function keep(id, code) { if (!C0.lookKeep) return; LKL[id] = code; LQ.push([id, code]); clearTimeout(lkT); lkT = setTimeout(() => { const ks = Object.keys(LKL); if (ks.length > 6000) ks.slice(0, ks.length - 6000).forEach((k) => delete LKL[k]); LS.set('lk', LKL);
-      const L = LQ.splice(0, LQ.length); if (L.length && o.saveLooks) for (let i = 0; i < L.length; i += 300) o.saveLooks(L.slice(i, i + 300), gen); }, 2500); }
-    keep.flush = () => { clearTimeout(lkT); lkT = setTimeout(() => { const L = LQ.splice(0, LQ.length); if (L.length && o.saveLooks) for (let i = 0; i < L.length; i += 300) o.saveLooks(L.slice(i, i + 300), gen); }, 2500); };
+      sendLooks(); }, 2500); }
+    keep.flush = () => { clearTimeout(lkT); lkT = setTimeout(sendLooks, 2500); };
+    /* (shelf7) 클라우드가 '이미 다른 책이 쓴 조합'이라 고쳐 돌려준 모양(fix)은 이 기기에도 바로 바꿔 넣고 책등을 다시 그림 */
+    function sendLooks() { const L = LQ.splice(0, LQ.length); if (!L.length || !o.saveLooks) return; for (let i = 0; i < L.length; i += 300) { const r = o.saveLooks(L.slice(i, i + 300), gen); if (r && r.then) r.then(lookFix, () => {}); } }
+    function lookFix(j) { const F = j && Array.isArray(j.fix) ? j.fix : []; if (!F.length || st.dead) return; for (const [id, code] of F) { if (typeof code !== 'string' || !B.decode(code)) continue; LKL[id] = code; const x = byId.get(id); if (x) x.lk = code; LKC.delete(id);
+        const b = ring && ring.querySelector(`.sp[data-id="${CSS.escape(id)}"]`); if (x && b && b !== popFor) { const c = b.closest('.bqs-case'); const ti = b.tabIndex; b.outerHTML = spineH(x, null, st.sort + c.dataset.i); const n = ring.querySelector(`.sp[data-id="${CSS.escape(id)}"]`); if (n) { n.tabIndex = ti; if (c.classList.contains('cur')) fitSpines([n]); } } }
+      try { LS.set('lk', LKL); } catch (e) {} ccFont(); }
     function lookOf(x) { let L = LKC.get(x.id); if (L) return L; let A = null; let temp = false;
       if (C0.lookKeep) for (const code of [x.lk, LKL[x.id]]) { const a = code && B.decode(code); if (a && a.g === gen) { A = a; if (code !== x.lk && !o.demo) { LQ.push([x.id, code]); keep.flush(); } break; } } /* 이 기기에만 있던 모양은 서버에도 알림(서버가 먼저 정한 것이 있으면 서버 것) */
       if (!A) { /* (shelf4) 앞표지 대표색·글꼴 갈래는 클라우드가 미리 셈해 cv로 보냄(우리 저장소 그림은 CORS가 닫혀 손님 화면이 못 읽음 — 11/12 확인) · 아직 셈 전이면 임시 모양(저장 안 함) · 다른 곳 그림만 화면에서 읽어 봄 */
@@ -223,10 +229,20 @@
     function fontsFor(cEl) { if (!C.fontsOn || !cEl || !root.fetch) return; const ck = st.sort + cEl.dataset.i; const by = new Map();
       cEl.querySelectorAll('.sp:not(.ok)').forEach((b) => { const x = byId.get(b.dataset.id); if (!x) return; const f = lookOf(x).f; by.set(f, (by.get(f) || '') + x.t + (x.a || '')); });
       const jobs = [...by].map(([f, txt]) => () => { const al = `bqf-${f}-${ck}`; if (FONT_CSS.has(al)) { const s = FONT_CSS.get(al); FONT_CSS.delete(al); FONT_CSS.set(al, s); return Promise.resolve(); }
+        const src = B.fontSrc && B.fontSrc(f, txt, o.fontApi || root.BQ_API); /* (shelf7) 우리 클라우드 글꼴 — FontFace로 받아 429·실패면 2~8초 뒤 다시(3번까지) */
+        if (src && root.FontFace && document.fonts && document.fonts.add) return fontGet(al, src, 0);
         const own = B.fontCss && B.fontCss(f, txt, al, o.fontApi || root.BQ_API); /* (shelf5) 우리 클라우드 글꼴은 CSS를 받지 않고 바로 만듦 */
-        return (own ? Promise.resolve(own) : fetch(B.fontUrl(f, txt)).then((r) => (r.ok ? r.text() : ''))).then((css) => { if (!css || st.dead) return; const s = document.createElement('style'); s.dataset.bqf = al; s.textContent = css.replace(/font-family:\s*'[^']+'/g, `font-family:'${al}'`); document.head.appendChild(s); FONT_CSS.set(al, s);
-          while (FONT_CSS.size > 160) { const [k0, s0] = FONT_CSS.entries().next().value; s0.remove(); FONT_CSS.delete(k0); } }).catch(() => {}); });
-      let n = 0; const next = () => { if (st.dead || n >= jobs.length) return; jobs[n++]().then(next); }; const idle = root.requestIdleCallback || ((f) => setTimeout(f, 60)); idle(() => { for (let i = 0; i < 4; i++) next(); }); }
+        return (own ? Promise.resolve(own) : fetch(B.fontUrl(f, txt)).then((r) => (r.ok ? r.text() : ''))).then((css) => { if (!css || st.dead) return; const s = document.createElement('style'); s.dataset.bqf = al; s.textContent = css.replace(/font-family:\s*'[^']+'/g, `font-family:'${al}'`); document.head.appendChild(s); fontKeep(al, s); }).catch(() => {}); });
+      FQ.push(...jobs); fontPump(); }
+    /* (shelf7 · rel9 휴대폰 확인: 첫 주소·둘째 주소가 함께 429 → 글꼴 6~10개 못 붙음) 글꼴 받기 줄 — 한 번에 2개(넓은 화면 3개)씩 차례로 · 다시 받기는 줄 자리를 잡지 않고 기다렸다가 끝에 다시 섬 */
+    function fMax() { return root.matchMedia && root.matchMedia('(min-width: 900px)').matches ? 3 : 2; }
+    function fontPump() { while (!st.dead && fRun < fMax() && FQ.length) { const job = FQ.shift(); fRun++; Promise.resolve().then(job).catch(() => {}).then(() => { fRun--; fontPump(); }); } }
+    function fontKeep(al, s) { FONT_CSS.set(al, s); while (FONT_CSS.size > 160) { const [k0, s0] = FONT_CSS.entries().next().value; s0.remove(); FONT_CSS.delete(k0); } }
+    function fontGet(al, src, n) { if (st.dead || FONT_CSS.has(al)) return Promise.resolve(); const u = src.url + (n ? '&r=' + n : ''); /* 다시 받을 땐 주소 끝을 바꿔 막힌 답(캐시)을 안 씀 · 서버는 r을 안 봄 */
+      return fetch(u, { mode: 'cors', credentials: 'omit' }).then((r) => { if (!r.ok) { const e = new Error('font ' + r.status); e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000; throw e; } return r.arrayBuffer(); })
+        .then((buf) => { if (st.dead) return; const ff = new FontFace(al, buf, { weight: String(src.wt || 400), style: 'normal', display: 'swap' }); return ff.load().then(() => { if (st.dead) return; document.fonts.add(ff); fontKeep(al, { remove: () => { try { document.fonts.delete(ff); } catch (e) {} } }); FST.ok++; refit(true); }); })
+        .catch((e) => { if (st.dead) return; FST.fail++; if (n >= 3 || (e && e.status === 404)) { FST.gave++; return; } FST.retry++; const w = Math.min(8000, Math.max(e && e.wait ? e.wait : 0, 2000 * Math.pow(2, n))) + Math.round(Math.random() * 600); /* 2초 → 4초 → 8초 */
+          setTimeout(() => { if (st.dead) return; FQ.push(() => fontGet(al, src, n + 1)); fontPump(); }, w); }); }
     const fontsDrop = (c) => { if (!c || !c.dataset) return; const ck = '-' + st.sort + c.dataset.i; for (const [al, s0] of [...FONT_CSS]) if (al.endsWith(ck)) { s0.remove(); FONT_CSS.delete(al); } };
 
     /* ── 툴팁(앞·뒤 표지 · 책 정보) */
@@ -376,7 +392,7 @@
         if (!st.items.length) { ring.innerHTML = '<div class="bqs-empty">아직 꽂을 책이 없습니다</div>'; stage.style.height = 'auto'; return; }
         st.P = B.plan(st.items, C, st.sort); const N = st.P.cases.length; const p0 = o.start || {}; const pos = LS.get('pos', null);
         st.j = p0.i != null ? B.mod(+p0.i || 0, N) : MEM[st.sort] ? B.mod(MEM[st.sort].j, N) : pos && pos.s === st.sort ? B.mod(pos.i, N) : 0; sec.dataset.tPlan = Math.round(performance.now() - T0); sync(true); sec.dataset.firstMs = Math.round(performance.now() - T0); sec.dataset.firstAt = Math.round(performance.now()); o.ready && o.ready(api); }
-    const api = { get state() { return { sort: st.sort, i: st.P ? B.mod(st.j, st.P.cases.length) : 0, N: st.P ? st.P.cases.length : 0, z: st.z, n: st.items.length }; }, turn, go, zoom: setZ, badge, refit: () => { const c = curCase(); if (c) delete c.dataset.fz; fitCase(c); }, lookOf: (id) => { const x = byId.get(id); return x ? lookOf(x) : null; }, get colorState() { return { ok: CC.ok, fail: CC.fail, okN: CC.okN, got: CC.got.size, q: CC.q.length }; },
+    const api = { get fontState() { return { ...FST, q: FQ.length, run: fRun, n: FONT_CSS.size }; }, get state() { return { sort: st.sort, i: st.P ? B.mod(st.j, st.P.cases.length) : 0, N: st.P ? st.P.cases.length : 0, z: st.z, n: st.items.length }; }, turn, go, zoom: setZ, badge, refit: () => { const c = curCase(); if (c) delete c.dataset.fz; fitCase(c); }, lookOf: (id) => { const x = byId.get(id); return x ? lookOf(x) : null; }, get colorState() { return { ok: CC.ok, fail: CC.fail, okN: CC.okN, got: CC.got.size, q: CC.q.length }; },
       destroy() { st.dead = true; try { document.body.classList.remove('shelf-mob'); } catch (e) {} cancelAnimationFrame(rw); offs.forEach((f) => f()); if (RO) RO.disconnect(); closePop(); hideTip(); el.querySelectorAll('.bqs-fly,.bqs-fx,.bqs-dust').forEach((x) => x.remove()); } };
     return api; }
   root.BQShelf = { mount, VER: B.VER };
