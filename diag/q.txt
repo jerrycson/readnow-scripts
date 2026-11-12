@@ -1,2 +1,2 @@
-regq=9788988907344&asCode=1&br=1&regitems=200
-# 113095870
+doc=seller_deep/al_1018816,seller_deep/al_540432,app_settings/seller_shop_state
+# 750411085
