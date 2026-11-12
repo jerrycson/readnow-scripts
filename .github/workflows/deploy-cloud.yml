@@ -4,6 +4,7 @@
 #  · 처음 한 번 준비(2026-10-12 끝남): Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
 #  · 기존 설정(비밀·메모리·예약 호출)은 그대로 두고 프로그램만 바꿈 — 비밀(알라딘 아이디·비밀번호)은 Secret Manager에만
 #  · 손으로 다시 올리기: GitHub 저장소 → Actions → '클라우드 자동 배포' → Run workflow
+#  · (deployfix 11/12) 진단 회차(side)와 배포 회차(deploy)는 묶음이 달라 진단 push가 기다리던 배포를 밀어내지 않음
 name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
