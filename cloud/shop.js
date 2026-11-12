@@ -191,6 +191,11 @@ function suggest(all, q0, X) { const q = norm(q0); X = X || new Set(); if (q.len
   return { s: [...top(T, 6, 't'), ...top(A, 3, 'a'), ...top(P, 2, 'pb')] }; }
 
 function makeShop({ db, C, FV, log, bucket }) {
+  /* (bookinfo1 11/12) 📖 책 정보 공개 요약 — bk_info/{ISBN}(클라우드 bookinfo.js가 모음) · 10분 기억 · 미리보기는 저장소 주소로 */
+  const BKM = new Map(); const BKP = require('./bookinfo.js');
+  async function bkInfoOf(isbn) { if (!/^97[89]\d{10}$/.test(String(isbn || ''))) return null; const m = BKM.get(isbn); if (m && Date.now() - m.t < 10 * 60e3) return m.v; let v = null;
+    try { const d = await C('bk_info').doc(isbn).get(); const p = d.exists ? BKP.pubOf(d.data()) : null; if (p && (Object.keys(p.t).length || Object.keys(p.b).length || p.pv.length)) v = { t: p.t, b: p.b, pv: p.pv.map((x) => imgOf({ stored: x.s }, false)).filter(Boolean), dimg: p.dimg.filter((u) => /^https:\/\/image\.yes24\.com\//.test(u)) }; } catch (e) { v = null; }
+    BKM.set(isbn, { t: Date.now(), v }); if (BKM.size > 800) BKM.delete(BKM.keys().next().value); return v; }
   const fr = (k) => { const b = CAT.books.get(k); const f = b && b.images && b.images.front; return f && typeof f === 'object' ? f : null; }; /* (shelf6) 표지 셈 — 도서 정보의 실제 저장 길(png·gif일 수 있음)·알라딘 원래 주소 */
   const COV = bucket ? require('./shop-cover.js').makeCover({ C, bucket, log, pathOf: (k) => { const f = fr(k); return f && typeof f.stored === 'string' && f.stored.startsWith('img/' + k + '/') ? f.stored : null; }, srcOf: (k) => { const f = fr(k); return f && typeof f.src === 'string' ? f.src : null; } }) : null; /* (shelf4) 📚 앞표지 대표색·글꼴 갈래 — 저장소 그림을 클라우드가 미리 셈 */
   const FONT = require('./shop-font.js').makeFont({ log }); /* (shelf5) 📚 글자만 자른 글꼴 창구 */
@@ -346,8 +351,10 @@ function makeShop({ db, C, FV, log, bucket }) {
         for (const id of ids) { const it = V.get(id); st[id] = !it || X.has(id) ? 'x' : H.has(id) ? 'o' : 's'; if (it) p[id] = it.p; } return send(200, { ok: true, st, p }); }
       if (path === '/shop/item') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); const it0 = V.get(s(q.id, 80)); const it = it0 && !X.has(it0.id) ? it0 : null; if (!it) return send(404, { ok: false, err: '판매가 끝났거나 없는 책입니다' });
         const same = it.isbn ? [...V.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id)).slice(0, 6).map((x) => ({ id: x.id, g: x.g, p: x.p, st: H.has(x.id) ? 'o' : 's' })) : [];
-        let more = {}; try { more = await itemMore(it.id, it); } catch (e) {} /* (shelf8) 책 정보 더(못 읽어도 상품 화면은 그대로) */
-        return send(200, { ok: true, item: { ...it, ...more, ...(() => { try { const v = ACCT.ratingOf(it); return v ? { rv: v } : {}; } catch (e) { return {}; } })(), st: H.has(it.id) ? 'o' : 's' }, same, rel: rvTag(relItems(it, [...V.values()], H, X), V) }, 'public, max-age=30'); }
+        const [info, more0] = await Promise.all([bkInfoOf(it.isbn).catch(() => null), itemMore(it.id, it).catch(() => ({}))]); /* (bookinfo1 11/12) 📖 bk_info 공개 요약 · (shelf8) 서가 펼친 책 칸(옮긴이·무게·분류 경로·책소개·목차·샘플 쪽) */
+        const more = { ...more0 }; if (info) { const T = info.t || {}, Bb = info.b || {}; const I = { ...(more.info || {}) }; for (const [f, k, n] of [['intro', 'intro', 1600], ['toc', 'toc', 2400], ['pubRev', 'pubrev', 1600], ['auIntro', 'auth', 1000], ['trIntro', 'trans', 600], ['pbIntro', 'pubintro', 600]]) { const v = txt(T[k], n); if (v) I[f] = v; } if (Object.keys(I).length) more.info = I;
+          if (!more.tr && Bb.translators) more.tr = s(Array.isArray(Bb.translators) ? Bb.translators.join(', ') : Bb.translators, 60); if (!more.wt && num(Bb.weightG)) more.wt = num(Bb.weightG); if (!it.sz && !more.sz && szOf(Bb.size)) more.sz = szOf(Bb.size); if (!more.pvs && info.pv && info.pv.length) more.pvs = info.pv.slice(0, 40); } /* bk_info가 먼저 · 없으면 prd_books·ext_basic */
+        return send(200, { ok: true, item: { ...it, ...more, ...(() => { try { const v = ACCT.ratingOf(it); return v ? { rv: v } : {}; } catch (e) { return {}; } })(), st: H.has(it.id) ? 'o' : 's' }, same, rel: rvTag(relItems(it, [...V.values()], H, X), V), info }, 'public, max-age=30'); }
       if (path === '/shop/suggest') { await ready(); return send(200, { ok: true, ...suggest([...(await vw()).values()], q.q, await soldX()) }, 'public, max-age=120'); } /* (11/11 shopc1) 🔎 찾기 자동완성 */
       if (path === '/shop/quote' && req.method === 'POST') { await ready(); const b = await readBody(req); const c = await cfg(); const pc = pubCfg(c, null); const P = await promo(); const V = await vw(); const H = await held(); const X = await soldX(); /* (11/11 shopc1) 🧮 장바구니 값(묶음 할인·쿠폰·배송비) — 잡아 두지 않음 · 주문 때 다시 셈 */
         const ids = [...new Set((Array.isArray(b.items) ? b.items : []).map((x) => s(x, 80)).filter(Boolean))].slice(0, pc.maxItems); const bad = []; const L = [];
