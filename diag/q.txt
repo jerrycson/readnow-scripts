@@ -1,2 +1,2 @@
-run=1&soldfill=903578&from=2026-11-12T09:50
-# 950215519
+doc=app_settings/omni_auto&col2=1
+# 141898021
