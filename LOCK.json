@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "auditfix 판 내기 — 웹앱·수집기·클라우드·공용·도우미·번외(점검 리드 몫 고침)",
+ "since": "2026-11-12T23:53:09Z",
+ "beat": "2026-11-12T23:53:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "수집기 1.89.292 netFlush 빈 jobs 고침 · a4155410",
   "at": "2026-11-12T23:48:00Z"
  },
- "host": null
+ "host": "vm-auditfix"
 }
