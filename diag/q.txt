@@ -1,3 +1,2 @@
-run=1
-doc=app_settings/voice_study
-# 2648114201
+doc=app_settings/platforms
+# 1850432577
