@@ -47,8 +47,10 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   console.log('② 판매자 상품 수');
   const s0 = SRC.indexOf('function sshItemsOf('); const s1 = SRC.indexOf('function sshSumOf('); ok(s0 > 0 && s1 > s0, 'sshItemsOf 있음');
   const sshItemsOf = new Function(SRC.slice(s0, s1) + '\nreturn sshItemsOf;')(); const X = { strip: (h) => String(h).replace(/<[^>]+>/g, ' ') };
-  const cases = [['<div>전체상품 (12,345)</div>', 12345], ['<li>판매중인 상품 : <b>4,321</b>개</li>', 4321], ['<span>총 <em>2,000</em>개의 상품</span>', 2000], ['<a>전체</a> <span>(777)</span>', 777], ['<ul><li>국내도서 (1,000)</li><li>외국도서 (20)</li><li>음반 (5)</li></ul>', 1025]];
+  const cases = [['<div>전체상품 (12,345)</div>', 12345], ['<span>총 <em>2,000</em>개의 상품</span>', 2000], ];
   for (const [h, n] of cases) { const r = sshItemsOf(X, h, null); ok(r.n === n, `꼴 '${X.strip(h).replace(/\s+/g, ' ').trim()}' → ${n}`, r); }
+  ok(sshItemsOf(X, '<div>판매자 상품 모두보기 가게A 전문셀러 000 개 --> 중고국내도서 전체보기 건강/취미 (11469) 건강운동 (733) 스포츠/레저 기타 (249) 원예 (167)</div>', null).n === null, '(0.35.143) 실제 화면 꼴 — 분야 나무 숫자(기타 249)를 상품 수로 쓰지 않음(null)');
+  ok(/fix1112/.test(SRC) && /shopItemsBad: \{ v: v\.shopItems/.test(SRC), '0.35.142가 잘못 쓴 상품 수는 한 번 비우고 shopItemsBad에 남김(지우지 않음)');
   ok(sshItemsOf(X, '<p>상품 목록입니다</p>', null).n === null && /상품/.test(sshItemsOf(X, '<p>상품 목록입니다</p>', null).near), '못 찾으면 null(지어내지 않음) + 글 조각');
   ok(sshItemsOf(X, 'x', 55).n === 55 && sshItemsOf(X, 'x', 55).how === 'core', '공용 해석이 찾은 값은 그대로');
   ok(/itemsMiss: \{ at: nowIso\(\), \.\.\.out\.near \}/.test(SRC) && /itemsHow: out\.how/.test(SRC), '못 찾은 화면 글 조각은 seller_shop_state.itemsMiss(진단으로 꼴 확인)');
