@@ -87,8 +87,9 @@ console.log('⑤ ⏱ 속도 스스로 조절');
 
 console.log('⑥ 🗂 차례 — 새 등록 → 판매 중 → 그 밖 → 다시 볼 책');
 { const now = Date.parse('2026-11-12T12:00:00Z'); const C = [{ isbn: '9788900000002', st: 'other', reg: '2026-01-01T00:00:00Z' }, { isbn: '9788900000003', st: 'act', reg: '2026-10-01T00:00:00Z' }, { isbn: '9788900000004', st: 'act', reg: '2026-11-12T10:00:00Z' }, { isbn: '9788900000005', st: 'act', reg: '2026-11-01T00:00:00Z' }, { isbn: '9788900000006', st: 'act' }, { isbn: 'abc', st: 'act' }, { isbn: '9788900000003', st: 'act' }];
-  const have = new Map([['9788900000005', { nx: now - 1 }], ['9788900000006', { nx: now + 864e5 }]]); const r = B.planQ(C, have, now);
+  const have = new Map([['9788900000005', { nx: now - 1, tries: 1, f: ['intro'] }], ['9788900000006', { nx: now + 864e5 }]]); const r = B.planQ(C, have, now);
   ok(JSON.stringify(r.list.map((x) => x.isbn.slice(-1))) === JSON.stringify(['4', '3', '2', '5']), `차례 ${r.list.map((x) => x.isbn.slice(-1)).join(',')} (새 등록 4 → 판매 중 3 → 그 밖 2 → 다시 볼 5 · 아직 때 아닌 6·잘못된 번호·겹친 번호 뺌)`);
+  { const h2 = new Map([['9788900000003', { pvN: 3, tries: 0, f: [] }]]); const r2 = B.planQ([{ isbn: '9788900000002', st: 'other' }, { isbn: '9788900000003', st: 'act', reg: '2026-10-01T00:00:00Z' }], h2, now); ok(r2.list[0].isbn === '9788900000003', '미리보기만 붙은 판매 중 책도 새 책 차례(판매 중 앞)'); }
   ok(B.nextAt({ t: { intro: 1, toc: 1, auth: 1 } }, 1, now) === now + 180 * 864e5 && B.nextAt({ t: { intro: 1 } }, 1, now) === now + 14 * 864e5 && B.nextAt({ t: {} }, 5, now) === now + 120 * 864e5, '다시 볼 때: 다 참 180일 · 빈 칸 14일 · 없음 30일×횟수(최대 120일)'); }
 
 console.log('⑦ 🖼 샘플 페이지 예산 — 하루 처음엔 많이, 남은 수가 줄면 적게');
