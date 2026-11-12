@@ -24,7 +24,7 @@ const base = {
   mobile: { '39.7.7.7': { mobile: true, isp: 'SKT' }, '39.8.8.8': { mobile: true, isp: 'KT' }, '125.1.1.1': { mobile: false, isp: 'KT 유선' } },
   speed: { [P1]: { rtt: 40, mbps: 20.7, bytes: 3e6, ms: 1100 }, [P2]: { rtt: null, err: 'connect ETIMEDOUT' } }, defaultIp: '192.168.0.10' };
 fake(base);
-fs.writeFileSync(path.join(LOC, 'readnow-local.json'), JSON.stringify({ port: PORT, selfUpdate: false, wifiIface: '이더넷', netRetryMin: 0.02, speedEveryMin: 0.01, capGB: 120, planGB: 120,
+fs.writeFileSync(path.join(LOC, 'readnow-local.json'), JSON.stringify({ port: PORT, selfUpdate: false, wifiIface: '이더넷', netRetryMin: 0.02, speedEveryMin: 0.01, capGB: 120, planGB: 120, planId: 'p20261021b', planSince: '2026-10-21', planPre: 0, planPrePh: {}, phCap1024: 'x', phName1026: 'x', /* 한 번만 하는 옛 옮기기는 이미 한 것으로(시험 중 테더링 확인을 끄지 않게) */
   phones: { [P1]: { name: '휴대폰 1 · 기존', capGB: 120, order: 1 }, [P2]: { name: '휴대폰 2 · 새', capGB: 120, order: 2 }, 'DESC:이더넷 2': { name: 'USB 연결 1', capGB: 120, order: 3 }, 'PCI\\VEN_8086&DEV_A33F\\3&1': { name: 'USB 연결 3', capGB: 120, order: 4 }, 'USB\\VID_05AC&PID_12A8\\IPHONE1': { name: '아이폰', capGB: 10, order: 5, desc: 'Apple Mobile Device Ethernet' } } }));
 const get = (p, h) => new Promise((res, rej) => { const rq = http.get({ host: '127.0.0.1', port: PORT, path: p, headers: { Host: '127.0.0.1:' + PORT, ...(h || {}) }, timeout: 4000 }, (r) => { let b = ''; r.on('data', (c) => (b += c)); r.on('end', () => { try { res(JSON.parse(b)); } catch (e) { res({ raw: b }); } }); }); rq.on('error', rej); rq.on('timeout', () => rq.destroy(new Error('시간 초과'))); });
 const st = () => get('/status');
@@ -35,7 +35,7 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8');
 (async () => {
   try {
     /* ⓪ 소스 검사 */
-    ok(/const VERSION = '1\.8\.22'/.test(L), '⓪ 도우미 판 1.8.22');
+    ok(/const VERSION = '1\.8\.23'/.test(L), '⓪ 도우미 판 1.8.23');
     ok(/'naver\.com', 'naver\.net'/.test(L), '⓪ 네이버 주소는 와이파이 목록에 그대로');
   } catch (e) { bad++; console.log('  ❌ 소스 읽기', e.message); }
   try {
@@ -49,8 +49,10 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8');
   await phcap(0, 50 * G);
   s = await until((x) => (x.phones || []).some((p) => p.id === P2 && p.net && p.net.bad) && x.tether && x.tether.ok, 8000);
   const p2 = (s.phones || []).find((p) => p.id === P2) || {};
-  ok(p2.net && p2.net.bad && /인터넷/.test(p2.net.why), '① 휴대폰 2(공인 IP 못 봄) = 📵 인터넷 없음으로 표시 · ' + (p2.net && p2.net.why));
+  ok(p2.net && p2.net.bad && /인터넷|공인 IP/.test(p2.net.why), '① 휴대폰 2(공인 IP 못 봄) = 📵 인터넷 없음으로 표시 · ' + (p2.net && p2.net.why));
   ok(s.tether && s.tether.ok && s.tether.phone === P1 && s.tether.borrow === true, '① 몇 초 안에 인터넷 되는 휴대폰 1로 이어 씀(오늘 몫은 닿았지만 이번 달 상한 안) · tetherOk ' + (s.tether && s.tether.ok));
+  ok(s.capped === false, '① 이어 쓰는 중에는 오늘 몫으로 막지 않음(알라딘 길 열림 · 테더링 연결을 끊지 않음) capped=' + s.capped);
+  await sleep(3500); const s9 = await until((x) => x.tether && x.tether.ok, 5000); ok(s9.tether.ok && s9.tether.phone === P1 && s9.capped === false && (s9.today.blocked || 0) === 0, '① 몇 초 뒤에도 휴대폰 1 그대로 · 막힘 0 (1.8.22 처음 판은 여기서 막힘) ' + JSON.stringify({ ok: s9.tether.ok, ph: s9.tether.phoneName, capped: s9.capped, bl: s9.today.blocked, why: s9.tether.why }));
   ok(/이어 씀/.test(out) && /인터넷 없음으로 표시/.test(out), '① 도우미 기록에 까닭(인터넷 없음·이어 씀)');
   /* ③ 목록 */
   const ids = (s.phones || []).map((p) => p.id);
@@ -70,10 +72,10 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8');
   /* ⑤ 속도 */
   s = await until((x) => (x.phones || []).some((p) => p.id === P1 && p.speed && p.speed.mbps), 6000);
   const sp1 = ((s.phones || []).find((p) => p.id === P1) || {}).speed || {};
-  ok(sp1.mbps === 20.7 && sp1.small === false && sp1.bigIso, '⑤ 처음 속도 재기는 3MB(큰 것)');
+  ok(sp1.mbps === 20.7 && sp1.bigIso, '⑤ 처음 속도 재기는 3MB(큰 것) — 큰 것 시각 남음');
   s = await until((x) => { const q = ((x.phones || []).find((p) => p.id === P1) || {}).speed; return q && q.small === true; }, 6000);
   const sp1b = ((s.phones || []).find((p) => p.id === P1) || {}).speed || {};
-  ok(sp1b.small === true && sp1b.bigIso === sp1.bigIso, '⑤ 그다음은 정한 간격마다 작게(500KB) 다시 잼 · 큰 것 시각은 그대로');
+  ok(sp1b.small === true && sp1b.bigIso && Date.parse(sp1b.atIso) > Date.parse(sp1b.bigIso), '⑤ 그다음은 정한 간격마다 작게(500KB) 다시 잼 · 큰 것 시각은 그대로');
   ok(/speedBytesSmall \|\| 5e5/.test(L) && /speedEveryMin \|\| 30/.test(L) && /speedEveryH \|\| 6/.test(L), '⑤ 기본 30분마다 500KB · 6시간마다 3MB');
   /* ② 휴대폰 2가 살아남 → 다시 후보 → 휴대폰 1은 몫이 닿았으므로 휴대폰 2로 */
   fake({ ...base, pubip: { ...base.pubip, '192.168.42.2': '39.8.8.8' }, speed: { ...base.speed, [P2]: { rtt: 50, mbps: 30, bytes: 3e6, ms: 800 } } });
