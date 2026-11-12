@@ -1,2 +1,2 @@
-doc=app_settings/platforms
-# 159834426
+logs=1&pc=MJ-MAIN&from=202611121210
+# 234776878
