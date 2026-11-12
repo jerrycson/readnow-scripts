@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "soldfill3 커서 비움 진단",
+ "since": "2026-11-12T10:24:23Z",
+ "beat": "2026-11-12T10:24:23Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.154 판매가치 배우기 가볍게 (a7c61441)",
   "at": "2026-11-12T10:24:14Z"
  },
- "host": null
+ "host": "vm-soldfill"
 }
