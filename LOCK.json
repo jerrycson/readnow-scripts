@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "front2: 앞 페이지 올리기 강화 판 내기",
+ "since": "2026-11-12T15:57:12Z",
+ "beat": "2026-11-12T15:57:12Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.530 perf9 웹앱 무게 판 (6062329c)",
   "at": "2026-11-12T15:57:06Z"
  },
- "host": null
+ "host": "vm-front2"
 }
