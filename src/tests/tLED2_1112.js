@@ -62,7 +62,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(Y4.go && Y4.sm && /⏸ 예스24 쓰기 대기: HOME 번외 예스24 로그인 필요 — 로그인되면 저절로 반영/.test(Y4.td), '🛠 처리할 일 — 맡기기 단추 옆에 누르기 전부터 「⏸ 예스24 쓰기 대기: … 로그인되면 저절로 반영」 · 판매관리는 작은 링크', Y4.td);
   console.log('⑤ ⚙ 설정 — 상품 화면 칸 처음에 펼치기(켜면 예전 그대로)');
   await p.evaluate(() => { history.back(); }); await p.waitForTimeout(300);
-  await p.evaluate(() => { S.sec.set_pfold = true; S.tab = 'settings'; renderTabs(); renderMain(); }); await p.waitForTimeout(800);
+  await p.evaluate(() => { S.sec.set_pfold = true; S.tab = 'settings'; renderTabs(); renderMain(); }); await p.waitForTimeout(800); await p.waitForSelector('#pfold_set [data-pfold]', { timeout: 8000 }).catch(() => {}); /* (11/12 fold2) 기계가 바쁠 때 설정 탭 그리기가 늦어 칸을 못 찾던 흔들림 */
   const cbx = p.locator('#pfold_set [data-pfold]'); const S1 = await cbx.count(); if (S1) { await cbx.scrollIntoViewIfNeeded(); await cbx.check(); } await p.waitForTimeout(200);
   const S2 = await p.evaluate(async () => { const v = localStorage.getItem('rn-pfold-open'); S._secSess = {}; S.sec.p_cat = true; uxTabGo('products'); await new Promise((r) => setTimeout(r, 800)); const cat = document.querySelector('#main details.sec[data-sec="p_cat"]');
     S._ledView = 'todo'; S._led = null; openLedger(); await new Promise((r) => setTimeout(r, 400)); return { v, cat: cat && cat.open, oc: document.querySelector('#omni_card').open, rc: document.querySelector('#omni_rc').open }; });
