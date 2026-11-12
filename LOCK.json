@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "shipcalc 출고 자동판정 순이익·짧은 경고 판 내기",
+ "since": "2026-11-12T16:33:22Z",
+ "beat": "2026-11-12T16:33:22Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "shelf8 서가 0.2.6→0.2.7 · 클라우드 0.35.174 push 3b398872·97b651bf · 우리숍·클라우드 배포 성공",
   "at": "2026-11-12T16:33:11Z"
  },
- "host": null
+ "host": "vm-shipcalc"
 }
