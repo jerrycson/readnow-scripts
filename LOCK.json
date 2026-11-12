@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "pcdock2",
+ "since": "2026-11-12T06:33:06Z",
+ "beat": "2026-11-12T06:33:06Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "pend2 판 웹앱 1.78.501 · 번외 0.1.36 · c1416be8 · 머리 그대로",
   "at": "2026-11-12T06:31:49Z"
  },
- "host": null
+ "host": "vm"
 }
