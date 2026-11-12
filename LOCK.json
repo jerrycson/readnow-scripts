@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "번외 긴급 판(hot1 · 번외만)",
+ "since": "2026-11-12T00:45:09Z",
+ "beat": "2026-11-12T00:45:09Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "4시간 점검 08:15 — 수집기 1.89.274 · 웹앱 1.78.495 (번외 이어받은 PC 매일 자동 담당에서 뺌)",
   "at": "2026-11-11T23:47:43Z"
  },
- "host": null
+ "host": "vm"
 }
