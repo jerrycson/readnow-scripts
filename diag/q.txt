@@ -1,2 +1,2 @@
-doc=app_settings/seller_learn,app_settings/seller_aud
-# 1521922714
+run=1
+# 1327926393
