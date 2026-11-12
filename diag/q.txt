@@ -1,2 +1,2 @@
-run=1&soldfill=903578&reset=gone&from=2026-11-12T09:50
-# 219021654
+vlearn=2&mem=1&doc=app_settings/heavy_run
+# 170812966
