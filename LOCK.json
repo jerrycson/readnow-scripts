@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "adapt9 둘째 클라우드 판(판매자 상품 수 장부 길 이름)",
+ "since": "2026-11-12T15:50:56Z",
+ "beat": "2026-11-12T15:50:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.528 · 클라우드 0.35.170 📖 책 정보 모으기(bookinfo1) 80ec547c",
   "at": "2026-11-12T15:50:53Z"
  },
- "host": null
+ "host": "vm-adapt9"
 }
