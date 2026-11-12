@@ -59,7 +59,9 @@ class Browser {
     a.push(`--window-size=${r.w || 1280},${r.h || 900}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${o.profile}`,
       '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync', '--mute-audio', '--disable-default-apps', '--hide-crash-restore-bubble',
       /* 가려져도 늦추지 않음(로거 공개 수집 크롬과 같은 세 플래그) — 이 크롬에만 적용(정범님 크롬 바로가기는 그대로) */
-      '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding');
+      '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
+      /* (0.1.40 🔬 정밀 점검 11/12) 로거 공개 수집 크롬(install.ps1)·그려 읽기 크롬(readnow-local.js)과 같게 — WebRTC가 프록시를 돌아 와이파이 주소를 내보내지 않게 · 크롬 자체 배경 통신 끔 */
+      '--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--disable-background-networking');
     /* (11/11 col2fix6 · 로거 '알라딘 첫 화면을 못 엶: net::ERR_NAME_NOT_RESOLVED') 로거는 이 크롬도 운영 로거 도우미(127.0.0.1:8899) 길로만 — 그 도우미가 알라딘을 테더링으로만 내보내고(와이파이로 안 샘) 테더링이 안 되면 거절
      *  예전엔 프록시 없이 윈도우 기본 길(와이파이 · 테더링은 9000 뒤로)로 나가려 했고, 로거 hosts가 알라딘 주소를 0.0.0.0으로 막아 둬(local/install.ps1 ②) 이름을 못 찾음 */
     if (o.proxy) a.push(`--proxy-server=${o.proxy}`);
