@@ -132,7 +132,7 @@ const loadOld = () => { try { const t = require('child_process').execSync('git -
   const DY = A.drillList('y24_list', ydoc); ok(DY && DY.score >= 0.85 && DY.muts.cls.keep >= 0.8, '예스24 목록 훈련도 같은 틀', DY && { s: DY.score, cls: DY.muts.cls });
   ok(/adaptDrillRun\(await getPage\(\), ids, best && best\.url \? best\.url : null\)/.test(CSRC) && /golden, drill \};/.test(CSRC) && /drill: drill \? drill\.score : null/.test(CSRC), '매일 점검이 훈련 화면을 돌려 adapt_health.drill · 지난 날 표(hist)에 점수');
   ok(!/\.reduce\(/.test(ASRC), '공용 파일에 reduce 없음(알라딘 화면 prototype.js)');
-  ok(/const VERSION = '0\.1\.([3-9]|\d\d)'/.test(ASRC), '공용 파일 판 0.1.3 이상'); /* (rel7 합침) 4회차 0.1.4에서도 통과 */
+  ok(/const VERSION = '0\.(1\.([3-9]|\d\d)|([2-9]|\d\d)\.\d+)'/.test(ASRC), '공용 파일 판 0.1.3 이상'); /* (rel7 합침) 4회차 0.1.4에서도 통과 */
 
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e && e.stack); process.exit(1); });

@@ -42,9 +42,14 @@ const MAP = {
   N05: { q: '요일·월급날·날씨·연휴 같은 때와 환경이 수요를 얼마나 바꾸나?', open: 'cons' },
   N06: { q: '구매평·문의 글을 보면 손님은 무엇을 가장 중요하게 보나?', open: 'voice' },
   N07: { q: '성공 기업 사례와 견줘 우리 기능에 빈 곳·뒤처진 곳은 어디인가?', open: 'benchCase' },
+  N08: { q: '매출 상위 판매자는 무엇(분야·가격대·상태·SP)을 주력으로 하나 — 우리가 배울 것은?', open: 'sellerLearn' },
+  N09: { q: '숍 앞 페이지(최근 등록 240개)에 어떤 종류가 놓이면 그 숍 전체 판매가 활발해지나?', open: 'sellerLearn' },
+  N10: { q: '알라딘 화면이 바뀌어도 수집이 멈추지 않게 스스로 새 길을 찾나?', noScr: '진단·점검 문서(adapt_health)만 — 웹앱 화면은 아직' },
+  N11: { q: '구매자 나이·성별 분포와 함께 산 책이 판매 속도·값·매입값과 어떻게 이어지나?', open: 'sellerLearn' },
+  N12: { q: '연구가 찾은 앞 페이지 전략대로 우리 상품을 다시 앞으로 올리면 정말 더 팔리나(상품 단위 · 견줄 무리와 채점)?', open: 'frontBump' },
 };
 /* 웹앱 쪽에서 쓰는 Firestore 요약 문서(있으면 그 문서의 at을 '마지막 갱신'으로 · 작은 문서만) */
-const FS = { R12: 'buyback_stats', R19: 'extras_study', R20: 'badge_study', N06: 'voice_study', N07: 'bench_obs' };
+const FS = { R12: 'buyback_stats', R19: 'extras_study', R20: 'badge_study', N06: 'voice_study', N07: 'bench_obs', N12: 'front_bump_eval' }; /* (11/12 front1) seller_learn·seller_hyp는 커서 읽지 않음(웹앱이 at만 보려고 통째로 받음) */
 /* 원본 위치 — 비공개 저장소의 폴더 이름만(파일 이름은 연구 폴더 안) */
 const srcOf = (s) => { const D = (s.docs || []).map(String); const top = [...new Set(D.map((d) => (d.match(/^research\/([A-Z]+)\//) || [])[1]).filter(Boolean))]; return top.length ? top.map((t) => `research/${t}/`) : D.some((d) => /^reports\//.test(d)) ? ['reports/'] : []; };
 const lvState = (s) => { const lv = String(s.level || ''); const L = s.metric && s.metric.last; if (L && L.value && !/첫 값 없음|꺼짐|배정 0/.test(L.value) && !/아직 안 돎/.test(lv)) return 'result'; /* 실험이 꺼졌거나 아직 안 돈 연구의 '0'은 결과로 치지 않음 */ if (/^L0|설계|아직 안 돎|멈춤/.test(lv)) return 'collect'; return 'run'; };

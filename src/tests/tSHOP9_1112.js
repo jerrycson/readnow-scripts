@@ -119,6 +119,26 @@ const by = await A({ op: 'bye', pw: 'abcd1234' }, others[0]); ok(by.s === 200 &&
 ok((await J('OPTIONS', '/shop/a')).s === 204, 'CORS 미리 묻기');
 { const r = await fetch(base + '/shop/a', { method: 'OPTIONS', headers: { Origin: 'https://booksqueen.com' } }); ok(/Authorization/.test(r.headers.get('access-control-allow-headers') || ''), 'CORS: Authorization 머리 허락'); }
 
+console.log('②-2 (shop9 2회) 카드 별점 · /b/ 별점 · 리뷰 요약 · 가게 답글 · 팔로잉·추천 · 점검 계정 보관');
+{ ok(AC.rvSummary([{ st: 10, s100: '번역이 매끄럽고 문장이 아름다워요' }, { st: 9, s100: '번역이 좋아요 문장도' }]) === null, '리뷰 2개면 요약 없음');
+  const z = AC.rvSummary([{ rid: 'a', st: 10, lk: 3, s100: '번역이 매끄럽고 문장이 아름다워요' }, { rid: 'b', st: 9, lk: 1, s100: '번역이 좋아요 문장도 좋고' }, { rid: 'c', st: 4, lk: 2, s100: '번역은 괜찮지만 배송이 늦었어요' }]);
+  ok(z && z.kw[0].w === '번역' && z.kw[0].n === 3 && z.kw.some((k) => k.w === '문장') && z.pos.rid === 'a' && z.neg.rid === 'c', '요약: 자주 쓴 말(조사 뗌 · 두 사람 넘게) · 좋은 평/아쉬운 평', z);
+  ok(AC.qaAcct({ em: 'qa-1@test.booksqueen.invalid' }) && AC.qaAcct({ test: 1 }) && !AC.qaAcct({ em: 'guest@example.com' }), '보관 대상 = 시험 계정 · .invalid 점검 계정'); }
+{ const Tk = []; for (let i = 0; i < 3; i++) Tk.push((await A({ op: 'join', em: `sum${i}@example.com`, pw: 'abcd1234', nick: '요약손님' + i, agree: AG })).j.tok);
+  await A({ op: 'rv', k: 'i9788900000002', id: 'aladin_U2', st: 10, s100: '번역이 매끄럽고 문장이 아름다워요' }, Tk[0]); await A({ op: 'rv', k: 'i9788900000002', id: 'aladin_U2', st: 9, s100: '번역이 좋아요 문장도 좋고' }, Tk[1]); const neg = await A({ op: 'rv', k: 'i9788900000002', id: 'aladin_U2', st: 4, s100: '번역은 괜찮지만 종이가 누렇네요' }, Tk[2]);
+  const R = await J('GET', '/shop/rv?k=i9788900000002'); ok(R.j.sum && R.j.sum.kw[0].w === '번역' && R.j.sum.pos && R.j.sum.neg && R.j.sum.neg.rid === neg.j.rv.rid, '공개 리뷰에 요약(자주 쓴 말 · 좋은 평/아쉬운 평)', R.j.sum);
+  const L = await J('GET', '/shop/list?q=' + encodeURIComponent('시험 책 2')); const c2 = L.j.items.find((x) => x.id === 'aladin_U2'); ok(c2 && c2.rv && c2.rv[1] === 3 && c2.rv[0] === 3.8, '목록 카드에 별점 [평균, 수]', c2);
+  const I = await J('GET', '/shop/item?id=aladin_U3'); ok((I.j.rel || []).some((x) => x.id === 'aladin_U2' && x.rv), '함께 보면 좋은 책 카드에도 별점');
+  const bp = await fetch(base + '/b/aladin_U2'); const h = await bp.text(); const ld = JSON.parse(/ld\+json">([\s\S]*?)<\/script>/.exec(h)[1]); ok(ld.aggregateRating && ld.aggregateRating.reviewCount === 3 && ld.aggregateRating.ratingValue === 3.8 && ld.review.length === 3 && /손님 리뷰 ★ 3\.8/.test(h) && !h.includes('example.com'), '/b/ 화면: 손님 리뷰 3개·별점(schema.org AggregateRating) · 메일 없음');
+  const bp0 = await (await fetch(base + '/b/aladin_U4')).text(); ok(!/aggregateRating/.test(bp0), '공개 리뷰 없는 책(시험 리뷰만)은 별점 표 없음');
+  ok((await ADM({ op: 'rvReply', id: neg.j.rv.rid, tx: '불편을 드려 죄송합니다 — 다음엔 더 꼼꼼히 살피겠습니다' })).ok && (await J('GET', '/shop/rv?k=i9788900000002&s=lo')).j.items[0].reply.tx.startsWith('불편을'), '🏪 가게 답글 → 공개 리뷰에');
+  ok((await ADM({ op: 'rvList', days: 30 })).L.find((r) => r.rid === neg.j.rv.rid).reply, '운영자 목록에도 답글');
+  await ADM({ op: 'rvReply', id: neg.j.rv.rid, tx: '' }); ok(!(await J('GET', '/shop/rv?k=i9788900000002&s=lo')).j.items[0].reply, '답글 비우면 내림');
+  await A({ op: 'rv', k: 'i9788900000002', id: 'aladin_U2', st: 9, s100: '저도 좋았어요 문장이' }, T1);
+  const fr = await A({ op: 'folList' }, T1); ok(fr.j.L.length === 0 && fr.j.rec.length >= 2 && fr.j.rec[0].same === 1 && fr.j.rec.every((x) => x.uid !== U1), '추천: 같은 책에 별 4 넘게 준 손님(겹친 책 수)', fr.j);
+  await A({ op: 'fol', u: fr.j.rec[0].uid, on: 1 }, T1); const fl2 = await A({ op: 'folList' }, T1); ok(fl2.j.L.length === 1 && fl2.j.L[0].nick && !fl2.j.rec.some((x) => x.uid === fl2.j.L[0].uid), '팔로잉 목록 · 팔로우한 손님은 추천에서 빠짐');
+  const qa = await A({ op: 'join', em: 'qa-zz@test.booksqueen.invalid', pw: 'abcd1234', nick: '점검손님1', agree: AG }); const f = await ADM({ op: 'find', q: '점검손님' }); ok(f.L.length === 1 && f.L[0].uid === qa.j.me.uid && !(await ADM({ op: 'find', q: '요약손님' })).L.length, '찾기: 시험·점검 계정만(진짜 손님은 안 찾음)');
+  ok((await ADM({ op: 'arch', uid: qa.j.me.uid, on: 1 })).ok && (await A({ op: 'me' }, qa.j.tok)).s === 401 && col('shop_users')[qa.j.me.uid], '점검 계정(.invalid) 보관 → 로그인 0 · 문서 그대로'); }
 if (!process.env.RN_UI) { srv.close(); console.log(bad ? `❌ tSHOP9_1112 ${bad}개 실패` : '✓ tSHOP9_1112 순수 셈·클라우드 창구 통과 (화면 시험은 RN_UI=1)'); process.exit(bad ? 1 : 0); }
 global.__T = { base, ok, ADM, A, col, srv }; await require('./tSHOP9_ui.js')(global.__T);
 srv.close(); console.log(bad ? `❌ tSHOP9_1112 ${bad}개 실패` : '✓ tSHOP9_1112 모두 통과'); process.exit(bad ? 1 : 0);
