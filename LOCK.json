@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "soldfill5 후보 고르게",
+ "since": "2026-11-12T12:58:13Z",
+ "beat": "2026-11-12T12:58:13Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "도우미 1.8.22 (teth3) 18e5801b",
   "at": "2026-11-12T12:36:47Z"
  },
- "host": null
+ "host": "vm-soldfill"
 }
