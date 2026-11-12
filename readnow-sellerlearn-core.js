@@ -11,7 +11,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.3.0'; // (0.3.0 sell3) 장르 14갈래·표지 값·채운 정보 합치기·채움률·minFill·fillSens // (0.2.1 rel4) sell2 배분(benchSpread·benchFix)과 bavg1 사람 값·날 수 무게를 하나로 // (0.2.0 sell2)
+  const VERSION = '0.3.1'; // (0.3.1 front2) 가설 원장 점수에 우리 숍 ⬆ 앞 페이지 올리기 실험(N12 · 무작위 대조군 A/B 먼저)을 사전 분포로(bumpPrior · hypEvolve opt.prior) — 숍 단위 상관 + 우리 실험 // (0.3.0 sell3) 장르 14갈래·표지 값·채운 정보 합치기·채움률·minFill·fillSens // (0.2.1 rel4) sell2 배분(benchSpread·benchFix)과 bavg1 사람 값·날 수 무게를 하나로 // (0.2.0 sell2)
 
   /* ── ① 판정 조건 ── v = 판정 종류: avoid 배척 · watch 주의 · learn 배움 · info 정보 */
   const VERDICT = { avoid: { t: '배척', c: '#B0322A' }, watch: { t: '주의', c: '#B26A00' }, learn: { t: '배움', c: '#1E7B4E' }, info: { t: '정보', c: '#4A5A55' } };
@@ -317,13 +317,26 @@
     for (const t of (res && res.all) || []) { const id = t.f + '|' + t.y; const h0 = L.H[id]; if (h0 && h0.lastDay === day) continue; const h = h0 ? { ...h0 } : { f: t.f, y: t.y, a: 1, b: 1, n: 0, sign: Math.sign(t.r) || 1, first: day, hist: [] }; if (!h0) nNew++; else nUp++;
       const ok = t.q < (O.q || 0.1) && Math.sign(t.r) === h.sign && t.rep; h.a += ok ? 1 : 0; h.b += ok ? 0 : 1; h.n++; h.lastDay = day; h.last = { r: t.r, q: t.q, eff: t.eff, n: t.n, rep: t.rep }; h.score = r3(h.a / (h.a + h.b)); h.hist = [...(h.hist || []), [day, t.r, t.q]].slice(-10);
       h.st = h.n >= 3 && h.score >= 0.6 ? '지지' : h.n >= 3 && h.score <= 0.25 ? '기각' : '후보'; L.H[id] = h; }
+    if (O.prior) { for (const k of Object.keys(L.H)) L.H[k] = { ...L.H[k] }; hypPrior(L, O.prior); } /* (0.3.1 front2) 우리 숍 실험 사전 분포 */
     const ids = Object.keys(L.H); if (ids.length > O.keep) { ids.sort((a, b) => (L.H[a].st === '기각') - (L.H[b].st === '기각') || L.H[b].score - L.H[a].score); ids.slice(O.keep).forEach((k) => delete L.H[k]); }
     const singles = [...new Set(Object.values(L.H).filter((h) => !h.f.includes('*')).map((h) => h.f))]; const good = Object.values(L.H).filter((h) => h.st !== '기각' && !h.f.includes('*')).sort((a, b) => b.score * Math.abs(b.last.r) - a.score * Math.abs(a.last.r)).slice(0, 5);
     const R = rng([...String(day)].reduce((s, c) => s * 31 + c.charCodeAt(0), 7)); const P = new Set((L.pending || []).filter((k) => !Object.values(L.H).some((h) => h.f === k && h.st === '기각')));
     for (const h of good) { for (let g = 0; g < 3 && P.size < O.pend; g++) { const o = singles[Math.floor(R() * singles.length)]; if (!o || o === h.f) continue; const k = [h.f, o].sort().join('*'); if (!Object.values(L.H).some((x) => x.f === k)) P.add(k); } }
     L.pending = [...P].slice(-O.pend); L.day = day; const V = Object.values(L.H); L.sum = { n: V.length, sup: V.filter((h) => h.st === '지지').length, cand: V.filter((h) => h.st === '후보').length, rej: V.filter((h) => h.st === '기각').length, nNew, nUp };
-    L.best = V.filter((h) => h.st !== '기각').sort((a, b) => b.score - a.score || Math.abs(b.last.r) - Math.abs(a.last.r)).slice(0, 12).map((h) => ({ f: h.f, t: featT(h.f), y: h.y, yt: YT[h.y] || h.y, st: h.st, score: h.score, n: h.n, r: h.last.r, q: h.last.q, eff: h.last.eff }));
+    L.best = V.filter((h) => h.st !== '기각').sort((a, b) => b.score - a.score || Math.abs(b.last.r) - Math.abs(a.last.r)).slice(0, 12).map((h) => ({ f: h.f, t: featT(h.f), y: h.y, yt: YT[h.y] || h.y, st: h.st, score: h.score, n: h.n, r: h.last.r, q: h.last.q, eff: h.last.eff, ...(h.pr ? { sShop: h.sShop, pr: h.pr } : {}) }));
     return L; }
+  /* (0.3.1 front2) 우리 숍 실험 → 사전 분포 — 웹앱 ⬆ 앞 페이지 올리기 채점(app_settings/front_bump_eval)의 전략(= 특징)마다
+   *  무작위 대조군 A/B(ab.by — 원인 효과)가 있으면 그것, 없으면 짝지은 견줄 무리(by — 관계)를 반 무게로 · 차이(올린 판매율 − 대조 판매율)를 표준오차로 나눈 z → 성공 몫 p(로지스틱 근사)
+   *  무게 w = 표본 수 ÷ per(기본 20)를 wMax(기본 4)로 자름 → 의사 성공 a0 = w·p · 의사 실패 b0 = w·(1−p) · 표본이 minN(기본 6) 아래면 넣지 않음 */
+  function bumpPrior(E, opt) { const O = { per: 20, wMax: 4, minN: 6, ...(opt || {}) }; const out = {}; if (!E) return out; const pf = (x, n) => (x + 0.5) / (n + 1);
+    const one = (f, z, src) => { const nb = +z.nb || +z.n || 0, nc = +z.nc || +z.cn || 0, b = +z.b || 0, c = +z.c || 0; if (nb < O.minN || nc < O.minN || out[f]) return; const rb = pf(b, nb), rc = pf(c, nc); const se = Math.sqrt(rb * (1 - rb) / nb + rc * (1 - rc) / nc) || 1; const lift = b / nb - c / nc; const zz = lift / se;
+      const p = 1 / (1 + Math.exp(-1.7 * zz)); const w = Math.min(O.wMax, (nb + nc) / O.per) * (src === 'ab' ? 1 : 0.5); out[f] = { a0: r3(w * p), b0: r3(w * (1 - p)), w: r3(w), lift: r3(lift), z: r3(zz), n: nb + nc, src }; };
+    for (const [f, z] of Object.entries((E.ab && E.ab.by) || {})) if (f && f !== 'manual' && z) one(f, z, 'ab');
+    for (const [f, z] of Object.entries(E.by || {})) if (f && f !== 'manual' && z) one(f, z, 'match'); return out; }
+  /* 원장에 사전 분포 얹기 — 점수 = (a + a0) / (a + b + a0 + b0) · 숍 단위만의 점수는 sShop에 남김 · 판정(지지·기각)은 숍 단위로 3번 넘게 본 뒤에만(그대로) */
+  function hypPrior(L, P) { if (!L || !L.H) return L; for (const h of Object.values(L.H)) { if (!h || h.f.includes('*')) continue; const p = P && P[h.f]; const a = +h.a || 1, b = +h.b || 1;
+      if (p) { h.sShop = r3(a / (a + b)); h.pr = { a0: p.a0, b0: p.b0, lift: p.lift, z: p.z, n: p.n, src: p.src }; h.score = r3((a + p.a0) / (a + b + p.a0 + p.b0)); } else if (h.pr) { h.score = r3(a / (a + b)); delete h.pr; delete h.sShop; } else continue;
+      h.st = h.n >= 3 && h.score >= 0.6 ? '지지' : h.n >= 3 && h.score <= 0.25 ? '기각' : '후보'; } return L; }
   /* 채점(그날까지 자료만): 숍마다 시간 앞 2/3로 배우고 뒤 1/3 맞히기 — 챔피언 = 통제만(지금 판매·등록·재고) · 도전자 = 통제 + 원장 위 특징 k개 · 평균 절대 오차(로그) */
   function oosScore(rows, feats, yk, opt) { const O = { frac: 2 / 3, ...(opt || {}) }; const F = (feats || []).filter(Boolean); const S = rows.filter((r) => r.y[yk] != null && Number.isFinite(r.y[yk]) && F.every((f) => getX(r, f) != null) && r.c.every(Number.isFinite)); const G = new Map(); S.forEach((r) => { if (!G.has(r.g)) G.set(r.g, []); G.get(r.g).push(r); });
     const tr = [], te = []; for (const L of G.values()) { if (L.length < 6) continue; L.sort((a, b) => a.t - b.t); const m = Math.floor(L.length * O.frac); const mu = mean(L.slice(0, m).map((r) => r.y[yk])); const mx = F.map((f) => mean(L.slice(0, m).map((r) => getX(r, f)))); const mc = L[0].c.map((_, p) => mean(L.slice(0, m).map((r) => r.c[p])));
@@ -389,6 +402,6 @@
     const W = {}; for (const o of out) if (o.lift != null) (W[o.kind] = W[o.kind] || []).push(o.lift); return { items: out, w: Object.fromEntries(Object.entries(W).map(([k, a]) => [k, r3(mean(a))])) }; }
 
   const api = { VERSION, VERDICT, CONDS, DEFAULT_ORDER, condOf, normOrder, moveKey, dragKey, condHit, judge, pass, topicKey, bandOf, pubAgeM, runUse, profile, ROLE_DEF, roleRank, followPlan, FRONT_DEF, frontOne, frontPool, ourFront, spearman, pearson, boot, med, rowsOf,
-    KIND, FEAT_T, YT, featT, hashT, shopItems, frontAt, frontFeat, shopFronts, panelFrom, shopPanel, hashSet, hasH, rareOf, topWords, explore, test1, bh, benchSpread, benchFix, hypEvolve, oosScore, genreOf, GENRE_T, covOf, fillItems, frontFill, fillStat, fillSens, NEWF, AGE_K, audVec, audFeat, cosv, audStudy, ourPanel, isBad, condEvolve, roleEvolve, followEval, dayN, words };
+    KIND, FEAT_T, YT, featT, hashT, shopItems, frontAt, frontFeat, shopFronts, panelFrom, shopPanel, hashSet, hasH, rareOf, topWords, explore, test1, bh, benchSpread, benchFix, hypEvolve, bumpPrior, hypPrior, oosScore, genreOf, GENRE_T, covOf, fillItems, frontFill, fillStat, fillSens, NEWF, AGE_K, audVec, audFeat, cosv, audStudy, ourPanel, isBad, condEvolve, roleEvolve, followEval, dayN, words };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowSellerLearn = api;
 })(typeof window !== 'undefined' ? window : this);
