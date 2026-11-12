@@ -249,6 +249,7 @@ function makeShop({ db, C, FV, log, bucket }) {
     const c = await cfg(); if (!c.open) return [403, { ok: false, err: '아직 주문을 받지 않습니다 — 곧 문을 엽니다' }];
     const ik = ipKey(req); if (limited('o' + ik, 5, 3600e3)) return [429, { ok: false, err: '잠시 뒤 다시 해 주세요(짧은 시간에 주문이 많음)' }];
     const chk = checkOrder(body, c); if (!chk.ok) return [400, chk]; const v = chk.v;
+    const au = await ACCT.authOf(req).catch(() => null); if (au && au.u.test) return [403, { ok: false, err: '🧪 시험 계정은 실제 주문을 넣지 않습니다(매출·재고에 섞이지 않게) — 둘러보기·리뷰·마이페이지만 써 보세요' }]; /* (11/12 shop9) 로그인한 손님 주문은 계정에 이어 둠(마이페이지·구매 인증) */
     const refs = v.ids.map((id) => C('prd_listings').doc(id)); const now = Date.now(); const no = orderNo(now); const tok = crypto.randomBytes(16).toString('hex');
     const pc = pubCfg(c, null); const due = new Date(now + pc.payDays * 864e5).toISOString();
     const P = await promo(); if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) return [400, { ok: false, err: f.why, cp: 1 }]; } /* (11/11 shopc1) 쿠폰 번호가 틀리면 주문 전에 알림 */
@@ -267,15 +268,17 @@ function makeShop({ db, C, FV, log, bucket }) {
       if (v.expect != null && v.expect !== total) { out = [409, { ok: false, err: '그사이 값이 바뀌었습니다(할인 기간이 끝났거나 새로 시작) — 바뀐 값을 확인하고 다시 주문해 주세요', price: { items: lines.map((x) => ({ id: x.lid, p: x.pp || x.p })), sum, fee, total, disc: q.disc } }]; return; }
       const ref = C('shop_orders').doc(no);
       tx.set(ref, { no, ch: 'shop', st: 'new', at: new Date(now).toISOString(), due, items: lines, sum, shipFee: fee, total, ...(q.disc ? { sum0: q.sum0, disc: { total: q.disc, bundle: q.bundle || 0, coupon: q.coupon || null } } : {}), pay: { how: pc.pay.how, ...(pc.pay.how === 'bank' ? { bank: pc.pay.bank, acct: pc.pay.acct, holder: pc.pay.holder } : {}) }, depositor: v.depositor,
-        buyer: v.buyer, rcv: v.rcv, agree: { privacy: new Date(now).toISOString(), terms: new Date(now).toISOString(), ver: '2026-11-11' }, tokH: hashTok(tok), ipk: ik, ua: s(req.headers['user-agent'], 120),
+        ...(au ? { uid: au.uid } : {}), buyer: v.buyer, rcv: v.rcv, agree: { privacy: new Date(now).toISOString(), terms: new Date(now).toISOString(), ver: '2026-11-11' }, tokH: hashTok(tok), ipk: ik, ua: s(req.headers['user-agent'], 120),
         hist: [{ at: new Date(now).toISOString(), by: '손님', what: `주문 접수 ${lines.length}권 · ${total}원` }], uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' });
       for (const x of lines) tx.set(C('shop_holds').doc(x.lid), { on: 1, no, at: new Date(now).toISOString(), t: x.t, uploadedAt: FV.serverTimestamp() });
       out = [200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, disc: q.disc || 0, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })) }]; });
+    if (au && out && out[0] === 200) await ACCT.addOrder(au.uid, { no, t: out[1].t, at: new Date(now).toISOString(), total: out[1].total, n: out[1].items.length }).catch((e) => log && log('👤 주문을 계정에 잇지 못함', no, e.message));
     HELD.at = 0; if (out && out[0] === 200) log && log(`🛍 우리숍 주문 접수 ${no} · ${out[1].items.length}권`); return out || [500, { ok: false, err: '주문을 저장하지 못했습니다 — 잠시 뒤 다시' }];
   }
   async function lookup(no, tok) { no = s(no, 30); if (!/^BQ\d{8}-[A-Z0-9]{5}$/.test(no) || !/^[0-9a-f]{32}$/.test(String(tok || ''))) return null; const d = await C('shop_orders').doc(no).get(); if (!d.exists) return null; const o = d.data() || {};
     const a = Buffer.from(String(o.tokH || '')), b = Buffer.from(hashTok(tok)); if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null; return { ref: d.ref, o }; }
   const ST = { new: '주문 접수 — 입금을 기다립니다', paid: '입금 확인 — 포장 준비 중', ship: '출고 준비 중', sent: '보냈습니다', done: '끝', cancel: '취소됨' };
+  const ACCT = require('./shop-acct.js').makeAcct({ db, C, FV, log, bucket, ready: () => ready(), vw: () => vw(), held: () => held(), soldX: () => soldX(), ipKey: (r) => ipKey(r), limitWait: (k, n, ms) => limitWait(k, n, ms), view: (o) => view(o) }); /* (11/12 shop9) 👤⭐ */
   const view = (o) => ({ ok: true, no: o.no, at: o.at, st: o.st, stTxt: ST[o.st] || o.st, due: o.due, total: o.total, sum: o.sum, shipFee: o.shipFee, disc: (o.disc && o.disc.total) || 0, pay: o.st === 'new' ? o.pay : { how: (o.pay || {}).how }, name: maskName(o.buyer && o.buyer.name), dep: maskName(o.depositor),
     items: (o.items || []).map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })), inv: o.inv && o.inv.no ? { courier: o.inv.courier || null, no: o.inv.no } : null, cxl: o.st === 'cancel' ? (o.cxl || {}).why || null : null });
 
@@ -297,7 +300,7 @@ function makeShop({ db, C, FV, log, bucket }) {
     if (/^\/b\/[^/]+$/.test(path) || /^\/sitemap(-\d+)?\.xml$/.test(path)) path = '/shop' + path; /* (11/11 shop2) Hosting이 넘긴 검색 주소 */
     if (!/^\/shop\//.test(path)) return false;
     const origin = req.headers.origin || ''; const extra = String(process.env.SHOP_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean);
-    if ([...SHOP_ORIGINS, ...extra].includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); res.setHeader('Access-Control-Expose-Headers', 'Retry-After, ETag'); res.setHeader('Access-Control-Max-Age', '600'); } /* (shelf6) 손님 화면이 Retry-After를 읽어 기다렸다 다시 · 미리 묻기(OPTIONS)는 10분 기억 */
+    if ([...SHOP_ORIGINS, ...extra].includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); res.setHeader('Access-Control-Expose-Headers', 'Retry-After, ETag'); res.setHeader('Access-Control-Max-Age', '600'); } /* (shelf6) 손님 화면이 Retry-After를 읽어 기다렸다 다시 · 미리 묻기(OPTIONS)는 10분 기억 */
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return true; }
     const send = (code, obj, cache, extraH) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cache || 'no-store', 'X-Robots-Tag': 'noindex', ...(extraH || {}) }); res.end(JSON.stringify(obj)); return true; };
     /* (shelf6) 막힘 응답 — 출처(CORS) 머리는 위에서 이미 붙음 · Retry-After(초)로 언제 다시 할지 알려 줌 */
@@ -337,6 +340,7 @@ function makeShop({ db, C, FV, log, bucket }) {
         catch (e) { return send(e.code === 404 ? 404 : e.code === 400 ? 400 : 502, { ok: false, err: e.code ? e.message : '글꼴을 잠시 못 만듦' }); } }
       if (path === '/shop/spines' && req.method === 'POST') { { const w = limitWait('sp' + ipKey(req), 40, 600e3); if (w) return busy(w, '잠시 뒤 다시'); } const body = await readBody(req); await ready(); await spinesLoad(); const c = await cfg(); const gen = Math.max(0, Math.round(+((c.shelf || {}).lookGen) || 0));
         uqSync(gen); const fix = []; const take = spineTake(body.L, SPN.m, (id) => CAT.items.has(id), gen); for (const [id, code0] of take) { const r = SPN.uq.claim(id, code0); const code = r.code; if (r.fixed) fix.push([id, code]); SPN.m.set(id, code); SPN.dirty.set(id, code); } if (take.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); } return send(200, { ok: true, n: take.length, gen, fix }); } /* (shelf7) 이미 다른 책이 쓴 조합이면 고친 모양을 돌려줌(손님 화면이 바로 바꿈) */
+      { const r = await ACCT.handle(req, res, path, q, send, readBody); if (r) return r; } /* (11/12 shop9) 👤 손님 계정·⭐ 리뷰·서재(cloud/shop-acct.js) */
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
       if (path === '/shop/cancel' && req.method === 'POST') { const body = await readBody(req); const r = await lookup(body.no, body.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다' });
@@ -354,7 +358,7 @@ function makeShop({ db, C, FV, log, bucket }) {
   async function promoPreview(b) { b = b || {}; await ready(); const P = await promo(true); const items = [...CAT.items.values()]; const kinds = {}; for (const x of items) { const k = (CAT.pv.get(x.id) || {}).k || 'etc'; kinds[k] = (kinds[k] || 0) + 1; }
     const live = P.rules.filter((r) => BQP.ruleSt(r) === 'on').length; if (!b.rule) return { n: items.length, kinds, live, at: CAT.meta && CAT.meta.at };
     return { ...BQP.preview(items, (id) => CAT.pv.get(id), P, b.rule, Date.now()), kinds0: kinds, live, at: CAT.meta && CAT.meta.at }; }
-  return { handle, build, check, promoPreview, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
+  return { handle, build, check, promoPreview, acctAdmin: (b, who) => ACCT.admin(b, who), _acct: ACCT, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억
