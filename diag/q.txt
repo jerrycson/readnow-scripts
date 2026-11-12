@@ -1,2 +1,2 @@
-run=1&spfull=1
-# 1893928896
+run=1&bkinfo=1&reload=1
+# 864115166
