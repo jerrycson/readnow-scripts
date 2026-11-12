@@ -8,7 +8,7 @@
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
 const ROOT = fs.existsSync(path.join(__dirname, '..', 'cloud')) ? path.join(__dirname, '..') : path.join(__dirname, '..', '..');
-const APP = fs.readFileSync(path.join(ROOT, 'src', 'app.html'), 'utf8'); const SRC = fs.readFileSync(path.join(ROOT, 'cloud', 'index.js'), 'utf8');
+const APP = fs.readFileSync(fs.existsSync(path.join(ROOT, 'src', 'app.html')) ? path.join(ROOT, 'src', 'app.html') : path.join(ROOT, 'app.html'), 'utf8'); /* 저장소 꼴(src/app.html) · 시험 폴더 꼴(pw 옆 app.html) */ const SRC = fs.readFileSync(path.join(ROOT, 'cloud', 'index.js'), 'utf8');
 const V = require(path.join(ROOT, 'cloud', 'voice.js'));
 
 (async () => {
