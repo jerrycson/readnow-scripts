@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "번외 로그인 판(login1 · 예스24 이어받기·알라딘 평범한 창 네이버 길)",
+ "since": "2026-11-12T02:18:33Z",
+ "beat": "2026-11-12T02:18:33Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.496 · 수집기 1.89.275 · 클라우드 0.35.138 · 번외 0.1.31(rel9 셋째) — 번외 상태에 CPU %·PowerShell 횟수 · 머리 그대로",
   "at": "2026-11-12T01:54:20Z"
  },
- "host": null
+ "host": "vm"
 }
