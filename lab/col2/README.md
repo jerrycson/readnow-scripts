@@ -493,7 +493,7 @@ node tests/t_more.js                  # (다음 판) 남은 9가지 — 그려 �
 - **🎯 숍 목록 끝까지(로거만 · `helper/col2-benchfull.js`)**: 운영 app_settings/bench 대상 중 끝 쪽 40쪽 이하 작은 숍을 1쪽~끝 쪽(운영 benchUrl 꼴 · 한 쪽 48개) 읽음 · 해석 = 운영 본체 benchParse·benchLastPage 글자 그대로 · 쪽마다 알라딘 몫 한 장(로거 하루 몫 안).
   - 그림자(안 넘김): 하루 1곳 · 운영 bench_state 지금 목록(조각 `bench_state/<숍>/c/<k>` — 웹앱·클라우드가 로거에만 넘김)과 상품 번호·값·등급·최저가 배지를 견줌 → 하루 요약 일 이름 `benchFull`(표본 기준 1 = 숍 하나 · 운영 회차 끝과 1시간 넘게 떨어진 다름은 '때가 다름').
   - 넘김(⚙ 🔀 🎯 → LOGGER): 읽는 동안 운영 판매자 잡기 문서 `prd_jobs/bclaim_<숍>`을 2분마다 잡음(운영 benchOneT가 '다른 PC가 읽는 중'으로 건너뜀) → 끝까지 읽은 회차(운영 prog.items 꼴)를 맡김 → 웹앱(`c2HoBenchW`)·클라우드(`col2solo.benchW`)가 운영 본체 **benchFinish를 글자 그대로 떼어**(`shadow/col2-handoff.js benchCode`) 진짜 Firestore로 부름 = 새로 올림·사라짐(하루 늦게 확정)·값 바뀜·최저가·통계·조각이 운영 회차와 같은 규칙 · bench_state 쓴 이 '번외 LOGGER'라 운영은 이번 실행에서 그 숍을 건너뜀. 그사이 운영이 끝냈으면(본 회차 끝과 다름)·운영 회차 진행 중이면 쓰지 않음. 큰 숍·상품 페이지 정보(benchDetail — 운영 BENCH_DEFER_DETAIL 길)·이어 읽기는 운영 그대로.
-  - 넘김 판정은 끝까지 읽기 그림자로만(첫 쪽 그림자 `bench`는 셈에 안 듦 · 넘김 표 `shadowK`) · 번외 0.1.42부터.
+  - 넘김 판정은 끝까지 읽기 그림자로만(첫 쪽 그림자 `bench`는 셈에 안 듦 · 넘김 표 `shadowK`) · 번외 0.1.44부터.
 - **🔌 홀로 연결 판매자 목록**: 클라우드 `/c2/solo`가 `lists:[{c:'sellers'}]`에 웹앱 c2ListsGive와 같은 칸(숍 번호·이름·평가 수·rev6mAt·rev6mTriedAt · 우리 숍 996008 뺌)으로 답 → 웹앱 탭 없이 홀로 연결만 된 로거도 🏪 숍 요약 차례·🗣 판매자 글 목록을 받음 · 홀로 연결이 살아 있으면 웹앱 길엔 판매자 목록 부탁을 안 냄.
 - **📦 pubset(📘·📈·🏷) 약속 0 판단**: 운영 refreshOne0은 상품 화면 한 번으로 prd_books·prd_ids·**prd_listings(우리 상품 연결)**·prd_book_metrics·prd_metric_changes·prd_rank_periods를 씀 · 입력이 우리 상품 목록 → **사무실 PC 한 대(기본 JS-MAIN)가 묶음째** 맡음 · 로거 칸과 섞지 않음(로거 📈·🏷 그림자는 견줌만). 쓰는 길은 아직(막힘 까닭 글에 판단을 적어 둠).
 - **🟧 R21 추천 판매가**: 클라우드 진단 `r21=<정가,…>` — 같은 알라딘 화면에서 쿠키 없이·쿠키 있게(이미 로그인일 때만 · 로그인 시도 안 함) 한 번씩 읽어 견줌(읽기만 · 정가·등급 숫자만).
