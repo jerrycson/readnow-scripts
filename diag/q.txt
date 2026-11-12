@@ -1,2 +1,2 @@
-run=1&bkinfo=aladin:9788934972464
-# 191603157
+bkinfo=1&reload=1
+# 2091231444
