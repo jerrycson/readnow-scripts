@@ -1,1 +1,2 @@
-@kpin kpin/20261112-205151.json
+run=1&bkinfo=1&reload=1
+# 260012523
