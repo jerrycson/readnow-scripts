@@ -9,7 +9,7 @@ const SHOT = process.env.NAV_SHOT || ''; const shot = async (p, n) => { if (SHOT
 const draw = (p, t) => p.evaluate((t) => { S.q = ''; S.tab = t; renderTabs(); renderMainNow(); afterRender(); }, t);
 const shut = (p) => p.evaluate(async () => { try { document.querySelectorAll('.bigask-ov').forEach((x) => x.remove()); LBL_OV = null; } catch (e) {} for (let i = 0; i < 4 && S.detail; i++) { try { closeDetail(); } catch (e) { break; } await new Promise((r) => setTimeout(r, 60)); } try { S.navStack.length = 0; } catch (e) {} try { closeModal(); } catch (e) {} });
 require('./harness.js')(G(async (p) => {
-  await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+  await p.evaluate(require('./seed.js')); await p.evaluate(() => { try { localStorage.setItem('rn-pfold-open', '1'); } catch (e) {} }); /* (rel10) 11/12 ledger2가 상품 화면 칸·🧭 상품 묶음을 처음엔 접게 바꿈 — 이 시험은 묶음 줄 자체를 보므로 ⚙ 📚 '처음에 펼치기'(예전 그대로)로 봄 */ await p.waitForTimeout(500);
   // ① 탭 차례
   const tabs = await p.evaluate(() => { localStorage.removeItem('rn-navhub-fold'); S.tab = 'home'; renderTabs(); return [...document.querySelectorAll('#tabs > button[data-tab]')].map((b) => b.dataset.tab); });
   ok(tabs.join() === 'home,purchase,products,ledger,channels,orders,search,biz,research,market,sellers,projects', '① 탭 차례 = 일의 흐름 · 새 탭 🧾 통합 장부 · 🛒 판매처 · 🔬 연구', tabs);
@@ -87,7 +87,7 @@ require('./harness.js')(G(async (p) => {
   ok(await p.evaluate(() => featFind('소비심리').length > 0 && featFind('판매처 탭').some((f) => f.go && f.go.tab === 'channels') && featFind('화면 지도').length > 0), '🔍 기능 찾기: 판매처 탭·연구 탭·화면 지도');
 }), { vp: { width: 1400, height: 900 } }).then(() => require('./harness.js')(G(async (p) => {
   // ⑨ 휴대폰 390px
-  await p.evaluate(require('./seed.js')); await p.waitForTimeout(600); await p.evaluate(() => { localStorage.removeItem('rn-navhub-fold'); localStorage.removeItem('rn-ux2'); S.tab = 'home'; renderTabs(); renderMainNow(); afterRender(); });
+  await p.evaluate(require('./seed.js')); await p.evaluate(() => { try { localStorage.setItem('rn-pfold-open', '1'); } catch (e) {} }); /* (rel10) 11/12 ledger2가 상품 화면 칸·🧭 상품 묶음을 처음엔 접게 바꿈 — 이 시험은 묶음 줄 자체를 보므로 ⚙ 📚 '처음에 펼치기'(예전 그대로)로 봄 */ await p.waitForTimeout(600); await p.evaluate(() => { localStorage.removeItem('rn-navhub-fold'); localStorage.removeItem('rn-ux2'); S.tab = 'home'; renderTabs(); renderMainNow(); afterRender(); });
   const tb = await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.tab || 'more'));
   ok(tb.join() === 'home,purchase,products,ledger,orders,more', '⑨ 휴대폰 아래 탭 = 홈·매입·상품·🧾 통합 장부·주문·⋯', tb);
   await p.click('[data-ux2tmore]'); await p.waitForTimeout(200);
