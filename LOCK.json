@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 매일 정밀 점검 11/12 — 로거 테더링 상한 오판(도우미 borrow)·판매자 쓰기 5천·보고",
+ "since": "2026-11-12T13:15:10Z",
+ "beat": "2026-11-12T13:15:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "soldfill5 클라우드 0.35.162 (f781735a)",
   "at": "2026-11-12T12:58:21Z"
  },
- "host": null
+ "host": "vm"
 }
