@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "found1 📚 발견 모음 판 내기(웹앱+클라우드)",
- "since": "2026-11-12T15:18:48Z",
- "beat": "2026-11-12T15:18:48Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: spfull 셋째 클라우드 판(이어 할 목록·판매자별 차례)",
-  "at": "2026-11-12T15:30:32Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "adapt9 웹앱 1.78.525 · 수집기 1.89.284 · 클라우드 0.35.167 · 적응 엔진 0.1.6 🔄 목표·방법 적응 틀 push c734937c",
-  "at": "2026-11-12T15:18:45Z"
+  "done": "found1 웹앱 1.78.526 · 클라우드 0.35.168 📚 발견 모음 push 2adb5d65 · 클라우드 손 배포 성공",
+  "at": "2026-11-12T15:31:59Z"
  },
- "host": "vm-found1"
+ "host": null
 }
