@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "price2 기본값",
+ "since": "2026-11-12T09:55:53Z",
+ "beat": "2026-11-12T09:55:53Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "soldfill 웹앱 1.78.511·수집기 1.89.282·클라우드 0.35.151 (e5aa5e85)",
   "at": "2026-11-12T09:54:49Z"
  },
- "host": null
+ "host": "vm"
 }
