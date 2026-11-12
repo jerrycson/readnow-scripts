@@ -1,2 +1,2 @@
-col2=2026-11-12
-# 1798820813
+doc=app_settings/seller_learn,app_settings/seller_aud
+# 1521922714
