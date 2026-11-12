@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.280의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.281의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.280' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.280', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.281' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.281', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -492,7 +492,7 @@
   const logLines = [];
   function log(m, warn) {
     window.__rnLog && window.__rnLog('상품', warn ? 'warn' : 'info', m);
-    logLines.unshift({ t: `${new Date().toTimeString().slice(0, 8)} ${m}`, w: warn ? 'warn' : '' }); if (logLines.length > 200) logLines.length = 200;
+    logLines.unshift({ t: `${new Date().toTimeString().slice(0, 8)} ${m}`, w: warn ? 'warn' : '' }); if (logLines.length > 60) logLines.length = 60; /* (11/12 fix3 · 진단 18:11~18:29 — 새 판 뒤 '우리 칸' 요소가 5분에 +20~70씩 늘던 곳 = 이 패널 기록 줄(200줄까지)) 200 → 60줄(고객 패널과 같음 · 전체는 기록 창·내려받기) */
     $('#rnpLog').innerHTML = logLines.map((l) => `<p class="${l.w}">${l.t.replace(/</g, '&lt;')}</p>`).join('');
   }
   // 진행 표시 + 남은 시간(최근 처리 속도 기준) + 다른 PC에서 볼 수 있게 상태 공유

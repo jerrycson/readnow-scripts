@@ -1,7 +1,7 @@
 {
- "ver": "1.89.280",
+ "ver": "1.89.281",
  "hsig": "8ab2f661d1d8afa8",
- "at": "2026-11-12T09:03:39.480Z",
+ "at": "2026-11-12T09:31:31.597Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.280",
-   "sha": "458cbbf756ceee161dce8ffd640c86847972289ac0ed6c557bb59a17f2bbc0c1",
+   "v": "1.89.281",
+   "sha": "718a7e3b0fe455cef87e2c3992544f78cee383a3bfd5a3e9ef3dea4449cf3e8b",
    "n": 51727
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.280",
-   "sha": "49b4bce9962772f201aa46a2ff4e351e6d8fba42f4a8bd9a4b5cbbb0299b45aa",
-   "n": 272377
+   "v": "1.89.281",
+   "sha": "79db7aad02fd689e595db942536af68e299acc85b2510a4308a8990e73774a83",
+   "n": 272874
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.280",
-   "sha": "b546ddf4f54b2e82b84162a67cbf01c4327ae6a2b3711e86006c01c4da05c724",
+   "v": "1.89.281",
+   "sha": "9971bafdf167761c53cccaf54630c066c6e62f0480f6d305e7960151e3168a27",
    "n": 263963
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.280",
-   "sha": "91e109392c3c1a43f17f9a10c3afd98d134275002f9ac3084c42e8fc1b0caffd",
-   "n": 1265142
+   "v": "1.89.281",
+   "sha": "07c7eda1aebaa776f48eed9c79a7e942d2d84170d467bc77102549d1f95eca2d",
+   "n": 1265364
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.280",
-   "sha": "2570e1da514c62bad4e7891889d14ab8a8e754f52cf376f8013c23d3691e115f",
+   "v": "1.89.281",
+   "sha": "a92dd3de80d97d6a09e85a0724d383d3bda6598e7c903200e5a986e81b50cbd6",
    "n": 66152
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.280",
-   "sha": "8875fcc51031bcffaa5db5197c381643336b098b282f779b1155b9e260c8f251",
+   "v": "1.89.281",
+   "sha": "6319f2d62132673f472246bc70245e0b5ac39be8f2eeda78ce32eb14fe7cb6ab",
    "n": 334773
   }
  ]

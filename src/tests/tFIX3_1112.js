@@ -68,6 +68,7 @@ function part2() {
     const draw = cut(CS, '    const draw = () => {', '      { const ca = w.querySelector'); ok(/childElementCount - JW_MAX/.test(draw) && /slice\(-JW_MAX\)/.test(draw) && /const JW_MAX = 400;/.test(CS) && !/childElementCount - 800/.test(CS), "오늘 기록 화면 줄 상한 400(덧붙일 때·다시 그릴 때 둘 다)");
     ok(/let tab = 'today'; const fmtRow = rowOne;/.test(CS) && /const rowH = rowOne;/.test(CS), '전체 기록·🛰 감시·🖥 다른 PC 줄도 같은 한 요소 줄');
     ok(/P\.domBy = \(\) =>/.test(CS) && /domBy: P\.domBy\(\)/.test(CS) && /기록 창 \$\{x\.domBy\.jw/.test(CS) && /알라딘 화면 \$\{x\.domBy\.page/.test(CS), '5분 성능 줄: 화면 요소를 기록 창·줄 수·우리 칸·표 표시·틀·알라딘 화면으로 나눠 셈');
+    ok(/if \(logLines\.length > 60\) logLines\.length = 60;/.test(CS) && /상품 패널 기록 \$\{x\.domBy\.plog\}/.test(CS), '상품 패널 기록 줄 60까지(새 판 뒤 진단에서 늘던 곳) · 성능 줄에 우리 칸별 수');
     ok(/its\.length - 20/.test(cut(CS, 'window.__rnNote = (msg, kind) =>', 'const noteFold')), '알림 띠는 최근 20개까지'); }
   { let head0 = ''; try { head0 = cp.execSync('git -C ' + JSON.stringify(path.resolve(__dirname, '..', '..')) + ' show origin/main:src/readnow-collector.src.js', { maxBuffer: 64e6 }).toString(); } catch (e) {}
     const hd = (s) => s.split('\n').filter((l) => /^\/\/ @(match|grant|connect|require|include|noframes|run-at)/.test(l)).join('\n').replace(/\?v=[\d.]+/g, '');
