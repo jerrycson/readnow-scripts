@@ -1,1 +1,4 @@
-@kpin kpin/aud_20261111-234725.json
+spbatch=dry
+slearn=1
+saud=1
+# 1299110208
