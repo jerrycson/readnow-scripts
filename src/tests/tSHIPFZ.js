@@ -88,7 +88,7 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
   // ── ④ 길마다 출고 보호가 걸려 있음(원본 글) ──
   const has = (re, m) => ok(re.test(s), m);
   has(/const t = verTimer = setInterval\(\(\) => \{ if \(window\.__rnShipWait && window\.__rnShipWait\('verReload'/, '④ ⚡ 새 수집기 판 바꾸기(verReload) — 하던 일을 끊지도 새로고침하지도 않음');
-  has(/async function safeReload\(reason, resumeKey\) \{ if \(window\.__rnShipWait && window\.__rnShipWait\('reload'[^\n]*\{ reload: true \}\)\)/, '④ 안전한 새로고침(safeReload) — 마지막 받침(끝나면 그때 새로고침)');
+  has(/async function safeReload\(reason, resumeKey\) \{ [^\n]{0,900}?if \(window\.__rnShipWait && window\.__rnShipWait\('reload'[^\n]*\{ reload: true \}\)\)/, /* (shipq1) 앞에 🔕 출고 시간 방해 금지 받침이 하나 더 */ '④ 안전한 새로고침(safeReload) — 마지막 받침(끝나면 그때 새로고침)');
   has(/window\.__rnShipWait\('memRun', '메모리 정리\(수집 중\)'\)\) return;/, '④ 수집 중 메모리 정리');
   { const { idleMemBusy } = new Function(cut('function idleMemBusy(E)', '/* ⟦idleMemDecide 끝⟧ */') + '; return { idleMemBusy };')(); ok(idleMemBusy({ ship: true }) === '🚚 출고 중' && idleMemBusy({}) === null, '④ 쉬는 때·바쁜 중 메모리 정리 지킴이(idleMemBusy)가 출고 중을 바쁨으로 봄'); }
   has(/return idleMemBusy\(\{ ship: \(window\.__rnSgOn && window\.__rnSgOn\(\)\),/, '④ 지킴이가 출고 보호를 넘겨줌');
@@ -113,7 +113,7 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
     M.shipSet({ on: true, until: Dn + H, why: 'x' }); ok(M.shipHold(), '④ PC 도우미가 출고 보호를 받음'); let opened = 0; M._RV_DEPS.open = () => { opened++; return true; }; M._RV_DEPS.chrome = async () => true; M._RV_DEPS.net = async () => true; M._ST.lead = { at: Date.now() - 15 * MIN };
     await M.reviveTick(); ok(opened === 0, '④ PC 도우미: 출고 중엔 되살리기 안 함'); M.shipSet({ on: false }); await M.reviveTick(); ok(opened === 1, '④ PC 도우미: 출고 끝나면 다음 확인 때 이어서 엶');
     M.shipSet({ on: true, until: Date.now() - 1 }); ok(!M.shipHold(), '④ PC 도우미: 수집기 탭이 죽어도 최대 시간(until)이 지나면 풀림'); }
-  if (PR) { const p = fs.readFileSync(PR, 'utf8'); ok(/function selfUpdate\(\) \{ if \(alpsBusy\(\) \|\| shipHold\(\)\)/.test(p) && /if \(alpsBusy\(\) \|\| shipHold\(\)\) \{ if \(shipHold\(\)\) log\(`ALPS 모듈 새 판/.test(p) && /if \(shipHold\(\)\) \{ log\(`작업 창 모듈 새 판/.test(p) && /if \(p === 'update'\) \{ if \(alpsBusy\(\) \|\| shipHold\(\)\)/.test(p), '④ 인쇄 도우미·ALPS·작업 창 모듈 스스로 새 판 받기(다시 켜기)를 출고 중엔 미룸(10분 뒤 다시)'); }
+  if (PR) { const p = fs.readFileSync(PR, 'utf8'); ok(/const updHold = \(\) => shipHold\(\) \|\|/.test(p) && /function selfUpdate\(\) \{ if \(alpsBusy\(\) \|\| updHold\(\)\)/.test(p) && /if \(alpsBusy\(\) \|\| updHold\(\)\) \{ if \(updHold\(\)\) log\(`ALPS 모듈 새 판/.test(p) && /if \(updHold\(\)\) \{ log\(`작업 창 모듈 새 판/.test(p) && /if \(p === 'update'\) \{ if \(alpsBusy\(\) \|\| shipHold\(\)\)/.test(p), '④ 인쇄 도우미·ALPS·작업 창 모듈 스스로 새 판 받기(다시 켜기)를 출고 중엔 미룸(10분 뒤 다시)'); }
   ok(/^\/\/ @require/m.test(s) && !/shipGuard/.test(s.split('// ==/UserScript==')[0]), '④ 수집기 머리(==UserScript==)는 그대로');
 
   // ── ⑤ 웹앱(Playwright) ──
