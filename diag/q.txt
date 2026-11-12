@@ -1,3 +1,2 @@
-voice=save&vms=200000
-doc=app_settings/voice_study
-# 296315353
+run=1
+# 699924006
