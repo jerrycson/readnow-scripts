@@ -56,7 +56,9 @@ console.log('④ Firestore로 · 끄기');
 const fr = await0(R.flush(true)); function await0(p) { return p; }
 (async () => {
   const f = await fr; ok(f && f.n >= 1, 'flush — 장부 보냄', f);
-  const pcDoc = W.find((w) => w.c === 'adapt_pc' && w.id === 'PC_시험'); ok(pcDoc && pcDoc.v.g.pc_al_product && pcDoc.v.pc === 'PC_시험', 'adapt_pc/<PC>에 장부 몸통', pcDoc && Object.keys(pcDoc.v));
+  const pcDoc = W.find((w) => w.c === 'adapt_pc' && w.id === 'PC_시험'); ok(pcDoc && JSON.parse(pcDoc.v.gs).pc_al_product && pcDoc.v.pc === 'PC_시험', 'adapt_pc/<PC>에 장부 몸통(글 gs)', pcDoc && Object.keys(pcDoc.v));
+  const nest = (x) => Array.isArray(x) ? x.some((y) => Array.isArray(y) || nest(y)) : x && typeof x === 'object' && !(x.union) ? Object.values(x).some(nest) : x && x.union ? x.union.some(nest) : false;
+  ok(W.every((w) => !nest(w.v) && !nest((w.a || []).filter((y) => !(y && y.p)))), '쓰는 모든 문서에 배열 안 배열 없음(웹 SDK가 거절 — 1.89.289에서 PC 장부가 안 올라간 까닭)', W.map((w) => w.c + '/' + w.id));
   const up = W.find((w) => w.c === 'app_settings' && w.id === 'adapt_goals' && w.op === 'update'); const ids = up ? up.a.filter((x) => x && x.p).map((x) => x.p.join('.')) : []; ok(ids.includes('sum.pc_al_product@PC_시험'), "adapt_goals sum['pc_al_product@PC_시험'](웹앱 🔄 엔진 적응 상태)", ids);
   const sv = up && up.a[up.a.findIndex((x) => x && x.p && x.p[1] === 'pc_al_product@PC_시험') + 1]; ok(sv && /· PC_시험$/.test(sv.label) && sv.fl, '요약에 PC 이름 · 칸별 길(fl)', sv && { label: sv.label });
   const fi = W.find((w) => w.c === 'app_settings' && w.id === 'finds_inbox'); ok(!lines.length || (fi && fi.v.L.union.length >= 1 && fi.v.L.union.every((x) => x.src === '엔진')), '발견 모음 넘김(새 줄만 · arrayUnion)', fi && fi.v.L);

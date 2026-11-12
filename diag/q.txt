@@ -1,2 +1,2 @@
-col2=1
-# 1401718399
+clog=60&cq=%EC%A0%81%EC%9D%91&doc=app_settings/adapt_goals
+# 2056214559

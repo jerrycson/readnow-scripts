@@ -11,7 +11,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.route(/raw\.githubusercontent\.com\/jerrycson\/readnow-scripts\/main\/src\/readnow-collector\.src\.js/, (rt) => rt.fulfill({ status: 200, contentType: 'text/plain', body: fs.readFileSync(SRCF, 'utf8') }));
   await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: CORS }); let b = null; try { b = JSON.parse(rt.request().postData() || 'null'); } catch (e) {} calls.push({ p: u.pathname, b });
     const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(x) });
-    if (u.pathname === '/relay/pending') { const o = outNow; outNow = []; return J({ ok: true, want: [], sample: 0, pool: 0, fields: [], out: o, hot: false, pc: 'JS-MAIN', pcSrc: 'web', ver: '0.1.45', kind: 'office', handBeat: {}, handAt: 0 }); }
+    if (u.pathname === '/relay/pending') { const o = outNow; outNow = []; return J({ ok: true, want: [], sample: 0, pool: 0, fields: [], out: o, hot: false, pc: 'JS-MAIN', pcSrc: 'web', ver: '0.1.46', kind: 'office', handBeat: {}, handAt: 0 }); }
     return J({ ok: true }); });
   const tick = async () => p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); await new Promise((r) => setTimeout(r, 200)); });
   const errsOf = () => Object.assign({}, ...calls.filter((c) => c.p === '/relay/ack' && c.b && c.b.errs).map((c) => c.b.errs)); const keysOf = () => [].concat(...calls.filter((c) => c.p === '/relay/ack' && c.b && c.b.keys).map((c) => c.b.keys));

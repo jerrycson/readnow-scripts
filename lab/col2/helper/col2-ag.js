@@ -33,7 +33,7 @@ function makeAg(o) { o = o || {}; const now = () => Date.now(); const F = path.j
     if (k) { try { fs.writeFileSync(F, JSON.stringify(S)); } catch (e) {} } return k; }
   /* 15분마다 col2_adapt/<PC> 로 — o.out(c, id, v) = 웹앱 대신 쓰기(쓰기 막이 col2_* 그대로) */
   function tick(force) { const k = close(force); if (!o.out) return k; if (!force && now() - (S.outAt || 0) < OUT_MS) return k; if (!Object.keys(S.g).length) return k;
-    S.outAt = now(); const pc = String((o.pc && o.pc()) || 'PC').replace(/[^\w가-힣-]/g, '_').slice(0, 40); try { o.out('col2_adapt', pc, { pc, at: new Date().toISOString(), ver: o.ver || null, g: JSON.parse(JSON.stringify(S.g)), lines: S.lines.slice(-60) }); } catch (e) {} try { fs.writeFileSync(F, JSON.stringify(S)); } catch (e) {} return k; }
+    S.outAt = now(); const pc = String((o.pc && o.pc()) || 'PC').replace(/[^\w가-힣-]/g, '_').slice(0, 40); try { o.out('col2_adapt', pc, { pc, at: new Date().toISOString(), ver: o.ver || null, n: Object.keys(S.g).length, gs: JSON.stringify(S.g), lines: S.lines.slice(-60).map((x) => ({ at: x.at, src: '엔진', eng: x.eng, engL: x.engL, kind: x.kind, t: x.t, ...(x.ev ? { ev: JSON.stringify(x.ev).slice(0, 400) } : {}) })) }); /* (0.1.44) 웹앱 대신 쓰기(웹 SDK)는 배열 안 배열을 거절 — 장부 몸통은 글(gs)로 */ } catch (e) {} try { fs.writeFileSync(F, JSON.stringify(S)); } catch (e) {} return k; }
   function view() { const a = A(); return { ready: !!a, ver: a && a.VERSION, pend, wait: Object.fromEntries(Object.entries(P).map(([k, B]) => [k, B.n])), goals: a ? Object.fromEntries(Object.entries(S.g).map(([k, g]) => [k, a.agSummary(g)])) : null, lines: S.lines.slice(-5), outAt: S.outAt ? new Date(S.outAt).toISOString() : null }; }
   return { obs, fill, close, tick, view, S, P };
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.289
+// @version      1.89.290
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -1416,15 +1416,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       sv(KA, acc); } catch (e) {} }
   /* 15분마다 이 PC 한 탭이 Firestore로 — adapt_pc/<PC>(장부 몸통) · adapt_goals sum(웹앱 🔄 엔진 적응 상태) · finds_inbox(발견 모음 넘김) */
   async function flush(force) { try { const F = G.firebase; if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return null; const pc = pcN(); if (!pc) return null; const t = Date.now(); const last = +gv(KF, 0) || 0; if (!force && t - last < FLUSH_MS) return null; sv(KF, t); push();
-      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60);
-      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, g: JSON.parse(JSON.stringify(L)), lines }, { merge: false });
+      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60).map((x) => ({ at: x.at, src: '엔진', eng: x.eng, engL: x.engL, kind: x.kind, t: x.t, ...(x.ev ? { ev: JSON.stringify(x.ev).slice(0, 400) } : {}) })); /* (adapt10 둘째) 웹 SDK는 배열 안 배열을 거절 — 장부 몸통은 글(gs)로 · 근거(ev)도 글로 */
+      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, n: ks.length, gs: JSON.stringify(L), lines }, { merge: false });
       const args = []; for (const k of ks) { const s0 = AG.agSummary(L[k]); if (s0) args.push(new FP('sum', k + '@' + pc), JSON.parse(JSON.stringify({ ...s0, id: k + '@' + pc, label: `${s0.label} · ${pc}`, by: '수집기', pc }))); }
-      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) {} }
-      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, src: '엔진', engL: `${x.engL || x.eng} · ${pc}` }))));
+      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) { sv('rn-ag-err', String((e && e.message) || e).slice(0, 200)); } }
+      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, engL: `${x.engL || x.eng} · ${pc}` }))));
       if (nw.length) { try { await db.collection('app_settings').doc('finds_inbox').set({ L: F.firestore.FieldValue.arrayUnion(...nw), at }, { merge: true }); sv('rn-ag-sent', Math.max(...nw.map((x) => Date.parse(x.at) || 0))); } catch (e) {} }
-      return { n: ks.length, lines: nw.length }; } catch (e) { return { err: String((e && e.message) || e).slice(0, 120) }; } }
+      sv('rn-ag-err', ''); return { n: ks.length, lines: nw.length }; } catch (e) { sv('rn-ag-err', String((e && e.message) || e).slice(0, 200)); return { err: String((e && e.message) || e).slice(0, 120) }; } } /* 실패 까닭은 GM rn-ag-err(peek에 보임) */
   setInterval(push, 30e3); setInterval(() => { flush().catch(() => {}); }, 60e3); try { addEventListener('pagehide', push); } catch (e) {}
-  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
+  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, err: gv('rn-ag-err', '') || null, flushAt: +gv(KF, 0) || null, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
   /* ── 공용 파서 감싸기(같은 화면은 한 번만 · 실패해도 원래 결과 그대로) ── */
   const wrap = (o, k, fn) => { try { const f = o && o[k]; if (typeof f !== 'function' || f.__rnAg) return; const w = function () { const r = f.apply(this, arguments); try { if (on()) fn(arguments, r); } catch (e) {} return r; }; w.__rnAg = 1; o[k] = w; } catch (e) {} };
   const tx = (el) => (el ? String(el.textContent || '').replace(/[ \s]+/g, ' ').trim() : ''); const num = (s) => { const m = String(s == null ? '' : s).replace(/,/g, '').match(/\d+/); return m ? +m[0] : null; };

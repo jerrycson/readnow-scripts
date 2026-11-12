@@ -13,7 +13,9 @@ for (let i = 0; i < 12; i++) { ag.obs('y24_ops', 'tpl', { n: 1, ok: 1, ms: 30 })
 ok(ag.tick() === 0 && !outs.length, '틀(CORE.ag)이 없으면 닫지도 쓰지도 않음(메모리에만)');
 core = A; ag.tick(); const g = ag.S.g.c2_y24_ops;
 ok(g && g.champ === 'tpl' && g.methods.tpl.d[0][1] === 12 && g.methods.tpl.d[0][2] === 12, '회차 닫힘 — 챔피언 tpl · 12번 중 12번', g && g.methods);
-ok(outs.length === 1 && outs[0].c === 'col2_adapt' && outs[0].id === 'PC_시험' && outs[0].v.g.c2_y24_ops, 'col2_adapt/<PC>에 장부를 씀(막이 col2_*)', outs[0] && { c: outs[0].c, id: outs[0].id });
+const nest = (x) => Array.isArray(x) ? x.some((y) => Array.isArray(y) || nest(y)) : x && typeof x === 'object' ? Object.values(x).some(nest) : false;
+ok(outs.length === 1 && !nest(outs[0].v), '쓰는 문서에 배열 안 배열 없음(웹 SDK가 거절함 — 장부 몸통은 글 gs)');
+ok(outs.length === 1 && outs[0].c === 'col2_adapt' && outs[0].id === 'PC_시험' && JSON.parse(outs[0].v.gs).c2_y24_ops, 'col2_adapt/<PC>에 장부를 씀(막이 col2_*)', outs[0] && { c: outs[0].c, id: outs[0].id });
 ok(fs.existsSync(path.join(HOME, 'col2-ag.json')), '이 PC 파일에도 남김');
 const sm = A.agSummary(g); ok(sm.fl && sm.fl.f.n_list && sm.fl.f.n_list.tpl[0] === 12, '칸마다 길 성적(fl) — n_list · tpl', sm.fl);
 console.log('② 무너지면 바뀜 줄');

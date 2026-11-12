@@ -1,4 +1,4 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.289의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.290의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
 /* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg 0.1.7 — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */
@@ -135,8 +135,8 @@
   
   root.ReadnowAdaptAg = { VERSION: '0.1.7', AG_DEF, AG_SYN, AG_KIND, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, agFillTally, agFillAdd, agFill, agFlSum };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.289' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.289', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.290' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.290', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -1451,15 +1451,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       sv(KA, acc); } catch (e) {} }
   /* 15분마다 이 PC 한 탭이 Firestore로 — adapt_pc/<PC>(장부 몸통) · adapt_goals sum(웹앱 🔄 엔진 적응 상태) · finds_inbox(발견 모음 넘김) */
   async function flush(force) { try { const F = G.firebase; if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return null; const pc = pcN(); if (!pc) return null; const t = Date.now(); const last = +gv(KF, 0) || 0; if (!force && t - last < FLUSH_MS) return null; sv(KF, t); push();
-      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60);
-      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, g: JSON.parse(JSON.stringify(L)), lines }, { merge: false });
+      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60).map((x) => ({ at: x.at, src: '엔진', eng: x.eng, engL: x.engL, kind: x.kind, t: x.t, ...(x.ev ? { ev: JSON.stringify(x.ev).slice(0, 400) } : {}) })); /* (adapt10 둘째) 웹 SDK는 배열 안 배열을 거절 — 장부 몸통은 글(gs)로 · 근거(ev)도 글로 */
+      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, n: ks.length, gs: JSON.stringify(L), lines }, { merge: false });
       const args = []; for (const k of ks) { const s0 = AG.agSummary(L[k]); if (s0) args.push(new FP('sum', k + '@' + pc), JSON.parse(JSON.stringify({ ...s0, id: k + '@' + pc, label: `${s0.label} · ${pc}`, by: '수집기', pc }))); }
-      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) {} }
-      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, src: '엔진', engL: `${x.engL || x.eng} · ${pc}` }))));
+      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) { sv('rn-ag-err', String((e && e.message) || e).slice(0, 200)); } }
+      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, engL: `${x.engL || x.eng} · ${pc}` }))));
       if (nw.length) { try { await db.collection('app_settings').doc('finds_inbox').set({ L: F.firestore.FieldValue.arrayUnion(...nw), at }, { merge: true }); sv('rn-ag-sent', Math.max(...nw.map((x) => Date.parse(x.at) || 0))); } catch (e) {} }
-      return { n: ks.length, lines: nw.length }; } catch (e) { return { err: String((e && e.message) || e).slice(0, 120) }; } }
+      sv('rn-ag-err', ''); return { n: ks.length, lines: nw.length }; } catch (e) { sv('rn-ag-err', String((e && e.message) || e).slice(0, 200)); return { err: String((e && e.message) || e).slice(0, 120) }; } } /* 실패 까닭은 GM rn-ag-err(peek에 보임) */
   setInterval(push, 30e3); setInterval(() => { flush().catch(() => {}); }, 60e3); try { addEventListener('pagehide', push); } catch (e) {}
-  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
+  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, err: gv('rn-ag-err', '') || null, flushAt: +gv(KF, 0) || null, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
   /* ── 공용 파서 감싸기(같은 화면은 한 번만 · 실패해도 원래 결과 그대로) ── */
   const wrap = (o, k, fn) => { try { const f = o && o[k]; if (typeof f !== 'function' || f.__rnAg) return; const w = function () { const r = f.apply(this, arguments); try { if (on()) fn(arguments, r); } catch (e) {} return r; }; w.__rnAg = 1; o[k] = w; } catch (e) {} };
   const tx = (el) => (el ? String(el.textContent || '').replace(/[ \s]+/g, ' ').trim() : ''); const num = (s) => { const m = String(s == null ? '' : s).replace(/,/g, '').match(/\d+/); return m ? +m[0] : null; };
