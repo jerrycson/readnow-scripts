@@ -1,2 +1,2 @@
-shelfjobs=1&recentUp=prd_listings&mins=240
-# 54665079
+doc=app_settings/ml_state,app_settings/value_model,app_settings/eng_health,app_settings/extras_study,app_settings/badge_study,app_settings/buyback_stats,app_settings/sp_obs,app_settings/value_factors,app_settings/strat_run,app_settings/pxDaily,app_settings/voice_study,app_settings/bench_obs,app_settings/oop_study,app_settings/research_pulse,app_settings/peer_ev,app_settings/eng_fence,app_settings/adapt_health,app_settings/adapt_ttbcmp,app_settings/slearn,app_settings/seller_learn
+# 545912551
