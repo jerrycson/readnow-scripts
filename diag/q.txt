@@ -1,2 +1,2 @@
-sizes=prd_book_metrics,prd_books,prd_listings,ext_basic&n=400
-# 221408367
+doc=app_settings/adapt_cfg,app_settings/adapt_health,app_settings/adapt_sel
+# 1077030149
