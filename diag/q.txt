@@ -1,4 +1,2 @@
-adapt=1
 col2=2026-11-12
-doc=app_settings/adapt_ttbcmp,app_settings/adapt_cfg,app_settings/seller_learn,app_settings/seller_aud
-# 3108516770
+# 593631427
