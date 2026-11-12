@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fold2 — 탭마다 화면 모두 기본 접기",
+ "since": "2026-11-12T09:58:30Z",
+ "beat": "2026-11-12T09:58:30Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "soldfill 클라우드 0.35.152 진단 (f1440d8b)",
   "at": "2026-11-12T09:57:16Z"
  },
- "host": null
+ "host": "vm"
 }
