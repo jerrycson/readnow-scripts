@@ -1,2 +1,2 @@
-run=1&spfull=1
-# 906916751
+doc=app_settings/adapt_cfg
+# 156255854
