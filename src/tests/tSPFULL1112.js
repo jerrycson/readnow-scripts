@@ -76,6 +76,7 @@ function world(spec) { global.FieldPath = { documentId: () => '__name__' };
   { const W = world([['1', 5]]); W.setCfg([{ sc: '1' }], { spBatch: { gone: false, front: false } }); W.S.failOrder = true; const r = await W.tick({ force: true }); ok(r.sell && r.sell.on === false && /색인/.test(r.sell.err) && W.byId.get('1_000').v.isbn, '자리 물음이 실패하면 예전 길로 그대로 채움 · 까닭을 sell.err에', r.sell); }
   { const W = world([['1', 5]]); W.setCfg([{ sc: '1' }], { spBatch: { gone: false, front: false } }); const r = await W.tick({ force: true, dry: true }); ok(r.sell && r.sell.scan === 5 && !W.store['app_settings/adapt_cfg'].spBatchSell && !W.byId.get('1_000').v.isbn, '셈만(spbatch=dry)은 자리·기록을 쓰지 않음', r.sell); }
 
+  { const W = world([['1', 3]]); W.setCfg([{ sc: '1' }, { sc: '7' }], { spBatch: { gone: false, front: false } }); const r = await W.tick({ force: true }); const c = W.cur(); ok(c['7'] && c['7'].rounds === 0 && c['7'].lastId === null && r.sell.wraps === 1 && c['1'].rounds === 1, '상품 기록이 없는 판매자는 바퀴로 세지 않음', c['7']); }
   console.log('⑤ 진단');
   ok(/if \(q\.spfull \|\| q\.bfill \|\| q\.soldfill\) \{/.test(CSRC) && /out\.spfull = z;/.test(CSRC) && /z\.etaRoundH = /.test(CSRC) && /v\.left = r; v\.pos = /.test(CSRC), '진단 spfull=1 — 판매자별 자리·바퀴·남은 문서 수·한 바퀴 예상 시간 · bfill·soldfill에도 함께');
   ok(/spBatchSellHist: hs\.filter/.test(CSRC) && /rateFull: S\.rateFull, rateFilled: S\.rateFilled/.test(CSRC), '숍 전체 기준 채움률을 날마다 남김');
