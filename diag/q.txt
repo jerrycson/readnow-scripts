@@ -1,1 +1,6 @@
-@kpin kpin/aud_20261112-072409.json
+pend=1
+shopraw=1018816
+mlx=M
+mlx=M&mp=0&mlim=500
+doc=app_settings/seller_shop_state,app_settings/voice_study
+# 1141969
