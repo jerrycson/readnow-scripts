@@ -39,6 +39,7 @@ async function partHelper() { console.log('① 인쇄 도우미 다리 — /col2
 
     const e1 = await P('POST', '/col2/ensure', { pc: 'HOME', by: '시험' }); const ver = (fs.readFileSync(path.join(LABD, 'col2-config.js'), 'utf8').match(/COL2_VER:\s*'([\d.]+)'/) || [])[1];
     ok(e1.j && e1.j.ok && e1.j.installed && e1.j.running && e1.j.on && e1.j.ver === ver && e1.j.dayN === 0, `켜기 → 묶음 받음 · 켜짐 · 번외 수집 켬 · 판 ${ver} · 오늘 읽은 수 0`, e1.j);
+    { const sL = await P('GET', '/col2/status'); ok(sL.j && sL.j.load && typeof sL.j.load === 'object' && 'pct' in sL.j.load && 'ps' in sL.j.load && typeof sL.j.load.hot === 'boolean', '(verify2 11/12) 상태에 번외 부하(load: CPU %·쉬는 중·PowerShell 횟수)도 실음 — 웹앱 relay가 col2_ctl.st.load를 null로 덮지 않게', sL.j && sL.j.load); }
     const man = JSON.parse(fs.readFileSync(LAB, 'utf8')).files; ok(man.every((f) => fs.existsSync(path.join(BASE, 'app', ...f.split('/')))) && !fs.existsSync(BASE + '/app.new'), `묶음 ${man.length}개 파일을 %USERPROFILE%\\ReadNow\\col2\\app 에(검사 뒤 바꿔 끼움)`);
     ok(man.every((f) => got.includes('/' + f)) && got.includes('/bundle.json'), 'GitHub(lab/col2)에서 목록·파일을 받음');
     const w1 = JSON.parse(fs.readFileSync(BASE + '/want.json', 'utf8')); ok(w1.on === true && w1.pc === 'HOME', '켠 것을 want.json에 적음(로그온 때 다시 켜려고)');
