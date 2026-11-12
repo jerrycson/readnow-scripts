@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "perf9 웹앱 무게 판 — 빌드 중",
- "since": "2026-11-12T15:53:52Z",
- "beat": "2026-11-12T15:54:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "spfull 셋째 클라우드 0.35.172 push ca3b2965",
-  "at": "2026-11-12T15:53:36Z"
+  "done": "웹앱 1.78.530 perf9 웹앱 무게 판 (6062329c)",
+  "at": "2026-11-12T15:57:06Z"
  },
- "host": "vm-perf9"
+ "host": null
 }
