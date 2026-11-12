@@ -6,7 +6,7 @@
  * 차례표(jobs.json)는 이 PC 것만 — 다른 PC의 목록·차례를 이어받지 않음 */
 'use strict';
 const fs = require('fs'), path = require('path');
-const TK = require('../shadow/col2-tasks.js'); const CMP = require('../shadow/col2-compare-core.js');
+const TK = require('../shadow/col2-tasks.js'); const CMP = require('../shadow/col2-compare-core.js'); const HOF = require('../shadow/col2-handoff.js'); /* (11/12 handoff2) 로거 칸 넘김 — 운영 규칙으로 '지금 써야 하나'(due) */
 const kday = (t) => new Date((t || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
 const QMAX = 500, SEENMAX = 3000;
 const KP_PATH = '/home/v3/addition/adiStatsSaleReport'; /* (0.1.10) 운영 KP_PAGE와 같은 화면(운영 본체 글자에서 떼어 온 KP_PAGE가 실제로 묻는 곳) */
@@ -145,7 +145,7 @@ function makeJobs(ctx) {
     if (t.reader === 'al') { const p = TK.pathOf(t, a, own()); if (!p) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님(또는 우리 숍)' }); return { did: true }; }
       let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { S.q[k].unshift(a); delete S.seen[k][a.key]; ctx.pace.fail('error'); return { did: false, rest: 10e3, why: '작업 창 준비 실패: ' + e.message }; }
       const tk = await ctx.pace.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
-      r = await br.readJob(ctx.aladin + p, t.parse, core.src, 30) || { ok: false, why: '빈 응답' }; if (r.ok) ctx.pace.ok(); else if (!r.needLogin) ctx.pace.fail(r.kind || 'error'); r.url = p; }
+      r = await br.readJob(ctx.aladin + p, t.parse, core.src, 30) || { ok: false, why: '빈 응답' }; if (r.ok) ctx.pace.ok(); else if (!r.needLogin) ctx.pace.fail(r.kind || 'error'); r.url = p; r.cv = (core.ver && core.ver['readnow-sellers-core.js']) || null; /* (11/12 handoff2) 넘긴 숍 요약의 rev6mTriedVer — 운영 RSV.VERSION과 같은 판 */ }
     else if (t.reader === 'dyn' || t.reader === 'nb' || t.reader === 'kp') { const back = (why, ms) => { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: ms || 5000, why }; };
       let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { SP.fail('error'); return back('작업 창 준비 실패: ' + e.message, 10e3); }
       if (t.reader === 'dyn' && !TK.pathOf(t, a, own())) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님' }); return { did: true }; }
@@ -173,7 +173,7 @@ function makeJobs(ctx) {
   /* (0.1.10) 👥 구매자 분포 — 따로 된 칸 탭에 상품 화면을 그리고 운영 getProductFull(글자 그대로 · 받침 loadInFrame = 이 탭을 내려 보며 기다림) */
   async function dynRead(br, core, t, a) { const url = ctx.aladin + TK.pathOf(t, a, own()); const sec = ctx.pageSec || 25;
     const expr = `(async () => { globalThis.SET = { pageTimeoutSec: ${sec} }; const r = await Col2Lift.getProductFull(${JSON.stringify(url)}); if (!r || !r.page) return { ok: false, needLogin: !!(location.href && /login|adult/i.test(location.href)), why: '상품 화면을 못 읽음(로그인·19금 화면이거나 화면 모양이 다름)' }; const p = r.page;
-      return { ok: true, page: JSON.parse(JSON.stringify({ buyerDist: p.buyerDist || null, relationBuy: p.relationBuy || [], clickRelation: p.clickRelation || [], clickRaw: !!p.clickRaw, dynamicLoaded: !!p.dynamicLoaded })), finalUrl: r.finalUrl }; })()`;
+      return { ok: true, page: JSON.parse(JSON.stringify({ buyerDist: p.buyerDist || null, relationBuy: p.relationBuy || [], clickRelation: p.clickRelation || [], clickRaw: ${handed('dynamic') ? 'p.clickRaw || null' : '!!p.clickRaw'} /* (11/12 handoff2) 넘긴 뒤엔 운영 dynOne처럼 원문까지 */, dynamicLoaded: !!p.dynamicLoaded })), finalUrl: r.finalUrl }; })()`;
     const r = await br.tabJob(url, core.src, expr, sec + 10); if (r && r.ok && r.page && !r.page.dynamicLoaded) r.page.note = '지연 로딩 칸이 정한 시간 안에 다 차지 않음(운영도 같은 표시 dynLoaded:false)'; return r; }
   /* (0.1.10) 🔍 새상품 없는 시세 — 운영 nbMarketJob(글자 그대로)을 알라딘 탭 떨어진 칸에서 이 상품 한 건만 · 쓰기는 메모리 칸(__col2.W)에서 꺼내 견줌 */
   async function nbRead(br, core, a) { const L = { usedCode: a.usedCode, listingId: a.listingId, title: a.title, price: a.price, bookId: null, active: true };
@@ -201,7 +201,7 @@ function makeJobs(ctx) {
     if (t.cls === 'ext') { const id = t.src === 'fx' ? String(r.date || a.day) : a.isbn || null; if (!id) { record(t, a, a.key, 'noprod', [], { why: 'ISBN 없음(장터 시세만 · 운영 문서 이름 모름)', ms }); return; }
       S.wait.push({ k: t.k, a, id, c: t.col, res: R(slimRes(r)), at: now(), ms }); return; }
     const id = t.id === 'bookId' ? a.bookId : TK.docId(t, a); if (!id) { record(t, a, a.key, 'noprod', [], { why: '운영 문서 이름 모름(bookId 없음)', ms }); return; }
-    S.wait.push({ k: t.k, a, id, c: t.col, sh: t.shape === 'survey' ? TK.surveyDays(pg) : pg, at: now(), ms }); }
+    S.wait.push({ k: t.k, a, id, c: t.col, sh: t.shape === 'survey' ? TK.surveyDays(pg) : pg, at: now(), ms, ...(r.cv ? { cv: r.cv } : {}) }); }
   const slimRes = (r) => { const o = { ok: !!r.ok, none: !!r.none, skip: r.skip || null, why: r.why || null }; if (r.d !== undefined) o.d = r.d; if (r.rates) { o.rates = r.rates; o.src = r.src; o.date = r.date; o.warn = r.warn || null; } return o; };
 
   /* (11/11 col2rep2 · 약속 38·48) 🔀 넘긴 KPIPA — 이 PC로 넘겼으면(웹앱 ⚙ › 🔀 번외로 넘기기) 운영 kpipaJob과 같은 꼴로 mkt_kpipa/<날짜>에 씀(같으면 안 씀 · 바뀌면 옛 값을 history에) · 넘기지 않았으면 아무것도 안 함 */
@@ -221,6 +221,14 @@ function makeJobs(ctx) {
   /* (11/11 col2rep3) 🔀 넘긴 환율 — 운영 extFx처럼 ext_fx/<고시일>이 없을 때만(웹앱이 다시 확인) · 수출입은행 출처만 */
   function hoFx(w, v) { if (!handed('ext.fx') || v) return; const res = w.res || {}; if (!res.ok || !res.rates || res.src !== 'koreaexim') return; const id = String(res.date || w.id);
     if (ctx.opOut('ext.fx', 'ext_fx', id, { date: id, rates: res.rates, src: res.src, warn: res.warn || null })) ctx.note(`🔀 넘긴 일 💱 환율 ${id} — 수출입은행 고시를 운영 칸에 맡김(없을 때만)`, { k: 'read', m: '🔀 넘김' }); }
+  /* (11/12 handoff2 · 리드 '로거 고유 일 넘기는 길') 🔀 넘긴 로거 칸 일(👥 구매자 분포 · 🏪 숍 요약) — 운영 규칙으로 쓸 때만(운영 문서 v를 보고 30일·7일 · HOF.due) 읽은 값을 그대로 맡김
+   *  실제 쓰기 규칙(운영 dynOne·rev6mJob)은 shadow/col2-handoff.js plan() 한 곳 — 웹앱·클라우드가 운영 문서를 다시 읽고 그 자리에서 셈 · 값이 같아도 맥박(beat)은 남김 */
+  function hoPlan(t, w, v) { if (!handed(t.k)) return; if (ctx.beat) ctx.beat(t.k); if (!HOF.due(t.k, v || null, now())) return; const sh = w.sh || {};
+    const val = t.k === 'dynamic' ? { dyn: { buyerDist: sh.buyerDist || null, relationBuy: Array.isArray(sh.relationBuy) ? sh.relationBuy : [], clickRelation: Array.isArray(sh.clickRelation) ? sh.clickRelation : [], clickRaw: sh.clickRaw && sh.clickRaw !== true ? sh.clickRaw : null, dynamicLoaded: !!sh.dynamicLoaded } } : { shop: sh, ver: w.cv || null };
+    if (ctx.opOut(t.k, t.col, String(w.id), val)) ctx.note(`🔀 넘긴 일 ${t.name} ${w.id} — 운영 칸에 맡김(웹앱이 운영 문서를 다시 읽고 운영과 같은 규칙으로 씀)`, { k: 'read', m: '🔀 넘김' }); }
+  /* (11/12 handoff2) 🏪 넘긴 숍 요약 차례 — 운영 rev6mJob처럼 7일 넘게 안 본 판매자(웹앱이 넘긴 판매자 목록 · rev6mAt/rev6mTriedAt만 · 우리 숍 뺌) */
+  function feedStale(list) { if (!handed('shopSum')) return 0; const sc = []; for (const x of list || []) { const v = (x && x.v) || {}; if (!v.sc) continue; if (!HOF.due('shopSum', { rev6mAt: v.rev6mAt || null, rev6mTriedAt: v.rev6mTriedAt || null }, now())) continue; sc.push(String(v.sc)); }
+    let n = 0; for (const s of sc) { if (!/^\d{1,10}$/.test(s) || own().includes(s)) continue; if (push('shopSum', { sc: s, from: 'stale' }, s)) n++; } if (n) { save(); ctx.note(`🏪 넘긴 숍 요약 — 7일 넘게 안 본 판매자 ${n}곳을 차례에 넣음(운영 규칙)`, { k: 'read', m: '🔀 넘김' }); } return n; }
   /* 운영 문서가 왔는지 보고 견줌 */
   function settle() { const P0 = P(); const keep = [];
     for (const w of S.wait) { const t = TK.byK[w.k]; if (!t) continue; const g = ctx.want(w.c, w.id);
@@ -236,7 +244,7 @@ function makeJobs(ctx) {
       else if (CMP.stab(pv.series) === CMP.stab(sh.series)) cmp = { verdict: 'same', reasons: [] }; /* 운영 kpSig와 같은 셈(칸 순서 상관없이 같은 값) */
       else { const ageH = (now() - Date.parse(pv.at || 0)) / 3600e3; cmp = { verdict: 'diff', reasons: [ageH >= 3 ? 'old' : 'diff'], rows: [{ f: sh.type, k: 'diff', prod: pv.series, shadow: sh.series }], ageH: Number.isFinite(ageH) ? Math.round(ageH * 10) / 10 : null }; } } /* 최근 7일은 공표 뒤 고쳐질 수 있어 운영도 3시간마다 다시 받음 → 3시간 넘은 운영 값이면 '오래됨' */
     else cmp = CMP.compareMap(v || null, w.sh || {}, t.map || {}, { move: t.move, prodAt: t.at && v ? v[t.at] || atOf(v) : atOf(v) });
-    if (t.k === 'kpipa') hoKp(w, v, cmp); else if (t.k === 'nbMarket') hoNb(w); else if (t.src === 'fx') hoFx(w, v); else if (HO_EXT(t)) hoExt(t, w);
+    if (t.k === 'kpipa') hoKp(w, v, cmp); else if (t.k === 'dynamic' || t.k === 'shopSum') hoPlan(t, w, v); else if (t.k === 'nbMarket') hoNb(w); else if (t.src === 'fx') hoFx(w, v); else if (HO_EXT(t)) hoExt(t, w);
     record(t, w.a, w.id, cmp.verdict, cmp.reasons || [], { ms: w.ms, rows: (cmp.rows || []).filter((x) => x.k !== 'same').slice(0, 8), how: cmp.how || null, ageH: cmp.ageH == null ? null : cmp.ageH, why: cmp.why || null }); }
 
   /* 기록 — col2_jobs 한 건 · col2_jday 하루 요약(일마다 같음 비율·다름 까닭·넘길 수 있음) · 기록창 한 줄 */
@@ -264,6 +272,6 @@ function makeJobs(ctx) {
       mine: pl.includes(t.k), notMine: pl.includes(t.k) ? null : t.state === 'ended' ? `종료됨(${t.ended}) — 묻지 않음` : t.state !== 'run' ? '아직 안 돎' : t.who === 'logger' && !lg ? '로거 고유 일(사무실 PC는 안 함)' : t.who === 'office' && lg ? '사무실 PC 일(로거는 안 함)' : t.who === 'share' && lg ? '외부 정보 — 사무실 PC가 함(나눔 꺼짐 · col2.json jobs.extShare)' : '꺼 둠', q: (S.q[t.k] || []).length, today: sm[t.k] || null })) }; }
   /* 📘 공개 상품 화면(0.1.2부터 도는 자동 읽기)의 결과도 같은 하루 셈에 — col2_books는 그 길이 이미 씀(여기서는 하루 요약만) */
   function addProduct(itemId, verdict, reasons, why) { const t = TK.byK.product; if (!t || !TK.plan(kind(), C()).includes('product')) return; record(t, { key: String(itemId) }, String(itemId), verdict, reasons || [], { noItem: true, quiet: true, why: why || null }); }
-  return { step, addProduct, pickK, tried, feedBooks, feedShops, feedNb, qLen, bookQ, view, plan, summary, _S: () => S, save };
+  return { step, addProduct, pickK, tried, feedBooks, feedShops, feedStale, feedNb, qLen, bookQ, view, plan, summary, _S: () => S, save };
 }
 module.exports = { makeJobs };
