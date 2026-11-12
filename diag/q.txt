@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261112-154352.json
+run=1&fsrules=1&shopacct=find&s=%EC%A0%90%EA%B2%80%EC%86%90%EB%8B%98
+# 1440617632
