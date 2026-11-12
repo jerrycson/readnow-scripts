@@ -1,3 +1,5 @@
-shopraw=1018816
-voice=1&vms=200000
-# 230057323
+run=1
+voice=save&vms=240000
+run=1
+doc=app_settings/voice_study,app_settings/voice_study_run
+# 2769229332
