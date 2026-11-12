@@ -4,6 +4,7 @@
 #  · 처음 한 번 준비(2026-10-12 끝남): Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
 #  · 기존 설정(비밀·메모리·예약 호출)은 그대로 두고 프로그램만 바꿈 — 비밀(알라딘 아이디·비밀번호)은 Secret Manager에만
 #  · 손으로 다시 올리기: GitHub 저장소 → Actions → '클라우드 자동 배포' → Run workflow
+#  · (deployfix 11/12) 진단 회차(side)와 배포 회차(deploy)는 묶음이 달라 진단 push가 기다리던 배포를 밀어내지 않음
 name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
@@ -14,7 +15,7 @@ on:
       health_only: { description: '숫자 요약만(배포 안 함)', type: boolean, default: false }
   schedule:
     - cron: '41 * * * *'  # (2026-10-22) 매시 41분 🔁 숫자 요약(@health 3시간·24시간)을 health-out 가지에 평문으로 — 예약 점검 세션이 push 없이 읽기만(예약 세션의 권한 검사가 진단 push를 막아 06:15 점검이 숫자를 못 본 것 · 쓰기 폭주를 못 잡은 까닭)
-concurrency: { group: deploy-cloud, cancel-in-progress: false }
+# (deployfix 11/12) 회차 전체 묶음은 없앰 — 예전엔 진단·숫자 요약 회차가 같은 'deploy-cloud' 묶음의 기다리던 배포를 '취소됨'으로 밀어냄(0.35.155·0.35.158·0.35.168). 묶음은 아래 작업마다 따로
 permissions: { contents: write, id-token: write }  # contents: write = 진단 결과(암호화)를 diag-out 가지에 올릴 때만
 env:
   PROJECT: readnow-3a385
@@ -23,26 +24,73 @@ env:
   WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
   SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
 jobs:
-  deploy:
+  what:
+    name: 무엇이 바뀌었나 (배포 · 진단)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
+    outputs: { deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
         with: { fetch-depth: 2 }
-      - name: 무엇이 바뀌었나 (배포 · 진단)
+      - id: ch
+        name: 무엇이 바뀌었나 (배포 · 진단)
         run: |
           # (자동 점검 2026-10-16) 한 번에 여러 커밋을 올리면 HEAD~1과만 비교해 앞 커밋의 cloud/ 바뀜을 놓치고 배포를 건너뛰던 것 → 올리기 전 커밋(event.before)과 비교 · 못 받으면 ALL(배포)
-          if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "${{ inputs.health_only }}" = true ]; then echo "DO_HEALTH=1" >> "$GITHUB_ENV"; exit 0; fi  # (2026-10-22) 숫자 요약만 — 배포·진단 안 함
+          if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "${{ inputs.health_only }}" = true ]; then echo "health=1" >> "$GITHUB_OUTPUT"; exit 0; fi  # (2026-10-22) 숫자 요약만 — 배포·진단 안 함
           B="${{ github.event.before }}"
           if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "DO_DEPLOY=1" >> "$GITHUB_ENV"; fi
-          if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "DO_DIAG=1" >> "$GITHUB_ENV"; fi
-          if echo "$CH" | grep -q '^pc-live\.json$'; then echo "DO_PCLIVE=1" >> "$GITHUB_ENV"; fi  # (2026-10-18) ⚡ 수집기 새 판 → 클라우드 /pclive → 켜진 PC가 바로
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "deploy=1" >> "$GITHUB_OUTPUT"; fi
+          if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "diag=1" >> "$GITHUB_OUTPUT"; fi
+          if echo "$CH" | grep -q '^pc-live\.json$'; then echo "pclive=1" >> "$GITHUB_OUTPUT"; fi  # (2026-10-18) ⚡ 수집기 새 판 → 클라우드 /pclive → 켜진 PC가 바로
+  deploy:
+    name: Cloud Run 배포
+    needs: what
+    if: needs.what.outputs.deploy == '1'
+    concurrency: { group: deploy-cloud, cancel-in-progress: false }  # 배포끼리만 한 줄 — 새 판이 기다리던 옛 판을 대신해도 새 판(그 커밋 전체)이 올라가므로 마지막 판은 꼭 배포됨
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs: { deployed: "${{ steps.ver.outcome == 'success' }}" }  # 클라우드 새 판이 올라갔는지(뒤 작업이 이어 받음)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
       - name: 문법 검사 (깨진 파일은 올리지 않음)
-        if: env.DO_DEPLOY == '1'
         run: |
           for f in cloud/*.js; do node --check "$f"; done
           echo "VER=$(grep -oP "^const VER = '\K[0-9.]+" cloud/index.js)" >> "$GITHUB_ENV"
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0 (node24)
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
+      - name: Cloud Run 올리기 (빌드 3~6분)
+        working-directory: cloud
+        run: |
+          # (11/10 big1) 공용 파일을 이미지에 함께 넣음(cores_<파일> · cores_commit.js) — 클라우드가 GitHub에서 받지 않고 이 커밋의 사본을 읽음(없거나 커밋이 다르면 예전처럼 GitHub)
+          for f in ../readnow-*-core.js ../readnow-registry.js; do cp "$f" "cores_$(basename "$f")"; done; echo "module.exports = '$GITHUB_SHA';" > cores_commit.js; ls cores_* | wc -l
+          # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
+          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --update-env-vars "CODE_SHA=$GITHUB_SHA" --concurrency 8 --quiet > /tmp/deploy.log 2>&1; then
+            tail -n 25 /tmp/deploy.log | sed 's/^/  /'; grep -iE 'error|denied|permission|not found|failed' /tmp/deploy.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done
+            if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
+            exit 1; fi
+          tail -n 5 /tmp/deploy.log
+          # (adapt5 11/11) 동시 처리·메모리·CPU가 실제로 들어갔는지 알림으로 남김(읽기만 · 실패해도 배포는 성공)
+          C=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containerConcurrency,spec.template.spec.containers[0].resources.limits.memory,spec.template.spec.containers[0].resources.limits.cpu,status.latestReadyRevisionName)' 2>/dev/null || true); echo "::notice::클라우드 설정(동시 처리·메모리·CPU·판) $C"
+      - name: 올라간 판 확인
+        id: ver
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
+          echo "### ☁ 클라우드 $GOT 올라감 (기대 $VER)" >> "$GITHUB_STEP_SUMMARY"
+          [ "$GOT" = "$VER" ] || { echo "::error::올린 뒤 판이 $GOT — 기대한 $VER 아님"; exit 1; }
+  side:
+    name: 진단 · 숫자 요약 · 수집기 새 판 알림
+    needs: what
+    if: needs.what.outputs.diag == '1' || needs.what.outputs.pclive == '1' || needs.what.outputs.health == '1'
+    concurrency: { group: "cloud-side-${{ needs.what.outputs.health == '1' && 'health' || 'diag' }}", cancel-in-progress: false }  # 배포 묶음과 따로 — 진단이 배포를 밀어내지 않음 · 매시 숫자 요약도 진단과 따로
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env: { DO_DIAG: '${{ needs.what.outputs.diag }}', DO_PCLIVE: '${{ needs.what.outputs.pclive }}', DO_HEALTH: '${{ needs.what.outputs.health }}' }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
       - id: auth
         name: 구글 로그인 (열쇠 없이 OIDC)
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0 (node24)
@@ -87,27 +135,6 @@ jobs:
           for H in 3 24; do for t in 1 2 3 4; do curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?health=1&hours=$H" > /tmp/h/health$H.json || echo '{"ok":false,"err":"curl"}' > /tmp/h/health$H.json; grep -q '^Rate exceeded' /tmp/h/health$H.json || break; sleep 20; done; echo "health$H bytes $(wc -c < /tmp/h/health$H.json)"; done
           date -u +%Y-%m-%dT%H:%M:%SZ > /tmp/h/at.txt
           git config user.email "actions@github.com"; git config user.name "health"; git checkout -q --orphan health-out; git rm -rfq --cached . ; cp /tmp/h/* .; git add -f health3.json health24.json at.txt; git commit -qm "health $(cat /tmp/h/at.txt)"; git push -qf origin HEAD:health-out
-      - name: Cloud Run 올리기 (빌드 3~6분)
-        if: env.DO_DEPLOY == '1'
-        working-directory: cloud
-        run: |
-          # (11/10 big1) 공용 파일을 이미지에 함께 넣음(cores_<파일> · cores_commit.js) — 클라우드가 GitHub에서 받지 않고 이 커밋의 사본을 읽음(없거나 커밋이 다르면 예전처럼 GitHub)
-          for f in ../readnow-*-core.js ../readnow-registry.js; do cp "$f" "cores_$(basename "$f")"; done; echo "module.exports = '$GITHUB_SHA';" > cores_commit.js; ls cores_* | wc -l
-          # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
-          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --update-env-vars "CODE_SHA=$GITHUB_SHA" --concurrency 8 --quiet > /tmp/deploy.log 2>&1; then
-            tail -n 25 /tmp/deploy.log | sed 's/^/  /'; grep -iE 'error|denied|permission|not found|failed' /tmp/deploy.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done
-            if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
-            exit 1; fi
-          tail -n 5 /tmp/deploy.log
-          # (adapt5 11/11) 동시 처리·메모리·CPU가 실제로 들어갔는지 알림으로 남김(읽기만 · 실패해도 배포는 성공)
-          C=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containerConcurrency,spec.template.spec.containers[0].resources.limits.memory,spec.template.spec.containers[0].resources.limits.cpu,status.latestReadyRevisionName)' 2>/dev/null || true); echo "::notice::클라우드 설정(동시 처리·메모리·CPU·판) $C"
-      - name: 올라간 판 확인
-        if: env.DO_DEPLOY == '1'
-        run: |
-          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
-          for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
-          echo "### ☁ 클라우드 $GOT 올라감 (기대 $VER)" >> "$GITHUB_STEP_SUMMARY"
-          [ "$GOT" = "$VER" ] || { echo "::error::올린 뒤 판이 $GOT — 기대한 $VER 아님"; exit 1; }
       - name: ⚡ 수집기 새 판 알림 (pc-live.json이 바뀌었을 때 — 켜진 PC가 몇 초 안에 받음)
         if: env.DO_PCLIVE == '1'
         env: { IDT: '${{ steps.idt.outputs.id_token }}' }

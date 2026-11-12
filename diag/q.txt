@@ -1,2 +1,2 @@
-doc=app_settings/adapt_cfg,app_settings/adapt_health,app_settings/adapt_sel
-# 1077030149
+bkinfo=1&bkinfo2=kyobo
+# 1901428115
