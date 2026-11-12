@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fold2 — 탭마다 화면 모두 기본 접기",
+ "since": "2026-11-12T10:04:10Z",
+ "beat": "2026-11-12T10:04:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "price2 기본값 웹앱 1.78.512 (6de0bfc6)",
   "at": "2026-11-12T10:03:52Z"
  },
- "host": null
+ "host": "vm"
 }
