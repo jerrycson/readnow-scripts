@@ -1,2 +1,2 @@
-recentUp=bench_items&mins=240
-# 27355426
+benchday=2026-11-13
+# 223218536
