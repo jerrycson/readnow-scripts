@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "found1 📚 발견 모음 판 내기(웹앱+클라우드)",
+ "since": "2026-11-12T15:18:48Z",
+ "beat": "2026-11-12T15:18:48Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "adapt9 웹앱 1.78.525 · 수집기 1.89.284 · 클라우드 0.35.167 · 적응 엔진 0.1.6 🔄 목표·방법 적응 틀 push c734937c",
   "at": "2026-11-12T15:18:45Z"
  },
- "host": null
+ "host": "vm-found1"
 }
