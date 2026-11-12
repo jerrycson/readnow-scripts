@@ -1,2 +1,2 @@
-doc=app_settings/aladin_login
-# 1192525348
+col2=2026-11-12
+# 1422727727
