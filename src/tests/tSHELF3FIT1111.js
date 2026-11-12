@@ -11,12 +11,12 @@ let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } 
 const ROOT = path.resolve(__dirname, '..', '..'); const BQS = require(path.join(ROOT, 'shop/shelf-core.js')); const SH = require(path.join(ROOT, 'cloud/shop.js'));
 (async () => {
 console.log('① 순수 셈');
-{ const C = BQS.COLORS; let md = 1e9, mp = ''; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const d = BQS.cdist(C[i].hex, C[j].hex); if (d < md) { md = d; mp = C[i].name + '·' + C[j].name; } }
+{ const C = BQS.COLORS.slice(0, 70); /* (shelf7) 처음 70색 그대로(뒤 28색은 CIEDE2000 기준 — tSHELF7_1112) */ let md = 1e9, mp = ''; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const d = BQS.cdist(C[i].hex, C[j].hex); if (d < md) { md = d; mp = C[i].name + '·' + C[j].name; } }
   ok(C.length === 70 && new Set(C.map((x) => x.hex)).size === 70 && md >= 35 && C.every((x) => /^#[0-9a-f]{6}$/.test(x.hex) && x.name), `색 70 · 모두 다름 · 가장 가까운 두 색(${mp})도 거리 ${Math.round(md)} ≥ 35`);
   ok(C[0].hex === '#63171c' && C[19].hex === '#ceccca' && C[19].name === '미색', '처음 20색은 그대로(뒤에 덧붙이기만 — 저장된 책등이 안 바뀜)');
-  const cb = BQS.combos(); ok(BQS.PATTERNS.length === 50 && cb.P === 50 && cb.C === 70 && cb.core === 50 * 70 * 50 * 68 * 50 && cb.core === 595000000 /* (shelf5) 글꼴 50 → 68 */, `조합 = 디자인 ${cb.D} × 색 ${cb.C} × 무늬 ${cb.P} × 글꼴 ${cb.F} × 모양 ${cb.S} = ${cb.core.toLocaleString('ko-KR')}`);
+  const cb = BQS.combos(); ok(BQS.PATTERNS.length === 72 && cb.P === 72 && cb.C === 98 && cb.core === 57 * 98 * 72 * 68 * 115 /* (shelf7) 덧붙임 */, `조합 = 디자인 ${cb.D} × 색 ${cb.C} × 무늬 ${cb.P} × 글꼴 ${cb.F} × 모양 ${cb.S} = ${cb.core.toLocaleString('ko-KR')}`);
   const css = fs.readFileSync(path.join(ROOT, 'shop/shelf.css'), 'utf8'); ok([41, 50].every((n) => css.includes(`.sp[data-p="${n}"]`)), '무늬 41~50 CSS 있음');
-  ok(BQS.decode('0.t.1.70.50.1.1.1.v') && !BQS.decode('0.t.1.71.1.1.1.1.v') && !BQS.decode('0.t.1.1.51.1.1.1.v') && SH.SPINE_RE.test('0.t.1.70.50.1.1.1.v'), '저장 글: 색 70·무늬 50까지 받음 · 넘으면 버림'); }
+  ok(BQS.decode('0.t.1.70.50.1.1.1.v') && BQS.decode('0.t.1.98.72.1.115.1.v.98') && !BQS.decode('0.t.1.99.1.1.1.1.v') && !BQS.decode('0.t.1.1.73.1.1.1.v') && SH.SPINE_RE.test('0.t.1.70.50.1.1.1.v') && SH.SPINE_RE.test('0.t.1.98.72.1.115.1.v.98'), '저장 글: 옛 꼴(곁색 없음) 그대로 · (shelf7) 색 98·무늬 72·모양 115·곁색까지 받음 · 넘으면 버림'); }
 { const z37 = BQS.zoneOf(37), z9 = BQS.zoneOf(9), z1 = BQS.zoneOf(1); ok(z37.zb >= 19 && z9.zt >= 17 && z9.zb >= 17 && z1.zt === 6 && BQS.zoneOf(38).zb >= 38 && BQS.zoneOf(13).zt >= 22, '글 자리: 라벨(아래)·문고판 흰 종이·띠지·동그라미를 피함');
   const L = BQS.look({ id: 'z1', t: '섬' }, BQS.DEF); ok(L.zt > 0 && L.zb > 0 && L.zs > 0, '책등 꼴에 글 자리 칸'); }
 { const A = BQS.catOf({ c: '국내도서,종교/역학,기독교(개신교),기독교(개신교) 신앙생활' }), Bx = BQS.catOf({ c: '국내도서>소설/시/희곡>한국소설' }), Cx = BQS.catOf({ c: '종교/역학', c2: '불교' });
