@@ -1,2 +1,2 @@
-doc=app_settings/seller_learn,app_settings/seller_aud,app_settings/seller_front_need,app_settings/seller_hyp
-# 1939919404
+col2=1
+# 2790215335
