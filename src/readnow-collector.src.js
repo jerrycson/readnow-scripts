@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.275
+// @version      1.89.276
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -8773,7 +8773,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const getM = async (b) => { const M = await (await fetch(b + 'pc-live.json' + (b === RN_NEW ? '?t=' + Date.now() : ''), { cache: 'no-store' })).json(); return M && M.ver === v.ver && Array.isArray(M.files) ? M : null; };
           const getCode = async (b, M) => { let code = ''; for (const f of M.files) { const t = await (await fetch(b + f.f, { cache: 'no-store' })).text(); if ((await sha(t)) !== f.sha) throw new Error(f.f + ' 지문이 다름'); code += '\n;' + t + '\n'; } return code; };
           let M = null, via = null; try { M = await getM(RN_NEW); if (M) via = RN_NEW; } catch (e) {} if (!M || M.hsig !== info.hsig) { M = await getM(RB + v.commit + '/'); via = RB + v.commit + '/'; } if (!M) return; if (M.hsig !== info.hsig) { window.__rnLiveCheck && window.__rnLiveCheck(); return; }
-          const H = GM_getValue('rn-live', null); if (!(H && H.ver === M.ver && H.hsig === info.hsig)) { let code = null; if (via === RN_NEW) { try { code = await getCode(RN_NEW, M); } catch (e) { code = null; via = RB + v.commit + '/'; } } if (code == null) code = await getCode(RB + v.commit + '/', M); GM_setValue('rn-live', { ver: M.ver, hsig: info.hsig, code, at: Date.now(), n: M.files.length }); }
+          const H = GM_getValue('rn-live', null); if (!(H && H.ver === M.ver && H.hsig === info.hsig)) { let code = null; if (via === RN_NEW) { try { code = await getCode(RN_NEW, M); } catch (e) { code = null; via = RB + v.commit + '/'; } } if (code == null) code = await getCode(RB + v.commit + '/', M); const H2 = GM_getValue('rn-live', null); /* (4시간 점검 11/12) 받는 몇 초 사이 5분마다 확인(로더)이 같은 판을 먼저 적었으면 다시 적지 않음 — 전엔 새 판마다 약 2.8MB 사본을 2초 사이 두 번 적음(JS-MAIN 09:13 GM 쓰기 5분 6.9MB) */ if (!(H2 && H2.ver === M.ver && H2.hsig === info.hsig)) GM_setValue('rn-live', { ver: M.ver, hsig: info.hsig, code, at: Date.now(), n: M.files.length }); }
           log(`⚡ 새 판 ${M.ver}을 ${via === RN_NEW ? '새 주소(readnow.kr)' : 'GitHub 커밋 ' + v.commit.slice(0, 7)}에서 바로 받아 둠 — 쉬는 사이 바꿈`); window.__rnLiveFast = true; window.__rnLiveReady && window.__rnLiveReady(M.ver); } catch (e) { lastC = null; log('⚡ 새 판 바로 받기 실패: ' + e.message + ' — 5분마다 확인으로 이어감', 1); } };
       const sub = () => { try { C('app_settings').doc('pc_live').onSnapshot((d) => { go(d.exists ? d.data() : null); }, () => setTimeout(sub, 60000)); } catch (e) { setTimeout(sub, 60000); } }; setTimeout(sub, 15000); })();
     function onNewVer(v, src) { if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
