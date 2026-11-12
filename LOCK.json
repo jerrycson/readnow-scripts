@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "handoff3 판 내기 — 🎯 숍 목록 끝까지 넘기는 길·홀로 연결 판매자 목록·R21 진단",
+ "since": "2026-11-12T18:03:58Z",
+ "beat": "2026-11-12T18:03:58Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "adapt10 판 c7398d3f — 웹앱 1.78.536 · 수집기 1.89.289 · 클라우드 0.35.184 · 적응 틀 0.1.7 · 번외 0.1.43 (머리 그대로)",
   "at": "2026-11-12T18:03:01Z"
  },
- "host": null
+ "host": "vm-handoff3"
 }
