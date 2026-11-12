@@ -179,7 +179,15 @@
      *  양수 = 택배비 마진(순이익에 더함) · 음수 = 우리 부담(무료배송 등 — 순이익에서 뺌) · 예전: 우리 부담만 빼고 마진은 0으로 버림(max(0, 택배 − 손님 배송비)) → 손님 배송비 2,800원·택배 2,500원이면 300원을 놓쳤음
      *  ship = 택배비 몫(주문당 권수로 나눔 · 반올림) · shipNet = 예전 이름(우리가 내는 택배비 − 손님 배송비 · 음수 = 마진) */
     const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = cr - cust, per = Math.round((pk + shipNet) / bpo), pkPer = Math.round(pk / bpo), ship = Math.round((cust - cr) / bpo);
-    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net }; }
+    const crSrc = o.crSrc || (D.courierPerOrder != null && D.courierPerOrder !== '' ? null : '엔진 기본값'); /* (리드 11/12 밤) 평균 택배비가 어디서 왔나 — ⚙ 택배 계약(bbCourier) · 없으면 엔진 기본값 */
+    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net, crSrc }; }
+  /* (리드 11/12 밤 '평균 택배비 = 설정 택배 계약의 실제 계약 택배비') ⚙ 설정 › ④ 택배 계약(crm_system/accounting.couriers [{ from, carrier, cost }]) 중 그날(iso · 없으면 오늘 한국 날짜) 적용되는 줄
+   *  → { cost, src } · 계약 줄이 없거나 값이 이상하면 null(엔진 기본값 2,500원을 씀) · 웹앱·클라우드·PC가 같이 부름 */
+  function bbCourier(acct, iso) { const L = acct && Array.isArray(acct.couriers) ? acct.couriers.filter((c) => c && +c.cost > 0 && +c.cost < 100000) : []; if (!L.length) return null;
+    const d = String(iso || new Date(Date.now() + 9 * 3600e3).toISOString()).slice(0, 10); const S0 = L.slice().sort((a, b) => String(a.from || '').localeCompare(String(b.from || ''))); let hit = null; for (const c of S0) if (String(c.from || '') <= d) hit = c; if (!hit) hit = S0[0];
+    const f = String(hit.from || ''); return { cost: Math.round(+hit.cost), carrier: hit.carrier || '', from: f, src: `택배 계약${hit.carrier ? ' ' + hit.carrier : ''}${f && f !== '2000-01-01' ? ' ' + f + '~' : ''}` }; }
+  /* 매입 판정 재료에 택배 계약을 얹음 — o = { margin, policy, D } → D.courierPerOrder = 계약 택배비 · crSrc = 출처 글 */
+  function bbWithCourier(o, acct, iso) { o = o || {}; const K = bbCourier(acct, iso); if (!K) return { ...o, crSrc: '엔진 기본값' }; return { ...o, D: { ...(o.D || DEFAULTS), courierPerOrder: K.cost }, crSrc: K.src }; }
   /* 🏷 매입 후보 판정 — o = { margin: 기준 차액, policy, D, list: 정가(주면 매입가 거르기) } → null(셀 수 없음) · { in, below, P, buy, k, net, gain, parts, calc } · 무시한 매입가면 { in: false, ignored: { buy, list, why }, calc: 까닭 } */
   function bbNear(P, buy, o) { P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
     const V = bbValid(buy, o.list); if (V && !V.ok) return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: V.list, why: V.why }, calc: V.why };
@@ -864,6 +872,6 @@
   }
   const Chase = makeChase(); const { chaseEvents, chaseState, sellerChase, chaseMap, chaserOn, chaseStep, STRATS } = Chase; /* 판정 엔진 api의 옛 이름 그대로(같은 함수) */
   if (root && typeof root === 'object') { try { root.ReadnowChase = Chase; } catch (e) {} }
-  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, bbGradeOut, BB_GR_KEYS, bbGrDef, bbGrNorm, bbGrRow, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
+  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbCourier, bbWithCourier, bbNear, bbFloor, bbFloorPick, bbGradeOut, BB_GR_KEYS, bbGrDef, bbGrNorm, bbGrRow, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);

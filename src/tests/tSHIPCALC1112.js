@@ -28,12 +28,25 @@ for (const [nm, S0] of [['혼자', SH], ['엔진 곁', SH2]]) { let D = dec(S0, 
   D = dec(S0, '중', 1600, 1600, POL); ok(D.state === 'pass' && D.items[0].rule === 'bbGrade', `자동 판단(${nm}): 같은 책이 '중'이면 알라딘 매입 조건 밖 → 매입 후보 판정 안 함 · 통과`, D.items[0]);
   D = dec(S0, '상', 2900, 1600, POL); ok(D.state === 'pass' && D.items[0].bbGain === 2900 - 290 - 394 + 300 - 1600, `자동 판단(${nm}): 2,900원이면 순이익 2,516 − 1,600 = 916 ≥ 500 → 통과(예전 셈이면 616)`, D.items[0]); }
 
+// ① 마) (리드 11/12 밤) 평균 택배비 = ⚙ 택배 계약(crm_system/accounting.couriers)의 그날 적용 줄 · 없으면 엔진 기본값 2,500원 · 셈 식에 출처
+const ACCT = { couriers: [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }, { from: '2026-11-01', carrier: '롯데택배', cost: 2700 }, { from: '2026-12-01', carrier: '한진', cost: 2400 }] };
+let K = PRC.bbCourier(ACCT, '2026-11-12'); ok(K && K.cost === 2700 && K.src === '택배 계약 롯데택배 2026-11-01~', '11/12에 적용되는 계약 줄 = 2026-11-01 롯데택배 2,700원(12/01 줄은 아직 아님)', K);
+K = PRC.bbCourier(ACCT, '2026-12-03'); ok(K && K.cost === 2400 && /한진/.test(K.src), '12/03이면 한진 2,400원', K);
+ok(PRC.bbCourier(null) === null && PRC.bbCourier({ couriers: [] }) === null && PRC.bbCourier({ couriers: [{ from: '2026-01-01', cost: 'x' }] }) === null, '계약 줄이 없거나 값이 이상하면 null(엔진 기본값)');
+const BX = PRC.bbWithCourier({ policy: POL, D: PRC.DEFAULTS }, ACCT, '2026-11-12'); let X = PRC.bbNetParts(1600, BX); ok(X.cr === 2700 && X.ship === 100 && X.net === 1146 && X.crSrc === '택배 계약 롯데택배 2026-11-01~', '계약 2,700원이면 초보 골프 교실 순이익 = 1,600 − 160 − 394 + (2,800 − 2,700) = 1,146원 · 출처 칸', X);
+X = PRC.bbNetParts(1600, PRC.bbWithCourier({ policy: POL }, null)); ok(X.cr === 2500 && X.net === 1346 && X.crSrc === '엔진 기본값', '계약이 없으면 엔진 기본값 2,500원 · 출처 「엔진 기본값」', X);
+ok(SH.bbNetParts(1600, BX).net === 1146 && SH.bbNetParts(1600, BX).crSrc === BX.crSrc && SH2.bbNetParts(1600, BX).net === 1146, '출고 공용(혼자·엔진 곁)도 같은 값·출처');
+for (const [nm, S0] of [['혼자', SH], ['엔진 곁', SH2]]) { const D = S0.autoShipDecide({ evalSale: ML.evalSale, now: 1000, firstAt: 1000, cfg, bb: BX, order: { orderNo: 'O2', buyer: '손님A', items: [{ listingId: '1', title: '초보 골프 교실', price: 1600, qty: 1, grade: '상', sku: 'BLKCMN_ms' }] }, enrich: { 1: E([row('green', '상', 2000)], { 상: 1600 }) } });
+  ok(D.items[0].bbNet === 1146 && D.items[0].bbGain === -454 && /순이익 1,146원/.test(D.reasons[0]), `자동 판단(${nm})도 택배 계약 값으로: 순이익 1,146 − 1,600 = −454`, D.items[0]); }
+
 // ② 화면
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
-  const w = await p.evaluate(() => { S.policy = { current: { fee: 2800, freeOver: 40000 } }; const J = bbNearJ(1600, 1600, '상'); const Z = bbNearJ(2200, 2000, '중'); const Za = bbNearJ(2200, 2000, '상', null, null, { v: 2000, g: '상', alt: true, warn: '', bad: [] }, '중');
+  const w = await p.evaluate(() => { S.acct = { couriersSet: false, couriers: [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }] }; S.policy = { current: { fee: 2800, freeOver: 40000 } }; const J = bbNearJ(1600, 1600, '상'); const Z = bbNearJ(2200, 2000, '중'); const Za = bbNearJ(2200, 2000, '상', null, null, { v: 2000, g: '상', alt: true, warn: '', bad: [] }, '중');
     S.policy = { current: { fee: 0 } }; const F = bbNearJ(1600, 1600, '상'); return { J: [J.in, J.net, J.gain, J.formula], Z: [Z.in, Z.gradeOut, Z.tag], Za: [Za.in, Za.gradeOut], F: [F.net, F.formula] }; });
-  ok(w.J[0] && w.J[1] === 1346 && w.J[2] === -254 && /판매가 1,600원 − 수수료 160원\(10%\) − 포장 394원 \+ 택배비 마진 300원\(손님 배송비 2,800원 − 평균 택배비 2,500원\) = 남는 돈 1,346원/.test(w.J[3]), '웹앱 셈 식: + 택배비 마진 300원(손님 배송비 2,800 − 평균 택배비 2,500) = 남는 돈 1,346원', w.J);
-  ok(w.F[0] === -1454 && /− 택배비 우리 부담 2,500원\(평균 택배비 2,500원 − 손님 배송비 0원\)/.test(w.F[1]), '웹앱 셈 식(무료배송): − 택배비 우리 부담 2,500원', w.F);
+  ok(w.J[0] && w.J[1] === 1346 && w.J[2] === -254 && /판매가 1,600원 − 수수료 160원\(10%\) − 포장 394원 \+ 택배비 마진 300원\(손님 배송비 2,800원 − 평균 택배비 2,500원\[택배비 엔진 기본값\]\) = 남는 돈 1,346원/.test(w.J[3]), '웹앱 셈 식: + 택배비 마진 300원(손님 배송비 2,800 − 평균 택배비 2,500) = 남는 돈 1,346원', w.J);
+  const wc = await p.evaluate(() => { S.acct = { couriersSet: true, couriers: [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }, { from: '2026-11-01', carrier: '롯데택배', cost: 2700 }] }; S.policy = { current: { fee: 2800, freeOver: 40000 } }; const J = bbNearJ(1600, 1600, '상'); S.acct = { couriersSet: false, couriers: [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }] }; return [J.net, J.formula]; });
+  ok(wc[0] === 1146 && /평균 택배비 2,700원\[택배비 택배 계약 롯데택배 2026-11-01~\]/.test(wc[1]), '웹앱 셈 식: ⚙ 택배 계약 2,700원(출처 표시)으로 순이익 1,146원', wc);
+  ok(w.F[0] === -1454 && /− 택배비 우리 부담 2,500원\(평균 택배비 2,500원\[택배비 엔진 기본값\] − 손님 배송비 0원\)/.test(w.F[1]), '웹앱 셈 식(무료배송): − 택배비 우리 부담 2,500원', w.F);
   ok(!w.Z[0] && w.Z[1] === '중' && /매입 조건 밖\(중\)/.test(w.Z[2]) && !w.Za[0] && w.Za[1] === '중', "웹앱 판정: 우리 상태 '중' → 매입 후보 아님(다른 등급 매입가로 견줄 때도)", w);
   // 라) 출고 카드 짧은 경고
   const v = await p.evaluate(() => { S.shipAutoCfg = { on: true }; S._saW = 1; S.shipAuto = new Map();
