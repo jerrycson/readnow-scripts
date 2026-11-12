@@ -176,6 +176,7 @@ function makeAl(o) {
   async function hide(why) { const f = await WIN.run('find', MARK); const it = f.ok && f.list && f.list[0]; if (A.shown && it && it.r && !it.ic && !it.tool && it.r.w >= 400 && it.r.h >= 300 && f.vs && it.r.x + it.r.w > f.vs.x) o.saveRect('awin', it.r); const r = await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }); A.shown = false; note(`🟧 알라딘 창을 다시 숨김 (${why || ''})`); return r; }
   async function login(why) { if (isLogger()) return { ok: false, err: '로거 PC에서는 알라딘 로그인을 하지 않습니다(약속 0 — 계정·쿠키 금지)' }; if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' }; if (!enabled()) return { ok: false, err: '알라딘 샵매니저 읽기가 꺼져 있음(옆 창 ⚙에서 켜기)' };
     if (holdOn()) return { ok: false, err: '🚚 출고 중 — 끝난 뒤에 로그인해 주세요(약속 0-1)' };
+    if (A.plain) A.plainStop = true; /* (11/12 login1) 스스로 다시 로그인 네이버 창이 떠 있으면 그만두게 — 사람 창이 먼저 */
     for (let k = 0; k < 60 && A.busy; k++) await sleep(500); if (A.busy) return { ok: false, err: '다른 일을 하는 중 — 잠시 뒤 다시' };
     if (A.login === 'human') { const r = await humanEnd('단추를 한 번 더 누름'); return { ok: true, msg: '🔐 평범한 크롬 창을 닫고 로그인됐는지 확인합니다' + (r ? ' — ' + r : '') }; }
     A.busy = true; A.pp = null; try { await ensure('로그인'); await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); if (!isLoginSt(s)) { setLogin('ok'); return { ok: true, msg: '이미 로그인돼 있음 — 할 일 없음' }; }
@@ -235,15 +236,15 @@ function makeAl(o) {
   async function naverPlain() { const exe = o.chromeExe(); if (!exe) return { ok: false, why: '크롬을 못 찾음' };
     await close('스스로 다시 로그인(네이버 길)은 평범한 크롬 창으로'); const fr = new Browser({ exe, profile: PROF, stale: () => WIN.run('kill', MARK) }); try { await fr.freeProfile(); } catch (e) {} prefsNoPw();
     const w = cfg().awin && cfg().awin.w >= 400 && cfg().awin.x >= 0 ? cfg().awin : { x: 120, y: 60, w: 1100, h: 800 }; const args = humanArgs(PROF, NV_URL(), w);
-    if (TEST && process.env.RN_COL2_HUMAN_TEST_ARGS) args.splice(1, 0, ...process.env.RN_COL2_HUMAN_TEST_ARGS.split(' ').filter(Boolean));
-    if (!TEST && !humanArgsOk(args)) return { ok: false, why: '평범한 창 플래그 검사 실패(번외 코드 오류) — 띄우지 않음' };
+    if (!humanArgsOk(args)) return { ok: false, why: '평범한 창 플래그 검사 실패(번외 코드 오류) — 띄우지 않음' };
     let p; try { p = require('child_process').spawn(exe, args, { stdio: 'ignore', detached: false, windowsHide: false }); } catch (e) { return { ok: false, why: '크롬을 못 띄움: ' + e.message }; }
-    const H = { proc: p, at: now(), exit: null }; A.plain = H; p.on('exit', (code) => { H.exit = { code, ms: now() - H.at }; }); p.on('error', (e) => { H.exit = { code: null, err: e.message, ms: now() - H.at }; });
+    const H = { proc: p, at: now(), exit: null }; A.plain = H; A.plainStop = false; p.on('exit', (code) => { H.exit = { code, ms: now() - H.at }; }); p.on('error', (e) => { H.exit = { code: null, err: e.message, ms: now() - H.at }; });
     note('🔐 알라딘 스스로 다시 로그인 — 평범한 크롬 창으로 「네이버로 로그인」(이 번외 크롬에 남은 네이버 로그인 상태 · 값은 넣지 않음 · 창은 곧 숨기고 닫음)');
     try { await sleep(TEST ? 600 : 1800); if (H.exit && H.exit.ms < 5000) return { ok: false, why: `평범한 크롬 창이 바로 꺼짐(종료 코드 ${H.exit.code}) — 이 프로필을 다른 크롬이 쥐고 있을 수 있음` };
       if (!cfg().plainShow) await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }).catch(() => {});
-      const lim = (C().plainSec == null ? 25 : +C().plainSec) * 1000 * (TEST ? SC : 1); while (!H.exit && now() - H.at < lim) await sleep(TEST ? 150 : 500); }
+      const lim = (C().plainSec == null ? 25 : +C().plainSec) * 1000 * (TEST ? SC : 1); while (!H.exit && now() - H.at < lim && !A.plainStop) await sleep(TEST ? 150 : 500); }
     finally { if (!H.exit) { await WIN.run('close', MARK).catch(() => {}); for (let k = 0; k < 30 && !H.exit; k++) await sleep(500); if (!H.exit) { try { p.kill(); } catch (e) {} await WIN.run('kill', MARK).catch(() => {}); for (let k = 0; k < 10 && !H.exit; k++) await sleep(300); } } A.plain = null; }
+    if (A.plainStop) { A.plainStop = false; return { ok: false, why: '사람이 [🔐 알라딘 로그인]을 눌러 네이버 길을 그만둠' }; } /* 사람 창이 먼저 */
     await ensure('네이버 길 뒤 샵매니저 확인'); A.landed = true;
     return (await chkScm()) ? { ok: true } : { ok: false, human: true, why: "평범한 크롬 창으로 「네이버로 로그인」을 해 봤지만 샵매니저가 로그인 화면 — 이 번외 크롬에 네이버 '로그인 상태 유지'가 없음(사람이 한 번 해야 함)" }; }
   async function autoRe() { const R = o.relogin; if (!R) return ''; const w = R.why('al', { hold: holdOn(), seat: seatOk(), pp: A.pp, naver: naverOn() }); if (w) return w;
