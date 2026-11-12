@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "teth3 도우미 1.8.22 판 내기",
- "since": "2026-11-12T12:36:12Z",
- "beat": "2026-11-12T12:36:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24adm 웹앱 1.78.520 (758d890d)",
-  "at": "2026-11-12T12:35:54Z"
+  "done": "도우미 1.8.22 (teth3) 18e5801b",
+  "at": "2026-11-12T12:36:47Z"
  },
- "host": "vm-teth3"
+ "host": null
 }
