@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const COL2 = {
-    COL2_VER: '0.1.42', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
+    COL2_VER: '0.1.43', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
     PORT: 8797, /* 번외 도우미 포트 — 운영 인쇄 도우미 8898·로거 도우미 8899와 겹치면 켜지 않음 */
     PROD_PORTS: [8898, 8899],
     PREFIX: 'col2_', /* Firestore 쓰기는 이 머리 칸만 */
@@ -14,7 +14,7 @@
     CORE_BASE: 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/',
     CORE_FILES: ['readnow-aladin-core.js', 'readnow-products-core.js'],
     /* (0.1.9) 그림자 일에 더 쓰는 운영 공용 파일(그대로 받아 씀) — 판매자(숍 요약·평가 쪽)는 번외 크롬 떨어진 칸에 · 외부 정보(교보·장터 등)는 도우미(Node)에서 운영과 같은 ReadnowExt.run */
-    CORE_MORE: ['readnow-sellers-core.js'], CORE_NODE: ['readnow-ext-core.js'],
+    CORE_MORE: ['readnow-sellers-core.js'], CORE_NODE: ['readnow-ext-core.js', 'readnow-adapt-core.js'], /* (0.1.43 adapt10) 🔄 목표·방법 장부 틀(◆AG)도 그대로 받아 씀 */
     /* (0.1.9) 운영 수집기 본체 안에만 있는 해석 함수(🎯 벤치마킹 숍 목록) — 본체 파일을 그대로 받아 이 이름의 함수 글자만 떼어 씀(고치지 않음 · 복사본 없음) */
     LIFT: { file: 'src/readnow-collector.src.js', fns: ['coverKey', 'benchParseSimple', 'benchParse',
       /* (0.1.10) 👥 구매자 분포(숨은 창 그려 읽기) · 🔍 새상품 없는 시세 · 🖼 그린 화면 해석(도우미 /render 답) · 📚 KPIPA — 모두 글자 그대로(받침은 helper/col2-shim.js) */

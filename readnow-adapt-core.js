@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.1.6'; // (0.1.6) 🔄 목표·방법 적응 틀 — 판정·바뀐 것 찾기(표기·자리·경로·막힘)·같은 뜻 다른 표기 후보·작은 표본 시험·통계로 채택·옛 방법 보관·되돌림·100%여도 탐색 (adapt9) // (0.1.6 adapt9) 🔄 목표·방법 적응 틀(agRecord·agJudge·agPick·agDecide·agDiff·agClassify·agLabelCands·agTrial·agAdapt·agSummary) — 모든 엔진 공용 · 약속 64 // (0.1.5 adapt5) SP 묶음 k≤12·170자·posN/posHit·성적 칸 대문자 · ebookHas // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
+  const VERSION = '0.1.7'; // (0.1.7 adapt10) 🧩 칸마다 길 성적(agFillTally·agFillAdd·agFill·agFlSum · 요약에 fl) · ◆AG-BEGIN~END 덩어리를 수집기가 머리 그대로 씀(split.js가 readnow-pc-runtime.js 앞에 넣음) // (0.1.6) 🔄 목표·방법 적응 틀 — 판정·바뀐 것 찾기(표기·자리·경로·막힘)·같은 뜻 다른 표기 후보·작은 표본 시험·통계로 채택·옛 방법 보관·되돌림·100%여도 탐색 (adapt9) // (0.1.6 adapt9) 🔄 목표·방법 적응 틀(agRecord·agJudge·agPick·agDecide·agDiff·agClassify·agLabelCands·agTrial·agAdapt·agSummary) — 모든 엔진 공용 · 약속 64 // (0.1.5 adapt5) SP 묶음 k≤12·170자·posN/posHit·성적 칸 대문자 · ebookHas // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
 
   /* ── 도움 함수 ── */
   const txt = (el) => (el ? String(el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -349,11 +349,12 @@
     tries.push({ how: 'auto', sel: '(상품 링크로 묶음)', L: autoBoxes(doc, lk) }); tries.forEach((t) => { t.n = new Set(t.L.map((b) => lk.idOf(b))).size; });
     const aut = tries[tries.length - 1]; const sels = tries.slice(0, -1).sort((a, b) => b.n - a.n); /* (0.1.2) 선택자 상자가 자동 묶음 수의 60% 넘으면 선택자 상자(상자 안에 표지·장바구니까지 다 들어 있음) — 자동 묶음은 상자를 잘게 쪼개 ISBN(표지)을 놓쳤음 */
     const best = sels[0] && sels[0].n >= 1 && sels[0].n >= aut.n * 0.6 ? sels[0] : aut.n ? aut : sels[0]; const boxes = { tried: tries.map((t) => ({ how: t.how, sel: t.sel, n: t.n })), use: best.n ? best.sel : null };
-    const rows = []; const seen = new Set();
+    const rows = []; const seen = new Set(); const fl = {};
     for (const b of best.L) { const r = { _conf: {} }; for (const [fd, spec] of Object.entries(lk.fields)) { const P = spec.paths.concat((((o.learned || {})[lkn] || {})[fd] || []).map((x) => ({ how: 'learned', f: (bx) => { const e = x.sel ? bx.querySelector(x.sel) : bx; const t = txt(e); if (x.re) { const m = t.match(new RegExp(x.re)); return m ? m[1] : null; } return t || null; } })));
-        const votes = P.map((p) => { let raw = null; try { raw = p.f(b); } catch (e) {} return { how: p.how, w: W_DEF[p.how] || 1, v: NORM[spec.type](raw) }; }); const v = vote(spec.type, votes, P.length, TOL[fd]); r[fd] = v.v; r._conf[fd] = v.conf; }
+        const votes = P.map((p) => { let raw = null; try { raw = p.f(b); } catch (e) {} return { how: p.how, w: W_DEF[p.how] || 1, v: NORM[spec.type](raw) }; }); const v = vote(spec.type, votes, P.length, TOL[fd]); r[fd] = v.v; r._conf[fd] = v.conf;
+          /* (0.1.7 adapt10) 🧩 칸마다 길 성적 — 길마다 [시도, 채움, 합의값과 같음] */ const FL = (fl[fd] = fl[fd] || {}); for (const x of votes) { const z = (FL[x.how] = FL[x.how] || [0, 0, 0]); z[0]++; if (x.v != null) { z[1]++; if (v.v != null && agKey(x.v) === agKey(v.v)) z[2]++; } } }
       const rid = r[lk.idField]; if (!rid || !r.title || seen.has(rid)) continue; seen.add(rid); if (o.withEls) Object.defineProperty(r, '_el', { value: b, enumerable: false }); rows.push(r); }
-    if (o.withEls) Object.defineProperty(rows, 'els', { value: best.L, enumerable: false }); return { rows, boxes, fp: o.fp === false ? null : fingerprint(doc, lkn) }; }
+    if (o.withEls) Object.defineProperty(rows, 'els', { value: best.L, enumerable: false }); return { rows, boxes, fl, fp: o.fp === false ? null : fingerprint(doc, lkn) }; }
 
   /* ── 화면 구조 지문 ── 칸 길이 기대는 조각(fp 선택자)이 있나 + 자주 쓰인 class 이름 묶음 → 서명 */
   function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).padStart(8, '0'); }
@@ -378,7 +379,7 @@
   /* 목록 화면 건강 — 줄들의 칸 채움률(상자 길 이름 포함) */
   function healthOfList(lists, kind) { const lk = LISTK[kind] || LISTK.al_list; const L = (lists || []).filter(Boolean); const rows = L.flatMap((x) => x.rows || []); const out = { kind: LISTK[kind] ? kind : 'al_list', n: L.length, rows: rows.length, fields: {}, box: L.map((x) => x.boxes && x.boxes.use) };
     for (const [fd, spec] of Object.entries(lk.fields)) { if (!rows.length) { out.fields[fd] = { fill: 0, conf: 0, must: !!spec.must, opt: !!spec.opt }; continue; } const got = rows.filter((r) => r[fd] != null); out.fields[fd] = { fill: Math.round((got.length / rows.length) * 1000) / 1000, conf: got.length ? Math.round((sumOf(got, (r) => (r._conf || {})[fd] || 0) / got.length) * 1000) / 1000 : 0, must: !!spec.must, opt: !!spec.opt }; }
-    const fs = Object.values(out.fields).filter((f) => !f.opt); out.score = fs.length ? Math.round((sumOf(fs, (f) => f.fill * (0.5 + 0.5 * (+f.conf || 0))) / fs.length) * 1000) / 1000 : 0; return out; }
+    out.fl = {}; for (const x of L) if (x.fl) agFillAdd(out.fl, x.fl); /* (0.1.7 adapt10) 칸마다 길 성적 모음 */ const fs = Object.values(out.fields).filter((f) => !f.opt); out.score = fs.length ? Math.round((sumOf(fs, (f) => f.fill * (0.5 + 0.5 * (+f.conf || 0))) / fs.length) * 1000) / 1000 : 0; return out; }
   /* 오늘 vs 전날 → 칸마다 판정: broken(못 읽음) · drop(채움률 크게 떨어짐) · path(합의는 살았지만 길 하나가 죽음 — 새 길 찾기 시작) · range · ok */
   function healthJudge(today, prev, opt) { const o = { drop: 0.25, low: 0.5, pathDead: 0.2, pathWas: 0.8, ...(opt || {}) }; const out = { kind: today && today.kind, st: 'ok', fields: {}, broken: [], warn: [], deadPaths: [] }; if (!today) return out;
     for (const [fd, f] of Object.entries(today.fields || {})) { const p = prev && prev.fields ? prev.fields[fd] : null; let st = 'ok'; const why = [];
@@ -582,6 +583,7 @@
   /* 하루 요약 한 줄(리드가 매일 봄) — 종류마다 점수·깨진 칸·죽은 길·지문 바뀜 */
   function dailyLine(H) { const parts = []; for (const [k, v] of Object.entries((H && H.kinds) || {})) { const j = v.judge || {}; parts.push(`${(KINDS[k] && KINDS[k].label) || (k === 'al_list' ? '알라딘 목록 화면' : k)} ${v.health ? Math.round(v.health.score * 100) : '-'}점${j.broken && j.broken.length ? ` · 깨짐 ${j.broken.join(',')}` : ''}${j.deadPaths && j.deadPaths.length ? ` · 죽은 길 ${j.deadPaths.map((d) => d.field + '/' + d.how).join(',')}` : ''}${v.fp && v.fp.changed ? ' · 화면 구조 바뀜' : ''}${v.guard && v.guard.bad && v.guard.bad.length ? ` · 운영 파서 어긋남 ${v.guard.bad.join(',')}` : ''}`); } return parts.join(' │ '); }
 
+  /* ◆AG-BEGIN — (0.1.7 adapt10) 여기부터 ◆AG-END까지는 수집기(PC)가 머리를 바꾸지 않고 쓰게 split.js가 그대로 떼어 readnow-pc-runtime.js 앞에 넣음(ReadnowAdaptAg) · 이 안에서는 toInt·fmtInt 말고 바깥 이름을 쓰지 않음 */
   /* ══ (0.1.6 adapt9 · 정범님 11/12 밤 · 약속 64) 🔄 목표·방법 적응 틀 — 전제: '상대(알라딘·예스24 등)는 방식을 바꾼다'
    *  목표(무엇을 얻나)는 고정하고 방법(어디서·어떤 표기·어떤 경로로)만 바꿈. 엔진마다 '목표 장부' 하나(g):
    *   methods[방법] = 날짜별 성적 d[[날, 시도, 성공, 비용, 시간ms]](21일) · 최근 회차 rr[[시도, 성공, 시각]](6번) · st: champ(지금 쓰는 길) | cand(후보) | arch(예전 챔피언 — 지우지 않음, 돌아갈 수 있게) | off
@@ -689,8 +691,26 @@
   /* 웹앱 🔬 연구 탭에 보일 작은 요약(문서 작게) */
   function agSummary(g) { if (!g || !g.methods) return null; const ch = g.champ ? g.methods[g.champ] : null; const S = ch ? agStat(ch) : null; const j = agJudge(g); const R = ch ? agRecent(ch, 3) : null;
     const others = Object.values(g.methods).filter((m) => m !== ch && m.st !== 'off').map((m) => { const s = agStat(m); return { id: m.id, label: m.label, st: m.st, r: r3(s.r), n: Math.round(s.n), eff: r3(s.eff) }; }).sort((a, b) => (b.r || 0) - (a.r || 0)).slice(0, 3);
-    const last = (g.ev || []).filter((e) => e.kind !== '시작').slice(-1)[0] || null; return { id: g.id, label: g.label, goal: g.goal, unit: g.unit, st: j.st, champ: ch ? { id: ch.id, label: ch.label, r: r3(S.r), n: Math.round(S.n), eff: r3(S.eff), since: ch.since || null, recent: R ? r3(R.r) : null } : null, cands: others, arch: (g.arch || []).length, last, at: g.at }; }
+    const last = (g.ev || []).filter((e) => e.kind !== '시작').slice(-1)[0] || null; const fl = g.fl || g.fl0 ? agFlSum(g) : null; return { id: g.id, label: g.label, goal: g.goal, unit: g.unit, st: j.st, ...(fl ? { fl } : {}), champ: ch ? { id: ch.id, label: ch.label, r: r3(S.r), n: Math.round(S.n), eff: r3(S.eff), since: ch.since || null, recent: R ? r3(R.r) : null } : null, cands: others, arch: (g.arch || []).length, last, at: g.at }; }
 
-  const api = { VERSION, AG_DEF, AG_SYN, AG_KIND, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, spBatchPlan3, spMultiLearn, spKeepDays, spKeepPerH, kCode, idKeyOf, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
+  /* (0.1.7 adapt10) 🧩 칸마다 길 성적 — 한 화면에서 칸마다 여러 길(운영 파서·글 이름표·구조 데이터 등)로 읽은 값을 견줘 [시도, 채움, 맞음]
+   *  fields = { 칸: { 길: 값|null } } · 기준값 = 가장 많은 길이 낸 값(같으면 main 길) · 길 하나뿐이면 채움 = 맞음
+   *  agFillTally(fields, {main}) → { t: { 칸: { 길: [1, 채움, 맞음] } }, tot: { 길: { n, ok } } } · agFillAdd(가, 나) 더하기 · agFill(g, t, now) 장부 g.fl(오늘)·g.fl0(어제)에 더함 · 칸 24개·길 6개까지 */
+  const agHas = (v) => v != null && v !== '' && !(typeof v === 'number' && !isFinite(v)) && !(Array.isArray(v) && !v.length);
+  const agKey = (v) => (Array.isArray(v) ? v.join('|') : String(v)).replace(/\s+/g, ' ').trim().toLowerCase();
+  function agFillTally(fields, o) { o = o || {}; const t = {}, tot = {}; let nf = 0;
+    for (const f of Object.keys(fields || {})) { const P = fields[f]; if (!P || typeof P !== 'object') continue; if (++nf > 24) break; const ps = Object.keys(P).slice(0, 6); const cnt = new Map(); for (const p of ps) if (agHas(P[p])) { const k = agKey(P[p]); cnt.set(k, (cnt.get(k) || 0) + 1); }
+      let ref = null, rn = 0; const mk = o.main && agHas(P[o.main]) ? agKey(P[o.main]) : null; for (const [k, n] of cnt) if (n > rn || (n === rn && k === mk)) { ref = k; rn = n; }
+      const F = (t[f] = {}); for (const p of ps) { const has = agHas(P[p]) ? 1 : 0; const ag = has && ref != null && agKey(P[p]) === ref ? 1 : 0; F[p] = [1, has, ag]; const z = (tot[p] = tot[p] || { n: 0, ok: 0 }); z.n++; z.ok += ag; } }
+    return { t, tot }; }
+  function agFillAdd(A, B) { A = A || {}; for (const f of Object.keys(B || {})) { const F = (A[f] = A[f] || {}); for (const p of Object.keys(B[f] || {})) { const z = (F[p] = F[p] || [0, 0, 0]); const y = B[f][p] || []; z[0] += +y[0] || 0; z[1] += +y[1] || 0; z[2] += +y[2] || 0; } } return A; }
+  function agFill(g, T, now) { if (!g || !T) return g; const day = agDay(now); if (g.flDay !== day) { if (g.fl && g.flDay) { g.fl0 = g.fl; g.fl0Day = g.flDay; } g.fl = {}; g.flDay = day; }
+    const fs = Object.keys(T); for (const f of fs) { if (!g.fl[f] && Object.keys(g.fl).length >= 24) continue; const F = (g.fl[f] = g.fl[f] || {}); for (const p of Object.keys(T[f] || {})) { if (!F[p] && Object.keys(F).length >= 6) continue; const z = (F[p] = F[p] || [0, 0, 0]); const y = T[f][p] || []; z[0] += +y[0] || 0; z[1] += +y[1] || 0; z[2] += +y[2] || 0; } } return g; }
+  /* 칸별 길 요약(웹앱 · 진단) — 오늘 것이 적으면(칸당 5번 밑) 어제 것 · { day, f: { 칸: { 길: [시도, 채움률, 맞음률] } } } */
+  function agFlSum(g) { if (!g) return null; let F = g.fl, d = g.flDay; const n0 = (X) => { let n = 0; for (const f of Object.keys(X || {})) for (const p of Object.keys(X[f])) n = Math.max(n, X[f][p][0]); return n; }; if ((!F || n0(F) < 5) && g.fl0 && n0(g.fl0) > n0(F)) { F = g.fl0; d = g.fl0Day; } if (!F || !Object.keys(F).length) return null;
+    const f = {}; for (const k of Object.keys(F)) { f[k] = {}; for (const p of Object.keys(F[k])) { const z = F[k][p]; f[k][p] = [z[0], z[0] ? r3(z[1] / z[0]) : null, z[0] ? r3(z[2] / z[0]) : null]; } } return { day: d, f }; }
+  /* ◆AG-END */
+
+  const api = { VERSION, AG_DEF, AG_SYN, AG_KIND, agFillTally, agFillAdd, agFill, agFlSum, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, spBatchPlan3, spMultiLearn, spKeepDays, spKeepPerH, kCode, idKeyOf, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowAdapt = api;
 })(typeof window !== 'undefined' ? window : this);
