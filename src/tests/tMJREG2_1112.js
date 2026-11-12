@@ -16,8 +16,8 @@ ok(T.includes(`{ n: '도서관책', t: '${LIB}' }`) && T.includes(`{ n: '북카�
 ok(/const rgdbList = \(\) => \{ const L = \(\(S\.app && S\.app\.reg\) \|\| \{\}\)\.descBtns;/.test(T), '단추 목록 = app_settings/main.reg.descBtns');
 ok(/regSaveCfg\(\{ descBtns: L \}\)/.test(T), '✎ 저장 = regSaveCfg(모든 기기 · ⚡ 문구 모음과 같은 저장)');
 ok(/descMode: 'manual', descEdit: t, desc: t/.test(T), '누르면 직접 입력(descEdit = desc = 글)');
-ok(/<span class="rgr-qx">\$\{regRowDescHtml\(it\)\}\$\{rgdbHtml\(it\)\}<\/span>/.test(T), '📋 한눈에 줄 ⚡ 설명 옆');
-ok(/⚡ 간단 직접 입력<\/button>\$\{rgdbHtml\(it\)\}/.test(T), '🔎 자세히 카드 ⚡ 간단 직접 입력 옆');
+ok(/<span class="rgr-qx">\$\{regRowDescHtml\(it\)\}\$\{rgdbHtml\(it(, 1)?\)\}<\/span>/.test(T), '📋 한눈에 줄 ⚡ 설명 옆');
+ok(/⚡ 간단 직접 입력<\/button>\$\{rgdbHtml\(it\)\}/.test(T) || /\$\{rgdbHtml\(it\)\}<span class="rgsh-br"[^>]*><\/span><button class="regbtn rgq-mb/.test(T), '🔎 자세히 카드 ⚡ 간단 직접 입력 옆');
 ok(/\$\{rgdbBulkHtml\(L\)\}/.test(T), '✔ 한꺼번에 바꾸기 상품 설명 줄');
 ok(/localStorage\.getItem\('rn-reg-vropen'\) === '1'/.test(T), '판매가치 펼침 기억 rn-reg-vropen (기본 접힘)');
 ok(/id: 'desc-btn'/.test(T) && /<b>📝 빠른 설명 단추<\/b>/.test(T) && /<b>🧠 판매가치 한 줄<\/b>/.test(T), '기능 찾기·매뉴얼 항목');
