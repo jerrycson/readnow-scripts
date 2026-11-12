@@ -44,7 +44,8 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
     await p.waitForTimeout(300); await tick(p);
     const f1 = HL.filter((x) => x.p === '/al/feed')[0];
     ok(f1 && f1.h['x-rn-col2'] === '1' && f1.b.by === 'OFFICE1' && f1.b.seat && f1.b.seat.ok === false && f1.b.hold && f1.b.hold.on === false && f1.b.opLostAt === 1762700000000 && f1.b.cfg && f1.b.cfg.off === false, `POST /al/feed {by, seat, hold, opLostAt, cfg}: ${JSON.stringify(f1 && f1.b)}`);
-    ok(f1 && Object.keys(f1.b).sort().join(',') === 'by,cfg,hold,opLostAt,seat', `알림 칸은 다섯뿐(손님 정보·쿠키 없음): ${f1 && Object.keys(f1.b)}`);
+    ok(f1 && Object.keys(f1.b).sort().join(',') === 'by,cfg,hands,hold,opLostAt,seat', `알림 칸은 여섯뿐(손님 정보·쿠키 없음): ${f1 && Object.keys(f1.b)}`);
+    ok(f1 && f1.b.hands && Object.keys(f1.b.hands).sort().join(',') === 'done,login,page,title,v,ver,why,work' && !/cookie|asid|pw/i.test(JSON.stringify(f1.b.hands)), `(11/12 hands1) 🖐 손발 칸도 정해진 것만(로그인 여부·화면 이름·판·맡김 결과): ${f1 && f1.b.hands && Object.keys(f1.b.hands)}`);
     let d = await dev(p, 'OFFICE1~col2'); ok(d.dev && d.dev.in === true && d.dev.pri === -1 && d.dev.how === '자리', `번외가 켜져 있으니 'OFFICE1~col2' 자리를 운영 규칙으로 받음(우선순위 -1): ${JSON.stringify(d)}`);
     await p.waitForTimeout(1700); await tick(p); const f2 = HL.filter((x) => x.p === '/al/feed').slice(-1)[0];
     ok(f2.b.seat.ok === true && /자리 받음\(\d\/4대\)/.test(f2.b.seat.why), `다음 알림에 seat.ok 참: ${JSON.stringify(f2.b.seat)}`);
@@ -97,6 +98,38 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
     ok(/function lostMark\(\) \{ try \{ if \(PUB\(\)\) return; const s = st\(\); if \(s\.in !== false\) S\('rnu-login-lost', Date\.now\(\)\); \} catch \(e\) \{\} \}/.test(gov), '로그인 모듈 lostMark — 로거 아님 · 이미 풀린 채(in 거짓)면 적지 않음');
     ok(/lostMark\(\); devPut\(false, 'out'\); return 'out';/.test(gov) && /if \(await isIn\(\)\) \{ markIn\('확인'\); return true; \}\n\s+lostMark\(\);/.test(gov), "확인(verify)에서 '진짜 풀림' · 다시 로그인(relogin0) 직전에 적음"); }
 
+  // ── (11/12 hands1) 🖐 손발 길 — 번외가 맡긴 샵매니저 읽기를 이 탭(평소 크롬 · 자리를 쥔 운영 수집기)이 대신 함
+  { const S = {}; let J = []; let hon = true, front = null; const helper = (pth, b) => (pth === '/al/feed' ? { ok: true, al: { ...AL, on: false, own: false }, hands: { on: hon, jobs: J.splice(0, 1), front } } : pth === '/al/hands' ? { ok: true, n: 1 } : pth === '/busy' ? { ok: true } : null);
+    const { p, HL } = await mk({}, helper, {}, 'HOME'); const AQ = [];
+    const CORES = ['readnow-aladin-core.js', 'readnow-products-core.js', 'readnow-shipping-core.js', 'readnow-orders-core.js'].map((f) => fs.readFileSync(path.join(__dirname, '../..', f), 'utf8'));
+    for (const c of CORES) await p.addScriptTag({ content: c });
+    await p.evaluate(() => { window.__IN = true; window.__FOCUS = 0; window.focus = () => { window.__FOCUS++; }; window.__rnLoginGov = { state: () => (window.__IN ? { in: true, at: Date.now() } : { in: false, why: '자리 기다림', seat: 'seat' }) }; });
+    const OUT = '<a href="/scm/wC2Cuser_logout.aspx">로그아웃</a>'; const pg = (t, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${t}</title></head><body>${OUT}<h1>${t}</h1>${b}</body></html>`;
+    await p.route('https://www.aladin.co.kr/**', (rt) => { const rq = rt.request(); const u = new URL(rq.url()); AQ.push({ m: rq.method(), p: u.pathname + u.search });
+      if (u.pathname === '/scm/wmain.aspx') return rt.fulfill({ contentType: 'text/html; charset=utf-8', body: pg('샵매니저', '첫 화면') });
+      if (u.pathname === '/scm/worder_preparatory_complete.aspx') return rt.fulfill({ contentType: 'text/html; charset=utf-8', body: pg('주문확인요청', '<table><tr id="oList1"><td>v</td><td>발송준비중</td><td>1</td><td><a onclick="viewOrderDetail(\'111-A000000001\')">111-A000000001</a></td><td><a href="/shop/wproduct.aspx?ItemId=5001">[중고-상] 시험 책</a></td><td>1</td><td><a onclick="viewAddrLayer(1,0)">손님A</a></td></tr></table><div id="addrLayer1"><table><tr><td>성명</td><td>손님A</td></tr><tr><td>전화1</td><td>010-1234-5678</td></tr></table></div><div>주문확인요청 (1건) 발송 요청 (0건)</div>') });
+      return rt.fulfill({ contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>로그인</title><input type="password">' }); });
+    const hd = () => HL.filter((x) => x.p === '/al/hands').map((x) => x.b.done[0]);
+    J.push({ id: 'h1', k: 'chk' }); await tick(p); await p.waitForTimeout(600); await tick(p);
+    const f = HL.filter((x) => x.p === '/al/feed').pop(); const t1 = await p.title();
+    ok(f && f.b.hands && f.b.hands.v === 1 && f.b.hands.login === true && t1.startsWith('🖐 리드나우 손발 ·') && t1.split('🖐').length === 2, `🖐 다리 알림에 손발 소식(로그인 ✓) · 창 제목에 '🖐 리드나우 손발'(번외가 이 창을 찾음): ${t1} ${JSON.stringify(f && f.b.hands)}`);
+    const d1 = hd()[0]; ok(d1 && d1.id === 'h1' && d1.res.ok && d1.res.sum.loggedIn === true && AQ.some((x) => x.m === 'GET' && x.p === '/scm/wmain.aspx'), `맡김 chk → 이 탭이 샵매니저 첫 화면을 GET으로 읽고 /al/hands로 돌려줌: ${JSON.stringify(d1)}`);
+    J.push({ id: 'h2', k: 'confirm' }); await tick(p); await p.waitForTimeout(800); const d2 = hd().find((x) => x.id === 'h2');
+    ok(d2 && d2.res.ok && d2.res.sum.orders && d2.res.sum.orders[0] && d2.res.sum.orders[0].o === '111-A000000001' && !/손님A|010-1234-5678/.test(JSON.stringify(HL.filter((x) => x.p === '/al/hands'))), `주문확인요청 — 화면 안에서 해석해 주문번호·상품 번호만(손님 이름·전화는 안 나감): ${JSON.stringify(d2 && d2.res)}`);
+    J.push({ id: 'h3', k: 'list', st: '판매중', page: 2 }); await tick(p); await p.waitForTimeout(800); const d3 = hd().find((x) => x.id === 'h3');
+    ok(d3 && !d3.res.ok && d3.res.login === true && AQ.some((x) => /^\/scm\/wrecord_edit\.aspx\?chkItemStockStatus=1&.*page=2&/.test(x.p)), `로그인 화면이면 '로그인 풀림'으로 돌려줌(주소는 이 탭 표대로): ${JSON.stringify(d3 && d3.res)}`);
+    await tick(p); const f3 = HL.filter((x) => x.p === '/al/feed').pop(); ok(f3 && f3.b.hands.login === false, '다음 알림에 로그인 풀림을 알림', f3 && f3.b.hands);
+    J.push({ id: 'h4', k: '/scm/ajaxCmd.aspx?cmd=chg.pricesales', url: 'https://www.aladin.co.kr/scm/ajaxCmd.aspx?cmd=x' }); await tick(p); await p.waitForTimeout(500); const d4 = hd().find((x) => x.id === 'h4');
+    ok(d4 && !d4.res.ok && /모르는 일/.test(d4.res.why) && !AQ.some((x) => /ajaxCmd/.test(x.p)) && AQ.every((x) => x.m === 'GET'), `모르는 종류·주소가 와도 부르지 않음 · 알라딘엔 GET만: ${JSON.stringify(AQ)}`);
+    await p.evaluate(() => { window.__IN = false; }); J.push({ id: 'h5', k: 'chk' }); const n0 = AQ.length; await tick(p); await p.waitForTimeout(500); const d5 = hd().find((x) => x.id === 'h5');
+    ok(d5 && !d5.res.ok && /자리를 쥐고 있지 않음/.test(d5.res.why) && AQ.length === n0, `이 탭이 알라딘 자리를 쥐지 않으면 읽지 않음(동시 로그인 4대 규칙): ${JSON.stringify(d5 && d5.res)}`);
+    await p.evaluate(() => { window.__IN = true; window.__HOLD = true; }); J.push({ id: 'h6', k: 'chk' }); const n1 = AQ.length; await tick(p); await p.waitForTimeout(400); await tick(p); const d6 = [...hd(), ...HL.filter((x) => x.p === '/al/feed').flatMap((x) => (x.b.hands && x.b.hands.done) || [])].find((x) => x && x.id === 'h6');
+    ok(d6 && !d6.res.ok && /출고 중/.test(d6.res.why) && AQ.length === n1, `🚚 출고 중엔 맡김을 읽지 않고 그대로 돌려줌(약속 0-1): ${JSON.stringify(d6)}`); await p.evaluate(() => { window.__HOLD = false; });
+    front = 'f1'; await tick(p); await tick(p); ok((await p.evaluate(() => window.__FOCUS)) === 1, "번외가 '사람 손 필요'(front)라고 하면 이 탭을 앞으로(window.focus) — 같은 신호엔 한 번만");
+    hon = false; await tick(p, true); await p.waitForTimeout(1600); await tick(p, true); const t2 = await p.title(); ok(!t2.startsWith('🖐') && (await p.evaluate(() => window.__rnC2hands().on)) === false, `손발 길이 꺼지면 제목 표시를 지우고 맡김을 받지 않음: ${t2}`);
+    await p.context().close(); }
+  { const { p, HL } = await mk({}, (pth) => (pth === '/al/feed' ? { ok: true, al: { ...AL }, hands: { on: true, jobs: [{ id: 'x', k: 'chk' }] } } : null), {}, 'LOGGER'); await tick(p); await p.waitForTimeout(400);
+    ok(!HL.some((x) => x.p === '/al/hands') && !(await p.title()).startsWith('🖐'), '로거 PC 탭은 손발 맡김을 하지 않음(약속 0)', HL.map((x) => x.p)); await p.context().close(); }
   // ── 팝업 없음 · ⑥ 머리 서명 그대로
   ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(BR), '다리에 브라우저 팝업 없음');
   { const split = [path.join(__dirname, '../split.js')].find((p) => fs.existsSync(p)); if (split && /readnow-collector\.src\.js$/.test(SRCF)) { const out = fs.mkdtempSync(path.join(os.tmpdir(), 'c2alb-')); cp.execFileSync('node', [split, SRCF, out], { stdio: 'pipe' });

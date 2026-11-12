@@ -155,6 +155,10 @@ function makeJobs(ctx) {
       if (r && r.ok) SP.ok(); else if (r && !r.needLogin) SP.fail(r.kind === '429' ? '429' : 'error'); }
     else { const tk = await SP.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
       S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
+    /* (0.1.43 adapt10 · 약속 64) 🔄 번외 읽기 성적 → 목표·방법 장부(col2-ag.js) — 알라딘·그려 읽기는 일 종류마다 장부(칸마다 채움) · 바깥 시세는 출처가 길 · 읽기만 셈(차례·속도는 그대로) */
+    try { const AGX = require('./col2-ag.js').get(); const rr = r || {}; if (AGX && !rr.skip && !rr.needLogin) { const isExt = !(t.reader === 'al' || t.reader === 'dyn' || t.reader === 'nb' || t.reader === 'kp'); const eng = isExt ? 'ext' : (t.reader === 'al' ? 'al_' : t.reader + '_') + String(t.k).replace(/[^\w]/g, '').slice(0, 24); const mid = isExt ? String(t.src || t.k) : t.reader;
+      AGX.obs(eng, mid, { n: 1, ok: rr.ok ? 1 : 0, cost: t.cost || 1, ms: now() - t0, why: rr.ok ? null : rr.why });
+      const pg = rr.page; if (rr.ok && pg && typeof pg === 'object') { const F = {}; if (Array.isArray(pg)) F.rows = { [mid]: pg.length || null }; else for (const k of Object.keys(pg).slice(0, 20)) { const v = pg[k]; if (v == null || typeof v !== 'object' || Array.isArray(v)) F[k] = { [mid]: Array.isArray(v) ? (v.length || null) : v }; } AGX.fill(eng, F); } } } catch (e) {}
     r = r || { ok: false, why: '빈 응답' }; const ms = now() - t0;
     if (r.skip) { record(t, a, a.key, 'skip', [], { why: r.skip, ms }); return { did: true }; }
     if (!r.ok && t.cls === 'ext' && DAYSTOP_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'fail', [], { why: String(r.why || '').slice(0, 120), ms }); ctx.note(`${t.name} — '이 PC IP 등록이 필요' 답 → 오늘은 이 PC에서 더 묻지 않음(키 계정에 이 PC 공인 IP를 넣으면 다음 날부터)`, { k: 'read', l: 'warn', m: t.name }); return { did: true }; }

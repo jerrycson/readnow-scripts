@@ -59,6 +59,18 @@ console.log('③ 교보·알라딘·그 밖 — 일반 길(제목 글·구조 �
   const a = B.parseGeneric('aladin', AL, ISBN, {}); ok(a.ok && a.t.intro === '알라딘 소개 글\n둘째 줄' && a.t.toc === '가. 하나\n나. 둘', `알라딘: ${JSON.stringify(a.t)}`);
   ok(!B.parseGeneric('kyobo', KB.replace(ISBN, '1'), ISBN, {}).ok, '교보: 다른 책 받지 않음'); }
 
+console.log('③-2 교보 새 틀(section id) · 알라딘 따로 불러오는 칸');
+{ const KBN = `<html><head><meta property="og:title" content="새 틀 책 | 교보문고"></head><body><section id="bookBasicInfo"><h2>기본정보</h2><table><tr><th>ISBN</th><td>${ISBN}</td></tr><tr><th>발행(출시)일자</th><td>2023년 04월 01일</td></tr><tr><th>쪽수/크기</th><td>648쪽 | 152 * 215 mm</td></tr></table></section>
+  <section id="bookIntro"><h2>책 소개</h2><div id="bookSimpleIntro">짧은 머리 글입니다. 기념판</div><div id="bookDescription">긴 소개 글이 여기에 있습니다. 둘째 문장도 있습니다.</div></section><div id="contentTable" data-anchor-pending="true"><div style="x"></div></div><div id="authorInfo"><h2>작가정보</h2><p>작가는 서울에서 태어났다. 소설을 쓴다.</p></div></body></html>`;
+  const r = B.parseKyobo(KBN, ISBN, {}); ok(r.ok && r.t.intro === '짧은 머리 글입니다. 기념판\n\n긴 소개 글이 여기에 있습니다. 둘째 문장도 있습니다.' && r.from.intro === 'site', `교보 새 틀: 책소개(머리 글 + 소개) ${JSON.stringify(r.t.intro)}`);
+  ok(!r.t.toc && r.t.auth === '작가는 서울에서 태어났다. 소설을 쓴다.', '교보 새 틀: 늦게 오는 빈 틀(목차)은 비움 · 들어 있는 칸(작가정보)은 읽음');
+  ok(r.b.pages === 648 && r.b.size === '152*215mm' && r.b.pubDate === '2023-04-01' && r.b.title === '새 틀 책', `교보 새 틀: 기본 정보 ${JSON.stringify(r.b)}`);
+  const AL0 = `<div class="pContent" id="8900000001_Introduce"></div><div class="pContent" id="8900000001_AuthorInfo"></div><div class="pContent" id="8900000001_PublisherDesc"></div><div class="pContent" id="8900000001_ShopInfo"></div>`; ok(JSON.stringify(B.alParts(AL0)) === JSON.stringify({ Introduce: '8900000001', AuthorInfo: '8900000001', PublisherDesc: '8900000001' }), '알라딘: 화면에서 칸 자리 이름 읽음(필요한 셋)');
+  const I = B.alPart('Introduce', '<div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책소개</div><div class="Ere_prod_mconts_R">알라딘 책소개 글</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">목차</div><div class="Ere_prod_mconts_R">1부<br>2부</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책속에서</div><div class="Ere_prod_mconts_R">한 대목</div></div>');
+  ok(I.intro === '알라딘 책소개 글' && I.toc === '1부\n2부' && I.inbook === '한 대목', `알라딘 Introduce: 책소개·목차·책속에서 ${JSON.stringify(I)}`);
+  const A = B.alPart('AuthorInfo', '<div>저자 및 역자소개</div><div>지은이 : 김작가<br>서울 사람</div><div>옮긴이 : 이번역<br>번역가</div>'); ok(/^지은이 : 김작가\n서울 사람/.test(A.auth || '') && /^옮긴이 : 이번역\n번역가/.test(A.trans || ''), `알라딘 AuthorInfo: 지은이·옮긴이 나눔 ${JSON.stringify(A)}`);
+  ok(B.alPart('PublisherDesc', '<div class="Ere_prod_mconts_LS">출판사 제공 책소개</div><div>출판사 홍보 글</div>').pubrev === '출판사 홍보 글', '알라딘 PublisherDesc → 출판사 서평'); }
+
 console.log('④ 출처 합치기 — 먼저 온 출처 값을 지키고 빈 칸만 채움');
 { const y = B.parseYes24(Y24, ISBN, {}); const k = { ok: true, src: 'kyobo', t: { intro: '다른 소개', pubintro: '교보 출판사 소개' }, b: { pages: 999, kdc: '813' } };
   const m = B.merge(B.merge(null, y), k); ok(m.t.intro === y.t.intro && m.t.pubintro === '교보 출판사 소개' && m.from.pubintro === 'kyobo' && m.from.intro === 'yes24', '글 칸');
@@ -85,22 +97,29 @@ console.log('⑦ 🖼 샘플 페이지 예산 — 하루 처음엔 많이, 남�
 
 console.log('⑧ 💾 저장 — 가짜 Firestore·가짜 인터넷으로 한 회차(예스24 번호는 ext_basic에서) · 미리보기 함께 쓰기');
 (async () => { const store = new Map(); const files = [];
-  const mkDoc = (col, id) => ({ col, id, get: async () => { const v = store.get(col + '/' + id); return { exists: !!v, id, data: () => v }; }, set: async (v, o) => { const k = col + '/' + id; const cur = store.get(k) || {}; const clean = JSON.parse(JSON.stringify(v, (kk, x) => (x && x._fv ? undefined : x))); store.set(k, o && o.merge ? { ...cur, ...clean } : clean); } });
+  const mkDoc = (col, id) => ({ col, id, get: async () => { const v = store.get(col + '/' + id); return { exists: !!v, id, data: () => v }; }, set: async (v, o) => { const chk = (x, p) => { if (x === undefined) throw new Error('undefined at ' + p); if (x && typeof x === 'object' && !x._fv) for (const [kk, vv] of Object.entries(x)) chk(vv, p + '.' + kk); }; chk(v, col); const k = col + '/' + id; const cur = store.get(k) || {}; const clean = JSON.parse(JSON.stringify(v, (kk, x) => (x && x._fv ? undefined : x))); store.set(k, o && o.merge ? { ...cur, ...clean } : clean); } });
   const qOf = (col, rows) => { const q = { _w: [], where() { return q; }, select() { return q; }, limit() { return q; }, startAfter() { return { get: async () => ({ empty: true, size: 0, docs: [], forEach() {} }) }; }, get: async () => { const docs = rows().map(([id, v]) => ({ id, data: () => v, ref: mkDoc(col, id) })); return { empty: !docs.length, size: docs.length, docs, forEach: (f) => docs.forEach(f) }; } }; return q; };
   const C = (col) => ({ doc: (id) => mkDoc(col, id), ...qOf(col, () => [...store.entries()].filter(([k]) => k.startsWith(col + '/')).map(([k, v]) => [k.slice(col.length + 1), v])) });
   store.set('prd_listings/L1', { isbn13: ISBN, status: '판매중', active: true, firstSeenAt: '2026-11-12T00:00:00Z', bookId: 'B1', title: '[중고] 견본 책', previewsStatus: 'done', previews: [{ stored: 'img/preview/B1/1.jpg', n: 1 }] });
   store.set('ext_basic/' + ISBN, { src: { yes24: { d: { id: '111' } } } });
   const db = { getAll: async (...a) => Promise.all(a.filter((x) => x && x.get).map((r) => r.get())) };
   const urls = []; const fetchFn = async (u) => { urls.push(u); if (/Goods\/111/.test(u)) return { ok: true, status: 200, url: u, text: async () => Y24, headers: { get: () => 'text/html' } }; return { ok: false, status: 404, url: u, text: async () => '', headers: { get: () => null } }; };
-  const M = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), fetchFn, bucket: () => ({ file: (p) => ({ save: async () => files.push(p) }) }) });
+  const AGC = []; const M = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), fetchFn, ag: async (id, seed, mid, r) => AGC.push({ id, mid, r, seed }), rnd: () => 0.5, bucket: () => ({ file: (p) => ({ save: async () => files.push(p) }) }) });
   const r = await M.tick(8000); const d = store.get('bk_info/' + ISBN); ok(r.n === 1 && d && d.t && d.t.intro && d.t.toc && d.t.auth && d.full, `한 권 저장(${d && d.f && d.f.join('·')})`);
   ok(urls.length === 1 && /Goods\/111/.test(urls[0]), '받아 둔 예스24 번호로 바로 상품 화면만(검색 요청 0 · 다 차서 교보·알라딘 안 물음)');
   ok(d.b.pages === 320 && d.srcs.yes24.ok && d.srcs.yes24.via === 'ext' && d.nx > Date.now() + 100 * 864e5, '기본 정보 · 출처 기록 · 다시 볼 때(180일)');
+  ok(AGC.length === 1 && AGC[0].id === 'bkinfo_yes24' && AGC[0].mid === 'id' && AGC[0].r.n === 1 && AGC[0].r.ok === 1 && AGC[0].seed.methods.some((m) => m.id === 'rsc'), `🔄 적응 틀 장부에 성적(출처·길·성공): ${JSON.stringify(AGC.map((x) => [x.id, x.mid, x.r]))}`);
   const r2 = await M.tick(3000); ok(r2.n === 0, '다 찬 책은 다시 묻지 않음');
   store.set('prd_listings/L2', { isbn13: '9788900000009', status: '판매중', active: true, firstSeenAt: '2026-11-12T01:00:00Z', bookId: 'B2', title: '번호 모르는 책' }); M.state.cands = null; M.state.q = null; const n0 = urls.length;
   await M.tick(3000); ok(!store.get('bk_info/9788900000009') && M.state.have.get('9788900000009').nx > Date.now() + 5 * 3600e3 && urls.length - n0 <= 1, '예스24 번호를 모르고 그려 읽기도 없으면: 쓰지 않고 6시간 뒤(실패로 세지 않음 · 알라딘으로 넘기지 않음)');
+  /* 예스24 번호를 모르는 책 → 교보 검색(표지 칸 ISBN 같은 상품만) → 교보 상품 화면 · 그려 읽기 없이 */
+  const ISB3 = '9788900000017'; store.set('prd_listings/L3', { isbn13: ISB3, status: '판매중', active: true, firstSeenAt: '2026-11-12T02:00:00Z', bookId: 'B3', title: '교보 책' }); M.state.cands = null; M.state.q = null;
+  const KBP = `<html>${ISB3}<h2 class="title_heading"><span>책 소개</span></h2><div class="intro_bottom"><div class="info_text">교보 소개입니다</div></div><h2 class="title_heading"><span>목차</span></h2><ul><li>1부</li><li>2부</li></ul><h2 class="title_heading"><span>작가정보</span></h2><div class="writer_info_box"><p>작가 소개 글</p></div></html>`;
+  const f0 = fetchFn; const urls2 = []; M.state.pace = {}; const M2 = B.makeBookInfo({ db, C, FV: {}, log: () => {}, W: () => ({ uploadedAt: { _fv: 1 } }), bucket: () => ({ file: () => ({ save: async () => {} }) }), fetchFn: async (u) => { urls2.push(u); if (/search\.kyobobook/.test(u)) return { ok: true, status: 200, url: u, text: async () => `<div data-kbbfn-pid="S000111" data-kbbfn-bid="9788999999999"></div><div data-kbbfn-pid="S000222" data-kbbfn-bid="${ISB3}"></div>`, headers: { get: () => 'text/html' } }; if (/detail\/S000222/.test(u)) return { ok: true, status: 200, url: u, text: async () => KBP, headers: { get: () => 'text/html' } }; return f0(u); } });
+  await M2.tick(20000); const d3 = store.get('bk_info/' + ISB3); ok(d3 && d3.t.intro === '교보 소개입니다' && d3.t.toc === '1부\n2부' && d3.t.auth === '작가 소개 글' && d3.srcs.kyobo.via === 'search' && d3.srcs.kyobo.id === 'S000222', `예스24 번호 모름 → 교보 검색(같은 ISBN 상품만 · 추천 S000111 안 잡음) → 교보 화면: ${d3 && JSON.stringify(d3.srcs.kyobo)}`);
+  ok(!urls2.some((u) => /aladin/.test(u) && u.includes(ISB3)) && d3.full, '교보로 다 차면 알라딘 안 물음(교보에도 없는 책만 알라딘)');
   const pvr = await M.pvTick(); const d2 = store.get('bk_info/' + ISBN); ok(pvr.share === 1 && d2.pv && d2.pv.from === 'listing' && d2.pvN === 1 && !files.length, '미리보기: 같은 책 매물 것을 함께 씀(받기 0)');
-  const dg = await M.diag(); ok(dg.cands.act === 2 && dg.haveAct === 1 && dg.fullAct === 1 && dg.pvAct === 1 && dg.fields.intro === 1, `진단 숫자: ${JSON.stringify({ act: dg.cands.act, have: dg.haveAct, full: dg.fullAct, pv: dg.pvAct })}`);
+  const dg = await M.diag(); ok(dg.cands.act === 3 && dg.haveAct >= 1 && dg.fullAct === 1 && dg.pvAct === 1 && dg.fields.intro === 1, `진단 숫자: ${JSON.stringify({ act: dg.cands.act, have: dg.haveAct, full: dg.fullAct, pv: dg.pvAct })}`);
   const pub = B.pubOf(d2); ok(pub.t.intro && pub.b.pages === 320 && pub.pv.length === 1, '공개 요약(우리숍) 꼴');
 
   console.log('⑨ 우리숍·웹앱이 같은 칸 이름을 씀');

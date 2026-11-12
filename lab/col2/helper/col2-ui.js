@@ -217,6 +217,7 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
       else if (!s.on) P.push({ l: 'err', w: '번외 수집 꺼짐', t: '켜야 읽음 — 운영 수집기는 그대로', fix: '켜기', go: () => post('/cfg', { on: true, src: 'pc' }) });
       if (s.on && !off && y.on && y.login === 'need') P.push({ l: 'err', h: 1, w: '예스24 로그인 풀림', t: (R.y24 && R.y24.has ? '저장된 계정으로 스스로 다시 해 보거나, ' : '') + '한 번 로그인하면 이어 읽음', fix: '로그인', go: () => post('/y24/login', { why: '한눈 카드 [고치기]' }) });
       if (s.on && !off && a.on && a.pp) P.push({ l: 'err', w: '알라딘 읽기 멈춤(핑퐁 의심)', t: '기록을 보고 까닭 확인', fix: '기록 보기', go: async () => { if (root.__jw && root.__jw.setOpen) root.__jw.setOpen(true); return { ok: true, msg: '기록창' }; } });
+      else if (s.on && !off && a.hands && a.hands.on && a.hands.todo) P.push({ l: 'err', h: 1, w: '알라딘 — 평소 크롬에서 로그인', t: '평소 크롬의 리드나우 수집기 탭에서 알라딘에 로그인해 주세요(번외 창은 로그인하지 않음)', fix: '🖐 평소 크롬 띄우기', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) }); /* (11/12 hands1) 🖐 손발 길 */
       else if (s.on && !off && a.on && a.todo) P.push({ l: 'err', h: 1, w: '알라딘 — 사람이 할 일', t: '🟧 알라딘 카드의 큰 단추를 눌러 주세요', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) }); /* (11/12 col2ui2) 사람이 해야 하는 순간이면 큰 상태 줄이 주황 */
       else if (s.on && !off && a.on && a.login === 'human') P.push({ l: 'warn', h: 1, w: '알라딘 — 평범한 크롬 창에서 로그인 기다림', t: '그 창에서 로그인하고 닫거나 [✅ 로그인 다 함]', fix: '✅ 로그인 다 함', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
       else if (s.on && !off && a.on && a.login === 'need') P.push({ l: 'err', h: 1, w: '알라딘 샵매니저 로그인 풀림', t: a.seat ? '한 번 로그인하면 이어 읽음' : '로그인 자리가 나면 이어 감', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
@@ -239,7 +240,7 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
       const e = $('glErr'), top = P[0]; e.hidden = !top; if (top) { e.className = 'glerr' + (top.l === 'err' ? '' : ' warn'); $('glErrW').textContent = top.w + (P.length > 1 ? ` (외 ${P.length - 1})` : ''); $('glErrT').textContent = top.t; $('glFix').hidden = !top.go; $('glFix').textContent = top.fix || '고치기';
         $('glFix').onclick = async () => { msg('…'); try { const j = await top.go(); msg(j && j.ok === false ? '✗ ' + (j.err || '') : '✓ ' + ((j && j.msg) || top.fix)); } catch (er) { msg('✗ ' + er.message); } load(); }; e.title = P.map((x) => x.w + ' — ' + x.t).join('\n'); }
       /* 앞면 단추 넷 — 로그인 · 지금 읽기 · 잠깐 멈춤 · 설정 */
-      const need = !s || kind === 'logger' ? null : y.on && y.login === 'need' ? 'y24' : a.on && (a.login === 'need' || a.todo) ? 'al' : null; const fl = $('fLogin');
+      const need = !s || kind === 'logger' ? null : y.on && y.login === 'need' ? 'y24' : (a.on && (a.login === 'need' || a.todo)) || (a.hands && a.hands.on && a.hands.todo) ? 'al' : null; const fl = $('fLogin');
       fl.disabled = !need; fl.textContent = need ? '🔐 ' + (need === 'y24' ? '예스24' : '알라딘') + ' 로그인' : '🔐 로그인 ✓'; fl.title = need ? '그 사이트 창이 앞으로 나옴 — 직접 로그인하면 저절로 숨음' : kind === 'logger' ? '로거 PC는 로그인 일을 안 함' : '로그인이 필요한 곳 없음';
       fl.onclick = async () => { if (!need) return; const j = await post(need === 'y24' ? '/y24/login' : '/al/login', { why: '앞면 [로그인]' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
       const fp = $('fPause'); const ps = !!(s && s.pause), offN = !!(s && !s.on && !s.pause); fp.textContent = ps ? '▶ 다시 켜기' : offN ? '▶ 켜기' : '⏸ 30분 멈춤'; fp.className = ps || offN ? 'p' : ''; fp.title = ps ? '잠깐 멈춤을 풀고 곧바로 다시 켬' : offN ? '번외 수집 켜기' : '30분 동안 숨은 크롬을 닫고 쉼 — 그 뒤 저절로 다시 켬';
@@ -258,15 +259,20 @@ details.more #cards{padding-top:0}@media (min-width:760px){details.more #cards{d
       /* 🟧 알라딘 */
       const ac = $('mAlCh'), at = $('mAlTodo'), aL = [], aB = $('mAlB');
       if (!s) chipOf(ac, '', '—'); else if (lg) chipOf(ac, s.on ? 'ok' : '', '공개 화면만(로그인 없음)');
+      else if (a.hands && a.hands.on) { const h = a.hands; chipOf(ac, !h.linked ? 'warn' : h.login === false ? 'err' : h.login === true ? 'ok' : 'warn', !h.linked ? '🖐 평소 크롬 탭 찾는 중' : h.login === false ? '🖐 평소 크롬 로그인 풀림' : h.login === true ? '🖐 평소 크롬이 손발 · 로그인 ✓' : '🖐 평소 크롬이 손발 · 확인 중'); } /* (11/12 hands1) */
       else if (!a.on) chipOf(ac, s.on ? 'ok' : '', '공개 화면 · 샵매니저 꺼 둠');
       else chipOf(ac, a.pp ? 'err' : a.login === 'ok' ? 'ok' : a.login === 'need' ? 'err' : 'warn', a.pp ? '⛔ 멈춤(핑퐁 의심)' : a.login === 'ok' ? '로그인 ✓' : a.login === 'need' ? '🔐 로그인 필요' : a.login === 'human' ? '평범한 창에서 로그인 기다림' : a.login === 'wait' ? '로그인 창 열림' : '확인 중');
-      at.hidden = !(a.on && a.todo && !lg); if (!at.hidden) at.textContent = a.todo;
+      at.hidden = !((a.on || (a.hands && a.hands.on)) && a.todo && !lg); if (!at.hidden) at.textContent = a.todo;
       if (lg) aL.push('<span class="k">로거 PC — 우리 숍 로그인 일은 하지 않음(약속 0)</span>');
+      else if (a.hands && a.hands.on) { const h = a.hands, d = a.day || {}, wn = h.win;
+        aL.push(`<span class="${h.linked ? 'ok' : 'wa'}">🖐 평소 크롬이 손발</span> · 로그인 ${h.login === true ? '<span class="ok">✓</span>' : h.login === false ? '<span class="no">풀림</span>' : '확인 중'} · 맡긴 일 <b>${+h.n || 0}</b>(받음 ${+h.ok || 0}${h.fail ? ' · 못 받음 ' + h.fail : ''})${a.want ? ' · 견줌 같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) : ' · <span class="k">샵매니저 그림자 읽기는 꺼 둠</span>'}`);
+        aL.push(`<span class="k">🪟 평소 크롬 창: ${!wn ? '아직 안 봄' : wn.err ? E(wn.err) : h.work ? '🪟 운영 작업 창(숨김·띄움은 운영 도우미)' : !wn.n ? "'🖐 리드나우 손발' 창을 못 찾음(수집기 탭이 앞 탭이 아님)" : wn.on ? '화면에 보임' : '숨김(일은 그대로)'} · 새 로그인 0(번외 창은 로그인 안 함)</span> <button id="mAlHs" class="sm">🖐 띄우기</button> <button id="mAlHh" class="sm">숨기기</button>`); }
       else if (a.on) { const d = a.day || {}; aL.push('<span class="' + (a.seat ? 'ok' : 'wa') + '">🪑 로그인 자리 ' + (a.seat ? '받음' : '아직 없음') + '</span>' + (a.login === 'ok' ? ' · 샵매니저 오늘 <b>' + (d.n || 0) + '</b>장(같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) + ')' : '')); }
       $('mAlL').innerHTML = aL.join('<br>');
-      const aw = !s || lg || !a.on ? '' : a.login === 'human' ? 'hu' : a.login !== 'ok' || a.pp || a.todo ? 'lg' : '';
+      { const hw = async (act) => { msg('…'); const j = await post('/al/hands/win', { act }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); }; if ($('mAlHs')) $('mAlHs').onclick = () => hw('show'); if ($('mAlHh')) $('mAlHh').onclick = () => hw('hide'); } /* (11/12 hands1) 🖐 평소 크롬 손발 창 */
+      const aw = !s || lg ? '' : a.hands && a.hands.on ? (a.hands.todo ? 'hd' : '') : !a.on ? '' : a.login === 'human' ? 'hu' : a.login !== 'ok' || a.pp || a.todo ? 'lg' : '';
       liftAlX();
-      bigBtn(aB, aw, aw === 'hu' ? '<button class="p big" id="mAlLg">✅ 로그인 다 함 — 창 닫고 확인</button>' : aw === 'lg' ? '<button class="p big" id="mAlLg">🔐 알라딘 로그인</button>' : '', alGo);
+      bigBtn(aB, aw, aw === 'hd' ? '<button class="p big" id="mAlLg">🖐 평소 크롬 띄우기 — 거기서 로그인</button>' : aw === 'hu' ? '<button class="p big" id="mAlLg">✅ 로그인 다 함 — 창 닫고 확인</button>' : aw === 'lg' ? '<button class="p big" id="mAlLg">🔐 알라딘 로그인</button>' : '', alGo);
       /* 🟦 예스24 — 로거엔 없음 */
       $('mcY24').hidden = lg; if (!lg) { const yc = $('mY24Ch'); const w = y.w || {}, yj = y.jobs || {}, tk = y.tk || {};
         if (!s) chipOf(yc, '', '—'); else if (y.mine === false) chipOf(yc, '', '🔒 ' + (y.holder || 'HOME') + ' 맡음'); else if (!y.on) chipOf(yc, '', '꺼 둠');

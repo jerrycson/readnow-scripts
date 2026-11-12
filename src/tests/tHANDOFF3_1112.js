@@ -13,7 +13,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.route(/raw\.githubusercontent\.com\/jerrycson\/readnow-scripts\/main\/src\/readnow-collector\.src\.js/, (rt) => rt.fulfill({ status: 200, contentType: 'text/plain', body: fs.readFileSync(SRCF, 'utf8') }));
   await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: CORS }); let b = null; try { b = JSON.parse(rt.request().postData() || 'null'); } catch (e) {} calls.push({ p: u.pathname, b });
     const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(x) });
-    if (u.pathname === '/relay/pending') { const o = outNow; outNow = []; const w = wantNow; wantNow = []; return J({ ok: true, want: w, sample: 0, pool: 0, fields: [], out: o, hot: false, pc: me, pcSrc: 'web', ver: '0.1.42', kind: me === 'LOGGER' ? 'logger' : 'office', handBeat: {}, handAt: 0 }); }
+    if (u.pathname === '/relay/pending') { const o = outNow; outNow = []; const w = wantNow; wantNow = []; return J({ ok: true, want: w, sample: 0, pool: 0, fields: [], out: o, hot: false, pc: me, pcSrc: 'web', ver: '0.1.44', kind: me === 'LOGGER' ? 'logger' : 'office', handBeat: {}, handAt: 0 }); }
     return J({ ok: true }); });
   const tick = async () => p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); await new Promise((r) => setTimeout(r, 150)); });
   const endAt0 = new Date(Date.now() - 30 * 3600e3).toISOString();
@@ -50,7 +50,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await tick(); await tick(); const errs = Object.assign({}, ...calls.filter((c) => c.p === '/relay/ack' && c.b && c.b.errs).map((c) => c.b.errs));
   ok(/그사이/.test(errs.r2 || '') && /큰 숍/.test(errs.r3 || '') && /끝 쪽까지/.test(errs.r4 || ''), '④ 같은 회차를 다시(그사이 회차 끝이 바뀜) · 큰 숍 · 끝까지 못 읽은 회차는 쓰지 않음', errs);
   /* ⑤ 묶음 보기 */
-  await p.evaluate(async () => { const kd = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); await db.collection('col2_jday').doc(kd + '_LOGGER').set({ d: kd, pc: 'LOGGER', kind: 'logger', ver: '0.1.42', at: new Date().toISOString(), tasks: { benchFull: { name: '🎯 끝까지', n: 1, same: 1, diff: 0, un: 0, fail: 0, pass: { n: 1, can: true, why: '넘길 수 있음' } } } });
+  await p.evaluate(async () => { const kd = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); await db.collection('col2_jday').doc(kd + '_LOGGER').set({ d: kd, pc: 'LOGGER', kind: 'logger', ver: '0.1.44', at: new Date().toISOString(), tasks: { benchFull: { name: '🎯 끝까지', n: 1, same: 1, diff: 0, un: 0, fail: 0, pass: { n: 1, can: true, why: '넘길 수 있음' } } } });
     await db.collection('app_settings').doc('col2_handoff').set({ jobs: { bench: { on: false } } }, { merge: true }); });
   const ui = await p.evaluate(async () => { const sl = (ms) => new Promise((x) => setTimeout(x, ms)); S.sec.set_c2ho = true; const m = document.createElement('div'); m.id = 'c2hoT3'; document.body.appendChild(m); renderSettings(m); await sl(900); const box = document.getElementById('c2ho_box'); if (!box) return { none: true }; c2HoLoad(true);
     for (let i = 0; i < 30 && !box.querySelector('.c2hobun'); i++) await sl(200); box.querySelectorAll('details.c2hobun').forEach((d) => (d.open = true)); return { t: box.innerText, lg: (box.querySelector('[data-c2hobon="lg"]') || {}).textContent || null }; });

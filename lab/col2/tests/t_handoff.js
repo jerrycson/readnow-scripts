@@ -109,9 +109,9 @@ const HOF = require('../shadow/col2-handoff.js'); const TK = require('../shadow/
   ok(cm.verdict === 'diff' && cm.reasons.join() === 'move' && cm.chg === 1 && cm.onlyMine === 1 && cm.onlyOps === 1 && cm.gapH === 5, "운영 회차와 5시간 떨어진 다름 = '때가 다름'(그사이 팔림·새로 올림·값 바꿈)", cm);
   cm = HOF.benchCmp([row('1', 900, '상'), row('2', 2000, '중', 1)], ch, { opsEnd: '2026-11-12T01:00:00Z', myAt: '2026-11-12T01:30:00Z' }); ok(cm.reasons.join() === 'diff', '1시간 안에 읽었는데 다르면 까닭 모를 다름(넘길 수 없음)', cm);
   ok(HOF.claimOk({ pc: 'MJ-MAIN', at: Date.now() - 60e3 }, 'LOGGER') === false && HOF.claimOk({ pc: 'MJ-MAIN', at: Date.now() - 5 * 60e3 }, 'LOGGER') && HOF.claimOk({ pc: 'col2-LOGGER', at: Date.now() }, 'LOGGER') && HOF.claimOk(null, 'LOGGER'), '잡기 = 운영 benchClaim과 같은 판단(남이 4분 안에 잡았으면 못 잡음 · 내 것은 이어 잡음)');
-  const jdB = [{ d: '2026-11-12', pc: 'LOGGER', kind: 'logger', ver: '0.1.42', at: new Date().toISOString(), tasks: { benchFull: { name: '끝까지', n: 1, same: 1, un: 0, pass: { can: true } }, bench: { name: '첫 쪽', n: 60, same: 60, un: 0, pass: { can: true } } } }];
+  const jdB = [{ d: '2026-11-12', pc: 'LOGGER', kind: 'logger', ver: '0.1.44', at: new Date().toISOString(), tasks: { benchFull: { name: '끝까지', n: 1, same: 1, un: 0, pass: { can: true } }, bench: { name: '첫 쪽', n: 60, same: 60, un: 0, pass: { can: true } } } }];
   let cB = HOF.candidates(jdB).find((x) => x.k === 'bench'); ok(cB && cB.pc === 'LOGGER' && cB.n === 1, "넘김 판정은 끝까지 읽기 그림자(benchFull)로만 — 첫 쪽 그림자(bench 60건)는 셈에 안 듦", cB);
-  cB = HOF.candidates([{ ...jdB[0], ver: '0.1.41' }]).find((x) => x.k === 'bench'); ok(!cB || !cB.pc, '번외 0.1.42 아래 PC는 맡지 못함', cB);
+  cB = HOF.candidates([{ ...jdB[0], ver: '0.1.43' }]).find((x) => x.k === 'bench'); ok(!cB || !cB.pc, '번외 0.1.44 아래 PC는 맡지 못함', cB);
   /* 번외 일 돌리기 — 끝까지 읽기 */
   const BFF = require('../helper/col2-benchfull.js'); const SB = {}; const recs = []; const ops3 = []; let HAND3 = false; const W3 = {};
   const pages = { 1: { rows: [{ id: '1', p: 1000, g: '상', t: '책1' }, { id: '2', p: 2000, g: '중', t: '책2', low: true }], last: 2 }, 2: { rows: [{ id: '3', p: 3000, g: '상', t: '책3' }, { id: '1', p: 1000, g: '상', t: '책1' }], last: 2 } };

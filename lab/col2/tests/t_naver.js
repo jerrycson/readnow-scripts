@@ -95,7 +95,7 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
   const env = { RN_COL2_NV: F.base, RN_COL2_DPAPI: D + '/bin/dpapi', RN_COL2_NVIMG: F.base + '/img', RN_COL2_NET: NETF, RN_COL2_NVIP: F.base + '/myip', RN_COL2_NVBINDX: D + '/bindx.json' }; const cfg0 = { on: false, y24: false, al: false, auto: false, side: false, headless: true, pcSrc: 'pc', nvcfg: { ip: '203.0.113.7', minGapMs: 0, ordMin: 0.02, prdH: 0.0005, cool429Sec: 1 } };
 
   console.log('③ 로거가 아닌 PC');
-  { const H = await L.startHelper({ dir: D + '/office', port: L.PORT + 7, cfg: { ...cfg0, pc: 'HOME' }, env });
+  { const H = await L.startHelper({ dir: D + '/office', port: L.PORT + 7, cfg: { ...cfg0, pc: 'HOME', hands: false }, env });
     const s = await H.api('GET', '/nv/st'); ok(s.st === 200 && s.j && s.j.nv && s.j.nv.on === false && !s.j.nv.pub, '사무실 PC — 네이버 칸 꺼짐 · 공개 열쇠 없음', s.j && s.j.nv);
     const c = await H.api('POST', '/nv/cmd', { k: 'test' }); ok(c.j && c.j.ok === false && /로거/.test(c.j.err || ''), '명령 거절(로거 PC만)', c.j && c.j.err);
     await wait(600); ok(!fs.existsSync(D + '/office/home/cred/nv-key.dat') && !F.S.log.length, '열쇠 파일 없음 · 네이버를 부르지 않음'); await H.stop(); }
