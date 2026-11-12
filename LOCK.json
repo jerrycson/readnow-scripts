@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel10 합친 판",
+ "since": "2026-11-12T05:08:23Z",
+ "beat": "2026-11-12T05:08:23Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "4시간 점검: 1.89.276 새 판 사본 겹쳐 적기 막음 · b5ad23d6 · 머리 그대로",
   "at": "2026-11-12T03:35:35Z"
  },
- "host": null
+ "host": "vm"
 }
