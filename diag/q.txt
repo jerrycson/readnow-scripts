@@ -1,2 +1,2 @@
-run=1&soldfill=903578&from=2026-11-12T09:50
-# 102450
+mem=1&doc=app_settings/heavy_run
+# 91547444
