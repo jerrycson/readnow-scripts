@@ -113,7 +113,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.evaluate(async () => { await db.collection('app_settings').doc('platforms').set({ omni: { autoDown: { on: 1, from: new Date(window.__T0 - 3600e3).toISOString(), by: 'test', at: new Date().toISOString() } } }, { merge: true }); S.app = { ...S.app }; delete S.app.platforms; /* 다른 설정 듣기가 S.app을 통째로 바꾼 꼴 */ S._ledView = 'todo'; openLedger(); });
   await p.waitForTimeout(600);
   const A0 = await p.evaluate(() => { const c = document.querySelector('#omni_card'); return { card: !!c, on: !!(c && c.querySelector('#omni_on').checked), txt: c ? c.textContent : '', rc: !!document.querySelector('#omni_rc'), tabs: [...document.querySelectorAll('[data-ledview]')].map((b) => b.textContent.trim()) }; });
-  ok(A0.card && A0.on && /켬/.test(A0.txt) && A0.rc && A0.tabs.length === 3 && /주문 모음/.test(A0.tabs[2]), '🛠 처리할 일 위 🤖 자동 내림 카드(켬) · 🔍 재고 맞추기 카드 · 보기 칸 셋(전체·처리할 일·📋 주문 모음)', A0);
+  ok(A0.card && A0.on && /켬/.test(A0.txt) && A0.rc && /실사 목록/.test(A0.tabs.join('|')) && /주문 모음/.test(A0.tabs.join('|')) && /처리할 일/.test(A0.tabs.join('|')), '🛠 처리할 일 위 🤖 자동 내림 카드(켬) · 🔍 재고 맞추기 카드 · 보기 칸(전체·처리할 일·(led3) 🔍 실사 목록·📋 주문 모음)', A0);
   /* 돌기 한 번 — 이 기기엔 번외 없음 → 알라딘 쪽만 */
   await p.evaluate(async () => { await omniTick(); }); await p.waitForTimeout(600); const C1 = await cmds();
   const L1 = await p.evaluate(async () => { await omniLoad(true); return Object.values(S.omni.log); });
