@@ -35,8 +35,8 @@ async function run(cfgX, seedX) {
     ...(seedX || []).map(([id, v]) => mkDoc(id, v)),
   ];
   const byId = new Map(BI.map((d) => [d.id, d]));
-  const qObj = (filt, sorted) => { const o = { _f: filt, _after: null, _lim: 1e9 }; o.orderBy = () => o; o.startAfter = (snap) => { o._after = snap.id; return o; }; o.select = () => o; o.limit = (n) => { o._lim = n; return o; };
-    o.get = async () => { let L = BI.filter(o._f); if (sorted) L = L.slice().sort((a, b) => String(a.data().goneDay).localeCompare(String(b.data().goneDay)) || a.id.localeCompare(b.id)); if (o._after) { const k = L.findIndex((d) => d.id === o._after); L = L.slice(k + 1); } L = L.slice(0, o._lim); return { docs: L, empty: !L.length }; }; return o; };
+  const qObj = (filt, sorted) => { const o = { _f: filt, _after: null, _lim: 1e9 }; o.orderBy = (f, dir) => { o._desc = dir === 'desc'; return o; }; o.startAfter = (snap) => { o._after = snap.id; return o; }; o.select = () => o; o.limit = (n) => { o._lim = n; return o; };
+    o.get = async () => { let L = BI.filter(o._f); if (sorted) L = L.slice().sort((a, b) => String(a.data().goneDay).localeCompare(String(b.data().goneDay)) || a.id.localeCompare(b.id)); if (sorted && o._desc) L.reverse(); if (o._after) { const k = L.findIndex((d) => d.id === o._after); L = L.slice(k + 1); } L = L.slice(0, o._lim); return { docs: L, empty: !L.length }; }; return o; };
   const C2 = (name) => ({ doc: (id) => ({ id, get: async () => (name === 'bench_items' && byId.has(id) ? byId.get(id) : { id, exists: !!store[name + '/' + id], data: () => store[name + '/' + id] }), set: async (v) => { store[name + '/' + id] = { ...(store[name + '/' + id] || {}), ...v }; } }),
     where: (k, op, v) => name !== 'bench_items' ? { select: () => ({ limit: () => ({ get: async () => ({ docs: [], empty: true }) }), get: async () => ({ docs: [], empty: true }) }) }
       : k === 'goneDay' ? qObj((d) => d.data().goneDay && d.data().goneDay >= v, true) : qObj((d) => d.data()[k] === v, false) });
@@ -70,8 +70,9 @@ async function run(cfgX, seedX) {
   { const R1 = await run({ spBatch: { maxQ: 1 } }); ok(R1.r.q === 1 && R1.r.qGone === 1 && R1.w.g_3 && R1.w.g_3.isbn && !(R1.w.s_0 && R1.w.s_0.sp != null), '쪽 수 1이어도 팔린 상품 몫 최소 1쪽(올림)', { q: R1.r.q, qGone: R1.r.qGone }); }
   ok(r.goneFill >= 3 && r.goneCat === 2 && store['app_settings/adapt_cfg'].spBatchHist.slice(-1)[0].goneFill === r.goneFill, '셈: 팔린 상품 채움 수(goneFill)·분류 채움(goneCat)이 회차 결과와 하루 합에 남음', { goneFill: r.goneFill, goneCat: r.goneCat });
   const cur = store['app_settings/adapt_cfg'].spBatchGone; ok(cur && cur.lastId === null && cur.scan === 5 && cur.rounds === 1, '한 쪽 다 읽으면 다음은 처음부터(커서 비움 · 한 바퀴 셈)', cur);
-  { const R2 = await run({ spBatch: { goneMax: 2 } }); const c2 = R2.store['app_settings/adapt_cfg'].spBatchGone; ok(R2.r.goneScan === 2 && c2.lastId && c2.rounds === 0, '메모리 가볍게: 회차마다 goneMax(여기선 2)개만 읽고 다음 자리를 남김', c2);
-    const R3 = await run({ spBatch: { goneMax: 2 }, spBatchGone: { lastId: c2.lastId } }); ok(R3.r.goneScan === 2 && R3.store['app_settings/adapt_cfg'].spBatchGone.lastId !== c2.lastId, '다음 회차는 남긴 자리 뒤부터', R3.store['app_settings/adapt_cfg'].spBatchGone); }
+  { const R2 = await run({ spBatch: { goneMax: 2 } }); const c2 = R2.store['app_settings/adapt_cfg'].spBatchGone; ok(R2.r.goneScan === 2 && c2.lastId && c2.rounds === 0 && c2.order === 'desc' && c2.lastId === 'g_other' && R2.w.g_sib, '메모리 가볍게: 회차마다 goneMax(여기선 2)개만 읽고 다음 자리를 남김', c2);
+    { const R9 = await run({ spBatch: { goneMax: 2 }, spBatchGone: { lastId: 'g_3', order: 'asc' } }); const c9 = R9.store['app_settings/adapt_cfg'].spBatchGone; ok(R9.w.g_sib && R9.w.g_sib.publisher && c9.order === 'desc', '최근에 팔린 것 먼저(기본) · 예전 차례(asc)의 자리는 버리고 처음부터', c9); }
+    const R3 = await run({ spBatch: { goneMax: 2 }, spBatchGone: { lastId: c2.lastId, order: 'desc' } }); ok(R3.r.goneScan === 2 && R3.store['app_settings/adapt_cfg'].spBatchGone.lastId !== c2.lastId, '다음 회차는 남긴 자리 뒤부터', R3.store['app_settings/adapt_cfg'].spBatchGone); }
   { const T5 = Array.from({ length: 3 }, (_, i) => ['g_t' + i, { sc: '1', title: '제목만 팔린 책 ' + i, goneDay: dAgo(20 + i) }]);
     const R6 = await run({ spBatch: { maxQ: 1, goneHold: 0 }, spBatchGone: { lastId: null, rounds: 2 } }, T5); const c6 = R6.store['app_settings/adapt_cfg'].spBatchGone;
     ok(R6.r.qGone === 1 && c6.stay === true && c6.rem >= 1 && c6.lastId === null && c6.stayN === 1 && c6.rounds === 2, '쪽에 못 찾은 팔린 상품이 남으면(goneHold 넘음) 다음 회차도 같은 쪽 — 쪽마다 몫만큼만 찾고 넘어가던 것', c6);
