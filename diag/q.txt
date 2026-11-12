@@ -1,2 +1,2 @@
-doc=app_settings/omni_recheck
-# 1471512776
+doc=app_settings/omni_auto
+# 499125586
