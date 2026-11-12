@@ -42,6 +42,30 @@ const AL = require('../helper/col2-al.js');
     await run(AL.humanArgs(prof, base + '/probe?k=again', {}), 'again'); const again = ckSeen.filter((x) => x.k === 'again').pop();
     ok(pr.session && pr.session.restore_on_startup === 1 && pr.credentials_enable_service === false && pr.profile.cookie_controls_mode === 0, "프로필 설정: 이어서 열기 · 비밀번호 저장 끔 · 제3자 쿠키 평소처럼", JSON.stringify({ s: pr.session, c: pr.profile && pr.profile.cookie_controls_mode }));
     ok(head ? again && /asid=t123/.test(again.ck) : true, head ? '만료 없는 로그인 쿠키가 다시 띄운 창에도 실림' : '(화면 없는 곳 — 이어서 열기는 화면 있는 크롬만 · 건너뜀)', again && again.ck);
+
+    console.log('④ (11/12 login2) 조종 크롬으로 쓴 프로필 = 사이트가 볼 흔적이 깨끗한 프로필과 같음 · 설정 정리 · 거친 길 기록');
+    { const { Browser } = require('../helper/col2-cdp.js'); const pc = path.join(D, 'used', 'col2-al-chrome'); const ba = new Browser({ exe, profile: pc, headless: false, rect: { x: -32000, y: 40, w: 1280, h: 900 } }).args().filter((x) => x !== 'about:blank');
+      ok(ba.includes('--remote-debugging-port=0') && ba.includes('--disable-extensions'), '견줌 준비: 번외 조종 크롬과 같은 인자(조종 길·일꾼 플래그)로 그 프로필을 먼저 씀', ba.join(' '));
+      await run([...ba, base + '/probe?k=ctlrun'], 'ctlrun', 3000);
+      const u = await run(AL.humanArgs(pc, base + '/probe?k=used', {}), 'used'); const n = await run(AL.humanArgs(path.join(D, 'fresh', 'col2-al-chrome'), base + '/probe?k=fresh', {}), 'fresh');
+      const pick = (g) => g && JSON.stringify({ wd: g.wd, auto: g.auto, ua: g.ua, ch: g.ch, lang: g.lang });
+      ok(u && n && pick(u) === pick(n) && u.wd === false, '조종에 쓴 프로필을 평범한 창으로 열면 화면이 보는 것(webdriver·조종 흔적·이름표·언어)이 처음 쓰는 프로필과 똑같음 — 로그인 막힘은 플래그·프로필 설정 탓이 아님', pick(u) + ' / ' + pick(n));
+      const flat = (o, p = '', out = []) => { if (o && typeof o === 'object' && !Array.isArray(o)) for (const [k, v] of Object.entries(o)) flat(v, p + '.' + k, out); else out.push(p); return out; };
+      const keys = flat(JSON.parse(fs.readFileSync(path.join(pc, 'Default', 'Preferences'), 'utf8'))).concat(flat(JSON.parse(fs.readFileSync(path.join(pc, 'Local State'), 'utf8'))));
+      ok(!keys.some((k) => /automation|webdriver|remote_debug|devtools_active/i.test(k)), '조종에 쓴 프로필 설정 파일(Preferences·Local State)에 자동화 표시 칸 없음', keys.filter((k) => /automation|webdriver|remote_debug/i.test(k)).join(','));
+      const pf = path.join(D, 'pf', 'col2-al-chrome'); fs.mkdirSync(path.join(pf, 'Default'), { recursive: true });
+      fs.writeFileSync(path.join(pf, 'Default', 'Preferences'), JSON.stringify({ profile: { exit_type: 'Crashed', content_settings: { exceptions: { cookies: { 'https://www.aladin.co.kr:443,*': { setting: 2 }, 'https://keep.example:443,*': { setting: 2 } }, popups: { 'https://nid.naver.com:443,*': { setting: 2 } } } } } }));
+      AL.prefsFix(pf); const pp = JSON.parse(fs.readFileSync(path.join(pf, 'Default', 'Preferences'), 'utf8')); const ex = pp.profile.content_settings.exceptions;
+      ok(pp.profile.exit_type === 'Normal' && !ex.cookies['https://www.aladin.co.kr:443,*'] && !ex.popups['https://nid.naver.com:443,*'] && ex.cookies['https://keep.example:443,*'] && AL.profLook(pf).blk === 0, "설정 정리: '제대로 안 꺼짐' 표시 지움 · 알라딘·네이버를 막는 쿠키·팝업 예외만 지움(다른 사이트 예외는 그대로)", JSON.stringify(pp.profile));
+      let SQ = null; try { SQ = require('node:sqlite'); } catch (e) {}
+      if (SQ) { const hp = path.join(D, 'hist', 'col2-al-chrome'); fs.mkdirSync(path.join(hp, 'Default'), { recursive: true }); const db = new SQ.DatabaseSync(path.join(hp, 'Default', 'History'));
+        db.exec('CREATE TABLE urls(id INTEGER PRIMARY KEY, url TEXT); CREATE TABLE visits(id INTEGER PRIMARY KEY, url INTEGER, visit_time INTEGER);'); const t0 = Date.now(); let i = 0;
+        const add = (u, dt) => { i++; db.prepare('INSERT INTO urls VALUES(?,?)').run(i, u); db.prepare('INSERT INTO visits VALUES(?,?,?)').run(i, i, BigInt(AL.chromeUs(t0 + dt))); };
+        add('https://www.aladin.co.kr/scm/wmain.aspx', -600e3); add('https://www.aladin.co.kr/login/wlogin.aspx?returnUrl=x&token=SECRET1', 1000); add('https://www.aladin.co.kr/login/wlogin_naver.aspx', 2000); add('https://nid.naver.com/oauth2.0/authorize?client_id=abc&state=SECRET2', 3000);
+        add('https://nid.naver.com/nidlogin.login?mode=form', 4000); add('https://mail.example.com/inbox', 4500); add('https://www.aladin.co.kr/login/wnaver_callback.aspx?code=SECRET3', 5000); add('https://www.aladin.co.kr/login/wlogin.aspx', 6000); db.close();
+        const tr = AL.trailOf(hp, t0); const js = JSON.stringify(tr);
+        ok(tr.path && tr.path[0] === 'aladin.co.kr/login/wlogin.aspx' && tr.path.length === 6 && tr.other === 1 && !/SECRET|client_id|mail\.example/.test(js) && /알라딘 단계에서 막힘/.test(AL.trailWhy(tr.path)), '거친 길: 창을 띄운 뒤 것만 · 호스트·경로만(물음표 뒤 값 버림) · 알라딘·네이버 밖은 셈만 · 멈춘 곳 = 네이버 뒤 알라딘 단계', js + ' · ' + AL.trailWhy(tr.path)); }
+      else ok(true, '(이 노드에 sqlite 없음 — 거친 길 검사 건너뜀)'); }
   } finally { srv.close(); if (xv) try { xv.kill(); } catch (e) {} try { fs.rmSync(D, { recursive: true, force: true }); } catch (e) {} }
   L.done('t_human');
 })();

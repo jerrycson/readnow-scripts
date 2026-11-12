@@ -39,7 +39,10 @@ function fakeScm() { const S = { sess: new Set(), log: [], r429: false };
       return H(200, page('알라딘', '')); }); });
   return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ srv, S, base: `http://127.0.0.1:${srv.address().port}` }))); }
 async function closeHuman(A) { try { const c = await A.br.newBrowserCDPSession(); await c.send('Browser.close'); } catch (e) {} await A.br.close().catch(() => {}); }
-async function attach(home) { const pf = path.join(home, 'col2-al-chrome', 'DevToolsActivePort'); const port = fs.readFileSync(pf, 'utf8').split('\n')[0].trim(); const br = await L.chromium().connectOverCDP('http://127.0.0.1:' + port); const pg = br.contexts()[0].pages()[0]; return { br, pg }; }
+async function attach(home) { const pf = path.join(home, 'col2-al-chrome', 'DevToolsActivePort'); const port = fs.readFileSync(pf, 'utf8').split('\n')[0].trim(); const br = await L.chromium().connectOverCDP('http://127.0.0.1:' + port);
+  /* (11/12 login2) '이어서 열기'로 앞 창(네이버 길 평범한 창)의 탭이 되살아나 첫 탭이 로그인 화면이 아닐 수 있음 — 비밀번호 칸이 있는 탭을 고름 */
+  let pg = null; for (let i = 0; i < 40 && !pg; i++) { for (const p of br.contexts()[0].pages()) { if (await p.$('input[type=password]').catch(() => null)) { pg = p; break; } } if (!pg) await wait(250); }
+  return { br, pg: pg || br.contexts()[0].pages().slice(-1)[0] }; }
 const DANGER = /ajaxCmd|worder_process|NoticeEdit|usedbatch|ReportNotSales|deliveryNoBulk|C2CAnswer|account_make|wrecord\.aspx/;
 const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); let st0; try { st0 = fs.lstatSync(p); } catch (e) { continue; } if (st0.isSymbolicLink()) continue; if (st0.isDirectory()) { if (!/-chrome$/.test(p)) walk(p, hit); } else { const t = fs.readFileSync(p, 'utf8'); hit(f, t); } } };
 
@@ -71,7 +74,7 @@ const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.j
     ok(s && s.login === 'need' && F.S.log.some((x) => x.p === '/scm/wmain.aspx' && !x.auth) && !F.S.log.some((x) => x.m === 'POST'), "자리가 생기면 샵매니저 첫 화면 → 로그인 화면 → '로그인 필요'(저절로 로그인하지 않음)", s && s.loginMsg);
 
     console.log('② 로그인 한 번(정범님 손) — 비밀번호 안 남음');
-    const n0 = F.S.log.length; const c0 = H.T.clog().length; let r = await H.api('POST', '/al/login', { why: '시험' }); ok(r.j.ok && H.T.win().acts.includes('show:col2-al-chrome') && /평범한 크롬/.test(r.j.msg), '단추 → 평범한 크롬 창으로 알라딘 로그인 화면(앞으로)', r.j.msg || r.j.err);
+    const n0 = F.S.log.length; const c0 = H.T.clog().length; let r = await H.api('POST', '/al/login', { why: '시험' }); ok(r.j.ok && H.T.win().acts.includes('front:col2-al-chrome') && !H.T.win().acts.includes('show:col2-al-chrome') && /평범한 크롬/.test(r.j.msg), '단추 → 평범한 크롬 창으로 알라딘 로그인 화면(앞으로만 · 창 모양은 안 바꿈 — 11/12 login2)', r.j.msg || r.j.err);
     { const hl = H.T.clog().slice(c0).filter((l) => /col2-al-chrome/.test(l) && /scm\/wmain/.test(l)).pop() || ''; const fl = hl.split(' ').filter((x) => /^--/.test(x) && x !== '--remote-debugging-port=0'); /* 시험만 넣은 사람 손 흉내 길 하나는 뺌 */
       ok(hl && !fl.some((x) => /remote-debugging|enable-automation|headless|disable-extensions|disable-background|window-position=-|mute-audio|disable-sync/.test(x)) && fl.every((x) => /^--(user-data-dir|no-first-run|no-default-browser-check|window-size|window-position)/.test(x)), '사람 로그인 창 = 조종 길·자동화·일꾼 플래그 없는 평범한 크롬(같은 프로필)', fl.join(' ')); }
     s = await a(); ok(s.login === 'human' && s.human && s.human.open, "상태 '평범한 창에서 로그인 기다림'", s.msg);
@@ -80,6 +83,8 @@ const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.j
     await closeHuman(A1); /* 정범님이 창을 닫음(X) — 크롬이 점잖게 끝나며 쿠키를 씀 */
     s = await until(async () => { const v = await a(); return v.login === 'ok' ? v : null; }, 80);
     if (process.env.DBG) console.log(JSON.stringify(F.S.log.slice(n0).map((x) => x.m + x.p + (x.auth ? '+' : '-'))), (await a()).msg, (await a()).loginMsg); ok(s && H.T.win().acts.includes('hide:col2-al-chrome'), '로그인하면 저절로 다시 숨김', s && s.msg);
+    ok(s && s.hu && s.hu.ok && Array.isArray(s.hu.path) && s.hu.path.some((x) => /\/scm\/wmain/.test(x)) && s.hu.path.every((x) => !/[?#=]/.test(x) && !x.includes(PW_SECRET)) && /^--user-data-dir=…/.test(s.hu.cmd[0]) && /샵매니저 화면까지/.test(s.hu.stop || '') && s.hu.prof && s.hu.prof.blk === 0,
+      '(11/12 login2) 사람 창 기록 — 띄운 인자·거친 길(호스트·경로만 · 물음표 뒤 값 없음)·멈춘 곳·프로필 상태가 상태(hu)에 남음', s && JSON.stringify(s.hu));
     const leak = []; walk(HOME, (f, t) => { if (t.includes(PW_SECRET)) leak.push(f); }); const pref = JSON.parse(fs.readFileSync(path.join(HOME, 'col2-al-chrome', 'Default', 'Preferences'), 'utf8'));
     ok(!leak.length && pref.credentials_enable_service === false && pref.profile.password_manager_enabled === false, '비밀번호가 도우미 파일 어디에도 없음 · 그 크롬의 비밀번호 저장 끔', leak);
 
@@ -118,7 +123,7 @@ const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.j
     await until(async () => !/429 뒤 쉼/.test((await a()).msg), 80);
     F.S.sess.clear(); n1 = F.S.log.length; await H.api('POST', '/al/run', { what: 'confirm' });
     { const v0 = await until(async () => { const v = await a(); return v.login === 'need' ? v : null; }, 80); let q = await H.api('POST', '/al/login', {}); const v1 = await a(); q = await H.api('POST', '/al/login', { why: '로그인 다 함' }); const v2 = await until(async () => { const v = await a(); return v.login === 'need' && !v.human ? v : null; }, 80);
-      ok(v0 && v1.login === 'human' && q.j.ok && /닫고/.test(q.j.msg) && v2 && /평범한 크롬 창을 닫은 뒤에도/.test(v2.loginMsg), "[✅ 로그인 다 함] → 창을 닫고 확인 · 로그인 안 했으면 '로그인 필요'로", q.j.msg + ' / ' + (v2 && v2.loginMsg)); n1 = F.S.log.length; }
+      ok(v0 && v1.login === 'human' && q.j.ok && /닫고/.test(q.j.msg) && v2 && /평범한 크롬 창을 닫은 뒤에도/.test(v2.loginMsg) && v2.hu && !v2.hu.ok && /단추를 한 번 더/.test(v2.hu.how) && /로그인 화면|안 거침|알라딘 화면만/.test(v2.hu.stop || '') && /멈춘 곳|안 거침|로그인 화면/.test(v2.loginMsg), "[✅ 로그인 다 함] → 창을 닫고 확인 · 로그인 안 했으면 '로그인 필요'로 · 사람 창이 어디서 멈췄는지 남김", q.j.msg + ' / ' + (v2 && v2.loginMsg) + ' / ' + JSON.stringify(v2 && v2.hu)); n1 = F.S.log.length; }
     s = await until(async () => { const v = await a(); return v.login === 'need' ? v : null; }, 80); await wait(2500);
     ok(s && s.login === 'need' && !F.S.log.slice(n1).some((x) => x.m === 'POST' || /login/.test(x.p) && x.mode === 'navigate' && x.t > F.S.log[n1].t + 3000), "세션이 풀리면 '로그인 필요' — 저절로 다시 로그인하지 않음(번갈아 넘어감 0)", s && s.loginMsg);
     await H.api('POST', '/al/login', {}); { const A2 = await attach(HOME); await A2.pg.waitForSelector('input[type=password]'); await A2.pg.fill('input[type=password]', PW_SECRET); await A2.pg.check('input[name=keep]'); await A2.pg.click('button'); await A2.pg.waitForURL(/wmain/).catch(() => {}); await closeHuman(A2); }

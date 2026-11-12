@@ -68,6 +68,7 @@ if ($L.Count -gt 0) { $hnd = $L[0]
     $okp = $false; foreach ($sc in [System.Windows.Forms.Screen]::AllScreens) { $b = $sc.WorkingArea; if ($x -ge $b.X - 60 -and $x -le $b.X + $b.Width - 120 -and $y -ge $b.Y - 20 -and $y -le $b.Y + $b.Height - 80) { $okp = $true } }
     if (-not $okp) { $x = $wa.X + [int](($wa.Width - [Math]::Min($w, $wa.Width)) / 2); $y = $wa.Y + 20 }
     [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-1), $x, $y, $w, $hh, 0x0040); if ($Top -ne 1) { [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-2), 0, 0, 0, 0, 0x0043) }; [void][RnCol2Win]::SetForegroundWindow($hnd) }
+  elseif ($Act -eq 'front') { <# (11/12 login2) 사람 로그인 창 — 모양·자리·작업 표시줄 표시는 그대로 두고 앞으로만 #> if ([RnCol2Win]::IsIconic($hnd)) { [void][RnCol2Win]::ShowWindow($hnd, 9) }; [void][RnCol2Win]::SetForegroundWindow($hnd) }
   elseif ($Act -eq 'close') { foreach ($q in $L) { [void][RnCol2Win]::PostMessage($q, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) } }
   $out.list = @($L | Select-Object -First 4 | ForEach-Object { Info $_ }) }
 $out | ConvertTo-Json -Compress -Depth 5
@@ -77,7 +78,7 @@ $out | ConvertTo-Json -Compress -Depth 5
 const WIN_HASH = (() => { const m = /\$rnSrc = @'([\s\S]*?)\n'@/.exec(PS_RAW({ showW: 0, showH: 0 })); return crypto.createHash('sha1').update(m ? m[1] : 'x').digest('hex').slice(0, 12); })();
 
 function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () => process.env.RN_COL2_PS || 'powershell.exe';
-  /* act: find|hide|show|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기 · 0.1.3 끝날 때까지 5초 기다리고 남은 수 left) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
+  /* act: find|hide|show|front(11/12 login2 · 앞으로만)|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기 · 0.1.3 끝날 때까지 5초 기다리고 남은 수 left) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
   /* (11/10 정범님 '더뎌진 느낌') PowerShell은 한 번에 2개까지만(지킴이·예스24·기록창이 겹쳐 CPU가 튀지 않게) — 나머지는 차례를 기다림 */
   let busy = 0; const q = []; const MAX = 2; const T = []; /* (11/12 rel9) 최근 한 시간 PowerShell 켠 때 — 상태 st.load.ps(시간당 횟수)로 col2_ctl에 */
   const pump = () => { while (busy < MAX && q.length) { const [f, res] = q.shift(); busy++; f().then((r) => { busy--; res(r); pump(); }); } };

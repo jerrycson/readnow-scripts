@@ -32,9 +32,44 @@ function humanArgs(prof, url, rect) { const r = rect || {}; const a = [`--user-d
   if (r.w >= 400 && r.h >= 300) a.push(`--window-size=${Math.round(r.w)},${Math.round(r.h)}`); if (Number.isFinite(r.x) && Number.isFinite(r.y) && r.x >= 0 && r.y >= 0) a.push(`--window-position=${Math.round(r.x)},${Math.round(r.y)}`);
   return a.concat([url]); }
 function prefsFix(PROF) { try { const d = path.join(PROF, 'Default'); fs.mkdirSync(d, { recursive: true }); const f = path.join(d, 'Preferences'); let P = {}; try { P = JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (e) {}
-      const pr = P.profile || {}; if (P.credentials_enable_service === false && pr.password_manager_enabled === false && P.session && P.session.restore_on_startup === 1 && pr.cookie_controls_mode === 0 && pr.block_third_party_cookies === false) return;
-      P.credentials_enable_service = false; P.profile = { ...pr, password_manager_enabled: false, cookie_controls_mode: 0, block_third_party_cookies: false }; P.session = { ...(P.session || {}), restore_on_startup: 1 }; fs.writeFileSync(f, JSON.stringify(P)); } catch (e) {} }
+      const pr = P.profile || {}; const ex = (pr.content_settings && pr.content_settings.exceptions) || {}; let blk = 0; /* (11/12 login2) 알라딘·네이버를 막는 사이트 예외(쿠키·팝업·자바스크립트)가 있으면 지움 */
+      for (const k of ['cookies', 'popups', 'javascript', 'third_party_cookie_blocking']) for (const [h, v] of Object.entries(ex[k] || {})) if (/aladin|naver/i.test(h) && v && v.setting === 2) { delete ex[k][h]; blk++; }
+      if (!blk && P.credentials_enable_service === false && pr.password_manager_enabled === false && P.session && P.session.restore_on_startup === 1 && pr.cookie_controls_mode === 0 && pr.block_third_party_cookies === false && (pr.exit_type == null || pr.exit_type === 'Normal')) return;
+      P.credentials_enable_service = false; P.profile = { ...pr, password_manager_enabled: false, cookie_controls_mode: 0, block_third_party_cookies: false, ...(pr.exit_type == null ? {} : { exit_type: 'Normal', exited_cleanly: true }) }; /* (11/12 login2) 조종 크롬을 끝낸 뒤 '크롬이 제대로 종료되지 않음' 막대가 사람 창에 안 뜨게 */
+      P.session = { ...(P.session || {}), restore_on_startup: 1 }; fs.writeFileSync(f, JSON.stringify(P)); } catch (e) {} }
 const humanArgsOk = (a) => a.filter((x) => /^--/.test(x)).every((x) => HUMAN_OK.test(x) && !HUMAN_BAD.test(x));
+/* (11/12 login2 · 정범님 '🔐 창이 여전히 일반 창이 아님 — 작업 표시줄에서 다른 크롬과 안 합쳐지고, 그 창에서 네이버·아이디 로그인 둘 다 안 됨 · 평소 크롬은 둘 다 됨')
+ *  밝힌 것: ① 작업 표시줄 묶음 = 크롬이 '사용자 데이터 폴더(--user-data-dir)'마다 따로 매김 — 번외 창은 폴더가 col2-al-chrome이라 플래그를 다 빼도 평소 크롬과 절대 안 합쳐짐(창 모양 탓이 아님)
+ *   ② 조종 크롬으로 쓴 프로필과 깨끗한 프로필의 설정 파일(Preferences·Local State)을 리눅스에서 견줌 → 사이트가 볼 수 있는 자동화 흔적은 남지 않음(동기화·맞춤법 기본값 몇 개뿐 · tests/t_human ④)
+ *   ③ 그래서 평소 크롬과 남은 차이 = 그 폴더의 쿠키·저장소(알라딘이 '전에 로그인했던 기기'로 알아보는 표시) — 알라딘 42FB는 '새 기기 새 로그인'만 막음(10/14·10/26: 기존 기기는 정상 · 사람 시크릿 창도 막힘)
+ *      → 번외 프로필 = 알라딘에게 늘 '새 기기' → 네이버 길·아이디 길 모두 마지막 알라딘 단계에서 막힘. 평소 크롬은 '아는 기기'라 됨
+ *  고침(이 판): 사람 창이 실제로 어디까지 갔는지 남김 — 창이 닫힌 뒤 그 프로필의 방문 기록(History)에서 주소의 호스트·경로만(물음표 뒤 값·쿠키·화면 글 없음 · 알라딘·네이버만) 읽어 기록·상태·col2_al/hu_<날짜>_<PC>
+ *   · 사람 창에 번외가 손대던 것 하나 더 뺌: 띄운 뒤 창 모양 바꾸기(작업 표시줄 표시 끄고 켜기·맨 위 고정) 대신 앞으로만(front) · '제대로 안 꺼짐' 막대가 안 뜨게 exit_type 정리 */
+const TRAIL_HOST = /(^|\.)(aladin\.co\.kr|naver\.com)$/i;
+function chromeUs(ms) { return Math.round((ms + 11644473600000) * 1000); } /* 크롬 시각 = 1601-01-01부터 마이크로초 */
+function trailOf(prof, sinceMs, o) { o = o || {}; const okHost = (h) => TRAIL_HOST.test(h) || (o.host && h === o.host); const src = path.join(prof, 'Default', 'History'); if (!fs.existsSync(src)) return { err: '방문 기록 파일 없음' };
+  let SQ; try { SQ = require('node:sqlite'); } catch (e) { return { err: '이 노드에 sqlite 없음(' + process.version + ')' }; }
+  const tmp = path.join(require('os').tmpdir(), `col2-hu-${process.pid}-${Date.now()}.db`); let db = null;
+  try { fs.copyFileSync(src, tmp); db = new SQ.DatabaseSync(tmp, { readOnly: true });
+    const st = db.prepare('SELECT u.url AS url FROM visits v JOIN urls u ON u.id = v.url WHERE v.visit_time >= ? ORDER BY v.visit_time LIMIT 400'); const rows = st.all(BigInt(chromeUs(sinceMs - 5000))); /* 크롬 시각은 2^53보다 커서 BigInt로 넘김 */
+    const out = []; let other = 0; for (const r of rows) { let u; try { u = new URL(String(r.url)); } catch (e) { continue; } if (!/^https?:$/.test(u.protocol)) continue; if (!okHost(u.hostname) && !okHost(u.host)) { other++; continue; }
+      const k = (u.hostname.replace(/^www\./, '') + u.pathname).slice(0, 90); if (out[out.length - 1] !== k) out.push(k); }
+    return { n: rows.length, other, path: out.length > (o.max || 16) ? out.slice(0, 4).concat(['…'], out.slice(-((o.max || 16) - 5))) : out }; }
+  catch (e) { return { err: String(e.message || e).slice(0, 100) }; } finally { try { if (db) db.close(); } catch (e) {} try { fs.unlinkSync(tmp); } catch (e) {} } }
+/* 거친 길로 어디서 멈췄는지 한 줄(짐작은 짐작이라고 씀) */
+function trailWhy(p) { const a = Array.isArray(p) ? p : []; const isNv = (x) => /naver\.com\//.test(x); const al = (x) => !isNv(x) && x !== '…';
+  const nv = a.some(isNv); const nvIn = a.some((x) => /nid\.naver\.com\/(nidlogin|login|oauth)/.test(x)); const cb = a.some((x, i) => al(x) && /\/login\//i.test(x) && a.slice(0, i).some(isNv));
+  const lg = a.filter((x) => al(x) && /\/login\//i.test(x)).length; const last = a[a.length - 1] || '';
+  if (!a.length) return '알라딘·네이버 주소를 하나도 안 거침(창이 뜨자마자 닫혔거나 기록이 없음)';
+  if (al(last) && /\/scm\//.test(last) && !/login/i.test(last)) return '샵매니저 화면까지 들어감(로그인 된 듯)';
+  if (cb) return '네이버를 거쳐 알라딘으로 돌아왔지만 샵매니저에 못 들어감 — 알라딘 단계에서 막힘(42FB 같은 새 기기 막힘으로 보임)';
+  if (nvIn) return '네이버 로그인 화면에서 멈춤(알라딘으로 안 돌아옴) — 네이버 단계';
+  if (nv) return '네이버로 갔다가 알라딘으로 안 돌아옴';
+  return lg ? `알라딘 로그인 화면에서 멈춤(${lg}번) — 아이디 로그인이 알라딘에서 막혔거나(42FB로 보임) 입력하지 않음` : '알라딘 화면만 거침(로그인 화면 없음)'; }
+function profLook(prof) { const o = {}; try { const P = JSON.parse(fs.readFileSync(path.join(prof, 'Default', 'Preferences'), 'utf8')) || {}; const pr = P.profile || {}; o.exit = pr.exit_type || null; o.ck = pr.cookie_controls_mode == null ? null : pr.cookie_controls_mode; o.b3 = pr.block_third_party_cookies === true;
+    const ex = (pr.content_settings && pr.content_settings.exceptions) || {}; let blk = 0; for (const k of ['cookies', 'popups', 'javascript', 'third_party_cookie_blocking']) for (const [h, v] of Object.entries(ex[k] || {})) if (/aladin|naver/i.test(h) && v && v.setting === 2) blk++; o.blk = blk;
+    o.ext = Object.keys((P.extensions && P.extensions.settings) || {}).length; } catch (e) { o.err = '설정 파일 못 읽음'; }
+  try { const LS = JSON.parse(fs.readFileSync(path.join(prof, 'Local State'), 'utf8')) || {}; o.labs = ((LS.browser && LS.browser.enabled_labs_experiments) || []).length; } catch (e) {} return o; }
 
 function makeAl(o) {
   const { HOME, Browser, WIN, note, log, TEST } = o; const cfg = () => o.cfg(); const now = () => Date.now();
@@ -195,17 +230,27 @@ function makeAl(o) {
     if (TEST && process.env.RN_COL2_HUMAN_TEST_ARGS) args.splice(1, 0, ...process.env.RN_COL2_HUMAN_TEST_ARGS.split(' ').filter(Boolean)); /* 시험만 — 사람 손 흉내(창을 조종해 로그인 칸을 채움) · 실제는 늘 빈 값 */
     if (!TEST && !humanArgsOk(args)) return { ok: false, err: '평범한 창 플래그 검사 실패(번외 코드 오류) — 띄우지 않음' };
     let p; try { p = require('child_process').spawn(exe, args, { stdio: 'ignore', detached: false, windowsHide: false }); } catch (e) { return { ok: false, err: '크롬을 못 띄움: ' + e.message }; }
-    const H = { proc: p, at: now(), exit: null, args: args.filter((x) => /^--/.test(x)).map((x) => x.replace(/=.*/, '')) }; A.hu = H; p.on('exit', (code) => { H.exit = { code, ms: now() - H.at, at: now() }; }); p.on('error', (e) => { H.exit = { code: null, err: e.message, ms: now() - H.at, at: now() }; });
+    const H = { proc: p, at: now(), exit: null, why: String(why || '').slice(0, 60), args: args.filter((x) => /^--/.test(x)).map((x) => x.replace(/=.*/, '')), cmd: args.filter((x) => /^--/.test(x)).map((x) => (/^--user-data-dir=/.test(x) ? '--user-data-dir=…\\' + MARK : x)), prof: profLook(PROF) }; A.hu = H; p.on('exit', (code) => { H.exit = { code, ms: now() - H.at, at: now() }; }); p.on('error', (e) => { H.exit = { code: null, err: e.message, ms: now() - H.at, at: now() }; });
     A.login = 'human'; A.loginWait = now(); A.loginMsg = ''; A.shown = true;
-    await sleep(TEST ? 800 : 2500); if (H.exit && H.exit.ms < 5000) { A.hu = null; A.login = 'need'; return { ok: false, err: `평범한 크롬 창이 바로 꺼짐(종료 코드 ${H.exit.code}) — 이 프로필(${MARK})을 다른 크롬이 쥐고 있을 수 있음 · 잠시 뒤 다시` }; }
-    await WIN.run('show', MARK, w).catch(() => {}); note(`🔐 알라딘 로그인 — 평범한 크롬 창을 띄움(${why || ''} · 조종 길·자동화 흔적 없음 · 같은 프로필 ${MARK} · 플래그 ${H.args.join(' ')})`);
-    return { ok: true, msg: '🔐 평범한 크롬 창(자동화 흔적 없음 · 번외가 조종하지 않음)으로 알라딘 로그인 화면을 열었습니다 — 그 창에서 직접 로그인(「네이버로 로그인」이나 아이디 · 「로그인 상태 유지」 켬)하고 샵매니저가 보이면 그 창을 닫아(X) 주세요. 번외가 이어서 확인합니다(아이디·비밀번호는 번외가 보지도 저장하지도 않음)' }; }
+    await sleep(TEST ? 800 : 2500); if (H.exit && H.exit.ms < 5000) { A.hu = null; A.login = 'need'; huRec(H, { how: '바로 꺼짐', ok: false, end: `종료 코드 ${H.exit.code}` }); return { ok: false, err: `평범한 크롬 창이 바로 꺼짐(종료 코드 ${H.exit.code}) — 이 프로필(${MARK})을 다른 크롬이 쥐고 있을 수 있음 · 잠시 뒤 다시` }; }
+    if (C().humanFront !== false) await WIN.run('front', MARK).catch(() => {}); /* (11/12 login2) 앞으로만 — 예전 show는 창을 숨겼다 다시 띄우며 모양(작업 표시줄 표시·맨 위)을 바꿨음 */
+    note(`🔐 알라딘 로그인 — 평범한 크롬 창을 띄움(${why || ''} · 조종 길·자동화 흔적 없음 · 같은 프로필 ${MARK} · 띄운 인자 ${H.cmd.join(' ')} · 프로필 ${profTxt(H.prof)}) — 작업 표시줄에서 평소 크롬과 따로 묶이는 것은 프로필 폴더가 달라서(정상)`);
+    return { ok: true, msg: '🔐 평범한 크롬 창(자동화 흔적 없음 · 번외가 조종하지 않음)으로 알라딘 로그인 화면을 열었습니다 — 그 창에서 직접 로그인(「네이버로 로그인」이나 아이디 · 「로그인 상태 유지」 켬)하고 샵매니저가 보이면 그 창을 닫아(X) 주세요. 번외가 이어서 확인하고, 안 되면 그 창이 어디까지 갔는지(주소 경로만) 남깁니다(아이디·비밀번호는 번외가 보지도 저장하지도 않음 · 이 창은 번외 전용 프로필이라 작업 표시줄에서 평소 크롬과 따로 묶임)' }; }
   async function humanEnd(why) { const H = A.hu; if (!H) return ''; if (!H.exit) { await WIN.run('close', MARK).catch(() => {}); for (let k = 0; k < 30 && !H.exit; k++) await sleep(500); if (!H.exit) { try { H.proc.kill(); } catch (e) {} await WIN.run('kill', MARK).catch(() => {}); for (let k = 0; k < 10 && !H.exit; k++) await sleep(300); } }
-    A.hu = null; A.shown = false; note(`🔐 알라딘 평범한 로그인 창이 닫힘(${why}) — 조종 크롬을 다시 띄워 샵매니저로 확인`); return why; }
-  async function humanCheck() { if (!A.hu) { /* 창은 이미 닫힘 */ } else if (!A.hu.exit && now() - A.loginWait < HUMAN_MIN() * 60e3) { A.msg = '🔐 평범한 크롬 창에서 알라딘 로그인을 기다림 — 로그인 뒤 그 창을 닫으면(X) 번외가 이어 받음'; return false; }
+    H.how = why; A.huDone = H; A.hu = null; A.shown = false; note(`🔐 알라딘 평범한 로그인 창이 닫힘(${why}) — 조종 크롬을 다시 띄워 샵매니저로 확인`); return why; }
+  async function humanCheck() { const H0 = A.hu || A.huDone; A.huDone = null; if (!A.hu) { /* 창은 이미 닫힘 */ } else if (!A.hu.exit && now() - A.loginWait < HUMAN_MIN() * 60e3) { A.msg = '🔐 평범한 크롬 창에서 알라딘 로그인을 기다림 — 로그인 뒤 그 창을 닫으면(X) 번외가 이어 받음'; return false; }
     else await humanEnd(A.hu.exit ? '정범님이 창을 닫음' : `${HUMAN_MIN()}분 넘음`);
-    A.login = 'unknown'; try { await ensure('사람 로그인 뒤 확인'); await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); if (!isLoginSt(s)) { setLogin('ok'); await hide('로그인 됨').catch(() => {}); A.next.chk = now() + (TEST ? 0 : 60e3); } else setLogin('need', '평범한 크롬 창을 닫은 뒤에도 샵매니저가 로그인 화면 — 로그인이 안 됐거나 그 창에서 로그인 상태가 남지 않음'); }
-    catch (e) { setLogin('need', '사람 로그인 뒤 확인 실패: ' + e.message); } return true; }
+    const tr = H0 ? trailOf(PROF, H0.at, { host: HOST }) : null; /* 조종 크롬을 띄우기 전에(그 크롬이 기록 파일을 쥐기 전) 사람 창이 거친 길 */
+    A.login = 'unknown'; let res = null; try { await ensure('사람 로그인 뒤 확인'); await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); res = { ok: !isLoginSt(s), end: s ? String(s.p || '').slice(0, 60) : null }; if (res.ok) { setLogin('ok'); await hide('로그인 됨').catch(() => {}); A.next.chk = now() + (TEST ? 0 : 60e3); } else setLogin('need', '평범한 크롬 창을 닫은 뒤에도 샵매니저가 로그인 화면 — ' + (tr && tr.path ? trailWhy(tr.path) : '로그인이 안 됐거나 그 창에서 로그인 상태가 남지 않음')); }
+    catch (e) { res = { ok: false, end: '확인 실패: ' + String(e.message || e).slice(0, 80) }; setLogin('need', '사람 로그인 뒤 확인 실패: ' + e.message); }
+    if (H0) huRec(H0, { how: H0.how || '', ok: !!(res && res.ok), end: res && res.end, trail: tr }); return true; }
+  /* (11/12 login2) 🔐 사람 창 한 번마다 기록 — 띄운 인자·프로필 상태·얼마나·어떻게 닫힘·거친 길(호스트·경로만)·결과 → 옆 창 기록 · 상태(sum.hu) · col2_al/hu_<날짜>_<PC>(진단 col2=<날짜>의 alDay) */
+  function profTxt(p) { p = p || {}; return p.err ? p.err : `끝남 ${p.exit || '-'} · 제3자 쿠키 ${p.b3 ? '막음' : '허용'}(${p.ck == null ? '-' : p.ck}) · 알라딘·네이버 막힘 예외 ${p.blk || 0} · 확장 ${p.ext || 0} · 실험 기능 ${p.labs || 0}`; }
+  function huRec(H, x) { const tr = x.trail || null; const r = { at: new Date(H.at + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' '), why: H.why || '', cmd: H.cmd || [], prof: H.prof || null, sec: Math.round(((H.exit && H.exit.at) || now()) - H.at) / 1000 | 0, how: x.how || '', exit: H.exit ? H.exit.code : null,
+      ok: !!x.ok, end: x.end || null, path: tr && tr.path ? tr.path : null, pathN: tr ? tr.n || 0 : 0, other: tr ? tr.other || 0 : 0, pathErr: tr && tr.err ? tr.err : null, stop: tr && tr.path ? trailWhy(tr.path) : null, ver: o.ver || null };
+    A.huLast = r; A.huLog = (A.huLog || []).concat([r]).slice(-6);
+    note(`🔐 사람 로그인 창 결과 — ${r.ok ? '✅ 로그인 됨' : '❌ 로그인 안 됨'} · ${r.sec}초 · ${r.how || '-'}${r.stop ? ' · 멈춘 곳: ' + r.stop : ''}${r.path ? ' · 거친 길 ' + r.path.join(' → ') : r.pathErr ? ' · 거친 길 못 읽음(' + r.pathErr + ')' : ''} · 인자 ${r.cmd.join(' ')}`, { k: 'al', l: r.ok ? 'info' : 'warn', m: '알라딘' });
+    try { if (o.out) o.out('col2_al', `hu_${kday()}_${pcName().replace(/[^\w-]/g, '_')}`, { day: kday(), pc: pcName(), kind: 'human', ver: o.ver || null, last: r, log: A.huLog, at: new Date().toISOString() }, false); } catch (e) {} }
   async function loginPoll() { if (now() - A.loginWait > 15 * 60e3) { A.login = 'need'; A.loginMsg = '로그인 기다림 15분 넘음'; await hide('로그인 기다림 15분 넘음').catch(() => {}); return; } let s = null; try { s = await ev(JS_STATE, 5000); } catch (e) { return; }
     if (s && s.rs === 'complete' && !s.pw && !/login/i.test(s.p || '') && (s.h === HOST || s.h === HOST.split(':')[0])) { if (!onScm(s)) { try { await nav(BASE + '/scm/wmain.aspx', 30); s = await ev(JS_STATE, 5000); } catch (e) { return; } } if (!isLoginSt(s)) { setLogin('ok'); await hide('로그인 됨').catch(() => {}); A.next.chk = now() + (TEST ? 0 : 60e3); } } }
 
@@ -301,10 +346,10 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
-  function sum() { return { todo: A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args } : null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { return { todo: A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };
   return { start, kick, feed, sum, login, verify, close, runNow, seatAsk, wseat, seatHot, seatTell, tellTxt, MARK, A };
 }
-module.exports = { makeAl, prefsFix, humanArgs, humanArgsOk, HUMAN_OK, HUMAN_BAD };
+module.exports = { makeAl, prefsFix, humanArgs, humanArgsOk, HUMAN_OK, HUMAN_BAD, trailOf, trailWhy, profLook, chromeUs };
