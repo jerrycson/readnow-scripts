@@ -252,7 +252,8 @@
   function bbNetParts(P, o) { const Q = PRC(); if (Q) return Q.bbNetParts(P, o); P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && Number.isFinite(+v) ? +v : d);
     const fr = num(D.feeRate, BB_NET_DEF.feeRate), pk = num(D.packPerOrder, BB_NET_DEF.packPerOrder), cr = num(D.courierPerOrder, BB_NET_DEF.courierPerOrder), bpo = Math.max(1, num(D.booksPerOrder, BB_NET_DEF.booksPerOrder));
     const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = cr - cust, per = Math.round((pk + shipNet) / bpo), pkPer = Math.round(pk / bpo), ship = Math.round((cust - cr) / bpo); /* (0.7.16 · 정범님 11/12 밤) 택배비 몫 = 손님 배송비 − 평균 택배비(마진이면 더함 · 우리 부담이면 뺌) — 판정 엔진 0.17.14와 같은 셈 */
-    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net }; }
+    const crSrc = o.crSrc || (D.courierPerOrder != null && Number.isFinite(+D.courierPerOrder) ? null : '엔진 기본값'); /* 평균 택배비 출처(판정 엔진과 같음) */
+    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, pkPer, ship, net, crSrc }; }
   /* o.list = 정가(주면 정가보다 큰 매입가는 무시 → { in: false, ignored }) */
   function bbNear(P, buy, o) { const Q = PRC(); if (Q) return Q.bbNear(P, buy, o); P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
     const L = +o.list; if (L > 0 && buy > L) { const why = `알라딘 매입가 ${W0(buy)}이 정가 ${W0(L)}보다 큼 — 잘못 읽은 값으로 보고 무시`; return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: L, why }, calc: why }; }

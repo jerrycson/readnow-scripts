@@ -8,7 +8,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     const cons = [3500, 4300, 4800, 5000, 6000, 9000].every((P) => { const J = bbNearJ(P, buy, '상'); return J.in === (J.net - buy < 500) && J.gain === J.net - buy; });
     return { def: bbMargin(), lo, A: [A.in, A.gain, A.tag], B: [B.in, B.gain, B.tag], c: [c.in, c.below, c.tag, c.formula], d: [d.in, d.warn, d.gradeOut, d.tag], pp, f6: bbNearJ(6000, buy, '상').formula, cons, net6: bbSellNet(6000) }; });
   ok(j.def === 500 && j.A[0] && j.A[1] < 500 && !j.B[0] && j.B[1] >= 500 && /기준/.test(j.A[2]) && /직접 판매/.test(j.B[2]), `기본 기준 차액 500원 · 경계: 판매가 ${j.lo - 1}원(더 남는 돈 ${j.A[1]})은 후보 · ${j.lo}원(${j.B[1]})은 직접 판매`, j);
-  ok(j.cons && j.pp && j.net6 === j.pp.net && j.pp.fee === 600 && /판매가 6,000원 − 수수료 600원\(10%\) − 포장 394원 − 택배비 우리 부담 2,500원\(평균 택배비 2,500원 − 손님 배송비 0원\)/.test(j.f6) && /남는 돈/.test(j.f6) && /알라딘 매입가 3,800원/.test(j.f6), '셈 식: 판매가 − 수수료(10%) − 포장 ± 택배비 몫(정범님 11/12 밤 — 우리 부담이면 뺌) = 남는 돈 · 매입가와 차액 — 판정 엔진 sellNet과 같은 값(손님 배송비 0원)', { f6: j.f6, pp: j.pp });
+  ok(j.cons && j.pp && j.net6 === j.pp.net && j.pp.fee === 600 && /판매가 6,000원 − 수수료 600원\(10%\) − 포장 394원 − 택배비 우리 부담 2,500원\(평균 택배비 2,500원\[택배비 (엔진 기본값|택배 계약[^\]]*)\] − 손님 배송비 0원\)/.test(j.f6) && /남는 돈/.test(j.f6) && /알라딘 매입가 3,800원/.test(j.f6), '셈 식: 판매가 − 수수료(10%) − 포장 ± 택배비 몫(정범님 11/12 밤 — 우리 부담이면 뺌) = 남는 돈 · 매입가와 차액 — 판정 엔진 sellNet과 같은 값(손님 배송비 0원)', { f6: j.f6, pp: j.pp });
   ok(j.c[0] && j.c[1] && /매입이 나음/.test(j.c[2]), '직접 팔면 매입가보다 덜 남음 → 「매입이 나음(n원 더 받음)」', j.c);
   ok(!j.d[0] && j.d[2] === '중' && /매입 조건 밖\(중\)/.test(j.d[3]), "(정범님 11/12 밤 '중 상태는 알라딘이 매입하지 않으니 빼라') 우리 상태 중 → 매입 후보 아님 · 「매입 조건 밖(중)」", j.d);
   // ② 모든 곳 같은 판정 — 수동 일괄(bbNearX) · 등록 추천 탭(regBbrJ) · 등록 칸(regBbNear) · 상품 상세 · 경영 ⑤
