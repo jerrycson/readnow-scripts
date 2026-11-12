@@ -1,2 +1,2 @@
-doc=col2_naver/state,app_settings/platforms
-# 636523552
+doc=app_settings/research_pulse,app_settings/cons_study
+# 712010504
