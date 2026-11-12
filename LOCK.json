@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "soldfill5 후보 고르게",
- "since": "2026-11-12T12:58:13Z",
- "beat": "2026-11-12T12:58:13Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "도우미 1.8.22 (teth3) 18e5801b",
-  "at": "2026-11-12T12:36:47Z"
+  "done": "soldfill5 클라우드 0.35.162 (f781735a)",
+  "at": "2026-11-12T12:58:21Z"
  },
- "host": "vm-soldfill"
+ "host": null
 }
