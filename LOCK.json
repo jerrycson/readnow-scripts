@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "adapt9 🔄 적응 틀 판 내기(웹앱·클라우드·공용 적응 엔진)",
+ "since": "2026-11-12T15:12:17Z",
+ "beat": "2026-11-12T15:12:17Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "spfull 둘째 클라우드 0.35.166 push bc775622",
   "at": "2026-11-12T15:12:06Z"
  },
- "host": null
+ "host": "vm-adapt9"
 }
