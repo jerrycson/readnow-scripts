@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "adapt9 셋째 클라우드 판(발견 넘김 다듬기)",
+ "since": "2026-11-12T17:03:05Z",
+ "beat": "2026-11-12T17:03:05Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "hands1 수집기 1.89.288 · 번외 0.1.42 🖐 손발 길 push a24c9bc8",
   "at": "2026-11-12T17:02:52Z"
  },
- "host": null
+ "host": "vm-adapt9"
 }
