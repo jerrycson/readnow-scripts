@@ -1,3 +1,2 @@
-adapt=1
-spbatch=dry
-# 2890917117
+logs=1&pc=HOME&from=202611121200
+# 1962610583
