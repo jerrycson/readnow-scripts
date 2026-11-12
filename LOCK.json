@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "확인 고침 판 둘째(rel9 · 클라우드 0.35.137)",
+ "since": "2026-11-12T01:35:50Z",
+ "beat": "2026-11-12T01:35:50Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.136 · 우리숍 서가 0.2.4 확인 고침 판(rel9 · 0d5a195a) — 판매자 배우기·구매자 분포 따로 · 서가 글꼴 429 둘째 주소 · 웹앱·수집기·머리 그대로",
   "at": "2026-11-12T01:05:17Z"
  },
- "host": null
+ "host": "vm"
 }
