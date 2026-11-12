@@ -1,2 +1,2 @@
-doc=prd_system/autoSched,prd_jobs/autoSched
-# 249514223
+shelfjobs=1&recentUp=prd_listings&mins=240
+# 54665079
