@@ -1,0 +1,148 @@
+// tMJREG2_1112 — (11/12 MJ 등록 담당) 📥 등록 › 선택 대기
+//  ① 📝 빠른 설명 단추(도서관책 · 북카페) — 🔎 자세히 카드 '상품 설명' 줄 · 📋 한눈에 줄 ⚡ 설명 옆 · ✔ 고른 상품 한꺼번에 바꾸기
+//     누르면 상품 설명 = 단추 글(직접 입력 · descEdit = desc) · 켜짐 표시 · ✎로 단추 더하기(app_settings/main.reg.descBtns · 모든 기기) · 일괄(설명 있던 상품은 두 번)
+//  ③ 고른 상품 일괄 단추 줄 — 스크롤해도 화면 위에 붙음(📋 한눈에·🔎 자세히) · 휴대폰 폭은 '✔ 고른 n개 ▾' 한 줄
+//  ② 🔎 자세히 카드 🧠 판매가치 상자 — 기본 머리 한 줄(▸) · 누르면 펼침(▾) · 이 기기에 기억(rn-reg-vropen)
+// 실행: cd pw && RN_PORT=<포트> node tMJREG2_1112.js (harness.js·seed.js 옆) · 시험 자료에 손님 정보 없음 · 사진은 RN_SHOTS 폴더(없으면 건너뜀)
+const fs = require('fs'); const path = require('path');
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
+const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
+const T = fs.readFileSync(APP, 'utf8');
+const SHOTS = process.env.RN_SHOTS || '';
+const LIB = '도서관 정리 도서 입니다. 책등 하단에 도서관 스티커 있습니다. 앞표지 하단에 도서관 스티커 있습니다. 둘레 도서관 도장 찍혀 있습니다. 그 외 상태 양호합니다.';
+const CAFE = '북카페 도서 입니다. 책등 하단에 북카페 스티커 있습니다. 둘레 북카페 도장 찍혀 있습니다. 그 외 상태 양호합니다.';
+console.log('① 코드 꼴');
+ok(T.includes(`{ n: '도서관책', t: '${LIB}' }`) && T.includes(`{ n: '북카페', t: '${CAFE}' }`), '처음 단추 둘 = 도서관책 · 북카페 (글 그대로)');
+ok(/const rgdbList = \(\) => \{ const L = \(\(S\.app && S\.app\.reg\) \|\| \{\}\)\.descBtns;/.test(T), '단추 목록 = app_settings/main.reg.descBtns');
+ok(/regSaveCfg\(\{ descBtns: L \}\)/.test(T), '✎ 저장 = regSaveCfg(모든 기기 · ⚡ 문구 모음과 같은 저장)');
+ok(/descMode: 'manual', descEdit: t, desc: t/.test(T), '누르면 직접 입력(descEdit = desc = 글)');
+ok(/<span class="rgr-qx">\$\{regRowDescHtml\(it\)\}\$\{rgdbHtml\(it\)\}<\/span>/.test(T), '📋 한눈에 줄 ⚡ 설명 옆');
+ok(/⚡ 간단 직접 입력<\/button>\$\{rgdbHtml\(it\)\}/.test(T), '🔎 자세히 카드 ⚡ 간단 직접 입력 옆');
+ok(/\$\{rgdbBulkHtml\(L\)\}/.test(T), '✔ 한꺼번에 바꾸기 상품 설명 줄');
+ok(/localStorage\.getItem\('rn-reg-vropen'\) === '1'/.test(T), '판매가치 펼침 기억 rn-reg-vropen (기본 접힘)');
+ok(/id: 'desc-btn'/.test(T) && /<b>📝 빠른 설명 단추<\/b>/.test(T) && /<b>🧠 판매가치 한 줄<\/b>/.test(T), '기능 찾기·매뉴얼 항목');
+(async () => {
+  if (!process.env.RN_PORT) { console.log(bad ? `❌ tMJREG2_1112 ${bad}개 실패` : '✓ tMJREG2_1112 코드 꼴 통과 (화면 시험은 RN_PORT를 주면)'); process.exit(bad ? 1 : 0); }
+  const H = require(path.join(process.cwd(), 'harness.js')); const SEED = require(path.join(process.cwd(), 'seed.js'));
+  const PG = [{ price: 4000, grade: '중', sellerCode: '777', sellerName: '판매자A', ship: 2500 }, { price: 5200, grade: '상', sellerCode: '778', sellerName: '판매자B', ship: 2500 }, { price: 6100, grade: '상', sellerCode: '779', sellerName: '판매자C', ship: 0 }];
+  const seed = async (p, view, keepLs) => { p.on('dialog', (d) => d.dismiss().catch(() => {}));
+    await p.evaluate(SEED); await p.waitForTimeout(500); await p.addStyleTag({ content: '#seenp{display:none!important}.mkpanel,[class*=mktoast],.dlq,#dlq{display:none!important}' });
+    await p.evaluate(async ({ PG, view, keepLs }) => { const T0 = Date.parse('2026-11-12T01:00:00Z'); const at = (k) => new Date(T0 + k * 60e3).toISOString(); S.regItems = S.regItems || new Map(); window.ask = async () => true; window.confirm = _nativeConfirm;
+      const mk = (id, k, o) => ({ stage: 'sel', method: 'one', isbn: '97911000088' + String(k).padStart(2, '0'), grade: 2, qty: 1, price: 9000, ws: regWsCur(), createdAt: at(k), code: 'BLKCMN', codeManual: true, info: { title: '설명 단추 시험 책 ' + id, isbn13: '97911000088' + String(k).padStart(2, '0'), itemId: '88' + k, author: '지은이갑', publisher: '시험출판', pubDate: '2015-01-01', categories: [{ path: ['국내도서', '어린이'] }], page1: PG, priceList: 15000, priceSales: 13500, salesPoint: 1200, usedTotal: 3, at: at(k) }, ...o });
+      const L = { d1: mk('d1', 1, {}), d2: mk('d2', 2, { descMode: 'quick', descQuick: '사용감 조금 있음' }), d3: mk('d3', 3, { descMode: 'manual', descEdit: '예전 직접 입력 글', desc: '예전 직접 입력 글' }) };
+      for (const [id, d] of Object.entries(L)) { await db.collection('reg_items').doc(id).set(d); S.regItems.set(id, { id, ...d }); }
+      for (const k of [...S.regItems.keys()]) if (/^m\d+$/.test(k)) S.regItems.delete(k);
+      if (S.app && S.app.reg) delete S.app.reg.descBtns; await db.collection('app_settings').doc('main').set({ reg: { descBtns: null } }, { merge: true }); S.regChk = new Set(); if (!keepLs) localStorage.removeItem('rn-reg-vropen');
+      localStorage.setItem('rn-reg-view', view); localStorage.removeItem('rn-reg-sort'); S._regOpen = new Set(); S.regT = 'sel'; S.regSub = { sel: 'all', pick: 'all' }; S.detail = null; openRegister(); }, { PG, view, keepLs });
+    await p.waitForTimeout(1800); };
+  const shotEl = async (p, sel, n) => { if (!SHOTS) return; try { fs.mkdirSync(SHOTS, { recursive: true }); const el = await p.$(sel); if (el) { await el.scrollIntoViewIfNeeded(); await p.waitForTimeout(250); await el.screenshot({ path: path.join(SHOTS, n + '.png') }); console.log('  📷', n); } } catch (e) {} };
+  const st = (p, id) => p.evaluate((id) => { const it = S.regItems.get(id) || {}; const c = document.querySelector(`#sheet [data-rgcid="${id}"]`) || document.querySelector(`.rgrow[data-rgexp="${id}"]`); const on = c ? [...c.querySelectorAll('[data-rgdb].on')].map((b) => b.textContent.trim()) : null; return { mode: it.descMode, own: regOwnDesc(it), fin: regDescFinal(it), before: it.descBefore ? it.descBefore.t : null, on, btns: c ? [...c.querySelectorAll('[data-rgdb]')].map((b) => b.textContent.trim()) : null }; }, id);
+  await H(async (p) => { await seed(p, 'full');
+    console.log('② 🔎 자세히 카드 — 빠른 설명 단추');
+    let s1 = await st(p, 'd1');
+    ok(s1.btns && s1.btns.join(',') === '도서관책,북카페' && !s1.on.length, '단추 둘(도서관책·북카페) · 처음엔 꺼짐', s1);
+    ok(await p.evaluate(() => !!document.querySelector('#sheet [data-rgcid="d1"] .rgsh [data-rgdbedit]')), '✎ 단추');
+    await shotEl(p, '#sheet [data-rgcid="d1"] .rgsh:has([data-rgdb])', 'mjreg2_card_desc_before');
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(700);
+    s1 = await st(p, 'd1');
+    ok(s1.mode === 'manual' && s1.own === LIB, '도서관책 → 상품 설명 = 도서관 글(직접 입력)', s1);
+    ok(s1.fin.includes(LIB), '알라딘에 들어갈 설명(regDescFinal)에 그대로', s1);
+    ok(s1.on.join(',') === '도서관책', '다시 그린 뒤 도서관책 단추 켜짐', s1);
+    const dbv = await p.evaluate(async () => { const d = await db.collection('reg_items').doc('d1').get(); const x = d.data() || {}; return { m: x.descMode, e: x.descEdit, d: x.desc }; });
+    ok(dbv.m === 'manual' && dbv.e === LIB && dbv.d === LIB, '저장(reg_items)에도 직접 입력 글', dbv);
+    await shotEl(p, '#sheet [data-rgcid="d1"] .rgsh:has([data-rgdb])', 'mjreg2_card_desc_lib');
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(400);
+    ok((await st(p, 'd1')).own === LIB, '켜진 단추를 다시 눌러도 그대로');
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="1"]'); await p.waitForTimeout(700);
+    s1 = await st(p, 'd1');
+    ok(s1.own === CAFE && s1.on.join(',') === '북카페' && s1.before === LIB, '북카페 → 북카페 글 · 북카페만 켜짐 · 예전 글 기록', s1);
+    const s2 = await st(p, 'd2');
+    ok(s2.mode === 'quick' && s2.own === '사용감 조금 있음' && !s2.on.length, '다른 카드는 그대로(⚡ 간단 직접 입력)', s2);
+    await p.click('#sheet [data-rgcid="d2"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(700);
+    const s2b = await st(p, 'd2');
+    ok(s2b.mode === 'manual' && s2b.own === LIB && s2b.before === '사용감 조금 있음', '⚡ 간단 직접 입력 카드도 도서관책 → 직접 입력 · 예전 글 기록', s2b);
+
+    console.log('③ ✎ 단추 더하기 (모든 기기 저장)');
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdbedit]'); await p.waitForTimeout(400);
+    const ed = await p.evaluate(() => { const ov = document.querySelector('.bigask-ov'); return ov ? [...ov.querySelectorAll('.rgdbe-n')].map((i) => i.value) : null; });
+    ok(ed && ed.join(',') === '도서관책,북카페', '편집 창에 지금 단추 둘', ed);
+    await shotEl(p, '.bigask', 'mjreg2_edit');
+    await p.click('#rgdbe-add'); await p.waitForTimeout(150);
+    await p.evaluate(() => { const r = [...document.querySelectorAll('.bigask-ov .rgdbe-r')].pop(); r.querySelector('.rgdbe-n').value = '새단추'; r.querySelector('.rgdbe-t').value = '시험용 새 설명 글 입니다.'; const r0 = document.querySelector('.bigask-ov .rgdbe-r .rgdbe-n'); r0.value = '도서관'; });
+    await p.click('.bigask-ok'); await p.waitForTimeout(900);
+    const sv = await p.evaluate(async () => { const d = await db.collection('app_settings').doc('main').get(); return { mem: (S.app.reg || {}).descBtns, db: ((d.data() || {}).reg || {}).descBtns }; });
+    ok(sv.mem && sv.mem.length === 3 && sv.mem[0].n === '도서관' && sv.mem[2].n === '새단추' && sv.db && sv.db.length === 3, '저장: 이름 고침 + 새 단추 (app_settings/main.reg.descBtns)', sv);
+    const s3 = await st(p, 'd3');
+    ok(s3.btns && s3.btns.join(',') === '도서관,북카페,새단추', '카드 단추가 바로 셋으로', s3);
+    await p.click('#sheet [data-rgcid="d3"] [data-rgdb][data-i="2"]'); await p.waitForTimeout(700);
+    const s3b = await st(p, 'd3');
+    ok(s3b.own === '시험용 새 설명 글 입니다.' && s3b.on.join(',') === '새단추', '새 단추 → 그 글 · 켜짐', s3b);
+
+    console.log('④ ✔ 고른 상품 한꺼번에 — 빠른 설명 단추');
+    await p.evaluate(() => { S.regChk = new Set(['d1', 'd2', 'd3']); regRerender(); }); await p.waitForTimeout(900);
+    const bk = await p.evaluate(() => [...document.querySelectorAll('[data-rgbkdb]')].map((b) => b.textContent.trim()));
+    ok(bk.length === 3 && /^도서관/.test(bk[0]), '한꺼번에 바꾸기 상품 설명 줄에 단추 셋', bk);
+    await p.click('[data-rgbkdb="0"]'); await p.waitForTimeout(700);
+    const arm = await p.evaluate(() => ({ a: !!document.querySelector('[data-rgbkdb="0"].rgbkd-arm'), d3: regOwnDesc(S.regItems.get('d3')) }));
+    ok(arm.a && arm.d3 === '시험용 새 설명 글 입니다.', '다른 설명 있는 상품이 있으면 한 번 눌러선 안 바뀜(⚠ 한 번 더)', arm);
+    await shotEl(p, '.rgbk', 'mjreg2_bulk_arm');
+    await p.click('[data-rgbkdb="0"]'); await p.waitForTimeout(900);
+    const all = await p.evaluate(() => ['d1', 'd2', 'd3'].map((id) => regOwnDesc(S.regItems.get(id))));
+    ok(all.every((t) => t === LIB), '두 번 → 고른 셋 모두 도서관 글', all);
+    ok(await p.evaluate(() => !!document.querySelector('[data-rgbkdb="0"].all')), '일괄 단추 진한 칸(모두 그 값)');
+
+    console.log('⑤ 🧠 판매가치 한 줄 (기본 접힘 · 펼침 기억)');
+    await p.evaluate(() => { S.regChk = new Set(); regRerender(); }); await p.waitForTimeout(800);
+    const v0 = await p.evaluate(() => { const v = document.querySelector('#sheet [data-rgcid="d1"] .vr.vrfold'); if (!v) return null; const b = v.querySelector('.vrbody'); return { hid: b.hidden, h: v.querySelector('.vrh').getBoundingClientRect().height, tot: v.getBoundingClientRect().height, car: v.querySelector('.vrcar').textContent, head: v.querySelector('.vrh').textContent.replace(/\s+/g, ' ').trim() }; });
+    ok(v0 && v0.hid && v0.car === '▸' && v0.tot < v0.h + 16, '기본 = 머리 한 줄만(▸)', v0);
+    ok(v0 && /🧠 판매가치/.test(v0.head), '머리에 🧠 판매가치 · 전략 · 추천가 · 판정', v0);
+    await shotEl(p, '#sheet [data-rgcid="d1"]', 'mjreg2_card_vr_closed');
+    await p.click('#sheet [data-rgcid="d1"] .vr.vrfold .vrh'); await p.waitForTimeout(300);
+    const v1 = await p.evaluate(() => ({ L: [...document.querySelectorAll('#sheet .vr.vrfold')].map((v) => !v.querySelector('.vrbody').hidden && v.querySelector('.vrcar').textContent === '▾'), ls: localStorage.getItem('rn-reg-vropen') }));
+    ok(v1.L.length >= 3 && v1.L.every(Boolean) && v1.ls === '1', '누르면 펼침(▾) · 이 기기에 기억', v1);
+    await shotEl(p, '#sheet [data-rgcid="d1"] .vr', 'mjreg2_vr_open');
+    await p.evaluate(() => regRerender()); await p.waitForTimeout(800);
+    ok(await p.evaluate(() => { const v = document.querySelector('#sheet [data-rgcid="d1"] .vr.vrfold'); return !!v && !v.querySelector('.vrbody').hidden; }), '다시 그려도 펼친 채');
+    await seed(p, 'full', true);
+    ok(await p.evaluate(() => { const v = document.querySelector('#sheet [data-rgcid="d1"] .vr.vrfold'); return !!v && !v.querySelector('.vrbody').hidden; }), '등록 화면을 다시 열어도 펼친 채(기억)');
+    await p.click('#sheet [data-rgcid="d1"] .vr.vrfold .vrh'); await p.waitForTimeout(300);
+    const v2 = await p.evaluate(() => ({ h: document.querySelector('#sheet [data-rgcid="d1"] .vr.vrfold .vrbody').hidden, ls: localStorage.getItem('rn-reg-vropen') }));
+    ok(v2.h && v2.ls === '0', '다시 누르면 접힘 · 기억', v2);
+    ok(await p.evaluate(() => { const it = S.regItems.get('d1'); return +it.price === 9000; }), '판매가 그대로(접기·펼치기가 값을 바꾸지 않음)');
+
+    console.log('⑥ 📋 한눈에 줄 — 빠른 설명 단추');
+    await seed(p, 'compact');
+    const r0 = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="d1"]'); return r ? { qx: !!r.querySelector('.rgr-qx [data-rgdb]'), btn: [...r.querySelectorAll('[data-rgdb]')].map((b) => b.textContent.trim()), q: !!r.querySelector('.rgr-qx .rgr-qw [data-rgdm]') } : null; });
+    ok(r0 && r0.qx && r0.q && r0.btn.join(',') === '도서관책,북카페', '⚡ 설명 옆에 도서관책·북카페', r0);
+    await shotEl(p, '.rgrow[data-rgexp="d1"]', 'mjreg2_glance_before');
+    await p.click('.rgrow[data-rgexp="d1"] [data-rgdb][data-i="1"]'); await p.waitForTimeout(800);
+    const r1 = await st(p, 'd1'); const exp = await p.evaluate(() => !!(S._regOpen && S._regOpen.has('d1')));
+    ok(r1.own === CAFE && r1.on.join(',') === '북카페' && !exp, '북카페 → 그 글 · 켜짐 · 줄은 펼쳐지지 않음', { r1, exp });
+    await shotEl(p, '.rgrow[data-rgexp="d1"]', 'mjreg2_glance_cafe');
+    const r2 = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="d1"]'); const q = r.querySelector('.rgqf-t'); return q ? q.textContent : ''; });
+    ok(/북카페 도서 입니다/.test(r2), '한눈에 줄 설명 칸에 ✍ 북카페 글', r2);
+    console.log('⑦ 고른 상품 일괄 단추 줄 — 스크롤 뒤에도 보임');
+    const more = async () => p.evaluate(async () => { const B = S.regItems.get('d1'); for (let k = 10; k < 40; k++) { const id = 'm' + k; const d = { ...B, id: undefined, createdAt: new Date(Date.parse('2026-11-12T02:00:00Z') + k * 60e3).toISOString(), info: { ...B.info, title: '채움 책 ' + k, isbn13: '979110000' + (7000 + k) } }; delete d.id; await db.collection('reg_items').doc(id).set(d); S.regItems.set(id, { id, ...d }); } S.regChk = new Set(['d1']); regRerender(); });
+    const stick = (p) => p.evaluate(async () => { const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight; await new Promise((r) => setTimeout(r, 300)); const b = document.querySelector('[data-rgselbar]'); const h = sh.querySelector(':scope > .sh'); if (!b || !h) return null; const br = b.getBoundingClientRect(), hr = h.getBoundingClientRect(); const row = b.querySelector('.rgselrow'); return { st: sh.scrollTop, top: Math.round(br.top), hb: Math.round(hr.bottom), on: b.classList.contains('rgsel-on'), rowVis: !!row && row.getBoundingClientRect().height > 0, sum: (b.querySelector('[data-rgselsum]') || {}).offsetHeight || 0, txt: b.textContent.replace(/\s+/g, ' ').slice(0, 80) }; });
+    await more(); await p.waitForTimeout(1200);
+    let k1 = await stick(p);
+    ok(k1 && k1.on && k1.st > 500 && Math.abs(k1.top - k1.hb) <= 3 && k1.rowVis && /고른 1개/.test(k1.txt), '📋 한눈에: 스크롤 뒤에도 일괄 단추 줄이 머리줄 바로 아래에 보임', k1);
+    await shotEl(p, '#sheet', 'mjreg2_selbar_glance_scrolled');
+    await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'full'); regRerender(); }); await p.waitForTimeout(1500);
+    k1 = await stick(p);
+    ok(k1 && k1.on && k1.st > 500 && Math.abs(k1.top - k1.hb) <= 3 && k1.rowVis, '🔎 자세히: 스크롤 뒤에도 일괄 단추 줄이 보임', k1);
+    await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'compact'); S.regChk = new Set(); regRerender(); }); await p.waitForTimeout(1200);
+    k1 = await stick(p);
+    ok(k1 && !k1.on, '아무것도 안 고르면 붙지 않음(예전처럼)', k1);
+    await p.setViewportSize({ width: 390, height: 844 }); await p.evaluate(() => { S.regChk = new Set(['d1', 'd2']); regRerender(); }); await p.waitForTimeout(1200);
+    k1 = await stick(p);
+    ok(k1 && k1.on && Math.abs(k1.top - k1.hb) <= 3 && !k1.rowVis && k1.sum > 0 && k1.sum < 40 && /고른 2개 ▾/.test(k1.txt), '휴대폰: 접힌 한 줄 「✔ 고른 2개 ▾」만 위에 붙음', k1);
+    await shotEl(p, '#sheet', 'mjreg2_selbar_phone_fold');
+    await p.click('[data-rgselsum]'); await p.waitForTimeout(900);
+    k1 = await stick(p);
+    ok(k1 && k1.rowVis && /▴/.test(k1.txt), '휴대폰: 요약을 누르면 단추 줄 펼침', k1);
+    await p.evaluate(() => { S._rgSelOpen = false; S.regChk = new Set(); }); await p.setViewportSize({ width: 1400, height: 900 }); await p.waitForTimeout(300);
+    if (SHOTS) { try { await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(600); await shotEl(p, '.rgrow[data-rgexp="d2"]', 'mjreg2_glance_phone'); await p.setViewportSize({ width: 1400, height: 900 }); } catch (e) {} }
+  });
+  console.log(bad ? `❌ tMJREG2_1112 ${bad}개 실패` : '✓ tMJREG2_1112 모두 통과'); process.exit(bad ? 1 : 0);
+})();
