@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "vlite: 클라우드 판매가치 배우기 가볍게 판 내기",
+ "since": "2026-11-12T10:23:08Z",
+ "beat": "2026-11-12T10:23:08Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "번외 0.1.37 col2ui2 옆 창 새 모양 (fb9001f3)",
   "at": "2026-11-12T10:17:40Z"
  },
- "host": null
+ "host": "vm-vlite"
 }
