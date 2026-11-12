@@ -1,2 +1,3 @@
-logs=1&pc=HOME&from=202611130150
-# 30090357
+run=1&bkraw=kyobo:9788934972464
+bkraw=aladin:9788934972464
+# 58211152
