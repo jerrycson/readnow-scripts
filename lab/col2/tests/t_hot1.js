@@ -31,5 +31,19 @@ const { makeLoad } = require('../helper/col2-load.js'); const W = require('../he
   ok(/SAVE_MS = ctx\.test \? 3000 : 20e3/.test(J), 'jobs.json 다시 쓰기 20초마다(시험은 3초)');
   const H = fs.readFileSync(path.join(__dirname, '../helper/readnow-col2-helper.js'), 'utf8');
   ok(/function busyNow\(\) \{ const lh = LOAD\.hot\(\); if \(lh\) return lh;/.test(H), 'CPU 바쁨은 운영 바쁨과 같은 길(자동 읽기·그림자 일 쉼)');
+
+  console.log('④ (rel9) CPU %·PowerShell 횟수가 상태 st.load로 col2_ctl까지 — 세 길(웹앱 relay·수집기 다리·홀로 연결)');
+  { const os = require('os'); const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'c2w-')); const fake = path.join(tmp, 'ps.sh'); fs.writeFileSync(fake, '#!/bin/sh\necho \'{"ok":true,"list":[]}\'\n'); fs.chmodSync(fake, 0o755);
+    const old = process.env.RN_COL2_PS; process.env.RN_COL2_PS = fake; const Wn = W.makeWin({ psFile: path.join(tmp, 'w.ps1'), D: { showW: 1200, showH: 820 } });
+    ok(Wn.sum().h === 0, '처음엔 0번'); await Wn.run('find', 'col2-work-chrome'); await Wn.run('find', 'col2-work-chrome'); await Wn.run('hide', 'col2-stat-chrome');
+    ok(Wn.sum().h === 3 && Wn.sum().q === 0, '창 다루기 3번 → 시간당 3', Wn.sum()); if (old == null) delete process.env.RN_COL2_PS; else process.env.RN_COL2_PS = old; fs.rmSync(tmp, { recursive: true, force: true }); }
+  ok(/load: \{ \.\.\.LOAD\.sum\(\), ps: \(\(\) => \{ try \{ return WIN0\.sum\(\)\.h;/.test(H), '도우미 상태 /status 에 load.ps(창 다루기 시간당 횟수)');
+  ok(/load: s\.load \? \{ pct: s\.load\.pct, hot: !!s\.load\.hot, ps: s\.load\.ps \} : null/.test(H), '홀로 연결로 보내는 st에도 load');
+  const repo = process.env.COL2_PROD_REPO || path.join(__dirname, '..', '..', '..'); const rd = (f) => { try { return fs.readFileSync(path.join(repo, f), 'utf8'); } catch (e) { return ''; } };
+  const CS = rd('cloud/col2solo.js'); let SS = null; try { SS = require(path.join(repo, 'cloud/col2solo.js')).stSum; } catch (e) { console.log('  (col2solo 못 부름: ' + e.message + ')'); }
+  const s1 = SS && SS({ ver: '0.1.31', load: { pct: 42.5, hot: false, since: 1, n: 9, ps: 17 } }); ok(!!s1 && s1.load && s1.load.pct === 42.5 && s1.load.ps === 17 && s1.load.hot === false && !('n' in s1.load), '클라우드 홀로 연결 거름(stSum)이 load {pct, hot, ps}만 통과', s1 && s1.load);
+  ok(/delete o\.load;/.test(CS), '홀로 연결 지문엔 load 뺌(CPU %가 바뀔 때마다 쓰지 않음 · 5분에 한 번 함께)');
+  const AP = rd('src/app.html'); ok(/load: j\.load && typeof j\.load === 'object' \? \{ pct:/.test(AP), '웹앱 relay(c2Sum)도 load 통과');
+  const CO = rd('src/readnow-collector.src.js'); ok((CO.match(/load: st\.load && typeof st\.load === 'object' \? \{ pct:/g) || []).length === 2, '수집기 다리 두 곳(사무실 PC·로거 rnC2lg)도 load 통과');
   L.done('t_hot1');
 })();

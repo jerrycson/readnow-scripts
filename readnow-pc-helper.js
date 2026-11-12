@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.274의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.275의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.274' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.274', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.275' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.275', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -937,7 +937,7 @@
      *  · 웹앱이 다시 오면 웹앱이 씀(이 다리는 비킴) · 결과(하루 요약·견줌)는 여전히 웹앱 또는 홀로 연결이 올림 */
     let stAt = 0; const stPut = async (pc) => { if (!pc || Date.now() - stAt < 5 * 60e3) return; stAt = Date.now(); const st = await gx('GET', '/status'); if (!st || !st.ok || st.kind === 'logger') return; const rl = st.relay || {}; const pull = +rl.pullAt || 0; if (pull && Date.now() - pull < 3 * 60e3) return; if (st.solo && st.solo.live) return;
       const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
-      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, webAt: pull ? new Date(pull).toISOString() : null, at: now } }, { merge: true }); } catch (e) {} };
+      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, webAt: pull ? new Date(pull).toISOString() : null, at: now } }, { merge: true }); } catch (e) {} };
     G.__rnC2yStPut = stPut;
     const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
       busy = true; let jobs = [];
@@ -1046,7 +1046,7 @@
       /* (11/11 col2fix6 · 진단 'LOGGER 번외 상태 기록이 12:34 0.1.21에서 멈춤 — 화면은 0.1.23') 번외 상태 기록(col2_ctl/<PC>)은 그 PC 웹앱 탭만 5분마다 썼음 → 로거는 웹앱 탭이 없어 멈춰 있었음
        *  웹앱이 3분 넘게 안 오면 이 다리가 5분마다 대신 씀(판·켜짐·오늘 몫·지금 글·새 판 받기 결과만 · 손님 정보·키 없음 · by '수집기 다리') */
       if (Date.now() - (G.__rnC2lgCtl || 0) > 5 * 60e3) { const st = await gx('GET', '/status'); if (st && st.ok) { G.__rnC2lgCtl = Date.now(); const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
-        try { await db.collection('col2_ctl').doc(String(st.pc || pcOf() || 'LOGGER').replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + (pcOf() || 'LOGGER'), via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, at: now } }, { merge: true }); } catch (e) {} } }
+        try { await db.collection('col2_ctl').doc(String(st.pc || pcOf() || 'LOGGER').replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + (pcOf() || 'LOGGER'), via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, at: now } }, { merge: true }); } catch (e) {} } }
       const docs = []; for (const w of (pd.want || []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!RID.test(id)) continue;
         if (c === 'app_settings') { if (id !== 'bench') continue; try { const d = await db.collection(c).doc(id).get(); const v = d.exists ? d.data() || {} : null; docs.push({ c, id, v: v ? { targets: (Array.isArray(v.targets) ? v.targets : []).filter((t) => t && t.sc).slice(0, 200).map((t) => ({ sc: String(t.sc), on: t.on !== false })) } : null }); } catch (e) {} continue; }
         if (!KEEP[c]) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? pick(d.data(), KEEP[c]) : null }); } catch (e) {} }

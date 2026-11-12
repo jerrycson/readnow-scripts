@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.274
+// @version      1.89.275
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -10296,7 +10296,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
      *  · 웹앱이 다시 오면 웹앱이 씀(이 다리는 비킴) · 결과(하루 요약·견줌)는 여전히 웹앱 또는 홀로 연결이 올림 */
     let stAt = 0; const stPut = async (pc) => { if (!pc || Date.now() - stAt < 5 * 60e3) return; stAt = Date.now(); const st = await gx('GET', '/status'); if (!st || !st.ok || st.kind === 'logger') return; const rl = st.relay || {}; const pull = +rl.pullAt || 0; if (pull && Date.now() - pull < 3 * 60e3) return; if (st.solo && st.solo.live) return;
       const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
-      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, webAt: pull ? new Date(pull).toISOString() : null, at: now } }, { merge: true }); } catch (e) {} };
+      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, webAt: pull ? new Date(pull).toISOString() : null, at: now } }, { merge: true }); } catch (e) {} };
     G.__rnC2yStPut = stPut;
     const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
       busy = true; let jobs = [];
@@ -10405,7 +10405,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       /* (11/11 col2fix6 · 진단 'LOGGER 번외 상태 기록이 12:34 0.1.21에서 멈춤 — 화면은 0.1.23') 번외 상태 기록(col2_ctl/<PC>)은 그 PC 웹앱 탭만 5분마다 썼음 → 로거는 웹앱 탭이 없어 멈춰 있었음
        *  웹앱이 3분 넘게 안 오면 이 다리가 5분마다 대신 씀(판·켜짐·오늘 몫·지금 글·새 판 받기 결과만 · 손님 정보·키 없음 · by '수집기 다리') */
       if (Date.now() - (G.__rnC2lgCtl || 0) > 5 * 60e3) { const st = await gx('GET', '/status'); if (st && st.ok) { G.__rnC2lgCtl = Date.now(); const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
-        try { await db.collection('col2_ctl').doc(String(st.pc || pcOf() || 'LOGGER').replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + (pcOf() || 'LOGGER'), via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, at: now } }, { merge: true }); } catch (e) {} } }
+        try { await db.collection('col2_ctl').doc(String(st.pc || pcOf() || 'LOGGER').replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + (pcOf() || 'LOGGER'), via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, at: now } }, { merge: true }); } catch (e) {} } }
       const docs = []; for (const w of (pd.want || []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!RID.test(id)) continue;
         if (c === 'app_settings') { if (id !== 'bench') continue; try { const d = await db.collection(c).doc(id).get(); const v = d.exists ? d.data() || {} : null; docs.push({ c, id, v: v ? { targets: (Array.isArray(v.targets) ? v.targets : []).filter((t) => t && t.sc).slice(0, 200).map((t) => ({ sc: String(t.sc), on: t.on !== false })) } : null }); } catch (e) {} continue; }
         if (!KEEP[c]) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? pick(d.data(), KEEP[c]) : null }); } catch (e) {} }
