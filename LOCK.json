@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "soldfill4 주력 나눠 받기",
+ "since": "2026-11-12T11:32:24Z",
+ "beat": "2026-11-12T11:32:24Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "soldfill4 클라우드 0.35.160 (fee09bef)",
   "at": "2026-11-12T11:16:54Z"
  },
- "host": null
+ "host": "vm-soldfill"
 }
