@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fix3 — 밀린 일 예스24 원격 길·번외 상태·기록 창 요소",
+ "since": "2026-11-12T09:02:56Z",
+ "beat": "2026-11-12T09:02:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "voice2 클라우드 0.35.148 메모리 감시·구매평 증분 셈 (6002ed27)",
   "at": "2026-11-12T09:00:06Z"
  },
- "host": null
+ "host": "vm"
 }
