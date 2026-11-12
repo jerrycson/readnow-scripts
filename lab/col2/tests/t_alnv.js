@@ -33,6 +33,7 @@ function fakeScm() { const S = { sess: new Set(), log: [], keep: false }; const 
     ok(a && a.relogin.al.stop.human && /로그인 상태 유지/.test(a.relogin.al.stop.why), "멈춤 = 사람 손 필요(까닭: 이 번외 크롬에 네이버 '로그인 상태 유지'가 없음)", a && a.relogin.al.stop);
     a = await until(async () => { await feed(); const v = await al(); return v.todo ? v : null; }, 40);
     ok(a && /^👉 지금 할 일 하나: 옆 창 \[🔐 알라딘 로그인\]/.test(a.todo) && /^👉/.test(a.msg), '크게 한 줄 할 일(옆 창 · 번외 상태 글 맨 앞 → 웹앱)', a && a.todo);
+    { const m = (await st()).msg; ok(/^👉 지금 할 일 하나/.test(m), '도우미 지금 글(웹앱이 닫혀도 수집기 다리가 col2_ctl에 올리는 글) 맨 앞에도 그 한 줄', m); }
     const cl = fs.readFileSync(D + '/chrome.log', 'utf8').split('\n').filter((x) => /wlogin_naver/.test(x)); ok(cl.length === 1 && !/remote-debugging|enable-automation|disable-background/.test(cl[0].replace(/--remote-debugging-port=0 /, '')), '네이버 길 창 = 평범한 크롬(조종 길·일꾼 플래그 없음)', cl[0]);
     await feed(); await wait(2500); ok(nv() === 1, '멈춘 뒤엔 더 두드리지 않음');
     console.log('② 사람이 한 번 → 살아남 → 멈춤 저절로 풂');
