@@ -21,7 +21,7 @@ const box = (b) => `<div class="ss_book_box" itemid="${b.id}"><table><tbody><tr>
 const listPage = (L) => `<html><body><form>${L.map(box).join('')}</form></body></html>`;
 const dAgo = (n) => new Date(Date.now() + 9 * 3600e3 - n * 864e5).toISOString().slice(0, 10);
 
-async function run(cfgX, seedX) {
+async function run(cfgX, seedX, tgX) { global.FieldPath = { documentId: () => '__name__' };
   const covs = Array.from({ length: 12 }, (_, i) => i10('89' + String(2000000 + i * 41).padStart(7, '0')));
   const store = {}; const sets = []; const mkDoc = (id, v) => ({ id, ref: { id }, data: () => v, exists: true });
   const BI = [
@@ -35,12 +35,12 @@ async function run(cfgX, seedX) {
     ...(seedX || []).map(([id, v]) => mkDoc(id, v)),
   ];
   const byId = new Map(BI.map((d) => [d.id, d]));
-  const qObj = (filt, sorted) => { const o = { _f: filt, _after: null, _lim: 1e9 }; o.orderBy = (f, dir) => { o._desc = dir === 'desc'; return o; }; o.startAfter = (snap) => { o._after = snap.id; return o; }; o.select = () => o; o.limit = (n) => { o._lim = n; return o; };
-    o.get = async () => { let L = BI.filter(o._f); if (sorted) L = L.slice().sort((a, b) => String(a.data().goneDay).localeCompare(String(b.data().goneDay)) || a.id.localeCompare(b.id)); if (sorted && o._desc) L.reverse(); if (o._after) { const k = L.findIndex((d) => d.id === o._after); L = L.slice(k + 1); } L = L.slice(0, o._lim); return { docs: L, empty: !L.length }; }; return o; };
-  const C2 = (name) => ({ doc: (id) => ({ id, get: async () => (name === 'bench_items' && byId.has(id) ? byId.get(id) : { id, exists: !!store[name + '/' + id], data: () => store[name + '/' + id] }), set: async (v) => { store[name + '/' + id] = { ...(store[name + '/' + id] || {}), ...v }; } }),
+  const qObj = (filt, sorted) => { const o = { _f: filt, _after: null, _lim: 1e9 }; o.orderBy = (f, dir) => { o._desc = dir === 'desc'; return o; }; o.startAfter = (snap) => { o._after = typeof snap === 'string' ? snap : snap.id; return o; }; o.select = () => o; o.limit = (n) => { o._lim = n; return o; };
+    o.get = async () => { let L = BI.filter(o._f); if (sorted) L = L.slice().sort((a, b) => String(a.data().goneDay).localeCompare(String(b.data().goneDay)) || a.id.localeCompare(b.id)); if (sorted && o._desc) L.reverse(); if (!sorted) L = L.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); if (o._after) { const k = L.findIndex((d) => d.id === o._after); L = L.slice(k + 1); } L = L.slice(0, o._lim); return { docs: L, empty: !L.length }; }; return o; };
+  const C2 = (name) => ({ doc: (id) => ({ id, get: async () => (name === 'bench_items' && byId.has(id) ? byId.get(id) : { id, exists: !!store[name + '/' + id], data: () => store[name + '/' + id] }), set: async (v) => { const o0 = store[name + '/' + id] || {}; const n0 = { ...o0 }; for (const [k, x] of Object.entries(v)) n0[k] = x && typeof x === 'object' && !Array.isArray(x) && o0[k] && typeof o0[k] === 'object' && !Array.isArray(o0[k]) ? { ...o0[k], ...x } : x; store[name + '/' + id] = n0; } }), /* merge: true처럼 한 칸 깊이 합침 */
     where: (k, op, v) => name !== 'bench_items' ? { select: () => ({ limit: () => ({ get: async () => ({ docs: [], empty: true }) }), get: async () => ({ docs: [], empty: true }) }) }
       : k === 'goneDay' ? qObj((d) => d.data().goneDay && d.data().goneDay >= v, true) : qObj((d) => d.data()[k] === v, false) });
-  store['app_settings/bench'] = { targets: [{ sc: '1' }] }; store['app_settings/adapt_cfg'] = { spBatchHist: [{ day: 'x', list: 40, noMatch: 2 }], spBatchLearn: { k: 12, cap: 25, y: {} }, ...(cfgX || {}) };
+  store['app_settings/bench'] = { targets: tgX || [{ sc: '1' }] }; store['app_settings/adapt_cfg'] = { spBatchHist: [{ day: 'x', list: 40, noMatch: 2 }], spBatchLearn: { k: 12, cap: 25, y: {} }, ...(cfgX || {}) };
   store['bench_books/777'] = { cat: '국내도서>인문', isbn: covs[7], pubYm: '2020-10' };
   const db = { batch: () => ({ set: (ref, v) => sets.push([ref.id, v]), commit: async () => {} }), getAll: async (...refs) => refs.filter((r) => r && r.get).map((r) => ({ exists: !!store['bench_books/' + r.id], data: () => store['bench_books/' + r.id] })) };
   const byKey = new Map(covs.map((c, i) => [A.coverIsbn(c), { id: String(4000000 + i), cov: c, title: (i >= 3 && i <= 4 ? '팔린 책 ' : '판매 중 책 ') + i, pl: 10000, ps: 9000, sp: 100 + i, pub: '시험출판', au: '가가' }]));
@@ -78,6 +78,22 @@ async function run(cfgX, seedX) {
     ok(R6.r.qGone === 1 && c6.stay === true && c6.rem >= 1 && c6.lastId === null && c6.stayN === 1 && c6.rounds === 2, '쪽에 못 찾은 팔린 상품이 남으면(goneHold 넘음) 다음 회차도 같은 쪽 — 쪽마다 몫만큼만 찾고 넘어가던 것', c6);
     const R7 = await run({ spBatch: { maxQ: 1, goneHold: 0, goneStayMax: 3 }, spBatchGone: { lastId: null, stayN: 3 } }, T5); ok(R7.store['app_settings/adapt_cfg'].spBatchGone.stay === false, '같은 쪽에 goneStayMax 회차 넘게 머물면 그래도 넘김(못 찾는 상품에 묶이지 않게)', R7.store['app_settings/adapt_cfg'].spBatchGone);
     const R8 = await run({ spBatch: { maxQ: 1, goneShare: 0, goneHold: 0 } }, T5); ok(R8.store['app_settings/adapt_cfg'].spBatchGone.stay === false, '팔린 상품 검색을 한 쪽도 못 한 회차(몫 0)는 머물지 않고 넘김', R8.store['app_settings/adapt_cfg'].spBatchGone); }
+  console.log('  🎯 주력 판매자 팔린 상품 먼저(goneFirst)');
+  { const C9 = (i) => i10('89' + String(2000000 + i * 41).padStart(7, '0'));
+    const S2 = [['2_a', { sc: '2', coverKey: C9(9), title: '주력 팔린 책 a', goneDay: dAgo(2) }], ['2_b', { sc: '2', coverKey: C9(10), title: '주력 팔린 책 b', goneDay: dAgo(40) }], ['2_old', { sc: '2', coverKey: C9(11), title: '주력 오래전 책', goneDay: dAgo(200) }],
+      ['2_full', { sc: '2', coverKey: C9(9), title: '다 찬 책', goneDay: dAgo(3), isbn: C9(9), publisher: 'p', author: 'a', pubYm: '2020-01', priceList: 1, cat: 'c' }], ['2_sell', { sc: '2', coverKey: C9(10), title: '주력 판매 중' }],
+      ['2_rest', { sc: '2', coverKey: 'K000000077', title: '7일 쉬는 주력 책', goneDay: dAgo(5), listTryAt: new Date(Date.now() - 864e5).toISOString(), listTryV: 5 }]];
+    const TG = [{ sc: '1' }, { sc: '2' }];
+    const G1 = await run({ spBatch: { maxQ: 1, goneFirst: ['2'], goneFirstPage: 2 } }, S2, TG); const f1 = G1.store['app_settings/adapt_cfg'].spBatchGone.first;
+    ok(G1.r.goneFirst && G1.r.goneFirst.cand === 2 && G1.r.goneFirst.bySc['2'] === 2 && G1.r.goneFirst.scan === 6, '주력 판매자 상품을 쪽(2개)씩 받아 90일 안·빈 칸·7일 안 쉬는 것만 후보(2개 · 200일 전·다 찬 것·판매 중·쉬는 것 뺌)', G1.r.goneFirst);
+    ok(G1.r.qGone === 1 && G1.w['2_a'] && G1.w['2_a'].isbn && G1.w['2_b'] && G1.w['2_b'].isbn && !(G1.w.g_3 && G1.w.g_3.isbn), '팔린 상품 몫(쪽 1)을 주력 판매자 것부터 씀 — 사라진 날 차례 쪽(g_3)은 뒤로', { qGone: G1.r.qGone, a: G1.w['2_a'], g3: G1.w.g_3 });
+    ok(f1 && f1['2'] && f1['2'].lastId === null && f1['2'].rounds === 1 && !f1['2'].doneAt, '판매자 끝까지 받으면 처음부터(한 바퀴) · 후보가 있었으니 아직 끝 아님', f1);
+    const S3 = S2.map(([k, v]) => [k, k === '2_a' || k === '2_b' ? { ...v, isbn: '9790000000001', publisher: 'p', author: 'a', pubYm: '2020-01', priceList: 1, cat: 'c' } : v]);
+    const G2 = await run({ spBatch: { goneFirst: ['2'] } }, S3, TG); const f2 = G2.store['app_settings/adapt_cfg'].spBatchGone.first;
+    ok(G2.r.goneFirst.cand === 0 && f2['2'].doneAt && G2.w.g_3 && G2.w.g_3.isbn, '다 채우거나 7일 쉼뿐이면 그 판매자는 7일 건너뛰고 지금 차례(사라진 날 차례)로', { gf: G2.r.goneFirst, f2 });
+    const G3 = await run({ spBatch: { goneFirst: ['2'] }, spBatchGone: { first: { 2: { doneAt: new Date().toISOString() } } } }, S2, TG); ok(G3.r.goneFirst.shops.length === 0 && G3.r.goneFirst.scan === 0, '7일 안 끝낸 판매자는 받지도 않음', G3.r.goneFirst);
+    const G4 = await run({ spBatch: { goneFirst: [] } }, S2, TG); ok(!G4.r.goneFirst && G4.r.gone >= 4, '빈 배열이면 예전 동작(주력 먼저 없음)', { gf: G4.r.goneFirst, gone: G4.r.gone });
+    const G5 = await run({ spBatch: { maxQ: 1 } }, S2, TG); ok(!G5.r.goneFirst, '기본 목록(주력 10곳)은 대상 판매자에 있을 때만 — 시험 판매자 1·2는 해당 없음'); }
   { const R4 = await run({ spBatch: { gone: false } }); ok(R4.r.gone === 0 && !R4.w.g_3 && R4.w.s_0 && R4.w.s_0.sp === 100, '끄기 adapt_cfg.spBatch.gone = false → 팔린 상품 넣지 않음(판매 중은 그대로)', R4.r.gone); }
   { const R5 = await run(null, [['g_tried', { sc: '1', coverKey: 'K000000001', title: '7일 쉬는 팔린 책', goneDay: dAgo(4), listTryAt: new Date(Date.now() - 864e5).toISOString(), listTryV: 5 }]]); ok(!R5.urls.some((u) => /K000000001/.test(u)), '팔린 상품도 못 찾은 것은 7일 쉼(listTryAt) — 날마다 같은 검색 되풀이 없음'); }
 
