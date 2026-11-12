@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto,app_settings/platforms
-# 1689021137
+run=1&doc=app_settings/voice_study_run,app_settings/voice_study
+# 1862814169
