@@ -62,8 +62,12 @@ async function run(cfgX, seedX) {
   ok(!w.g_old && !w.g_other, '90일 넘은 팔린 상품·대상 아닌 판매자 상품은 건드리지 않음');
   ok(w.g_sib && w.g_sib.publisher === '형제출판' && w.g_sib.cat === '국내도서>소설' && w.g_sib.catSrc === 'sib' && w.g_sib.sp == null, '같은 표지 형제(판매 중 상품)의 정보·분류를 새 요청 없이 맞댐(SP는 빼고)', w.g_sib);
   ok(w.g_cat && w.g_cat.cat === '국내도서>인문' && w.g_cat.catSrc === 'bb' && !urls.some((u) => decodeURIComponent(u).includes(A.coverIsbn(covs[7]))), '분류만 빈 팔린 상품은 수집기가 읽어 둔 상품 페이지 정보(bench_books)에서 분류 · 검색하지 않음', w.g_cat);
-  const has = (u, i) => decodeURIComponent(u).includes(A.coverIsbn(covs[i])); const sIdx = urls.findIndex((u) => [0, 1, 2].some((i) => has(u, i))), gIdx = urls.findIndex((u) => [3, 4].some((i) => has(u, i)));
-  ok(sIdx >= 0 && gIdx >= 0 && sIdx < gIdx && ![3, 4].some((i) => has(urls[sIdx], i)), '검색 차례: 판매 중 상품 쪽이 먼저, 팔린 상품 쪽은 뒤(따로 계획)', { sIdx, gIdx, n: urls.length });
+  const has = (u, i) => decodeURIComponent(u).includes(A.coverIsbn(covs[i]));
+  { const sIdx = urls.findIndex((u) => [0, 1, 2].some((i) => has(u, i))), gIdx = urls.findIndex((u) => [3, 4].some((i) => has(u, i)));
+    ok(gIdx === 0 && sIdx > gIdx && r.goneShare === 0.2 && r.goneQ0 === 1 && r.qGone >= 1 && store['app_settings/adapt_cfg'].spBatchHist.slice(-1)[0].qGone === r.qGone, '팔린 상품 몫(기본 20% · 올림 · 최소 1쪽)이 먼저 — 후보 계획이 1쪽뿐이라 남는 몫은 판매 중 상품이 씀', { sIdx, gIdx, share: r.goneShare, q0: r.goneQ0, qGone: r.qGone, maxQ: r.maxQ, q: r.q }); }
+  { const R0 = await run({ spBatch: { goneShare: 0 } }); const sIdx = R0.urls.findIndex((u) => [0, 1, 2].some((i) => has(u, i))), gIdx = R0.urls.findIndex((u) => [3, 4].some((i) => has(u, i)));
+    ok(sIdx >= 0 && gIdx >= 0 && sIdx < gIdx && R0.r.goneQ0 === 0, 'goneShare 0 = 예전 동작(판매 중 상품 쪽이 먼저, 팔린 상품은 뒤)', { sIdx, gIdx, q0: R0.r.goneQ0 }); }
+  { const R1 = await run({ spBatch: { maxQ: 1 } }); ok(R1.r.q === 1 && R1.r.qGone === 1 && R1.w.g_3 && R1.w.g_3.isbn && !(R1.w.s_0 && R1.w.s_0.sp != null), '쪽 수 1이어도 팔린 상품 몫 최소 1쪽(올림)', { q: R1.r.q, qGone: R1.r.qGone }); }
   ok(r.goneFill >= 3 && r.goneCat === 2 && store['app_settings/adapt_cfg'].spBatchHist.slice(-1)[0].goneFill === r.goneFill, '셈: 팔린 상품 채움 수(goneFill)·분류 채움(goneCat)이 회차 결과와 하루 합에 남음', { goneFill: r.goneFill, goneCat: r.goneCat });
   const cur = store['app_settings/adapt_cfg'].spBatchGone; ok(cur && cur.lastId === null && cur.scan === 5 && cur.rounds === 1, '한 쪽 다 읽으면 다음은 처음부터(커서 비움 · 한 바퀴 셈)', cur);
   { const R2 = await run({ spBatch: { goneMax: 2 } }); const c2 = R2.store['app_settings/adapt_cfg'].spBatchGone; ok(R2.r.goneScan === 2 && c2.lastId && c2.rounds === 0, '메모리 가볍게: 회차마다 goneMax(여기선 2)개만 읽고 다음 자리를 남김', c2);
