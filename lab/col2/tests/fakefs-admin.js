@@ -1,5 +1,5 @@
 /* 시험용 가짜 Firestore(서버 Admin SDK 모양 · cloud/col2solo.js가 쓰는 만큼) — 실제 Firebase에는 아무것도 쓰지 않음
- * 깊은 merge · FieldValue(serverTimestamp·delete·arrayUnion) · 트랜잭션(get·set·update) · where('==')·orderBy('__name__')·startAfter·limit · 하위 칸(doc.collection) */
+ * 깊은 merge · FieldValue(serverTimestamp·delete·arrayUnion·increment) · 묶음(batch) · 트랜잭션(get·set·update) · where('==')·orderBy('__name__')·startAfter·limit · 하위 칸(doc.collection) */
 'use strict';
 const T = (k, v) => ({ __fv: k, v });
 const FV = { serverTimestamp: () => T('ts'), delete: () => T('del'), arrayUnion: (...a) => T('au', a), increment: (n) => T('inc', n) };
@@ -21,6 +21,7 @@ function makeDb() { const store = {}; const writes = [];
       const docs = ids.map((id) => snap(c, id)); return { docs, size: docs.length, forEach: (fn) => docs.forEach(fn) }; };
     return q; }
   function colRef(c) { const q = query(c); return { ...q, doc: (id) => docRef(c, id) }; }
-  const db = { collection: colRef, runTransaction: async (fn) => { const ops = []; const tx = { get: async (r) => snap(r._c, r.id), set: (r, v, o) => ops.push(() => r.set(v, o)), update: (r, v) => ops.push(() => r.update(v)) }; const out = await fn(tx); for (const o of ops) await o(); return out; } };
+  const db = { collection: colRef, runTransaction: async (fn) => { const ops = []; const tx = { get: async (r) => snap(r._c, r.id), set: (r, v, o) => ops.push(() => r.set(v, o)), update: (r, v) => ops.push(() => r.update(v)) }; const out = await fn(tx); for (const o of ops) await o(); return out; },
+    batch: () => { const ops = []; return { set: (r, v, o) => { ops.push(() => r.set(v, o)); }, update: (r, v) => { ops.push(() => r.update(v)); }, commit: async () => { for (const o of ops.splice(0)) await o(); } }; } }; /* (11/12 handoff3) 묶음 쓰기 — 🎯 운영 benchFinish 떼어 부르기 시험 */
   return { db, C: (c) => db.collection(c), FV, store, writes, col }; }
 module.exports = { makeDb, FV };

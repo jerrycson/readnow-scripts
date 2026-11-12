@@ -23,6 +23,9 @@
     { k: 'survey', name: '⭐ 숍 구매 평가 첫 쪽(날짜별 만족·보통·불만족)', ops: ['revTop', 'revAll'], cls: 'pub', reader: 'al', path: '/shop/UsedShop/wshopsurvey.aspx?SC={sc}&page=1', parse: 'S.parseSurveyPage', col: 'seller_review_daily', id: 'sc_{sc}', input: 'shop', who: 'logger', state: 'run', shape: 'survey' },
     { k: 'bench', name: '🎯 집중 벤치마킹 — 숍 목록 첫 쪽', ops: ['bench', 'benchForce', 'benchHelp', 'benchResume'], cls: 'pub', reader: 'al', path: '/shop/usedshop/wshopitem.aspx?SC={sc}&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=1', parse: 'L.benchParse', col: 'bench_items', id: '{sc}_{id}', input: 'bench', who: 'logger', state: 'run', rows: 10,
       map: { title: 't', price: 'p', grade: 'g' }, move: ['price'], note: '해석 함수는 운영 수집기 본체(benchParse·benchParseSimple·coverKey)를 그대로 받아 떼어 씀 · 대상 숍은 운영 app_settings/bench(읽기만)' },
+    /* (11/12 handoff3) 🎯 숍 목록 끝까지 — 작은 숍(끝 쪽 40쪽 이하)을 1쪽~끝 쪽 읽어 운영 bench_state 지금 목록과 견줌(helper/col2-benchfull.js) · 하루 한 숍이라 표본 기준 1(한 숍 = 상품 수백 개 견줌) */
+    { k: 'benchFull', name: '🎯 집중 벤치마킹 — 숍 목록 끝까지(작은 숍)', ops: ['bench', 'benchForce', 'benchHelp', 'benchResume'], cls: 'pub', reader: 'benchFull', col: 'bench_state', id: '{sc}', input: 'benchFull', who: 'logger', state: 'run', minN: 1,
+      note: '해석 = 운영 본체 benchParse·benchLastPage 글자 그대로 · 견줌 = 상품 번호·값·등급·최저가 배지 · 운영 회차 끝과 1시간 넘게 떨어지면 다름은 \'때가 다름\'' },
     { k: 'dynamic', name: '👥 구매자 분포·함께 산 책', ops: ['dynamic', 'dynamic0', 'dynAll'], cls: 'pub', reader: 'dyn', path: PRODUCT, col: 'prd_book_metrics', id: 'bookId', input: 'book', who: 'logger', state: 'run', cost: 3,
       map: { buyerDist: 'buyerDist', relationBuyIds: 'relationBuy', clickRelation: 'clickRelation' }, move: ['buyerDist', 'relationBuyIds', 'clickRelation'], at: 'dynAt',
       note: '(0.1.10) 번외 크롬 안 쿠키 없는 따로 된 칸의 보이지 않는 탭에 상품 화면을 실제로 그려, 운영 본체 getProductFull(숨은 창을 내려 보며 지연 로딩 칸이 찰 때까지 기다림)을 글자 그대로 떼어 그 화면에 부름 · 운영처럼 요청 3장 몫으로 셈' },
@@ -62,7 +65,7 @@
   const shard = (isbn) => (+String(isbn || '').replace(/\D/g, '').slice(-1) || 0) % 2;
   function shareOk(kind, key, cfg) { if (!(cfg && cfg.extShare === true)) return kind !== 'logger'; return kind === 'logger' ? shard(key) === 1 : shard(key) === 0; }
   /* 주소 — 정한 꼴의 알라딘 공개 화면만(판매자 센터·로그인·계정 화면은 꼴에 없음) · 우리 숍은 열지 않음 */
-  const ALLOW = [/^\/shop\/wproduct\.aspx\?ItemId=\d{1,13}$/, /^\/shop\/UsedShop\/wuseditemall\.aspx\?ItemId=\d{1,13}&TabType=0$/, /^\/shop\/usedshop\/wshopitem\.aspx\?SC=\d{1,10}(&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=1)?$/, /^\/shop\/UsedShop\/wshopsurvey\.aspx\?SC=\d{1,10}&page=1$/];
+  const ALLOW = [/^\/shop\/wproduct\.aspx\?ItemId=\d{1,13}$/, /^\/shop\/UsedShop\/wuseditemall\.aspx\?ItemId=\d{1,13}&TabType=0$/, /^\/shop\/usedshop\/wshopitem\.aspx\?SC=\d{1,10}(&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=1)?$/, /^\/shop\/UsedShop\/wshopsurvey\.aspx\?SC=\d{1,10}&page=1$/, /^\/shop\/usedshop\/wshopitem\.aspx\?SC=\d{1,10}&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=\d{1,4}$/ /* (11/12 handoff3) 🎯 끝까지 */];
   function pathOf(t, a, own) { if (!t || !t.path) return null; if (a && a.sc != null && (own || []).map(String).includes(String(a.sc))) return null; let bad = false;
     const p = t.path.replace(/\{(\w+)\}/g, (m, k) => { const v = a ? a[k] : null; if (v == null || !/^\d{1,13}$/.test(String(v))) bad = true; return String(v); }); return !bad && ALLOW.some((re) => re.test(p)) ? p : null; }
   const docId = (t, a) => String(t.id || '').replace(/\{(\w+)\}/g, (m, k) => String(a && a[k] != null ? a[k] : ''));
