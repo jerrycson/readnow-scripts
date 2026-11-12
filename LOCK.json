@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "handoff4 판 내기 — push",
- "since": "2026-11-12T19:48:22Z",
- "beat": "2026-11-12T19:57:48Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "클라우드 책 정보 0.1.5(bookinfo1)",
-  "at": "2026-11-12T19:47:20Z"
+  "done": "웹앱 1.78.540 · 번외 0.1.46 📦 상품 화면 묶음·⚖ 하루 몫 나누기·R21 (handoff4 a38c723a)",
+  "at": "2026-11-12T19:58:14Z"
  },
- "host": "vm-handoff4"
+ "host": null
 }
