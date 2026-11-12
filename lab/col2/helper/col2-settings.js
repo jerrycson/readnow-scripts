@@ -75,6 +75,8 @@
     S('y24cfg.tkHour', 'pc', '🟦 예스24 이어받기 한 시간', 'pc', 'int', 1, 10, ['y24cfg', 'tkHour'], 'Y24.tkHour', { u: '번', f: 'rare', i: '서로 끊기를 되풀이하지 않게 한 시간에 이만큼까지만 이어받음' }),
     S('y24Jobs', 'pc', '🟦 예스24 맡긴 일도 여기서', 'pc', 'bool', 0, 1, ['y24Jobs'], 'X.on', { i: '주문접수확인·발송처리를 이 PC 번외가 함' }),
     S('al', 'pc', '🟧 알라딘 샵매니저 읽기', 'pc', 'bool', 0, 1, ['al'], 'X.off', { f: 'often', i: '읽기만 · 기본 꺼짐' }),
+    S('hands', 'pc', '🖐 알라딘은 평소 크롬을 손발로', 'pc', 'bool', 0, 1, ['hands'], 'HANDS.def', { f: 'often', nolg: true, i: '(11/12 정범님 결정) 로그인이 필요한 알라딘 일은 이미 로그인된 평소 크롬의 리드나우 수집기 탭이 하고, 번외는 일을 맡기고·결과를 받고·그 창을 숨기고 띄우기만 함 · 번외 창은 알라딘에 로그인하지 않음(새 기기 로그인 42FB를 키우지 않게) · 켜면 🏠 이어받기는 쓰지 않음 · 기본: HOME만 켬 · 로거는 없음' }),
+    S('handsHide', 'pc', '🖐 평소 크롬 손발 창 늘 숨김', 'pc', 'bool', 0, 1, ['handsHide'], 'X.off', { nolg: true, i: '켜면 리드나우 수집기 탭이 앞 탭인 평소 크롬 창을 화면 밖으로 숨겨 둠(1분마다 봄 · 일은 그대로) · 로그인이 풀려 사람 손이 필요하면 앞으로 띄우고, 돌아오면 다시 숨김 · 그 창에 다른 탭도 쓰면 끄세요' }),
     S('alOwn', 'pc', '🏠 알라딘 로그인 자리 이어받기', 'pc', 'bool', 0, 1, ['alOwn'], 'X.off', { i: '켜면 이 PC 운영 수집기는 알라딘 로그인 자리를 놓고, 번외가 그 자리로 샵매니저 읽기를 맡음(번외가 30분 넘게 안 보이면 운영이 되찾음) · 로거 PC는 늘 끔' }),
     S('side', 'pc', '📊 켜질 때 옆 창 띄우기', 'pc', 'bool', 0, 1, ['side'], 'X.on', { f: 'rare' }),
   ];
@@ -109,7 +111,7 @@
   function makeSettings(o) {
     const now = o.now || Date.now; const C0 = JSON.parse(JSON.stringify(o.COL2)); /* 처음 받은 col2-config.js 값 = 기본값 */
     const SRC = { AL: AL_DEF, Y24: Y24_DEF, RLG: RLG_DEF, X: { on: true, off: false } };
-    const defOf = (r) => { const [a, ...b] = r.dk.split('.'); if (a === 'SITE') return o.siteDef ? o.siteDef(b[0], b[1]) : undefined; const base = SRC[a] || C0[a]; const v = getP(base, b); return v; };
+    const defOf = (r) => { const [a, ...b] = r.dk.split('.'); if (a === 'HANDS') return !!(o.handsDef && o.handsDef()); /* (11/12 hands1) 손발 길 기본 = HOME만 켬 */ if (a === 'SITE') return o.siteDef ? o.siteDef(b[0], b[1]) : undefined; const base = SRC[a] || C0[a]; const v = getP(base, b); return v; };
     const defs = () => Object.fromEntries(SCHEMA.map((r) => [r.k, defOf(r)]));
     const cfg = () => o.get();
     const sh = () => { const c = cfg(); if (!c.shared || typeof c.shared !== 'object') c.shared = { v: {}, at: 0, by: '' }; if (!c.shared.v || typeof c.shared.v !== 'object') c.shared.v = {}; return c.shared; };
@@ -124,6 +126,7 @@
       if (o.AC) { o.AC.nightFrom = c.nightFrom != null ? +c.nightFrom : C0.AUTO.nightFrom; o.AC.nightTo = c.nightTo != null ? +c.nightTo : C0.AUTO.nightTo; } }
     /* 바꾸기 — 옆 창(by = 'PC 이름 옆 창') · 공통 값은 이 PC에 곧바로 넣고 올릴 것으로 둠 */
     function set(k, v, by) { const r = rowOf(k); if (!r) return { ok: false, err: '모르는 설정: ' + k }; const ck = check(k, v, { test: o.test }); if (!ck.ok) return { ok: false, err: `${r.t} — ${ck.err}` };
+      if ((r.k === 'hands' || r.k === 'handsHide') && o.isLogger && o.isLogger()) return { ok: false, err: '로거 PC에는 손발 길이 없음(약속 0)' };
       if (r.k === 'alOwn' && ck.v === true && o.isLogger && o.isLogger()) return { ok: false, err: '로거 PC는 알라딘 자리를 받지 않음(약속 0)' };
       const from = effOf(r); const c = cfg(); if (ck.reset) delP(c, r.p); else setP(c, r.p, ck.v); const to = effOf(r); const t = now();
       if (r.sc === 'all') { const s = sh(); if (ck.reset) delete s.v[k]; else s.v[k] = ck.v; s.at = Math.max(t, (+s.at || 0) + 1); pend()[k] = { v: ck.reset ? null : ck.v, at: s.at, by: String(by || '').slice(0, 60) }; }

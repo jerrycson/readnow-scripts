@@ -23,8 +23,8 @@ const pol = { fee: 2500, freeOver: 20000 };
 D = mk(8200, 7000, 'YLWCMN_ms', { policy: pol }); ok(D.state === 'review' && D.items[0].bbNet === 6986 && D.items[0].bbGain === -14, '배송비 정책(손님 배송비 2,500원)도 셈 — 8,200원 순이익 6,986원 · 차 −14원 → 검토', D.items[0]);
 D = mk(10000, 7000, 'YLWCMN_ms', { policy: pol }); ok(D.state === 'pass' && D.items[0].bbGain === 1606, '배송비 정책 넣으면 10,000원은 차 1,606원 → 통과', D.items[0]);
 D = mk(8200, 7000); ok(D.state === 'pass' && D.items[0].rule === 'pct', '저가·관리코드가 아닌 책(8,200원 · BLK)은 매입 판정 안 씀 — 25% 규칙(그대로)', D.items[0]);
-const same = [1500, 3333, 4000, 8200, 10000, 19999, 20000, 31234].every((P) => [{}, { fee: 2500, freeOver: 20000 }, { fee: 3000, freeOver: null }].every((po) => SH.bbNetParts(P, { policy: po, D: PRC.DEFAULTS }).net === Math.round(PRC.sellNet(P, { policy: { fee: po.fee ?? null, freeOver: po.freeOver ?? null } }, null))));
-ok(same && SH.bbNetParts(5000, {}).net === SH.bbNetParts(5000, { D: PRC.DEFAULTS }).net, '공용 순이익(bbNetParts) = 판정 엔진 sellNet(같은 값 · D 없어도 같은 기본값)');
+const same = [1500, 3333, 4000, 8200, 10000, 19999, 20000, 31234].every((P) => [{}, { fee: 2500, freeOver: 20000 }, { fee: 3000, freeOver: null }].every((po) => { const x = SH.bbNetParts(P, { policy: po, D: PRC.DEFAULTS }); return x.net === Math.round(PRC.sellNet(P, { policy: { fee: po.fee ?? null, freeOver: po.freeOver ?? null } }, null) + Math.max(0, x.cust - x.cr)); })); /* (정범님 11/12 밤) 매입 후보 순이익 = 하한 셈(sellNet) + 택배비 마진(손님 배송비 > 택배비일 때만 다름) */
+ok(same && SH.bbNetParts(5000, {}).net === SH.bbNetParts(5000, { D: PRC.DEFAULTS }).net, '공용 순이익(bbNetParts) = 판정 엔진 sellNet + 택배비 마진(손님 배송비 3,000원 > 택배비 2,500원이면 500원 더) · D 없어도 같은 기본값');
 ok(SH.bbMarginOf(undefined) === 500 && SH.bbMarginOf('') === 500 && SH.bbMarginOf(-1) === 500 && SH.bbMarginOf(1200) === 1200, '기준 차액 기본 500원 · 이상한 값이면 500원');
 // ② 화면
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(600);

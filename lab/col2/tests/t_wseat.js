@@ -33,7 +33,7 @@ function webApp(port) { const APP = fs.readFileSync(path.join(L.PROD_REPO, 'src'
 const A=process.argv;const act=A[A.indexOf('-Act')+1];let t='';process.stdin.on('data',(c)=>t+=c);process.stdin.on('end',()=>{const k=Buffer.from('rn3-test-key');const x=(b)=>Buffer.from(b.map((v,i)=>v^k[i%k.length]));
 if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toString('base64'));else process.stdout.write('ok:'+x([...Buffer.from(t.trim(),'base64')]).toString('utf8'))});`); fs.chmodSync(D + '/bin/dpapi', 0o755);
   const alcfg = { chkMin: 600, confirmMin: 600, delivMin: 600, listMin: 600, qnaMin: 600, gapA: 100, gapB: 200 };
-  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: false, al: true, alOwn: true, auto: false, headless: true, pc: 'HOME', pcSrc: 'pc', alcfg, relogin: { gapMin: 0, perHour: 20, perDay: 50, vGapSec: 0, vPerHour: 50, vMaxSec: 40 }, watch: { tickSec: 60, handoffMs: 200 } },
+  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: false, al: true, alOwn: true, auto: false, headless: true, pc: 'HOME', hands: false, pcSrc: 'pc', alcfg, relogin: { gapMin: 0, perHour: 20, perDay: 50, vGapSec: 0, vPerHour: 50, vMaxSec: 40 }, watch: { tickSec: 60, handoffMs: 200 } },
     env: { RN_COL2_ALSCM: A.base, RN_COL2_AL_SCALE: '0.05', RN_COL2_CORE_DIR: L.PROD_REPO, RN_COL2_DPAPI: D + '/bin/dpapi' } });
   const OG = { Origin: `http://127.0.0.1:${H.port}` }; const save = (b) => H.api('POST', '/cred/save', b, OG);
   const st = async () => (await H.api('GET', '/status')).j; const datA = path.join(HOME, 'cred', 'al.dat'); const chk = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')).chk; } catch (e) { return null; } };

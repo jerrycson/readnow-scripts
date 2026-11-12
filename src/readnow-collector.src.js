@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.285
+// @version      1.89.288
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -23,9 +23,9 @@
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.8
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.13
-// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.15
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.178
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
+// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.17
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.180
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.19
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
@@ -6748,7 +6748,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function autoShipPc(orders) { if (AU.busy || PUBONLY || !auth.currentUser || !pcLoggedNow()) return null; if (window.__rnFeat && !window.__rnFeat('ship')) return null; /* 출고 기능을 끈 PC는 판단·발송준비시작 안 함(다른 PC·클라우드) */
     const SHC = window.ReadnowShipping || globalThis.ReadnowShipping, ML = window.ReadnowML || globalThis.ReadnowML; if (!SHC || !SHC.autoShipDecide || !ML || !ML.evalSale) return null;
     AU.busy = true; const out = { sent: 0, review: 0, wait: 0 };
-    try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; c.holds = d.holds && typeof d.holds === 'object' ? d.holds : {}; /* (11/04 정범님) ⏸ 보류 목록(웹앱 출고 카드) */ AU.cfg = c; AU.cfgAt = Date.now(); if (!AU.bbx || Date.now() - (AU.bbxAt || 0) > 5 * 60e3) { /* (정범님 11/05 밤) 🏷 알라딘 매입 후보 판정 재료(공용 bbNear) — 웹앱·클라우드와 같은 출처: 기준 차액 app_settings/main.bbMargin · 배송비 정책 crm_system/shopPolicy.current · 판정 엔진 DEFAULTS · 5분마다 */ const bx = { margin: null, policy: null, D: null }; try { bx.margin = ((await C('app_settings').doc('main').get()).data() || {}).bbMargin ?? null; } catch (e) {} try { const pc = ((await C('crm_system').doc('shopPolicy').get()).data() || {}).current || {}; bx.policy = { fee: pc.fee ?? null, freeOver: pc.freeOver ?? null }; } catch (e) {} const PRb = window.ReadnowPricing || globalThis.ReadnowPricing || null; bx.D = (PRb && PRb.DEFAULTS) || null; AU.bbx = bx; AU.bbxAt = Date.now(); } if ((d.rejudgeAt || null) !== (AU.rjAt || null)) { AU.rjAt = d.rejudgeAt || null; (d.rejudgeOrders || []).forEach((x) => AU.mem.delete(String(x))); } /* (정범님 11/02) 🔄 웹앱 '시장 다시 읽기' 뒤 다시 판단할 주문 — 기억을 지워 다시 봄 */ if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
+    try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; c.holds = d.holds && typeof d.holds === 'object' ? d.holds : {}; /* (11/04 정범님) ⏸ 보류 목록(웹앱 출고 카드) */ AU.cfg = c; AU.cfgAt = Date.now(); if (!AU.bbx || Date.now() - (AU.bbxAt || 0) > 5 * 60e3) { /* (정범님 11/05 밤) 🏷 알라딘 매입 후보 판정 재료(공용 bbNear) — 웹앱·클라우드와 같은 출처: 기준 차액 app_settings/main.bbMargin · 배송비 정책 crm_system/shopPolicy.current · 판정 엔진 DEFAULTS · 5분마다 */ const bx = { margin: null, policy: null, D: null }; try { bx.margin = ((await C('app_settings').doc('main').get()).data() || {}).bbMargin ?? null; } catch (e) {} try { const pc = ((await C('crm_system').doc('shopPolicy').get()).data() || {}).current || {}; bx.policy = { fee: pc.fee ?? null, freeOver: pc.freeOver ?? null }; } catch (e) {} const PRb = window.ReadnowPricing || globalThis.ReadnowPricing || null; bx.D = (PRb && PRb.DEFAULTS) || null; if (PRb && PRb.bbWithCourier) { let ac = null; try { ac = (await C('crm_system').doc('accounting').get()).data() || null; } catch (e) {} const w = PRb.bbWithCourier(bx, ac); bx.D = w.D || bx.D; bx.crSrc = w.crSrc; } /* (리드 11/12 밤) 평균 택배비 = ⚙ 택배 계약 · 없으면 엔진 기본값 */ AU.bbx = bx; AU.bbxAt = Date.now(); } if ((d.rejudgeAt || null) !== (AU.rjAt || null)) { AU.rjAt = d.rejudgeAt || null; (d.rejudgeOrders || []).forEach((x) => AU.mem.delete(String(x))); } /* (정범님 11/02) 🔄 웹앱 '시장 다시 읽기' 뒤 다시 판단할 주문 — 기억을 지워 다시 봄 */ if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
       const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, sellerReview: !!cfg.sellerReview, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, bbMargin: SHC.bbMarginOf ? SHC.bbMarginOf(AU.bbx && AU.bbx.margin) : null, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 · (11/05 밤) 매입 후보 기준 차액도 */ if (AU.mem.size > 3000) AU.mem.clear();
@@ -10565,6 +10565,51 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
   const gx = (p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'POST', url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: JSON.stringify(b), timeout: 15000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
   const L = (lv, m) => { try { window.__rnLog && window.__rnLog('로그인', lv, m); } catch (e) {} };
+  /* (11/12 hands1 정범님 결정 'HOME 알라딘은 평소 크롬을 손발로' · readnow-chats reports/ANS_1112_night.md 8번 길 가) 🖐 손발 길 — 번외 ⚙ '알라딘은 평소 크롬을 손발로'를 켠 PC(HOME 기본)에서
+   *  이 탭(평소 크롬 · 이미 로그인된 아는 기기 · 이 PC 알라딘 자리를 쥔 운영 수집기)이 번외가 맡긴 샵매니저 읽기를 대신 함 — 번외 크롬은 알라딘에 로그인하지 않음(새 로그인 0)
+   *  · 맡김은 일 종류(chk·list·confirm·deliv·qna)와 쪽 번호만 받음 — 주소는 아래 표에서 이 탭이 스스로 만듦(번외가 아무 주소나 부르게 하지 않음) · GET 읽기만(값을 바꾸는 요청 없음)
+   *  · 화면 안에서 해석해 번호·상태·값만 돌려줌(POST /al/hands · 손님 이름·전화·주소·문의 글 없음) · 한 번(10초)에 하나 · 이 탭이 자리를 쥔 때만(로그인 자리 4대 규칙) · 출고 보호·로거·쉬는 탭이면 안 함
+   *  · 알라딘 요청 속도는 이 PC 운영 수집기와 같은 속도 조절(makePacer 'aladin')을 거침
+   *  · 창 제목 앞에 '🖐 리드나우 손발 · '를 붙여 번외가 이 창을 찾게 함(🪟 작업 창 탭은 제목 그대로 — 그 창은 운영 도우미 몫) · 번외가 '사람 손 필요'라고 하면 이 탭을 앞 탭으로(window.focus · 작업 창이면 __rnWorkShow) */
+  const HSx = { on: false, done: [], busy: false, front: null, login: null, loginAt: 0, why: '' }; const HT = '🖐 리드나우 손발 · ';
+  const HST = { 판매중: 1, 일시판매중지: 3, 판매중지: 15 };
+  const hUrl = (j) => { const pg = (hi) => Math.max(1, Math.min(hi, Math.round(+j.page || 1))); switch (String(j.k || '')) {
+    case 'chk': return '/scm/wmain.aspx';
+    case 'list': { const c = HST[j.st]; return c ? `/scm/wrecord_edit.aspx?chkItemStockStatus=${c}&chkItemInDate=0&searchCat1=0&searchType=1&keyword=&ViewRowsCount=100&page=${pg(60)}&SortOrder=6&itemStockStatus=${c}&categoryId=0` : null; }
+    case 'confirm': return '/scm/worder_preparatory_complete.aspx';
+    case 'deliv': return '/scm/worder_delivery.aspx?orderstep=4';
+    case 'qna': return `/scm/wUsedShopC2CQnASellerList.aspx?page=${pg(20)}`;
+    default: return null; } };
+  const hTitle = () => { try { const W0 = window.__rnWork; const work = !!(W0 && W0.isWork && W0.isWork()); const t = String(document.title || ''); const want = HSx.on && !work && window.__rnRole && window.__rnRole() === 'lead';
+    const has = t.startsWith(HT.trim()); /* 제목이 비면 브라우저가 끝 빈칸을 잘라 '…손발 ·'만 남음 */ if (want && !has) document.title = HT + t; else if (!want && has) document.title = t.slice(HT.trim().length).replace(/^\s/, ''); } catch (e) {} };
+  const hGov = () => { try { const g = window.__rnLoginGov; return g && g.state ? g.state() : null; } catch (e) { return null; } };
+  async function hRun(j) { const u = hUrl(j); if (!u) return { ok: false, why: '모르는 일(맡김 종류 밖)', kind: 'error' }; const k = String(j.k);
+    if (location.hostname !== 'www.aladin.co.kr') return { ok: false, why: '이 탭이 www.aladin.co.kr 화면이 아님', kind: 'error' };
+    const s0 = hGov(); if (!(s0 && s0.in === true)) return { ok: false, why: '이 PC 운영 수집기가 지금 알라딘 로그인 자리를 쥐고 있지 않음 — 읽지 않음', kind: 'error' };
+    const A0 = G.ReadnowAladin || window.ReadnowAladin, P0 = G.ReadnowProducts || window.ReadnowProducts, S0 = G.ReadnowShipping || window.ReadnowShipping, O0 = G.ReadnowOrders || window.ReadnowOrders;
+    if (!A0 || !P0 || !S0 || !O0) return { ok: false, why: '공용 해석 파일이 아직 안 들어옴', kind: 'error' };
+    try { await P0.makePacer('aladin').wait((ms) => new Promise((r) => setTimeout(r, ms))); } catch (e) {}
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 30000); let r, buf;
+    try { r = await fetch(u, { credentials: 'include', cache: 'no-store', signal: ac.signal }); buf = await r.arrayBuffer(); } catch (e) { return { ok: false, why: e.name === 'AbortError' ? '알라딘이 시간 안에 답하지 않음' : '연결 실패: ' + String(e.message || e).slice(0, 80), kind: 'error' }; } finally { clearTimeout(to); }
+    if (r.status === 429 || r.status === 503) return { ok: false, st: r.status, why: '서버 응답 ' + r.status + ' (요청이 너무 많음 — 쉼)', kind: '429' };
+    if (!r.ok) return { ok: false, st: r.status, why: '서버 응답 ' + r.status, kind: 'error' };
+    const doc = new DOMParser().parseFromString(A0.decode(buf, r.headers.get('content-type')), 'text/html'); let fin = '/'; try { fin = new URL(r.url).pathname; } catch (e) {}
+    if (A0.isMaintenance(doc)) return { ok: false, why: '알라딘 점검 중', kind: 'maint' };
+    if (A0.looksLoggedOut(r.url, doc, { scmNeedsLogout: true, url: u })) return { ok: false, login: true, why: '샵매니저가 로그인 화면으로 감(' + fin + ')', kind: 'login' };
+    if (k === 'chk') return { ok: true, st: r.status, sum: { loggedIn: true } };
+    if (k === 'list') { const x = P0.parseScmList(doc, new Date().getFullYear()); return { ok: true, st: r.status, sum: { page: x.page, lastPage: x.lastPage, rows: x.rows.map((z) => ({ u: z.usedCode || null, l: z.listingId || null, s: z.status, p: z.price, k: z.sku, g: z.grade, q: z.qty })) } }; }
+    if (k === 'confirm' || k === 'deliv') { const x = S0.parseDeliveryPage(doc); return { ok: true, st: r.status, sum: { tab: x.tabCounts || {}, orders: (x.orders || []).map((o) => ({ o: o.orderNo, it: (o.items || []).map((i) => i.listingId || null), d: o.deliveryNo || null })) } }; }
+    if (k === 'qna') { const x = O0.parseQnaList(doc); return { ok: true, st: r.status, sum: { rows: x.map((z) => ({ q: z.questionId, a: z.answered == null ? null : String(z.answered) })) } }; }
+    return { ok: false, why: '모르는 일', kind: 'error' }; }
+  const hBody = () => { const s0 = hGov(); const W0 = window.__rnWork; const fresh = HSx.login != null && Date.now() - HSx.loginAt < 30 * 60e3;
+    const login = fresh ? HSx.login : s0 && s0.in === true ? true : s0 && s0.in === false && !s0.seat ? false : null; /* 자리 기다림·이어받기(seat)는 '풀림'으로 보지 않음 — 사람을 부르지 않게 */
+    return { v: 1, login, why: String((!fresh && s0 && s0.in === false && s0.why) || HSx.why || '').slice(0, 120), work: !!(W0 && W0.isWork && W0.isWork()), page: location.pathname.split('/').pop().slice(0, 40), ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '', title: String(document.title || '').startsWith(HT.trim()), done: HSx.done.splice(0, 5) }; };
+  async function hTake(h, pc, hold) { const was = HSx.on; HSx.on = !!(h && h.on) && !isLogger(); if (was !== HSx.on) L('info', HSx.on ? '🖐 번외 ⚙ 「알라딘은 평소 크롬을 손발로」 — 이 탭이 번외가 맡긴 샵매니저 읽기를 대신 함(번외 크롬은 로그인하지 않음)' : '🖐 손발 길 끔 — 번외 맡김을 받지 않음'); hTitle();
+    if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} /* 🪟 작업 창이면 운영 도우미가 그 창을 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 이 탭을 앞으로 띄움(알라딘 로그인을 확인해 주세요)'); }
+    const jobs = Array.isArray(h.jobs) ? h.jobs.slice(0, 1) : []; if (!jobs.length || HSx.busy) return; if (hold && hold.on) { for (const j of jobs) HSx.done.push({ id: String(j.id), res: { ok: false, why: '🚚 출고 중 — 읽지 않음', kind: 'error' } }); return; }
+    HSx.busy = true; try { for (const j of jobs) { let res; try { res = await hRun(j); } catch (e) { res = { ok: false, why: '읽기 오류: ' + String(e.message || e).slice(0, 100), kind: 'error' }; }
+        if (res.ok) { HSx.login = true; HSx.loginAt = Date.now(); HSx.why = ''; } else if (res.login) { HSx.login = false; HSx.loginAt = Date.now(); HSx.why = res.why; }
+        const one = { id: String(j.id).slice(0, 40), res }; const r2 = await gx('/al/hands', { by: pc, done: [one] }); if (!(r2 && r2.ok)) HSx.done.push(one); } } finally { HSx.busy = false; } }
   /* 🪑 자리 받기·지키기·내려놓기(한 트랜잭션) — want 거짓이면 내려놓기만 */
   /* (11/10 정범님 'HOME을 번외 전용으로') 🏠 own = 번외 ⚙ '이 PC 알라딘 자리를 번외가 이어받음' — 운영 자리를 먼저 놓은 뒤(로그인 모듈 ownDrop) 번외 자리를 보통 PC 차례(우선순위 1)로 받고 그림자 양보를 하지 않음 */
   async function seatTx(want, who, own) { const db = fsx(), RULE = G.__rnLoginRule; const PRI = own && RULE ? RULE.PRI.pc : -1; if (!db || !RULE) return { ok: false, why: '계정 상태 문서를 못 읽음(Firebase 로그인 전)', until: Date.now() + 60e3 };
@@ -10585,11 +10630,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const was = SEAT.ok; let r = null; try { r = await seatTx(true, who, own); } catch (e) { r = { ok: false, why: '자리 트랜잭션 실패: ' + (e.code || e.message), until: now + 60e3 }; }
     SEAT.ok = !!r.ok; SEAT.why = r.why; SEAT.at = now; SEAT.until = r.until || now + 60e3; SEAT.off = !!r.off; if (r.gap) SEAT.gap = r.gap; SEAT.had = true; /* 받았거나 기다림 줄에 섰음 — 그만둘 때 내려놓음 */
     if (was !== SEAT.ok) L(SEAT.ok ? 'info' : 'warn', `🟧 번외 알라딘 그림자 자리 — ${r.why}`); return was !== SEAT.ok; }
-  const c2alTick = async (now0) => { if (now0 === true) { SEAT.at = 0; SEAT.until = 0; nextAt = 0; } /* 참 = 자리를 곧바로 다시 봄(사람이 누름·시험) */ if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || isLogger()) return; if (!fsx()) return;
+  const c2alTick = async (now0) => { if (now0 === true) { SEAT.at = 0; SEAT.until = 0; nextAt = 0; } /* 참 = 자리를 곧바로 다시 봄(사람이 누름·시험) */ if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || isLogger()) { if (HSx.on) { HSx.on = false; hTitle(); } return; } if (!fsx()) return;
     busy = true; try { const pc = pcOf(); if (!pc) return; const who = pc + '~col2'; let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
-      const r = await gx('/al/feed', { by: pc, seat: { ok: SEAT.ok && !(hold && hold.on), why: hold && hold.on ? '🚚 출고 중 — 자리를 쓰지 않음' : SEAT.why }, hold, opLostAt: +gv('rnu-login-lost', 0) || 0, cfg: { off: SEAT.off } });
+      const r = await gx('/al/feed', { by: pc, seat: { ok: SEAT.ok && !(hold && hold.on), why: hold && hold.on ? '🚚 출고 중 — 자리를 쓰지 않음' : SEAT.why }, hold, opLostAt: +gv('rnu-login-lost', 0) || 0, cfg: { off: SEAT.off }, hands: hBody() });
       if (!r || !r.ok) { miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; try { GM_setValue('rn-c2w-ok', { on: false, hold: !!(hold && hold.on), at: Date.now() }); } catch (e) {} await seatStep(false, who); return; }
-      miss = 0; const a = r.al || {};
+      miss = 0; const a = r.al || {}; hTake(r.hands, pc, hold).catch(() => {}); /* (11/12 hands1) 🖐 손발 길 — 기다리지 않음(읽기는 따로 끝나면 /al/hands로) */
       { /* 🏠 이어받기 — 운영 자리 놓음 → 번외 자리 받음(이 차례) · 끄면 운영이 곧바로 되찾음 */ const gov = window.__rnLoginGov; const own = !!a.own && !a.logger; const was = gv('rn-c2own', null);
         if (own) { GM_setValue('rn-c2own', { on: true, at: Date.now(), pc }); if (!(was && was.on)) L('info', '🏠 번외 ⚙에서 이 PC 알라딘 자리를 번외가 이어받기로 함 — 운영 자리를 먼저 놓음'); if (gov && gov.ownDrop) await gov.ownDrop('번외 이어받기'); }
         else if (was && was.on) { GM_setValue('rn-c2own', { on: false, at: Date.now(), pc }); if (gov && gov.ownEnd) gov.ownEnd('번외 ⚙에서 이어받기 끔'); }
@@ -10608,7 +10653,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const on = !!(w && (w.job || w.img || w.crm)); if (!on && !bzOn) return; const why = on ? String(w.job || (w.img ? '사진 보관' : '고객·주문 수집')).slice(0, 80) : '끝남';
     const r = await gx('/busy', { sec: on ? 180 : 0, why }); if (!r || !r.ok) { if (++bzMiss >= 3) bzNext = Date.now() + 10 * 60e3; return; } bzMiss = 0; bzOn = on; };
   G.__rnC2busyTick = c2busyTick; setInterval(() => c2busyTick().catch(() => {}), 60000);
-  G.__rnC2alTick = c2alTick; G.__rnC2alSeat = () => ({ ...SEAT }); setTimeout(() => c2alTick().catch(() => {}), 20000); setInterval(() => c2alTick().catch(() => {}), 10000);
+  G.__rnC2alTick = c2alTick; G.__rnC2alSeat = () => ({ ...SEAT }); G.__rnC2hands = () => ({ on: HSx.on, busy: HSx.busy, login: HSx.login, left: HSx.done.length }); setTimeout(() => c2alTick().catch(() => {}), 20000); setInterval(() => c2alTick().catch(() => {}), 10000);
 })();
 /* (1.89.8) 🏷 정범님 10/20: 샵매니저 '상품 조회/수정' 목록의 우리 상품 관리코드 아래에 우리 SKU를 작게(관리코드 앞 3자리 + 고유 5칸 · 같은 상품 실물이 여럿이면 '외 n')
  *  자료 = app_settings/sku_seq(mapN) + sku_map_0…N (웹앱 상품 상세와 같은 것) · 이 PC Tampermonkey 저장소에 1시간 보관(rn-skuc — 화면을 열 때마다 다시 읽지 않게) · 로그인한 샵매니저 화면에서만(로거는 열지 않음)

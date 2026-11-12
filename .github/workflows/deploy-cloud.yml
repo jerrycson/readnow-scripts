@@ -142,3 +142,60 @@ jobs:
           URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
           V=$(python3 -c "import json;print(json.load(open('pc-live.json'))['ver'])")
           for t in 1 2 3 4; do R=$(curl -sS -m 60 -X POST -H "Authorization: Bearer $IDT" "$URL/pclive?ver=$V&commit=$GITHUB_SHA" || true); echo "$R"; echo "$R" | grep -q '"ok":true' && break; sleep 20; done
+
+  # (11/12 shopsrv · 정범님 11/12 밤 '우리숍 전용 서버를 바로 둠') 🛍 readnow-shop — 수집 서버(readnow-cloud)와 같은 이미지 · 명령만 node shop-main.js(숍 창구만 · 크롬·수집·배우기·예약 일 없음)
+  #  · 최소 0대(손님 없으면 0원) · 최대 3대 · 동시 40 · 1 vCPU·1GiB · 켤 때 CPU 부스트 · 요청 처리 중에만 CPU 값
+  #  · 공개(allUsers 호출)가 안 되면 빨간 실패 + 정범님이 Cloud Shell에서 한 줄 — 그동안 booksqueen.com은 원래 서비스로 넘어감(hosting/deploy.js resolveRuns)
+  #  · booksqueen.com/shop/ping 응답 머리(X-RN-Srv)가 아직 readnow-cloud면 '우리숍 내기'를 다시 돌려 Hosting 넘김을 새 서비스로 바꿈
+  shop:
+    name: 🛍 우리숍 전용 서버
+    needs: deploy
+    concurrency: { group: deploy-shopsrv, cancel-in-progress: false }
+    if: needs.deploy.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { contents: read, id-token: write, actions: write }
+    env: { SHOP_SVC: readnow-shop, SHOP_URL: 'https://readnow-shop-63884079760.asia-northeast3.run.app' }
+    steps:
+      - name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: 🛍 우리숍 전용 서버 올리기 (같은 이미지)
+        run: |
+          pub() { curl -fsS -m 20 "$SHOP_URL/healthz" 2>/dev/null | grep -q "\"srv\":\"$SHOP_SVC\""; }
+          IMG=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')
+          RSA=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.serviceAccountName)')
+          [ -n "$IMG" ] || { echo "::error::수집 서버 이미지 주소를 못 읽음"; exit 1; }
+          echo "이미지 $IMG · 실행 계정 ${RSA:-기본}"
+          A=(--image "$IMG" --region "$REGION" --project "$PROJECT" --command node --args="--max-old-space-size=700,shop-main.js" --memory 1Gi --cpu 1 --concurrency 40 --min-instances 0 --max-instances 3 --cpu-boost --timeout 60 --set-env-vars "FB_PROJECT=$PROJECT,CODE_SHA=$GITHUB_SHA,RN_ROLE=shop" --quiet)
+          [ -n "$RSA" ] && A+=(--service-account "$RSA")
+          if ! gcloud run deploy "$SHOP_SVC" "${A[@]}" --allow-unauthenticated > /tmp/shop.log 2>&1; then
+            tail -n 15 /tmp/shop.log
+            if grep -qi "iam\|policy" /tmp/shop.log && gcloud run services describe "$SHOP_SVC" --region "$REGION" --project "$PROJECT" >/dev/null 2>&1; then echo "::warning::공개 설정(IAM)만 실패 — 아래에서 다시"; else
+              grep -iE 'error|denied|permission|quota|billing' /tmp/shop.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; fi
+          fi
+          tail -n 4 /tmp/shop.log
+          for i in 1 2 3; do pub && break; sleep 10; done
+          if ! pub; then
+            gcloud run services update "$SHOP_SVC" --region "$REGION" --project "$PROJECT" --no-invoker-iam-check --quiet > /tmp/iam1.log 2>&1 || tail -n 3 /tmp/iam1.log
+            gcloud run services add-iam-policy-binding "$SHOP_SVC" --region "$REGION" --project "$PROJECT" --member=allUsers --role=roles/run.invoker --quiet > /tmp/iam2.log 2>&1 || tail -n 3 /tmp/iam2.log
+            for i in 1 2 3 4 5 6; do pub && break; sleep 10; done
+          fi
+          if ! pub; then
+            echo "::error::readnow-shop이 공개되지 않음(배포 계정 gh-deployer는 run.developer라 공개 설정 권한이 없음) — 정범님: Cloud Shell에서  gcloud run services add-iam-policy-binding readnow-shop --region asia-northeast3 --project readnow-3a385 --member=allUsers --role=roles/run.invoker  한 줄 → 그 뒤 Actions '클라우드 자동 배포' Run workflow (그동안 booksqueen.com은 원래 서비스가 받음)"
+            echo "### 🛍 우리숍 전용 서버: 올렸지만 공개 안 됨 — 정범님 한 줄 필요(오류 알림 참고) · 숍은 원래 서비스로 계속" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          C=$(gcloud run services describe "$SHOP_SVC" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containerConcurrency,spec.template.spec.containers[0].resources.limits.memory,spec.template.metadata.annotations."autoscaling.knative.dev/maxScale",status.latestReadyRevisionName)' 2>/dev/null || true); echo "::notice::우리숍 전용 서버 설정(동시·메모리·최대 대수·판) $C"
+      - name: 🛍 확인 (응답 머리·자료)
+        run: |
+          H=$(curl -sS -m 30 -D - -o /tmp/cfg.json "$SHOP_URL/shop/cfg" | tr -d '\r' | grep -i '^x-rn-srv:' || true)
+          N=$(python3 -c "import json;print(json.load(open('/tmp/cfg.json')).get('n'))" 2>/dev/null || echo '?')
+          S=$(curl -sS -m 30 "$SHOP_URL/shop/shelf?k=0" | python3 -c "import json,sys;j=json.load(sys.stdin);print(len(j.get('rows',[])),'/',j.get('n'))" 2>/dev/null || echo '?')
+          B=$(curl -sS -m 20 -D - -o /dev/null "https://booksqueen.com/shop/ping?t=$(date +%s)" | tr -d '\r' | grep -i '^x-rn-srv:' || true)
+          echo "### 🛍 우리숍 전용 서버 — ${H:-머리 없음} · 판매 ${N}권 · 서가 첫 묶음 ${S} · booksqueen.com 지금 넘김: ${B:-모름}" >> "$GITHUB_STEP_SUMMARY"
+          echo "$B" | grep -qi "$SHOP_SVC" && echo "ROUTED=1" >> "$GITHUB_ENV"
+          echo "$H" | grep -qi "$SHOP_SVC" || { echo "::error::새 서비스 응답 머리에 $SHOP_SVC가 없음"; exit 1; }
+      - name: booksqueen.com이 아직 새 서비스로 안 넘어갔으면 Hosting 다시 (우리숍 내기)
+        if: env.ROUTED != '1'
+        env: { GH_TOKEN: '${{ github.token }}', GH_REPO: '${{ github.repository }}' }
+        run: gh workflow run deploy-shop.yml --ref main && echo "::notice::'우리숍 내기'를 다시 돌림 — booksqueen.com 넘김이 readnow-shop으로"

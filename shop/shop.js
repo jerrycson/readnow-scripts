@@ -4,7 +4,14 @@
 (function () {
   'use strict';
   const B = window.BQ; const { won, esc } = B;
-  const API = (window.BQ_API || 'https://readnow-cloud-63884079760.asia-northeast3.run.app').replace(/\/+$/, '');
+  const API_CLOUD = 'https://readnow-cloud-63884079760.asia-northeast3.run.app', API_SHOP = 'https://readnow-shop-63884079760.asia-northeast3.run.app';
+  let API = (window.BQ_API || API_CLOUD).replace(/\/+$/, '');
+  /* (11/12 shopsrv) 🛍 우리숍 전용 서버(readnow-shop)가 살아 있으면 주문·로그인(POST)도 그리로 — 수집 서버(readnow-cloud)가 죽어도 숍이 삶 · 한 번 /shop/ping으로 보고 6초 안에 답이 없으면 원래 주소 그대로(10분 기억) */
+  const PICK = { p: null };
+  function pickApi() { if (window.BQ_API) return Promise.resolve(API); if (PICK.p) return PICK.p;
+    try { const m = JSON.parse(sessionStorage.getItem('bq-api') || 'null'); if (m && Date.now() - m.at < 600e3 && (m.u === API_SHOP || m.u === API_CLOUD)) { API = m.u; return (PICK.p = Promise.resolve(API)); } } catch (e) {}
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
+    PICK.p = fetch(API_SHOP + '/shop/ping', { signal: ctl.signal }).then((r) => r.json()).then((j) => { if (j && j.ok && j.srv === 'readnow-shop') API = API_SHOP; }).catch(() => {}).then(() => { clearTimeout(t); try { sessionStorage.setItem('bq-api', JSON.stringify({ u: API, at: Date.now() })); } catch (e) {} return API; }); return PICK.p; }
   const $ = (s, r) => (r || document).querySelector(s); const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const ST = { cfg: null, cfgAt: 0, list: null, busy: false };
   const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
@@ -15,7 +22,7 @@
    *  ③ 읽기가 429·502·503·504·연결 실패면 Retry-After(없으면 1.5·4·8초 + 흔들기)만큼 기다렸다 최대 3번 다시 — 주문(POST)은 다시 보내지 않음(두 번 접수 막기) */
   const SAME = { on: !window.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '') };
   const RETRY_ST = [429, 502, 503, 504]; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const base = get && SAME.on ? location.origin : API; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
+  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; if (!(get && SAME.on)) await pickApi(); const base = get && SAME.on ? location.origin : API; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
     try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && window.BQA && window.BQA.tok() ? { Authorization: 'Bearer ' + window.BQA.tok() } : {}) } }) }); /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */ let j = null; try { j = await r.json(); } catch (e) {}
       if (get && base !== API && (!j || typeof j !== 'object') && r.status !== 429 && r.status < 500) { SAME.on = false; return api1(path, opt); } /* 같은 주소 넘김이 아직 없음(HTML 404 등) → 클라우드 주소로 */
       if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || (r.status === 429 ? '사람이 많아 잠시 기다리는 중입니다' : '연결이 잠시 안 됩니다')); e.j = j; e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000 || (j && j.retry ? j.retry * 1000 : 0); throw e; } return j; }
@@ -232,7 +239,7 @@
     const waitOn = () => (navigator.onLine === false ? new Promise((r) => { const f = () => { window.removeEventListener('online', f); r(); }; window.addEventListener('online', f); setTimeout(f, 20000); }) : Promise.resolve());
     const go = (n) => one(n).catch((e) => { if (n >= 2) { const x = new Error(`책장 화면을 받지 못했습니다(${String(u0).split('?')[0]} · ${e.message}) — 인터넷 연결을 확인한 뒤 다시 해 보기를 눌러 주세요`); x.res = u0; throw x; } return waitOn().then(() => new Promise((r) => setTimeout(r, n ? 2000 : 800))).then(() => go(n + 1)); });
     return go(0); };
-  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.6' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.6' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.6' }))).catch((e) => { SHL.js = null; throw e; }));
+  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.7' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.7' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.7' }))).catch((e) => { SHL.js = null; throw e; }));
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
     try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const J0 = await (SHL.p0 || k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); SHL.p0 = null; /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */ all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());

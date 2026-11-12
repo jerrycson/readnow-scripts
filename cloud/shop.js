@@ -190,7 +190,9 @@ function suggest(all, q0, X) { const q = norm(q0); X = X || new Set(); if (q.len
   const top = (m, n, k) => [...m.entries()].sort((a, b) => (norm(a[0]).startsWith(q) ? 0 : 1) - (norm(b[0]).startsWith(q) ? 0 : 1) || b[1] - a[1] || a[0].length - b[0].length).slice(0, n).map(([v, c]) => ({ v, k, n: c }));
   return { s: [...top(T, 6, 't'), ...top(A, 3, 'a'), ...top(P, 2, 'pb')] }; }
 
-function makeShop({ db, C, FV, log, bucket }) {
+function makeShop({ db, C, FV, log, bucket, bg }) {
+  /* (11/12 shopsrv) bg === false = 🛍 숍 전용 서비스(readnow-shop · cloud/shop-main.js) — 표지 대표색 셈·책등 규칙 주소 묻기(뒷일 · 쓰기)는 하지 않고 읽기만(표지 셈 결과 shop_cover는 1시간마다 다시 읽음) · 뒷일은 원래 서비스(readnow-cloud)가 맡음(여러 대가 같은 일을 겹쳐 하지 않게) */
+  const BG = bg !== false; const SRV = String(process.env.K_SERVICE || 'local').slice(0, 40);
   /* (bookinfo1 11/12) 📖 책 정보 공개 요약 — bk_info/{ISBN}(클라우드 bookinfo.js가 모음) · 10분 기억 · 미리보기는 저장소 주소로 */
   const BKM = new Map(); const BKP = require('./bookinfo.js');
   async function bkInfoOf(isbn) { if (!/^97[89]\d{10}$/.test(String(isbn || ''))) return null; const m = BKM.get(isbn); if (m && Date.now() - m.t < 10 * 60e3) return m.v; let v = null;
@@ -219,8 +221,8 @@ function makeShop({ db, C, FV, log, bucket }) {
   const vw = async () => { const P = await promo(); const now = Date.now(); const key = [CAT.meta && CAT.meta.at, CAT.items.size, PROMO.ver, Math.floor(now / 60e3)].join('|'); if (VIEW.key === key) return VIEW.m;
     const m = new Map(); for (const [k, x] of CAT.items) m.set(k, BQP.applyOne(x, CAT.pv.get(k), P, now)); VIEW.key = key; VIEW.m = m; return m; };
   /* (shelf5) 서가 뒷일 — 표지 대표색(5분마다 300권 · 책등 없는 책·새 책 먼저) · 책등 규칙 주소(10분마다 40권) · 서가를 부를 때와 1분 시계 둘 다에서(손님이 없어도 돎) */
-  const covKick = () => { if (!COV || !CAT.items.size) return; const CV = require('./shop-cover.js'); if (Date.now() - (COV.state().runAt || 0) < CV.TICK_MS) return; COV.tick(CV.order([...CAT.items.values()]), CV.TICK_N).catch(() => {}); };
-  const spxKick = async () => { if (!CAT.items.size) return; const st = SPX.state(); if (Date.now() - (st.runAt || 0) < ((st.auto && st.auto.every) || 600e3)) return; const c = await cfg(); const sc = (c && c.shelf) || {};
+  const covKick = () => { if (!BG) { return COV ? COV.load().catch(() => {}) : null; } /* 숍 전용: 결과만 읽음(1시간에 한 번 · 서가는 이 읽기를 기다림) */ if (!COV || !CAT.items.size) return; const CV = require('./shop-cover.js'); if (Date.now() - (COV.state().runAt || 0) < CV.TICK_MS) return; COV.tick(CV.order([...CAT.items.values()]), CV.TICK_N).catch(() => {}); };
+  const spxKick = async () => { if (!BG || !CAT.items.size) return; const st = SPX.state(); if (Date.now() - (st.runAt || 0) < ((st.auto && st.auto.every) || 600e3)) return; const c = await cfg(); const sc = (c && c.shelf) || {};
     const pl = await SPX.plan(sc); if (!pl.n) { return; } /* (shelf6) 맞춤률이 낮으면 저절로 '천천히'(1시간 10권)·'멈춤'(14일) — 설정 spineRule·spineRuleAuto·spineRuleMin은 그대로 둠 */
     const cand = []; for (const [k, x] of CAT.items) { const id = CAT.bk.get(k); if (id && !x.sp) cand.push({ id, at: x.at }); } return SPX.tick(cand, CAT.books, { n: pl.n }).catch(() => {}); };
   const kickT = setInterval(() => { try { covKick(); spxKick().catch(() => {}); } catch (e) {} }, 60e3); if (kickT.unref) kickT.unref();
@@ -324,6 +326,7 @@ function makeShop({ db, C, FV, log, bucket }) {
     if (!/^\/shop\//.test(path)) return false;
     const origin = req.headers.origin || ''; const extra = String(process.env.SHOP_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean);
     if ([...SHOP_ORIGINS, ...extra].includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); res.setHeader('Access-Control-Expose-Headers', 'Retry-After, ETag'); res.setHeader('Access-Control-Max-Age', '600'); } /* (shelf6) 손님 화면이 Retry-After를 읽어 기다렸다 다시 · 미리 묻기(OPTIONS)는 10분 기억 */
+    try { res.setHeader('X-RN-Srv', SRV); } catch (e) {} /* (11/12 shopsrv) 어느 서비스가 답했는지(readnow-shop · readnow-cloud) — 응답 머리로 확인 */
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return true; }
     const send = (code, obj, cache, extraH) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cache || 'no-store', 'X-Robots-Tag': 'noindex', ...(extraH || {}) }); res.end(JSON.stringify(obj)); return true; };
     /* (shelf6) 막힘 응답 — 출처(CORS) 머리는 위에서 이미 붙음 · Retry-After(초)로 언제 다시 할지 알려 줌 */
@@ -332,12 +335,13 @@ function makeShop({ db, C, FV, log, bucket }) {
     try {
       /* (shelf6) 제한 갈래 — 서가 자료(/shop/shelf)·글꼴(/shop/font)은 따로 넉넉히(같은 주소를 쓰는 회사·학교 손님 여럿이 한꺼번에 서가를 열어도) · 나머지는 IP당 1분 240번 그대로 */
       { const ik = ipKey(req); const w = path === '/shop/shelf' ? limitWait('sh' + ik, SHELF_RL[0], SHELF_RL[1]) : path === '/shop/font' ? 0 : limitWait('r' + ik, 240, 60e3); if (w) return busy(w); }
+      if (path === '/shop/ping') return send(200, { ok: true, srv: SRV, bg: BG ? 1 : 0, n: CAT.items.size, at: new Date().toISOString() }); /* (11/12 shopsrv) 손님 화면이 숍 전용 서비스가 살아 있는지 먼저 봄(목록을 만들지 않음 · 가벼움) */
       if (path.startsWith('/shop/b/') && req.method === 'GET') return await seoPage(res, decodeURIComponent(path.slice(8)).slice(0, 80));
       { const m = /^\/shop\/sitemap(?:-(\d+))?\.xml$/.exec(path); if (m) { await ready(); const X = await soldX(); const H = await held(); const xml = sitemapXml([...CAT.items.values()].filter((x) => !X.has(x.id) && !H.has(x.id)), { n: m[1] ? +m[1] : 0 }); if (!xml) return send(404, { ok: false, err: '없는 쪽' });
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800, s-maxage=3600' }); res.end(xml); return true; } }
       if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta, await promo()), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60, s-maxage=60'); }
       if (path === '/shop/list') { await ready(); const H = await held(); const V0 = await vw(); const r = listItems([...V0.values()], q, H, await soldX()); r.items = rvTag(r.items, V0); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30, s-maxage=30'); }
-      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); await spinesLoad(); try { const c0 = await cfg(); uqSync(Math.max(0, Math.round(+((c0.shelf || {}).lookGen) || 0))); } catch (e) {} if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) · (shopc1) 값 = 우리숍 판매가(규칙 얹음) */ covKick(); spxKick().catch(() => {}); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv, VIEW.key, COV ? Math.floor((COV.state().runAt || 0) / 600e3) : 0, Math.floor(Date.now() / 600e3) /* (shelf8) 별점 요약이 10분마다 바뀜 */].join('|'); /* 표지 셈은 5분마다 300권씩(뒤에서 · 묶음은 10분에 한 번만 다시 만듦) */
+      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); await spinesLoad(); try { const c0 = await cfg(); uqSync(Math.max(0, Math.round(+((c0.shelf || {}).lookGen) || 0))); } catch (e) {} if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) · (shopc1) 값 = 우리숍 판매가(규칙 얹음) */ await covKick(); spxKick().catch(() => {}); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv, VIEW.key, COV ? Math.floor((COV.state().runAt || 0) / 600e3) : 0, Math.floor(Date.now() / 600e3) /* (shelf8) 별점 요약이 10분마다 바뀜 */].join('|'); /* 표지 셈은 5분마다 300권씩(뒤에서 · 묶음은 10분에 한 번만 다시 만듦) */
         if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...V.values()], H, X, CAT.sp, SPN.m, COV && COV.cvOf, (x) => { try { return ACCT.ratingOf(x); } catch (e) { return null; } })); SHELF.key = key; SHELF.gz = new Map(); }
         const [k, k2] = shelfK(q.k, SHELF.parts.length); const gk = k + '-' + k2; /* (shelf6) 나머지 묶음을 한 번에(k=1-) — 손님 한 명 요청 5번 → 2번 */
         const etag = '"' + crypto.createHash('sha1').update(SHELF.key + '|' + gk).digest('hex').slice(0, 20) + '"'; /* (shelf6) 같은 자료면 브라우저·CDN이 304로(본문 안 보냄) */
@@ -383,7 +387,7 @@ function makeShop({ db, C, FV, log, bucket }) {
   async function promoPreview(b) { b = b || {}; await ready(); const P = await promo(true); const items = [...CAT.items.values()]; const kinds = {}; for (const x of items) { const k = (CAT.pv.get(x.id) || {}).k || 'etc'; kinds[k] = (kinds[k] || 0) + 1; }
     const live = P.rules.filter((r) => BQP.ruleSt(r) === 'on').length; if (!b.rule) return { n: items.length, kinds, live, at: CAT.meta && CAT.meta.at };
     return { ...BQP.preview(items, (id) => CAT.pv.get(id), P, b.rule, Date.now()), kinds0: kinds, live, at: CAT.meta && CAT.meta.at }; }
-  return { handle, build, check, promoPreview, acctAdmin: (b, who) => ACCT.admin(b, who), _acct: ACCT, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
+  return { BG, SRV, handle, build, check, promoPreview, acctAdmin: (b, who) => ACCT.admin(b, who), _acct: ACCT, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억
