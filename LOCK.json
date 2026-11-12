@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "adapt10 판 내기 — 수집기·번외·클라우드·웹앱 목표·방법 장부",
+ "since": "2026-11-12T17:48:18Z",
+ "beat": "2026-11-12T17:48:18Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 책 정보 0.1.2(bookinfo1)",
   "at": "2026-11-12T17:45:01Z"
  },
- "host": null
+ "host": "vm-adapt10"
 }
