@@ -95,6 +95,10 @@ async function run(cfgX, seedX, tgX) { global.FieldPath = { documentId: () => '_
     { const S4 = S2.concat([['3_a', { sc: '3', coverKey: 'K000000301', title: '둘째 주력 팔린 책', goneDay: dAgo(6) }], ['3_b', { sc: '3', coverKey: 'K000000302', title: '둘째 주력 팔린 책 2', goneDay: dAgo(7) }]]);
       const G6 = await run({ spBatch: { goneFirst: ['2', '3'], goneFirstPage: 2, goneFirstScan: 10 } }, S4, TG.concat([{ sc: '3' }])); const f6 = G6.store['app_settings/adapt_cfg'].spBatchGone.first;
       ok(G6.r.goneFirst.shops.join() === '2,3' && G6.r.goneFirst.scan === 7 && G6.r.goneFirst.bySc['3'] >= 1 && f6['2'].lastId && f6['3'].lastId === null, '회차마다 주력 판매자 모두에서 조금씩(받는 문서를 판매자 수로 나눔 — 첫 판매자가 회차를 다 쓰지 않음)', { gf: G6.r.goneFirst, f6 }); }
+    { const S5 = Array.from({ length: 12 }, (_, i) => ['5_' + String(i).padStart(2, '0'), { sc: '5', coverKey: 'K0000005' + String(i).padStart(2, '0'), title: '많은 판매자 책 ' + i, goneDay: dAgo(1 + i) }]).concat([['6_a', { sc: '6', coverKey: 'K000000601', title: '적은 판매자 책 a', goneDay: dAgo(30) }], ['6_b', { sc: '6', coverKey: 'K000000602', title: '적은 판매자 책 b', goneDay: dAgo(31) }]]);
+      const G7 = await run({ spBatch: { goneFirst: ['5', '6'], goneFirstWant: 10 } }, S5, [{ sc: '1' }, { sc: '5' }, { sc: '6' }]); const b7 = G7.r.goneFirst.bySc;
+      const in5 = Object.keys(G7.w).filter((k) => /^5_/.test(k)).sort();
+      ok(G7.r.goneFirst.cand === 10 && b7['5'] === 8 && b7['6'] === 2 && G7.r.goneFirst.dayBySc['5'][0] === dAgo(1) && G7.r.goneFirst.dayBySc['5'][1] === dAgo(8), '후보도 판매자마다 고르게(상한 10÷2=5 · 적은 곳 2 → 남는 3은 많은 곳으로 · 판매자 안에선 최근 팔린 것 먼저 8개)', { b7, in5 }); }
     const G4 = await run({ spBatch: { goneFirst: [] } }, S2, TG); ok(!G4.r.goneFirst && G4.r.gone >= 4, '빈 배열이면 예전 동작(주력 먼저 없음)', { gf: G4.r.goneFirst, gone: G4.r.gone });
     const G5 = await run({ spBatch: { maxQ: 1 } }, S2, TG); ok(!G5.r.goneFirst, '기본 목록(주력 10곳)은 대상 판매자에 있을 때만 — 시험 판매자 1·2는 해당 없음'); }
   { const R4 = await run({ spBatch: { gone: false } }); ok(R4.r.gone === 0 && !R4.w.g_3 && R4.w.s_0 && R4.w.s_0.sp === 100, '끄기 adapt_cfg.spBatch.gone = false → 팔린 상품 넣지 않음(판매 중은 그대로)', R4.r.gone); }

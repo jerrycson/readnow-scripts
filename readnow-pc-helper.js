@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.282의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.283의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.282' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.282', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.283' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.283', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -905,15 +905,15 @@
      *  · 근거(진단 11/11 23:30): 맡기기는 127.0.0.1(그 기기 번외)로만 가서 HOME이 아닌 기기에선 '번외 없음'·'예스24 꺼짐'으로 막혔음 — HOME 번외는 로그인 ok·주문 읽기 도는 중
      *  · 받기는 트랜잭션(두 PC·두 탭이 같은 맡김을 두 번 넘기지 않음 · 번외도 같은 맡김 번호는 두 번 받지 않음) · 30분 넘게 묵은 새 맡김은 넘기지 않고 '늦음'으로 끝(그사이 재고가 바뀌었을 수 있음)
      *  · 로거 크롬(rn-pubChrome)·맡지 않은 PC는 아무것도 안 함(약속 0) · 손님 정보 없음(상품 번호·자체코드·수량·값·결과 글만) · 머리 그대로(@connect 127.0.0.1·firestore 이미 있음) */
-    const W_CMD = 'col2_y24_cmd', W_STALE = 30 * 60e3; let wAt = 0, wBusy = false; const wSig = {};
+    const W_CMD = 'col2_y24_cmd', W_STALE = 30 * 60e3; let wAt = 0, wBusy = false, wSeen = 0; const wSig = {}; /* (1.89.283 🔬 정밀 점검 11/12) wSeen = 마지막으로 맡김·진행 중이 있던 때 — 5분 넘게 없으면 15초 → 60초마다(빈 질의 둘 ≈ 11,500 읽기/일 → ≈ 3,000) */
     const gxs = (m, p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: C2Y + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(j ? { ...j, _st: r.status } : { ok: false, _st: r.status }); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
     const wCut = (x) => { if (!x || typeof x !== 'object') return null; const sm = (v) => (v && typeof v === 'object' && JSON.stringify(v).length <= 400 ? v : null); const c = (v, n) => (v == null ? null : String(v).slice(0, n || 200)); const one = (y) => (y && typeof y === 'object' ? { state: c(y.state, 20), msg: c(y.msg), todo: c(y.todo), pre: !!y.pre, before: sm(y.before), after: sm(y.after) } : null); /* 전·후 값은 작은 숫자 묶음만(400자 넘으면 버림) */
       const rows = {}; for (const [k, y] of Object.entries(x.rows || {}).slice(0, 30)) rows[String(k).slice(0, 200)] = one(y); return { ...one(x), stop: !!x.stop, rows }; };
     const wSafe = (x) => { try { return wCut(x); } catch (e) { return { state: x && x.state ? String(x.state).slice(0, 20) : 'fail', msg: x && x.msg ? String(x.msg).slice(0, 200) : '', rows: {} }; } };
-    const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < 15e3) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
+    const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < (Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
     const wRelay1 = async (pc) => { const fs = firebase.firestore(); const iso = () => new Date().toISOString();
       /* ① 새 맡김 받기 */
-      let qn = null; try { qn = await fs.collection(W_CMD).where('st', '==', 'new').limit(10).get(); } catch (e) { return; }
+      let qn = null; try { qn = await fs.collection(W_CMD).where('st', '==', 'new').limit(10).get(); } catch (e) { return; } if (qn.docs.length) wSeen = Date.now();
       for (const d of qn.docs.sort((a, b) => String((a.data() || {}).at).localeCompare(String((b.data() || {}).at)))) { const v = d.data() || {}; if (v.holder && String(v.holder).trim().toUpperCase() !== pc.trim().toUpperCase()) continue;
         let got = false; try { got = await fs.runTransaction(async (tx) => { const c = (await tx.get(d.ref)).data() || {}; if (c.st !== 'new') return false; tx.set(d.ref, { st: 'took', tookBy: pc, tookAt: iso() }, { merge: true }); return true; }); } catch (e) { got = false; } if (!got) continue;
         const age = Date.now() - (Date.parse(v.at || '') || 0); let fin = null;
@@ -927,7 +927,7 @@
         try { await fs.collection(W_CMD).doc(d.id).set(fin ? { st: 'done', doneAt: iso(), res: fin } : { st: 'run', runAt: iso(), prog: { step: '', wait: true, why: null } }, { merge: true }); } catch (e) {}
         try { window.__rnLog && window.__rnLog('예스24', fin ? 'warn' : 'info', fin ? `🟦 원격 예스24 쓰기 맡김(${String(v.by || '').slice(0, 20)}) 넘기지 못함 — ${fin.msg}` : `🟦 원격 예스24 쓰기 맡김 ${((v.job || {}).rows || []).length}건(${String(v.by || '').slice(0, 20)})을 이 PC 번외에 넘김`); } catch (e) {} }
       /* ② 넘긴 맡김의 결과·진행 되돌려 적기 */
-      let qr = null; try { qr = await fs.collection(W_CMD).where('st', '==', 'run').limit(30).get(); } catch (e) { return; } const mine = qr.docs.filter((d) => String((d.data() || {}).tookBy || '') === pc); if (!mine.length) return;
+      let qr = null; try { qr = await fs.collection(W_CMD).where('st', '==', 'run').limit(30).get(); } catch (e) { return; } const mine = qr.docs.filter((d) => String((d.data() || {}).tookBy || '') === pc); if (mine.length) wSeen = Date.now(); if (!mine.length) return;
       const st = await gxs('GET', '/y24/w/state'); if (!st || !st.ok) return; const res = st.res || {}; const wait = new Set((st.wait || []).map((w) => w.id)); const acks = [];
       for (const d of mine) { const v = d.data() || {}; const jid = String((v.job || {}).id || d.id); const x = res[jid];
         try { if (x) { await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: wSafe(x), prog: null }, { merge: true }); acks.push(jid); delete wSig[d.id]; continue; }
