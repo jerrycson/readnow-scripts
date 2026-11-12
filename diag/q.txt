@@ -1,6 +1,4 @@
-col2=2026-11-12
-doc=col2_naver/state,app_settings/adapt_health,app_settings/adapt_cfg,prd_system/autoSched
-logs=1&pc=LOGGER&from=202611120000
-run=1
-shelfjobs=1
-# 3151816652
+spbatch=dry
+slearn=1
+saud=1
+# 1299110208
