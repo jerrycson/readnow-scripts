@@ -45,11 +45,18 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   ok(/if \(q\.voice\) \{ try \{ out\.voice = await VOICE\.run\(true, q\.voice !== 'save'/.test(SRC), '진단 voice=1(계산만) · voice=save(저장)');
 
   console.log('② 판매자 상품 수');
-  const s0 = SRC.indexOf('function sshItemsOf('); const s1 = SRC.indexOf('function sshSumOf('); ok(s0 > 0 && s1 > s0, 'sshItemsOf 있음');
+  const s0 = SRC.indexOf('function shopTreeItems('); const s1 = SRC.indexOf('function sshSumOf('); ok(s0 > 0 && s1 > s0, 'sshItemsOf 있음');
   const sshItemsOf = new Function(SRC.slice(s0, s1) + '\nreturn sshItemsOf;')(); const X = { strip: (h) => String(h).replace(/<[^>]+>/g, ' ') };
   const cases = [['<div>전체상품 (12,345)</div>', 12345], ['<span>총 <em>2,000</em>개의 상품</span>', 2000], ];
   for (const [h, n] of cases) { const r = sshItemsOf(X, h, null); ok(r.n === n, `꼴 '${X.strip(h).replace(/\s+/g, ' ').trim()}' → ${n}`, r); }
   ok(sshItemsOf(X, '<div>판매자 상품 모두보기 가게A 전문셀러 000 개 --> 중고국내도서 전체보기 건강/취미 (11469) 건강운동 (733) 스포츠/레저 기타 (249) 원예 (167)</div>', null).n === null, '(0.35.143) 실제 화면 꼴 — 분야 나무 숫자(기타 249)를 상품 수로 쓰지 않음(null)');
+  { const tree = (o) => `<div class="wTrees" id="subtr-1" style="display:block"><ul>
+<li id="tb1"><a href="#" class="fold"><img/></a><a href="#" onclick="Goto('1','100')" class="br">건강/취미 (11469)</a>
+<div class="wTrees" id="subtr1" style="display:none"><ul><li id="tb2"><a href="#" class="br">건강운동 (733)</a></li><li id="tb3"><a href="#" class="br">기타 (249)</a></li></ul></div></li>
+<li id="tb4"><a href="#" class="br">소설/시/희곡 (1,200)</a><div class="wTrees" id="subtr4"><ul><li><a class="br" href="#">한국소설 (1,000)</a></li></ul></div></li>
+</ul></div>${o || ''}<ul><li><a class="br" href="#">딴 목록 (5)</a></li></ul>`;
+    const r1 = sshItemsOf(X, tree(), null); ok(r1.n === 12669 && /^tree1:2$/.test(r1.how), '분야 나무 맨 윗줄만 더함(11,469 + 1,200 · 아랫분야·나무 밖 목록 뺌)', r1);
+    const r2 = sshItemsOf(X, tree('<div class="wTrees" id="subtr-2"><ul><li><a class="br" href="#">외국도서 (30)</a></li></ul></div>'), null); ok(r2.n === 12699 && r2.how === 'tree2:3', '갈래가 둘이면(국내·외국) 둘 다', r2); }
   ok(/fix1112/.test(SRC) && /shopItemsBad: \{ v: v\.shopItems/.test(SRC), '0.35.142가 잘못 쓴 상품 수는 한 번 비우고 shopItemsBad에 남김(지우지 않음)');
   ok(sshItemsOf(X, '<p>상품 목록입니다</p>', null).n === null && /상품/.test(sshItemsOf(X, '<p>상품 목록입니다</p>', null).near), '못 찾으면 null(지어내지 않음) + 글 조각');
   ok(sshItemsOf(X, 'x', 55).n === 55 && sshItemsOf(X, 'x', 55).how === 'core', '공용 해석이 찾은 값은 그대로');
