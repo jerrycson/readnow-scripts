@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "auditfix 판 내기 — 웹앱·수집기·클라우드·공용·도우미·번외(점검 리드 몫 고침)",
- "since": "2026-11-12T23:53:09Z",
- "beat": "2026-11-12T23:53:09Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "수집기 1.89.292 netFlush 빈 jobs 고침 · a4155410",
-  "at": "2026-11-12T23:48:00Z"
+  "done": "auditfix 판 076c7d3c 웹앱 1.78.541·수집기 1.89.293·클라우드 0.35.191·공용 0.18.25·도우미 1.8.24·번외 0.1.47",
+  "at": "2026-11-12T23:57:04Z"
  },
- "host": "vm-auditfix"
+ "host": null
 }
