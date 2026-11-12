@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const COL2 = {
-    COL2_VER: '0.1.45', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
+    COL2_VER: '0.1.46', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
     PORT: 8797, /* 번외 도우미 포트 — 운영 인쇄 도우미 8898·로거 도우미 8899와 겹치면 켜지 않음 */
     PROD_PORTS: [8898, 8899],
     PREFIX: 'col2_', /* Firestore 쓰기는 이 머리 칸만 */

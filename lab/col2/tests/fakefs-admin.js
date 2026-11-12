@@ -20,7 +20,7 @@ function makeDb() { const store = {}; const writes = [];
     q.get = async () => { let ids = Object.keys(col(c)).sort(); ids = ids.filter((id) => q._f.w.every(([k, op, v]) => op === '==' && col(c)[id][k] === v)); if (q._f.after != null) ids = ids.filter((id) => id > q._f.after); if (q._f.lim) ids = ids.slice(0, q._f.lim);
       const docs = ids.map((id) => snap(c, id)); return { docs, size: docs.length, forEach: (fn) => docs.forEach(fn) }; };
     return q; }
-  function colRef(c) { const q = query(c); return { ...q, doc: (id) => docRef(c, id) }; }
+  let autoN = 0; function colRef(c) { const q = query(c); return { ...q, doc: (id) => docRef(c, id == null ? 'auto' + String(++autoN).padStart(6, '0') : id) }; } /* (11/12 handoff4) 이름 없는 doc() = 새 이름(운영 prd_metric_changes·prd_rank_periods) */
   const db = { collection: colRef, runTransaction: async (fn) => { const ops = []; const tx = { get: async (r) => snap(r._c, r.id), set: (r, v, o) => ops.push(() => r.set(v, o)), update: (r, v) => ops.push(() => r.update(v)) }; const out = await fn(tx); for (const o of ops) await o(); return out; },
     batch: () => { const ops = []; return { set: (r, v, o) => { ops.push(() => r.set(v, o)); }, update: (r, v) => { ops.push(() => r.update(v)); }, commit: async () => { for (const o of ops.splice(0)) await o(); } }; } }; /* (11/12 handoff3) 묶음 쓰기 — 🎯 운영 benchFinish 떼어 부르기 시험 */
   return { db, C: (c) => db.collection(c), FV, store, writes, col }; }

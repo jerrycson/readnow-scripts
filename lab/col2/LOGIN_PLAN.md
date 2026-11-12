@@ -31,7 +31,7 @@
 | R18 | 매입 신청 내역(우리가 알라딘에 판 책) | GET `/account/wc2binfo.aspx?pType=C2BOrderList…` · `c2borderinfo` | 필요 | 없음 | 우리 계좌 꼴 | — | 매입 대금 | 설계 |
 | R19 | 구매 내역(우리가 산 주문) | GET `/account/wmaininfo.aspx?pType=MyAccount` · `wordersinfo.aspx?ONO=` | 필요 | 없음 | 우리 주소 | — | — | 설계 |
 | R20 | 매입가 조회·팔기 장바구니 보기 | GET `/shop/usedshop/wc2b_search.aspx` · `wc2b_sales.aspx?search=1` | 필요 | 없음 | 없음 | 장바구니 화면은 W15와 같은 곳 | 매입가 | 설계 |
-| R21 | 추천 판매가 | GET `/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales` | 필요 | 없음 | 없음 | — | 가격 판단 | 설계 |
+| R21 | 추천 판매가 | GET `/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales` | **불필요(11/12 확인 — 쿠키 없이도 같은 답)** | 없음 | 없음 | — | 가격 판단 · 값 = 정가 × 45% × 품질(최상 100% · 상 90% · 중 80%) — 운영은 ✍ 등록·등급 바꾸기(W6·W7) 안에서만 부름 → 그 쓰기와 함께 넘김 | 설계 |
 | R22 | 등록 보조(ISBN·분류·출판사·저자·대학 분류 팝업) | GET `/scm/wpopup_*.aspx` · POST `wpopup_category.aspx/GetCategoryData`(JSON 읽기) | 필요 | 없음 | 없음 | — | — | 설계(등록 W7과 함께) |
 
 ### 쓰기 (값을 바꿈 — 오늘은 하나도 만들지 않음)

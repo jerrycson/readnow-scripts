@@ -42,6 +42,14 @@
     bench: { name: '🎯 집중 벤치마킹 — 숍 목록 끝까지', col: 'bench_state', cols: ['bench_state', 'bench_days', 'bench_items', 'prd_jobs'], idRe: '^\\d{1,10}$', fields: ['run', 'claim'], mode: 'bench', lg: true, shadowK: 'benchFull', maxPages: 40, maxItems: 4000, everyH: 0, beatMaxH: 30,
       ops: "운영 benchJob이 그 숍을 '다른 PC가 읽는 중'(번외 잡기 신호)·'이번 실행 중에 이미 끝냄'(번외가 쓴 bench_state)으로 저절로 건너뜀 — 큰 숍(끝 쪽 40쪽 넘음)·상품 페이지 정보(benchDetail)·이어 읽기는 운영 그대로",
       why: '읽기 = 운영 benchParse·benchLastPage 글자 그대로 · 쓰기 = 운영 benchFinish 글자 그대로(웹앱·클라우드가 떼어 부름) · 그림자 = 숍 끝까지 읽은 목록을 운영 bench_state 지금 목록과 견줌' },
+    /* (11/12 handoff4 · 리드 '📘·📈·🏷 묶음째') 📦 상품 화면 묶음 — 운영 refreshOne0 한 번 읽기(도서 정보·번호 색인·우리 상품 연결·시장 지표·중고 첫 쪽·순위 기간)를 사무실 PC 한 대(PUBSET · 기본 JS-MAIN)가 묶음째
+     *  읽기: 번외 사무실 PC가 상품 화면(운영 parseProductPage) + 중고 첫 쪽(운영 parseUsedPage) 두 장 · 그림자 'pubset' = 도서 칸(📘)·시장 지표(📈)·중고 첫 쪽(🏷)을 한 번에 운영 문서와 견줌
+     *  쓰기: 그 PC 웹앱만(우리 상품 목록 prd_listings를 읽어야 해 클라우드 길 없음) — 운영 본체 refreshOne0를 글자 그대로 떼어(pubCode) 진짜 Firestore로 부름 · 화면 받기 두 곳(pubProd·pubUsed)만 번외가 읽은 결과로 받침
+     *  나눔(운영 수집기 본문·머리 그대로): 운영 시장 지표(market·그룹 시장 지표)는 마지막 확인 시각(lastCheckedAt)이 주기(recheckDays · 그룹은 회차 시작 since) 안인 책을 저절로 건너뜀 → 번외가 먼저 쓴 책은 운영이 다시 읽지 않음
+     *  운영과 겹치지 않게: 웹앱이 쓰기 바로 앞에 잡기 문서(prd_jobs/pclaim_<책> · 4분)를 트랜잭션으로 잡고 시장 지표 확인 시각을 다시 읽어 주기 안이면 쓰지 않음 · 우리 상품 연결이 없는 책(알라딘 구간·탐색 책)은 운영 그대로 */
+    product: { name: '📦 상품 화면 묶음 — 📘 도서 정보·📈 시장 지표·🏷 중고 첫 쪽(사무실 PC 한 대)', col: 'prd_book_metrics', cols: ['prd_books', 'prd_ids', 'prd_listings', 'prd_book_metrics', 'prd_metric_changes', 'prd_rank_periods', 'prd_jobs'], idRe: '^[\\w.-]{1,150}$', fields: ['pub'], mode: 'pub', lg: false, shadowK: 'pubset', recheckDays: 7, everyH: 0, beatMaxH: 30,
+      ops: '운영 시장 지표(market·그룹 시장 지표)가 번외가 먼저 읽어 쓴 책(확인 시각이 주기 안)을 저절로 건너뜀 — 우리 상품 연결이 없는 책·판매완료 상품 정보·알라딘 구간·탐색·로거 일은 운영 그대로',
+      why: '읽기 = 운영 parseProductPage·parseUsedPage 그대로 · 쓰기 = 운영 refreshOne0 글자 그대로(웹앱이 떼어 부름) · 그림자 = 같은 두 장으로 도서 칸·시장 지표·중고 첫 쪽을 한 번에 견줌' },
   };
   /* (11/11 col2rep5) 🔀 외부 정보 다른 출처도 국중과 같은 길로 — 운영 extSave(모든 출처 같은 함수)와 같은 쓰기: 같으면 확인 시각만 · 바뀌면 옛 값을 ext_hist에 먼저 · 기본 정보는 '없음'이면 받아 둔 값 그대로 · 출처 색인
    *  나눔: ISBN 있는 책은 번외(다시 볼 날 = 운영 공용 파일 기본 — 기본 정보 120일 · 장터 7일 · 해외 14일 · 전자책 30일) · ISBN 없는 상품(장터 시세만)·국중 날짜 차례는 운영 그대로
@@ -57,7 +65,7 @@
   /* (11/11 col2rep5 · 정범님 11/11 'JS-MAIN에도 번외가 깔림') 맡길 PC 차림표 — 그 PC가 '넘길 수 있음'을 낸 적이 있으면 그 PC가 [넘기기] 단추의 기본(없으면 표본 많은 PC)
    *  HOME = 바깥 사이트 일(외부 정보·KPIPA·환율) — HOME은 알라딘 하루 몫 1,600장을 상품 화면이 새벽에 다 쓰지만 바깥 사이트 몫은 따로라 남음 · 표본도 가장 많음(11/11 국중 368·eBay 34·리디 40)
    *  JS-MAIN = 알라딘 화면을 읽는 일(🔍 새상품 없는 시세 = 알라딘 중고 검색) — 11/11 알라딘 몫 642/1,600장만 씀 · 사무실 상시 켜짐 · 알라딘 로그인 그림자(읽기·쓰기)도 이 PC */
-  const PC_PLAN = { kpipa: 'HOME', 'ext.fx': 'HOME', 'ext.nl': 'HOME', nbMarket: 'JS-MAIN', 'ext.*': 'HOME' };
+  const PC_PLAN = { product: 'JS-MAIN', /* (11/12 handoff4) 📦 PUBSET.pc */ kpipa: 'HOME', 'ext.fx': 'HOME', 'ext.nl': 'HOME', nbMarket: 'JS-MAIN', 'ext.*': 'HOME' };
   const planPc = (k) => PC_PLAN[k] || (/^ext\./.test(k) ? PC_PLAN['ext.*'] : null);
   const pickPc = (k, pcs) => { const P = planPc(k); const x = P && Object.entries(pcs).find(([pc, v]) => pc.toUpperCase() === P && v.can > 0); return x || Object.entries(pcs).sort((a, b) => b[1].can - a[1].can || b[1].n - a[1].n)[0]; };
   const DOC = { col: 'app_settings', id: 'col2_handoff' };
@@ -68,7 +76,8 @@
   /* 이 PC 번외가 운영 칸에 써도 되나 */
   const mine = (doc, k, pc) => { const s = state(doc, k); return s.on && !!pc && s.pc.toUpperCase() === String(pc).toUpperCase(); };
   /* 웹앱이 대신 쓸 때 — 그 일 · 그 칸 · 그 문서 이름 꼴 · 정한 칸만(그 밖 칸은 버림) */
-  function writeOk(doc, it, pc) { const k = String((it && it.job) || ''); const J = JOBS[k]; if (!J) return { ok: false, why: '넘김 표에 없는 일' };
+  function writeOk(doc, it, pc, o) { const k = String((it && it.job) || ''); const J = JOBS[k]; if (!J) return { ok: false, why: '넘김 표에 없는 일' };
+    if (J.mode === 'pub' && !(o && o.web)) return { ok: false, why: '📦 상품 화면 묶음은 그 PC 웹앱만 씀(우리 상품 목록을 읽어야 함 · 클라우드 길 없음)' }; /* (11/12 handoff4) */
     if (!mine(doc, k, pc)) return { ok: false, why: '이 PC로 넘긴 일이 아님(⚙ 🔀 번외로 넘기기)' }; const clm = J.mode === 'bench' && it.c === 'prd_jobs' && /^bclaim_\d{1,10}$/.test(String(it.id || '')); /* (11/12 handoff3) 🎯 잡기 신호는 운영 잡기 문서 이름으로(회차와 따로 — 번외 내보내기 줄이 서로 덮지 않게) */ if (it.c !== J.col && !clm) return { ok: false, why: `${k}는 ${J.col} 칸에만` };
     if (!clm && !new RegExp(J.idRe).test(String(it.id || ''))) return { ok: false, why: '문서 이름 꼴이 다름' };
     const v = {}; for (const f of J.fields) if (it.v && it.v[f] !== undefined) v[f] = it.v[f]; if (!Object.keys(v).length) return { ok: false, why: '쓸 칸이 없음' };
@@ -77,6 +86,7 @@
     if (J.mode === 'once' && J.srcOnly && v.src !== J.srcOnly) return { ok: false, why: `출처가 ${J.srcOnly}가 아님(운영과 같은 출처만)` };
     if (J.mode === 'plan') { const bad = planBad(k, v); if (bad) return { ok: false, why: bad }; }
     if (J.mode === 'bench') { const bad = benchBad(String(it.id || ''), v); if (bad) return { ok: false, why: bad }; }
+    if (J.mode === 'pub') { const bad = pubBad(String(it.id || ''), v); if (bad) return { ok: false, why: bad }; }
     return { ok: true, v }; }
   /* (11/11 col2rep3) 운영 extSave 판단 그대로(순수) — cur = 운영 문서(ext_basic/<ISBN>) · sameSig = 운영 공용 파일 ReadnowExt.sameSig · obj = 번외 결과 {at, chk, sig, none, d, by, q}
    *  → { st: same|keep|none1|changed|new, hist: 옛 값 보관 문서(없으면 null), up: 고칠 칸 } · 웹앱이 같은 규칙으로 씀(tCOL2HO가 견줌) */
@@ -91,7 +101,7 @@
    *  차례 = 같음이 오래(날 수) → 표본 많음 · pc = 표본이 가장 많은 PC */
   /* (11/12 col2rep6) 맡을 PC = 그 일을 하는 번외 판(외부 정보 14곳 0.1.26 · 그 밖 0.1.25) · 최근 3시간 안 하루 요약을 올린 PC만 — 웹앱 c2HoCand와 같음 · 없으면 pc null + no(까닭) */
   const SHADOW_OF = {}; for (const [k, J] of Object.entries(JOBS)) if (J.shadowK) SHADOW_OF[J.shadowK] = k;
-  const MINV = (k) => k === 'bench' ? '0.1.44' : (JOBS[k] && JOBS[k].mode === 'plan') || k === 'ext.lib' ? '0.1.41' : (/^ext\./.test(k) && !['ext.nl', 'ext.fx'].includes(k) ? '0.1.26' : '0.1.25'); /* (11/12 handoff2) 로거 칸 일·정보나루는 0.1.41부터 */ const FRESH_H = 3;
+  const MINV = (k) => k === 'product' ? '0.1.46' : k === 'bench' ? '0.1.44' : (JOBS[k] && JOBS[k].mode === 'plan') || k === 'ext.lib' ? '0.1.41' : (/^ext\./.test(k) && !['ext.nl', 'ext.fx'].includes(k) ? '0.1.26' : '0.1.25'); /* (11/12 handoff2) 로거 칸 일·정보나루는 0.1.41부터 */ const FRESH_H = 3;
   const verGE = (a, b) => { const x = String(a || '').split('.').map((n) => +n || 0), y = String(b || '').split('.').map((n) => +n || 0); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return true; };
   function candidates(jdays, t) { t = t || Date.now(); const by = {}; const last = {}; for (const j of jdays || []) { const a = Date.parse((j && j.at) || '') || 0; const u = String((j && j.pc) || ''); if (!last[u] || a > last[u].at) last[u] = { at: a, ver: (j && j.ver) || null, kind: (j && j.kind) || (/^LOGGER/i.test(u) ? 'logger' : 'office') }; }
     for (const j of jdays || []) { const T = (j && j.tasks) || {}; for (const [k0, s] of Object.entries(T)) { if (!s || !s.pass) continue; if (JOBS[k0] && JOBS[k0].shadowK && JOBS[k0].shadowK !== k0) continue; const k = SHADOW_OF[k0] || k0; /* (11/12 handoff3) 그림자 이름이 다른 일(🎯 첫 쪽 'bench' ↔ 끝까지 'benchFull') */ const o = by[k] || (by[k] = { k, name: s.name || k, days: new Set(), canDays: new Set(), n: 0, same: 0, un: 0, pcs: {} });
@@ -134,6 +144,7 @@
   /* (번외 쪽) 운영 규칙으로 '지금 써야 하나' — cur = 운영 문서(그림자 견줌에 받은 것) · 운영이 건너뛰는 책·판매자는 번외도 안 씀(값이 같아도 맥박은 남김) */
   function due(k, cur, t) { t = t || Date.now(); const J = JOBS[k] || {}; const ts = (x) => Date.parse(x || '') || 0;
     if (k === 'dynamic') { if (!cur) return true; const cut = t - (J.dynDays || 30) * 864e5; return cur.dynAt ? ts(cur.dynAt) < cut : !cur.dynTriedAt || ts(cur.dynTriedAt) < cut; }
+    if (k === 'product') return pubDue(cur, t);
     if (k === 'shopSum') { if (!cur) return true; const cut = t - (J.rev6mDays || 7) * 864e5; return (!cur.rev6mAt || ts(cur.rev6mAt) < cut) && !(cur.rev6mTriedAt && ts(cur.rev6mTriedAt) >= cut); }
     return true; }
 
@@ -141,8 +152,8 @@
    *    판정(저절로): 넘김 = 문서 on · 넘길 수 있음 = 최근 3일 그림자 '넘길 수 있음' + 까닭 모를 다름 0 + 길 있음 + 맡을 PC 있음 · 그림자 중 = 길은 있는데 아직 기준 못 넘음(그 까닭) · 막힘 = 길 없음(까닭) */
   const BLOCK = {
     product: '운영은 상품 화면 한 번으로 도서 정보·번호 색인·우리 상품 연결(prd_listings)·시장 지표·중고 첫 쪽·순위 기간을 함께 씀(refreshOne0) — 📘·📈·🏷 한 묶음 · (11/12 handoff3 약속 0 판단) 입력이 우리 상품 목록이고 우리 상품 칸을 쓰므로 맡을 PC = 사무실 PC 한 대(📦 pubset) · 로거는 맡지 않음 → 사무실 PC가 같은 상품 화면 읽기로 📈·🏷 그림자를 함께 내는 길을 만든 뒤',
-    metrics: '📘 한 묶음(📦 pubset · 사무실 PC) — 우리 책의 시장 지표는 우리 상품 목록이 입력이라 로거 칸에서 넘기지 않음(약속 0) · 로거 📈 그림자는 견줌만',
-    usedPage: '📘 한 묶음(📦 pubset · 사무실 PC) — 우리 책 중고 첫 쪽은 우리 상품 목록이 입력이라 로거 칸에서 넘기지 않음(약속 0) · 로거 🏷 그림자는 견줌만',
+    metrics: '📦 상품 화면 묶음으로 넘김(📘 알라딘 공개 화면 묶음 · 사무실 PC 한 대) — 우리 책의 시장 지표는 우리 상품 목록이 입력이라 로거 칸에서 넘기지 않음(약속 0) · 로거 📈 그림자는 견줌만',
+    usedPage: '📦 상품 화면 묶음으로 넘김(📘 알라딘 공개 화면 묶음 · 사무실 PC 한 대) — 우리 책 중고 첫 쪽은 우리 상품 목록이 입력이라 로거 칸에서 넘기지 않음(약속 0) · 로거 🏷 그림자는 견줌만',
     survey: "운영은 평가 글까지 여러 쪽을 읽어 seller_reviews에 달마다 쌓고 고르는 차례에 손님 연결 점수를 씀(로거에 줄 수 없음 · 약속 0) — 번외 그림자는 첫 쪽 날짜별 수만 → 여러 쪽 읽기·차례를 번외에 만든 뒤",
     voice: '🗣 판매자 글은 번외가 처음부터 따로 모음(col2_voice) — 운영에 같은 일이 없어 넘길 것 없음(운영 구매평 글은 ⭐ 숍 평가와 같은 함수)',
     'ext.ttb': '알라딘 OpenAPI 종료(2026-10-30) — 운영도 묻지 않음',
@@ -194,17 +205,44 @@
   /* 잡기 — 운영 benchClaim과 같은 판단(남이 4분 안에 잡았으면 못 잡음) · 번외 PC 이름 'col2-<PC>' */
   function claimOk(cur, pc, t) { const me = 'col2-' + String(pc); return !(cur && cur.pc && cur.pc !== me && (t || Date.now()) - (+cur.at || 0) < 4 * 60e3); }
 
+  /* ══ (11/12 handoff4) 📦 상품 화면 묶음 — 넘김 값 검사 · 운영 refreshOne0 떼어 부르기 · 운영 규칙으로 '지금 써야 하나' ══ */
+  /* 넘김 값 = { pub: { itemId, page(운영 parseProductPage 결과), used(운영 parseUsedPage 결과) } } · 문서 이름 = 책(bookId) */
+  const PUB_MAX = 400000;
+  function pubBad(id, v) { const p = v && v.pub; if (!p || typeof p !== 'object') return '상품 화면 값이 없음'; if (!/^[\w.-]{1,150}$/.test(String(id || ''))) return '책 번호 꼴이 다름';
+    if (!/^\d{1,13}$/.test(String(p.itemId || ''))) return '알라딘 상품 번호가 이상함'; const g = p.page; if (!g || typeof g !== 'object' || Array.isArray(g)) return '상품 화면 해석 값이 없음';
+    if (String(g.aladinItemId || '') !== String(p.itemId)) return '상품 화면 번호가 다름'; if (typeof g.title !== 'string' || !g.title) return '상품 화면에 제목이 없음(운영처럼 못 찾은 책)'; if (g.fetchedFrom !== 'aladin') return '알라딘 상품 화면 해석 값만';
+    const u = p.used; if (!u || typeof u !== 'object' || !Array.isArray(u.listings)) return '중고 첫 쪽 해석 값이 없음(운영은 두 장을 함께 읽음)';
+    let n = 0; try { n = JSON.stringify(p).length; } catch (e) { return '값을 글로 못 바꿈'; } return n > PUB_MAX ? `값이 너무 큼(${n}자)` : ''; }
+  /* 운영 market 규칙 — 마지막 확인 시각(lastCheckedAt)이 recheckDays(운영 SET.recheckDays · 기본 7)일 안이면 운영도 안 읽음 → 번외도 안 씀 */
+  const pubDue = (cur, t, days) => { const d = days == null ? JOBS.product.recheckDays : +days; if (!(d > 0)) return true; const a = Date.parse((cur && cur.lastCheckedAt) || '') || 0; return !a || a <= (t || Date.now()) - d * 864e5; };
+  /* 우리 상품 연결 고르기 — prd_listings 문서들(그 책) 중 판매 중이고 U코드가 있는 것(운영 market 대상과 같음 · 문서 이름 차례) */
+  const pubListing = (rows) => (rows || []).filter((x) => x && x.v && x.v.active && x.v.usedCode).sort((a, b) => String(a.id).localeCompare(String(b.id)))[0] || null;
+  /* 운영 본체에서 refreshOne0와 그 함수가 부르는 이름들을 글자 그대로 꺼냄 — env { C, db, firebase, PC_NAME, W, nowIso, log, SET, P, X, l, bookId, finalUrl, pub }
+   *  받침: 화면 받기 두 곳만(pubProd·pubUsed = 번외가 읽은 결과 · 상품 화면 주소는 운영이 부른 주소 그대로) · 구매자 분포 숨은 창(getProductFull)·대체 출처는 쓰지 않음(운영 기본 dynamicParts 꺼짐 · fallback 꺼짐 — 웹앱이 운영 설정을 보고 켜져 있으면 쓰지 않음)
+   *  사무실 PC라 PUBONLY = false(운영 JS-MAIN과 같음) · 운영 보관본(LISTINGS)은 이 자리 한 번만(빈 표) */
+  const PUB_NAMES = ['stabJ', 'BOOK_FIXED', 'avCode', 'avEvent', 'METRICS', 'resolveBookId', 'productUrls', 'extBasicFor', 'extToPage', 'refreshOne0'];
+  function pubCode(src) { const parts = []; for (const n of PUB_NAMES) { const f = grab(src, n); if (!f) return { err: `운영 본체에서 ${n}를 못 찾음` }; parts.push(f); }
+    const code = `(async function (env) { 'use strict'; const { C, db, firebase, PC_NAME, W, nowIso, log, SET } = env; const LISTINGS = new Map(); const EXT = () => env.X || null; const PUBONLY = false;
+      const cp = (x) => (x == null ? null : JSON.parse(JSON.stringify(x))); const P = Object.assign(Object.create(env.P), { parseProductPage: () => cp(env.pub.page), parseUsedPage: () => cp(env.pub.used) });
+      const pubProd = async (url) => ({ doc: null, finalUrl: env.finalUrl || ('https://www.aladin.co.kr' + url) }); const pubUsed = async () => ({ doc: null }); const getProductFull = async () => null; const fallbackProviders = async () => null;
+      ${parts.join('\n      ')}
+      await refreshOne0(env.l, env.bookId || null, null); return { lnk: LISTINGS.size }; })`;
+    const ver = (String(src).match(/@version\s+([\d.]+)/) || [])[1] || '?'; return { code, ver, len: code.length }; }
+  /* 잡기 — 4분 안에 남(다른 번외 PC)이 잡았으면 못 잡음 · 문서 prd_jobs/pclaim_<책> */
+  const pubClaimOk = (cur, pc, t) => { const me = 'col2-' + String(pc); return !(cur && cur.pc && cur.pc !== me && (t || Date.now()) - (+cur.at || 0) < 4 * 60e3); };
+
   const ALR = [ /* 🟧 알라딘 샵매니저 읽기 22가지(lab/col2/LOGIN_PLAN.md R1~R22) — free = 로그인 없이 읽힘 */
     ['R1', '로그인 확인'], ['R2', '상품 조회 목록'], ['R3', '상품 찾기(키워드)'], ['R4', '상품 정보수정 화면 읽기'], ['R5', '주문확인요청'], ['R6', '발송 요청'], ['R7', '배송&구매확정전'], ['R8', '주문 엑셀 받기'],
     ['R9', '주문조회 목록'], ['R10', '주문 상세 팝업'], ['R11', '반품 목록'], ['R12', '묻고 답하기 목록'], ['R13', '문의 상세'], ['R14', '구매평 목록(판매자 화면)'], ['R15', '가게 설정·공지 읽기'], ['R16', '부가가치세 조회'],
-    ['R17', '예치금(환급액)'], ['R18', '매입 신청 내역'], ['R19', '구매 내역'], ['R20', '매입가 조회', 'free'], ['R21', '추천 판매가', 'free?'], ['R22', '등록 보조 팝업']];
+    ['R17', '예치금(환급액)'], ['R18', '매입 신청 내역'], ['R19', '구매 내역'], ['R20', '매입가 조회', 'free'], ['R21', '추천 판매가', 'free21'], ['R22', '등록 보조 팝업']];
   const ALR_WHY = { login: '알라딘 판매자 로그인 필요 — 번외 창 로그인이 42FB(새 기기)로 막힘 · 로그인 길(가 평소 크롬 손발 · 나 쿠키 옮기기 · 다 사람이 한 번 로그인) 정범님 결정 전',
     free: '로그인 없이 읽히는 공개 화면(/shop/usedshop/wc2b_search) — 다만 운영에선 따로 도는 일이 아니라 ✍ W15 팔기 장바구니(매입 신청)의 앞 단계 → W15와 함께 넘김(따로 넘길 일 없음) · 시세 쪽 매입가는 🏷 중고 첫 쪽(buyback)이 이미 읽음',
-    'free?': '공개 주소(/shop/usedshop/c2c_sales_ajax · 정가·등급으로 셈하는 값) — 운영은 ✍ 등록·등급 바꾸기(W6·W7) 안에서만 부름 → 그 쓰기와 함께 넘김 · 쿠키 없이 같은 답인지 아직 시험 안 함' };
+    /* (11/12 handoff4) R21 확인함 — 쿠키 없이도 같은 답 · 값은 정가·등급으로만 셈(알라딘 쪽 셈) */
+    free21: '로그인 없이 읽히는 공개 주소(/shop/usedshop/c2c_sales_ajax) — 쿠키 없이도 같은 답(11/12 확인): 추천 판매가 = 정가 × 45% × 품질(최상 100% · 상 90% · 중 80%) · 운영은 따로 도는 일이 아니라 ✍ 등록·등급 바꾸기(W6·W7) 안에서만 부름 → 그 쓰기와 함께 넘김(따로 넘길 일 없음)' };
   const BUNDLES = [
     { id: 'lg', name: '🌐 로거 고유 일', lg: true, note: '로거 PC 번외만 맡음 · 사무실과 엮지 않는 따로 칸(약속 0)', keys: ['dynamic', 'shopSum', 'metrics', 'usedPage', 'survey', 'bench', 'voice'] },
     { id: 'ext', name: '🔎 외부 정보·통계', note: '바깥 사이트 일 — 운영 extFill이 넘긴 출처는 ISBN 있는 책을 묻지 않음', keys: ['ext.nl', 'ext.lib', 'ext.kakao', 'ext.kyobo', 'ext.google', 'ext.yes24', 'ext.naverbook', 'ext.ttb', 'ext.joongmo', 'ext.yes24used', 'ext.bunjang', 'ext.joongna', 'ext.daangn', 'ext.dvdprime', 'ext.ebay', 'ext.abebooks', 'ext.ridi', 'ext.fx', 'kpipa'] },
-    { id: 'pub', name: '📘 알라딘 공개 화면(사무실)', note: '로그인 없는 알라딘 화면 — 사무실 PC', keys: ['product', 'nbMarket'] },
+    { id: 'pub', name: '📘 알라딘 공개 화면(사무실)', note: '로그인 없는 알라딘 화면 — 📦 상품 화면 묶음(📘·📈·🏷)은 사무실 PC 한 대(기본 JS-MAIN · 약속 0)', keys: ['product', 'nbMarket'] },
     { id: 'alr', name: '🟧 알라딘 샵매니저 읽기', note: '22가지 — 로그인 없이 되는 것과 로그인이 필요한 것을 나눔', keys: ALR.map((x) => 'al.' + x[0]) },
   ];
   /* 묶음 보기 — jdays(최근 3일 col2_jday) · doc(app_settings/col2_handoff) → [{ id, name, items:[{k,name,st,why,pc}] , n:{on,can,shadow,block}, can:[넘길 수 있는 일 k…] }] */
@@ -218,6 +256,6 @@
         if (c && !c.pc) return { k, name, st: 'shadow', why: '맡을 PC 없음 — ' + (c.no || '') };
         const L = lastWhy[k]; return { k, name, st: 'shadow', why: L ? `그림자 중 — ${L.why || '기준 못 넘음'}(${L.pc})` : '그림자 표본 없음(최근 3일 하루 요약에 이 일이 없음)' }; });
       const n = { on: 0, can: 0, shadow: 0, block: 0 }; for (const x of items) n[x.st]++; return { id: B.id, name: B.name, note: B.note, lg: !!B.lg, items, n, can: items.filter((x) => x.st === 'can').map((x) => ({ k: x.k, pc: x.pc })), on: items.filter((x) => x.st === 'on').map((x) => x.k) }; }); }
-  const api = { PUBSET, benchBad, chunkMap, benchCmp, grab, benchCode, benchProg, claimOk, SHADOW_OF, LG_K, kindOk, planBad, reads, plan, planCheck, due, BLOCK, ALR, ALR_WHY, BUNDLES, bundleView, EXT_HO, PC_PLAN, planPc, JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
+  const api = { pubBad, pubDue, pubListing, pubCode, pubClaimOk, PUB_NAMES, PUBSET, benchBad, chunkMap, benchCmp, grab, benchCode, benchProg, claimOk, SHADOW_OF, LG_K, kindOk, planBad, reads, plan, planCheck, due, BLOCK, ALR, ALR_WHY, BUNDLES, bundleView, EXT_HO, PC_PLAN, planPc, JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Handoff = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
