@@ -1,2 +1,3 @@
-@mirror mirror/20261112-083223-25666.json
-# 2574526349
+run=1
+doc=app_settings/voice_study
+# 59935870
