@@ -37,7 +37,7 @@ ok(/function regMktFbFix\(\)/.test(T) && /const regFbCIs = /.test(T), '표시 �
   await H(async (p) => { await seed(p, 'full');
     console.log('② 첫 페이지 빈 카드 — ⏳ 표시와 막힘');
     let a = await st(p, 'm1');
-    ok(a.wait && a.hold && a.card && /시장 지표 읽는 중/.test(a.cardT || ''), '선택 대기 카드에 ⏳ 시장 지표 읽는 중', a);
+    ok(a.wait && a.price === null && a.card && /시장 지표 읽는 중/.test(a.cardT || ''), '선택 대기 카드에 ⏳ 시장 지표 읽는 중 · (price2) 판매가는 비워 둠(정가 × 2 안 씀)', a);
     ok(a.miss.includes('⏳ 시장 지표 읽는 중 — 판매가 확정 전'), '필수 칸 목록에 ⏳ 시장 지표', a.miss);
     const c3 = await st(p, 'm3'); ok(!c3.wait && !c3.card && !c3.miss.length, '첫 페이지가 있는 카드는 그대로(막힘 없음)', c3);
     const mv = await p.evaluate(async () => { const r = await regMoveStage('m1', 'pick', regFinals([S.regItems.get('m1')], regCfg()).get('m1')); return { r, st: S.regItems.get('m1').stage }; });
@@ -64,8 +64,10 @@ ok(/function regMktFbFix\(\)/.test(T) && /const regFbCIs = /.test(T), '표시 �
     console.log('⑤ 다시 읽어도 0줄 — 세 번째에 확인으로 둠');
     for (let i = 1; i <= 3; i++) { await p.evaluate(() => { REG_MKT_RE.at.delete('m1'); }); await p.evaluate(() => regMktReread('m1')); await p.waitForTimeout(300); const s = await st(p, 'm1'); console.log('    ' + i + '번째', JSON.stringify({ wait: s.wait, chk: !!s.chk, err: s.err })); if (i === 1) ok(s.wait && !s.chk && /다시 읽어도 첫 페이지 0줄/.test(s.err || ''), '첫 번째: 아직 읽는 중(0줄 · 까닭 남김)', s); }
     const s3 = await st(p, 'm1');
-    ok(!s3.wait && s3.chk && s3.chk.tries >= 2 && !s3.miss.length, '0개가 되풀이되면 확인(mktChk)으로 두고 넘김', s3);
+    ok(!s3.wait && s3.chk && s3.chk.tries >= 2 && s3.miss.join() === '판매가', '0개가 되풀이되면 확인(mktChk)으로 두고 ⏳ 막힘은 풀림 · (price2) 새상품 판매 중이라 정가 × 2는 안 씀 → 판매가 빈칸(직접 정하기)', s3);
     ok(s3.card && /번 읽어도 0개/.test(s3.cardT || ''), '카드에 「n번 읽어도 0개」 남음', s3.cardT);
+    const fbn = await p.evaluate(() => { const el = document.querySelector('#sheet [data-rgcid="m1"] [data-rgfbno]'); return el ? el.textContent : ''; });
+    ok(/새상품 판매 중이라 정가 × 2 안 씀/.test(fbn), '(price2) 카드에 💬 판매가 비워 둠 — 까닭', fbn);
     console.log('⑥ 첫 페이지가 빈 24시간 조회 기록은 쓰지 않음');
     const fbuse = await p.evaluate(async () => { await db.collection('prd_lookups').add({ key: 'id_992', itemId: '992', title: '빈 기록', categories: [{ path: ['국내도서'] }], page1: [], usedTotal: 0, at: new Date().toISOString() }); const rec = await pptRecent(['id_992']); const x = rec['id_992']; return { got: !!x, use: !!(x && x.title && Array.isArray(x.categories) && Array.isArray(x.page1) && x.page1.length) }; });
     ok(fbuse.got && !fbuse.use, '빈 첫 페이지 기록은 다시 쓰는 조건에 안 맞음', fbuse);
