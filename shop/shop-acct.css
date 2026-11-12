@@ -1,0 +1,71 @@
+/* 🛍 북스퀸 👤 계정 · ⭐ 리뷰 · 📚 서재 · 마이페이지 (11/12 shop9) — shop.css 색 그대로(밤 화면 자동) */
+.bqst { --v: 0; position: relative; display: inline-block; font-size: 18px; line-height: 1; letter-spacing: 1px; color: var(--line); vertical-align: -2px; white-space: nowrap; }
+.bqst::before { content: '★★★★★'; }
+.bqst i { position: absolute; left: 0; top: 0; width: calc(var(--v) / 5 * 100%); overflow: hidden; color: #e0a526; font-style: normal; }
+.bqst i::before { content: '★★★★★'; }
+.bqst.sm { font-size: 14px; } .bqst.lg { font-size: 34px; letter-spacing: 2px; }
+.bqa-star { margin: 4px 0 2px; } .bqa-sh { text-decoration: none; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; } .bqa-sh small { color: var(--mut); text-decoration: underline; } .bqa-sh.none { color: var(--mut); }
+.bqa-actbar { margin: 10px 0 4px; display: grid; gap: 8px; }
+.bqa-rd { display: flex; gap: 6px; flex-wrap: wrap; } .bqa-rd .chip { font-size: 14px; min-height: 38px; cursor: pointer; }
+.bqa-act2 { display: flex; gap: 6px; flex-wrap: wrap; } .btn.sm { min-height: 36px; padding: 6px 12px; font-size: 14px; } .btn.on { border-color: var(--gold); background: rgba(201,162,74,.14); }
+.bqa-lp { border: 1px solid var(--line); border-radius: var(--r); padding: 10px; background: var(--card); display: grid; gap: 6px; }
+.bqa-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; } .bqa-row input { flex: 1; min-width: 0; height: 40px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: var(--card); color: var(--ink); font-size: 15px; }
+.bqa { margin: 22px 0 8px; } .bqa-wait { color: var(--mut); padding: 18px 0; }
+.bqa-sum { display: flex; gap: 18px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+.bqa-sum .big { display: grid; justify-items: center; gap: 2px; min-width: 96px; } .bqa-sum .big b { font-size: 36px; line-height: 1; } .bqa-sum .big small { color: var(--mut); font-size: 12px; }
+.bqa-dist { flex: 1; display: grid; gap: 3px; font-size: 12px; color: var(--mut); } .bqa-dist div { display: grid; grid-template-columns: 28px 1fr 26px; align-items: center; gap: 6px; }
+.bqa-dist i { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; } .bqa-dist i b { display: block; height: 100%; background: #e0a526; border-radius: 4px; }
+.bqa-wr { margin: 10px 0; } .bqa-wr .btn small { font-weight: 400; opacity: .8; margin-left: 6px; font-size: 12px; }
+.bqa-ctl { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; align-items: center; margin: 12px 0 6px; } .bqa-ctl select { height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 0 8px; }
+.bqa-ctl .chip { cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.bqa-rv { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; margin: 8px 0; } .bqa-rv.mine { border-color: var(--gold); }
+.bqa-rv header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--mut); } .bqa-rv header .sc { color: var(--ink); } .bqa-rv header .nk { color: var(--ink); font-weight: 600; } .bqa-rv header time { margin-left: auto; }
+.bqa-buy { color: var(--ok); font-weight: 700; font-size: 12px; } .bqa-test { font-size: 11.5px; padding: 1px 6px; border-radius: 6px; background: rgba(201,162,74,.18); color: var(--ink); font-weight: 500; }
+.bqa-rv .s100 { margin: 8px 0 4px; font-weight: 600; font-size: 15.5px; word-break: keep-all; overflow-wrap: anywhere; }
+.bqa-rv .body { position: relative; font-size: 14.5px; color: var(--ink); overflow-wrap: anywhere; } .bqa-rv .body.fold .tx { max-height: 7.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.bqa-rv .body.spo .tx { filter: blur(6px); user-select: none; pointer-events: none; max-height: 5em; overflow: hidden; } .spob { display: block; width: 100%; margin: 4px 0; padding: 8px; border: 1px dashed var(--line); background: transparent; color: var(--ink); border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.linkb { background: none; border: 0; color: var(--mut); font-size: 13px; cursor: pointer; padding: 6px 4px; text-decoration: underline; min-height: 32px; }
+.bqa-rv footer { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; } .bqa-rv footer .lk.on { border-color: var(--gold); color: var(--ink); background: rgba(201,162,74,.16); }
+.bqa-ph { display: flex; gap: 6px; margin-top: 8px; } .bqa-ph img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.bqa-bk { display: inline-block; margin-top: 6px; font-size: 13px; color: var(--mut); text-decoration: none; }
+.bqa-h3 { font-size: 15px; margin: 16px 0 6px; }
+.bqa-qh { margin-top: 26px; }
+.bqa-q { margin: 8px 0; padding: 10px 14px; border-left: 4px solid var(--gold); background: var(--card); border-radius: 0 var(--r) var(--r) 0; } .bqa-q p { margin: 0 0 4px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; } .bqa-q footer { font-size: 12.5px; color: var(--mut); }
+.bqa-qf textarea, .bqa-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; resize: vertical; }
+.bqa-qf .bqa-row input { flex: 0 0 90px; }
+.bqa-form { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; margin: 8px 0; display: grid; gap: 8px; } .bqa-form > input { height: 40px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: var(--card); color: var(--ink); font-size: 15px; }
+.bqa-form details summary { cursor: pointer; padding: 6px 0; font-weight: 600; } .bqa-form details small { font-weight: 400; color: var(--mut); }
+.bqa-si { display: flex; align-items: center; gap: 10px; position: relative; } .bqa-si .hit { position: absolute; left: 0; top: 0; height: 100%; display: flex; }
+.bqa-si .hit button { flex: 1; width: auto; height: 100%; min-height: 40px; background: transparent; border: 0; padding: 0; cursor: pointer; } .bqa-si .hit button:focus-visible { outline: 2px solid var(--gold); }
+.bqa-si b { font-size: 15px; }
+.bqa-pu { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bqa-pu .pv { position: relative; display: inline-block; } .bqa-pu .pv img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; } .bqa-pu .pv button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 12px; border: 0; background: var(--navy); color: #fff; cursor: pointer; }
+.bqa-ov { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 16px; } .bqa-ovb { background: var(--card); border-radius: var(--r); padding: 12px; max-width: 420px; width: 100%; } .bqa-ovb img { width: 100%; border-radius: 8px; display: block; }
+.bqa-auth { max-width: 460px; margin: 18px auto; } .bqa-auth form { display: grid; gap: 6px; } .seg2 { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+.seg2 a { text-align: center; padding: 11px; text-decoration: none; background: var(--card); } .seg2 a.on { background: var(--navy); color: #fff; font-weight: 700; }
+.bqa-why { margin: 18px 0 8px; padding-left: 18px; color: var(--mut); font-size: 14px; line-height: 1.8; }
+.bqa-me { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin: 14px 0 10px; }
+.bqa-me .who { display: flex; gap: 12px; align-items: center; } .bqa-me .who h1 { font-size: 20px; margin: 0 0 2px; } .bqa-me .av { flex: 0 0 52px; height: 52px; border-radius: 26px; background: var(--navy); color: var(--gold2); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+.bqa-me .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 6px; margin: 12px 0 6px; } .bqa-me .nums > * { text-decoration: none; text-align: center; padding: 8px 2px; border-radius: 10px; background: var(--bg); display: grid; }
+.bqa-me .nums b { font-size: 17px; } .bqa-me .nums small { color: var(--mut); font-size: 12px; } .bqa-me .nums i { font-style: normal; font-size: 10.5px; opacity: .8; }
+.bqa-me .goal { margin-top: 8px; font-size: 14px; } .bqa-me .goal > i { display: block; height: 8px; border-radius: 4px; background: var(--line); margin: 6px 0; position: relative; overflow: hidden; } .bqa-me .goal > i::after { content: ''; position: absolute; inset: 0; width: var(--p); background: var(--ok); border-radius: 4px; }
+.bqa-me .goal input { flex: 0 0 120px; }
+.bqa-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 8px -16px; padding: 0 16px 4px; -webkit-overflow-scrolling: touch; } .bqa-tabs::-webkit-scrollbar { display: none; }
+.bqa-tabs a { flex: 0 0 auto; text-decoration: none; padding: 8px 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); font-size: 14px; min-height: 38px; display: inline-flex; align-items: center; gap: 4px; } .bqa-tabs a.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.dot { min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; line-height: 18px; text-align: center; padding: 0 4px; }
+.bqa-o .stt { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 6px; background: var(--bg); } .bqa-inv { font-size: 13px; margin-top: 4px; }
+.bqa-al.hit { border-left: 4px solid var(--ok); } .bqa-nt { display: grid; gap: 4px; }
+.bqa-bl { display: block; text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; margin: 8px 0; } .bqa-bl h3 { margin: 0 0 4px; font-size: 16px; } .bqa-bl h3 small { color: var(--mut); font-weight: 400; font-size: 12.5px; }
+.bqa-strip { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; } .bqa-strip img { height: 84px; width: 58px; object-fit: cover; border-radius: 4px; flex: 0 0 auto; } .bqa-strip a span { display: inline-block; width: 58px; height: 84px; font-size: 10px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; padding: 2px; }
+.bqa-newrv { display: grid; grid-template-columns: 1fr; gap: 8px; } @media (min-width: 720px) { .bqa-newrv { grid-template-columns: 1fr 1fr 1fr; } }
+.bqa-nr { display: flex; gap: 10px; text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; } .bqa-nr img, .bqa-nr .noim { flex: 0 0 56px; width: 56px; height: 80px; object-fit: cover; border-radius: 4px; display: grid; place-items: center; }
+.bqa-nr div { min-width: 0; } .bqa-nr b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .bqa-nr p { margin: 4px 0 2px; font-size: 13.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .bqa-nr small { color: var(--mut); font-size: 12px; }
+.empty.sm { padding: 18px 8px; font-size: 14px; }
+.bqa-bye summary { cursor: pointer; color: var(--mut); margin-top: 18px; }
+/* (shop9 2회) 카드 별점 · 리뷰 요약 · 가게 답글 · 팔로잉 */
+.crv { font-size: 12.5px; color: var(--mut); margin-top: 2px; } .crv b { color: var(--ink); } .card .crv { line-height: 1.2; } .crv::first-letter { color: #e0a526; }
+.bqa-sm { margin: 10px 0; display: grid; gap: 8px; } .bqa-sm .chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); } .bqa-sm .chip small { color: var(--mut); }
+.bqa-pnw { display: grid; grid-template-columns: 1fr; gap: 8px; } @media (min-width: 720px) { .bqa-pnw { grid-template-columns: 1fr 1fr; } }
+.bqa-pn { display: block; text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; } .bqa-pn p { margin: 4px 0; font-size: 14px; } .bqa-pn small { color: var(--mut); font-size: 12px; }
+.bqa-rv.flash { box-shadow: 0 0 0 3px var(--gold); transition: box-shadow .3s; }
+.bqa-reply { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--bg); border-left: 3px solid var(--navy); font-size: 14px; } .bqa-reply p { margin: 2px 0 0; } .bqa-reply small { color: var(--mut); }
+.bqa-who { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); } .bqa-who small { color: var(--mut); flex: 1; font-size: 12.5px; min-width: 0; }
