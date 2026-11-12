@@ -380,7 +380,9 @@
   const FONT_API = 'https://readnow-cloud-63884079760.asia-northeast3.run.app';
   const fontText = (text) => [...new Set(String(text || ''))].sort().join('').slice(0, 900);
   const fontCss = (id, text, alias, api) => { const f = fontById(id); if (!f.bq) return null; const t = fontText(text); if (!t) return null;
-    return `@font-face{font-family:'${String(alias || f.id).replace(/['\\]/g, '')}';src:url(${String(api || FONT_API).replace(/\/+$/, '')}/shop/font?f=${encodeURIComponent(f.id)}&t=${encodeURIComponent(t)}) format('woff2');font-weight:${f.wt};font-style:normal;font-display:swap}`; };
+    /* (11/12 verify1) 둘째 주소 = 같은 글꼴(r=1 · 서버는 r을 안 봄) — 첫 요청이 클라우드 앞문 'Rate exceeded'(429)로 거절되면 브라우저가 둘째 주소로 한 번 더 받음(11/12 09:47 휴대폰 서가에서 /shop/font 429 1건) */
+    const u = `${String(api || FONT_API).replace(/\/+$/, '')}/shop/font?f=${encodeURIComponent(f.id)}&t=${encodeURIComponent(t)}`;
+    return `@font-face{font-family:'${String(alias || f.id).replace(/['\\]/g, '')}';src:url(${u}) format('woff2'),url(${u}&r=1) format('woff2');font-weight:${f.wt};font-style:normal;font-display:swap}`; };
   const fontUrl = (id, text) => { const f = fontById(id); return 'https://fonts.googleapis.com/css2?family=' + f.name.replace(/ /g, '+') + (f.ax ? ':' + f.ax : '') + '&display=swap&text=' + encodeURIComponent([...new Set(String(text || ''))].sort().join('').slice(0, 900)); };
   /* 설정 미리 보기 주소(관리 화면 → 손님 화면 #/shelf?cfg=… · 저장 안 하고 그 화면만) */
   const b64e = (s) => { try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
