@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "adapt9 🔄 적응 틀 판 내기",
- "since": "2026-11-12T15:12:17Z",
- "beat": "2026-11-12T15:17:31Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: 우리숍 전용 서버 readnow-shop 판 내기(shopsrv)",
-  "at": "2026-11-12T15:15:19Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "spfull 둘째 클라우드 0.35.166 push bc775622",
-  "at": "2026-11-12T15:12:06Z"
+  "done": "adapt9 웹앱 1.78.525 · 수집기 1.89.284 · 클라우드 0.35.167 · 적응 엔진 0.1.6 🔄 목표·방법 적응 틀 push c734937c",
+  "at": "2026-11-12T15:18:45Z"
  },
- "host": "vm-adapt9"
+ "host": null
 }
