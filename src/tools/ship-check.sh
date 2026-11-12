@@ -50,4 +50,6 @@ if [ -n "$add" ]; then
   ph=$(printf '%s\n' "$add" | grep -oE '(^|[^0-9])(01[016789]|\+?82[- ]?10)[- .]?[0-9]{3,4}[- .]?[0-9]{4}([^0-9]|$)' | grep -vE '01[016789][- .]?(0000|1234|1111)[- .]?(0000|5678|1111)' | wc -l)
   [ "$ph" -gt 0 ] && say "휴대전화 번호 꼴이 새 줄에 ${ph}개 있음 — 시험 자료라면 010-0000-0000처럼"
 fi
+# ⑦ (11/12 perf9) 🪶 무게 — 웹앱 본문 크기·되풀이 타이머·실시간 듣기 수를 app/weigh.json 기준선(앞 판)과 견줌 · 경고만(멈추지 않음) · 판 낼 때 node src/tools/weigh.js --save
+W7=$(dirname "$0")/weigh.js; command -v node >/dev/null && [ -f "$W7" ] && timeout 20 node "$W7" --quick 2>/dev/null | head -2
 [ $bad = 0 ] && echo "✓ push 전 검사 통과($who · $(printf '%s\n' "$changed" | wc -l)개 파일)"; exit $bad
