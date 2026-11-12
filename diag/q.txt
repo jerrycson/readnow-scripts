@@ -1,2 +1,2 @@
-run=1&bkinfo=1&reload=1
-# 260012523
+@health&hours=4
+# 597127510
