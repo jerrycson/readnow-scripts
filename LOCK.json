@@ -3,7 +3,11 @@
  "what": "vlite: 클라우드 HV 건너뜀 고침 판 내기",
  "since": "2026-11-12T10:47:20Z",
  "beat": "2026-11-12T10:47:20Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: soldfill3 최근 팔린 것 먼저",
+  "at": "2026-11-12T10:53:03Z"
+ },
  "last": {
   "who": "lead",
   "done": "soldfill3 클라우드 0.35.157 (20276ba6)",
