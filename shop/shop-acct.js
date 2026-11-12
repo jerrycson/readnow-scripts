@@ -28,7 +28,7 @@
   async function item(x, c) { IT.x = x; IT.k = kOf(x); IT.mine = null; IT.R = null; IT.p = 0; IT.liked = new Set(); const k = IT.k;
     const sec = $('#bqa'); if (!sec) return; sec.innerHTML = '<div class="bqa-wait">리뷰 불러오는 중…</div>'; actBar();
     const [R] = await Promise.all([X().api('/shop/rv?' + B.qs({ k, s: IT.s, f: IT.f })).catch(() => null), (async () => { if (!tok()) return; await me(); if (!ME) return; try { IT.mine = await A({ op: 'mine', k, id: x.id }); } catch (e) {} })()]);
-    if (IT.k !== k || !$('#bqa')) return; IT.R = R; starHead(); actBar(); rvRender(); likesLoad(); }
+    if (IT.k !== k || !$('#bqa')) return; IT.R = R && Array.isArray(R.items) ? { ...R, q: R.q || [] } : null; /* 옛 클라우드·다른 답이면 리뷰 없이 */ starHead(); actBar(); rvRender(); likesLoad(); }
   function starHead() { const h = $('#bqaStar'); const S = IT.R && IT.R.st; if (!h) return; h.innerHTML = S && S.n ? `<a href="#bqa" class="bqa-sh" data-jump="1">${stars(S.avg)} <b>${S.avg.toFixed(1)}</b> <small>리뷰 ${S.n.toLocaleString('ko-KR')}</small></a>` : `<a href="#bqa" class="bqa-sh none" data-jump="1">☆ 첫 리뷰를 남겨 주세요</a>`;
     const j = $('[data-jump]', h); if (j) j.onclick = (e) => { e.preventDefault(); const t = $('#bqa'); if (t) t.scrollIntoView({ behavior: 'smooth' }); }; }
   function actBar() { const el = $('#bqaAct'); if (!el || !IT.x) return; const x = IT.x; const rd = IT.mine && IT.mine.rd ? IT.mine.rd.s : null; const al = (IT.mine && IT.mine.al) || [];
@@ -214,7 +214,7 @@
       <div class="grid">${l.items.map((x) => bookCard({ ...x, p: x.p || 0, st: x.live === 'o' ? 'o' : null }, `<div class="wact"><small class="hint">${x.live ? (x.live === 'o' ? '주문 중' : '판매중') : '지금은 판매 끝'}${x.note ? ' · ' + esc(x.note) : ''}</small></div>`)).join('')}</div>`;
     $('#lcp').onclick = () => X().copy(location.href, '🔗 주소를 복사했습니다'); }
   /* 첫 화면: 새로 올라온 리뷰 */
-  async function home(el) { if (!el) return; let r; try { r = await X().api('/shop/rvnew'); } catch (e) { return; } if (!r.L.length || !el.isConnected) return; const L = r.L.slice(0, 6);
+  async function home(el) { if (!el) return; let r; try { r = await X().api('/shop/rvnew'); } catch (e) { return; } if (!r || !Array.isArray(r.L) || !r.L.length || !el.isConnected) return; const L = r.L.slice(0, 6);
     el.insertAdjacentHTML('beforeend', `<h2>⭐ 새로 올라온 리뷰</h2><div class="bqa-newrv">${L.map((x) => `<a class="bqa-nr" href="#/b/${esc(x.id || '')}">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}<div><b>${esc(x.t || '')}</b>${stars(st5(x.st), 'sm')}<p>${esc(x.s100)}</p><small>${esc(x.nick)} · ${esc(ago(x.at))}</small></div></a>`).join('')}</div>`); }
   /* 최근 본 책도 계정에(로그인했을 때 · 10초 모아서) */
   let sT = 0; function seenSync() { if (!tok()) return; clearTimeout(sT); sT = setTimeout(() => A({ op: 'seen', L: X().LS.get('bq-seen', []) }).catch(() => {}), 10000); }
