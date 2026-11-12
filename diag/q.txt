@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto,app_settings/platforms&pend=1&shelfjobs=1&col2=2026-11-12&cmds=prdEdit&n=20
-# 90226079
+logs=1&pc=JS-MAIN&from=202611121500
+# 1625023195
