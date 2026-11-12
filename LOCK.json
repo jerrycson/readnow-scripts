@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "📖 책 정보 모으기 판(bookinfo1) — 클라우드·웹앱·우리숍",
- "since": "2026-11-12T15:45:37Z",
- "beat": "2026-11-12T15:45:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "shop9 2회 웹앱 1.78.527 · 클라우드 0.35.169 push a27e8e03",
-  "at": "2026-11-12T15:45:26Z"
+  "done": "웹앱 1.78.528 · 클라우드 0.35.170 📖 책 정보 모으기(bookinfo1) 80ec547c",
+  "at": "2026-11-12T15:50:53Z"
  },
- "host": "vm-bookinfo1"
+ "host": null
 }
