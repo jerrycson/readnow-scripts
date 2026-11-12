@@ -15,8 +15,10 @@
       [2], [4], [8], [10], [11], [12], [13], [17], [18], [20], [23], [24], [26], [29], [35], [36], [38], [40], [43], [48], [51], [52], [54], [55], [56], [57]],
     PG: [[1, 2, 3, 15, 28, 38, 40, 42, 47, 50], [4, 5, 29, 46], [6, 20, 21, 30, 41, 48], [7, 22, 37], [8, 9, 39, 45, 49], [10, 31, 43], [11, 35, 36], [12, 13, 14, 26, 27, 32, 33], [17, 18, 19, 23, 34, 44], [16, 24, 25],
       [51, 67], [52], [53, 71], [54], [55], [56, 63], [57], [58, 61], [59], [60], [62, 69], [64], [65], [66], [68], [70], [72]],
-    BG: [[1, 2, 6, 7], [3], [4], [5, 9], [8], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20], [21], [22], [23]],
+    /* (shelf8 · 정범님 11/12) 직사각형만 — 둥근·깎인 모서리·아치·V 홈·비스듬·좁은 머리는 화면에서 반듯하게 그려 몸은 민·홈 줄·반짝이 셋으로 셈 */
+    BG: [[1, 2, 3, 5, 6, 7, 9, 15, 18, 21], [4, 11, 13, 16, 19, 22], [8, 12, 14, 17, 20, 23], [10]],
     HG: [[1], [2, 3, 4], [5]],
+    ZH: [170, 200, 215, 240, 270], ZD: [9, 15, 22, 31, 43] /* (shelf8) 크기 묶음(키 6 × 두께 6) — 셈에만 · 장부는 크기와 상관없이 조합이 겹치지 않게 지킴(더 엄격) */,
     NOB: [10],
     HEADS: 5,
     /* COLORS 번호-1 → PAL 칸(가장 가까운 색 · CIEDE2000) — 옛 70색 책등도 이 칸으로 셈(겉모습은 그대로) */
@@ -48,7 +50,8 @@
   const sigOf = (code) => { const t = tupleOf(typeof code === 'string' ? parse(code) : code); return t ? sigOfT(t) : null; };
   /* ── 새로 줄 수 있는 칸(전체 공간) — 디자인 묶음마다 크기가 다름(곁색이 보이면 바탕 50 × 곁색 49 · 아니면 바탕 50) */
   const REST = NPG * NBA * NHG; const gSize = dSec.map((s) => (s ? NP * (NP - 1) : NP) * REST); const gOff = []; let N = 0; for (const z of gSize) { gOff.push(N); N += z; }
-  function space() { return { N, D: ND, Dsec: dSec.filter(Boolean).length, C: NP, pairs: NP * (NP - 1), P: NPG, B: NBA, H: NHG, S: NBA * NHG, rest: REST }; }
+  const NZ = (T.ZH.length + 1) * (T.ZD.length + 1);
+  function space() { return { N, Z: NZ, Nall: N * NZ, D: ND, Dsec: dSec.filter(Boolean).length, C: NP, pairs: NP * (NP - 1), P: NPG, B: NBA, H: NHG, S: NBA * NHG, rest: REST }; }
   /* 번호 i(0 ~ N-1) ↔ 네 칸 — 섞인 진법(디자인 묶음 → 바탕 → 곁색 → 무늬 → 몸 → 머리) */
   function tupleAt(i) { i = ((i % N) + N) % N; let dg = 0; while (dg + 1 < ND && gOff[dg + 1] <= i) dg++; let r = i - gOff[dg]; const hc = r % NHG; r = (r - hc) / NHG; const bi = r % NBA; r = (r - bi) / NBA; const pc = r % NPG; r = (r - pc) / NPG;
     let b, kc; if (dSec[dg]) { const kk = r % (NP - 1); b = (r - kk) / (NP - 1); kc = kk < b ? kk : kk + 1; } else { b = r; kc = 0; } return { dg, b, kc, pc, bc: BA[bi], hc }; }
@@ -73,6 +76,11 @@
     for (const [K, P, Bb, H] of tiers) { const M = K.length * P.length * Bb.length * H.length; if (!M) continue; const a = coprime(M, M * 0.381966 + (h % 997)); const j0 = h % M;
       for (let n = 0; n < M; n++) { let r = (j0 + mulmod(a, n, M)) % M; const hi = r % H.length; r = (r - hi) / H.length; const bi = r % Bb.length; r = (r - bi) / Bb.length; const pi = r % P.length; r = (r - pi) / P.length;
         const t = { dg: t0.dg, b: t0.b, kc: K[r], pc: P[pi], bc: Bb[bi], hc: H[hi] }; const sg = sigOfT(t); if (!taken.has(sg)) return { code: codeFor(A, t), sig: sg }; } }
+    /* (shelf8) 모양 묶음이 9로 줄어 한 칸(디자인 묶음 × 바탕색)이 243~11,907자리 — 그 칸이 다 차면 바탕색(앞표지 대표색)은 두고 디자인 묶음만 바꿔 빈자리 */
+    const DGO = Array.from({ length: ND }, (_, i) => i).filter((g) => g !== t0.dg).sort((a, z) => (dSec[z] - dSec[a]) || ((a * 7919 + h) % ND) - ((z * 7919 + h) % ND));
+    for (const dg of DGO) { const K2 = dSec[dg] ? Array.from({ length: NP }, (_, i) => i).filter((k) => k !== t0.b) : [0]; const M = K2.length * PC.length * BC.length * HC.length; const a = coprime(M, M * 0.381966 + (h % 997)); const j0 = h % M;
+      for (let n = 0; n < M; n++) { let r = (j0 + mulmod(a, n, M)) % M; const hi = r % HC.length; r = (r - hi) / HC.length; const bi = r % BC.length; r = (r - bi) / BC.length; const pi = r % PC.length; r = (r - pi) / PC.length;
+        const t = { dg, b: t0.b, kc: K2[r], pc: PC[pi], bc: BC[bi], hc: HC[hi] }; const sg = sigOfT(t); if (!taken.has(sg)) return { code: codeFor(A, t), sig: sg }; } }
     for (let n = 0; n < N; n++) { const t = tupleAt((perm(n) + h) % N); const sg = sigOfT(t); if (!taken.has(sg)) return { code: codeFor(A, t), sig: sg }; } return null; }
   /* 쓰인 번호 장부 — claim(상품, 모양 글) → { code, fixed } · rebuild([[상품, 모양 글]] 먼저 정한 차례) → 겹친 것 고친 목록 */
   function makeIndex() { const bySig = new Map(), byId = new Map(); const st = { n: 0, dup: 0, fixedPost: 0, bad: 0, at: null };
@@ -84,5 +92,5 @@
     function rebuild(entries) { bySig.clear(); byId.clear(); RES = new Set(); for (const [, code] of entries) { const sg = sigOf(code); if (sg != null) RES.add(sg); } const fix = [];
       try { for (const [id, code] of entries) { const r = claim(id, code); if (r.fixed) fix.push([String(id), r.code]); } } finally { RES = null; } st.dup = fix.length; st.fixedPost = 0; st.at = new Date().toISOString(); return fix; }
     return { claim, rebuild, has: (sg) => bySig.has(sg), size: () => byId.size, taken: bySig, state: () => ({ ...st, n: byId.size }) }; }
-  return { T, AUTO, CODE_RE, parse, encode, tupleOf, sigOf, sigOfT, space, tupleAt, indexOf, perm, comboAt, codeFor, repair, makeIndex, hash, VER: '0.1.0' };
+  return { T, AUTO, CODE_RE, parse, encode, tupleOf, sigOf, sigOfT, space, tupleAt, indexOf, perm, comboAt, codeFor, repair, makeIndex, hash, VER: '0.1.1' };
 });

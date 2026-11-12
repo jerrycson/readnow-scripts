@@ -1,2 +1,2 @@
-col2=2026-11-12
-# 88583505
+recentUp=app_devices&mins=120
+# 2586518912

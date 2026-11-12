@@ -91,7 +91,7 @@ const KST = (y, mo, d, h, mi) => Date.UTC(y, mo - 1, d, h - 9, mi); const MIN = 
     await p.click('[data-sqsave="ship"]'); await p.waitForTimeout(400); await p.click('[data-sqbox="ship"] input[data-sqtog]'); await p.waitForTimeout(600);
     const r2 = await p.evaluate(() => ({ act: sqActive(), d: JSON.parse(JSON.stringify(window.__FS.app_settings.ship_quiet)), txt: (document.querySelector('[data-sqbox="ship"]') || {}).innerText || '' }));
     ok(r2.act && r2.d.on && /지금 미루는 중/.test(r2.txt), '④ 시간 고침 ✎ → 지금이 시간대 안 · 켬 → 지금 미루는 중: ' + r2.d.from + '~' + r2.d.to);
-    const navB = nav.length; await p.evaluate(() => { autoUpdate('9.99.999'); }); await p.waitForTimeout(6000);
+    const navB = nav.length; await p.evaluate(() => { localStorage.setItem('rn-upd-gap', '0'); /* (11/12 perf9) 새 판 모아 바꾸기 끔 — 이 시험은 출고 시간 방해 금지만 봄 */ autoUpdate('9.99.999'); }); await p.waitForTimeout(6000);
     const r3 = await p.evaluate(() => ({ def: S.sg.def.map((x) => x.k + (x.sq ? ':sq' : '')), bar: (document.querySelector('.verbar.new') || {}).textContent || '' }));
     ok(nav.length === navB && r3.def.includes('newver:sq') && /출고 시간 방해 금지/.test(r3.bar), '④ 켬 + 시간대 안 → 웹앱 새 판으로 다시 열지 않고 미룸: ' + JSON.stringify({ def: r3.def, navB, nav: nav.length, bar: r3.bar.slice(0, 80) }));
     await p.click('[data-sqbox="ship"] input[data-sqtog]'); const d0 = await p.evaluate(() => S.sg.def.length); for (let i = 0; i < 40 && nav.length <= navB; i++) await p.waitForTimeout(1000); /* 출고 화면은 20초 손을 안 대면 바꿈(0.81.5 그대로) */

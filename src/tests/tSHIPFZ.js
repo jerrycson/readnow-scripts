@@ -132,7 +132,7 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
     ok(r3.h.on && !r3.h.col, '⑤ 수집기가 없는 기기(휴대폰 등)는 이 탭 흐름으로 보호');
     ok(e2 && e2.end > 0 && e2.t0 === e1.t0, '⑤ 원스톱이 끝나면 그 칸에 end(지우지 않음)');
     ok(nav.length === 0, '⑤ 여기까지 화면을 다시 열지 않음');
-    await p.evaluate(() => { document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ on: true, why: 'MJ-MAIN 보호 — JS-MAIN ▶ 오늘 출고 끝까지', n: 0, at: Date.now() })); window.__kp = setInterval(() => { const a = JSON.parse(document.documentElement.getAttribute('data-rn-shiphold') || '{}'); if (a.on) document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ ...a, at: Date.now() })); }, 1000); autoUpdate('9.99.999'); });
+    await p.evaluate(() => { document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ on: true, why: 'MJ-MAIN 보호 — JS-MAIN ▶ 오늘 출고 끝까지', n: 0, at: Date.now() })); window.__kp = setInterval(() => { const a = JSON.parse(document.documentElement.getAttribute('data-rn-shiphold') || '{}'); if (a.on) document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ ...a, at: Date.now() })); }, 1000); localStorage.setItem('rn-upd-gap', '0'); /* (11/12 perf9) 새 판 모아 바꾸기 끔 — 이 시험은 출고 보호만 봄 */ autoUpdate('9.99.999'); });
     await p.waitForTimeout(6000); const r2 = await p.evaluate(() => ({ def: S.sg.def.map((x) => x.k), toast: document.body.innerText.includes('웹앱 새 판 v9.99.999으로 바꾸기 미룸') }));
     ok(nav.length === 0 && r2 && r2.def.includes('newver'), '⑤ 출고 중 웹앱 새 판 → 다시 열지 않고 미룸: ' + JSON.stringify(r2));
     await p.evaluate(() => { document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ on: false, n: 0, at: Date.now() })); });

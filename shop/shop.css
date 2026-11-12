@@ -115,3 +115,12 @@ label.f.good input { border-color: #2f7d4f; }
 /* (shelf4 · 원칙 56) 책 한 권 찜 단추 · 주문서 모두 동의 */
 .buy .wishb { flex: 0 0 52px; font-size: 22px; padding: 0; } .buy .wishb.on { color: #c62828; border-color: #c62828; }
 .agree .ck.all { padding: 10px 12px; border: 1px solid var(--line, #ddd); border-radius: 10px; margin-bottom: 8px; background: #fffaf0; } .agree .ck.all small { opacity: .7; font-weight: 400; }
+
+/* (shelf8) 서가에서 펼친 책 → 상세: 그 책 자리로 돌아가기 */
+.backshelf { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 12px; padding: 8px 14px; border-radius: 999px; background: #1d2b45; color: #f6ead0; text-decoration: none; font-weight: 700; font-size: 14px; } .backshelf small { font-weight: 500; opacity: .75; font-size: 12px; }
+/* (bookinfo1 11/12) 📖 책 정보 — 기본 정보 표 + 접는 칸 */
+.bkinfo { margin: 18px 0 8px; } .bkinfo h2 { margin-bottom: 8px; }
+.bkb { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; } .bkb th { text-align: left; font-weight: 600; width: 6.5em; padding: 5px 8px; color: var(--sub, #666); white-space: nowrap; vertical-align: top; } .bkb td { padding: 5px 8px; } .bkb tr + tr { border-top: 1px solid var(--line, #eee); }
+.bki { border: 1px solid var(--line, #e3e3e3); border-radius: 10px; margin: 6px 0; background: var(--card, #fff); } .bki > summary { cursor: pointer; padding: 10px 12px; font-weight: 600; list-style: none; } .bki > summary::-webkit-details-marker { display: none; } .bki > summary::after { content: '＋'; float: right; opacity: .5; } .bki[open] > summary::after { content: '－'; }
+.bkt { padding: 0 14px 12px; font-size: 14.5px; line-height: 1.7; white-space: normal; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; }
+.bkpv { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 12px; scroll-snap-type: x mandatory; } .bkpv img { height: 260px; width: auto; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.18); scroll-snap-align: start; }
