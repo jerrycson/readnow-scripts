@@ -1,2 +1,2 @@
-@kpin kpin/20261112-161241-14220.json
-# 1949225774
+recentUp=app_devices&mins=120
+# 2586518912
