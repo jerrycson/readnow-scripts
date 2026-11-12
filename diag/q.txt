@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto,app_settings/platforms&pend=1
-# 1596327450
+run=1&mem=1&doc=app_settings/heavy_run
+# 330117300
