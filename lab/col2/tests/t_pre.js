@@ -68,7 +68,7 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   ANS.ebay = (o) => ({ ok: true, d: { n: 400, items: big.slice() } });
   J.feedBooks([bk(11, E1), bk(12, E2)]); await run(4); const eb = day()['ext.ebay'] || {};
   ok(calls.length === 1 && calls[0][1] === E2 && eb.skip === 1, '다시 볼 날(14일 · 운영 공용 파일 기본) 전인 책은 묻지 않음 · 지난 책만', { calls, eb });
-  const o1 = ops.find((x) => x.job === 'ext.ebay'); const HD = { jobs: { 'ext.ebay': { on: true, pc: 'HOME', at: new Date().toISOString() } } };
+  const o1 = ops.find((x) => x.job === 'ext.ebay'); const HD = { jobs: { 'ext.ebay': { on: true, pc: 'HOME', hands: false, at: new Date().toISOString() } } };
   ok(o1 && o1.c === 'ext_foreign' && o1.id === E2 && o1.v.obj.d.trunc === true && Buffer.byteLength(JSON.stringify(o1.v.obj.d)) <= 150000 && o1.v.obj.sig === X0.sig({ none: false, d: o1.v.obj.d }, 'ebay') && HOF.writeOk(HD, { ...o1, job: 'ext.ebay' }, 'HOME').ok,
     '결과를 운영 extSave 꼴로 ext_foreign에 맡김 · 150KB 넘는 글 목록은 운영처럼 반씩 줄임 · 지문도 줄인 값으로', o1 && { c: o1.c, id: o1.id, trunc: o1.v.obj.d.trunc, len: Buffer.byteLength(JSON.stringify(o1.v.obj.d)) });
   ok(beats.filter((k) => k === 'ext.ebay').length >= 2, '다시 볼 날 전이라 건너뛴 때도 소식(beat) — 운영이 8시간 뒤 넘김을 풀지 않게', beats);

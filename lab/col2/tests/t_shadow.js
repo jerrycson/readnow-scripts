@@ -61,7 +61,7 @@ const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /
     ok(top.sw <= top.cw, '작은 창(380px)에서 가로 넘침 없음', top.sw + ' ≤ ' + top.cw);
     await p.click('#pcb'); await p.fill('#pci', 'HOME-시험'); await p.click('#pcv'); await wait(400); const st0 = (await H.api('GET', '/status')).j;
     ok(st0.pc === 'HOME-시험' && st0.pcSrc === 'pc' && (await p.textContent('#pcn')) === 'HOME-시험', 'PC 이름 바꾸기 → 저장(웹앱 기기 이름이 덮지 않음)');
-    await H.api('POST', '/cfg', { pc: 'HOME', pcSrc: 'web' }); ok((await H.api('GET', '/status')).j.pc === 'HOME-시험', '여기서 바꾼 이름은 웹앱이 넘긴 기기 이름으로 덮이지 않음');
+    await H.api('POST', '/cfg', { pc: 'HOME', hands: false, pcSrc: 'web' }); ok((await H.api('GET', '/status')).j.pc === 'HOME-시험', '여기서 바꾼 이름은 웹앱이 넘긴 기기 이름으로 덮이지 않음');
     await p.click('#onb'); await p.waitForFunction(() => /한 번 더 누르면 켬/.test(document.getElementById('onb').textContent), null, { timeout: 3000 }).catch(() => {}); ok(/한 번 더 누르면 켬/.test(await p.textContent('#onb')) && !(await H.api('GET', '/status')).j.on, '켜기는 두 번 누르기(한 번은 안 켜짐)');
     await p.click('#onb'); await wait(400); ok((await H.api('GET', '/status')).j.on, '두 번째 누르면 켜짐');
     await p.waitForFunction(() => /켜짐/.test(document.getElementById('hst').textContent), null, { timeout: 15000 });

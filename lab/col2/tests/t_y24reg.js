@@ -50,7 +50,7 @@ const job = (id, rows) => ({ id, rows, xlsx: b64(rows), by: '시험 웹앱' });
 
   const Y = await fakeY24(); const repo = process.env.COL2_PROD_REPO || path.join(__dirname, '..', '..', '..');
   const env = { RN_COL2_Y24: Y.base, RN_COL2_Y24_SCALE: '0.05', RN_COL2_CORE_DIR: repo };
-  const H = await L.startHelper({ cfg: { on: true, y24: true, pc: 'HOME', auto: false, headless: true, watch: { tickSec: 60, handoffMs: 200 } }, env }); const D = H.D;
+  const H = await L.startHelper({ cfg: { on: true, y24: true, pc: 'HOME', hands: false, auto: false, headless: true, watch: { tickSec: 60, handoffMs: 200 } }, env }); const D = H.D;
   const feed = (b) => H.api('POST', '/y24/feed', { by: '시험 수집기', cfg: { ordMin: 0 }, hold: { on: false }, ...(b || {}) });
   const rs = async () => (await H.api('GET', '/y24/reg/state')).j;
   const resOf = async (id, n) => until(async () => { await feed(); const s = await rs(); return s.res && s.res[id] ? s.res[id] : null; }, n || 200);

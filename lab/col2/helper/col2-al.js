@@ -71,6 +71,90 @@ function profLook(prof) { const o = {}; try { const P = JSON.parse(fs.readFileSy
     o.ext = Object.keys((P.extensions && P.extensions.settings) || {}).length; } catch (e) { o.err = '설정 파일 못 읽음'; }
   try { const LS = JSON.parse(fs.readFileSync(path.join(prof, 'Local State'), 'utf8')) || {}; o.labs = ((LS.browser && LS.browser.enabled_labs_experiments) || []).length; } catch (e) {} return o; }
 
+/* ══ (11/12 hands1 정범님 결정 'HOME 알라딘은 평소 크롬을 손발로') 🖐 손발 길 ══
+ * 평소 크롬(이미 알라딘에 로그인된 '아는 기기')의 운영 수집기 탭 = 손발 · 번외 = 지휘(맡기고·받고·창을 숨기고·띄움) — 새 로그인 0 · 수집기 머리 그대로(다리 127.0.0.1:8797)
+ *  ① 다리(운영 수집기 rnC2al · 10초마다 POST /al/feed)가 hands { v, login, why, work, page, ver, title } 를 알려 줌 → 답 hands { on, jobs:[{id,k,st,page}], front }
+ *     · 일은 종류(k)와 쪽 번호만 — 주소는 운영 탭이 자기 표에서 만듦(번외가 아무 주소나 부르게 하지 않음) · 한 번에 하나
+ *  ② 운영 탭이 읽고 화면 안에서 해석한 번호·상태·값만 POST /al/hands { by, done:[{id,res}] } 로 돌려줌 → handsClean이 정해진 칸만 남김(손님 정보 칸 없음) → 견주기는 예전 그대로(doKind)
+ *  ③ 창: 제목에 '리드나우 손발'(운영 탭이 붙임)·'리드나우 작업 창'이 든 평소 크롬 창만 찾기·숨기기(화면 밖)·띄우기·앞으로(col2-win '@hands' — 끄기·닫기는 절대 안 함)
+ *     · 사람 손이 필요하면(로그인 풀림 handsFrontMin분 넘게) 그 탭을 앞으로(운영 탭 window.focus + 창 앞으로) · 30분에 한 번까지 · [🔐 알라딘 로그인]도 같은 일
+ *     · '늘 숨김'(col2.json handsHide)을 켜면 1분마다 보고 화면에 나와 있으면 다시 숨김(사람이 띄운 동안·로그인 풀린 동안은 안 숨김)
+ *  지킴: 로거는 아예 없음(약속 0) · 🚚 출고 보호면 맡기지 않음(약속 0-1) · 속도는 예전 그림자 몫 그대로(한 장 뒤 3~6초 · 시간 30 · 하루 300 · 밤 쉼) */
+const HANDS_KINDS = ['chk', 'list', 'confirm', 'deliv', 'qna'];
+function handsClean(kind, r) { const S = (v, n) => (v == null || v === '' ? null : String(v).slice(0, n || 40)); const N = (v) => (v == null || v === '' || !Number.isFinite(+v) ? null : +v); const P = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : S(v, 20));
+  if (!r || typeof r !== 'object') return { ok: false, why: '평소 크롬 탭 답이 비었음', kind: 'error' };
+  if (!r.ok) return { ok: false, login: r.login === true, st: N(r.st), why: S(r.why, 160) || '못 읽음', kind: ['429', 'login', 'maint', 'error'].includes(r.kind) ? r.kind : 'error' };
+  const s = r.sum && typeof r.sum === 'object' ? r.sum : {}; const st = N(r.st); const arr = (v, n) => (Array.isArray(v) ? v.slice(0, n) : []);
+  if (kind === 'chk') return { ok: true, st, sum: { loggedIn: true } };
+  if (kind === 'list') return { ok: true, st, sum: { page: N(s.page), lastPage: N(s.lastPage), rows: arr(s.rows, 200).map((z) => ({ u: S(z && z.u, 20), l: S(z && z.l, 20), s: S(z && z.s, 20), p: P(z && z.p), k: S(z && z.k, 40), g: S(z && z.g, 20), q: P(z && z.q) })) } };
+  if (kind === 'confirm' || kind === 'deliv') { const tab = {}; for (const [k, v] of Object.entries(s.tab && typeof s.tab === 'object' ? s.tab : {}).slice(0, 20)) { const x = N(v); if (x != null && /^[가-힣\w ()·-]{1,30}$/.test(k)) tab[k] = x; } /* 탭 이름(한글 낱말)·숫자만 */
+    return { ok: true, st, sum: { tab, orders: arr(s.orders, 300).map((x) => ({ o: S(x && x.o, 30), it: arr(x && x.it, 50).map((i) => S(i, 20)), d: S(x && x.d, 40) })) } }; }
+  if (kind === 'qna') return { ok: true, st, sum: { rows: arr(s.rows, 100).map((z) => ({ q: S(z && z.q, 20), a: z && z.a != null ? S(z.a, 10) : null })) } };
+  return { ok: false, why: '모르는 일', kind: 'error' }; }
+function makeHands(x) { const { A, cfg, now, note, WIN, TEST, SC } = x;
+  const HC = () => ({ handsSec: 180, handsFrontMin: 3, handsFrontGapMin: 30, handsWinSec: 60, ...(cfg().alcfg || {}) }); /* 근거: 없음, 설정(col2.json alcfg)으로 바꿈 · 숨은 창은 크롬이 타이머를 1분에 한 번까지 늦춰 답이 늦을 수 있어 180초 */
+  const sc = (ms) => ms * (TEST ? SC : 1);
+  const J = { q: [], wait: new Map(), seq: 0 };
+  const HS = { b: null, at: 0, since: 0, offAt: 0, d: '', n: 0, ok: 0, fail: 0, last: null, win: null, winAt: 0, shown: false, front: null, frontAt: 0, frontWhy: '', hideAt: 0 };
+  const day = () => { if (HS.d !== x.kday()) { HS.d = x.kday(); HS.n = HS.ok = HS.fail = 0; } };
+  const on = () => x.handsOn() && !!cfg().on;
+  const linked = () => !!(HS.b && now() - HS.at < sc(5 * 60e3));
+  const login = () => (linked() ? HS.b.login : null);
+  function feed(h) { if (!h || typeof h !== 'object' || !(+h.v >= 1)) return; const was = linked();
+    HS.b = { v: +h.v, login: h.login === true ? true : h.login === false ? false : null, why: String(h.why || '').slice(0, 120), work: !!h.work, page: String(h.page || '').slice(0, 40), ver: String(h.ver || '').slice(0, 20), title: !!h.title }; HS.at = now(); if (!was) HS.since = now();
+    if (HS.b.login === false) { if (!HS.offAt) HS.offAt = now(); } else if (HS.b.login === true) { if (HS.offAt && HS.shown && cfg().handsHide === true) hide('로그인 돌아옴 — 다시 숨김').catch(() => {}); HS.offAt = 0; }
+    if (!was && on()) note(`🖐 평소 크롬이 손발 — 이 PC 운영 수집기 탭과 이어짐(${HS.b.work ? '🪟 작업 창' : '알라딘 탭'} · 로그인 ${HS.b.login === true ? '✓' : HS.b.login === false ? '풀림' : '확인 중'})`, { k: 'al', m: '알라딘' });
+    if (Array.isArray(h.done)) for (const d of h.done.slice(0, 5)) done(d); }
+  function reply() { if (!on()) return { on: false }; const jobs = []; if (J.q.length && !x.holdOn()) { const j = J.q.shift(); j.sent = now(); J.wait.set(j.id, j); jobs.push({ id: j.id, k: j.k, st: j.st || null, page: j.page || 1 }); }
+    return { on: true, jobs, front: HS.front && now() - HS.front.at < sc(90e3) ? HS.front.id : null, hide: cfg().handsHide === true }; }
+  function read(kind, arg) { if (!HANDS_KINDS.includes(kind)) return Promise.resolve({ ok: false, why: '모르는 일', kind: 'error' }); day(); HS.n++; const id = 'h' + now().toString(36) + '_' + ++J.seq; const lim = sc(HC().handsSec * 1000);
+    return new Promise((res) => { const j = { id, k: kind, st: arg && arg.st ? String(arg.st) : null, page: arg && arg.page ? +arg.page : 1, at: now(), res };
+      j.t = setTimeout(() => { J.q = J.q.filter((z) => z !== j); J.wait.delete(id); HS.fail++; HS.last = { at: now(), k: kind, ok: false, why: '답 없음' }; res({ ok: false, why: `평소 크롬 탭이 ${Math.round(lim / 1000)}초 안에 답하지 않음(탭이 쉬거나 숨어 느려졌을 수 있음)`, kind: 'error' }); }, lim);
+      J.q.push(j); }); }
+  function done(d) { if (!d || typeof d !== 'object') return false; const j = J.wait.get(String(d.id)); if (!j) return false; J.wait.delete(j.id); clearTimeout(j.t);
+    const r = handsClean(j.k, d.res); day(); if (r.ok) HS.ok++; else HS.fail++; HS.last = { at: now(), k: j.k, ok: r.ok, why: r.ok ? null : r.why, ms: now() - j.at };
+    A.reads.push({ at: now(), kind: j.k, ok: !!r.ok, why: r.ok ? null : r.why, n: r.sum ? (r.sum.rows || r.sum.orders || []).length : null, hands: 1 }); if (A.reads.length > 30) A.reads.shift();
+    if (r.ok && HS.b) { HS.b.login = true; HS.offAt = 0; } if (!r.ok && r.login && HS.b) { HS.b.login = false; if (!HS.offAt) HS.offAt = now(); } j.res(r); return true; }
+  function take(b) { const L = Array.isArray(b && b.done) ? b.done.slice(0, 5) : []; let n = 0; for (const d of L) if (done(d)) n++; return { ok: true, n, hands: reply() }; }
+  /* ── 창 ── */
+  async function find() { const r = await WIN.run('find', '@hands'); const it = r.ok && r.list && r.list[0]; const vs = r.vs || {};
+    HS.win = r.ok ? { n: +r.n || 0, vis: !!(it && it.vis && !it.ic), on: !!(it && it.vis && !it.ic && !it.tool && it.r && it.r.x + it.r.w > (vs.x || 0) && it.r.x < (vs.x || 0) + (vs.w || 1e5)), at: now() } : { n: 0, err: String(r.err || '창 찾기 실패').slice(0, 120), at: now() }; HS.winAt = now(); return HS.win; }
+  const workTab = () => !!(HS.b && HS.b.work); /* 운영 탭이 🪟 수집 작업 창이면 그 창 숨김·띄움은 운영 도우미(8898) 몫 — 번외는 안 건드림 · 앞으로는 운영 탭이 __rnWorkShow로 */
+  async function hide(why) { if (!on()) return { ok: false, why: '손발 길 꺼짐' }; if (workTab()) return { ok: false, why: '이 PC 운영 탭은 🪟 수집 작업 창 — 이미 운영 도우미가 숨겨 둠(번외는 안 건드림)' }; const f = await find(); if (!f.n) return { ok: false, why: f.err || "평소 크롬에서 '🖐 리드나우 손발' 창을 못 찾음 — 수집기 탭이 그 창의 앞 탭이 아니거나 아직 이어지지 않음" };
+    const r = await WIN.run('hide', '@hands', { w: 1280, h: 900, place: cfg().place }); HS.shown = false; HS.hideAt = now(); await find().catch(() => {}); note(`🖐 평소 크롬 손발 창을 숨김(화면 밖 · 작업 표시줄에서 뺌 — 일은 그대로) (${why || ''})`, { k: 'al', m: '알라딘' }); return { ok: !!r.ok, why: r.ok ? null : r.err }; }
+  async function show(why, front) { if (!on()) return { ok: false, why: '손발 길 꺼짐' }; HS.front = { id: 'f' + now().toString(36), at: now() }; /* 운영 탭이 다음 알림(10초 안)에 스스로 앞 탭이 됨(window.focus) */
+    if (workTab()) { HS.shown = true; HS.frontAt = now(); HS.frontWhy = String(why || '').slice(0, 80); note(`🖐 운영 🪟 작업 창에 앞으로 나오라 알림 (${why || ''})`, { k: 'al', m: '알라딘' }); return { ok: true }; }
+    let f = await find(); if (!f.n) { for (let k = 0; k < 3 && !f.n; k++) { await new Promise((r) => setTimeout(r, sc(12e3))); f = await find(); } } if (!f.n) return { ok: false, why: f.err || "평소 크롬에서 '🖐 리드나우 손발' 창을 못 찾음 — 그 PC에 알라딘 샵매니저 탭이 열려 있는지 봐 주세요" };
+    const w = cfg().hwin2 && cfg().hwin2.w >= 400 ? cfg().hwin2 : {}; const r = await WIN.run(f.on && front ? 'front' : 'show', '@hands', w); HS.shown = true; HS.frontAt = now(); HS.frontWhy = String(why || '').slice(0, 80);
+    note(`🖐 평소 크롬 손발 창을 앞으로 (${why || ''})`, { k: 'al', m: '알라딘' }); await find().catch(() => {}); return { ok: !!r.ok, why: r.ok ? null : r.err }; }
+  const front = (why) => show(why, true);
+  async function winTick() { if (!on() || now() - HS.winAt < sc(HC().handsWinSec * 1000)) return; await find().catch(() => {});
+    if (cfg().handsHide === true && !workTab() && HS.win && HS.win.on && !HS.shown && login() !== false && now() - HS.hideAt > sc(10 * 60e3)) await hide('늘 숨김').catch(() => {}); }
+  /* ── 한 바퀴(col2-al step 대신) ── */
+  async function step() { const c = x.C(); const hc = HC(); day();
+    if (A.br) await x.close('🖐 손발 길 — 번외 알라딘 크롬(번외 로그인)은 쓰지 않음');
+    if (!cfg().on) { A.msg = '🖐 손발 길 · 번외 수집 꺼짐'; return 30e3; }
+    winTick().catch(() => {});
+    if (!linked()) { A.msg = '🖐 손발 길 — ' + (x.feedOk() ? '이 PC 운영 수집기가 아직 손발 길을 모르는 판(새 판을 받으면 이어짐)' : '이 PC 평소 크롬의 리드나우 수집기 탭이 안 보임 — 알라딘 샵매니저 탭을 열어 두면 10초 안에 이어짐'); return 15e3; }
+    if (x.holdOn()) { A.msg = '🖐 손발 길 · 🚚 출고 중(이 PC 출고 보호) — 맡기지 않음 · 끝나면 이어감'; return 15e3; }
+    if (login() === false) { const long = HS.offAt && now() - HS.offAt > sc(hc.handsFrontMin * 60e3); const gapOk = now() - HS.frontAt > sc(hc.handsFrontGapMin * 60e3);
+      if (long && gapOk) await front(`알라딘 로그인이 ${Math.round((now() - HS.offAt) / 60e3)}분째 풀림 — 사람 손 필요`).catch(() => {});
+      A.msg = `🖐 평소 크롬의 알라딘 로그인이 풀림${HS.b && HS.b.why ? '(' + HS.b.why + ')' : ''} — ${long ? '🖐 사람 손 필요: 앞으로 띄운 평소 크롬 탭에서 로그인해 주세요' : '운영 수집기가 스스로 다시 로그인하는 중'}`; return 15e3; }
+    if (cfg().al !== true) { A.msg = `🖐 평소 크롬이 손발 · 로그인 ${login() === true ? '✓' : '확인 중'} · 샵매니저 그림자 읽기는 꺼 둠(옆 창 ⚙에서 켬)`; return 30e3; }
+    if (x.night()) { A.msg = '🖐 손발 길 · 🌙 밤 1~5시 — 알라딘 그림자 읽기 쉼'; return 5 * 60e3; }
+    if (now() < A.coolUntil) { A.msg = `🖐 손발 길 · 알라딘 429 뒤 쉼 — ${Math.ceil((A.coolUntil - now()) / 60e3)}분 남음`; return 30e3; }
+    x.cmpTick();
+    if (x.capLeft() <= 0) { A.msg = `🖐 손발 길 · 이번 시간·오늘 몫을 다 씀(시간 ${c.hourCap} · 하루 ${c.dayCap}장)`; return 60e3; }
+    const due = x.KINDS.find((k) => now() >= (A.next[k] || 0));
+    if (!due) { const nx = Math.min(...x.KINDS.map((k) => A.next[k] || 0)); A.msg = `🖐 평소 크롬이 손발 · 로그인 ${login() === true ? '✓' : '확인 중'} · 오늘 맡긴 일 ${HS.n}(받음 ${HS.ok}) · ` + (A.cmpQ.length ? `운영 문서 기다림 ${A.cmpQ.length}건` : `다음 맡김 ${Math.max(0, Math.round((nx - now()) / 60e3))}분 뒤`); return Math.min(15e3, Math.max(500, nx - now())); }
+    A.msg = `🖐 평소 크롬 탭에 ${x.AC.READ[due].t} 읽기를 맡김 — 답 기다리는 중`; A.hour.n++; A.day.n++;
+    const r = await x.doKind(due, read); A.next[due] = now() + c[due + 'Min'] * 60e3 * (0.8 + Math.random() * 0.4) * (TEST ? SC : 1);
+    A.msg = r === 'ok' ? `🖐 평소 크롬 탭이 ${x.AC.READ[due].t} 읽음 · 오늘 맡긴 일 ${HS.n}(받음 ${HS.ok})` : r === 'login' ? '🖐 평소 크롬의 알라딘 로그인이 풀림' : `🖐 ${x.AC.READ[due].t} 맡김 실패 — ${(A.last[due] && A.last[due].why) || ''}`; await x.sleepR(c.gapA, c.gapB); return 300; }
+  function sum() { const o0 = on(); const lg = login(); return { on: o0, def: x.handsDef(), linked: o0 && linked(), login: lg, why: HS.b && HS.b.why ? HS.b.why : null, work: !!(HS.b && HS.b.work), ver: HS.b ? HS.b.ver : null, since: HS.since || null, at: HS.at || null, offAt: HS.offAt || null,
+    d: HS.d, n: HS.n, ok: HS.ok, fail: HS.fail, q: J.q.length, out: J.wait.size, last: HS.last, win: HS.win, shown: HS.shown, frontAt: HS.frontAt || null, frontWhy: HS.frontWhy || null, hide: cfg().handsHide === true,
+    active: o0 && linked() && lg !== false && cfg().al === true && !x.holdOn(), todo: o0 && lg === false && HS.offAt && now() - HS.offAt > sc(HC().handsFrontMin * 60e3) ? '👉 지금 할 일 하나: 앞으로 띄운 평소 크롬(리드나우 수집기 탭)에서 알라딘에 로그인 — 번외 창에서는 로그인하지 않음' : null }; }
+  return { feed, reply, read, done, take, step, hide, show, front, find, sum, on, linked, J, HS }; }
+
 function makeAl(o) {
   const { HOME, Browser, WIN, note, log, TEST } = o; const cfg = () => o.cfg(); const now = () => Date.now();
   const BASE = (TEST && process.env.RN_COL2_ALSCM ? process.env.RN_COL2_ALSCM : 'https://www.aladin.co.kr').replace(/\/$/, ''); const HOST = new URL(BASE).host;
@@ -85,7 +169,13 @@ function makeAl(o) {
   const isLogger = () => /^LOGGER/i.test(pcName());
   const enabled = () => !!cfg().on && cfg().al === true && !isLogger();
   /* (11/10 정범님 'HOME 한 대에서 그 PC 자리를 번외가 이어받음') 🏠 이어받기 — 다리(운영 수집기)가 이 값을 보고 운영 자리를 먼저 놓은 뒤 번외 자리를 보통 PC 차례로 받음 */
-  const ownOn = () => enabled() && cfg().alOwn === true; /* 기본 꺼짐 — 정범님이 PC마다 켬(옆 창 ⚙) */
+  /* (11/12 hands1 정범님 결정 'HOME 알라딘은 평소 크롬을 손발로' · readnow-chats reports/ANS_1112_night.md 8번 길 가) 🖐 손발 길
+   *  로그인이 필요한 알라딘 일은 이미 로그인된 평소 크롬(아는 기기)의 운영 수집기 탭이 하고, 번외는 그 탭에 일을 맡기고·결과를 받고·창을 숨기고 띄우는 지휘만 함
+   *  · 번외 크롬은 알라딘에 로그인하지 않음(새 기기 로그인 = 42FB를 키움 → 시도 자체를 끔) · 번외 자리(<PC>~col2)도 받지 않음(운영 탭이 그 PC 자리 그대로)
+   *  · 기본: HOME만 켬(col2.json hands 없음 + PC 이름 HOME) · 다른 PC 꺼짐 · 로거는 늘 꺼짐(약속 0 — 칸도 숨김) · 옆 창 ⚙ 이 PC만에서 바꿈 */
+  const handsDef = () => /^HOME$/i.test(pcName());
+  const handsOn = () => !isLogger() && (cfg().hands === true || (cfg().hands == null && handsDef()));
+  const ownOn = () => enabled() && cfg().alOwn === true && !handsOn(); /* 기본 꺼짐 — 정범님이 PC마다 켬(옆 창 ⚙) · 손발 길이면 이어받기 안 함(운영 탭이 자리를 지킴) */
   const feedOk = () => now() - A.feed.at < C().feedMin * 60e3;
   const holdOn = () => !!((feedOk() && A.feed.hold && A.feed.hold.on) || (o.y24Hold && o.y24Hold()));
   /* (11/11 정범님 HOME 사진 '로그인 정보 기입 즉시 판단하지 않을 이유가 있어?') 이 PC 운영 수집기(다리)가 안 보이면 — 그 PC 웹앱(이미 Firebase 로그인)이 계정 자리 문서(app_settings/aladin_login · 동시 로그인 4대 규칙)를
@@ -103,7 +193,7 @@ function makeAl(o) {
   /* 웹앱에 부탁하는 자리 일 — { who, want, own, now, handover } · 다리가 보이면 넘겨줌(handover — 웹앱은 지우지 않고 손 뗌 · 운영 수집기가 같은 이름으로 이어 지킴) */
   function seatAsk() { if (isLogger()) return null; const who = pcName() + '~col2'; if (!pcName()) return null;
     if (feedOk()) return A.ws.had ? { who, want: false, handover: true } : null;
-    const want = enabled() && !A.pp && !holdOn(); if (!want && !A.ws.had) return null; return { who, want, own: ownOn(), now: now() < A.wsNow || !!(o.cqWait && o.cqWait() && now() - A.ws.at > 15e3) }; } /* 넣은 계정이 자리를 기다리는 동안은 15초마다 다시 봄(자리 문서만 · 알라딘엔 안 감) */
+    const want = enabled() && !handsOn() && !A.pp && !holdOn(); if (!want && !A.ws.had) return null; return { who, want, own: ownOn(), now: now() < A.wsNow || !!(o.cqWait && o.cqWait() && now() - A.ws.at > 15e3) }; } /* 넣은 계정이 자리를 기다리는 동안은 15초마다 다시 봄(자리 문서만 · 알라딘엔 안 감) */
   /* 웹앱이 트랜잭션 결과를 알려 줌 */
   function wseat(b) { b = b || {}; const was = A.ws.ok; A.ws = { at: now(), ok: b.ok === true, why: String(b.why || '').slice(0, 300), n: Number.isFinite(+b.n) ? +b.n : null, max: Number.isFinite(+b.max) ? +b.max : null, held: Array.isArray(b.held) ? b.held.slice(0, 12).map((x) => String(x).slice(0, 40)) : [], had: b.had === true || b.ok === true, err: b.err ? String(b.err).slice(0, 160) : null, by: String(b.by || '').slice(0, 60), gap: b.ok === true && Number.isFinite(+b.gap) && +b.gap > 0 ? Math.min(20 * 60e3, +b.gap) : 0, wait: b.ok !== true && +b.until > now() ? Math.min(20 * 60e3, +b.until - now()) : 0 };
     if (was !== A.ws.ok) note(A.ws.ok ? `🪑 웹앱이 자리 문서로 번외 알라딘 자리를 받음(${A.ws.why}) — 이 PC 운영 수집기가 꺼져 있어도 번외가 바로 씀` : `🪑 번외 알라딘 자리 — 웹앱이 자리 문서로 확인: ${A.ws.why}`, { k: 'al', l: A.ws.ok ? 'ok' : 'warn', m: '알라딘' });
@@ -186,8 +276,8 @@ function makeAl(o) {
     const v = r.exceptionDetails ? { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 160), kind: 'error' } : (r.result && r.result.value) || { ok: false, why: '빈 응답' };
     A.reads.push({ at: now(), kind, ok: !!v.ok, why: v.ok ? null : v.why, n: v.sum ? (v.sum.rows || v.sum.orders || []).length : null }); if (A.reads.length > 30) A.reads.shift(); return v; }
   const stamp = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-');
-  async function doKind(kind) { const arg = kind === 'list' ? { st: LIST_ST[A.listI++ % LIST_ST.length], page: 1 } : kind === 'qna' ? { page: 1 } : {}; const at = now();
-    const v = await readOne(kind, arg);
+  async function doKind(kind, reader) { const arg = kind === 'list' ? { st: LIST_ST[A.listI++ % LIST_ST.length], page: 1 } : kind === 'qna' ? { page: 1 } : {}; const at = now();
+    const v = await (reader || readOne)(kind, arg); /* (11/12 hands1) 손발 길이면 평소 크롬 탭이 읽음(H.read) — 받은 뒤 견주기는 같음 */
     if (!v.ok) { if (v.login) { setLogin('need', `${AC.READ[kind].t} 읽기 — ${v.why}`); return 'login'; } if (v.kind === '429') { A.coolUntil = now() + C().cool429Min * 60e3 * (TEST ? SC : 1); note(`🟧 알라딘이 ${v.st} — ${C().cool429Min}분 쉼(운영 출고 읽기와 같은 계정이라 그림자가 먼저 물러남)`); }
       A.last[kind] = { at, ok: false, why: v.why }; return 'err'; }
     setLogin('ok'); A.last[kind] = { at, ok: true, n: v.sum.rows ? v.sum.rows.length : v.sum.orders ? v.sum.orders.length : null, st: arg.st || null };
@@ -209,7 +299,9 @@ function makeAl(o) {
   /* ── 보이기·숨기기(로그인 때만) · 로그인 한 번 ── */
   async function show(why) { const w = cfg().awin && cfg().awin.w >= 400 ? cfg().awin : {}; const r = await WIN.run('show', MARK, w); A.shown = true; note(`🟧 알라딘 창을 앞으로 (${why || ''})`); return r; }
   async function hide(why) { const f = await WIN.run('find', MARK); const it = f.ok && f.list && f.list[0]; if (A.shown && it && it.r && !it.ic && !it.tool && it.r.w >= 400 && it.r.h >= 300 && f.vs && it.r.x + it.r.w > f.vs.x) o.saveRect('awin', it.r); const r = await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }); A.shown = false; note(`🟧 알라딘 창을 다시 숨김 (${why || ''})`); return r; }
-  async function login(why) { if (isLogger()) return { ok: false, err: '로거 PC에서는 알라딘 로그인을 하지 않습니다(약속 0 — 계정·쿠키 금지)' }; if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' }; if (!enabled()) return { ok: false, err: '알라딘 샵매니저 읽기가 꺼져 있음(옆 창 ⚙에서 켜기)' };
+  async function login(why) { if (isLogger()) return { ok: false, err: '로거 PC에서는 알라딘 로그인을 하지 않습니다(약속 0 — 계정·쿠키 금지)' };
+    if (handsOn()) { const r = await H.front('사람이 ' + (why || '[🔐 알라딘 로그인]')); return r.ok ? { ok: true, msg: '🖐 평소 크롬의 리드나우 수집기 탭을 앞으로 띄움 — 그 창에서 알라딘에 로그인해 주세요(번외 창에서는 로그인하지 않음 · 42FB 막음)' } : { ok: false, err: r.why }; }
+    if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' }; if (!enabled()) return { ok: false, err: '알라딘 샵매니저 읽기가 꺼져 있음(옆 창 ⚙에서 켜기)' };
     if (holdOn()) return { ok: false, err: '🚚 출고 중 — 끝난 뒤에 로그인해 주세요(약속 0-1)' };
     if (A.plain) A.plainStop = true; /* (11/12 login1) 스스로 다시 로그인 네이버 창이 떠 있으면 그만두게 — 사람 창이 먼저 */
     for (let k = 0; k < 60 && A.busy; k++) await sleep(500); if (A.busy) return { ok: false, err: '다른 일을 하는 중 — 잠시 뒤 다시' };
@@ -298,6 +390,7 @@ function makeAl(o) {
     if (r.ok) { setLogin('ok'); A.next.chk = now() + C().chkMin * 60e3; return 'ok'; } return r.why; }
   /* ── 한 바퀴 ── */
   async function step() { const c = C();
+    if (handsOn()) return H.step(); /* 🖐 손발 길 — 번외 크롬·번외 로그인 없이 평소 크롬 탭에 맡김 */
     if (!enabled()) { if (A.br) await close(isLogger() ? '로거 PC' : '꺼짐'); A.msg = isLogger() ? '로거 PC — 알라딘 로그인 일 안 함(약속 0 · 계정·쿠키 금지)' : !cfg().on ? '번외 수집 꺼짐' : '알라딘 샵매니저 읽기 꺼 둠(기본 꺼짐 · 옆 창 ⚙에서 켬)'; return 30e3; }
     if (A.pp) { A.msg = '⛔ 핑퐁 의심으로 멈춤 — ' + A.pp + ' · 정범님 확인 뒤 [🔐 알라딘 로그인]이나 끄고 켜기로 다시'; return 30e3; }
     if (A.login === 'human') { if (!(await humanCheck())) return 2000; return 300; } /* (11/11 col2fix6) 평범한 로그인 창이 열려 있는 동안은 이 프로필로 조종 크롬을 띄우지 않음 */
@@ -324,12 +417,13 @@ function makeAl(o) {
   /* ── 수집기 다리(이 PC 알라딘 일하는 탭 · 10초마다) — 🪑 자리 · 🚚 출고 보호 · 운영 세션 풀림 · 웹앱 끔 ── */
   function feed(b, by) { b = b || {}; const since = feedOk() ? A.feed.since || now() : now(); A.feed = { at: now(), since, seat: b.seat && typeof b.seat === 'object' ? { ok: b.seat.ok === true, why: String(b.seat.why || '').slice(0, 120) } : A.feed.seat, hold: b.hold && typeof b.hold === 'object' ? { on: !!b.hold.on, why: String(b.hold.why || '').slice(0, 120) } : null, opLostAt: +b.opLostAt || 0, off: !!(b.cfg && b.cfg.off), by: String(by || b.by || '').slice(0, 80) };
     if (A.feed.opLostAt && A.loginAt && A.feed.opLostAt >= A.loginAt && A.feed.opLostAt - A.loginAt < 15 * 60e3 && !A.pp) { A.pp = `번외 로그인(${new Date(A.loginAt + 9 * 3600e3).toISOString().slice(11, 16)}) 뒤 ${Math.round((A.feed.opLostAt - A.loginAt) / 60e3)}분 만에 운영 세션이 풀림`; note('⛔ 알라딘 핑퐁 의심 — ' + A.pp + ' → 번외 알라딘 읽기를 멈춤(운영 로그인이 먼저)', { k: 'al', l: 'err', m: '알라딘' }); }
-    if (!A.busy) kick(200); return { ok: true, al: sum() }; }
+    H.feed(b.hands); if (!A.busy) kick(200); return { ok: true, al: sum(), hands: H.reply() }; }
   /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인') 🔐 알라딘 — 번외 자리(<PC>~col2)를 받았고 세션이 풀려 있을 때만 본 창에서 넣은 값으로 로그인해 봄(맞으면 그대로 로그인 된 채)
    *  · (11/10 밤 정범님 '알라딘은 아예 안 먹혀') 세션이 살아 있으면 확인하려면 로그인을 하나 더 해야 해서(판매자 동시 로그인 ≤4대 — 다른 PC가 끊길 수 있음) 로그인하지 않고
    *    { live } 로 돌려줌 → 부른 쪽이 '확인하지 않고 잠가 저장 · 다음 다시 로그인 때 확인'(col2-relogin run이 맞음/틀림을 가림 · 틀리면 ⛔ 알림)
    *  · 🏠 이어받기가 꺼져 자리를 못 받으면 { own } — '🏠를 켜면 확인됨' · 출고 중·핑퐁 의심·로거면 안 함 */
   async function verify(id, pw, x) { x = x || {}; const ph = (t) => (x.phase ? x.phase(t) : null); if (isLogger()) return { ok: false, why: '로거 PC에서는 알라딘 계정을 쓰지 않습니다(약속 0)' };
+    if (handsOn()) return { ok: false, hands: true, why: '🖐 이 PC는 손발 길 — 알라딘 로그인은 평소 크롬(운영 수집기)이 하므로 번외는 이 값으로 알라딘에 로그인해 보지 않음(새 기기 로그인 = 42FB를 키움)' };
     const ownHint = '⚙ › 일 켜기·끄기 맨 위 🏠 「켜기 — 이 PC 알라딘 로그인 자리를 번외가 이어받음」을 켜면 번외가 이 PC 자리를 받아 실제 로그인으로 확인됨';
     if (enabled() && A.login === 'ok' && alive() && !(A.pg && A.pg.login)) return { ok: false, live: true, why: '알라딘 샵매니저가 지금 번외에서 로그인돼 있음' };
     if (!enabled()) return { ok: false, wait: true, own: cfg().alOwn !== true, why: cfg().alOwn !== true ? `🏠 이어받기가 꺼져 있어(알라딘 읽기도 꺼짐) 실제 로그인으로 확인할 수 없음 — ${ownHint}` : '🟧 알라딘 샵매니저 읽기(또는 번외 수집)가 꺼져 있어 확인할 수 없음 — 켠 뒤 다시' };
@@ -346,10 +440,11 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
-  function sum() { return { todo: A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { const hs = H.sum(); return { hands: hs, todo: hs.on ? hs.todo : A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled() && !handsOn(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };
-  return { start, kick, feed, sum, login, verify, close, runNow, seatAsk, wseat, seatHot, seatTell, tellTxt, MARK, A };
+  const H = makeHands({ A, C, cfg, now, note, WIN, TEST, SC, isLogger, handsOn, handsDef, holdOn, feedOk, night, capLeft, kday, KINDS, AC, doKind, cmpTick, close, setLogin: (st, why) => setLogin(st, why), sleepR, kick: (ms) => kick(ms) });
+  return { start, kick, feed, sum, login, verify, close, runNow, seatAsk, wseat, seatHot, seatTell, tellTxt, hands: H, MARK, A };
 }
-module.exports = { makeAl, prefsFix, humanArgs, humanArgsOk, HUMAN_OK, HUMAN_BAD, trailOf, trailWhy, profLook, chromeUs };
+module.exports = { makeAl, makeHands, handsClean, HANDS_KINDS, prefsFix, humanArgs, humanArgsOk, HUMAN_OK, HUMAN_BAD, trailOf, trailWhy, profLook, chromeUs };
