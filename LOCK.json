@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "recheck1 사후 확인 판(다시)",
+ "since": "2026-11-12T10:09:16Z",
+ "beat": "2026-11-12T10:09:16Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "fold2 웹앱 1.78.513 탭마다 화면 모두 기본 접기 (d6b9ed3c)",
   "at": "2026-11-12T10:07:41Z"
  },
- "host": null
+ "host": "vm"
 }
