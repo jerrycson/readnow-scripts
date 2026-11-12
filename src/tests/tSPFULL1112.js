@@ -56,7 +56,7 @@ function world(spec) { global.FieldPath = { documentId: () => '__name__' };
     const r1 = await W.tick({ force: true }); const c1 = W.cur()['1']; const filled = W.BI.filter((d) => d.v.isbn).length;
     ok(r1.q === 1 && filled > 0 && filled < 40 && c1.lastId === '1_039' && c1.carry.length === 40 - filled && c1.carry.every((c) => c[1] === 1) && r1.sell.adv === 40, '검색 1쪽만 — 자리는 읽은 데(1_039)까지 · 못 찾은 후보는 이어 할 목록(번호·횟수)', { filled, c1 });
     const r2 = await W.tick({ force: true }); const c2 = W.cur()['1']; const f2 = W.BI.filter((d) => d.v.isbn).length;
-    ok(c2.carryIn === 40 - filled && c2.cand === 40 && c2.scan === filled && c2.lastId === '1_0' + (39 + filled) && f2 > filled && c2.carry[0][1] === 2, '다음 회차는 이어 할 목록 먼저 · 모자란 후보 몫만큼만 더 읽음', { c2, f2 });
+    ok(c2.carryIn === 20 && c2.cand === 40 && c2.scan === 20 && c2.lastId === '1_059' && f2 > filled && c2.forced === 40 - filled - 20 + Math.max(0, c2.un - c2.carry.length), '다음 회차는 이어 할 목록 먼저(후보 몫의 절반까지 · 넘친 것은 다음 바퀴) · 나머지 몫은 새로 읽음', { c2, f2 });
     for (let i = 0; i < 8; i++) await W.tick({ force: true }); ok(W.BI.filter((d) => d.v.isbn).length === 60, '몇 회차 뒤 60개 모두 채움(건너뛴 것 없음)', W.BI.filter((d) => !d.v.isbn).map((d) => d.id));
     const W2 = world([['1', 5]]); W2.setCfg([{ sc: '1' }], { spBatch: { sellScan: 10, sellWant: 10, maxQ: 1, sellCarryMax: 2, gone: false, front: false, on: false } });
     await W2.tick({ force: true }); await W2.tick({ force: true }); const s2 = W2.cur()['1']; ok(s2.carry.length === 5 && s2.carry.every((c) => c[1] === 2), '검색이 꺼져 처리 못 하면 이어 할 목록에 남고 횟수가 늚', s2);
@@ -70,6 +70,8 @@ function world(spec) { global.FieldPath = { documentId: () => '__name__' };
     ok(hasM(W.urls[0]) && fM > f2 && f2 > 0, '검색 쪽: 주력 먼저·더 많이(70%) · 나머지도 굶지 않음', { fM, f2, q: r.q });
     const W3 = world([[MAIN, 200], ['2', 200]]); W3.setCfg([{ sc: MAIN }, { sc: '2' }], { spBatch: { sellScan: 300, sellWant: 1000, maxQ: 1, on: false, gone: false, front: false } }); await W3.tick({ force: true }); const c3 = W3.cur(); ok(c3[MAIN].scan === 200 && c3['2'].scan === 90, '읽는 문서 상한(sellScan 300)을 70:30으로 나눔(210→숍 200·90) · 회차당 메모리 그대로', c3); }
 
+  { const W = world([['2', 12, () => ({ coverKey: null })], ['3', 30]]); W.setCfg([{ sc: '2' }, { sc: '3' }], { spBatch: { maxQ: 2, gone: false, front: false } }); const r = await W.tick({ force: true });
+    ok(r.qMulti === 2 && r.qTitle === 0 && W.BI.filter((d) => d.v.sc === '3' && d.v.isbn).length >= 20, '쪽당 맞춘 수가 낮은 길(제목 한 권 검색)은 차례 무게를 낮춤 — 여러 번호 검색 쪽이 먼저', { qMulti: r.qMulti, qTitle: r.qTitle, plan: r.plan }); }
   console.log('④ 끝내 빈 칸 · 끄기 · 물음 실패 · 셈만');
   { const W = world([['1', 3, (i) => (i === 0 ? { noYm: true } : null)]]); W.setCfg([{ sc: '1' }], { spBatch: { gone: false, front: false } }); await W.tick({ force: true }); const v0 = W.byId.get('1_000').v;
     ok(v0.isbn && !v0.pubYm && v0.listPartAt && !W.byId.get('1_001').v.listPartAt, '목록에서 맞췄지만 출간 연월이 끝내 없으면 listPartAt(7일 쉼)', v0);
