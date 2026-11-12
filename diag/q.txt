@@ -1,2 +1,2 @@
-run=1&doc=app_settings/voice_study_run,app_settings/voice_study
-# 1862814169
+logs=1&pc=JS-MAIN&from=202611121600&col2=2026-11-12
+# 767517362
