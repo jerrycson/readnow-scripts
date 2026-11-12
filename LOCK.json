@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "teth2 테더링 재편성(다시 잡음)",
+ "since": "2026-11-12T08:19:52Z",
+ "beat": "2026-11-12T08:19:52Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "cres1 클라우드 0.35.146 · cbf90e45",
   "at": "2026-11-12T08:17:29Z"
  },
- "host": null
+ "host": "vm"
 }
