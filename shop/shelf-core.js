@@ -113,8 +113,11 @@
       [2], [4], [8], [10], [11], [12], [13], [17], [18], [20], [23], [24], [26], [29], [35], [36], [38], [40], [43], [48], [51], [52], [54], [55], [56], [57]],
     PG: [[1, 2, 3, 15, 28, 38, 40, 42, 47, 50], [4, 5, 29, 46], [6, 20, 21, 30, 41, 48], [7, 22, 37], [8, 9, 39, 45, 49], [10, 31, 43], [11, 35, 36], [12, 13, 14, 26, 27, 32, 33], [17, 18, 19, 23, 34, 44], [16, 24, 25],
       [51, 67], [52], [53, 71], [54], [55], [56, 63], [57], [58, 61], [59], [60], [62, 69], [64], [65], [66], [68], [70], [72]],
-    BG: [[1, 2, 6, 7], [3], [4], [5, 9], [8], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20], [21], [22], [23]],
+    /* (shelf8 · 정범님 11/12 '직사각형에서 변형된 모양은 모두 빼고 직사각형으로') 둥근·깎인 모서리·아치·V 홈·비스듬 머리·좁은 머리는 화면에서 모두 반듯한 직사각형으로 그림(shelf.css) → 겉으로 남는 몸은 셋뿐: 민·홈 줄·반짝이 */
+    BG: [[1, 2, 3, 5, 6, 7, 9, 15, 18, 21], [4, 11, 13, 16, 19, 22], [8, 12, 14, 17, 20, 23], [10]],
     HG: [[1], [2, 3, 4], [5]],
+    /* (shelf8) 크기 묶음 — 실제 판형(mm)이 눈에 띄게 다른 차례: 키 6(문고·소형 / 46판 / 국판·A5 / 신국판 / 크라운·46배판 / A4 넘음) × 두께 6(얇음~아주 두꺼움) · 경계 mm */
+    ZH: [170, 200, 215, 240, 270], ZD: [9, 15, 22, 31, 43],
     NOB: [10] /* '오래 읽은 책'은 색을 바래게 해 색 칸과 헷갈림 — 옛 책등은 그대로 두고 새로 정할 때는 안 씀 */ };
   /* 색 묶음(설정) = 20색 가운데 고르는 거름 */
   const PALS = { mix: () => true, classic: (x) => (['red', 'green', 'navy', 'brown', 'purple', 'teal'].includes(x.fam) && x.t <= 3) || (x.fam === 'gray' && x.t <= 1), vivid: (x) => x.fam !== 'gray' && x.t >= 3 && x.t <= 6,
@@ -126,7 +129,7 @@
   /* ── 장바구니·찜 움직임 */
   const CART_ANIMS = [['pull', '꺼내서 날아가기'], ['arc', '포물선 던지기'], ['cover', '표지 보이며 미끄러지기'], ['tumble', '빙글빙글 굴러 담기'], ['drop', '쏙 뽑혀 위에서 떨어지기']];
   const WISH_ANIMS = [['heart', '하트 퐁퐁'], ['blush', '수줍게 몸 비틀기(볼 빨개짐)'], ['bookmark', '빨간 책갈피 꽂힘'], ['jump', '신나서 깡총깡총'], ['wink', '윙크하며 "데려가 주세요!"']];
-  const SORTS = [['cat', '주제 분류'], ['title', '상품명(가나다)'], ['price', '가격대'], ['reg', '등록순'], ['sales', '판매량'], ['rec', '추천순']];
+  const SORTS = [['cat', '주제 분류'], ['title', '상품명(가나다)'], ['price', '가격대'], ['reg', '등록순'], ['sales', '판매량'], ['rec', '추천순'], /* (shelf8 · 정범님 11/12) 앞 몇 쪽 샘플을 모은 책만 */ ['pv', '샘플 있는 책']];
   const opt = (L) => Object.fromEntries(L.map((x) => (Array.isArray(x) ? x : [x, x])));
   const num1 = (L) => Object.fromEntries(L.map((n, i) => [String(i + 1), (i + 1) + '. ' + n]));
   /* ── 설정 틀 — 관리 웹앱 설정 화면·리드나우2 블록 속성이 이것을 그대로 그림 */
@@ -138,7 +141,7 @@
     { k: 'cap', group: '책장', label: '책장 하나에 꽂는 책 수', type: 'number', def: 200, min: 20, max: 300, step: 10, help: '넘치면 책장이 저절로 늘어남' },
     { k: 'pack', group: '책장', label: '작은 분야는 한 책장에 표찰로 나눠 함께 꽂기', type: 'check', def: true },
     { k: 'bayW', group: '책장', label: '칸 너비(px · 넓은 화면에서 칸이 몇 개로 나뉠지)', type: 'number', def: 460, min: 240, max: 1400, step: 20 },
-    { k: 'rowH', group: '책장', label: '선반 높이(px · 확대 1배 기준)', type: 'number', def: 190, min: 120, max: 320, step: 10 },
+    { k: 'rowH', group: '책장', label: '선반 높이(px · 확대 1배 기준 · A4 297mm가 선반 높이 − 24px)', type: 'number', def: 220, min: 120, max: 360, step: 10 }, /* (shelf8) 190 → 220 — 책 두께를 실제 비율로 그리며(아래 thickK) 보통 책(21mm)이 15px 안팎이 되게 */
     { k: 'sort0', group: '정렬', label: '처음 정렬', type: 'select', def: 'cat', opts: opt(SORTS) },
     { k: 'sorts', group: '정렬', label: '손님이 고를 수 있는 정렬', type: 'multi', def: SORTS.map((x) => x[0]), opts: opt(SORTS) },
     { k: 'inner', group: '정렬', label: '주제 분류 안의 차례', type: 'select', def: 'reg', opts: { reg: '우리 등록순', title: '상품명', price: '낮은 값', sales: '판매량' } },
@@ -166,13 +169,14 @@
     { k: 'shapes', group: '책등', label: '쓸 책 모양(비우면 ' + SHAPES.length + '가지 모두 = 몸 ' + BODIES.length + ' × 머리 ' + HEADS.length + ')', type: 'multi', def: [], opts: num1(SHAPES) },
     { k: 'palette', group: '책등', label: '색 묶음', type: 'select', def: 'mix', opts: { mix: '고루 섞기(70색)', classic: '고전 천 색', vivid: '선명한 색', earth: '흙빛', pastel: '파스텔', mono: '흑백' } },
     { k: 'orient', group: '책등', label: '글 방향', type: 'select', def: 'rand', opts: { rand: '책마다 랜덤', v: '세로쓰기(한 글자씩 세움)', h: '가로쓰기(눕혀 씀)' } },
-    { k: 'wMin', group: '책등', label: '가장 얇은 책(px)', type: 'number', def: 20, min: 12, max: 40 },
-    { k: 'wMax', group: '책등', label: '가장 두꺼운 책(px)', type: 'number', def: 48, min: 24, max: 80 },
+    { k: 'wMin', group: '책등', label: '가장 얇은 책(px · 이보다 얇은 책만 이 두께로 — 누르기 쉽게)', type: 'number', def: 8, min: 4, max: 40 },
+    { k: 'wMax', group: '책등', label: '가장 두꺼운 책(px)', type: 'number', def: 90, min: 24, max: 140 },
+    { k: 'thickK', group: '책등', label: '두께 배율(1 = 실제 비율 — 세로 mm와 같은 자로 두께 mm를 잼)', type: 'number', def: 1, min: 1, max: 3, step: 0.1, help: '정범님 11/12: 크기 비율을 실제와 맞게 · 1보다 크면 두께만 부풀림' },
     { k: 'hVar', group: '책등', label: '크기 정보 없는 책의 키 들쭉날쭉(%)', type: 'number', def: 16, min: 0, max: 35 },
     { k: 'seed', group: '책등', label: '섞기 번호(바꾸면 새로 정하는 책의 색·디자인·글꼴이 새로 섞임)', type: 'number', def: 1, min: 0, max: 99999 },
     { k: 'fontsOn', group: '글꼴', label: '무료 한글 글꼴 받아 쓰기(끄면 기기 글꼴만 — 더 가벼움)', type: 'check', def: true },
     { k: 'fonts', group: '글꼴', label: '쓸 글꼴(비우면 68가지 모두)', type: 'multi', def: [], opts: Object.fromEntries(FONTS.map((f) => [f.id, f.label])) },
-    { k: 'popMode', group: '움직임', label: '책등을 누르면', type: 'select', def: 'spine', opts: { spine: '책등 표면에 바로 단추(장바구니·찜·자세히)', bubble: '책등 위 말풍선 창' } },
+    { k: 'popMode', group: '움직임', label: '책등을 누르면(넓은 화면)', type: 'select', def: 'open', opts: { open: '책이 뽑혀 앞으로 나와 펼쳐짐(앞·책등·뒤 표지 + 책 정보)', spine: '책등 표면에 바로 단추(장바구니·찜·자세히)', bubble: '책등 위 말풍선 창' } },
     { k: 'cartAnim', group: '움직임', label: '장바구니 담기 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(CART_ANIMS), off: '움직임 없음' } },
     { k: 'wishAnim', group: '움직임', label: '찜 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(WISH_ANIMS), off: '움직임 없음' } },
     { k: 'turn3d', group: '움직임', label: '책장 넘길 때 3D로 돌기(끄면 옆으로 밀기)', type: 'check', def: true },
@@ -271,7 +275,9 @@
     F: (c.fonts && c.fonts.length ? c.fonts : FONTS.map((f) => f.id)).map((id) => FONTS.findIndex((f) => f.id === id) + 1).filter((i) => i > 0), C: ((L) => (L.length ? L : UQ.PAL.map((n) => n - 1)))(UQ.PAL.map((n) => n - 1).filter((i) => (PALS[c.palette] || PALS.mix)(COLORS[i]))) }); /* (shelf7) 새로 정하는 바탕색은 서로 뚜렷한 50색(UQ.PAL)에서만 */
   /* (shelf7) 묶음을 고르게 — 옅은 결 무늬처럼 한 묶음에 여럿 있는 것이 더 자주 뽑히지 않게(묶음 먼저 · 그 안에서 하나) */
   const pickCls = (R, pref, all, G) => { const P = (pref || []).filter((x) => all.includes(x)); if (P.length && R() < 0.75) return P[Math.floor(R() * P.length)]; const L = G.map((g) => g.filter((x) => all.includes(x))).filter((g) => g.length); if (!L.length) return all[Math.floor(R() * all.length)]; const g = L[Math.floor(R() * L.length)]; return g[Math.floor(R() * g.length)]; };
-  const pickShape = (R, pref, all) => { const P = (pref || []).filter((x) => all.includes(x)); if (P.length && R() < 0.75) return P[Math.floor(R() * P.length)]; const L = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).map((g) => g.flatMap((b) => UQ.HG.map((hs) => hs.map((h) => (b - 1) * HEADS.length + h).filter((x) => all.includes(x)))).filter((x) => x.length)).filter((g) => g.length);
+  const RECT = [1, 2, 4, 6, 7, 8]; /* (shelf8) 새로 정할 때 쓰는 몸 = 처음부터 직사각형인 것만(민·둥근 등 그림자·홈 줄·문고판·천 테·반짝이) */
+  const bodyOk = (s) => RECT.includes(Math.floor((s - 1) / HEADS.length) + 1);
+  const pickShape = (R, pref, all0) => { const all = all0.filter(bodyOk).length ? all0.filter(bodyOk) : all0; const P = (pref || []).filter((x) => all.includes(x)); if (P.length && R() < 0.75) return P[Math.floor(R() * P.length)]; const L = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).map((g) => g.flatMap((b) => UQ.HG.map((hs) => hs.map((h) => (b - 1) * HEADS.length + h).filter((x) => all.includes(x)))).filter((x) => x.length)).filter((g) => g.length);
     if (!L.length) return all[Math.floor(R() * all.length)]; const g = L[Math.floor(R() * L.length)]; const hs = g[Math.floor(R() * g.length)]; return hs[Math.floor(R() * hs.length)]; };
   const pickIn = (R, pref, all) => { const P = (pref || []).filter((x) => all.includes(x)); return P.length && R() < 0.75 ? P[Math.floor(R() * P.length)] : all[Math.floor(R() * all.length)]; };
   /* 책 한 권의 조합 정하기 → { g, src, d, ci, p, fi, s, a, o } (cc = 앞표지 대표색 #rrggbb · 없으면 null) */
@@ -291,15 +297,24 @@
   const encode = (A) => [A.g, A.src, A.d, A.ci, A.p, A.fi, A.s, A.a, A.o].concat(A.k ? [A.k] : []).join('.');
   function decode(code) { const m = CODE_RE.exec(String(code || '')); if (!m) return null; const A = { g: +m[1], src: m[2], d: +m[3], ci: +m[4], p: +m[5], fi: +m[6], s: +m[7], a: +m[8], o: m[9] }; if (m[10]) A.k = +m[10];
     if (!A.d || A.d > DESIGNS.length || !A.ci || A.ci > COLORS.length || !A.p || A.p > PATTERNS.length || !A.fi || A.fi > FONTS.length || !A.s || A.s > SHAPES.length || !A.a || A.a > ACCENTS.length || (m[10] && (!A.k || A.k > COLORS.length))) return null; return A; }
-  /* ── 크기: 판형 '가로x세로x두께'(mm · 클라우드 sz) → 키(선반 높이의 %)·두께(px) · 없으면 쪽수 · 그것도 없으면 랜덤(같은 책은 늘 같음)
-   *  근거: 국내 판형 46판 127×188 · 신국판 152×225 · 크라운판 176×248 · 46배판 188×257 · A4 210×297 → 297mm = 선반 높이 100% · 종이 한 쪽 ≈ 0.06mm + 표지 2mm */
+  /* ── 크기: 판형 '가로x세로x두께'(mm · 클라우드 sz) → 키(선반 높이의 %)·두께(px) — (shelf8 · 정범님 11/12 '크기 비율이 실제와 맞게')
+   *  · 세로·두께를 같은 자로 잼: 선반 높이 − 24px = 297mm(A4) → 1mm = (rowH − 24) / 297 px · 두께 px = 두께 mm × 그 값 × thickK(1 = 실제)
+   *    (전엔 두께를 20~48px 사이로 늘려 그려 보통 책이 실제보다 3배 두꺼워 보였음 — 21mm 책이 30px · 키 126px)
+   *  · 두께 mm가 없으면 쪽수(한 쪽 0.06mm + 표지 2mm) · 크기 자체가 없으면 판형을 분야·쪽수로 어림(est — 화면엔 '판형 추정'으로만 알림 · 저장 안 함)
+   *  근거: 국내 판형 46판 127×188 · 신국판 152×225 · 크라운판 176×248 · 46배판 188×257 · A4 210×297 */
   const SZ_RE = /^(\d{2,3})x(\d{2,3})(?:x(\d{1,3}))?$/;
-  function sizeOf(it, c) { c = c || DEF; const R = rng(hash(((it && it.id) || '') + '|sz')); const m = c.sizeOn !== false ? SZ_RE.exec(String((it && it.sz) || '')) : null; const H = m ? +m[2] : 0, D = m && m[3] ? +m[3] : 0; const pg = +(it && it.pg) || 0;
-    const dmm = D || (pg ? pg * 0.06 + 2 : 0); const span = c.wMax - c.wMin; const j = (R() - 0.5) * 2;
-    const w = dmm ? clamp(c.wMin + ((dmm - 5) / 40) * span + j, c.wMin, c.wMax) : c.wMin + Math.pow(R(), 1.4) * span;
-    const h = H ? clamp(H / 2.97, 50, 100) : clamp((225 + j * (c.hVar / 16) * 35 - R() * 4) / 2.97, 50, 100);
-    return { w: Math.round(w), h: Math.round(h * 10) / 10, tilt: R() < 0.04 ? (R() < 0.5 ? -1 : 1) : 0, real: !!(H || dmm) }; }
-  /* ── 책등 글 맞추기: 제목·지은이가 다 들어가는 가장 큰 글자(확대 1배 기준 px) — 세로쓰기 줄(열) 여러 개로 감김 · 손님 화면이 (글자 × 확대 < minFs)면 줄임(…) */
+  const FMT = { novel: [128, 188], essay: [128, 188], teen: [140, 205], comic: [125, 185], kids: [152, 210], baby: [200, 230], art: [176, 248], cook: [188, 240], travel: [140, 205],
+    lang: [188, 257], it: [188, 257], exam: [188, 257], _: [152, 225] };
+  const FMT_N = { '128x188': '46판', '125x185': '만화책(46판)', '140x205': '변형 46판', '152x225': '신국판', '152x210': '어린이 단행본', '200x230': '유아 그림책', '230x260': '그림책', '176x248': '크라운판', '188x240': '변형 크라운판', '188x257': '46배판' };
+  function fmtGuess(it) { const k = (BIG[bigOfCat(it && it.c)] || [])[0]; const pg = +(it && it.pg) || 0; let f = FMT[k] || FMT._; if (k === 'kids' && pg && pg < 80) f = [230, 260]; const key = f[0] + 'x' + f[1]; return { W: f[0], H: f[1], name: FMT_N[key] || '' }; }
+  /* 실제 크기(mm)와 어디서 왔는지 — 화면 글·펼친 책 비율이 함께 씀 · real = 판형 칸이 있음 · dEst = 두께는 쪽수로 셈 · est = 판형도 어림 */
+  function dimOf(it) { const m = SZ_RE.exec(String((it && it.sz) || '')); const pg = +(it && it.pg) || 0; const g = m ? null : fmtGuess(it);
+    const W = m ? +m[1] : g.W, H = m ? +m[2] : g.H; const D0 = m && m[3] ? +m[3] : 0; const D = D0 || (pg ? Math.round(pg * 0.06 + 2) : 15);
+    return { W, H, D, real: !!m, dReal: !!D0, dEst: !D0, est: !m, fmt: g ? g.name : '' }; }
+  function sizeOf(it, c) { c = c || DEF; const R = rng(hash(((it && it.id) || '') + '|sz')); const on = c.sizeOn !== false; const d = dimOf(it);
+    const pxmm = (c.rowH - 24) / 297; const w = on ? d.D * pxmm * (+c.thickK || 1) : c.wMin + R() * (c.wMax - c.wMin) * 0.4;
+    const h = on ? clamp(d.H / 2.97, 30, 100) : clamp((225 + (R() - 0.5) * 2 * (c.hVar / 16) * 35) / 2.97, 50, 100);
+    return { w: Math.round(clamp(w, c.wMin, c.wMax) * 10) / 10, h: Math.round(h * 10) / 10, tilt: 0 /* (shelf8 · 정범님 '반듯한 직사각형만') 비스듬히 기댄 책도 없앰 */, real: on && (d.real || !!(it && it.pg)), est: d.est, mm: d }; }
   const glen = (s) => [...String(s || '')].length;
   function textFit(t, a, w, hp) { const W = Math.max(6, w * 0.8), nt = Math.max(1, glen(t)), na = glen(a); const Ht = hp * (na ? 0.66 : 0.86), Ha = hp * 0.22;
     const fit = (n, H, top) => { for (let f = top; f >= 4; f -= 0.5) { const k = Math.floor(W / (f * 1.14)); const per = Math.floor(H / (f * 1.04)); if (k >= 1 && per >= 1 && k * per >= n) return f; } return 4; };
@@ -333,8 +348,9 @@
   /* 조합 수 — 실제로 만든 목록 길이를 곱함(정범님 11/11: 1억 넘게) */
   /* (shelf7) uq = 겉으로 뚜렷한 고유 모양 수(디자인 묶음 × 색 짝 × 무늬 묶음 × 모양 묶음 · 클라우드 cloud/shop-uniq.js space()와 같은 셈 — 시험이 견줌) · 옛 칸(D·C·P·F·S·core·total)은 목록 길이 곱 그대로 */
   function combos() { const D = DESIGNS.length, C = COLORS.length, P = PATTERNS.length, F = FONTS.length, S = SHAPES.length, A = ACCENTS.length, O = 2; return { D, C, P, F, S, A, O, core: D * C * P * F * S, total: D * C * P * F * S * A * O, uq: uqCount() }; }
+  const zClass = (d) => { const f = (v, E) => E.filter((e) => v >= e).length; return d ? f(d.H, UQ.ZH) * (UQ.ZD.length + 1) + f(d.D, UQ.ZD) : 0; }; /* (shelf8) 크기 묶음 번호 0~35 */
   function uqCount() { const n = UQ.PAL.length; let dc = 0, ds = 0; for (const g of UQ.DG) { const sec = g.some((d) => !UQ.NOSEC.includes(d)); dc += sec ? n * (n - 1) : n; if (sec) ds++; }
-    const B = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).length; return { D: UQ.DG.length, Dsec: ds, C: n, pairs: n * (n - 1), P: UQ.PG.length, B, H: UQ.HG.length, S: B * UQ.HG.length, N: dc * UQ.PG.length * B * UQ.HG.length }; }
+    const B = UQ.BG.filter((g) => !g.some((b) => UQ.NOB.includes(b))).length; const N = dc * UQ.PG.length * B * UQ.HG.length; const Z = (UQ.ZH.length + 1) * (UQ.ZD.length + 1); return { D: UQ.DG.length, Dsec: ds, C: n, pairs: n * (n - 1), P: UQ.PG.length, B, H: UQ.HG.length, S: B * UQ.HG.length, N, Z, Nall: N * Z }; } /* (shelf8) N = 장부가 겹침 0을 지키는 조합(크기와 상관없이) · Nall = 거기에 실제 크기 묶음까지 곱한 겉모습 수 */
   /* ── 한글 첫소리 · 상품명 묶음 */
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'; const CHO1 = { ㄲ: 'ㄱ', ㄸ: 'ㄷ', ㅃ: 'ㅂ', ㅆ: 'ㅅ', ㅉ: 'ㅈ' };
   const initial = (t) => { const s = String(t || '').replace(/^[\s"'(\[{<〈《「『【]+/, ''); const ch = s.charCodeAt(0); if (ch >= 0xac00 && ch <= 0xd7a3) { const c = CHO[Math.floor((ch - 0xac00) / 588)]; return CHO1[c] || c; } if (/[a-z]/i.test(s[0] || '')) return 'A–Z'; if (/[0-9]/.test(s[0] || '')) return '숫자'; if (/[ㄱ-ㅎ]/.test(s[0] || '')) return CHO1[s[0]] || s[0]; return '기호·그 밖'; };
@@ -352,7 +368,7 @@
     if (key === 'rec') return (a, b) => b._rs - a._rs || regCmp('new')(a, b); return regCmp(c.regDir); }
   /* ── 책장 묶음 짜기: 정렬 → 무리(분야·첫소리·가격대 · 없으면 하나) → 책장(수용 cap)마다 자리(slots: 책 또는 표찰 {lab})
    *  pack: 작은 무리는 앞 책장의 남은 자리에 표찰을 세워 이어 꽂음(실제 서점처럼) · 큰 무리는 cap마다 나눠 '문학 2/3' */
-  function plan(items, c, key, now) { c = c || DEF; now = now || Date.now(); key = SORTS.some((s) => s[0] === key) ? key : c.sort0; const L = (items || []).filter((x) => x && x.id);
+  function plan(items, c, key, now) { c = c || DEF; now = now || Date.now(); key = SORTS.some((s) => s[0] === key) ? key : c.sort0; const key0 = key; const L = (items || []).filter((x) => x && x.id && (key0 !== 'pv' || x.pv)); if (key === 'pv') key = 'cat'; /* (shelf8) 샘플 있는 책 = 샘플 모은 책만 주제 분류로 */
     const picks = String(c.picks || '').split(/[\s,]+/).map((x) => x.trim()).filter(Boolean); const P = new Map(picks.map((id, i) => [id, i]));
     if (key === 'rec') for (const x of L) x._rs = P.has(x.id) ? 1e6 - P.get(x.id) : recScore(x, now);
     let groups;
@@ -375,7 +391,7 @@
       if (!c.pack) cur = null; }
     for (const cs of cases) if (!cs.name) { const g = cs.groups; cs.name = g[0].part ? `${g[0].name} ${g[0].part}/${g[0].parts}` : g[0].name; const sm = [...new Set(cs.slots.filter((x) => x.lab && x.sm && x.big === g[0].name).map((x) => x.sm))];
       cs.sub = [sm.length ? sm.slice(0, 2).join(' · ') + (sm.length > 2 ? ` 외 ${sm.length - 2}` : '') : '', g.length > 1 ? `+ ${g.slice(1, 3).map((v) => v.name).join(' · ')}${g.length > 3 ? ` 외 ${g.length - 3}분야` : ''}` : ''].filter(Boolean).join(' '); }
-    return { key, cases, n: L.length }; }
+    return { key: key0, cases, n: L.length }; }
   /* ── 넓이 → 칸 수(넓은 화면은 칸을 나눠 실제 책장처럼 · 좁으면 한 칸에 선반이 늘어남) */
   const bays = (innerW, c, z) => clamp(Math.floor(innerW / Math.max(120, (c || DEF).bayW * (z || 1))), 1, 5);
   /* 칸 나누기: 표찰은 다음 책과 같은 칸에 · 칸마다 책 수가 고르게 */
@@ -399,7 +415,7 @@
   /* (shelf4) 클라우드가 앞표지를 미리 셈한 칸 cv = 'rrggbb' 또는 'rrggbb.갈래' (예 '8a2b1c.my') · 'x' = 셈했는데 쓸 만한 색 없음 */
   const cvOf = (v) => { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/.exec(String(v || '')); return m ? { cc: '#' + m[1], fg: GENRES[m[2]] ? m[2] : null, cv: 1 } : v === 'x' ? { cv: 1 } : {}; };
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); }
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
@@ -430,5 +446,5 @@
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.1', UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.2', UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

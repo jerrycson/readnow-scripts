@@ -20,7 +20,7 @@ function de00(p, q) { const [L1, a1, b1] = p, [L2, a2, b2] = q; const rad = Math
 (async () => {
 console.log('① 순수 셈');
 const sp = U.space(); const uq = BQS.combos().uq;
-{ ok(sp.N >= 1e8 && JSON.stringify(uq) === JSON.stringify({ D: sp.D, Dsec: sp.Dsec, C: sp.C, pairs: sp.pairs, P: sp.P, B: sp.B, H: sp.H, S: sp.S, N: sp.N }), `고유 책등 ${sp.N.toLocaleString('ko-KR')}가지 = (곁색 보이는 디자인 ${sp.Dsec}묶음 × 색 짝 ${sp.pairs.toLocaleString('ko-KR')}(바탕 ${sp.C} × 곁색 ${sp.C - 1}) + 곁색 안 보이는 ${sp.D - sp.Dsec}묶음 × 바탕 ${sp.C}) × 무늬 ${sp.P}묶음 × 모양 ${sp.S}묶음(몸 ${sp.B} × 머리 ${sp.H}) ≥ 1억 · 손님 화면 셈 = 클라우드 셈`);
+{ ok(sp.Nall >= 1e8 && JSON.stringify(uq) === JSON.stringify({ D: sp.D, Dsec: sp.Dsec, C: sp.C, pairs: sp.pairs, P: sp.P, B: sp.B, H: sp.H, S: sp.S, N: sp.N, Z: sp.Z, Nall: sp.Nall }), `(shelf8 직사각형만) 고유 겉모습 ${sp.Nall.toLocaleString('ko-KR')}가지 = 조합 ${sp.N.toLocaleString('ko-KR')} × 실제 크기 묶음 ${sp.Z}(키 6 × 두께 6) · 조합 ${sp.N.toLocaleString('ko-KR')} = (곁색 보이는 디자인 ${sp.Dsec}묶음 × 색 짝 ${sp.pairs.toLocaleString('ko-KR')}(바탕 ${sp.C} × 곁색 ${sp.C - 1}) + 곁색 안 보이는 ${sp.D - sp.Dsec}묶음 × 바탕 ${sp.C}) × 무늬 ${sp.P}묶음 × 모양 ${sp.S}묶음(몸 ${sp.B} × 머리 ${sp.H}) ≥ 1억 · 손님 화면 셈 = 클라우드 셈`);
   const K = ['PAL', 'GONLY', 'NOSEC', 'DG', 'PG', 'BG', 'HG', 'NOB']; ok(K.every((k) => JSON.stringify(BQS.UQ[k]) === JSON.stringify(U.T[k])), '손님 화면(shop/shelf-core.js UQ)과 클라우드(cloud/shop-uniq.js) 표가 같음 — ' + K.join('·'));
   const cover = (G, n) => { const L = G.flat().sort((a, b) => a - b); return L.length === n && L.every((x, i) => x === i + 1); };
   ok(cover(U.T.DG, BQS.DESIGNS.length) && cover(U.T.PG, BQS.PATTERNS.length) && cover(U.T.BG, BQS.BODIES.length) && cover(U.T.HG, BQS.HEADS.length), `묶음이 빠짐·겹침 없이 모두 덮음(디자인 ${BQS.DESIGNS.length} · 무늬 ${BQS.PATTERNS.length} · 몸 ${BQS.BODIES.length} · 머리 ${BQS.HEADS.length})`); }
@@ -36,17 +36,17 @@ const sp = U.space(); const uq = BQS.combos().uq;
 { let rt = 0; const R = BQS.rng(7); for (let n = 0; n < 200000; n++) { const i = Math.floor(R() * sp.N); if (U.indexOf(U.tupleAt(i)) === i) rt++; } const edge = [0, 1, sp.N - 1].every((i) => U.indexOf(U.tupleAt(i)) === i);
   const seen = new Set(); for (let i = 0; i < 1e6; i++) seen.add(U.perm(i)); const sg = new Set(); for (let i = 0; i < 2e5; i++) sg.add(U.sigOfT(U.comboAt(i)));
   ok(rt === 200000 && edge && seen.size === 1e6 && sg.size === 2e5, '번호 ↔ 조합 전단사(20만 번 되돌려도 같음) · 책 순번 → 조합 섞기 100만 개 모두 다름 · 20만 조합의 고유 번호 모두 다름'); }
-{ const c = BQS.cfgOf({}); const items = BQS.demoItems(60000, 11); const I = U.makeIndex(); const S = new Set(); let fx = 0, keepDB = 0;
-  for (const x of items) { const A = BQS.assign(x, c, x.id.endsWith('3') ? '#3a6ea5' : null); const r = I.claim(x.id, BQS.encode(A)); if (r.fixed) { fx++; const B = BQS.decode(r.code); if (B && B.d === A.d && B.ci === A.ci) keepDB++; } S.add(r.sig); }
-  ok(S.size === 60000 && I.size() === 60000 && keepDB === fx, `새 책 6만 권(일부는 같은 표지색): 겹침 0 · 처음 고른 조합이 이미 쓰인 ${fx}권(${(fx / 600).toFixed(2)}%)만 곁색·무늬·모양을 바꿈(디자인·바탕색은 그대로 ${keepDB}/${fx})`);
+{ const c = BQS.cfgOf({}); const items = BQS.demoItems(60000, 11); const I = U.makeIndex(); const S = new Set(); let fx = 0, keepDB = 0, keepB = 0;
+  for (const x of items) { const A = BQS.assign(x, c, x.id.endsWith('3') ? '#3a6ea5' : null); const r = I.claim(x.id, BQS.encode(A)); if (r.fixed) { fx++; const B = BQS.decode(r.code); if (B && B.d === A.d && B.ci === A.ci) keepDB++; if (B && B.ci === A.ci) keepB = (keepB || 0) + 1; } S.add(r.sig); }
+  ok(S.size === 60000 && I.size() === 60000 && keepB === fx && keepDB >= fx * 0.6, `새 책 6만 권(6천 권이 같은 표지색): 겹침 0 · 처음 고른 조합이 이미 쓰인 ${fx}권(${(fx / 600).toFixed(2)}%)만 곁색·무늬·모양을 바꿈 · 바탕색(앞표지 색)은 모두 그대로 ${keepB}/${fx} · 디자인도 그대로 ${keepDB}/${fx}(shelf8 모양 묶음 9로 줄어 같은 색이 몰린 칸은 디자인을 바꿈)`);
   const x = items[3]; const L = BQS.look(x, c); ok(L.kx > 0 && L.c2 === BQS.COLORS[L.kx - 1].hex && /\.\d+$/.test(L.code) && BQS.decode(L.code).k === L.kx && (BQS.UQ.GONLY.includes(L.d) ? L.ac === L.c2 : true), `새 모양 글 끝에 곁색(${L.code}) · 곁색이 띠(--c2)·장식(--g 자리 디자인)에 쓰임`); }
 { /* 옛 책등(곁색 없는 꼴) — 바로 앞 판(4dbb60ef)의 셈으로 만든 2만 권을 장부에 넣어 봄 */
   let OLD = null; try { const src = cp.execSync('git show 4dbb60ef:shop/shelf-core.js', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString(); const f = path.join(os.tmpdir(), 'bqs_old_' + process.pid + '.js'); fs.writeFileSync(f, src); OLD = require(f); fs.unlinkSync(f); } catch (e) {}
   const items = BQS.demoItems(20000, 5); const c0 = OLD ? OLD.cfgOf({}) : null; const E = items.map((x, i) => [x.id, OLD ? OLD.encode(OLD.assign(x, c0, i % 3 ? null : '#8e3b2f')) : `0.r.${1 + (i * 7) % 50}.${1 + (i * 13) % 70}.${1 + (i * 3) % 50}.1.${1 + (i * 11) % 50}.${1 + (i % 4)}.v`]);
   const I = U.makeIndex(); const fix = I.rebuild(E); const fm = new Map(fix); const same = E.filter(([id, code]) => !fm.has(id)).length; const S = new Set(E.map(([id, code]) => U.sigOf(fm.get(id) || code)));
-  const keepDB = fix.every(([id, code]) => { const a = BQS.decode(E.find((e) => e[0] === id)[1]), b = BQS.decode(code); return a && b && a.d === b.d && a.ci === b.ci && a.fi === b.fi && a.o === b.o; });
+  const keepDB = fix.every(([id, code]) => { const a = BQS.decode(E.find((e) => e[0] === id)[1]), b = BQS.decode(code); return a && b && a.ci === b.ci && a.fi === b.fi && a.o === b.o; }); const keepD = fix.filter(([id, code]) => BQS.decode(E.find((e) => e[0] === id)[1]).d === BQS.decode(code).d).length; /* (shelf8) 바탕색·글꼴·글 방향은 늘 그대로 · 디자인은 칸이 차면 바뀜 */
   const dupN = E.length - new Set(E.map(([, code]) => U.sigOf(code))).size; const onlyK = fix.filter(([id, code]) => { const a = BQS.decode(E.find((e) => e[0] === id)[1]), b = BQS.decode(code); return a.p === b.p && a.s === b.s; }).length;
-  ok(S.size === 20000 && keepDB && fix.length === dupN && same === 20000 - dupN, `옛 책등 2만 권(${OLD ? '앞 판 셈 그대로 · 지어낸 책이라 제목 낱말이 적어 실제보다 많이 겹침' : '앞 판을 못 읽어 고른 번호'}) 장부에 넣기: ${same}권(${(same / 200).toFixed(1)}%) 그대로 · 새 기준으로 앞 책과 겹친 ${fix.length}권만 새 빈 조합(그중 ${onlyK}권은 곁색만 · 디자인·바탕색·글꼴·글 방향은 모두 그대로) · 겹침 0`);
+  ok(S.size === 20000 && keepDB && fix.length === dupN && same === 20000 - dupN, `옛 책등 2만 권(${OLD ? '앞 판 셈 그대로 · 지어낸 책이라 제목 낱말이 적어 실제보다 많이 겹침' : '앞 판을 못 읽어 고른 번호'}) 장부에 넣기: ${same}권(${(same / 200).toFixed(1)}%) 그대로 · 새 기준(shelf8 직사각형만)으로 앞 책과 겹친 ${fix.length}권만 새 빈 조합(그중 ${onlyK}권은 곁색만 · 바탕색·글꼴·글 방향은 모두 그대로 · 디자인도 그대로 ${keepD}권) · 겹침 0`);
   ok(U.sigOf('0.t.3.1.1.1.1.1.v') !== U.sigOf('0.t.3.1.1.1.1.2.v') && U.sigOf('0.t.1.1.1.1.1.1.v') === U.sigOf('0.t.1.1.1.1.1.3.v') && U.sigOf('0.t.1.1.1.1.1.1.v') === U.sigOf('0.t.32.1.2.40.6.1.v') && U.sigOf('0.t.2.1.1.1.1.1.v.71') !== U.sigOf('0.t.2.1.1.1.1.1.v.72'),
     '고유 번호: 금박 장식만 있는 디자인은 금·은이 다름 · 민무늬에서 장식색·글꼴·비슷한 무늬(옅은 결)·비슷한 몸(반듯·얇은)은 같은 것으로 셈 · 곁색이 다르면 다름'); }
 { /* 클라우드 창구 — 가짜 Firestore */
@@ -66,7 +66,7 @@ const sp = U.space(); const uq = BQS.combos().uq;
   const sigs = Object.values(saved).map((c) => U.sigOf(c)); ok(new Set(sigs).size === sigs.length && SHOP.jobs().uniq.n === sigs.length && SHOP.jobs().uniq.space === sp.N, `저장된 ${sigs.length}권 고유 번호 겹침 0`); srv.close(); }
 { const T = fs.readFileSync(path.join(ROOT, 'shop/shelf.js'), 'utf8'); ok(/new FontFace\(al, buf/.test(T) && /n >= 3/.test(T) && /2000 \* Math\.pow\(2, n\)/.test(T) && /fRun < fMax\(\)/.test(T) && /lookFix/.test(T), '손님 화면: 글꼴은 FontFace로 받아 실패하면 2·4·8초 뒤 다시(3번까지) · 한 번에 2~3개씩 · 클라우드가 고친 모양 반영');
   for (const f of ['cloud/shop-uniq.js', 'shop/shelf.js', 'shop/shelf-core.js']) { const t = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(|console\.log/.test(t), f + ': 브라우저 창·console.log 없음'); }
-  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.5/.test(s) && /shelf\.css\?v=0\.2\.5/.test(s), '서가 판 0.2.5(새 파일을 받게 주소 꼬리)'); }
+  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.[5-9]/.test(s) && /shelf\.css\?v=0\.2\.[5-9]/.test(s), '서가 판 0.2.5 이후(새 파일을 받게 주소 꼬리)'); }
 if (!process.env.RN_SHELF_UI) { console.log(bad ? `❌ tSHELF7_1112 ${bad}개 실패` : '✓ tSHELF7_1112 순수 셈 통과 (화면 시험은 RN_SHELF_UI=1)'); process.exit(bad ? 1 : 0); }
 
 console.log('② 화면');
