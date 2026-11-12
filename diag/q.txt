@@ -1,2 +1,2 @@
-doc=col2_naver/state,app_settings/platforms
-# 636523552
+adapt=1
+# 14689763
