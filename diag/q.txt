@@ -1,2 +1,2 @@
-vlearn=2&mem=1
-# 1780620656
+doc=app_settings/omni_auto&col2=1
+# 143482128
