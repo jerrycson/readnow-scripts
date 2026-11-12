@@ -1,0 +1,14 @@
+{
+ "_설명": "PC 배치 도우미(pcdock) 묶음 — install-pcdock.ps1과 도우미 스스로 새 판 받기가 이 목록대로 %LOCALAPPDATA%\\ReadNow\\pcdock\\app 에 받음 · 파일을 더하면 여기에도(tests/t_static이 폴더와 견줌) · 판 번호는 pcdock-config.js PCDOCK_VER",
+ "files": [
+  "pcdock-config.js",
+  "readnow-pcdock.js",
+  "grid.js",
+  "apps.js",
+  "settings.js",
+  "clean.js",
+  "ui.html",
+  "pcdock.ps1",
+  "pcdock-win.cs"
+ ]
+}

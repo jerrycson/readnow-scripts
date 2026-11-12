@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>리드나우 PC 배치</title>
+<!-- 🖥 PC 배치 도우미 화면(이 PC 127.0.0.1에서만) — 처음 화면 단추 4개 · ① 설정(배치도) · ④ PC 정리 · 브라우저 팝업 없음(쪽지·두 번 누르기) -->
+<style>
+:root { --bg: #f6f7f9; --card: #fff; --ink: #1d232b; --mute: #6a7380; --line: #dde1e7; --acc: #2463eb; --acc2: #e8efff; --ok: #138a52; --warn: #b26a00; --bad: #c62828; --cell: #eef1f5; --cellh: #dfe8ff; --blk: #2463eb; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14171c; --card: #1d2229; --ink: #e8ebef; --mute: #98a2ae; --line: #313843; --acc: #6e9bff; --acc2: #22304d; --ok: #43c486; --warn: #f0a640; --bad: #ff6b6b; --cell: #232a33; --cellh: #2b3a58; --blk: #4c7ef0; } }
+:root[data-theme="dark"] { --bg: #14171c; --card: #1d2229; --ink: #e8ebef; --mute: #98a2ae; --line: #313843; --acc: #6e9bff; --acc2: #22304d; --ok: #43c486; --warn: #f0a640; --bad: #ff6b6b; --cell: #232a33; --cellh: #2b3a58; --blk: #4c7ef0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 13px/1.45 "Malgun Gothic", "맑은 고딕", system-ui, sans-serif; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card); border-radius: 7px; padding: 6px 10px; }
+button:hover { border-color: var(--acc); }
+button.pri { background: var(--acc); color: #fff; border-color: var(--acc); }
+button.arm { background: var(--bad); color: #fff; border-color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; }
+textarea { resize: vertical; min-height: 54px; }
+label { display: block; margin: 6px 0 2px; color: var(--mute); font-size: 12px; }
+.mute { color: var(--mute); } .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.view { display: none; height: 100%; } .view.on { display: flex; flex-direction: column; }
+/* 처음 화면 */
+#home { padding: 12px; gap: 8px; }
+#home h1 { font-size: 15px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; }
+.big { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 12px; font-size: 14px; border-radius: 10px; }
+.big .n { font-size: 18px; width: 26px; text-align: center; }
+.big .t { flex: 1; } .big small { display: block; color: var(--mute); font-size: 11.5px; }
+.sw { width: 40px; height: 22px; border-radius: 11px; background: var(--line); position: relative; flex: none; transition: .15s; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .15s; }
+.sw.on { background: var(--ok); } .sw.on::after { left: 21px; }
+#last { flex: 1; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: 12px; }
+#last div { padding: 1px 0; }
+/* 설정 */
+#set { flex-direction: row; }
+#side { width: 290px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: var(--card); }
+#side h2, #main h2 { font-size: 13px; margin: 0; }
+#apps { flex: 1 1 50%; overflow: auto; padding: 6px; border-bottom: 1px solid var(--line); position: relative; }
+#apps.drop { outline: 3px dashed var(--acc); outline-offset: -6px; background: var(--acc2); }
+.app { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 7px; border: 1px solid transparent; user-select: none; touch-action: none; cursor: grab; }
+.app:hover { background: var(--acc2); } .app.sel { border-color: var(--acc); background: var(--acc2); }
+.ic { width: 24px; height: 24px; flex: none; display: grid; place-items: center; font-size: 17px; }
+.ic img { width: 24px; height: 24px; }
+.app .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app .cnt { font-size: 11px; color: var(--mute); }
+#addrow { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+#addrow button { padding: 3px 7px; font-size: 12px; }
+#detail { flex: 1 1 50%; overflow: auto; padding: 8px 10px 12px; }
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#bar { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--card); flex-wrap: wrap; }
+#bar .sp { flex: 1; }
+#bar select { width: auto; }
+#mapwrap { flex: 1; position: relative; overflow: hidden; }
+#map { position: absolute; inset: 0; }
+.mon { position: absolute; border: 2px solid var(--mute); border-radius: 6px; background: var(--bg); }
+.mon .lab { position: absolute; left: 0; right: 0; top: -20px; font-size: 11.5px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mon.pri { border-color: var(--acc); }
+.cell { position: absolute; background: var(--cell); border: 1px solid var(--line); }
+.cell.hot { background: var(--cellh); border-color: var(--acc); }
+.blk { position: absolute; background: var(--blk); color: #fff; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; text-align: center; overflow: hidden; cursor: grab; touch-action: none; user-select: none; box-shadow: 0 1px 4px #0004; }
+.blk.bad { background: var(--bad); }
+.blk .ic { font-size: 20px; }
+.blk.sm .nm2 { display: none; } .blk.sm .ic { font-size: 16px; }
+.blk .x { position: absolute; top: 1px; right: 2px; font-size: 11px; line-height: 14px; opacity: 0; cursor: pointer; padding: 0 3px; border-radius: 3px; }
+.blk:hover .x { opacity: .9; background: #0003; }
+.blk .rz { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, #fff9 50%); }
+#monopts { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border-top: 1px solid var(--line); background: var(--card); }
+#monopts .mo { display: flex; gap: 4px; align-items: center; }
+#monopts select { width: auto; } #monopts input { width: 46px; }
+.ghost { position: fixed; pointer-events: none; z-index: 50; background: var(--blk); color: #fff; border-radius: 6px; padding: 4px 8px; opacity: .9; display: flex; gap: 5px; align-items: center; }
+/* 정리 */
+#clean { padding: 10px 12px; gap: 8px; overflow: auto; }
+#clean .lvs { display: flex; gap: 6px; } #clean .lvs button.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+.list { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.list .row { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.list .row:last-child { border-bottom: 0; }
+.list .row input[type=checkbox] { width: auto; margin-top: 3px; }
+.list .row .g { flex: 1; min-width: 0; } .list .row .sz { white-space: nowrap; color: var(--mute); }
+.adv { background: var(--acc2); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
+code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg); padding: 1px 4px; border-radius: 4px; word-break: break-all; }
+#toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 7px 12px; border-radius: 8px; font-size: 12.5px; max-width: 92%; display: none; z-index: 99; white-space: pre-line; }
+.back { padding: 3px 8px; }
+</style>
+</head>
+<body>
+<div id="home" class="view on">
+  <h1><span>🖥 리드나우 PC 배치</span><span class="mute" id="ver" style="font-size:11px"></span></h1>
+  <button class="big" id="b1"><span class="n">⚙</span><span class="t">① 실행·배치 설정<small id="b1s">프로그램을 모니터 칸에 끌어 놓기</small></span></button>
+  <button class="big" id="b2"><span class="n">🔁</span><span class="t">② 윈도우 시작 때 자동<small id="b2s">로그온 뒤 20초 기다렸다 실행·배치</small></span><span class="sw" id="b2sw"></span></button>
+  <button class="big pri" id="b3"><span class="n">▶</span><span class="t">③ 설정대로 지금 실행·배치<small id="b3s" style="color:#ffffffcc">켜고 · 뜨길 기다려 · 칸에 놓음</small></span></button>
+  <button class="big" id="b4"><span class="n">🧹</span><span class="t">④ PC 정리<small>임시·캐시만 · 리드나우는 안 건드림</small></span></button>
+  <div id="last" class="mute">아직 실행·배치하지 않았습니다.</div>
+</div>
+
+<div id="set" class="view">
+  <div id="side">
+    <div style="padding:8px 10px;border-bottom:1px solid var(--line)"><h2>📋 프로그램 <span class="mute" style="font-weight:normal;font-size:11.5px">끌어서 오른쪽 칸에 놓기</span></h2></div>
+    <div id="apps"></div>
+    <div id="addrow"><button id="addChrome">＋ 크롬 창</button><button id="addWeb">＋ 웹 주소 창</button><button id="addFolder">＋ 폴더</button><button id="addExe">＋ 프로그램</button></div>
+    <div id="detail" class="mute">왼쪽 목록에서 하나를 누르면 세부 설정이 여기 나옵니다.<br><br>탐색기에서 프로그램(.exe)·바로가기(.lnk)를 목록에 끌어다 놓으면 더해집니다.</div>
+  </div>
+  <div id="main">
+    <div id="bar">
+      <button class="back" id="setBack">← 처음</button>
+      <h2>🖥 모니터 배치도</h2>
+      <span class="mute">일반 모니터</span><select id="base"><option value="16:9">16:9</option><option value="16:10">16:10</option><option value="4:3">4:3</option><option value="21:9">21:9</option></select><span class="mute">= 가로 4 × 세로 3칸</span>
+      <span class="sp"></span>
+      <button id="reMon">🔄 모니터 다시 읽기</button>
+      <button id="setCancel">취소</button>
+      <button class="pri" id="setOk">✔ 확인(저장)</button>
+    </div>
+    <div id="mapwrap"><div id="map"></div></div>
+    <div id="monopts"></div>
+    <div id="runopts" style="display:flex;gap:14px;align-items:center;padding:6px 10px;border-top:1px solid var(--line);background:var(--card);flex-wrap:wrap">
+      <span>② 윈도우 시작 뒤 <input id="oDelay" type="number" min="0" max="600" style="width:58px"> 초 기다렸다 실행</span>
+      <span>③ 창이 뜨길 최대 <input id="oWait" type="number" min="5" max="180" style="width:58px"> 초 기다림</span>
+      <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oReuse" type="checkbox" style="width:auto"> 이미 떠 있는 프로그램은 새로 안 띄우고 자리만(크롬 빼고)</label>
+    </div>
+  </div>
+</div>
+
+<div id="clean" class="view">
+  <div style="display:flex;gap:8px;align-items:center"><button class="back" id="clBack">← 처음</button><h2 style="margin:0;font-size:14px">🧹 PC 정리</h2></div>
+  <div class="lvs" id="lvs"></div>
+  <div class="mute" id="lvdesc"></div>
+  <button id="scan" class="pri">🔍 미리보기(아직 아무것도 안 지움)</button>
+  <div id="scanout"></div>
+  <div class="adv" id="advice"></div>
+</div>
+<div id="toast"></div>
+
+<script src="/grid.js"></script>
+<script src="/apps.js"></script>
+<script src="/settings.js"></script>
+<script>
+'use strict';
+const G = window.PDGrid, AP = window.PDApps, SETL = window.PDSet;
+const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let S = null; /* 서버 상태 */ let C = null; /* 고치는 중인 설정(확인 전) */ let sel = null;
+function toast(m, ms) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.T); toast.T = setTimeout(() => { t.style.display = 'none'; }, ms || 3200); }
+/* 두 번 누르기 — 첫 번째는 단추 글만 바뀜(4초) · 브라우저 확인 창 없음 */
+function twice(btn, msg, fn) { if (btn.dataset.arm) { delete btn.dataset.arm; btn.classList.remove('arm'); btn.innerHTML = btn.dataset.orig; return fn(); }
+  btn.dataset.arm = '1'; btn.dataset.orig = btn.innerHTML; btn.classList.add('arm'); btn.textContent = msg; clearTimeout(btn._t); btn._t = setTimeout(() => { if (btn.dataset.arm) { delete btn.dataset.arm; btn.classList.remove('arm'); btn.innerHTML = btn.dataset.orig; } }, 4000); }
+async function api(p, b) { const r = await fetch(p, b === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json', 'x-rn-dock': '1' }, body: JSON.stringify(b) }); let j = {}; try { j = await r.json(); } catch (e) { j = { ok: false, err: '응답이 이상함' }; } return j; }
+function show(v) { $$('.view').forEach((x) => x.classList.toggle('on', x.id === v)); }
+function fit(view) { const W = view === 'set' ? { w: 1180, h: 760 } : view === 'clean' ? { w: 560, h: 720 } : { w: 340, h: 470 }; try { window.resizeTo(W.w, W.h); } catch (e) {} if (window.outerWidth < W.w - 40 || window.outerHeight < W.h - 40) api('/api/fit', { view }); }
+const appIcon = (a) => { const k = AP.keyOf(a); const b64 = (a.kind === 'exe' && a.exe && S.icons[a.exe]) || S.icons[k]; return b64 ? `<img alt="" src="data:image/png;base64,${b64}">` : esc(a.icon || ({ chrome: '🌐', folder: '📁', phone: '📱', crd: '🖥', claude: '✳', exe: '🧩', web: '🔗' })[a.kind] || '🧩'); };
+
+/* ── 처음 화면 ── */
+async function load(fresh) { S = await api('/api/state' + (fresh ? '?fresh=1' : '')); if (!S.ok) { toast('도우미 상태를 못 읽음: ' + (S.err || '')); return; } $('#ver').textContent = `${S.pc} · 판 ${S.ver}` + (S.update ? ` · 새 판 ${S.update.v} 준비됨(다시 열면 바뀜)` : ''); paintHome(); }
+function paintHome() { const c = S.cfg; $('#b2sw').classList.toggle('on', !!S.startup); $('#b2s').textContent = S.startup ? `켜짐 — 로그온 뒤 ${c.auto.delaySec}초 기다렸다 실행·배치` : `꺼짐 — 켜면 로그온 뒤 ${c.auto.delaySec}초 기다렸다 실행·배치`;
+  $('#b1s').textContent = c.place.length ? `프로그램 ${c.apps.length}개 · 놓은 자리 ${c.place.length}곳 · 모니터 ${S.mons.length}대` : `아직 놓은 것 없음 · 모니터 ${S.mons.length}대`;
+  if (S.last) paintLast(S.last); }
+function paintLast(L) { const el = $('#last'); el.classList.remove('mute'); const t = new Date(L.at).toLocaleTimeString('ko-KR');
+  el.innerHTML = `<div><b>${esc(t)} ${esc(L.by || '')}</b> ${L.ok ? '<span class="ok">끝</span>' : '<span class="bad">' + esc(L.err || '안 됨') + '</span>'}${L.sec != null ? ' · ' + L.sec + '초' : ''}</div>` +
+    (L.res || []).map((r) => `<div>${r.ok ? '✅' : '⚠'} ${esc(r.name)} — ${esc(r.how)}</div>`).join('') + (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)} — ${esc(s.why)}</div>`).join(''); }
+$('#b1').onclick = () => openSet();
+$('#b2').onclick = async () => { const on = !S.startup; const r = await api('/api/startup', { on }); if (!r.ok) return toast('바꾸지 못함: ' + (r.err || '')); S.startup = r.on; S.cfg.auto.on = r.on; paintHome(); toast(r.on ? '윈도우 시작 때 자동 실행·배치를 켰습니다' : '껐습니다(바로가기 이름만 .off로 바꿈)'); };
+$('#b3').onclick = async () => { const b = $('#b3'); b.disabled = true; $('#b3s').textContent = '실행·배치 중… (창이 뜨길 기다림)'; const r = await api('/api/run', {}); b.disabled = false; $('#b3s').textContent = '켜고 · 뜨길 기다려 · 칸에 놓음'; paintLast({ at: Date.now(), by: '단추', ...r }); };
+$('#b4').onclick = () => openClean();
+
+/* ── ① 설정 ── */
+function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
+window.addEventListener('resize', () => { if ($('#set').classList.contains('on')) paintSet(); });
+const monKey = (m) => m.id; const gridFor = (m) => G.gridOf(m, (C.mons[m.id] || {}).grid || 'auto', C.base);
+function paintSet() { paintApps(); paintMap(); paintMonOpts(); }
+function paintApps() { const el = $('#apps'); el.innerHTML = C.apps.map((a) => { const n = C.place.filter((p) => p.app === a.id).length; return `<div class="app${sel === a.id ? ' sel' : ''}" data-app="${esc(a.id)}"><span class="ic">${appIcon(a)}</span><span class="nm">${esc(a.name)}</span><span class="cnt">${n ? '📍' + n : ''}</span></div>`; }).join('');
+  $$('.app', el).forEach((d) => { d.onpointerdown = (e) => startDrag(e, { kind: 'new', app: d.dataset.app }); }); }
+let V = null;
+function paintMap() { const box = $('#mapwrap'); const W = box.clientWidth, H = box.clientHeight; const map = $('#map'); if (!S.mons.length) { map.innerHTML = '<div class="mute" style="padding:20px">모니터를 못 읽었습니다 — 「모니터 다시 읽기」</div>'; return; }
+  V = G.view(S.mons, W, H, 28); let h = '';
+  S.mons.forEach((m, i) => { const vb = V.mons[i].b, g = gridFor(m); const sc = G.scaleOf(m);
+    h += `<div class="mon${m.primary ? ' pri' : ''}" style="left:${vb.x}px;top:${vb.y}px;width:${vb.w}px;height:${vb.h}px"><div class="lab">${i + 1}${m.primary ? ' (주)' : ''} · ${m.b.w}×${m.b.h} · ${sc}% · ${g.cols}×${g.rows}칸</div></div>`;
+    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) { const t = V.T(G.cellRect(m, g, c, r, 1, 1)); h += `<div class="cell" data-mon="${esc(m.id)}" data-c="${c}" data-r="${r}" style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px"></div>`; } });
+  C.place.forEach((p, i) => { const m = S.mons.find((x) => x.id === p.mon); if (!m) return; const g = gridFor(m); const a = C.apps.find((x) => x.id === p.app); const ok = G.inGrid(p, g) && a; const t = V.T(G.cellRect(m, g, Math.min(p.c, g.cols - 1), Math.min(p.r, g.rows - 1), Math.max(1, Math.min(p.w, g.cols - Math.min(p.c, g.cols - 1))), Math.max(1, Math.min(p.h, g.rows - Math.min(p.r, g.rows - 1)))));
+    h += `<div class="blk${ok ? '' : ' bad'}${t.h < 46 || t.w < 50 ? ' sm' : ''}" data-i="${i}" style="left:${t.x + 2}px;top:${t.y + 2}px;width:${t.w - 4}px;height:${t.h - 4}px" title="${esc(a ? a.name : p.app)}"><span class="ic">${a ? appIcon(a) : '?'}</span><span class="nm2">${esc(a ? a.name : p.app)}</span><span class="x" data-x="${i}" title="빼기">✕</span><span class="rz" data-rz="${i}" title="모서리를 끌어 칸 늘리기"></span></div>`; });
+  const off = C.place.filter((p) => !S.mons.some((m) => m.id === p.mon)).length; if (off) h += `<div class="warn" style="position:absolute;left:8px;bottom:6px">⚠ 지금 연결 안 된 모니터에 놓은 것 ${off}곳(그대로 둠 · 그 모니터가 연결되면 놓음)</div>`;
+  map.innerHTML = h;
+  $$('.blk', map).forEach((b) => { b.onpointerdown = (e) => { if (e.target.dataset.x != null) return; if (e.target.dataset.rz != null) return startResize(e, +e.target.dataset.rz); startDrag(e, { kind: 'move', i: +b.dataset.i }); }; });
+  $$('.x', map).forEach((x) => { x.onclick = (e) => { e.stopPropagation(); C.place.splice(+x.dataset.x, 1); paintSet(); }; }); }
+function paintMonOpts() { $('#monopts').innerHTML = S.mons.map((m, i) => { const o = (C.mons[m.id] || {}).grid || 'auto'; const isC = typeof o === 'object'; const g = gridFor(m);
+  return `<div class="mo" data-mon="${esc(m.id)}"><b>${i + 1}번</b><select data-k="grid">${G.PRESETS.map((p) => `<option value="${p.v}"${(isC ? 'custom' : o) === p.v ? ' selected' : ''}>${p.t}</option>`).join('')}</select>${isC ? `<input data-k="cols" type="number" min="1" max="24" value="${g.cols}">×<input data-k="rows" type="number" min="1" max="24" value="${g.rows}">` : ''}<span class="mute">${g.cols}×${g.rows}</span></div>`; }).join('');
+  $$('#monopts .mo').forEach((d) => { const id = d.dataset.mon; const m = S.mons.find((x) => x.id === id);
+    $$('select,input', d).forEach((x) => { x.onchange = () => { const g0 = gridFor(m); let v = $('select', d).value; if (v === 'custom') { const c = +($('[data-k=cols]', d) || {}).value || g0.cols, r = +($('[data-k=rows]', d) || {}).value || g0.rows; v = { cols: c, rows: r }; }
+      C.mons[id] = { ...(C.mons[id] || {}), grid: v }; regrid(id, g0, gridFor(m)); paintSet(); }; }); }); }
+/* 칸 수가 바뀌면 놓은 자리를 비율대로 옮김(겹치면 빨갛게 — 저장 때 알려 줌) */
+function regrid(id, a, b) { if (a.cols === b.cols && a.rows === b.rows) return; for (const p of C.place) { if (p.mon !== id) continue; const c0 = Math.round(p.c * b.cols / a.cols), r0 = Math.round(p.r * b.rows / a.rows); const c1 = Math.max(c0 + 1, Math.round((p.c + p.w) * b.cols / a.cols)), r1 = Math.max(r0 + 1, Math.round((p.r + p.h) * b.rows / a.rows));
+  p.c = Math.min(c0, b.cols - 1); p.r = Math.min(r0, b.rows - 1); p.w = Math.max(1, Math.min(c1, b.cols) - p.c); p.h = Math.max(1, Math.min(r1, b.rows) - p.r); } }
+function cellUnder(x, y) { return $$('.cell').find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x < r.right && y >= r.top && y < r.bottom; }) || null; }
+const free = (np, skip) => !C.place.some((p, i) => i !== skip && p.mon === np.mon && np.c < p.c + p.w && p.c < np.c + np.w && np.r < p.r + p.h && p.r < np.r + np.h);
+/* 끌어 놓기(목록 → 칸 · 놓은 덩이 → 다른 칸) */
+function startDrag(e, D) { e.preventDefault(); const a = D.kind === 'new' ? C.apps.find((x) => x.id === D.app) : C.apps.find((x) => x.id === C.place[D.i].app); if (!a) return;
+  const x0 = e.clientX, y0 = e.clientY; let g = null, hot = null, moved = false;
+  const mv = (ev) => { if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return; if (!moved) { moved = true; g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = `<span class="ic">${appIcon(a)}</span>${esc(a.name)}`; document.body.appendChild(g); }
+    g.style.left = ev.clientX + 8 + 'px'; g.style.top = ev.clientY + 8 + 'px'; const c = cellUnder(ev.clientX, ev.clientY); if (hot !== c) { if (hot) hot.classList.remove('hot'); hot = c; if (hot) hot.classList.add('hot'); } };
+  const up = (ev) => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); if (g) g.remove(); if (hot) hot.classList.remove('hot');
+    if (!moved) { if (D.kind === 'new') { sel = D.app; paintApps(); paintDetail(); } else { sel = C.place[D.i].app; paintApps(); paintDetail(); } return; }
+    const c = cellUnder(ev.clientX, ev.clientY); if (!c) return; const mon = c.dataset.mon, cc = +c.dataset.c, rr = +c.dataset.r; const m = S.mons.find((x) => x.id === mon); const gr = gridFor(m);
+    if (D.kind === 'new') { const np = { app: a.id, mon, c: cc, r: rr, w: 1, h: 1 }; if (!free(np, -1)) return toast('그 칸에는 이미 다른 것이 있습니다 — 한 칸에 하나'); C.place.push(np); sel = a.id; }
+    else { const p = C.place[D.i]; const np = { ...p, mon, c: cc, r: rr, w: Math.min(p.w, gr.cols - cc), h: Math.min(p.h, gr.rows - rr) }; if (!free(np, D.i)) return toast('그 자리에는 이미 다른 것이 있습니다'); C.place[D.i] = np; }
+    paintSet(); paintDetail(); };
+  document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); }
+/* 모서리 끌어 칸 늘리기·줄이기(같은 모니터 안 · 겹치면 멈춤) */
+function startResize(e, i) { e.preventDefault(); e.stopPropagation(); const p = C.place[i]; const m = S.mons.find((x) => x.id === p.mon); if (!m) return; const gr = gridFor(m); const blk = $(`.blk[data-i="${i}"]`);
+  const mv = (ev) => { const c = cellUnder(ev.clientX, ev.clientY); if (!c || c.dataset.mon !== p.mon) return; const w = Math.max(1, +c.dataset.c - p.c + 1), h = Math.max(1, +c.dataset.r - p.r + 1); const np = { ...p, w: Math.min(w, gr.cols - p.c), h: Math.min(h, gr.rows - p.r) };
+    if (!free(np, i)) return; p.w = np.w; p.h = np.h; const t = V.T(G.cellRect(m, gr, p.c, p.r, p.w, p.h)); Object.assign(blk.style, { left: t.x + 2 + 'px', top: t.y + 2 + 'px', width: t.w - 4 + 'px', height: t.h - 4 + 'px' }); };
+  const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); paintSet(); };
+  document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); }
+/* 세부 설정 */
+function paintDetail() { const el = $('#detail'); const a = C && C.apps.find((x) => x.id === sel); if (!a) { el.className = 'mute'; return; } el.className = '';
+  const k = AP.keyOf(a); const auto = S.found[k] || ''; const F = (id, lab, v, ph, ty) => `<label>${lab}</label>${ty === 'ta' ? `<textarea data-f="${id}" placeholder="${esc(ph || '')}">${esc(v || '')}</textarea>` : `<input data-f="${id}" value="${esc(v || '')}" placeholder="${esc(ph || '')}">`}`;
+  const prof = () => `<label>크롬 프로필</label><select data-f="profile"><option value="">기본(마지막에 쓴 프로필)</option>${(S.profiles || []).map((p) => `<option value="${esc(p.dir)}"${a.profile === p.dir ? ' selected' : ''}>${esc(p.name)} (${esc(p.dir)})</option>`).join('')}</select>`;
+  let h = `<h2 style="display:flex;gap:6px;align-items:center"><span class="ic">${appIcon(a)}</span>${esc(a.name)} <span class="mute" style="font-weight:normal;font-size:11px">${esc(AP.KINDS[a.kind])}</span></h2>` + F('name', '이름', a.name);
+  if (a.kind === 'chrome') h += F('urls', '주소(한 줄에 하나 — 한 창에 탭으로 엶)', (a.urls || []).join('\n'), 'https://readnow.kr/app/', 'ta') + `<label>창 몇 개(놓은 칸을 나눠 씀)</label><input data-f="windows" type="number" min="1" max="8" value="${a.windows || 1}">` + prof() + '<div class="mute" style="margin-top:6px;font-size:11.5px">이미 떠 있는 크롬 창(리드나우 웹앱·수집기)은 옮기지 않고, 언제나 새 창을 열어 놓습니다.</div>';
+  if (a.kind === 'web' || a.kind === 'crd') h += F('url', '주소(크롬 앱 창으로 엶)', a.url, 'https://') + prof();
+  if (a.kind === 'folder') h += F('path', '폴더 경로', a.path, 'D:\\ReadNow');
+  if (a.kind === 'phone') h += '<div class="mute" style="margin-top:6px">윈도우 「휴대폰과 연결」 앱을 켜서 놓습니다(따로 설정 없음).</div>';
+  if (a.kind === 'claude') h += `<label>모드</label><select data-f="mode"><option value="chat"${a.mode !== 'code' ? ' selected' : ''}>채팅</option><option value="code"${a.mode === 'code' ? ' selected' : ''}>코드</option></select>` + F('room', a.mode === 'code' ? '코드 세션 주소(https://claude.ai/code/…) — 비우면 새 세션' : '열 대화 방(claude.ai 대화 주소) — 비우면 새 대화', a.room, 'https://claude.ai/chat/…') + (a.mode === 'code' ? F('folder', '새 코드 세션 작업 폴더(선택)', a.folder, 'D:\\ReadNow\\…') : '') + F('artifact', '아티팩트 주소(선택 — 같은 칸을 나눠 크롬 앱 창으로)', a.artifact, 'https://claude.ai/…') +
+    `<label>여는 길</label><select data-f="how"><option value="app"${a.how !== 'web' ? ' selected' : ''}>Claude 데스크톱 앱(claude:// 링크)</option><option value="web"${a.how === 'web' ? ' selected' : ''}>크롬 앱 창(claude.ai)</option></select><div class="mute" style="font-size:11.5px;margin-top:4px">데스크톱 앱은 채팅 방(claude://claude.ai/chat/…)·새 코드 세션은 바로 열 수 있지만, 이미 있는 코드 세션·아티팩트를 여는 링크가 없어 그건 크롬 앱 창으로 엽니다.</div>`;
+  if (a.kind === 'exe') h += F('exe', '실행 파일 경로', a.exe, auto ? '자동으로 찾음: ' + auto : '못 찾음 — 경로를 붙여 넣어 주세요') + `<div class="mute" style="font-size:11.5px">${auto && !a.exe ? '✓ 자동으로 찾은 경로를 씁니다' : a.exe ? '' : '탐색기에서 파일을 Shift+오른쪽 단추 → 「경로로 복사」 뒤 붙여 넣기'}</div>` + F('file', '같이 열 파일(선택)', a.file, 'D:\\…\\파일.xlsx');
+  h += `<div style="display:flex;gap:6px;margin-top:10px"><button id="dDel">🗑 목록에서 빼기</button></div>`;
+  el.innerHTML = h;
+  $$('[data-f]', el).forEach((x) => { x.oninput = x.onchange = () => { const f = x.dataset.f; let v = x.value; if (f === 'urls') v = v.split(/\s+/).filter(Boolean); if (f === 'windows') v = Math.max(1, Math.min(8, +v || 1)); a[f] = v; if (f === 'name') paintApps(); if (f === 'mode' && x.tagName === 'SELECT') paintDetail(); if (f === 'windows') paintMap(); }; });
+  $('#dDel').onclick = () => twice($('#dDel'), '한 번 더 누르면 빼고, 놓은 자리도 지웁니다', () => { C.apps = C.apps.filter((x) => x.id !== a.id); C.place = C.place.filter((p) => p.app !== a.id); sel = null; paintSet(); paintDetail(); }); }
+function newId(base) { let i = 1; while (C.apps.some((a) => a.id === base + i)) i++; return base + i; }
+function addApp(a) { C.apps.push(a); sel = a.id; paintApps(); paintDetail(); const el = $(`.app[data-app="${a.id}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); return a; }
+$('#addChrome').onclick = () => addApp({ id: newId('chrome'), kind: 'chrome', name: '크롬 ' + (C.apps.filter((a) => a.kind === 'chrome').length + 1), icon: '🌐', urls: [], windows: 1, profile: '' });
+$('#addWeb').onclick = () => addApp({ id: newId('web'), kind: 'web', name: '웹 주소 창', icon: '🔗', url: '' });
+$('#addFolder').onclick = () => addApp({ id: newId('folder'), kind: 'folder', name: '폴더', icon: '📁', path: '' });
+$('#addExe').onclick = () => addApp({ id: newId('exe'), kind: 'exe', name: '프로그램', icon: '🧩', exe: '', file: '' });
+/* 탐색기에서 끌어다 놓기 — .lnk는 도우미가 대상 경로를 풀고, .exe는 이름으로 찾음(브라우저는 파일 경로를 알려 주지 않음) */
+{ const el = $('#apps'); const on = (e) => { if ([...(e.dataTransfer && e.dataTransfer.types) || []].includes('Files')) { e.preventDefault(); el.classList.add('drop'); } };
+  el.addEventListener('dragenter', on); el.addEventListener('dragover', on); el.addEventListener('dragleave', () => el.classList.remove('drop'));
+  window.addEventListener('dragover', (e) => e.preventDefault()); window.addEventListener('drop', (e) => e.preventDefault());
+  el.addEventListener('drop', async (e) => { e.preventDefault(); el.classList.remove('drop'); for (const f of [...e.dataTransfer.files]) await dropFile(f); }); }
+async function dropFile(f) { const n = f.name; const base = n.replace(/\.(exe|lnk)$/i, '');
+  if (/\.lnk$/i.test(n)) { if (f.size > 200 * 1024) return toast('바로가기 파일이 너무 큼'); const b64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.readAsDataURL(f); });
+    const r = await api('/api/lnk', { name: n, b64 }); if (!r.ok || !r.target) return toast('바로가기를 못 풀었습니다: ' + (r.err || '')); if (r.icon) S.icons[r.target] = r.icon;
+    if (!/\.exe$/i.test(r.target)) { if (!/\./.test(r.target.split('\\').pop())) { addApp({ id: newId('folder'), kind: 'folder', name: r.name || base, icon: '📁', path: r.target }); return toast('폴더로 더했습니다'); } return toast('프로그램이 아닌 바로가기(' + r.target.split('\\').pop() + ')'); }
+    addApp({ id: newId('exe'), kind: 'exe', name: r.name || base, icon: '🧩', exe: r.target, file: '' }); return toast('더했습니다: ' + (r.name || base)); }
+  if (/\.exe$/i.test(n)) { const a = addApp({ id: newId('exe'), kind: 'exe', name: base, icon: '🧩', exe: '', file: '' }); const r = await api('/api/exe', { name: n });
+    if (r.ok && r.list && r.list[0]) { a.exe = r.list[0]; if (r.icon) S.icons[a.exe] = r.icon; paintApps(); paintDetail(); return toast('더했습니다: ' + base + '\n' + a.exe); }
+    paintDetail(); const inp = $('[data-f=exe]'); if (inp) inp.focus(); return toast('더했지만 경로를 못 찾았습니다 — 실행 파일 경로를 붙여 넣어 주세요', 5000); }
+  toast('프로그램(.exe)·바로가기(.lnk)만 더할 수 있습니다'); }
+$('#base').onchange = () => { const [aw, ah] = $('#base').value.split(':').map(Number); const old = S.mons.map((m) => gridFor(m)); C.base = { ...C.base, aw, ah }; S.mons.forEach((m, i) => regrid(m.id, old[i], gridFor(m))); paintSet(); };
+$('#reMon').onclick = async () => { const r = await api('/api/screens', {}); if (!r.ok) return toast('모니터를 못 읽음: ' + (r.err || '')); S.mons = r.mons; paintSet(); toast(`모니터 ${S.mons.length}대를 읽었습니다`); };
+$('#setCancel').onclick = $('#setBack').onclick = () => { C = null; show('home'); fit('home'); };
+$('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; };
+$('#setOk').onclick = async () => { for (const m of S.mons) { const g = gridFor(m); C.mons[m.id] = { ...(C.mons[m.id] || {}), grid: (C.mons[m.id] || {}).grid || 'auto', cols: g.cols, rows: g.rows, w: m.b.w, h: m.b.h }; }
+  const r = await api('/api/save', { cfg: C }); if (!r.ok) return toast('저장 못 함:\n' + (r.errs || [r.err]).slice(0, 5).join('\n'), 6000);
+  S.cfg = r.cfg; C = null; show('home'); fit('home'); paintHome(); toast('저장했습니다' + (r.warns && r.warns.length ? '\n' + r.warns.join('\n') : '')); };
+
+/* ── ④ 정리 ── */
+let LV = 1, SC = null;
+const LVD = { 1: '7일 넘은 임시 파일 · 메모리 비우기(프로그램은 그대로). 매주 한 번이면 충분.', 2: '+ 썸네일·오류 보고·셰이더 캐시·30일 넘은 로그 · 없어도 되는 백그라운드 프로그램(고른 것만 끔).', 3: '+ 임시 파일 2일 · 로그 14일 · 시작 프로그램 정리 제안(목록만) · 보안 검사 제외 제안(정범님이 고름).' };
+function openClean() { show('clean'); fit('clean'); $('#advice').textContent = S.advice || ''; paintLv(); }
+function paintLv() { $('#lvs').innerHTML = (S.levels || []).map((l) => `<button data-lv="${l.lv}" class="${l.lv === LV ? 'on' : ''}">${esc(l.t)}</button>`).join(''); $$('#lvs button').forEach((b) => { b.onclick = () => { LV = +b.dataset.lv; SC = null; $('#scanout').innerHTML = ''; paintLv(); }; }); $('#lvdesc').textContent = LVD[LV]; }
+const MB = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + 'GB' : Math.round(b / 1048576) + 'MB';
+$('#scan').onclick = async () => { const b = $('#scan'); b.disabled = true; b.textContent = '훑는 중…(지우지 않음)'; const r = await api('/api/clean/scan', { lv: LV }); b.disabled = false; b.textContent = '🔍 미리보기(아직 아무것도 안 지움)'; if (!r.ok) return toast('미리보기 실패: ' + (r.err || '')); SC = r; paintScan(); };
+function paintScan() { const r = SC; let tot = 0; let h = '<div class="list"><b>지울 것</b>';
+  for (const it of r.items) { if (it.kind === 'mem') h += `<div class="row"><input type="checkbox" data-trim checked><div class="g">${esc(it.t)}<div class="mute">리드나우·크롬·보호 프로그램은 빼고 · 지금 약 ${it.mb}MB 쓰는 중</div></div></div>`;
+    else if (!it.kind) { tot += it.bytes; h += `<div class="row"><input type="checkbox" data-id="${esc(it.id)}" ${it.files ? 'checked' : 'disabled'}><div class="g">${esc(it.t)}${it.sample && it.sample.length ? `<div class="mute" style="font-size:11px">${it.sample.slice(0, 2).map(esc).join('<br>')}</div>` : ''}</div><div class="sz">${it.files}개 · ${MB(it.bytes)}</div></div>`; } }
+  h += `<div class="mute" style="margin-top:4px">파일 합 ${MB(tot)} · 열려 있어 못 지우는 파일은 건너뜀</div></div>`;
+  if (r.stop && r.stop.length) h += '<div class="list"><b>없어도 되는 백그라운드 프로그램</b> <span class="mute">(고른 것만 끔 · 기본은 안 고름)</span>' + r.stop.map((p) => `<div class="row"><input type="checkbox" data-pid="${p.pid}" ${p.block ? 'disabled' : ''}><div class="g">${esc(p.t)} <span class="mute">${esc(p.name)}</span><div class="mute" style="font-size:11px">${esc(p.block || p.why || '')}</div></div><div class="sz">CPU ${p.cpu}% · ${p.mb}MB</div></div>`).join('') + '</div>';
+  if (r.info && r.info.length) h += '<div class="list"><b>지금 많이 쓰는 다른 프로그램</b> <span class="mute">(보기만 — 여기서 끄지 않음)</span>' + r.info.map((p) => `<div class="row"><div class="g">${esc(p.name)}</div><div class="sz">CPU ${p.cpu}% · ${p.mb}MB</div></div>`).join('') + '</div>';
+  if (r.startup) h += '<div class="list"><b>시작 프로그램 정리 제안</b> <span class="mute">(목록만 — 끄기는 작업 관리자 › 시작 앱에서 정범님이)</span>' + r.startup.map((s) => `<div class="row"><div class="g">${s.sug === 'off' ? '🔕' : s.sug === 'keep' ? '✅' : '❔'} ${esc(s.name)}<div class="mute" style="font-size:11px">${esc(s.why)}</div></div></div>`).join('') + '</div>';
+  if (r.defender) h += `<div class="list"><b>보안 검사 제외 제안</b> <span class="mute">(Defender를 끄지 않음 · 하지 않아도 됨)</span><div style="margin:4px 0">${esc(r.defender.why)}</div><div class="mute">지금 제외: ${r.defender.have ? (r.defender.have.length ? r.defender.have.map(esc).join(' · ') : '없음') : '관리자 권한이 없어 못 봄'}</div><div style="margin-top:4px">하려면 관리자 PowerShell에 붙여 넣기:</div><code>${esc(r.defender.cmd)}</code> <button id="cpDef" style="padding:2px 6px;font-size:11.5px">명령 복사</button></div>`;
+  h += '<button id="doClean" class="pri" style="margin-top:6px">🧹 고른 것 정리하기</button>';
+  $('#scanout').innerHTML = h;
+  if ($('#cpDef')) $('#cpDef').onclick = async () => { try { await navigator.clipboard.writeText(r.defender.cmd); toast('복사했습니다 — 관리자 PowerShell에 붙여 넣으면 됩니다'); } catch (e) { toast('복사 못 함 — 글을 직접 골라 복사해 주세요'); } };
+  $('#doClean').onclick = () => { const ids = $$('[data-id]:checked').map((x) => x.dataset.id), pids = $$('[data-pid]:checked').map((x) => +x.dataset.pid), trim = !!($('[data-trim]') && $('[data-trim]').checked);
+    if (!ids.length && !pids.length && !trim) return toast('고른 것이 없습니다');
+    twice($('#doClean'), `한 번 더 누르면 정리합니다(파일 ${ids.length}종 · 프로그램 ${pids.length}개${trim ? ' · 메모리' : ''})`, async () => { const b = $('#doClean'); b.disabled = true; b.textContent = '정리 중…';
+      const x = await api('/api/clean/run', { token: r.token, ids, pids, trim }); SC = null;
+      $('#scanout').innerHTML = x.ok ? `<div class="list"><b class="ok">끝</b><div>파일 ${x.deleted || 0}개 · ${MB(x.freed || 0)} 비움${x.failed ? ` · 쓰는 중이라 못 지움 ${x.failed}개` : ''}</div>${(x.stopped || []).length ? `<div>끈 프로그램: ${x.stopped.map(esc).join(', ')}</div>` : ''}${x.mem ? `<div>메모리 ${MB(Math.max(0, x.mem.before - x.mem.after))} 비움(프로그램 ${x.mem.n}개)</div>` : ''}</div>` : `<div class="bad">정리 못 함: ${esc(x.err || '')}</div>`; }); }; }
+$('#clBack').onclick = () => { show('home'); fit('home'); };
+
+/* 창이 떠 있다고 도우미에게 알림(창을 닫고 오래 지나면 도우미가 스스로 꺼짐) */
+setInterval(() => { fetch('/api/ping').catch(() => {}); }, 60000);
+load();
+</script>
+</body>
+</html>
