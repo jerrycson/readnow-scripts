@@ -9,4 +9,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev --no-audit --no-fund; else npm install --omit=dev --no-audit --no-fund; fi
 COPY *.js ./
-CMD ["node", "index.js"]
+# (0.35.146) --expose-gc: 🗣 구매평 요약 셈(cloud/voice.js)이 큰 묶음 사이에 다 쓴 문서를 치움(메모리 막이)
+CMD ["node", "--expose-gc", "index.js"]
