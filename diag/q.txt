@@ -1,2 +1,2 @@
-doc=app_summary/home,prd_jobs/pcBeat
-# 321432222
+spfull=1
+# 63377921
