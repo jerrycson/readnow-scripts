@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "spfull 셋째 클라우드 판(이어 할 목록·판매자별 차례)",
- "since": "2026-11-12T15:52:45Z",
- "beat": "2026-11-12T15:52:45Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "adapt9 둘째 웹앱 1.78.529 · 클라우드 0.35.171 push e19f8170",
-  "at": "2026-11-12T15:52:26Z"
+  "done": "spfull 셋째 클라우드 0.35.172 push ca3b2965",
+  "at": "2026-11-12T15:53:36Z"
  },
- "host": "vm-spfull"
+ "host": null
 }
