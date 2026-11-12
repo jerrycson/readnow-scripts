@@ -3,15 +3,16 @@
  *  → 정범님 크롬·운영 작업 창·로거 크롬은 절대 건드리지 않음(프로필 폴더 이름이 다름)
  * 결과는 맨 끝 한 줄 JSON { ok, act, vs, wa, scr(모든 화면 일하는 칸), n, list:[{ h, r:{x,y,w,h}, vis, ic, zm, tool }] } */
 'use strict';
-const fs = require('fs'), cp = require('child_process');
+const fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 
 /* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해') 창 자리 함수 이름을 R → Get-RnRect — PowerShell은 별칭이 함수보다 먼저라 'R'은 Invoke-History(r)로 불려
  *  'ID 21433606에 대한 기록을 찾을 수 없습니다'로 find·hide가 창이 있을 때마다 실패했음(HOME col2_ctl 11/09 17:40) */
-const PS_SRC = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome', [int]$Top = 0)
+const PS_SRC = (D) => PS_RAW(D).replace(/\$\{WIN_HASH\}/g, WIN_HASH);
+const PS_RAW = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome', [int]$Top = 0)
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
-if (-not ('RnCol2Win' -as [type])) { Add-Type -TypeDefinition @'
+$rnSrc = @'
 using System; using System.Text; using System.Collections.Generic; using System.Runtime.InteropServices;
 public static class RnCol2Win {
   public delegate bool EP(IntPtr h, IntPtr l);
@@ -34,7 +35,16 @@ public static class RnCol2Win {
   public static bool Tool(IntPtr h) { long ex = GetWL(h, -20).ToInt64(); return (ex & 0x80L) != 0; }
   public static void Taskbar(IntPtr h, bool hide) { long ex = GetWL(h, -20).ToInt64(); long nx = hide ? ((ex | 0x80L) & ~0x40000L) : ((ex & ~0x80L) | 0x40000L); if (nx == ex) return; ShowWindow(h, 0); SetWL(h, -20, new IntPtr(nx)); ShowWindow(h, 4); }
 }
-'@ }
+'@
+<# (11/12 hot1 정범님 'JS-MAIN 거의 멈춤 · Defender 26%') 예전엔 부를 때마다 C#을 새로 엮음(csc.exe 켜기 + 임시 폴더에 새 dll → Defender가 새 실행 파일마다 검사) — 1분 지킴이·숨기기 되풀이마다
+ *  → 한 번 엮은 dll을 이 폴더에 두고(C# 글이 바뀌면 이름의 해시가 바뀜) 그다음부턴 불러오기만 · 무엇이든 실패하면 예전처럼 메모리에서 엮음(일은 그대로) #>
+if (-not ('RnCol2Win' -as [type])) { $rnDll = Join-Path $PSScriptRoot 'col2-win-\${WIN_HASH}.dll'
+  if (Test-Path -LiteralPath $rnDll) { try { Add-Type -LiteralPath $rnDll -ErrorAction Stop } catch {} }
+  if (-not ('RnCol2Win' -as [type])) { $rnTmp = Join-Path $PSScriptRoot ('col2-win-\${WIN_HASH}.' + $PID + '.dll')
+    try { Add-Type -TypeDefinition $rnSrc -OutputAssembly $rnTmp -OutputType Library -ErrorAction Stop; if (-not (Test-Path -LiteralPath $rnDll)) { Move-Item -LiteralPath $rnTmp -Destination $rnDll -ErrorAction Stop } } catch {}
+    if (-not ('RnCol2Win' -as [type])) { try { Add-Type -LiteralPath $(if (Test-Path -LiteralPath $rnDll) { $rnDll } else { $rnTmp }) -ErrorAction Stop } catch {} }
+    try { if (Test-Path -LiteralPath $rnTmp) { Remove-Item -LiteralPath $rnTmp -Force -ErrorAction SilentlyContinue } } catch {} }
+  if (-not ('RnCol2Win' -as [type])) { Add-Type -TypeDefinition $rnSrc } }
 function Get-RnRect($h) { $r = New-Object RnCol2Win+RECT; [void][RnCol2Win]::GetWindowRect($h, [ref]$r); @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } }
 function Info($h) { @{ h = [int64]$h; r = (Get-RnRect $h); vis = [RnCol2Win]::IsWindowVisible($h); ic = [RnCol2Win]::IsIconic($h); zm = [RnCol2Win]::IsZoomed($h); tool = [RnCol2Win]::Tool($h) } }
 $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen; $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
@@ -63,6 +73,9 @@ if ($L.Count -gt 0) { $hnd = $L[0]
 $out | ConvertTo-Json -Compress -Depth 5
 `;
 
+/* C# 글(@' … '@ 사이)의 해시 — 글이 바뀌면 새 dll 이름(옛 dll을 잘못 불러오지 않음) */
+const WIN_HASH = (() => { const m = /\$rnSrc = @'([\s\S]*?)\n'@/.exec(PS_RAW({ showW: 0, showH: 0 })); return crypto.createHash('sha1').update(m ? m[1] : 'x').digest('hex').slice(0, 12); })();
+
 function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () => process.env.RN_COL2_PS || 'powershell.exe';
   /* act: find|hide|show|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기 · 0.1.3 끝날 때까지 5초 기다리고 남은 수 left) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
   /* (11/10 정범님 '더뎌진 느낌') PowerShell은 한 번에 2개까지만(지킴이·예스24·기록창이 겹쳐 CPU가 튀지 않게) — 나머지는 차례를 기다림 */
@@ -79,4 +92,4 @@ function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () =
       if (!j) return res({ ok: false, err: '창 다루기 실패: ' + String(err || (e && e.message) || '응답 없음').slice(0, 200) }); j.list = Array.isArray(j.list) ? j.list : j.list ? [j.list] : []; res(j); }); }); }
   return { run };
 }
-module.exports = { makeWin, PS_SRC };
+module.exports = { makeWin, PS_SRC, WIN_HASH };

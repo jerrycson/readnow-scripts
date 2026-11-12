@@ -15,8 +15,9 @@ function makeJobs(ctx) {
   const F = path.join(ctx.home, 'jobs.json'); const now = () => Date.now();
   let S = { q: {}, seen: {}, day: TK.dayNew(kday()), wait: [], rr: 0, benchAt: 0, fxDay: '', last: null, busyLog: 0 };
   try { const v = JSON.parse(fs.readFileSync(F, 'utf8')); if (v && typeof v === 'object') S = { ...S, ...v }; } catch (e) {}
-  let dirty = 0; const save = (force) => { if (!force && now() - dirty < 3000) return; dirty = now(); try { fs.writeFileSync(F + '.t', JSON.stringify(S)); fs.renameSync(F + '.t', F); } catch (e) {} };
-  const C = () => ctx.cfg() || {}; const kind = () => ctx.kind();
+  /* (11/12 hot1) 이 파일(차례·본 기록 — 수 MB까지 큼)을 3초마다 통째로 다시 쓰면 Defender가 매번 다시 검사 → 20초마다(시험은 3초) */
+  let dirty = 0; const SAVE_MS = ctx.test ? 3000 : 20e3; const save = (force) => { if (!force && now() - dirty < SAVE_MS) return; dirty = now(); try { fs.writeFileSync(F + '.t', JSON.stringify(S)); fs.renameSync(F + '.t', F); } catch (e) {} };
+  const C = () => ctx.cfg() || {}; const kind = () => ctx.kind(); const M = { ext: [], page: [], capLog: 0, fsAt: {} }; /* (11/12 hot1) 메모리만 */
   const P = () => ({ ...ctx.PASS, ...(C().pass || {}) });
   const plan = () => (C().on === false ? [] : TK.plan(kind(), C())); /* jobs.on:false 면 그림자 일 모두 쉼(시험은 기본 꺼짐) */
   const inPlan = (k) => plan().includes(k);
@@ -124,9 +125,18 @@ function makeJobs(ctx) {
     /* (11/10 밤 col2n) 표본이 모자란 일부터 — 예전엔 차례대로 돌아(일 수만큼 나눔) 표본 30개를 일찍 채운 일도 같은 몫을 받아, 하루 1,600장 몫이 낮 12시쯤 다 쓰이면 남은 일은 30개를 못 채움
      *  → 오늘 해 본 수(견줌+못 읽음+운영 값 없음+건너뜀)가 가장 적은 일 먼저(같으면 예전 차례) · 모든 일이 표본을 채운 뒤엔 다시 고르게 */
     /* (11/11 col2rep5) 🔎 운영 값 먼저 보기 · 🔑 키 쉼 — 차례 앞쪽에 바깥에 물을 책이 없는 일 · 키 문제로 쉬는 일은 이번엔 고르지 않음(다른 일이 차례를 받음) */
-    const L3 = L2.filter((k0) => !(S.pause && S.pause[k0] > now()) && preReady(k0));
+    /* (11/12 hot1 · 정범님 아침 'JS-MAIN 거의 멈춤') 11/11 04시 '바깥 사이트 몫 따로' 뒤 바깥 일은 알라딘 몫(시간 240장)을 안 쓰고 사이트마다 하루 상한(합 수만 번)만 봐서
+     *  JS-MAIN이 11/12 0~9시에 그림자 일 5,232번(바깥 약 4,000 · 화면 그려 읽기 수백 번 — 1280×6000 화면)을 함 → 사무실 PC CPU·Defender가 막힘
+     *  → 바깥 일 전체 한 시간 extHourCap(기본 90번) · 그 가운데 화면을 그릴 수 있는 출처(kind page) pageHourCap(기본 30번) — 넘으면 그 시간엔 쉼(근거: 없음 · 예전 공통 몫 시간 240장의 1/3쯤 · 설정 jobs.extHourCap·pageHourCap) */
+    const HR = (a0) => { const t1 = now() - 3600e3; while (a0.length && a0[0] < t1) a0.shift(); return a0.length; };
+    const extCap = C().extHourCap == null ? 90 : +C().extHourCap, pageCap = C().pageHourCap == null ? 30 : +C().pageHourCap;
+    const isPage = (k0) => { const t0 = TK.byK[k0]; if (!t0 || t0.cls !== 'ext') return false; const x = X(); const so = x && x.SOURCES && x.SOURCES[t0.src]; return !!(so && so.kind === 'page'); };
+    const extFull = extCap > 0 && HR(M.ext) >= extCap, pageFull = pageCap > 0 && HR(M.page) >= pageCap;
+    const L3 = L2.filter((k0) => !(S.pause && S.pause[k0] > now()) && !(extFull && siteOf(k0)) && !(pageFull && isPage(k0)) && preReady(k0));
+    if (!L3.length && (extFull || pageFull)) { const lim = extFull ? M.ext : M.page; const ms = Math.max(5000, (lim[0] || now()) + 3600e3 - now() + 500); if (now() - (M.capLog || 0) > 30 * 60e3) { M.capLog = now(); ctx.note(`그림자 일 쉼 — 바깥 사이트 한 시간 몫(${extFull ? '전체 ' + extCap + '번' : '화면 그리는 출처 ' + pageCap + '번'})을 다 씀 · 이 PC가 무거워지지 않게(${Math.round(ms / 60e3)}분 뒤 다시)`, { k: 'rest', m: '그림자 일' }); } return { did: false, rest: Math.min(ms, 10 * 60e3), why: '바깥 사이트 한 시간 몫을 다 씀' }; }
     if (!L3.length) return { did: false, rest: 2000, why: '외부 정보 — 운영 문서 먼저 받는 중(바깥 요청 없음)' };
     const k = pickK(L3); const t = TK.byK[k]; const SK = siteOf(k); const SP = ctx.site && SK ? { take: () => ctx.site.take(SK), ok: () => ctx.site.ok(SK), fail: (x) => ctx.site.fail(SK, x) } : ctx.pace; /* 바깥 일은 그 사이트 몫 */ const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
+    if (SK) { M.ext.push(now()); if (isPage(k)) M.page.push(now()); } /* (11/12 hot1) 한 시간 몫 셈 */
     if (S.ended && S.ended[k] === kday()) { record(t, a, a.key, 'skip', [], { why: '출처가 오늘 이 PC 요청을 받지 않음(서비스 끝 · IP 등록 필요) — 오늘은 묻지 않음', quiet: true, noItem: true }); return { did: true }; }
     /* (11/11 col2rep3) 🔀 넘긴 국중 — 운영처럼 다시 볼 날(120일)이 지난 책만 묻는다: 먼저 운영 문서(ext_basic/<ISBN>)를 웹앱에서 받아 보고(바깥 요청 없음) · 10분 안에 못 받으면 그냥 읽음 */
     if (HO_EXT(t) && handed(k)) { const due = hoDue(t, a); if (due === 'wait') { S.q[k].push(a); delete S.seen[k][a.key]; return { did: false, rest: 1500, why: '넘긴 일 — 운영 문서 먼저 받는 중' }; }
@@ -149,9 +159,15 @@ function makeJobs(ctx) {
     if (!r.ok && t.cls === 'ext' && DAYSTOP_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'fail', [], { why: String(r.why || '').slice(0, 120), ms }); ctx.note(`${t.name} — '이 PC IP 등록이 필요' 답 → 오늘은 이 PC에서 더 묻지 않음(키 계정에 이 PC 공인 IP를 넣으면 다음 날부터)`, { k: 'read', l: 'warn', m: t.name }); return { did: true }; }
     if (!r.ok && t.cls === 'ext' && failKey(r.why) === '키 없음·틀림') { (S.pause || (S.pause = {}))[k] = now() + 30 * 60e3; }
     if (!r.ok && t.cls === 'ext' && ENDED_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝 — ' + String(r.why || '').slice(0, 80), ms }); return { did: true }; }
-    if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); return { did: true }; }
+    if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); failStop(t); return { did: true }; }
     queue(t, a, r, ms); settle(); save(); return { did: true }; }
 
+  /* (11/12 hot1) 오늘 거의 다 못 읽는 바깥 출처는 그날 남은 시간 쉼 — 11/12 JS-MAIN 예스24 도서 167번·예스24 중고 134번 모두 못 읽음(맞음 0) · 한 번마다 화면을 그려 최대 12~30초 기다림 = 헛일
+   *  기준: 못 읽음 failStopN(기본 20) 이상 · 못 읽음 비율 90% 이상 · 설정 jobs.failStopN·failStopH(0이면 끔) · 근거: 없음 */
+  function failStop(t) { if (!t || t.cls !== 'ext') return; const N = C().failStopN == null ? 20 : +C().failStopN, Hh = C().failStopH == null ? 3 : +C().failStopH; if (!(N > 0 && Hh > 0)) return;
+    const s = S.day.t && S.day.t[t.k]; if (!s || (s.fail || 0) < N || (s.fail || 0) < 0.9 * ((s.n || 0) + (s.fail || 0))) return; if ((M.fsAt[t.k] || 0) > now() - Hh * 3600e3) return;
+    const mid = Date.parse(kday() + 'T00:00:00+09:00') + 864e5; const until = C().failStopH == null ? Math.max(now() + 3600e3, mid) : now() + Hh * 3600e3; /* (리드 11/12) 기본은 오늘 남은 시간 내내(한국 자정까지) 쉼 · 다음 날 다시 해 봄 */
+    M.fsAt[t.k] = now(); (S.pause || (S.pause = {}))[t.k] = until; ctx.note(`${t.name} — 오늘 ${s.fail}번 못 읽음(맞음 ${s.n || 0}) · ${new Date(until + 9 * 3600e3).toISOString().slice(11, 16)}까지 쉼(헛 화면 그리기·바깥 요청을 줄여 이 PC를 가볍게)`, { k: 'rest', l: 'warn', m: t.name }); }
   const tried = (k) => { const s = (S.day.d === kday() && S.day.t && S.day.t[k]) || null; let w = 0; for (const x of S.wait) if (x.k === k) w++; return w + (s ? (s.n || 0) + (s.fail || 0) + (s.noprod || 0) + (s.skip || 0) : 0); }; /* 운영 값을 기다리는 것도 셈(같은 일만 거듭 고르지 않게) */
   function pickK(L) { const off = S.rr++ % L.length; let best = null, bv = Infinity; for (let i = 0; i < L.length; i++) { const k = L[(off + i) % L.length]; const v = tried(k); if (v < bv) { bv = v; best = k; } } return best; }
   /* (0.1.10) 👥 구매자 분포 — 따로 된 칸 탭에 상품 화면을 그리고 운영 getProductFull(글자 그대로 · 받침 loadInFrame = 이 탭을 내려 보며 기다림) */
