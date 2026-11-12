@@ -24,13 +24,15 @@ const RATE = { 만족: 'good', 보통: 'mid', 불만족: 'bad' };
 const lexOf = (add) => VOICE_LEX.topics.map((t) => ({ ...t, w: [...t.w, ...(add && Array.isArray(add[t.k]) ? add[t.k].map(String) : [])] }));
 function voTopics(txt, lex) { const s = ' ' + String(txt || '').replace(/\s+/g, ' ') + ' '; const out = []; for (const t of lex) if (t.w.some((w) => w && s.includes(w))) out.push(t.k); return out; }
 const voSize = (n) => (n == null ? '모름' : n < 300 ? '작음(<300)' : n < 3000 ? '중간(300~3천)' : '큼(3천+)');
+/* 53비트 문자열 해시(cyrb53) — 같은 글 판단용(충돌 확률은 126만 건에서 약 1억분의 1) */
+const h53 = (str) => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return 4294967296 * (2097151 & h2) + (h1 >>> 0); };
 const tok = (s) => (String(s).match(/[가-힣]{2,6}/g) || []).filter((w) => !VO_STOP.has(w));
 
 /* 흘려 셈 — 웹앱 voRows(같은 글 한 번만) + voStats와 같은 값 */
-function makeAcc(o) { o = o || {}; const lex = o.lex || lexOf(null); const szOf = o.sizeOf || (() => '모름'); const waMax = o.waMax || 400000;
+function makeAcc(o) { o = o || {}; const lex = o.lex || lexOf(null); const szOf = o.sizeOf || (() => '모름'); const waMax = o.waMax || 120000;
   const seen = new Set(); const sellers = new Set(); const cnt = { good: 0, mid: 0, bad: 0 }; let n = 0, cov = 0, q = 0, qSec = 0, qAns = 0, rows = 0;
   const T = Object.fromEntries(lex.map((t) => [t.k, { n: 0, bad: 0, good: 0, q: 0 }])); const mon = new Map(); const sz = new Map(); const wc = new Map(); const wa = new Map(); let pruned = 0;
-  const row = (sc, x, k) => { const c = String(x.c != null ? x.c : x.t || '').slice(0, 1000); const key = [sc, x.d, x.r || '', c.slice(0, 60)].join('|'); if (k === 'r' && seen.has(key)) return; seen.add(key); rows++;
+  const row = (sc, x, k) => { const c = String(x.c != null ? x.c : x.t || '').slice(0, 1000); if (k === 'r') { const key = h53([sc, x.d, x.r || '', c.slice(0, 60)].join('|')); if (seen.has(key)) return; seen.add(key); } rows++; /* (0.35.145) 같은 글 열쇠는 글자 대신 53비트 숫자(구매평 126만 건 · 글자 열쇠 Set이 메모리를 크게 먹어 클라우드가 멈춤) — 웹앱도 문의 열쇠는 같은 글 판단에 쓰지 않음 */
     const r = k === 'r' ? x.r || null : null; const tp = voTopics(c + ' ' + (x.reply || ''), lex); sellers.add(String(sc));
     if (k === 'q') { q++; if (x.sec) qSec++; if (x.ans) qAns++; tp.forEach((t) => T[t] && T[t].q++); return; }
     if (!r || !(r in cnt)) return; cnt[r]++; n++; if (tp.length) cov++; tp.forEach((t) => { const v = T[t]; if (!v) return; v.n++; if (r === 'bad') v.bad++; if (r === 'good') v.good++; });
@@ -56,20 +58,22 @@ function docOf(st, day, extra) { return { day, at: new Date().toISOString(), lex
 /* 매일 일 — { C, FieldPath, log, W } 를 받아 씀 · force=20시간 막이 무시 · dry=쓰지 않고 돌려줌(진단) */
 function makeVoiceStudy(dep) { const { C, FieldPath, log } = dep; const W = dep.W || (() => ({})); let busy = false;
   const kday = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
-  async function pages(col, fields, page, t0, budget, each) { let last = null, docs = 0, done = true; for (;;) { if (Date.now() - t0 > budget) { done = false; break; } let qq = C(col).orderBy(FieldPath.documentId()).select(...fields).limit(page); if (last) qq = qq.startAfter(last); const g = await qq.get(); g.forEach((d) => { docs++; each(d.data() || {}, d.id); }); if (g.size < page) break; last = g.docs[g.docs.length - 1]; await new Promise((z) => setImmediate(z)); } return { docs, done }; }
+  const memHi = () => { try { return process.memoryUsage().rss > (dep.rssMax || 1100) * 1048576; } catch (e) { return false; } };
+  async function pages(col, fields, page, t0, budget, each) { let last = null, docs = 0, done = true; for (;;) { if (Date.now() - t0 > budget || memHi()) { done = false; break; } /* (0.35.145) 메모리가 1.1GB를 넘으면 거기까지(크롬·출고 일과 함께 2GB 안) */ let qq = C(col).orderBy(FieldPath.documentId()).select(...fields).limit(page); if (last) qq = qq.startAfter(last); const g = await qq.get(); g.forEach((d) => { docs++; each(d.data() || {}, d.id); }); if (g.size < page) break; last = g.docs[g.docs.length - 1]; await new Promise((z) => setImmediate(z)); } return { docs, done }; }
   async function run(force, dry, opt) { opt = opt || {}; const ref = C('app_settings').doc('voice_study'); if (busy) return { busy: 1 }; let prev = null; try { prev = (await ref.get()).data() || null; } catch (e) {}
     if (!force && prev && prev.by === 'cloud' && !prev.partial && Date.now() - Date.parse(prev.at || 0) < 20 * 3600e3) return { skip: 1, at: prev.at };
-    busy = true; const t0 = Date.now(); const budget = +opt.budgetMs || 8 * 60e3; const page = +opt.page || 40;
+    const rref = C('app_settings').doc('voice_study_run'); if (!force) { try { const rr = (await rref.get()).data() || {}; if (rr.ok === false && Date.now() - Date.parse(rr.startAt || 0) < 24 * 3600e3) { log('🗣 구매평 연구 요약 건너뜀 — 지난번이 끝나지 않음(클라우드가 멈췄을 수 있음 · 24시간 쉼)', rr.startAt); return { skip: 'crash', at: rr.startAt }; } } catch (e) {} }
+    busy = true; const t0 = Date.now(); const budget = +opt.budgetMs || 8 * 60e3; const page = +opt.page || 20; if (!dry) await rref.set({ startAt: new Date().toISOString(), ok: false }).catch(() => {}); /* (0.35.145) 멈춤 고리 막이 — 끝나지 않은 채 다시 뜨면 하루 쉼 */
     try { let add = null; try { add = ((await C('app_settings').doc('voice_lex').get()).data() || {}).add || null; } catch (e) {} const lex = lexOf(add);
       const N = new Map(); try { (await C('sellers').select('totalReviewCount').get()).forEach((d) => { const v = Number(String(d.data().totalReviewCount ?? '').replace(/[^\d]/g, '')); if (Number.isFinite(v) && v > 0) N.set(String(d.id).replace(/^sc_/, ''), v); }); } catch (e) {}
       try { (await C('col2_voice_s').get()).forEach((d) => { if (N.has(d.id)) return; const m = d.data() || {}; const v = m.n != null ? m.n : m.r ? m.r.n : null; if (v != null) N.set(d.id, v); }); } catch (e) {}
       const A = makeAcc({ lex, sizeOf: (sc) => voSize(N.has(sc) ? N.get(sc) : null) });
       const c2 = await pages('col2_voice', ['sc', 'kind', 'items'], page, t0, budget, (v) => A.c2(v));
-      const op = c2.done ? await pages('seller_reviews', ['sc', 'sellerId', 'items'], Math.max(page, 100), t0, budget, (v) => A.op(v)) : { docs: 0, done: false };
+      const op = c2.done ? await pages('seller_reviews', ['sc', 'sellerId', 'items'], Math.max(page, 50), t0, budget, (v) => A.op(v)) : { docs: 0, done: false };
       const ours = []; try { (await C('crm_interactions').where('type', '==', 'review').select('rating', 'body').get()).forEach((d) => { const v = d.data() || {}; ours.push({ r: RATE[String(v.rating || '').trim()] || null, c: String(v.body || '') }); }); } catch (e) {}
       const st = A.result(ours); ours.length = 0; const partial = !(c2.done && op.done); const day = kday(Date.now());
       const doc = docOf(st, day, { ms: Date.now() - t0, src: { c2Docs: c2.docs, opDocs: op.docs, rows: A.rows() }, partial, few: st.n < 50, pruned: st.pruned });
-      if (dry) return doc; await ref.set({ ...doc, ...W() }); log('🗣 구매평 연구 요약', st.n, '구매평 ·', st.q, '문의 · 판매자', st.sellers, partial ? '· 시간 넘김(거기까지)' : '', Math.round(doc.ms / 1000) + '초'); return { n: st.n, q: st.q, partial, ms: doc.ms };
+      if (dry) return doc; await ref.set({ ...doc, ...W() }); await rref.set({ ok: true, endAt: new Date().toISOString(), ms: doc.ms, n: st.n }, { merge: true }).catch(() => {}); log('🗣 구매평 연구 요약', st.n, '구매평 ·', st.q, '문의 · 판매자', st.sellers, partial ? '· 시간 넘김(거기까지)' : '', Math.round(doc.ms / 1000) + '초'); return { n: st.n, q: st.q, partial, ms: doc.ms };
     } finally { busy = false; } }
   return { run };
 }
