@@ -1,2 +1,2 @@
-perf=1
-# 126324128
+bkinfo=1&bkinfo2=kyobo
+# 1901428115
