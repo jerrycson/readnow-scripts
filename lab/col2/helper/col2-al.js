@@ -142,7 +142,7 @@ function makeAl(o) {
     if ((!a || a.age == null) && since < humanMs()) return { busy: true, why: `알라딘 로그인 창을 띄운 지 ${Math.round(since / 1000)}초 — 사람이 칠 수 있게 기다림` }; return { busy: false }; }
   async function endWait(why) { if (A.login !== 'wait') return; A.login = 'need'; A.loginMsg = why; note('🔐 알라딘 로그인 창에서 입력이 없어 기다림을 끝냄 — ' + why); await hide('입력 없음').catch(() => {}); }
   async function keyPress(sid) { const b = A.br; const k = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 }; await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', ...k, text: '\r' }, sid); await sleep(60); await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...k }, sid); }
-  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 열린 창에서 「네이버로 로그인」으로 해 주세요(' + (why || '') + ' · 번외 크롬에 네이버 로그인이 남아 있으면 스스로 네이버 길로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
+  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 열린 창에서 「네이버로 로그인」으로 해 주세요(' + (why || '') + ' · 번외 크롬에 네이버 로그인이 남아 있으면 스스로 네이버 길로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); A.todo = null; try { o.relogin && o.relogin.okSeen && o.relogin.okSeen('al'); } catch (e) {} note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
 
   /* ── 읽기 한 장(화면 없이 · 떨어진 칸 fetch) ── */
   async function readOne(kind, arg) { const u = AC.READ[kind].url(arg); if (!AC.isReadUrl(u)) throw new Error('읽기 목록 밖 주소라 보내지 않음: ' + u); /* 이 줄 밖으로는 알라딘에 아무것도 안 감 */
@@ -222,9 +222,33 @@ function makeAl(o) {
       if (st && !/(^|\.)naver\.com$/i.test(h) && !/wlogin_naver/i.test(pth)) break; await sleep(TEST ? 150 : 1500); }
     if (A.loginDlg && RLM.isBlock(A.loginDlg)) return { ok: false, why: `네이버 길도 막힘(알림: '${String(A.loginDlg).slice(0, 80)}')` };
     return (await chkScm()) ? { ok: true } : { ok: false, why: '네이버로 로그인 뒤에도 샵매니저가 로그인 화면' }; }
+  /* (11/12 login1 · 정범님 '3일째 알라딘 로그인조차 못 함' · 진단 11/12 09:06 HOME '연속 2번 실패 — 네이버로 로그인 뒤에도 샵매니저가 로그인 화면')
+   *  원인: 스스로 다시 로그인의 「네이버로 로그인」(naverTry)이 번외가 조종하는 크롬(조종 길·일꾼 플래그) 안에서 돌았음 — col2fix6이 사람 로그인 창에서 찾은 것과 같은 까닭으로
+   *   알라딘이 그 크롬의 새 로그인을 막음(아이디 길 42FB · 네이버 길도 같은 창에선 42FB — 11/11 HOME 정범님 시도) → 사람 창만 평범한 크롬으로 바뀌고 자동 길은 그대로였음
+   *  고침: 자동 네이버 길도 평범한 크롬 창으로 — 같은 프로필(col2-al-chrome)에 남은 네이버 '로그인 상태 유지'로 값 없이 끝남(사람이 [🔐 알라딘 로그인] 창에서 네이버로 한 번 하면 그 뒤로 저절로)
+   *   · 조종 크롬을 점잖게 닫고 → 평범한 창(조종 길 없음 · humanArgs)으로 네이버 길 주소를 엶 → 곧 작업 표시줄에서 숨김 → plainSec초(기본 25) 뒤 점잖게 닫음(쿠키를 다 씀) → 조종 크롬으로 샵매니저 확인
+   *   · 그 창에는 아무것도 넣지 않음(네이버·알라딘 아이디·비밀번호 절대 안 넣음) · 네이버 로그인이 없으면 그 창은 네이버 로그인 화면에 머물다 닫힘 → '사람 손 필요'(한 줄 · 단추 하나)
+   *   · 이 길이 안 되면 아이디·비밀번호 길은 하지 않음(조종 크롬 아이디 로그인 = 42FB 막힘 점수만 쌓임) — alcfg.idAfterNaver=true일 때만 · 예전 조종 크롬 네이버 길은 alcfg.naverPlain=false */
+  const plainOn = () => C().naverPlain !== false;
+  /* (11/12 login1) 사람이 해야 하는 순간 — 옆 창·웹앱(번외 상태 글 맨 앞)에 크게 한 줄 · 단추는 [🔐 알라딘 로그인] 하나 */
+  const TODO_AL = "👉 지금 할 일 하나: 옆 창 [🔐 알라딘 로그인] → 열린 창에서 「네이버로 로그인」(네이버 '로그인 상태 유지' 켬) → 샵매니저가 보이면 그 창 닫기(X) — 그 뒤로는 번외가 스스로 다시 로그인";
+  async function naverPlain() { const exe = o.chromeExe(); if (!exe) return { ok: false, why: '크롬을 못 찾음' };
+    await close('스스로 다시 로그인(네이버 길)은 평범한 크롬 창으로'); const fr = new Browser({ exe, profile: PROF, stale: () => WIN.run('kill', MARK) }); try { await fr.freeProfile(); } catch (e) {} prefsNoPw();
+    const w = cfg().awin && cfg().awin.w >= 400 && cfg().awin.x >= 0 ? cfg().awin : { x: 120, y: 60, w: 1100, h: 800 }; const args = humanArgs(PROF, NV_URL(), w);
+    if (TEST && process.env.RN_COL2_HUMAN_TEST_ARGS) args.splice(1, 0, ...process.env.RN_COL2_HUMAN_TEST_ARGS.split(' ').filter(Boolean));
+    if (!TEST && !humanArgsOk(args)) return { ok: false, why: '평범한 창 플래그 검사 실패(번외 코드 오류) — 띄우지 않음' };
+    let p; try { p = require('child_process').spawn(exe, args, { stdio: 'ignore', detached: false, windowsHide: false }); } catch (e) { return { ok: false, why: '크롬을 못 띄움: ' + e.message }; }
+    const H = { proc: p, at: now(), exit: null }; A.plain = H; p.on('exit', (code) => { H.exit = { code, ms: now() - H.at }; }); p.on('error', (e) => { H.exit = { code: null, err: e.message, ms: now() - H.at }; });
+    note('🔐 알라딘 스스로 다시 로그인 — 평범한 크롬 창으로 「네이버로 로그인」(이 번외 크롬에 남은 네이버 로그인 상태 · 값은 넣지 않음 · 창은 곧 숨기고 닫음)');
+    try { await sleep(TEST ? 600 : 1800); if (H.exit && H.exit.ms < 5000) return { ok: false, why: `평범한 크롬 창이 바로 꺼짐(종료 코드 ${H.exit.code}) — 이 프로필을 다른 크롬이 쥐고 있을 수 있음` };
+      if (!cfg().plainShow) await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }).catch(() => {});
+      const lim = (C().plainSec == null ? 25 : +C().plainSec) * 1000 * (TEST ? SC : 1); while (!H.exit && now() - H.at < lim) await sleep(TEST ? 150 : 500); }
+    finally { if (!H.exit) { await WIN.run('close', MARK).catch(() => {}); for (let k = 0; k < 30 && !H.exit; k++) await sleep(500); if (!H.exit) { try { p.kill(); } catch (e) {} await WIN.run('kill', MARK).catch(() => {}); for (let k = 0; k < 10 && !H.exit; k++) await sleep(300); } } A.plain = null; }
+    await ensure('네이버 길 뒤 샵매니저 확인'); A.landed = true;
+    return (await chkScm()) ? { ok: true } : { ok: false, human: true, why: "평범한 크롬 창으로 「네이버로 로그인」을 해 봤지만 샵매니저가 로그인 화면 — 이 번외 크롬에 네이버 '로그인 상태 유지'가 없음(사람이 한 번 해야 함)" }; }
   async function autoRe() { const R = o.relogin; if (!R) return ''; const w = R.why('al', { hold: holdOn(), seat: seatOk(), pp: A.pp, naver: naverOn() }); if (w) return w;
     A.inLogin = true; A.loginDlg = ''; let r; try { r = await R.run('al', { name: '알라딘 샵매니저', loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, A.br.sid), key: () => keyPress(A.br.sid), lastMsg: () => A.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: chkScm,
-      pre: naverOn() ? async () => { const x = await naverTry(); if (!x.ok) A.loginDlg = A.loginDlg && RLM.isBlock(A.loginDlg) ? A.loginDlg : ''; return x; } : null, preOnly: !(o.relogin.hasCred ? o.relogin.hasCred('al') : true) }); } finally { A.inLogin = false; }
+      pre: naverOn() ? async () => { const x = plainOn() ? await naverPlain() : await naverTry(); if (!x.ok) A.loginDlg = A.loginDlg && RLM.isBlock(A.loginDlg) ? A.loginDlg : ''; return x; } : null, preOnly: (naverOn() && plainOn() && C().idAfterNaver !== true) || !(o.relogin.hasCred ? o.relogin.hasCred('al') : true), preHuman: naverOn() && plainOn() }); } finally { A.inLogin = false; }
     if (r.ok) { setLogin('ok'); A.next.chk = now() + C().chkMin * 60e3; return 'ok'; } return r.why; }
   /* ── 한 바퀴 ── */
   async function step() { const c = C();
@@ -242,7 +266,7 @@ function makeAl(o) {
     if (now() < A.coolUntil) { A.msg = `알라딘 429 뒤 쉼 — ${Math.ceil((A.coolUntil - now()) / 60e3)}분 남음`; return 30e3; }
     try { await ensure(A.br ? '알라딘 크롬이 꺼져 있음' : '켜짐'); } catch (e) { A.msg = '알라딘 크롬 준비 실패: ' + e.message; return 60e3; }
     if (!A.landed) { try { await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); A.hour.n++; A.day.n++; if (isLoginSt(s)) setLogin('need', '샵매니저 첫 화면이 로그인 화면'); else { setLogin('ok'); A.next.chk = now() + c.chkMin * 60e3; } } catch (e) { A.msg = '샵매니저 첫 화면 실패: ' + e.message; A.landed = false; return 60e3; } }
-    if (A.login === 'need') { const ar = await autoRe(); if (ar === 'ok') return 300; A.msg = '🔐 알라딘 샵매니저 로그인 필요 — 옆 창 [🔐 알라딘 로그인]을 한 번' + (ar ? ' · 스스로 다시 로그인: ' + ar : '(저장된 계정이 없으면 저절로 다시 로그인하지 않음)'); return 15e3; }
+    if (A.login === 'need') { const ar = await autoRe(); if (ar === 'ok') return 300; A.todo = /^멈춤|사람|네이버 '로그인 상태 유지'가 없음/.test(ar || '') ? TODO_AL : null; A.msg = A.todo ? `${A.todo} · 까닭: ${ar}` : '🔐 알라딘 샵매니저 로그인 필요 — 옆 창 [🔐 알라딘 로그인]을 한 번' + (ar ? ' · 스스로 다시 로그인: ' + ar : '(저장된 계정이 없으면 저절로 다시 로그인하지 않음)'); return 15e3; }
     cmpTick();
     if (capLeft() <= 0) { A.msg = `이번 시간·오늘 몫을 다 씀(시간 ${c.hourCap} · 하루 ${c.dayCap}장)`; return 60e3; }
     const due = KINDS.find((k) => now() >= (A.next[k] || 0));
@@ -276,7 +300,7 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
-  function sum() { return { webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args } : null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { return { todo: A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args } : null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };

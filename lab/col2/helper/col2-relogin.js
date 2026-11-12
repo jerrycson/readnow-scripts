@@ -60,7 +60,7 @@ async function tkStep(ctx, ph, at) { let t = null; try { ph(at === 'pre' ? '「�
   if (t && t.page) ctx.tkNone = `「이미 로그인된」 화면 — ${t.why || '이어받지 않음'}(아이디·비밀번호는 맞음)`; return false; }
 async function doLogin(ctx, getK) { let res = null; const ph = (t) => (ctx.phase ? ctx.phase(t) : null);
   /* (11/11 fix5) ctx.pre = 값을 넣지 않는 다른 길(알라딘 = 이 번외 크롬에 남은 네이버 '로그인 상태 유지'로 「네이버로 로그인」 — 운영 수집기와 같은 길) · 되면 아이디·비밀번호를 쓰지 않음 */
-  if (ctx.pre) { ph(`${ctx.name || ''} — 네이버로 로그인 해 보는 중(아이디·비밀번호를 넣지 않음)`); let pr = null; try { pr = await ctx.pre(); } catch (e) { pr = { ok: false, why: String(e && e.message || e).slice(0, 80) }; } if (pr && pr.ok) return { ok: true, how: 'naver' }; ctx.preWhy = (pr && pr.why) || '네이버로 로그인 안 됨'; if (ctx.preOnly) return { ok: false, blocked: !!ctx.preBlocked, why: ctx.preWhy }; }
+  if (ctx.pre) { ph(`${ctx.name || ''} — 네이버로 로그인 해 보는 중(아이디·비밀번호를 넣지 않음)`); let pr = null; try { pr = await ctx.pre(); } catch (e) { pr = { ok: false, why: String(e && e.message || e).slice(0, 80) }; } if (pr && pr.ok) return { ok: true, how: 'naver' }; ctx.preWhy = (pr && pr.why) || '네이버로 로그인 안 됨'; if (ctx.preOnly) return { ok: false, blocked: !!ctx.preBlocked, human: !!(ctx.preHuman && pr && pr.human), why: ctx.preWhy }; } /* (11/12 login1) 평범한 창 네이버 길도 안 되면 = 사람 손(네이버 로그인 상태 유지가 없음) — 거듭 두드리지 않음 */
   ph(`${ctx.name || ''} 로그인 화면 여는 중`); await ctx.nav(ctx.loginUrl, 30); ph('보안 문자·추가 인증 화면인지 살피는 중'); const h0 = await ctx.ev(JS_HUMAN, 10000).catch(() => '');
       if (h0) res = { ok: false, human: true, why: `로그인 화면에 ${h0} — 사람 손이 필요` };
       else if (ctx.takeover && (await tkStep(ctx, ph, 'pre')) && (await ctx.check())) return { ok: true, how: 'takeover', tk: ctx.tkDid }; /* (11/12 login1) 첫 화면부터 「이미 로그인된」이면 이어받기 → 되면 값을 넣지 않고 끝 */
@@ -141,8 +141,8 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const jobOn = (pf) => { const jb = P(pf).job; return !!(jb && jb.on); };
   const anyJob = () => Object.keys(S).some((k) => jobOn(k));
   const jobView = (pf) => { const jb = P(pf).job; if (!jb) return null; return { on: !!jb.on, at0: jb.at0, phase: jb.phase, atP: jb.atP, max: jb.max, end: jb.end || null, res: jb.res || null }; };
-  /* (11/12 login1) 세션이 다시 살아나면(사람이 평범한 창·옆 창으로 했든 번외가 했든) '연속 n번 실패' 멈춤을 조용히 풂 — 그래야 다음에 풀릴 때 번외가 스스로 다시 로그인함 · 값 틀림(bad)·보안 문자(human) 멈춤은 그대로 */
-  const okSeen = (pf) => { const p = P(pf); if (p.stop && !p.stop.bad && !p.stop.human) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 로그인이 다시 살아나 '스스로 다시 로그인' 멈춤을 풂(다음에 풀리면 번외가 스스로)`); } catch (e) {} } else if (p.fails) { p.fails = 0; save(); } };
+  /* (11/12 login1) 세션이 다시 살아나면(사람이 평범한 창·옆 창으로 했든 번외가 했든) '연속 n번 실패' 멈춤을 조용히 풂 — 그래야 다음에 풀릴 때 번외가 스스로 다시 로그인함 · 값 틀림(bad) 멈춤만 그대로(사람 손이 필요하던 멈춤은 사람이 해서 살아난 것) */
+  const okSeen = (pf) => { const p = P(pf); if (p.stop && !p.stop.bad) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 로그인이 다시 살아나 '스스로 다시 로그인' 멈춤을 풂(다음에 풀리면 번외가 스스로)`); } catch (e) {} } else if (p.fails) { p.fails = 0; save(); } };
   const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
   const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
   const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
