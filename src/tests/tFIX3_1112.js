@@ -15,7 +15,12 @@ const CT = fs.readFileSync(find('../../cloud/index.js', '../cloud/index.js'), 'u
 const cut = (S, a, b) => { const i = S.indexOf(a); const j = S.indexOf(b, i + 1); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return S.slice(i, j); };
 
 console.log('① 순수 셈 — 예스24 쪽 원격 길·경보');
-const F = new Function(cut(T, '/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { omniY24Far, omniAlarm, OMNI_HB_MIN };')();
+const F = new Function(cut(T, '/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { omniY24Far, omniAlarm, OMNI_HB_MIN, omniReMap, OMNI_LATER_RE };')();
+{ const now = Date.parse('2026-11-12T08:50:00Z'); const g = '처음 한 건을 확인하는 중 — 그 결과를 본 뒤 이어 맡김(첫 실행은 1건 확인 뒤)';
+  const L = { a: { st: 'fail', msg: g, doneAt: '2026-11-12T08:46:27Z' }, b: { st: 'later', msg: g, doneAt: '2026-11-12T08:49:30Z' }, c: { st: 'fail', msg: '번외가 맡김을 거절' }, d: { st: 'later', doneAt: '2026-11-12T08:40:00Z' }, 'd#2': { st: 'sent' } };
+  const R = F.omniReMap(L, () => false, now);
+  ok(R.a === 'a#2' && !R.b && !R.c && R.d === 'd#2', '진단 08:46 모양: 번외 "처음 한 건을 확인하는 중" 거절(later · 옛 fail 기록도)은 2분 뒤 새 열쇠로 다시 · 2분 안은 기다림 · 다른 거절은 사람 손 그대로', R);
+  ok(F.OMNI_LATER_RE.test(g) && /OMNI_LATER_RE\.test\(why\) \? 'later'/.test(T), 'omniDo: 지금만 바쁜 거절은 later로 적음'); }
 { const now = Date.parse('2026-11-12T08:30:00Z'); const ago = (m) => new Date(now - m * 60e3).toISOString();
   ok(F.omniY24Far({ 'MJ-MAIN': { at: ago(1), y24: 0 }, 'JS-MAIN': { at: ago(43), y24: 1 }, HOME: { at: ago(500), y24: 1 } }, 'MJ-MAIN', now) === true, 'verify3 모양(JS-MAIN 43분·HOME 8시간 전 · MJ-MAIN만 y24 0) → MJ-MAIN이 원격 길로 맡음');
   ok(F.omniY24Far({ 'MJ-MAIN': { at: ago(1), y24: 0 }, 'JS-MAIN': { at: ago(3), y24: 1 } }, 'MJ-MAIN', now) === false, '다른 번외 PC 맥박이 15분 안이면 맡지 않음(그 PC가 함 · 겹치지 않게)');
