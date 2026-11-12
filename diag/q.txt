@@ -1,2 +1,2 @@
-fsrules=1
-# 3020326640
+clog=60&cq=%EC%A0%81%EC%9D%91&doc=app_settings/adapt_goals
+# 2056214559
