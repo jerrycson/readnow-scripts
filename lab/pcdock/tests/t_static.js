@@ -35,10 +35,30 @@ for (const f of ['pcdock.ps1', 'install-pcdock.ps1']) { const s = psStrip(rd(f))
   ok(/Prot \$f\.FullName/.test(ps) && /ReparsePoint/.test(ps), '지우기 전 파일마다 보호 경로 다시 봄 · 연결 폴더(정션)를 따라가지 않음');
   ok(!/Recycle|Clear-RecycleBin|SoftwareDistribution|Set-MpPreference|DisableRealtimeMonitoring|Remove-Item[^\n]*-Recurse[^\n]*\$t\b/i.test(ps), '휴지통·윈도우 업데이트 캐시·Defender 끄기 없음'); }
 
+console.log('②-2 PowerShell 5.1 함정(0.1.0 ③ \'op_Addition\' 오류의 까닭)');
+{ const ps = rd('pcdock.ps1').replace(/^\s*#.*$/gm, '').replace(/<#[\s\S]*?#>/g, '');
+  const vars = [...ps.matchAll(/\$(?:script:)?([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1]); const by = {}; for (const v of vars) (by[v.toLowerCase()] = by[v.toLowerCase()] || new Set()).add(v);
+  const clash = Object.values(by).filter((x) => x.size > 1).map((x) => [...x].join('/')); ok(!clash.length, '대소문자만 다른 변수 이름 없음($S와 $s는 같은 변수 — foreach가 목록을 덮음)', clash);
+  const loopVars = new Set([...ps.matchAll(/foreach\s*\(\s*\$(\w+)\s+in\b/gi)].map((m) => m[1].toLowerCase())); const plusOn = [...ps.matchAll(/\$(?:script:)?(\w+)\s*\+=/g)].map((m) => m[1].toLowerCase());
+  ok(!plusOn.some((v) => loopVars.has(v)), 'foreach 도는 변수에 += 하지 않음(PSObject 더하기)', plusOn.filter((v) => loopVars.has(v)));
+  const run = ps.slice(ps.indexOf("'run' {"), ps.indexOf("{ $_ -eq 'cleanscan'")); ok(run.length > 500 && !/\+=/.test(run) && /ArrayList/.test(run) && /\.Add\(/.test(run), "'run'(실행·배치)은 += 없이 ArrayList.Add로 쌓음");
+  ok((run.match(/\btry\s*\{/g) || []).length >= 6 && /이 프로그램 일이 멈춤/.test(run), '프로그램마다 try/catch — 하나가 실패해도 나머지는 계속');
+  ok(!/\$\w+\s*=\s*\$\w+\s*\+\s*@\{/.test(ps) && !/\+\s*\(?\s*\$In\b/.test(ps), 'ConvertFrom-Json 결과(PSCustomObject)·해시표를 + 로 더하지 않음');
+  { const glued = ['pcdock.ps1', 'install-pcdock.ps1'].flatMap((f) => rd(f).split('\n').filter((l) => !/^\s*#/.test(l)).flatMap((l) => l.match(/\$[A-Za-z_][A-Za-z0-9_]*[\uAC00-\uD7A3]/g) || []));
+    ok(!glued.length, '글 안에서 변수 바로 뒤에 한글을 붙이지 않음($wait초는 $wait초라는 빈 변수 — $($wait)초로)', glued); }
+  ok(!/\?\?|\?\.|\bForEach-Object -Parallel|\bclean\s*\{|\$\w+\s*\?\s/.test(ps), 'PowerShell 7 문법(?? · ?. · -Parallel · 삼항) 없음 — 5.1만');
+  ok(/WM_CLOSE|\[RnDock\]::Close/.test(ps) && !/Stop-Process[^\n]*\$ci|Kill\(/.test(run), '모두 닫기는 WM_CLOSE(부탁)만 · 강제 종료 없음');
+  ok(/chrome\|claude/.test(run) && /CabinetWClass/.test(run), 'PowerShell에서도 닫기 직전 크롬·Claude·탐색기 셸을 한 번 더 거절(두 겹)');
+  ok(/KakaoTalk\.exe'/.test(rd('apps.js')) && /%LOCALAPPDATA%\\\\Kakao\\\\KakaoTalk\\\\KakaoTalk\.exe/.test(rd('apps.js')) && /Uninstall/.test(ps), '카카오톡 찾기 — %LOCALAPPDATA%\\Kakao · Program Files (x86) · 설치 목록 · 시작 메뉴');
+  const cs = rd('pcdock-win.cs'); ok(/public static bool Close\(/.test(cs) && /public static string ExplorerTab\(/.test(cs) && /GetForegroundWindow\(\) != h/.test(cs), 'C# — 닫기(WM_CLOSE) · 탐색기 탭(창이 맨 앞일 때만 글자를 침)'); }
+
 console.log('③ 운영과 안 겹침 · 안전');
 const code = man.filter((f) => /\.(js|html|ps1|cs)$/.test(f)).map((f) => [f, rd(f)]).concat([['install-pcdock.ps1', rd('install-pcdock.ps1')]]);
 const noC = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*#.*$/gm, '');
-ok(code.every(([, s]) => !/(127\.0\.0\.1|localhost):(8898|8899|8797)\b/.test(noC(s))), '운영 인쇄·로거 도우미(8898·8899)·번외(8797) 주소를 부르지 않음');
+/* (0.1.1) 번외 수집기·ALPS 도우미 창은 크롬에 주소만 넘김 — 그 주소는 apps.js HELPER_WIN 두 줄에만 · 도우미(Node)·PowerShell·화면은 그 포트를 부르지 않음 */
+const noHelperLines = (f, s) => f === 'apps.js' ? s.split('\n').filter((l) => !/^\s*(col2|alps): \{ url: 'http:\/\/127\.0\.0\.1:(8797\/|8898\/alps)'/.test(l)).join('\n') : s;
+ok(code.every(([f, s]) => !/(127\.0\.0\.1|localhost):(8898|8899|8797)\b/.test(noC(noHelperLines(f, s)))), '운영 인쇄·로거 도우미(8898·8899)·번외(8797) 주소를 부르지 않음(번외·ALPS 창 주소는 apps.js HELPER_WIN에만 — 크롬에 넘길 뿐)');
+ok(!/fetch\(|http\.get|http\.request/.test(rd('apps.js')) && (noC(rd('apps.js')).match(/127\.0\.0\.1:(8797|8898)/g) || []).length === 2, 'apps.js는 그 주소를 부르지 않고 창 주소 두 개만 둠');
 ok(require('../pcdock-config.js').AVOID_PORTS.join() === '8898,8899,8797' && require('../pcdock-config.js').PORT === 8796, '포트 8796(겹치면 빈 포트)');
 ok(code.every(([, s]) => !/(^|[^.\w])(alert|confirm|prompt)\s*\(/m.test(noC(s))), '브라우저 팝업(alert·confirm·prompt) 없음');
 ok(code.every(([, s]) => !/01[016789]-?\d{3,4}-?\d{4}/.test(s)), '휴대전화 번호 없음');

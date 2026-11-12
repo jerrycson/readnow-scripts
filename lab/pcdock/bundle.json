@@ -7,6 +7,7 @@
   "apps.js",
   "settings.js",
   "clean.js",
+  "closeplan.js",
   "ui.html",
   "pcdock.ps1",
   "pcdock-win.cs"

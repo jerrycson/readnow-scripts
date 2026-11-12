@@ -2,11 +2,14 @@
 // · DPI 인식(모니터마다 · V2)으로 켜서 모든 자리를 '실제 화소'로 읽고 놓음 — 배율이 다른 모니터 사이로 옮겨도 크기가 어긋나지 않게
 // · 창 놓기: 최소화·최대화를 풀고 → 놓고 → 보이지 않는 테두리(윈도우 10·11의 그림자 테두리)만큼 바로잡아 칸에 딱 맞춤
 // · 메모리 비우기: EmptyWorkingSet(프로그램은 그대로 · 쓰던 메모리를 디스크 쪽으로 내려 둠 — 다시 쓰면 돌아옴)
+// · 닫기: WM_CLOSE를 보내 '닫아 달라고' 부탁만(저장 안 한 문서는 그 프로그램이 물음 · 강제 종료 없음)
+// · 탐색기 탭(윈도우 11): 창을 앞으로 → Ctrl+T → Ctrl+L(주소창) → 경로 글자(유니코드 입력) → Enter · 단계마다 그 창이 맨 앞인지 보고 아니면 글자를 치지 않고 멈춤
 using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 public static class RnDock {
   public delegate bool EP(IntPtr h, IntPtr l);
@@ -37,6 +40,16 @@ public static class RnDock {
   [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint a, bool i, uint pid);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
   [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr h);
+  [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint f, UIntPtr extra);
+  [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
+  [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
+  [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
+  [StructLayout(LayoutKind.Explicit)] public struct INPUTU { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
+  [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public INPUTU u; }
 
   public class Mon { public string Id; public bool Primary; public RECT B; public RECT Wa; public uint Dpi; }
   public class Win { public long H; public uint Pid; public string Proc; public string Cls; public string Title; public RECT R; public bool Ic; public bool Zm; }
@@ -89,4 +102,30 @@ public static class RnDock {
 
   // 메모리 비우기 — 되면 true
   public static bool Trim(uint pid) { IntPtr p = OpenProcess(0x0100 | 0x0400, false, pid); if (p == IntPtr.Zero) return false; try { return EmptyWorkingSet(p); } finally { CloseHandle(p); } }
+
+  // 닫아 달라고 부탁(WM_CLOSE) — 강제 종료 없음
+  public static bool Close(long hv) { IntPtr h = new IntPtr(hv); if (!IsWindow(h)) return false; return PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); }
+  public static bool Exists(long hv) { return IsWindow(new IntPtr(hv)); }
+
+  static INPUT Kb(ushort vk, ushort scan, uint flags) { INPUT i = new INPUT(); i.type = 1; i.u.ki.wVk = vk; i.u.ki.wScan = scan; i.u.ki.dwFlags = flags; return i; }
+  static void Send(List<INPUT> L) { if (L.Count == 0) return; SendInput((uint)L.Count, L.ToArray(), Marshal.SizeOf(typeof(INPUT))); }
+  static void Combo(ushort vk, bool ctrl) { var L = new List<INPUT>(); if (ctrl) L.Add(Kb(0x11, 0, 0)); L.Add(Kb(vk, 0, 0)); L.Add(Kb(vk, 0, 2)); if (ctrl) L.Add(Kb(0x11, 0, 2)); Send(L); }
+  static void TypeText(string s) { var L = new List<INPUT>(); foreach (char c in s) { L.Add(Kb(0, c, 4)); L.Add(Kb(0, c, 4 | 2)); } Send(L); }
+  // 창을 맨 앞으로(윈도우가 막으면 Alt를 한 번 눌렀다 떼는 흔한 방법으로 한 번 더) — 맨 앞이 되면 true
+  public static bool Front(long hv) { IntPtr h = new IntPtr(hv); if (GetForegroundWindow() == h) return true;
+    if (IsIconic(h)) ShowWindow(h, 9); SetForegroundWindow(h); Thread.Sleep(150); if (GetForegroundWindow() == h) return true;
+    keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero); SetForegroundWindow(h); Thread.Sleep(250); return GetForegroundWindow() == h; }
+  static string TitleOf(IntPtr h) { var t = new StringBuilder(512); GetWindowText(h, t, 512); return t.ToString(); }
+  // 탐색기 창에 탭 하나(경로) 더하기 — 되면 "" · 안 되면 까닭
+  public static string ExplorerTab(long hv, string path, string leaf, int ms) { IntPtr h = new IntPtr(hv);
+    if (!IsWindow(h)) return "창이 없어짐";
+    if (!Front(h)) return "탐색기 창을 앞으로 못 가져옴";
+    Combo(0x54, true); Thread.Sleep(900);                       // Ctrl+T 새 탭
+    if (GetForegroundWindow() != h) return "새 탭 뒤 다른 창이 앞에 옴";
+    Combo(0x4C, true); Thread.Sleep(350);                       // Ctrl+L 주소창
+    if (GetForegroundWindow() != h) return "주소창을 못 잡음";
+    TypeText(path); Thread.Sleep(120); Combo(0x0D, false);      // 경로 + Enter
+    string want = (leaf ?? "").ToLowerInvariant(); var sw = Stopwatch.StartNew();
+    while (sw.ElapsedMilliseconds < ms) { Thread.Sleep(250); string t = TitleOf(h).ToLowerInvariant(); if (want.Length > 0 && t.Contains(want)) return ""; }
+    return "탭을 열었지만 그 폴더로 바뀌지 않음"; }
 }

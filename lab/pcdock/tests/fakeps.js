@@ -13,12 +13,17 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
     { id: '\\\\.\\DISPLAY2', primary: false, b: { x: 1920, y: 0, w: 2560, h: 1080 }, wa: { x: 1920, y: 0, w: 2560, h: 1080 }, dpi: 96 },
     { id: '\\\\.\\DISPLAY3', primary: false, b: { x: -3840, y: -500, w: 3840, h: 2160 }, wa: { x: -3840, y: -500, w: 3840, h: 2100 }, dpi: 144 }];
   const SF = process.env.FAKE_STARTUP; const out = (o) => { process.stdout.write('준비 글\n' + JSON.stringify({ ok: true, act, aware: 'pmv2', ...o }) + '\n'); };
-  if (act === 'screens') return out({ mons: MONS });
+  if (act === 'screens') return out({ mons: MONS, build: 22631 });
+  if (act === 'windows') return out({ mons: MONS, wins: [
+    { h: 101, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 — Chrome' }, { h: 102, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
+    { h: 103, pid: 13, proc: 'explorer', cls: 'Progman', title: 'Program Manager' }, { h: 104, pid: 13, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드' },
+    { h: 105, pid: 14, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장' }, { h: 106, pid: 15, proc: 'mstsc', cls: 'TscShellContainerClass', title: '원격 데스크톱 연결' }] });
   if (act === 'find') return out({ found: { 'chrome.exe': 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'KakaoTalk.exe': 'C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe', 'claude.exe': 'C:\\Users\\u\\AppData\\Local\\AnthropicClaude\\claude.exe' }, icons: {} });
   if (act === 'lnk') return out({ target: 'C:\\Program Files\\Notepad++\\notepad++.exe', args: '', icon: null });
   if (act === 'exe') return out({ list: j.name === 'notfound.exe' ? [] : ['C:\\Program Files\\Some\\' + j.name], icon: null });
   if (act === 'startup') { if (on === 1 && SF) fs.writeFileSync(SF, '1'); if (on === 0 && SF) { try { fs.renameSync(SF, SF + '.off'); } catch (e) {} } return out({ on: !!(SF && fs.existsSync(SF)), path: 'C:\\…\\ReadNow-PC배치.lnk' }); }
-  if (act === 'run') return out({ res: (j.steps || []).map((s) => ({ app: s.app, name: s.name, ok: true, how: '켬 → 자리 옮김', want: s.rect, got: s.rect })) });
+  if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ok: true, gone: true, why: '' })),
+    res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect }) });
   if (act === 'fit') return out({ got: { x: 0, y: 0, w: j.w, h: j.h } });
   if (act === 'cleanscan') return out({ targets: (j.targets || []).filter((t) => !t.kind).map((t, i) => ({ id: t.id, files: i === 0 ? 1234 : 10 * i, bytes: (i + 1) * 50 * 1048576, sample: ['C:\\Users\\u\\AppData\\Local\\Temp\\old' + i + '.tmp'] })),
     procs: [{ pid: 11, name: 'chrome', ws: 900 * 1048576, cpu: 12, path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', cmd: 'chrome.exe' },

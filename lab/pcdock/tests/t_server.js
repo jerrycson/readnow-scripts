@@ -17,7 +17,7 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     console.log('① 켜기 · 상태');
     let r = await P('GET', '/api/ping'); ok(r.j && r.j.app === 'readnow-pcdock', '127.0.0.1에서 대답(/api/ping)');
     r = await P('GET', '/'); ok(r.code === 200 && /리드나우 PC 배치/.test(r.b) && /①/.test(r.b) && /④/.test(r.b), '화면(ui.html)을 줌');
-    r = await P('GET', '/api/state'); const st = r.j; ok(st && st.ok && st.mons.length === 3 && st.cfg.apps.length === 10 && st.startup === false && st.catalog.length === 10, '상태 — 모니터 3대 · 기본 프로그램 10 · 시작 자동 꺼짐', st && { m: st.mons.length, err: st.err });
+    r = await P('GET', '/api/state'); const st = r.j; ok(st && st.ok && st.mons.length === 3 && st.cfg.apps.length === 12 && st.startup === false && st.catalog.length === 12 && st.build === 22631, '상태 — 모니터 3대 · 기본 프로그램 12(번외·ALPS 더함) · 시작 자동 꺼짐 · 윈도우 빌드', st && { m: st.mons.length, err: st.err });
     ok(fs.readFileSync(path.join(S.D, 'pcdock-run.ps1'), 'utf8').startsWith('\ufeff') && /\r\n/.test(fs.readFileSync(path.join(S.D, 'pcdock-run.ps1'), 'utf8')), '윈도우 PowerShell 5.1이 한국어를 읽게 BOM·CRLF를 붙인 사본을 씀');
 
     console.log('② 다른 웹 페이지 막기');
@@ -33,12 +33,21 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     r = await P('POST', '/api/save', { cfg }); ok(fs.readdirSync(path.join(S.D, 'old')).length === 1, '다시 저장하면 예전 설정을 old\\에 남김(지우지 않음)');
 
     console.log('④ 설정대로 실행·배치');
-    r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop();
+    r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(run && Array.isArray(run.input.close) && !run.input.close.length && r.j.mode === 'keep', '고르지 않으면 남겨 둔 채(닫을 창 없음)');
     ok(r.j && r.j.ok && r.j.res.length === 3, '세 곳 모두 놓음(가짜 PowerShell)', r.j);
     const kk = run && run.input.steps.find((s) => s.app === 'kakao'); ok(kk && kk.rect.x === 1920 + 2048 && kk.rect.y === 720 && kk.rect.w === 512 && kk.rect.h === 360, '카카오톡 자리 = 울트라와이드 5×3의 맨 오른쪽 아래 칸(실제 화소)', kk && kk.rect);
     const cs = run && run.input.steps.find((s) => s.app === 'chrome'); ok(cs && cs.launch.args.join(' ') === '--new-window https://readnow.kr/app/ https://readnow.kr/manual/' && cs.match.fresh, '크롬 — 새 창(주소 두 개는 탭) · 새로 뜬 창만 옮김', cs && cs.launch);
     const cl = run && run.input.steps.find((s) => s.app === 'claude'); ok(cl && cl.launch.uri === 'claude://claude.ai/chat/0b9f3a10-1111-2222-3333-444455556666' && cl.rect.x === -3840 && cl.rect.w === 1920 && cl.rect.h === 1400, 'Claude — 150% 4K 모니터 왼쪽 위 2×2(실제 화소 1920×1400)', cl && cl.rect);
     r = await P('GET', '/api/state'); ok(r.j.last && r.j.last.res.length === 3, '처음 화면에 마지막 결과가 남음');
+
+    console.log('④-2 ③ 묻기 — 남겨 둔 채 / 모두 닫고 / 취소');
+    r = await P('POST', '/api/run', { mode: 'close', token: 'nope' }); ok(r.j && !r.j.ok && /닫을 목록/.test(r.j.err) && fakeLog(S.D).filter((x) => x.act === 'run').length === 1, '목록을 보지 않고 모두 닫기는 거절(아무것도 안 함)', r.j);
+    r = await P('POST', '/api/closeplan', {}); const cpl = r.j; ok(cpl && cpl.ok && cpl.close.map((w) => w.proc).sort().join() === 'explorer,notepad' && cpl.keep.length === 4 && cpl.keep.some((k) => k.proc === 'chrome') && cpl.keep.some((k) => k.proc === 'explorer' && /셸/.test(k.why)), '닫을 목록 — 폴더 창·메모장만 · 크롬·Claude·원격·바탕 화면은 지킴', cpl);
+    ok(!JSON.stringify(cpl.close).includes('"h"'), '화면에는 창 번호를 주지 않음(도우미가 들고 있다가 그 목록만 닫음)');
+    r = await P('POST', '/api/run', { mode: 'close', token: cpl.token }); const runC = fakeLog(S.D).filter((x) => x.act === 'run').pop();
+    ok(r.j && r.j.ok && r.j.mode === 'close' && runC.input.close.map((c) => c.h).sort().join() === '104,105' && r.j.closed.length === 2, '모두 닫고 — 미리 보여 준 두 창만 PowerShell에 넘김', runC && runC.input.close);
+    r = await P('POST', '/api/run', { mode: 'close', token: cpl.token }); ok(r.j && !r.j.ok, '같은 목록으로 두 번은 안 됨');
+    ok(/모두 닫고/.test(fs.readFileSync(path.join(S.D, 'pcdock.log'), 'utf8')), '기록에 모두 닫고 · 닫기 부탁 수');
 
     console.log('⑤ 윈도우 시작 자동');
     r = await P('POST', '/api/startup', { on: true }); ok(r.j && r.j.on === true && fs.existsSync(path.join(S.D, 'startup.lnk')), '켜기 → 시작 프로그램 바로가기');
@@ -65,6 +74,15 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     r = await P('POST', '/api/lnk', { name: 'x.txt', b64: 'AA==' }); ok(r.code === 400, '.lnk 아닌 파일은 거절');
     r = await P('POST', '/api/exe', { name: 'Tool.exe' }); ok(r.j && r.j.list[0] === 'C:\\Program Files\\Some\\Tool.exe', '.exe → 이름으로 찾음');
     r = await P('POST', '/api/exe', { name: '..\\evil.exe' }); ok(r.code === 400, '이상한 이름 거절');
+
+    console.log('⑦-2 예전 설정(0.1.0) 옮기기');
+    { const v1 = { v: 1, base: { aw: 16, ah: 9, cols: 4, rows: 3 }, mons: { '\\\\.\\DISPLAY1': { grid: 'auto', w: 1920, h: 1080 } }, apps: [{ id: 'chrome', kind: 'chrome', name: '크롬', icon: '🌐', urls: ['https://readnow.kr/app/'], windows: 1 }, { id: 'folder', kind: 'folder', name: '윈도우 폴더', icon: '📁', path: 'D:\\ReadNow' }],
+        place: [{ app: 'chrome', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 1, h: 1 }, { app: 'folder', mon: '\\\\.\\DISPLAY1', c: 1, r: 0, w: 1, h: 1 }], auto: { on: false, delaySec: 20 }, run: { waitSec: 40, reuse: true }, clean: { keep: [] } };
+      fs.writeFileSync(path.join(S.D, 'settings.json'), JSON.stringify(v1)); const before = fs.readdirSync(path.join(S.D, 'old')).length;
+      r = await P('GET', '/api/state'); const nf = JSON.parse(fs.readFileSync(path.join(S.D, 'settings.json'), 'utf8')); const olds = fs.readdirSync(path.join(S.D, 'old'));
+      ok(nf.v === 2 && nf.place.every((p) => p.id && p.o) && nf.place[1].o.paths[0] === 'D:\\ReadNow' && r.j.cfg.apps.some((a) => a.kind === 'col2'), '읽을 때 배치마다 자기 설정으로 옮겨 저장', nf.place);
+      ok(olds.length === before + 1 && olds.some((f) => /^settings-v1-/.test(f)) && JSON.parse(fs.readFileSync(path.join(S.D, 'old', olds.find((f) => /^settings-v1-/.test(f))), 'utf8')).v === 1, '예전 파일은 old\\settings-v1-…json에 그대로 남김(지우지 않음)'); }
+    r = await P('POST', '/api/run', {}); ok(r.j && r.j.ok && r.j.res.length === 2 && r.j.res.every((x) => x.inst), '옮긴 설정으로 실행·배치(배치 이름표가 결과에)', r.j);
 
     console.log('⑧ 두 번째로 켜면 창만');
     const t0 = Date.now(); const p2 = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'readnow-pcdock.js')], { env: S.env, timeout: 10000 }); ok(p2.status === 0 && Date.now() - t0 < 8000 && /이미 켜져 있어/.test(fs.readFileSync(path.join(S.D, 'pcdock.log'), 'utf8')), '이미 켜져 있으면 새 서버를 안 띄우고 끝남');

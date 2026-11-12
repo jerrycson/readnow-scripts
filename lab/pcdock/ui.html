@@ -23,7 +23,7 @@ label { display: block; margin: 6px 0 2px; color: var(--mute); font-size: 12px; 
 .mute { color: var(--mute); } .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
 .view { display: none; height: 100%; } .view.on { display: flex; flex-direction: column; }
 /* 처음 화면 */
-#home { padding: 12px; gap: 8px; }
+#home { padding: 12px; gap: 8px; position: relative; }
 #home h1 { font-size: 15px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; }
 .big { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 12px; font-size: 14px; border-radius: 10px; }
 .big .n { font-size: 18px; width: 26px; text-align: center; }
@@ -82,6 +82,14 @@ label { display: block; margin: 6px 0 2px; color: var(--mute); font-size: 12px; 
 code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg); padding: 1px 4px; border-radius: 4px; word-break: break-all; }
 #toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 7px 12px; border-radius: 8px; font-size: 12.5px; max-width: 92%; display: none; z-index: 99; white-space: pre-line; }
 .back { padding: 3px 8px; }
+.blk.sel { outline: 3px solid #ffd54a; outline-offset: -1px; }
+.tabs { display: flex; flex-direction: column; gap: 3px; }
+.tab { display: flex; gap: 3px; align-items: center; } .tab .tn { width: 16px; color: var(--mute); font-size: 11px; text-align: right; flex: none; }
+.tab button { padding: 2px 6px; font-size: 11.5px; flex: none; } .tabs > button { align-self: flex-start; padding: 2px 8px; font-size: 12px; }
+.ask { position: absolute; inset: 0; background: var(--bg); padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow: auto; z-index: 20; }
+.ask[hidden] { display: none; } .ask button { text-align: left; } .ask .list { font-size: 12px; }
+details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } details.raw summary { cursor: pointer; }
+.hd { font-size: 11.5px; color: var(--mute); margin: 2px 0 6px; }
 </style>
 </head>
 <body>
@@ -92,6 +100,13 @@ code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg
   <button class="big pri" id="b3"><span class="n">▶</span><span class="t">③ 설정대로 지금 실행·배치<small id="b3s" style="color:#ffffffcc">켜고 · 뜨길 기다려 · 칸에 놓음</small></span></button>
   <button class="big" id="b4"><span class="n">🧹</span><span class="t">④ PC 정리<small>임시·캐시만 · 리드나우는 안 건드림</small></span></button>
   <div id="last" class="mute">아직 실행·배치하지 않았습니다.</div>
+  <div id="ask" class="ask" hidden>
+    <b style="font-size:14px">▶ 지금 열린 프로그램을 어떻게 할까요?</b>
+    <button id="askKeep" class="pri">📌 남겨 둔 채 설정대로 열기</button>
+    <button id="askClose">🧹 화면에 열린 프로그램 모두 닫고 설정대로 열기<small class="mute" style="display:block;font-size:11px">닫을 목록을 먼저 보여 드림 · 크롬·Claude·원격·출고·탐색기 셸은 절대 안 닫음</small></button>
+    <button id="askNo">취소</button>
+    <div id="askList"></div>
+  </div>
 </div>
 
 <div id="set" class="view">
@@ -99,7 +114,7 @@ code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg
     <div style="padding:8px 10px;border-bottom:1px solid var(--line)"><h2>📋 프로그램 <span class="mute" style="font-weight:normal;font-size:11.5px">끌어서 오른쪽 칸에 놓기</span></h2></div>
     <div id="apps"></div>
     <div id="addrow"><button id="addChrome">＋ 크롬 창</button><button id="addWeb">＋ 웹 주소 창</button><button id="addFolder">＋ 폴더</button><button id="addExe">＋ 프로그램</button></div>
-    <div id="detail" class="mute">왼쪽 목록에서 하나를 누르면 세부 설정이 여기 나옵니다.<br><br>탐색기에서 프로그램(.exe)·바로가기(.lnk)를 목록에 끌어다 놓으면 더해집니다.</div>
+    <div id="detail" class="mute"></div>
   </div>
   <div id="main">
     <div id="bar">
@@ -139,7 +154,8 @@ code { font-family: Consolas, monospace; font-size: 11.5px; background: var(--bg
 const G = window.PDGrid, AP = window.PDApps, SETL = window.PDSet;
 const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let S = null; /* 서버 상태 */ let C = null; /* 고치는 중인 설정(확인 전) */ let sel = null;
+let S = null; /* 서버 상태 */ let C = null; /* 고치는 중인 설정(확인 전) */ let sel = null; /* 고른 틀(목록) */ let selP = null; /* 고른 배치(칸에 놓은 덩이) */
+const HINT = '왼쪽 목록의 프로그램은 <b>틀</b>입니다 — 칸에 끌어 놓을 때마다 새 <b>배치</b>가 생기고, 배치마다 따로 설정합니다(예: 스크린샷 폴더 / 다운로드 폴더, A 주소 크롬 / B 주소 크롬).<br><br>칸에 놓은 덩이를 누르면 그 배치의 설정이, 목록을 누르면 틀(놓을 때 처음 값)이 여기 나옵니다.<br><br>탐색기에서 프로그램(.exe)·바로가기(.lnk)를 목록에 끌어다 놓으면 더해집니다.';
 function toast(m, ms) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.T); toast.T = setTimeout(() => { t.style.display = 'none'; }, ms || 3200); }
 /* 두 번 누르기 — 첫 번째는 단추 글만 바뀜(4초) · 브라우저 확인 창 없음 */
 function twice(btn, msg, fn) { if (btn.dataset.arm) { delete btn.dataset.arm; btn.classList.remove('arm'); btn.innerHTML = btn.dataset.orig; return fn(); }
@@ -147,23 +163,37 @@ function twice(btn, msg, fn) { if (btn.dataset.arm) { delete btn.dataset.arm; bt
 async function api(p, b) { const r = await fetch(p, b === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json', 'x-rn-dock': '1' }, body: JSON.stringify(b) }); let j = {}; try { j = await r.json(); } catch (e) { j = { ok: false, err: '응답이 이상함' }; } return j; }
 function show(v) { $$('.view').forEach((x) => x.classList.toggle('on', x.id === v)); }
 function fit(view) { const W = view === 'set' ? { w: 1180, h: 760 } : view === 'clean' ? { w: 560, h: 720 } : { w: 340, h: 470 }; try { window.resizeTo(W.w, W.h); } catch (e) {} if (window.outerWidth < W.w - 40 || window.outerHeight < W.h - 40) api('/api/fit', { view }); }
-const appIcon = (a) => { const k = AP.keyOf(a); const b64 = (a.kind === 'exe' && a.exe && S.icons[a.exe]) || S.icons[k]; return b64 ? `<img alt="" src="data:image/png;base64,${b64}">` : esc(a.icon || ({ chrome: '🌐', folder: '📁', phone: '📱', crd: '🖥', claude: '✳', exe: '🧩', web: '🔗' })[a.kind] || '🧩'); };
+const appIcon0 = (a) => { const k = AP.keyOf(a); const b64 = (a.kind === 'exe' && a.exe && S.icons[a.exe]) || S.icons[k]; return b64 ? `<img alt="" src="data:image/png;base64,${b64}">` : esc(a.icon || ({ chrome: '🌐', folder: '📁', phone: '📱', crd: '🖥', claude: '✳', exe: '🧩', web: '🔗', col2: '🧪', alps: '🅰' })[a.kind] || '🧩'); };
+const appIcon = appIcon0;
 
 /* ── 처음 화면 ── */
 async function load(fresh) { S = await api('/api/state' + (fresh ? '?fresh=1' : '')); if (!S.ok) { toast('도우미 상태를 못 읽음: ' + (S.err || '')); return; } $('#ver').textContent = `${S.pc} · 판 ${S.ver}` + (S.update ? ` · 새 판 ${S.update.v} 준비됨(다시 열면 바뀜)` : ''); paintHome(); }
 function paintHome() { const c = S.cfg; $('#b2sw').classList.toggle('on', !!S.startup); $('#b2s').textContent = S.startup ? `켜짐 — 로그온 뒤 ${c.auto.delaySec}초 기다렸다 실행·배치` : `꺼짐 — 켜면 로그온 뒤 ${c.auto.delaySec}초 기다렸다 실행·배치`;
   $('#b1s').textContent = c.place.length ? `프로그램 ${c.apps.length}개 · 놓은 자리 ${c.place.length}곳 · 모니터 ${S.mons.length}대` : `아직 놓은 것 없음 · 모니터 ${S.mons.length}대`;
   if (S.last) paintLast(S.last); }
+const raw = (t) => t ? `<details class="raw"><summary>원문</summary><code>${esc(t)}</code></details>` : '';
 function paintLast(L) { const el = $('#last'); el.classList.remove('mute'); const t = new Date(L.at).toLocaleTimeString('ko-KR');
-  el.innerHTML = `<div><b>${esc(t)} ${esc(L.by || '')}</b> ${L.ok ? '<span class="ok">끝</span>' : '<span class="bad">' + esc(L.err || '안 됨') + '</span>'}${L.sec != null ? ' · ' + L.sec + '초' : ''}</div>` +
-    (L.res || []).map((r) => `<div>${r.ok ? '✅' : '⚠'} ${esc(r.name)} — ${esc(r.how)}</div>`).join('') + (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)} — ${esc(s.why)}</div>`).join(''); }
+  const cl = L.closed || []; const cOk = cl.filter((c) => c.ok);
+  el.innerHTML = `<div><b>${esc(t)} ${esc(L.by || '')}${L.mode === 'close' ? ' · 모두 닫고' : ''}</b> ${L.ok ? '<span class="ok">끝</span>' : '<span class="bad">' + esc(L.err || '안 됨') + '</span>'}${L.sec != null ? ' · ' + L.sec + '초' : ''}</div>` + raw(L.raw) +
+    (cl.length ? `<div>🧹 닫아 달라고 부탁 ${cOk.length}개 · 닫힘 ${cOk.filter((c) => c.gone).length}개${cOk.some((c) => !c.gone) ? ` · 아직 떠 있음 ${cOk.filter((c) => !c.gone).length}개(저장할지 묻는 중일 수 있음 — 그 창에서 골라 주세요)` : ''}</div>` + `<details class="raw"><summary>닫은 창</summary>${cl.map((c) => `<div>${c.ok ? (c.gone ? '✓' : '…') : '—'} ${esc(c.proc)} · ${esc(c.title)}${c.why ? ' (' + esc(c.why) + ')' : ''}</div>`).join('')}</details>` : '') +
+    (L.res || []).map((r) => `<div>${r.ok ? '✅' : '⚠'} ${r.ok ? esc(r.name) + ' — ' + esc(r.how) : esc(r.msg || (r.name + ' — ' + r.how))}</div>` + raw(r.raw)).join('') +
+    (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)}: ${esc(s.why)}${s.todo ? ' → ' + esc(s.todo) : ''}</div>`).join(''); }
 $('#b1').onclick = () => openSet();
 $('#b2').onclick = async () => { const on = !S.startup; const r = await api('/api/startup', { on }); if (!r.ok) return toast('바꾸지 못함: ' + (r.err || '')); S.startup = r.on; S.cfg.auto.on = r.on; paintHome(); toast(r.on ? '윈도우 시작 때 자동 실행·배치를 켰습니다' : '껐습니다(바로가기 이름만 .off로 바꿈)'); };
-$('#b3').onclick = async () => { const b = $('#b3'); b.disabled = true; $('#b3s').textContent = '실행·배치 중… (창이 뜨길 기다림)'; const r = await api('/api/run', {}); b.disabled = false; $('#b3s').textContent = '켜고 · 뜨길 기다려 · 칸에 놓음'; paintLast({ at: Date.now(), by: '단추', ...r }); };
+/* ③ — 먼저 묻기: 남겨 둔 채 / 모두 닫고(목록을 보여 준 뒤 두 번 누르기) / 취소 */
+async function doRun(body) { $('#ask').hidden = true; const b = $('#b3'); b.disabled = true; $('#b3s').textContent = '실행·배치 중… (창이 뜨길 기다림)'; const r = await api('/api/run', body); b.disabled = false; $('#b3s').textContent = '켜고 · 뜨길 기다려 · 칸에 놓음'; paintLast({ at: Date.now(), by: '단추', ...r }); }
+$('#b3').onclick = () => { $('#askList').innerHTML = ''; $('#ask').hidden = false; };
+$('#askNo').onclick = () => { $('#ask').hidden = true; };
+$('#askKeep').onclick = () => doRun({ mode: 'keep' });
+$('#askClose').onclick = async () => { const L = $('#askList'); L.innerHTML = '<div class="mute">떠 있는 창을 보는 중…</div>'; const r = await api('/api/closeplan', {}); if (!r.ok) { L.innerHTML = `<div class="bad">목록을 못 읽음: ${esc(r.err || '')}</div>`; return; }
+  L.innerHTML = `<div class="list"><b>닫을 창 ${r.close.length}개</b> <span class="mute">(닫아 달라고 부탁만 — 저장 안 한 문서는 그 프로그램이 물음 · 강제 종료 없음)</span>${r.close.map((w) => `<div class="row" data-close><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)}</span></div></div>`).join('') || '<div class="mute">없음 — 모두 지키는 창</div>'}</div>` +
+    `<details class="list"><summary><b>지키는 창 ${r.keep.length}개</b> <span class="mute">(절대 안 닫음)</span></summary>${r.keep.map((w) => `<div class="row" data-keep><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)} · ${esc(w.why)}</span></div></div>`).join('')}</details>` +
+    `<button id="askGo" class="pri">${r.close.length ? `🧹 ${r.close.length}개 닫고 설정대로 열기` : '닫을 것 없이 설정대로 열기'}</button>`;
+  $('#askGo').onclick = () => r.close.length ? twice($('#askGo'), `한 번 더 누르면 ${r.close.length}개 창을 닫고 엽니다`, () => doRun({ mode: 'close', token: r.token })) : doRun({ mode: 'keep' }); };
 $('#b4').onclick = () => openClean();
 
 /* ── ① 설정 ── */
-function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
+function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
 window.addEventListener('resize', () => { if ($('#set').classList.contains('on')) paintSet(); });
 const monKey = (m) => m.id; const gridFor = (m) => G.gridOf(m, (C.mons[m.id] || {}).grid || 'auto', C.base);
 function paintSet() { paintApps(); paintMap(); paintMonOpts(); }
@@ -176,11 +206,12 @@ function paintMap() { const box = $('#mapwrap'); const W = box.clientWidth, H = 
     h += `<div class="mon${m.primary ? ' pri' : ''}" style="left:${vb.x}px;top:${vb.y}px;width:${vb.w}px;height:${vb.h}px"><div class="lab">${i + 1}${m.primary ? ' (주)' : ''} · ${m.b.w}×${m.b.h} · ${sc}% · ${g.cols}×${g.rows}칸</div></div>`;
     for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) { const t = V.T(G.cellRect(m, g, c, r, 1, 1)); h += `<div class="cell" data-mon="${esc(m.id)}" data-c="${c}" data-r="${r}" style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px"></div>`; } });
   C.place.forEach((p, i) => { const m = S.mons.find((x) => x.id === p.mon); if (!m) return; const g = gridFor(m); const a = C.apps.find((x) => x.id === p.app); const ok = G.inGrid(p, g) && a; const t = V.T(G.cellRect(m, g, Math.min(p.c, g.cols - 1), Math.min(p.r, g.rows - 1), Math.max(1, Math.min(p.w, g.cols - Math.min(p.c, g.cols - 1))), Math.max(1, Math.min(p.h, g.rows - Math.min(p.r, g.rows - 1)))));
-    h += `<div class="blk${ok ? '' : ' bad'}${t.h < 46 || t.w < 50 ? ' sm' : ''}" data-i="${i}" style="left:${t.x + 2}px;top:${t.y + 2}px;width:${t.w - 4}px;height:${t.h - 4}px" title="${esc(a ? a.name : p.app)}"><span class="ic">${a ? appIcon(a) : '?'}</span><span class="nm2">${esc(a ? a.name : p.app)}</span><span class="x" data-x="${i}" title="빼기">✕</span><span class="rz" data-rz="${i}" title="모서리를 끌어 칸 늘리기"></span></div>`; });
+    const pn = p.name || (a ? a.name : p.app);
+    h += `<div class="blk${ok ? '' : ' bad'}${t.h < 46 || t.w < 50 ? ' sm' : ''}${selP && p.id === selP ? ' sel' : ''}" data-i="${i}" data-p="${esc(p.id || '')}" style="left:${t.x + 2}px;top:${t.y + 2}px;width:${t.w - 4}px;height:${t.h - 4}px" title="${esc(pn)} — 누르면 이 배치 설정"><span class="ic">${a ? appIcon(a) : '?'}</span><span class="nm2">${esc(pn)}</span><span class="x" data-x="${i}" title="빼기">✕</span><span class="rz" data-rz="${i}" title="모서리를 끌어 칸 늘리기"></span></div>`; });
   const off = C.place.filter((p) => !S.mons.some((m) => m.id === p.mon)).length; if (off) h += `<div class="warn" style="position:absolute;left:8px;bottom:6px">⚠ 지금 연결 안 된 모니터에 놓은 것 ${off}곳(그대로 둠 · 그 모니터가 연결되면 놓음)</div>`;
   map.innerHTML = h;
   $$('.blk', map).forEach((b) => { b.onpointerdown = (e) => { if (e.target.dataset.x != null) return; if (e.target.dataset.rz != null) return startResize(e, +e.target.dataset.rz); startDrag(e, { kind: 'move', i: +b.dataset.i }); }; });
-  $$('.x', map).forEach((x) => { x.onclick = (e) => { e.stopPropagation(); C.place.splice(+x.dataset.x, 1); paintSet(); }; }); }
+  $$('.x', map).forEach((x) => { x.onclick = (e) => { e.stopPropagation(); const gone = C.place.splice(+x.dataset.x, 1)[0]; if (gone && gone.id === selP) selP = null; paintSet(); paintDetail(); }; }); }
 function paintMonOpts() { $('#monopts').innerHTML = S.mons.map((m, i) => { const o = (C.mons[m.id] || {}).grid || 'auto'; const isC = typeof o === 'object'; const g = gridFor(m);
   return `<div class="mo" data-mon="${esc(m.id)}"><b>${i + 1}번</b><select data-k="grid">${G.PRESETS.map((p) => `<option value="${p.v}"${(isC ? 'custom' : o) === p.v ? ' selected' : ''}>${p.t}</option>`).join('')}</select>${isC ? `<input data-k="cols" type="number" min="1" max="24" value="${g.cols}">×<input data-k="rows" type="number" min="1" max="24" value="${g.rows}">` : ''}<span class="mute">${g.cols}×${g.rows}</span></div>`; }).join('');
   $$('#monopts .mo').forEach((d) => { const id = d.dataset.mon; const m = S.mons.find((x) => x.id === id);
@@ -197,9 +228,9 @@ function startDrag(e, D) { e.preventDefault(); const a = D.kind === 'new' ? C.ap
   const mv = (ev) => { if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return; if (!moved) { moved = true; g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = `<span class="ic">${appIcon(a)}</span>${esc(a.name)}`; document.body.appendChild(g); }
     g.style.left = ev.clientX + 8 + 'px'; g.style.top = ev.clientY + 8 + 'px'; const c = cellUnder(ev.clientX, ev.clientY); if (hot !== c) { if (hot) hot.classList.remove('hot'); hot = c; if (hot) hot.classList.add('hot'); } };
   const up = (ev) => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); if (g) g.remove(); if (hot) hot.classList.remove('hot');
-    if (!moved) { if (D.kind === 'new') { sel = D.app; paintApps(); paintDetail(); } else { sel = C.place[D.i].app; paintApps(); paintDetail(); } return; }
+    if (!moved) { if (D.kind === 'new') { sel = D.app; selP = null; } else { selP = C.place[D.i].id; sel = null; } paintApps(); paintMap(); paintDetail(); return; }
     const c = cellUnder(ev.clientX, ev.clientY); if (!c) return; const mon = c.dataset.mon, cc = +c.dataset.c, rr = +c.dataset.r; const m = S.mons.find((x) => x.id === mon); const gr = gridFor(m);
-    if (D.kind === 'new') { const np = { app: a.id, mon, c: cc, r: rr, w: 1, h: 1 }; if (!free(np, -1)) return toast('그 칸에는 이미 다른 것이 있습니다 — 한 칸에 하나'); C.place.push(np); sel = a.id; }
+    if (D.kind === 'new') { const n = C.place.filter((p) => p.app === a.id).length; const np = { id: newPid(), app: a.id, name: n ? `${a.name} ${n + 1}` : '', o: AP.newInstO(a), mon, c: cc, r: rr, w: 1, h: 1 }; if (!free(np, -1)) return toast('그 칸에는 이미 다른 것이 있습니다 — 한 칸에 하나'); C.place.push(np); selP = np.id; sel = null; }
     else { const p = C.place[D.i]; const np = { ...p, mon, c: cc, r: rr, w: Math.min(p.w, gr.cols - cc), h: Math.min(p.h, gr.rows - rr) }; if (!free(np, D.i)) return toast('그 자리에는 이미 다른 것이 있습니다'); C.place[D.i] = np; }
     paintSet(); paintDetail(); };
   document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); }
@@ -209,27 +240,46 @@ function startResize(e, i) { e.preventDefault(); e.stopPropagation(); const p = 
     if (!free(np, i)) return; p.w = np.w; p.h = np.h; const t = V.T(G.cellRect(m, gr, p.c, p.r, p.w, p.h)); Object.assign(blk.style, { left: t.x + 2 + 'px', top: t.y + 2 + 'px', width: t.w - 4 + 'px', height: t.h - 4 + 'px' }); };
   const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); paintSet(); };
   document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); }
-/* 세부 설정 */
-function paintDetail() { const el = $('#detail'); const a = C && C.apps.find((x) => x.id === sel); if (!a) { el.className = 'mute'; return; } el.className = '';
-  const k = AP.keyOf(a); const auto = S.found[k] || ''; const F = (id, lab, v, ph, ty) => `<label>${lab}</label>${ty === 'ta' ? `<textarea data-f="${id}" placeholder="${esc(ph || '')}">${esc(v || '')}</textarea>` : `<input data-f="${id}" value="${esc(v || '')}" placeholder="${esc(ph || '')}">`}`;
-  const prof = () => `<label>크롬 프로필</label><select data-f="profile"><option value="">기본(마지막에 쓴 프로필)</option>${(S.profiles || []).map((p) => `<option value="${esc(p.dir)}"${a.profile === p.dir ? ' selected' : ''}>${esc(p.name)} (${esc(p.dir)})</option>`).join('')}</select>`;
-  let h = `<h2 style="display:flex;gap:6px;align-items:center"><span class="ic">${appIcon(a)}</span>${esc(a.name)} <span class="mute" style="font-weight:normal;font-size:11px">${esc(AP.KINDS[a.kind])}</span></h2>` + F('name', '이름', a.name);
-  if (a.kind === 'chrome') h += F('urls', '주소(한 줄에 하나 — 한 창에 탭으로 엶)', (a.urls || []).join('\n'), 'https://readnow.kr/app/', 'ta') + `<label>창 몇 개(놓은 칸을 나눠 씀)</label><input data-f="windows" type="number" min="1" max="8" value="${a.windows || 1}">` + prof() + '<div class="mute" style="margin-top:6px;font-size:11.5px">이미 떠 있는 크롬 창(리드나우 웹앱·수집기)은 옮기지 않고, 언제나 새 창을 열어 놓습니다.</div>';
-  if (a.kind === 'web' || a.kind === 'crd') h += F('url', '주소(크롬 앱 창으로 엶)', a.url, 'https://') + prof();
-  if (a.kind === 'folder') h += F('path', '폴더 경로', a.path, 'D:\\ReadNow');
+/* 세부 설정 — 배치(칸의 덩이)를 고르면 그 배치만의 설정, 틀(목록)을 고르면 놓을 때 처음 값 */
+const newPid = () => { let i = 1; while (C.place.some((p) => p.id === 'p' + i)) i++; return 'p' + i; };
+function paintDetail() { const el = $('#detail'); const p = C && selP ? C.place.find((x) => x.id === selP) : null; const a = C && (p ? C.apps.find((x) => x.id === p.app) : C.apps.find((x) => x.id === sel));
+  if (!a) { el.className = 'mute'; el.innerHTML = HINT; return; } el.className = '';
+  const o = p ? p.o || (p.o = {}) : a; /* 값이 사는 곳 */ const ph = (f) => (p && a[f] != null && !Array.isArray(a[f]) ? '틀: ' + a[f] : '');
+  const k = AP.keyOf(a); const auto = S.found[k] || ''; const F = (id, lab, v, place, ty) => `<label>${lab}</label>${ty === 'ta' ? `<textarea data-f="${id}" placeholder="${esc(place || '')}">${esc(v || '')}</textarea>` : `<input data-f="${id}" value="${esc(v || '')}" placeholder="${esc(place || ph(id) || '')}">`}`;
+  const prof = () => `<label>크롬 프로필</label><select data-f="profile"><option value="">기본(마지막에 쓴 프로필)</option>${(S.profiles || []).map((x) => `<option value="${esc(x.dir)}"${o.profile === x.dir ? ' selected' : ''}>${esc(x.name)} (${esc(x.dir)})</option>`).join('')}</select>`;
+  /* 탭 목록(순서 있음) — ＋ 추가 · ↑↓ 순서 · ✕ */
+  const tabsEd = (f, lab, place) => { if (!Array.isArray(o[f])) o[f] = Array.isArray(a[f]) ? a[f].slice() : []; const L = o[f];
+    return `<label>${lab}</label><div class="tabs" data-tabs="${f}">${L.map((v, i) => `<div class="tab"><span class="tn">${i + 1}</span><input data-ti="${i}" value="${esc(v)}" placeholder="${esc(place)}"><button data-up="${i}" title="앞으로"${i ? '' : ' disabled'}>↑</button><button data-dn="${i}" title="뒤로"${i < L.length - 1 ? '' : ' disabled'}>↓</button><button data-rm="${i}" title="빼기">✕</button></div>`).join('')}<button data-add="1">＋ 탭 추가</button></div>`; };
+  const pos = p ? (() => { const mi = S.mons.findIndex((m) => m.id === p.mon); return `${mi >= 0 ? mi + 1 + '번 모니터' : '연결 안 된 모니터'} · 칸 ${p.c + 1},${p.r + 1}${p.w > 1 || p.h > 1 ? ` · ${p.w}×${p.h}칸` : ''}`; })() : '';
+  let h = `<h2 style="display:flex;gap:6px;align-items:center"><span class="ic">${appIcon(a)}</span>${p ? '📍 ' : '📋 '}${esc(p ? p.name || a.name : a.name)} <span class="mute" style="font-weight:normal;font-size:11px">${esc(AP.KINDS[a.kind])}</span></h2>` +
+    `<div class="hd">${p ? `이 배치만의 설정 · ${esc(pos)} · 틀: ${esc(a.name)}` : '틀 — 칸에 놓을 때 이 값으로 시작합니다(이미 놓은 배치는 그대로 · 칸의 덩이를 누르면 그 배치 설정)'}</div>` +
+    (p ? `<label>이름</label><input data-f="name" value="${esc(p.name || '')}" placeholder="${esc(a.name)}">` : F('name', '이름', a.name));
+  if (a.kind === 'chrome') h += tabsEd('urls', '탭(한 창에 이 순서로 엶)', 'https://…') + `<label>창 몇 개(놓은 칸을 나눠 씀 · 창마다 같은 탭)</label><input data-f="windows" type="number" min="1" max="8" value="${o.windows || 1}">` + prof() + '<div class="mute" style="margin-top:6px;font-size:11.5px">이미 떠 있는 크롬 창(리드나우 웹앱·수집기)은 옮기지 않고, 언제나 새 창을 열어 놓습니다.</div>';
+  if (a.kind === 'web' || a.kind === 'crd') h += F('url', '주소(크롬 앱 창으로 엶)', o.url, 'https://') + prof();
+  if (a.kind === 'folder') h += tabsEd('paths', '폴더(한 창에 탭으로 · 위에서부터 차례)', 'D:\\ReadNow\\…') + `<div class="mute" style="margin-top:6px;font-size:11.5px">${S.build && S.build < 22621 ? `이 PC 윈도우(빌드 ${S.build})에는 탐색기 탭이 없어(윈도우 10 · 윈도우 11 22H2 전) 둘째 폴더부터는 같은 칸에 창을 겹쳐 놓습니다.` : '윈도우 11: 첫 폴더 창을 연 뒤 Ctrl+T로 탭을 더합니다(그동안 키보드·마우스를 잠깐 멈춰 주세요). 안 되면 같은 칸에 창을 겹쳐 놓고 기록에 알립니다. 윈도우 10은 탭이 없어 겹쳐 놓습니다.'}</div>`;
   if (a.kind === 'phone') h += '<div class="mute" style="margin-top:6px">윈도우 「휴대폰과 연결」 앱을 켜서 놓습니다(따로 설정 없음).</div>';
-  if (a.kind === 'claude') h += `<label>모드</label><select data-f="mode"><option value="chat"${a.mode !== 'code' ? ' selected' : ''}>채팅</option><option value="code"${a.mode === 'code' ? ' selected' : ''}>코드</option></select>` + F('room', a.mode === 'code' ? '코드 세션 주소(https://claude.ai/code/…) — 비우면 새 세션' : '열 대화 방(claude.ai 대화 주소) — 비우면 새 대화', a.room, 'https://claude.ai/chat/…') + (a.mode === 'code' ? F('folder', '새 코드 세션 작업 폴더(선택)', a.folder, 'D:\\ReadNow\\…') : '') + F('artifact', '아티팩트 주소(선택 — 같은 칸을 나눠 크롬 앱 창으로)', a.artifact, 'https://claude.ai/…') +
-    `<label>여는 길</label><select data-f="how"><option value="app"${a.how !== 'web' ? ' selected' : ''}>Claude 데스크톱 앱(claude:// 링크)</option><option value="web"${a.how === 'web' ? ' selected' : ''}>크롬 앱 창(claude.ai)</option></select><div class="mute" style="font-size:11.5px;margin-top:4px">데스크톱 앱은 채팅 방(claude://claude.ai/chat/…)·새 코드 세션은 바로 열 수 있지만, 이미 있는 코드 세션·아티팩트를 여는 링크가 없어 그건 크롬 앱 창으로 엽니다.</div>`;
-  if (a.kind === 'exe') h += F('exe', '실행 파일 경로', a.exe, auto ? '자동으로 찾음: ' + auto : '못 찾음 — 경로를 붙여 넣어 주세요') + `<div class="mute" style="font-size:11.5px">${auto && !a.exe ? '✓ 자동으로 찾은 경로를 씁니다' : a.exe ? '' : '탐색기에서 파일을 Shift+오른쪽 단추 → 「경로로 복사」 뒤 붙여 넣기'}</div>` + F('file', '같이 열 파일(선택)', a.file, 'D:\\…\\파일.xlsx');
-  h += `<div style="display:flex;gap:6px;margin-top:10px"><button id="dDel">🗑 목록에서 빼기</button></div>`;
+  if (a.kind === 'col2') h += '<div class="mute" style="margin-top:6px">번외 수집기의 📊 상태 창(옆 창 · 포트 8797)을 놓습니다. 이미 떠 있으면 새로 안 띄우고 자리만 옮기고, 없으면 번외 도우미가 쓰는 것과 같은 크롬 창으로 엽니다(번외 도우미가 꺼져 있으면 빈 창).</div>';
+  if (a.kind === 'alps') h += '<div class="mute" style="margin-top:6px">ALPS 도우미 창(인쇄 도우미 8898의 ALPS 화면)을 놓습니다. 이미 떠 있으면 새로 안 띄우고 자리만 옮기고, 없으면 인쇄 도우미가 쓰는 것과 같은 크롬 창으로 엽니다(ALPS는 MJ-MAIN에서만 씀).</div>';
+  if (a.kind === 'claude') h += `<label>모드</label><select data-f="mode"><option value="chat"${o.mode !== 'code' ? ' selected' : ''}>채팅</option><option value="code"${o.mode === 'code' ? ' selected' : ''}>코드</option></select>` + F('room', o.mode === 'code' ? '코드 세션 주소(https://claude.ai/code/…) — 비우면 새 세션' : '열 대화 방(claude.ai 대화 주소) — 비우면 새 대화', o.room, 'https://claude.ai/chat/…') + (o.mode === 'code' ? F('folder', '새 코드 세션 작업 폴더(선택)', o.folder, 'D:\\ReadNow\\…') : '') + F('artifact', '아티팩트 주소(선택 — 같은 칸을 나눠 크롬 앱 창으로)', o.artifact, 'https://claude.ai/…') +
+    `<label>여는 길</label><select data-f="how"><option value="app"${o.how !== 'web' ? ' selected' : ''}>Claude 데스크톱 앱(claude:// 링크)</option><option value="web"${o.how === 'web' ? ' selected' : ''}>크롬 앱 창(claude.ai)</option></select><div class="mute" style="font-size:11.5px;margin-top:4px">데스크톱 앱은 채팅 방(claude://claude.ai/chat/…)·새 코드 세션은 바로 열 수 있지만, 이미 있는 코드 세션·아티팩트를 여는 링크가 없어 그건 크롬 앱 창으로 엽니다.</div>`;
+  if (a.kind === 'exe') { const tplExe = p ? a.exe : ''; h += F('exe', '실행 파일 경로', o.exe, tplExe ? '틀: ' + tplExe : auto ? '자동으로 찾음: ' + auto : '못 찾음 — 경로를 붙여 넣어 주세요') + `<div class="mute" style="font-size:11.5px">${(auto || tplExe) && !o.exe ? '✓ ' + (tplExe ? '틀의 경로' : '자동으로 찾은 경로') + '를 씁니다' : o.exe ? '' : '탐색기에서 파일을 Shift+오른쪽 단추 → 「경로로 복사」 뒤 붙여 넣기'}</div>` + F('file', '같이 열 파일(선택)', o.file, 'D:\\…\\파일.xlsx'); }
+  h += `<div style="display:flex;gap:6px;margin-top:10px">${p ? '<button id="dDelP">🗑 이 배치 빼기</button>' : '<button id="dDel">🗑 목록에서 빼기</button>'}</div>`;
   el.innerHTML = h;
-  $$('[data-f]', el).forEach((x) => { x.oninput = x.onchange = () => { const f = x.dataset.f; let v = x.value; if (f === 'urls') v = v.split(/\s+/).filter(Boolean); if (f === 'windows') v = Math.max(1, Math.min(8, +v || 1)); a[f] = v; if (f === 'name') paintApps(); if (f === 'mode' && x.tagName === 'SELECT') paintDetail(); if (f === 'windows') paintMap(); }; });
-  $('#dDel').onclick = () => twice($('#dDel'), '한 번 더 누르면 빼고, 놓은 자리도 지웁니다', () => { C.apps = C.apps.filter((x) => x.id !== a.id); C.place = C.place.filter((p) => p.app !== a.id); sel = null; paintSet(); paintDetail(); }); }
+  $$('[data-f]', el).forEach((x) => { x.oninput = x.onchange = () => { const f = x.dataset.f; let v = x.value; if (f === 'windows') v = Math.max(1, Math.min(8, +v || 1));
+    if (f === 'name') { if (p) p.name = v; else a.name = v; paintApps(); paintMap(); return; } o[f] = v; if (f === 'mode' && x.tagName === 'SELECT') paintDetail(); if (f === 'windows') paintMap(); }; });
+  $$('[data-tabs]', el).forEach((box) => { const f = box.dataset.tabs; const L = o[f];
+    $$('[data-ti]', box).forEach((x) => { x.oninput = () => { L[+x.dataset.ti] = x.value; }; });
+    $$('[data-up]', box).forEach((b) => { b.onclick = () => { const i = +b.dataset.up; if (i > 0) { [L[i - 1], L[i]] = [L[i], L[i - 1]]; paintDetail(); } }; });
+    $$('[data-dn]', box).forEach((b) => { b.onclick = () => { const i = +b.dataset.dn; if (i < L.length - 1) { [L[i + 1], L[i]] = [L[i], L[i + 1]]; paintDetail(); } }; });
+    $$('[data-rm]', box).forEach((b) => { b.onclick = () => { L.splice(+b.dataset.rm, 1); paintDetail(); }; });
+    $('[data-add]', box).onclick = () => { L.push(''); paintDetail(); const ins = $$(`[data-tabs="${f}"] [data-ti]`); if (ins.length) ins[ins.length - 1].focus(); }; });
+  if ($('#dDelP')) $('#dDelP').onclick = () => { C.place = C.place.filter((x) => x.id !== p.id); selP = null; paintSet(); paintDetail(); };
+  if ($('#dDel')) $('#dDel').onclick = () => twice($('#dDel'), '한 번 더 누르면 빼고, 그 틀로 놓은 배치도 지웁니다', () => { C.apps = C.apps.filter((x) => x.id !== a.id); C.place = C.place.filter((x) => x.app !== a.id); sel = null; paintSet(); paintDetail(); }); }
 function newId(base) { let i = 1; while (C.apps.some((a) => a.id === base + i)) i++; return base + i; }
-function addApp(a) { C.apps.push(a); sel = a.id; paintApps(); paintDetail(); const el = $(`.app[data-app="${a.id}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); return a; }
+function addApp(a) { C.apps.push(a); sel = a.id; selP = null; paintApps(); paintDetail(); const el = $(`.app[data-app="${a.id}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); return a; }
 $('#addChrome').onclick = () => addApp({ id: newId('chrome'), kind: 'chrome', name: '크롬 ' + (C.apps.filter((a) => a.kind === 'chrome').length + 1), icon: '🌐', urls: [], windows: 1, profile: '' });
 $('#addWeb').onclick = () => addApp({ id: newId('web'), kind: 'web', name: '웹 주소 창', icon: '🔗', url: '' });
-$('#addFolder').onclick = () => addApp({ id: newId('folder'), kind: 'folder', name: '폴더', icon: '📁', path: '' });
+$('#addFolder').onclick = () => addApp({ id: newId('folder'), kind: 'folder', name: '폴더', icon: '📁', paths: [] });
 $('#addExe').onclick = () => addApp({ id: newId('exe'), kind: 'exe', name: '프로그램', icon: '🧩', exe: '', file: '' });
 /* 탐색기에서 끌어다 놓기 — .lnk는 도우미가 대상 경로를 풀고, .exe는 이름으로 찾음(브라우저는 파일 경로를 알려 주지 않음) */
 { const el = $('#apps'); const on = (e) => { if ([...(e.dataTransfer && e.dataTransfer.types) || []].includes('Files')) { e.preventDefault(); el.classList.add('drop'); } };
@@ -239,7 +289,7 @@ $('#addExe').onclick = () => addApp({ id: newId('exe'), kind: 'exe', name: '프�
 async function dropFile(f) { const n = f.name; const base = n.replace(/\.(exe|lnk)$/i, '');
   if (/\.lnk$/i.test(n)) { if (f.size > 200 * 1024) return toast('바로가기 파일이 너무 큼'); const b64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.readAsDataURL(f); });
     const r = await api('/api/lnk', { name: n, b64 }); if (!r.ok || !r.target) return toast('바로가기를 못 풀었습니다: ' + (r.err || '')); if (r.icon) S.icons[r.target] = r.icon;
-    if (!/\.exe$/i.test(r.target)) { if (!/\./.test(r.target.split('\\').pop())) { addApp({ id: newId('folder'), kind: 'folder', name: r.name || base, icon: '📁', path: r.target }); return toast('폴더로 더했습니다'); } return toast('프로그램이 아닌 바로가기(' + r.target.split('\\').pop() + ')'); }
+    if (!/\.exe$/i.test(r.target)) { if (!/\./.test(r.target.split('\\').pop())) { addApp({ id: newId('folder'), kind: 'folder', name: r.name || base, icon: '📁', paths: [r.target] }); return toast('폴더로 더했습니다'); } return toast('프로그램이 아닌 바로가기(' + r.target.split('\\').pop() + ')'); }
     addApp({ id: newId('exe'), kind: 'exe', name: r.name || base, icon: '🧩', exe: r.target, file: '' }); return toast('더했습니다: ' + (r.name || base)); }
   if (/\.exe$/i.test(n)) { const a = addApp({ id: newId('exe'), kind: 'exe', name: base, icon: '🧩', exe: '', file: '' }); const r = await api('/api/exe', { name: n });
     if (r.ok && r.list && r.list[0]) { a.exe = r.list[0]; if (r.icon) S.icons[a.exe] = r.icon; paintApps(); paintDetail(); return toast('더했습니다: ' + base + '\n' + a.exe); }
@@ -280,6 +330,7 @@ $('#clBack').onclick = () => { show('home'); fit('home'); };
 
 /* 창이 떠 있다고 도우미에게 알림(창을 닫고 오래 지나면 도우미가 스스로 꺼짐) */
 setInterval(() => { fetch('/api/ping').catch(() => {}); }, 60000);
+$('#detail').innerHTML = HINT;
 load();
 </script>
 </body>

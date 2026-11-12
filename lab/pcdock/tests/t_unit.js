@@ -1,7 +1,7 @@
 /* t_unit — 칸 셈(여러 모니터 비율 → 칸 수) · 설정 검사 · 실행 계획 · 정리 보호 목록 (실행 없이 셈만)
  * 실행: node lab/pcdock/tests/t_unit.js */
 'use strict';
-const G = require('../grid.js'), SET = require('../settings.js'), A = require('../apps.js'), CL = require('../clean.js');
+const G = require('../grid.js'), SET = require('../settings.js'), A = require('../apps.js'), CL = require('../clean.js'), CP = require('../closeplan.js');
 let bad = 0, n = 0; const ok = (c, m, x) => { n++; if (c) console.log('  ✓ ' + m); else { bad++; console.log('  ✗ ' + m + (x !== undefined ? ' — ' + JSON.stringify(x) : '')); } };
 const M = (w, h, x, y, dpi, id) => ({ id: id || 'M' + w, b: { x: x || 0, y: y || 0, w, h }, wa: { x: x || 0, y: y || 0, w, h: h - 40 }, dpi: dpi || 96 });
 const g = (m, o, b) => { const r = G.gridOf(m, o, b); return r.cols + 'x' + r.rows; };
@@ -35,7 +35,7 @@ ok(G.scaleOf({ dpi: 144 }) === 150 && G.scaleOf({ dpi: 96 }) === 100, '배율 % 
 
 console.log('③ 설정 검사(저장 전)');
 const mons = [M(1920, 1080, 0, 0, 96, 'D1'), M(2560, 1080, 1920, 0, 96, 'D2')];
-{ const v = SET.validate(SET.defaults(), mons); ok(v.ok && v.cfg.apps.length === 10 && v.cfg.mons.D1.cols === 4 && v.cfg.mons.D2.cols === 5, '기본 설정 — 프로그램 열 가지 · 모니터 칸 수 채움', v.errs); }
+{ const v = SET.validate(SET.defaults(), mons); ok(v.ok && v.cfg.apps.length === 12 && v.cfg.apps.some((a) => a.kind === 'col2') && v.cfg.apps.some((a) => a.kind === 'alps') && v.cfg.mons.D1.cols === 4 && v.cfg.mons.D2.cols === 5, '기본 설정 — 프로그램 열두 가지(번외 수집기·ALPS 도우미 더함) · 모니터 칸 수 채움', v.errs); }
 { const c = SET.defaults(); c.apps[0].password = 'x'; const v = SET.validate(c, mons); ok(!v.ok && v.errs.some((e) => /비밀값/.test(e)), '비밀번호 같은 칸은 저장 거절'); }
 { const c = SET.defaults(); c.apps[0].urls = ['javascript:alert(1)']; ok(!SET.validate(c, mons).ok, 'http(s) 아닌 주소 거절'); }
 { const c = SET.defaults(); c.place = [{ app: 'chrome', mon: 'D1', c: 0, r: 0, w: 2, h: 2 }, { app: 'kakao', mon: 'D1', c: 1, r: 1, w: 1, h: 1 }]; const v = SET.validate(c, mons); ok(!v.ok && v.errs.some((e) => /한 칸에 둘/.test(e)), '겹쳐 놓기 거절(한 칸에 하나)'); }
@@ -58,6 +58,52 @@ console.log('④ 실행 계획');
 { const U = A.claudeUrls({ mode: 'code', room: 'https://claude.ai/code/session_01ABC', artifact: 'https://claude.ai/artifact/x1' }); ok(!U.uri && U.web.length === 2, '이미 있는 코드 세션·아티팩트는 크롬 앱 창으로(claude:// 링크가 없음)', U);
   const U2 = A.claudeUrls({ mode: 'code', folder: 'D:\\ReadNow' }); ok(U2.uri === 'claude://code/new?folder=D%3A%5CReadNow', '새 코드 세션 — claude://code/new?folder=', U2);
   const U3 = A.claudeUrls({ mode: 'chat', how: 'web', room: '0b9f3a10-1111-2222-3333-444455556666' }); ok(!U3.uri && U3.web[0] === 'https://claude.ai/chat/0b9f3a10-1111-2222-3333-444455556666', '웹으로 열기를 고르면 claude.ai 주소', U3); }
+
+console.log('④-2 배치마다 자기 설정(인스턴스) · 탭 순서 · 예전 설정 옮기기');
+{ const c = SET.defaults(); c.place = [
+    { id: 'p1', app: 'chrome', name: 'A 크롬', o: { urls: ['https://a.kr/1', 'https://a.kr/2', 'https://a.kr/3'] }, mon: 'D1', c: 0, r: 0, w: 1, h: 1 },
+    { id: 'p2', app: 'chrome', name: 'B 크롬', o: { urls: ['https://b.kr/'] }, mon: 'D1', c: 1, r: 0, w: 1, h: 1 },
+    { id: 'p3', app: 'folder', name: '스크린샷', o: { paths: ['D:\\Shots'] }, mon: 'D1', c: 2, r: 0, w: 1, h: 1 },
+    { id: 'p4', app: 'folder', name: '다운로드', o: { paths: ['C:\\Users\\u\\Downloads', 'D:\\ReadNow\\출고', 'D:\\ReadNow\\사진'] }, mon: 'D1', c: 3, r: 0, w: 1, h: 1 }];
+  const v = SET.validate(c, mons); ok(v.ok && !v.migrated && v.cfg.place.length === 4 && v.cfg.place[0].o.urls.length === 3 && v.cfg.place[1].o.urls[0] === 'https://b.kr/', '같은 틀(크롬·폴더)로 놓은 배치 둘이 서로 다른 설정을 가짐', v.errs);
+  const P = A.buildPlan(v.cfg, mons, { 'chrome.exe': 'C:\\chrome.exe' }, G); const ch = P.steps.filter((s) => s.app === 'chrome');
+  ok(ch.length === 2 && ch[0].inst === 'p1' && ch[0].name === 'A 크롬' && ch[0].launch.args.join(' ') === '--new-window https://a.kr/1 https://a.kr/2 https://a.kr/3' && ch[1].launch.args.join(' ') === '--new-window https://b.kr/', '크롬 — 배치마다 자기 주소 · 한 창에 탭이 그 순서로(--new-window 주소1 주소2 주소3)', ch.map((x) => x.launch.args));
+  const fo = P.steps.filter((s) => s.app === 'folder'); ok(fo.length === 2 && fo[0].launch.args[0] === 'D:\\Shots' && !fo[0].tabs && fo[1].launch.args[0] === 'C:\\Users\\u\\Downloads' && fo[1].tabs.map((t) => t.leaf).join() === '출고,사진' && fo[1].tabs[0].path === 'D:\\ReadNow\\출고', '폴더 — 배치마다 자기 폴더 · 첫 폴더로 창을 열고 나머지는 차례대로 탭(출고 → 사진)', fo.map((x) => [x.launch.args, x.tabs]));
+  ok(fo[1].reuse === false && fo[1].match.fresh === true && fo[0].reuse === true, '탭이 여럿인 폴더는 언제나 새 창(떠 있는 창에 탭을 거듭 더하지 않음)');
+  const c2 = JSON.parse(JSON.stringify(v.cfg)); const L = c2.place[3].o.paths; [L[1], L[2]] = [L[2], L[1]]; const P2 = A.buildPlan(SET.validate(c2, mons).cfg, mons, {}, G); ok(P2.steps.find((s) => s.inst === 'p4').tabs.map((t) => t.leaf).join() === '사진,출고', '탭 순서를 바꾸면(↑↓) 계획도 그 순서'); }
+{ const c = SET.defaults(); c.place = [{ id: 'p1', app: 'kakao', o: {}, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]; c.apps.find((a) => a.id === 'kakao').exe = 'C:\\K\\KakaoTalk.exe';
+  const P = A.buildPlan(SET.validate(c, mons).cfg, mons, {}, G); ok(P.steps[0] && P.steps[0].launch.file === 'C:\\K\\KakaoTalk.exe', '배치의 빈 칸은 틀의 값을 씀(틀에 넣은 실행 파일 경로)'); }
+{ /* 0.1.0 설정(v:1) — 배치에 자기 설정 없음 · 폴더는 path 하나 · 번외·ALPS 틀 없음 */
+  const old = { v: 1, base: G.BASE, mons: { D1: { grid: 'auto', w: 1920, h: 1080 } }, apps: SET.defaults().apps.filter((a) => a.kind !== 'col2' && a.kind !== 'alps').map((a) => a.kind === 'folder' ? { id: a.id, kind: 'folder', name: a.name, icon: a.icon, path: 'D:\\ReadNow' } : a),
+    place: [{ app: 'chrome', mon: 'D1', c: 0, r: 0, w: 1, h: 1 }, { app: 'chrome', mon: 'D1', c: 1, r: 0, w: 1, h: 1 }, { app: 'folder', mon: 'D1', c: 2, r: 0, w: 1, h: 1 }], auto: { on: true, delaySec: 20 }, run: { waitSec: 40, reuse: true }, clean: { keep: [] } };
+  const v = SET.validate(old, mons); ok(v.ok && v.migrated && v.cfg.v === 2 && v.cfg.place.map((p) => p.id).join() === 'p1,p2,p3', '예전 설정 → 배치마다 이름표(p1·p2·p3)를 붙여 옮김', v.errs);
+  ok(v.cfg.place[0].o.urls[0] === 'https://readnow.kr/app/' && v.cfg.place[0].o.urls !== v.cfg.place[1].o.urls && v.cfg.place[2].o.paths[0] === 'D:\\ReadNow' && v.cfg.apps.find((a) => a.kind === 'folder').paths[0] === 'D:\\ReadNow', '틀의 값을 배치마다 따로 복사 · 폴더 path → paths');
+  ok(v.cfg.apps.some((a) => a.kind === 'col2') && v.cfg.apps.some((a) => a.kind === 'alps') && v.cfg.auto.on === true, '옮길 때 새 틀(번외·ALPS)을 더하고 나머지 설정은 그대로');
+  ok(!SET.validate(v.cfg, mons).migrated, '옮긴 뒤 다시 읽으면 또 옮기지 않음'); }
+{ const c = SET.defaults(); c.place = [{ id: 'p1', app: 'folder', o: { paths: ['D:\\a', '..\\x'] }, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]; ok(!SET.validate(c, mons).ok, '배치의 폴더 경로도 꼴 검사'); c.place[0].o = { paths: ['D:\\a'], token: 'x' }; ok(!SET.validate(c, mons).ok, '배치 설정에도 비밀값 칸 거절'); }
+{ const c = SET.validate(SET.defaults(), mons).cfg; c.place = [{ id: 'p1', app: 'col2', o: {}, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }, { id: 'p2', app: 'alps', o: {}, mon: 'D1', c: 1, r: 0, w: 1, h: 1 }];
+  const P = A.buildPlan(c, mons, { 'chrome.exe': 'C:\\chrome.exe' }, G); const c2 = P.steps.find((s) => s.app === 'col2'), al = P.steps.find((s) => s.app === 'alps');
+  ok(c2 && c2.reuse && !c2.match.fresh && /번외 수집기/.test(c2.match.title) && c2.launch.args.includes('--app=http://127.0.0.1:8797/') && c2.launch.args.some((x) => /col2-stat-chrome$/.test(x)) && c2.launch.expand, '번외 수집기 — 떠 있으면(제목) 자리만 · 없으면 번외 도우미와 같은 프로필·상태 창 주소', c2);
+  ok(al && al.reuse && /ALPS 도우미/.test(al.match.title) && al.launch.args.includes('--app=http://127.0.0.1:8898/alps') && al.launch.args.some((x) => /print\\chrome-alpswin$/.test(x)), 'ALPS 도우미 — 떠 있으면 자리만 · 없으면 인쇄 도우미와 같은 프로필·/alps', al); }
+{ const k = A.CATALOG.find((c) => c.id === 'kakao').find; ok(k.paths[0] === '%LOCALAPPDATA%\\Kakao\\KakaoTalk\\KakaoTalk.exe' && k.paths.includes('%ProgramFiles(x86)%\\Kakao\\KakaoTalk\\KakaoTalk.exe') && k.lnk.includes('카카오톡') && k.uninst.length, '카카오톡 찾는 자리 — %LOCALAPPDATA% · Program Files (x86) · 설치 목록 · 시작 메뉴 바로가기');
+  ok(A.findHints(SET.defaults().apps).find((h) => h.key === 'KakaoTalk.exe').uninst.includes('KakaoTalk'), 'PowerShell 찾기 단서에 설치 목록 이름도 넘김'); }
+
+console.log('④-3 사람이 알아듣는 말');
+{ const c = SET.validate(SET.defaults(), mons).cfg; c.place = [{ id: 'p1', app: 'kakao', o: {}, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]; const P = A.buildPlan(c, mons, {}, G);
+  ok(P.skipped[0].app === '카카오톡' && /실행 파일을 못 찾음/.test(P.skipped[0].why) && /①/.test(P.skipped[0].todo) && /경로/.test(P.skipped[0].todo), '건너뛴 까닭 + 할 일(①에서 경로 넣기)', P.skipped);
+  const f = A.friendly({ name: '워드', ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' }); ok(/^워드: 켜지 못함 → /.test(f.msg) && /지정된 파일/.test(f.raw), '켜기 실패 — 사람 말 + 원문은 따로(접어 둠)', f);
+  const f2 = A.friendly({ name: '번외 수집기', ok: false, how: '창을 못 찾음(40초)', helper: 'col2' }); ok(/제때 안 보임/.test(f2.msg) && /도우미가 꺼져/.test(f2.msg), '창을 못 찾음 — 도우미 창이면 꺼져 있을 수 있다고');
+  const e = A.friendlyErr("단추 [System.Management.Automation.PSObject]에 이름이 'op_Addition'인 메서드가 없으므로 메서드를 호출하지 못했습니다."); ok(/PowerShell/.test(e.msg) && /op_Addition/.test(e.raw) && !/op_Addition/.test(e.msg), '전체가 멈춘 원문(op_Addition)은 접어 두고 사람 말로', e); }
+
+console.log('④-4 ③ 모두 닫기 — 보호 목록');
+{ const W = [{ h: 1, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: 'Google - Chrome' }, { h: 2, pid: 11, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 웹앱' }, { h: 3, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
+    { h: 4, pid: 13, proc: 'explorer', cls: 'Progman', title: 'Program Manager' }, { h: 5, pid: 13, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드' }, { h: 6, pid: 14, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장' },
+    { h: 7, pid: 15, proc: 'mstsc', cls: 'TscShellContainerClass', title: '원격 데스크톱 연결' }, { h: 8, pid: 16, proc: 'AcroRd32', cls: 'AcrobatSDIWindow', title: '출고 라벨.pdf' }, { h: 9, pid: 17, proc: 'KakaoTalk', cls: 'EVA_Window', title: '카카오톡' },
+    { h: 10, pid: 18, proc: 'WindowsTerminal', cls: 'CASCADIA_HOSTING_WINDOW_CLASS', title: 'node' }, { h: 11, pid: 19, proc: 'EXCEL', cls: 'XLMAIN', title: '재고.xlsx - Excel' }, { h: 12, pid: 20, proc: 'Foo', cls: 'X', title: 'ALPS 송장' }];
+  const P = CP.plan(W, ['EXCEL']); const closeH = P.close.map((x) => x.h).sort((a, b) => a - b).join();
+  ok(closeH === '5,6,9', '닫을 것 = 폴더 창 · 메모장 · 카카오톡만', P.close);
+  ok(P.keep.length === 9 && ['chrome', 'claude', 'mstsc', 'WindowsTerminal'].every((p) => P.keep.some((k) => k.proc === p)), '크롬(모든 창)·Claude·원격 데스크톱·명령 창은 지킴', P.keep);
+  ok(P.keep.some((k) => k.proc === 'explorer' && /셸/.test(k.why)) && P.keep.some((k) => /출고/.test(k.title)) && P.keep.some((k) => k.proc === 'Foo') && P.keep.some((k) => k.proc === 'EXCEL' && /지키기로/.test(k.why)), '탐색기 셸 자체 · 출고·ALPS 제목 · 정리에서 지키기로 한 이름도 지킴'); }
 
 console.log('⑤ PC 정리 — 보호 목록');
 ok(['chrome', 'node', 'claude', 'remoting_host', 'MsMpEng', 'spoolsv', 'explorer'].every((x) => CL.isKept({ name: x + '.exe' })), '크롬·Node(번외·인쇄·로거 도우미)·Claude·원격 데스크톱·Defender·인쇄·탐색기는 언제나 보호');

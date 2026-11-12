@@ -7,7 +7,7 @@ const PW = process.env.PCDOCK_PW || '/opt/node-tools/node_modules/playwright';
 let bad = 0, n = 0; const ok = (c, m, x) => { n++; if (c) console.log('  ✓ ' + m); else { bad++; console.log('  ✗ ' + m + (x !== undefined ? ' — ' + JSON.stringify(x).slice(0, 400) : '')); } };
 const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'pcdock-shots-'));
 (async () => { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'pcdocku-')); const FAKE = path.join(__dirname, 'fakeps.js'); fs.chmodSync(FAKE, 0o755);
-  const env = { ...process.env, RN_PCDOCK_HOME: D, RN_PCDOCK_PS: FAKE, RN_PCDOCK_NOWIN: '1', RN_PCDOCK_NOUPDATE: '1', RN_PCDOCK_PORT: String(20000 + Math.floor(Math.random() * 20000)), FAKE_LOG: path.join(D, 'fake.log'), FAKE_STARTUP: path.join(D, 'startup.lnk') };
+  const env = { ...process.env, RN_PCDOCK_HOME: D, RN_PCDOCK_PS: FAKE, RN_PCDOCK_NOWIN: '1', RN_PCDOCK_NOUPDATE: '1', RN_PCDOCK_PORT: String(20000 + Math.floor(Math.random() * 20000)), FAKE_LOG: path.join(D, 'fake.log'), FAKE_STARTUP: path.join(D, 'startup.lnk'), FAKE_RUN_FAIL: 'kakao' };
   const sp = cp.spawn(process.execPath, [path.join(__dirname, '..', 'readnow-pcdock.js')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
   const port = await new Promise((res) => { let b = ''; sp.stdout.on('data', (d) => { b += d; const m = /PCDOCK_PORT=(\d+)/.exec(b); if (m) res(+m[1]); }); });
   const br = await require(PW).chromium.launch(); const errs = [];
@@ -32,7 +32,15 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await drag('.app[data-app="claude"]', await C(D3, 0, 0)); await drag('.blk[data-i="2"] .rz', await C(D3, 1, 1));
     await drag('.app[data-app="excel"]', await C(D1, 2, 0)); await drag('.blk[data-i="3"]', await C(D1, 3, 2)); ok((await pg.evaluate(() => C.place))[3].c === 3, '놓은 덩이를 끌어 다른 칸으로 옮김', await pg.evaluate(() => [C.place, document.querySelector("#toast").textContent]));
     await pg.click('.app[data-app="claude"]'); await pg.fill('[data-f=room]', 'https://claude.ai/chat/0b9f3a10-1111-2222-3333-444455556666'); ok(/claude:\/\//.test(await pg.textContent('#detail')), 'Claude 세부 설정(방 주소 · 여는 길)');
-    await pg.click('.app[data-app="chrome"]'); await pg.fill('[data-f=urls]', 'https://readnow.kr/app/\nhttps://readnow.kr/manual/');
+    /* 배치마다 자기 설정 — 칸의 크롬 덩이를 누르면 그 배치 설정 · 탭 ＋ 추가 · ↑ 순서 */
+    await pg.click('.blk[data-i="1"]'); ok(/이 배치만의 설정/.test(await pg.textContent('#detail')) && await pg.$('.blk[data-i="1"].sel'), '놓은 덩이를 누르면 그 배치의 설정 칸이 열림(덩이에 표시)');
+    await pg.fill('[data-tabs=urls] [data-ti="0"]', 'https://readnow.kr/manual/'); await pg.click('[data-tabs=urls] [data-add]'); await pg.fill('[data-tabs=urls] [data-ti="1"]', 'https://readnow.kr/app/');
+    await pg.click('[data-tabs=urls] [data-up="1"]'); ok(JSON.stringify(await pg.evaluate(() => C.place[1].o.urls)) === JSON.stringify(['https://readnow.kr/app/', 'https://readnow.kr/manual/']), '탭 ＋ 추가 · ↑로 순서 바꿈', await pg.evaluate(() => C.place[1].o.urls));
+    /* 같은 틀(크롬)을 한 번 더 놓으면 새 배치(따로 설정) */
+    await drag('.app[data-app="chrome"]', await C(D2, 0, 0)); ok(/크롬 2/.test(await pg.textContent('#detail')), '같은 크롬을 또 놓으면 새 배치 「크롬 2」가 생기고 그 설정이 열림');
+    await pg.fill('[data-tabs=urls] [data-ti="0"]', 'https://b.example.kr/'); await pg.click('[data-tabs=urls] [data-add]'); await pg.fill('[data-tabs=urls] [data-ti="1"]', 'https://c.example.kr/'); await pg.click('[data-tabs=urls] [data-rm="0"]');
+    { const pl = await pg.evaluate(() => C.place.filter((p) => p.app === 'chrome').map((p) => p.o.urls)); ok(pl.length === 2 && pl[0].length === 2 && pl[1].join() === 'https://c.example.kr/', '두 크롬 배치가 서로 다른 탭 · ✕로 탭 빼기', pl); }
+    await pg.click('.app[data-app="chrome"]'); ok(/틀 — 칸에 놓을 때/.test(await pg.textContent('#detail')), '목록을 누르면 틀(처음 값) 설정');
     /* 탐색기에서 .exe를 끌어다 놓음(브라우저 DataTransfer 흉내) */
     await pg.evaluate(() => { const dt = new DataTransfer(); dt.items.add(new File(['MZ'], 'Tool.exe')); const el = document.querySelector('#apps'); for (const t of ['dragenter', 'dragover', 'drop']) el.dispatchEvent(new DragEvent(t, { dataTransfer: dt, bubbles: true, cancelable: true })); });
     await pg.waitForFunction(() => C.apps.some((a) => a.name === 'Tool' && /Tool\.exe$/.test(a.exe))); ok(true, '탐색기에서 끌어 놓은 프로그램(.exe)이 목록에 더해짐(경로는 도우미가 찾음)');
@@ -41,11 +49,20 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await pg.selectOption('#monopts .mo:nth-child(3) select', '2x2'); ok(await pg.$$eval(`.cell[data-mon="${D3.replace(/\\/g, '\\\\')}"]`, (L) => L.length) === 4 && (await pg.evaluate(() => C.place))[2].w === 1, '4K 모니터를 2×2로 — 놓은 자리도 비율대로 옮김', await pg.evaluate(() => C.place[2]));
     await pg.screenshot({ path: path.join(SHOTS, '2-settings.png') });
     await pg.click('#setOk'); await pg.waitForSelector('#home.on');
-    const saved = JSON.parse(fs.readFileSync(path.join(D, 'settings.json'), 'utf8')); ok(saved.place.length === 4 && saved.apps.some((a) => a.name === 'Tool') && saved.mons[D3].grid === '2x2' && saved.apps.find((a) => a.id === 'chrome').urls.length === 2, '✔ 확인 → settings.json에 저장(자리 4 · 더한 프로그램 · 2×2)', saved.place);
+    const saved = JSON.parse(fs.readFileSync(path.join(D, 'settings.json'), 'utf8')); ok(saved.v === 2 && saved.place.length === 5 && saved.apps.some((a) => a.name === 'Tool') && saved.mons[D3].grid === '2x2' && saved.place.filter((p) => p.app === 'chrome').map((p) => p.o.urls.length).join() === '2,1' && saved.place.every((p) => p.id), '✔ 확인 → settings.json에 저장(배치 5 · 배치마다 자기 탭 · 더한 프로그램 · 2×2)', saved.place);
     ok(saved.auto.on === true, '저장해도 시작 자동 켜짐은 그대로');
     console.log('③ 실행·배치 · 정리');
-    await pg.setViewportSize({ width: 340, height: 470 }); await pg.click('#b3'); await pg.waitForFunction(() => /끝/.test(document.querySelector('#last').textContent)); { const t = await pg.textContent('#last'); ok(t.match(/✅/g).length === 3 && /⏭ 엑셀 — 실행 파일을 못 찾음/.test(t), '③ 결과 줄이 처음 화면에 보임(놓은 3 · 못 찾은 엑셀은 까닭과 함께 건너뜀)', t); }
+    await pg.setViewportSize({ width: 340, height: 470 });
+    const runs = () => fs.readFileSync(path.join(D, 'fake.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.act === 'run');
+    await pg.click('#b3'); ok(await pg.isVisible('#ask') && /어떻게 할까요/.test(await pg.textContent('#ask')), '③ 누르면 먼저 물음(남겨 둔 채 · 모두 닫고 · 취소)');
+    await pg.click('#askNo'); ok(!(await pg.isVisible('#ask')) && !fs.readFileSync(path.join(D, 'fake.log'), 'utf8').includes('"run"'), '취소 — 아무것도 안 함');
+    await pg.click('#b3'); await pg.click('#askKeep'); await pg.waitForFunction(() => /끝/.test(document.querySelector('#last').textContent)); { const t = await pg.textContent('#last'); ok(t.match(/✅/g).length === 3 && /⏭ 엑셀: 실행 파일을 못 찾음 → ①/.test(t) && runs().pop().input.close.length === 0, '남겨 둔 채 — 결과 줄(놓은 3 · 못 찾은 엑셀은 까닭 → 할 일)', t); }
+    ok(/카카오톡: 켜지 못함 →/.test(await pg.textContent('#last')) && await pg.$eval('#last details.raw', (d) => !d.open && /지정된 파일/.test(d.textContent)), '실패는 사람 말로 · 원문은 접어 둠');
     await pg.screenshot({ path: path.join(SHOTS, '3-home-after-run.png') });
+    await pg.click('#b3'); await pg.click('#askClose'); await pg.waitForSelector('#askGo'); { const t = await pg.textContent('#askList'); ok(/닫을 창 2개/.test(t) && /메모장/.test(t) && /지키는 창 4개/.test(t) && await pg.$$eval('[data-close]', (L) => L.length) === 2, '모두 닫고 — 닫을 목록·지키는 목록을 먼저 보여 줌', t); }
+    await pg.screenshot({ path: path.join(SHOTS, '3b-ask-close.png') });
+    const nRun = runs().length; await pg.click('#askGo'); ok(/한 번 더/.test(await pg.textContent('#askGo')) && runs().length === nRun, '첫 번째 누름은 글만 바뀜(아직 안 닫음)');
+    await pg.click('#askGo'); await pg.waitForFunction(() => /모두 닫고/.test(document.querySelector('#last').textContent)); ok(runs().pop().input.close.map((c) => c.h).sort().join() === '104,105' && /닫힘 2개/.test(await pg.textContent('#last')), '두 번째 누름에 그 목록 창만 닫고 엶 · 결과에 닫은 수');
     await pg.setViewportSize({ width: 560, height: 720 }); await pg.click('#b4'); await pg.click('#lvs button[data-lv="3"]'); await pg.click('#scan'); await pg.waitForSelector('#doClean');
     ok(/OneDrive/.test(await pg.textContent('#scanout')) && /Add-MpPreference/.test(await pg.textContent('#scanout')) && !(await pg.$('[data-pid="11"]')) && await pg.$eval('[data-pid="15"]', (x) => x.disabled), '깊게 미리보기 — 끌 후보(크롬 없음 · Adobe 보조 막힘) · Defender 제안 글');
     ok(/권하는 정도/.test(await pg.textContent('#advice')), '어디까지 비우면 좋은지 조언 단락');
