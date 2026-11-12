@@ -29,9 +29,10 @@ const OUT_OK = {
 /* 🟩 네이버 — 웹앱 NV_OUT_OK와 같음(로거 PC만) */
 const NV_OUT_OK = { crm_naver_orders: /^[\w-]{2,40}$/, nv_listings: /^\d{1,20}$/, col2_naver_jobs: /^[\w.-]{4,150}$/, nv_inq: /^[cq]\d{1,20}$/, nv_settle: /^\d{8}(_[A-Z_]{1,12})?$/, nv_settle_case: /^[\w-]{4,120}$/ };
 /* 견줄 운영 값(읽기만) — 웹앱 C2R.ok에서 손님 정보 칸(C2AL_ID)을 뺀 것 · 로거 금지 칸은 웹앱 C2_LG_NO와 같음 */
-const READ_OK = ['prd_ids', 'prd_books', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings', 'mkt_kpipa', 'prd_market_nobook'];
+const BS_KEEP = ['name', 'day', 'complete', 'runAt', 'endAt', 'total', 'lastPage', 'chunks', 'startDay', 'okRunAt', 'writer', 'prog']; /* (11/12 handoff3) 웹앱 C2_BS_KEEP과 같음 */
+const READ_OK = ['bench_state', 'bench_chunk', 'prd_ids', 'prd_books', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings', 'mkt_kpipa', 'prd_market_nobook'];
 const LG_NO = ['prd_ids', 'prd_books', 'prd_listings', 'shp_state', 'crm_interactions', 'prd_market_nobook'];
-const READ_RE = { mkt_kpipa: /^\d{8}$/ };
+const READ_RE = { mkt_kpipa: /^\d{8}$/, bench_state: /^\d{1,10}$/, bench_chunk: /^\d{1,10}\.\d{1,2}$/ };
 const SOLO_DOC = 'col2_solo', SEEN_DOC = 'col2_solo_seen';
 
 /* ── 상태 요약 — 웹앱 c2Sum·c2ySum·c2alSum과 같은 칸(받은 값을 다시 거름 · 손님 정보 없음) ── */
@@ -77,6 +78,7 @@ function makeSolo({ db, C, FV, log, mods, now }) {
   /* ② 넘긴 일(운영 칸) — 웹앱 c2HoWrite·c2HoWriteMode와 같은 규칙(넘김 표 lab/col2/shadow/col2-handoff.js) */
   async function hoWrite(o, pc, hoDoc, X, HOF) { const k = String(o.job || ''); const J = HOF.JOBS[k]; if (!J) return '넘김 표에 없는 일';
     const w = HOF.writeOk(hoDoc, o, pc); if (!w.ok) return w.why; const v = w.v; const id = String(o.id); const by = '번외 ' + pc; const W2 = { writer: by, uploadedAt: FV.serverTimestamp() }; const t = iso(); const ref = C(J.col).doc(id);
+    if (J.mode === 'bench') return benchW(id, v, pc, HOF); /* (11/12 handoff3) 🎯 숍 목록 끝까지 — 웹앱 c2HoBenchW와 같음 */
     if (J.mode === 'plan') { /* (11/12 handoff2) 로거 칸 일 — 웹앱 c2HoPlanW와 같음: 운영 문서를 다시 읽고(HOF.reads) 규칙 파일 plan()이 낸 쓰기만 한 묶음으로 · 칸 밖이면 거절(HOF.planCheck) */
       if (!HOF.plan || !HOF.reads || !HOF.planCheck) return '넘김 규칙 파일이 옛 판(plan 없음)'; const docs = {}; for (const [c, d] of HOF.reads(k, id)) { const g = await C(c).doc(String(d)).get(); docs[c + '/' + d] = g.exists ? g.data() || {} : null; }
       const W = HOF.plan(k, id, v, docs, { now: t, day: new Date(now() + 9 * 3600e3).toISOString().slice(0, 10) }); const bad = HOF.planCheck(k, W); if (bad) return bad;
@@ -123,13 +125,33 @@ function makeSolo({ db, C, FV, log, mods, now }) {
         const nd = { v: V, at, by: who.slice(0, 60), log: lg.slice(0, 80) }; tx.set(ref, nd); return nd; }); }
     return { doc, ack: { keys, at: mx } }; }
 
+  /* (11/12 handoff3) 🎯 넘긴 숍 목록 끝까지 — 웹앱 c2HoBenchW와 같은 규칙: 잡기(운영 benchClaim 판단) · 회차(운영 bench_state를 다시 읽고 그사이 운영이 끝냈으면 안 씀 → 운영 본체 benchFinish 글자 그대로) */
+  const BFN = { fn: null, at: 0 };
+  async function benchW(id, v, pc, HOF) { if (!HOF.benchBad || !HOF.benchCode) return '넘김 규칙 파일이 옛 판(bench 없음)'; const bad = HOF.benchBad(id, v); if (bad) return bad; id = String(id).replace(/^bclaim_/, ''); const me = 'col2-' + pc, by = '번외 ' + pc; const cref = C('prd_jobs').doc('bclaim_' + id);
+    if (v.claim) { let ok = true; await db.runTransaction(async (tx) => { const d = (await tx.get(cref)).data(); ok = HOF.claimOk(d, pc, now()); if (!ok) return; if (v.claim.on) tx.set(cref, { pc: me, name: by, tab: 'col2', at: now(), since: iso(), writer: by, uploadedAt: FV.serverTimestamp() }); else if (d && d.pc === me) tx.set(cref, { pc: null, at: 0, doneAt: iso(), by }, { merge: true }); }); return ok ? true : '운영 PC가 이 숍을 읽는 중(잡기 신호 4분 안) — 번외는 건너뜀'; }
+    const run = v.run; const st = tsFix((await C('bench_state').doc(id).get()).data() || {}); if ((st.endAt || null) !== (run.seenEnd || null) && Date.parse(st.endAt || '') > Date.parse(run.startedAt)) return `운영이 그사이 이 숍 회차를 끝냄(${String(st.endAt).slice(0, 16)}) — 쓰지 않음`; if (st.prog) return '운영이 이 숍 회차를 하는 중 — 쓰지 않음';
+    const md = await mods(); if (!BFN.fn || now() - BFN.at > 30 * 60e3) { if (!md.BSRC) return '운영 본체 받는 길 없음'; const B = HOF.benchCode(await md.BSRC()); if (B.err) return B.err; BFN.fn = new Function('return ' + B.code)(); BFN.at = now(); }
+    const cfg = tsFix((await C('app_settings').doc('bench').get()).data() || {}); const P = HOF.benchProg(run, st);
+    await BFN.fn({ C, db, firebase: { firestore: { FieldValue: FV } }, PC_NAME: by, W: () => ({ uploadedAt: FV.serverTimestamp(), writerSchema: 6, writer: by }), nowIso: iso, log: () => {}, ui: () => {}, REG: md.REG || null, CFG: cfg, t: { sc: id, name: run.name || id }, prog: P.prog, st: P.st });
+    try { await db.runTransaction(async (tx) => { const d = (await tx.get(cref)).data(); if (d && d.pc === me) tx.set(cref, { pc: null, at: 0, doneAt: iso(), by }, { merge: true }); }); } catch (e) {} return true; }
+
   /* ⑤ 견줄 운영 값(읽기만) — 웹앱 c2RelayTick과 같은 칸·같은 로거 규칙 */
   async function getWant(L, lg, F) { const docs = []; for (const w of (Array.isArray(L) ? L : []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!READ_OK.includes(c) || !RID.test(id)) continue;
       if (lg && LG_NO.includes(c)) continue; if (c === 'app_settings' && !(id === 'bench' && lg)) continue; if (READ_RE[c] && !READ_RE[c].test(id)) continue; if (c === 'prd_market_nobook' && lg) continue;
+      if (/^bench_(state|chunk)$/.test(c)) { if (!lg) continue; try { if (c === 'bench_chunk') { const [sc, k] = id.split('.'); const d = await C('bench_state').doc(sc).collection('c').doc(k).get(); docs.push({ c, id, v: d.exists ? { s: (d.data() || {}).s || null, m: (d.data() || {}).m || null } : null }); } else { const d = await C('bench_state').doc(id).get(); const v0 = d.exists ? tsFix(d.data()) : null; docs.push({ c, id, v: v0 ? Object.fromEntries(BS_KEEP.filter((x) => v0[x] !== undefined).map((x) => [x, x === 'prog' ? (v0.prog ? 1 : null) : v0[x]])) : null }); } } catch (e) {} continue; } /* (11/12 handoff3) 🎯 로거만 */
       try { const d = await C(c).doc(id).get(); const v = d.exists ? tsFix(d.data()) : null; docs.push({ c, id, v: v == null ? null : c === 'prd_books' ? trimF(v, F) : c === 'app_settings' ? benchTrim(v) : c === 'prd_market_nobook' ? nbTrim(v) : v }); } catch (e) {} }
     return docs; }
   async function getPool(b, F) { const n = Math.min(2000, +b.pool || 1000); let q = C('prd_books').orderBy('__name__'); if (b.poolAfter && RID.test(String(b.poolAfter))) q = q.startAfter(String(b.poolAfter)); const g = await q.limit(n).get(); const L = []; let last = null;
     g.forEach((d) => { last = d.id; L.push({ id: d.id, ...trimF(tsFix(d.data()), F) }); }); return { pool: L.filter((x) => x.aladinItemId), poolFor: b.poolAfter || null, poolLap: b.poolLap, poolNext: last, poolEnd: L.length < n }; }
+
+  /* ⑤-2 (11/12 handoff3) 판매자 목록(🗣 판매자 글 · 🏪 넘긴 숍 요약 차례) — 웹앱 c2ListsGive와 같은 칸·같은 거름: 숍 번호·이름·전체 평가 수·확인 시각 두 칸만
+   *  우리 숍(996008)·숍 번호 꼴이 아닌 문서는 v:null(이어 받기 자리만) · 손님 연결·연락처·사업자 정보는 주지 않음 · 로거에도(공개 숍 번호 — 우리 상품·계정 정보 아님 · 약속 0) */
+  const OWN_SC = ['996008'];
+  async function getLists(L) { const out = {}; for (const w of (Array.isArray(L) ? L : []).slice(0, 3)) { if (!w || w.c !== 'sellers' || out.sellers) continue; const n = Math.max(1, Math.min(500, +w.n || 200));
+      let q = C('sellers').orderBy('__name__'); if (w.after && RID.test(String(w.after))) q = q.startAfter(String(w.after)); const g = await q.limit(n).get(); const A = [];
+      g.forEach((d) => { const v = d.data() || {}; const sc = String(v.sc || '').replace(/\D/g, ''); if (!/^sc_\d{1,10}$/.test(d.id) || !sc || OWN_SC.includes(sc)) { A.push({ id: d.id, v: null }); return; }
+        A.push({ id: d.id, v: { sc, name: typeof v.name === 'string' ? v.name.slice(0, 40) : null, n: Number(String(v.totalReviewCount ?? '').replace(/[^\d]/g, '')) || null, rev6mAt: typeof v.rev6mAt === 'string' ? v.rev6mAt : null, rev6mTriedAt: typeof v.rev6mTriedAt === 'string' ? v.rev6mTriedAt : null } }); });
+      out.sellers = A; } return Object.keys(out).length ? out : null; }
 
   /* ⑥ 🟩 네이버(로거 PC만) — 웹앱 nvRelayTick과 같은 일: 받는 열쇠 · 상태 · 봉투 넘기기(트랜잭션 · 넘긴 뒤 봉투 지움) · 읽은 것 쓰기 */
   async function nvStep(pc, nv) { const out = {}; const s = nv.st || {}; const t = iso(); const who = '번외 홀로 ' + pc;
@@ -162,10 +184,11 @@ function makeSolo({ db, C, FV, log, mods, now }) {
     try { if (b.setPend && typeof b.setPend === 'object' && Object.keys(b.setPend).length && md.SET) { const r = await cfgPut(pc, b.setPend, md.SET); res.sharedAck = r.ack; if (r.doc) res.shared = { v: r.doc.v, at: r.doc.at, by: r.doc.by }; }
       if (!res.shared) { const d = await C('app_settings').doc('col2_cfg').get(); const v = d.exists ? d.data() || {} : null; if (v && +v.at > (+b.sharedAt || 0)) res.shared = { v: v.v || {}, at: +v.at, by: v.by || '' }; } } catch (e) { errs.push('설정: ' + (e.code || e.message)); }
     try { if (Array.isArray(b.want) && b.want.length) res.docs = await getWant(b.want, lg, F); } catch (e) { errs.push('운영 값: ' + (e.code || e.message)); }
+    try { if (Array.isArray(b.lists) && b.lists.length) { const ls = await getLists(b.lists); if (ls) res.lists = ls; } } catch (e) { errs.push('판매자 목록: ' + (e.code || e.message)); } /* (11/12 handoff3) 홀로 연결로만 이어진 로거도 숍 요약 차례를 받게 */
     try { if (+b.pool > 0 && !lg && Object.prototype.hasOwnProperty.call(b, 'poolAfter')) Object.assign(res, await getPool(b, F)); } catch (e) { errs.push('표본: ' + (e.code || e.message)); } /* 로거에는 우리 도서 목록(표본)을 주지 않음(약속 0) */
     if (b.nv && typeof b.nv === 'object') { if (!lg) errs.push('네이버 일은 로거 PC만'); else { try { Object.assign(res, await nvStep(pc, b.nv)); } catch (e) { errs.push('네이버: ' + (e.code || e.message)); } } }
     if (errs.length) { res.errs = errs.slice(0, 6); log('🔌 번외 홀로 연결', pc, errs[0]); }
     return [200, res]; }
-  return { api, check, stSum, OUT_OK, NV_OUT_OK, READ_OK, LG_NO, _M: M };
+  return { api, check, getLists, benchW, stSum, OUT_OK, NV_OUT_OK, READ_OK, LG_NO, _M: M };
 }
 module.exports = { makeSolo, stSum, OUT_OK, NV_OUT_OK, READ_OK, LG_NO, SOLO_DOC, SEEN_DOC, pcSafe, pcSafe2 };

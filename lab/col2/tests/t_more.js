@@ -76,7 +76,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
 
 (async () => {
   console.log('⓪ 차림표');
-  ok(TK.TASKS.length === 27 && TK.TASKS.filter((t) => t.state === 'run').length === 26 && TK.byK['ext.ttb'].state === 'ended', '로그인 없는 운영 일 27가지 — 26가지가 그림자로 돎 · 알라딘 TTB는 종료됨(ttb1 11/11 — OpenAPI 2026-10-30 종료)', TK.TASKS.length);
+  ok(TK.TASKS.length === 28 && TK.TASKS.filter((t) => t.state === 'run').length === 27 && TK.byK['ext.ttb'].state === 'ended', '로그인 없는 운영 일 28가지(11/12 handoff3 🎯 끝까지 더함) — 27가지가 그림자로 돎 · 알라딘 TTB는 종료됨(ttb1 11/11 — OpenAPI 2026-10-30 종료)', TK.TASKS.length);
   ok(['dynamic', 'nbMarket', 'kpipa', 'ext.naverbook', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => TK.byK[k] && TK.byK[k].state === 'run'), '남았던 9가지(구매자 분포·새상품 없는 시세·KPIPA·네이버 도서·TTB·카카오·국중·eBay·정보나루) 돎');
   const lg = TK.plan('logger', { extShare: true }), of = TK.plan('office', {});
   ok(lg.includes('dynamic') && !lg.includes('nbMarket') && !lg.some((k) => TK.byK[k].keys) && of.includes('nbMarket') && of.includes('kpipa') && ['ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => of.includes(k)) && !of.includes('ext.ttb') && !lg.includes('ext.ttb') && !of.includes('dynamic'), '로거 = 구매자 분포(로거 고유) · 새상품 없는 시세·키 쓰는 출처는 사무실 PC만(나눔이 켜져도 로거엔 안 감)', 'logger ' + lg.length + ' · office ' + of.length);

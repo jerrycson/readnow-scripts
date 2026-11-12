@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.288
+// @version      1.89.289
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -25,7 +25,7 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.17
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.180
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.181
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.19
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
@@ -1366,6 +1366,90 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (saved === 'prc') setTimeout(() => { if (!bar.querySelector('button[data-t="prc"]')) set('ov'); }, 4000); // 가격 감시기 탭이 안 붙으면 개요로
     setInterval(draw, 1000); };
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+})();
+
+/* ══════════ (adapt10 11/12 밤 · 정범님 '알라딘은 방식을 계속 바꾼다는 전제' · 약속 64) 🔄 수집기(PC) 목표·방법 장부 — 머리 그대로
+ *  틀 = globalThis.ReadnowAdaptAg(공용 readnow-adapt-core.js ◆AG 덩어리를 split.js가 readnow-pc-runtime.js 앞에 그대로 넣음 · 새 @require 없음)
+ *  읽기 성적만 남김 — 수집기 동작(차례·속도·로그인·로거 잠금·네이버 와이파이 규칙)은 바꾸지 않음 · 손님 정보·값 원문은 남기지 않음(칸마다 '채움·맞음' 수만)
+ *  붙인 곳(공용 파서를 감쌈 · 같은 화면은 한 번만 셈): 알라딘 상품 화면(시장 지표·매입·벤치마킹 상세가 같이 씀) · 전체 중고 화면 · 검색 목록 · 샵매니저 목록(운영) · 판매자 숍 요약
+ *   · 예스24 검색 목록·묶음·가게 · 바깥 시세(ReadnowExt.run — 출처가 길) · 🎯 벤치마킹 숍 목록(간단히 보기 vs 상자 길) · 공개 화면 읽기 길(로그인 없이 vs 로그인) · 🟦 예스24 운영 응답 올리기
+ *  칸마다 길: 상품 화면은 운영 파서(op) · 글 이름표(lbl: 'Sales Point'·세일즈포인트·판매가·정가·쪽) · 구조 데이터(ld: meta·JSON-LD)를 견줘 [시도, 채움, 합의값과 같음]
+ *  회차 = 이 PC 모든 탭이 모은 시도 40번 또는 10분(GM 저장소 rn-ag-acc) → 장부(rn-ag-g) → 15분마다 한 탭이 adapt_pc/<PC>{g, lines}·app_settings/adapt_goals sum['pc_<엔진>@<PC>']·발견 모음 넘김(finds_inbox)
+ *  끄기: GM rn-ag-off = 1 · 진단: window.__rnAgPc.peek() */
+(function rnAgPc() { const G = globalThis; const AG = G.ReadnowAdaptAg; if (G.__rnAgPc || !AG || !AG.agRecord || !AG.agFillTally) return;
+  const KG = 'rn-ag-g', KA = 'rn-ag-acc', KL = 'rn-ag-lines', KF = 'rn-ag-flush'; const ROUND_N = 40, ROUND_MS = 10 * 60e3, FLUSH_MS = 15 * 60e3;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
+  const on = () => !gv('rn-ag-off', 0); const pcN = () => { try { return String((window.__rnPcName && window.__rnPcName.get()) || '').replace(/[^\w가-힣-]/g, '_').slice(0, 40); } catch (e) { return ''; } };
+  const SEED = {
+    al_product: { label: '수집기 알라딘 상품 화면 읽기', goal: '상품 화면 칸(SP·판매가·정가·ISBN·출간일·쪽수) — 시장 지표·매입·벤치마킹 상세가 같이 씀', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(products-core)' }, { id: 'lbl', label: "글 이름표('Sales Point'·세일즈포인트·판매가·정가·쪽)" }, { id: 'ld', label: '구조 데이터(meta·JSON-LD)' }], champ: 'op' },
+    al_sp: { label: '수집기 알라딘 상품 화면 SP 읽기', goal: '상품 화면마다 세일즈포인트(시장 지표·벤치마킹의 뼈대)', unit: '권', target: 0.9, methods: [{ id: 'op', label: '운영 파서(순위 상자 Sales Point)' }, { id: 'lbl', label: "글 이름표('Sales Point'·세일즈포인트·판매지수 — 화면 어디든)" }], champ: 'op' },
+    al_used: { label: '수집기 알라딘 전체 중고 화면 읽기', goal: '전체 중고 수·매물 줄', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서' }, { id: 'lbl', label: "글 이름표('전체 중고 (n)')" }, { id: 'cart', label: '장바구니 칸 수' }], champ: 'op' },
+    al_list: { label: '수집기 알라딘 검색 목록 읽기', goal: '목록 줄마다 상품 번호·제목·표지', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(.ss_book_box)' }, { id: 'attr', label: '상자 itemid 속성' }, { id: 'href', label: '제목 링크 주소' }], champ: 'op' },
+    al_scm: { label: '수집기 샵매니저 상품 목록 읽기(운영)', goal: '우리 상품 줄마다 값·수량·상태·관리 코드', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(input.batchChkBox 줄)' }], champ: 'op' },
+    seller_shop: { label: '수집기 판매자 숍 요약 읽기', goal: '숍 첫 화면 6개월 평가·등급·상태', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(sellers-core)' }], champ: 'op' },
+    y24_list: { label: '수집기 예스24 검색 목록 읽기', goal: '줄마다 묶음 번호·중고 수·새상품 값', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(a.gd_name)' }, { id: 'href', label: '묶음 링크 주소' }], champ: 'op' },
+    y24_hub: { label: '수집기 예스24 중고 묶음 읽기', goal: '매물 줄마다 값·등급·가게·배송비', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(li[saleprice])' }], champ: 'op' },
+    y24_shop: { label: '수집기 예스24 가게 읽기', goal: '가게 만족도·평가 수·상품 수', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(글 정규식)' }], champ: 'op' },
+    bench_list: { label: '수집기 🎯 벤치마킹 숍 목록 읽기', goal: '숍 목록 쪽마다 상품(값·등급·제목)', unit: '쪽', target: 0.9, methods: [{ id: 'simple', label: '간단히 보기(장바구니 칸)' }, { id: 'box', label: '상자 단위(자세히 보기)' }], champ: 'simple' },
+    pub_read: { label: '수집기 공개 화면 읽기 길', goal: '공개 화면을 로그인 없이(안 되면 로그인)', unit: '장', target: 0.9, methods: [{ id: 'anon', label: '로그인 없이' }, { id: 'logged', label: '로그인 상태' }] },
+    y24_ops: { label: '수집기 🟦 예스24 운영 응답 올리기', goal: '예스24 판매관리 응답(주문·상품)을 받아 올림', unit: '건', target: 0.9 },
+    ext: { label: '수집기 바깥 시세·책 정보 읽기', goal: 'ISBN마다 바깥 출처(교보·국중·예스24 등) 값', unit: '번', target: 0.6 },
+  };
+  let P = {}; let pend = 0; const seen = new WeakMap();
+  const once = (d, eng) => { if (!d || (typeof d !== 'object' && typeof d !== 'function')) return true; let s = seen.get(d); if (!s) { s = new Set(); try { seen.set(d, s); } catch (e) { return true; } } if (s.has(eng)) return false; s.add(eng); return true; };
+  const box = (eng) => (P[eng] = P[eng] || { m: {}, fl: {}, raw: null });
+  function obs(eng, mid, r) { try { if (!on() || !eng || !mid || !r || pend > 3000) return; const B = box(eng); const z = (B.m[mid] = B.m[mid] || [0, 0, 0, 0]); const n = Math.max(0, +r.n || 1); z[0] += n; z[1] += Math.min(n, Math.max(0, +r.ok || 0)); z[2] += r.cost != null ? Math.max(0, +r.cost || 0) : n; z[3] += Math.max(0, +r.ms || 0); pend += n;
+      if (r.raw != null) smp(eng, mid, r.raw, r.good); } catch (e) {} }
+  /* 원문 표본(바뀐 것 찾기용) — 길마다 안 된 것을 먼저 · 600자 · 전화번호 꼴 가림 */
+  function smp(eng, mid, raw, good) { try { if (!on()) return; const B = box(eng); if (raw != null && (!B.raw || !good)) B.raw = [mid, String(raw).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 600), !!good]; } catch (e) {} }
+  /* 칸마다 길 — fields = { 칸: { 길: 값|null } } → 길마다 성적도 같이(rec !== false) */
+  function fill(eng, fields, o) { o = o || {}; try { if (!on()) return; const T = AG.agFillTally(fields, { main: o.main || 'op' }); AG.agFillAdd(box(eng).fl, T.t); if (o.rec !== false) for (const [p, z] of Object.entries(T.tot)) if (z.n) obs(eng, p, { n: z.n, ok: z.ok }); } catch (e) {} }
+  /* 줄 목록 — 줄마다 칸(op 하나) 채움 + 쪽 하나 = 시도 하나(줄이 있으면 성공) */
+  function rows(eng, mid, L, pick, o) { try { if (!on()) return; const A0 = Array.isArray(L) ? L : []; obs(eng, mid, { n: 1, ok: A0.length ? 1 : 0, ...(o || {}) }); const T = {}; for (const r of A0.slice(0, 60)) { const F = pick(r) || {}; const t = AG.agFillTally(Object.fromEntries(Object.entries(F).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) ? v : { [mid]: v }])), { main: mid }).t; AG.agFillAdd(T, t); } AG.agFillAdd(box(eng).fl, T); } catch (e) {} }
+  /* 이 탭이 모은 것 → GM 저장소 회차 칸 → 회차가 차면 장부 */
+  function push() { if (!pend && !Object.keys(P).length) return; const Pn = P; P = {}; pend = 0; try { const acc = gv(KA, {}) || {}; const t = Date.now();
+      for (const [eng, B] of Object.entries(Pn)) { const a = (acc[eng] = acc[eng] || { t0: t, n: 0, m: {}, fl: {}, raw: null }); for (const [mid, z] of Object.entries(B.m)) { const y = (a.m[mid] = a.m[mid] || [0, 0, 0, 0]); for (let i = 0; i < 4; i++) y[i] += z[i]; a.n += z[0]; } AG.agFillAdd(a.fl, B.fl); if (B.raw && (!a.raw || !B.raw[2])) a.raw = B.raw; }
+      const due = Object.keys(acc).filter((k) => acc[k].n >= ROUND_N || t - acc[k].t0 >= ROUND_MS); if (due.length) { const L = gv(KG, {}) || {}; const lines = gv(KL, []) || [];
+        for (const eng of due) { const a = acc[eng]; delete acc[eng]; const id = 'pc_' + eng; const g = AG.agEnsure(L, id, SEED[eng] || { label: '수집기 ' + eng, unit: '번' }); for (const [mid, z] of Object.entries(a.m)) if (z[0]) AG.agRecord(g, mid, { n: z[0], ok: z[1], cost: z[2], ms: z[3] }, t); if (Object.keys(a.fl).length) AG.agFill(g, a.fl, t);
+          if (a.raw) AG.agSample(g, a.raw[0], a.raw[1], a.raw[2], t); const res = AG.agAdapt(g, { now: t }); for (const x of res.lines || []) lines.push(x); }
+        sv(KG, L); sv(KL, lines.slice(-60)); }
+      sv(KA, acc); } catch (e) {} }
+  /* 15분마다 이 PC 한 탭이 Firestore로 — adapt_pc/<PC>(장부 몸통) · adapt_goals sum(웹앱 🔄 엔진 적응 상태) · finds_inbox(발견 모음 넘김) */
+  async function flush(force) { try { const F = G.firebase; if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return null; const pc = pcN(); if (!pc) return null; const t = Date.now(); const last = +gv(KF, 0) || 0; if (!force && t - last < FLUSH_MS) return null; sv(KF, t); push();
+      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60);
+      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, g: JSON.parse(JSON.stringify(L)), lines }, { merge: false });
+      const args = []; for (const k of ks) { const s0 = AG.agSummary(L[k]); if (s0) args.push(new FP('sum', k + '@' + pc), JSON.parse(JSON.stringify({ ...s0, id: k + '@' + pc, label: `${s0.label} · ${pc}`, by: '수집기', pc }))); }
+      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) {} }
+      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, src: '엔진', engL: `${x.engL || x.eng} · ${pc}` }))));
+      if (nw.length) { try { await db.collection('app_settings').doc('finds_inbox').set({ L: F.firestore.FieldValue.arrayUnion(...nw), at }, { merge: true }); sv('rn-ag-sent', Math.max(...nw.map((x) => Date.parse(x.at) || 0))); } catch (e) {} }
+      return { n: ks.length, lines: nw.length }; } catch (e) { return { err: String((e && e.message) || e).slice(0, 120) }; } }
+  setInterval(push, 30e3); setInterval(() => { flush().catch(() => {}); }, 60e3); try { addEventListener('pagehide', push); } catch (e) {}
+  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
+  /* ── 공용 파서 감싸기(같은 화면은 한 번만 · 실패해도 원래 결과 그대로) ── */
+  const wrap = (o, k, fn) => { try { const f = o && o[k]; if (typeof f !== 'function' || f.__rnAg) return; const w = function () { const r = f.apply(this, arguments); try { if (on()) fn(arguments, r); } catch (e) {} return r; }; w.__rnAg = 1; o[k] = w; } catch (e) {} };
+  const tx = (el) => (el ? String(el.textContent || '').replace(/[ \s]+/g, ' ').trim() : ''); const num = (s) => { const m = String(s == null ? '' : s).replace(/,/g, '').match(/\d+/); return m ? +m[0] : null; };
+  const mt = (d, p) => { try { const m = d.querySelector(`meta[property="${p}"]`); return m ? m.getAttribute('content') || null : null; } catch (e) { return null; } };
+  const ldOf = (d) => { try { for (const s of d.querySelectorAll('script[type="application/ld+json"]')) { try { const j = JSON.parse(s.textContent); if (j && j['@type'] === 'Book') return j; } catch (e) {} } } catch (e) {} return null; };
+  const PR = G.ReadnowProducts || (typeof window !== 'undefined' && window.ReadnowProducts); const SL = G.ReadnowSellers || (typeof window !== 'undefined' && window.ReadnowSellers); const EX = G.ReadnowExt || (typeof window !== 'undefined' && window.ReadnowExt);
+  if (PR) {
+    wrap(PR, 'parseProductPage', (a, r) => { const d = a[0]; if (!r || !d || !d.querySelector || !once(d, 'p')) return; const bi = tx(d.querySelector('.Ere_prod_Binfowrap')); const rk = tx(d.querySelector('[id$="pnlRanking"]')) || tx(d.querySelector('.Ere_prod_titlewrap')); const ld = ldOf(d); const SPR = /(?:Sales\s*Point|세일즈\s*포인트|판매\s*지수)\s*[:：]?\s*([\d,]+)/i; let all = bi + ' ' + rk; if (!SPR.test(all) && d.body) all += ' ' + tx(d.body).slice(0, 200000); /* 늘 보던 자리에 없으면 화면 글 전체에서(자리가 바뀐 경우) */
+      const spM = all.match(SPR); const sp = spM && spM[1]; const ps = (bi.match(/판매가\s*[:：]?\s*([\d,]+)\s*원/) || [])[1]; const pl = (bi.match(/정가\s*[:：]?\s*([\d,]+)\s*원/) || [])[1]; const pg = (tx(d.querySelector('.conts_info_list1')).match(/(\d+)\s*쪽/) || [])[1];
+      const ldD = ld && ((ld.workExample && ld.workExample[0] && ld.workExample[0].datePublished) || ld.datePublished); const ldI = ld && ((ld.workExample && ld.workExample[0] && ld.workExample[0].isbn) || ld.isbn);
+      fill('al_product', { salesPoint: { op: r.salesPoint, lbl: num(sp) }, priceSales: { op: r.priceSales, lbl: num(ps) }, priceList: { op: r.priceList, lbl: num(pl) }, isbn13: { op: r.isbn13, ld: mt(d, 'books:isbn') || ldI || null }, pubDate: { op: r.pubDate, ld: ldD ? String(ldD).slice(0, 10) : null }, pages: { op: r.pages, lbl: num(pg) }, title: { op: r.title }, publisher: { op: r.publisher } });
+      fill('al_sp', { salesPoint: { op: r.salesPoint, lbl: num(sp) } }); /* SP만 따로 장부(시장 지표의 뼈대) — 운영 파서가 못 읽고 글 이름표만 읽으면 판정이 떨어짐 */
+      if (r.title && all) { const at = spM ? Math.max(0, all.indexOf(spM[0]) - 300) : 0; const sx = all.slice(at, at + 600); smp('al_sp', 'op', sx, r.salesPoint != null); smp('al_product', 'op', sx, r.salesPoint != null); } });
+    wrap(PR, 'parseUsedPage', (a, r) => { const d = a[0]; if (!r || !d || !d.querySelector || !once(d, 'u')) return; const tt = (tx(d.querySelector('.Ere_usedsell_list2')).match(/전체\s*중고\s*\(\s*(\d+)\s*\)/) || [])[1]; const n = Array.isArray(r.listings) ? r.listings.length : null;
+      fill('al_used', { usedTotal: { op: r.usedTotal, lbl: num(tt) }, rows: { op: n, cart: d.querySelectorAll('.Ere_usedsell_table input[name^="chkCart."]').length || null }, lastPage: { op: r.lastPage } }); });
+    wrap(PR, 'parseSearchResults', (a, r) => { const d = a[0]; if (!d || !d.querySelectorAll || !once(d, 's')) return; const B = [...d.querySelectorAll('.ss_book_box')].slice(0, 60); obs('al_list', 'op', { n: 1, ok: r && r.length ? 1 : 0 });
+      const T = {}; (r || []).slice(0, 60).forEach((x, i) => { const b = B[i]; const lk = b && b.querySelector('a.bo3'); AG.agFillAdd(T, AG.agFillTally({ itemId: { op: x.itemId, attr: b ? b.getAttribute('itemid') : null, href: lk ? ((lk.getAttribute('href') || '').match(/ItemId=(\d+)/i) || [])[1] || null : null }, title: { op: x.title || null }, img: { op: x.img || null } }, { main: 'op' }).t); }); AG.agFillAdd(box('al_list').fl, T); });
+    wrap(PR, 'parseScmList', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'm')) return; rows('al_scm', 'op', r.rows, (x) => ({ listingId: x.listingId, title: x.title, price: x.price, qty: x.qty, status: x.status, sku: x.sku, registeredAt: x.registeredAt })); });
+    wrap(PR, 'parseYes24Search', (a, r) => { const d = a[0]; if (!d || !d.querySelectorAll || !once(d, 'ys')) return; const hubs = new Set([...d.querySelectorAll('a[href*="UsedShopHub/Hub/"]')].map((x) => ((x.getAttribute('href') || '').match(/Hub\/(\d+)/) || [])[1]).filter(Boolean)); obs('y24_list', 'op', { n: 1, ok: r && r.length ? 1 : 0 });
+      AG.agFillAdd(box('y24_list').fl, AG.agFillTally({ rows: { op: r ? r.length || null : null, href: hubs.size || null } }, { main: 'op' }).t); const T = {}; for (const x of (r || []).slice(0, 40)) AG.agFillAdd(T, AG.agFillTally({ hubId: { op: x.hubId }, title: { op: x.title || null }, total: { op: x.total }, newPrice: { op: x.newPrice } }).t); AG.agFillAdd(box('y24_list').fl, T); });
+    wrap(PR, 'parseYes24Hub', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'yh')) return; rows('y24_hub', 'op', r.offers, (x) => ({ price: x.price, grade: x.grade, shopId: x.shopId, ship: x.ship, ratingCount: x.ratingCount })); });
+    wrap(PR, 'parseYes24Shop', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'yp')) return; fill('y24_shop', { shopName: { op: r.shopName }, score: { op: r.score }, ratingCount: { op: r.ratingCount }, totalItems: { op: r.totalItems }, shipFee: { op: r.shipFee } }); });
+  }
+  if (SL) wrap(SL, 'parseShopSummary', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'ss')) return; fill('seller_shop', { rev6m: { op: r.rev6m != null ? r.rev6m : r.rev6mLt3 ? 'lt3' : null }, grade: { op: r.grade }, total: { op: r.total != null ? r.total : r.totalLt3 ? 'lt3' : null }, status: { op: r.status || null } }); });
+  if (EX && typeof EX.run === 'function' && !EX.run.__rnAg) { const f0 = EX.run; const w = async function (src, a) { const t0 = Date.now(); const r = await f0.apply(this, arguments); try { if (r && !r.skip) { const s = (EX.SOURCES || {})[src] || {}; obs('ext', String(src), { n: 1, ok: r.ok === false ? 0 : 1, ms: Date.now() - t0, raw: r.ok === false && r.why ? String(r.why).slice(0, 200) : null, good: r.ok !== false }); fill('ext', { ['grp_' + (s.grp || 'etc')]: { [String(src)]: r.ok === false ? null : 1 } }, { rec: false }); } } catch (e) {} return r; }; w.__rnAg = 1; try { EX.run = w; } catch (e) {} }
 })();
 
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
@@ -4868,7 +4952,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const J = (f, g) => { try { return JSON.stringify(f(g)); } catch (e) { return 'ERR ' + e.message; } };
     const diffKeys = (a, b) => { try { const A = JSON.parse(a), B = JSON.parse(b); const ks = new Set(); const walk = (x, y, pth) => { if (JSON.stringify(x) === JSON.stringify(y)) return; if (x && y && typeof x === 'object' && typeof y === 'object' && ks.size < 8) { const kk = new Set([...Object.keys(x), ...Object.keys(y)]); kk.forEach((k) => walk(x[k], y[k], pth ? pth + '.' + k : k)); } else ks.add(pth || '(전체)'); }; walk(A, B, ''); return [...ks].slice(0, 8).join(', '); } catch (e) { return '?'; } };
     const report = () => { if (++tot % 500) return; log('🔓 공개 페이지 로그인 없이 읽기 — ' + Object.entries(st).map(([k, s]) => `${KN[k]}: ${s.mode === 'anon' ? '로그인 없이' : s.mode === 'logged' ? '로그인 유지' : '확인 전'} (없이 ${s.anon} · 로그인 ${s.logged}${s.gate ? ` · 19금 등 로그인 다시 ${s.gate}` : ''}${s.miss ? ` · 비어 보여 로그인 다시 ${s.miss}` : ''})`).join(' / ')); };
-    async function read(kind, url, norm, valid) { const s = st[kind]; s.n++; if (pubAnonOn()) { s.mode = 'anon'; s.anon++; return getDoc(url); } /* (1.64.0) 늘 로그인 없이 — 대조용 로그인 읽기도 하지 않음 */ report();
+    /* (adapt10) 🔄 공개 화면 읽기 길 성적 — 로그인 없이(anon) · 로그인(logged) · 19금·비어 보여 로그인으로 다시(gate·miss는 로그인 길로 셈) */
+    async function read(kind, url, norm, valid) { const s = st[kind]; const b0 = s.anon, t0 = Date.now(); const g = await read0(kind, url, norm, valid); try { const A = globalThis.__rnAgPc; if (A) { const ok = !!(g && g.doc && !g.needLogin) ? 1 : 0; A.obs('pub_read', s.anon > b0 ? 'anon' : 'logged', { n: 1, ok, ms: Date.now() - t0 }); A.fill('pub_read', { [kind]: { [s.anon > b0 ? 'anon' : 'logged']: ok || null } }, { rec: false }); } } catch (e) {} return g; }
+    async function read0(kind, url, norm, valid) { const s = st[kind]; s.n++; if (pubAnonOn()) { s.mode = 'anon'; s.anon++; return getDoc(url); } /* (1.64.0) 늘 로그인 없이 — 대조용 로그인 읽기도 하지 않음 */ report();
       const due = s.mode === 'check' || s.n >= RE_N || Date.now() - s.at > RE_MS;
       if (due) { const L = await getDoc(url); if (!valid(L)) { s.logged++; return L; } // 비교할 거리가 없는 장(빈 쪽·19금 등) — 판단은 다음 장에서
         let A = null; try { A = await getDoc(url, { cred: 'omit' }); } catch (e) { if (e.message === '멈춤') throw e; }
@@ -5783,7 +5869,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const img = cell.querySelector('img[src*="_"]'); const cov = img ? coverKey(img.getAttribute('src')) : null; const isbn = null; const low = !!cell.querySelector('.used_label_04');
       out.push({ id, ids: [id], t: (a.textContent || '').replace(/[\u00a0\s]+/g, ' ').trim().slice(0, 120), p, pl, g, isbn, ym: null, low, uc: cb.name.slice(8), au, cov, g0: /\[\s*중고\s*\]/.test(T) && !g }); }
     return out; }
-  function benchParse(doc) { const S0 = benchParseSimple(doc); if (S0.length) return S0; /* 간단히 보기가 아니면(자세히 보기 등) 예전처럼 상자 단위로 */ const idOf = (a) => (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1] || null; const A = [...doc.querySelectorAll('a[href*="ItemId="]')].filter((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''));
+  function benchParse(doc) { const S0 = benchParseSimple(doc); if (S0.length) { try { const A = globalThis.__rnAgPc; if (A) A.rows('bench_list', 'simple', S0, (x) => ({ id: x.id, price: x.p, grade: x.g, title: x.t || null, cover: x.cov })); } catch (e) {} return S0; } /* (adapt10) 🔄 벤치마킹 숍 목록 길 성적(간단히 보기) — 번외가 떼어 써도 globalThis.__rnAgPc가 없으면 아무 일 없음 */ /* 간단히 보기가 아니면(자세히 보기 등) 예전처럼 상자 단위로 */ const idOf = (a) => (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1] || null; const A = [...doc.querySelectorAll('a[href*="ItemId="]')].filter((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''));
     const out = []; const done = new Set(); const txt = (el) => { if (!el) return ''; const w = doc.createTreeWalker(el, 4); const P = []; for (let n = w.nextNode(); n; n = w.nextNode()) P.push(n.nodeValue); return P.join(' ').replace(/[\u00a0\s]+/g, ' ').trim(); }; /* 글 조각 사이에 빈칸 (줄바꿈 태그로 붙은 글자가 섞이지 않게) */
     for (const a of A) { const id = idOf(a); if (!id || done.has(id)) continue;
       let box = a.closest('.ss_book_box') || null; if (!box) { for (let el = a.parentElement, k = 0; el && el !== doc.body && k < 14; el = el.parentElement, k++) { const ids = new Set([...el.querySelectorAll('a[href*="ItemId="]')].map(idOf).filter(Boolean)); if (ids.size > 3) break; box = el; if (/[\d,]{3,}\s*원/.test(txt(el)) && el.querySelectorAll('a[href*="ItemId="]').length) break; } }
@@ -5796,6 +5882,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const isbn = (box.innerHTML.match(/\b(97[89]\d{10})\b/) || [])[1] || null; const ym = T.match(/(19|20)(\d{2})\s*년\s*(\d{1,2})\s*월/);
       const low = !!box.querySelector('.used_label_04') || [...box.querySelectorAll('span,em,b,i')].some((e) => /^\s*최저가\s*$/.test(e.textContent || '')); /* (1.48.0) '최저가' 표시 = 온라인 중고 목록 맨 위(그때 같은 상품 경쟁 매물 중 가장 쌈) */
       out.push({ id: main, ids: bIds, t: title.replace(/^\[중고[^\]]*\]\s*/, '').slice(0, 120), p: used.length ? used[0].v : null, pl: list ? list.v : null, g: gm ? gm[1] : null, isbn, ym: ym ? `${ym[1]}${ym[2]}-${String(ym[3]).padStart(2, '0')}` : null, low }); }
+    try { const A = globalThis.__rnAgPc; if (A) A.rows('bench_list', 'box', out, (x) => ({ id: x.id, price: x.p, grade: x.g, title: x.t || null, isbn: x.isbn })); } catch (e) {} /* (adapt10) 상자 단위 길 성적 */
     return out; }
   /* (1.53.0) 🎯 집중 벤치마킹 — 그룹·주기(app_settings/bench.groups · 기준은 노선표 readnow-registry.js BENCH 한 곳)
    *  할 차례(due)인 판매자만 위 그룹부터·그룹 안 위에서부터 하나씩 → 한 판매자를 끝낼 때마다 차례를 다시 계산(그사이 짧은 주기 그룹이 차례가 되면 그쪽 먼저)
@@ -10253,7 +10340,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const ch = !!o.sk && o.sk !== sk; await ix.set({ key: k, url: u0, page: r.page || null, ext, sk, lastSaveAt: at, lastDoc: base.id, parts: parts.length, bytes: body.length, cnt: parsed != null ? y24Cnt(parsed) : null, seenAt: at, n: FV.increment(1), changedAt: ch ? at : o.changedAt || null, by }, { merge: true });
       try { window.__rnLog && window.__rnLog('예스24', 'detail', `📥 예스24 화면 원문 보관 — ${k}${ch ? ' · 뼈대가 바뀜' : o.sk ? ' · 7일 지나 다시' : ' · 처음'} · ${Math.round(body.length / 1024)}KB · 손님 정보 가림`); } catch (e) {} } catch (e) {} };
   /* (11/10) 줄 한 개 올리기 — 알라딘 탭(Firebase SDK)과 예스24 창(REST · 아래)이 같은 함수 · 예전 drain 안의 것을 그대로 옮김 */
-  const y24UpOne = async (fs, FV, r) => { let parsed = null; if (r.json && r.body) { try { parsed = JSON.parse(r.body); } catch (e) {} } const pid = sid(r.sig); const sample = parsed != null ? JSON.stringify(mask(parsed)).slice(0, 60000) : r.body ? String(r.body).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 20000) : null;
+  const y24UpOne = async (fs, FV, r) => { let parsed = null; if (r.json && r.body) { try { parsed = JSON.parse(r.body); } catch (e) {} } try { const A = globalThis.__rnAgPc; if (A) { const ok = +r.status === 200 && (r.json ? parsed != null : !!r.body) ? 1 : 0; const mid = (r.c2 ? 'col2_' : 'tab_') + (r.json ? 'json' : 'html'); A.obs('y24_ops', mid, { n: 1, ok, raw: ok ? null : 'HTTP ' + r.status + ' ' + String(r.ctype || '').slice(0, 40), good: !!ok }); A.fill('y24_ops', { [String(r.page || 'etc').replace(/[^\w가-힣]/g, '').slice(0, 30) || 'etc']: { [mid]: ok || null } }, { rec: false }); } } catch (e) {} /* (adapt10) 🔄 예스24 운영 응답 성적(응답 틀·고객 정보는 안 남김) */ const pid = sid(r.sig); const sample = parsed != null ? JSON.stringify(mask(parsed)).slice(0, 60000) : r.body ? String(r.body).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 20000) : null;
     await fs.collection('y24_probe').doc(pid).set({ sig: r.sig, n: FV.increment(1), lastAt: new Date(r.at).toISOString(), lastUrl: r.url.replace(/(name|nm|tel|hp|addr)=[^&]*/gi, '$1=＊').slice(0, 500), page: r.page, status: r.status, ctype: r.ctype, req: r.req ? String(r.req).replace(/(name|nm|tel|hp|addr|passw\w*|pwd)=[^&]*/gi, '$1=＊').slice(0, 2000) : null, shape: parsed != null ? JSON.stringify(shape(parsed, 0)).slice(0, 20000) : null, sample, bytes: r.body ? r.body.length : 0, by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }, { merge: true });
     await y24RawTake(fs, FV, r, parsed); /* (11/07 ①) 가린 원문 보관 — 풀이·화면 바뀜 알림용 */
     if (r.body) { const parts = []; for (let i = 0; i < r.body.length; i += 280000) parts.push(r.body.slice(i, i + 280000)); const base = fs.collection('crm_y24_raw').doc(); for (let i = 0; i < parts.length; i++) await (i ? fs.collection('crm_y24_raw').doc(base.id + '_' + i) : base).set({ sig: r.sig, url: r.url, page: r.page, at: new Date(r.at).toISOString(), req: r.req || null, part: i, parts: parts.length, body: parts[i], by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }); } };
@@ -10388,7 +10475,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y)); if (!y.logger) stPut(pc, y).catch(() => {}); /* (11/12 col2rep6) 웹앱이 닫혀도 번외 상태 한 줄 */ if (!y.logger) wRelay(pc, y).catch(() => {}); /* (11/11 y24ops4) 원격 예스24 쓰기 다리 */
         undo(new Set(Array.isArray(r.took) ? r.took : []));
         if (Array.isArray(r.recs) && r.recs.length) { const seen = gv2('rn-c2yids', []); const S0 = new Set(seen); const q = qGet(); let bytes = q.reduce((a, x) => a + (x.body ? x.body.length : 0), 0), drop = 0, add = 0;
-          for (const x of r.recs) { if (!x || !x.id) continue; ack.push(x.id); if (S0.has(x.id)) continue; S0.add(x.id); seen.push(x.id); const { id, src, ...rec } = x; q.push(rec); bytes += rec.body ? rec.body.length : 0; add++; }
+          for (const x of r.recs) { if (!x || !x.id) continue; ack.push(x.id); if (S0.has(x.id)) continue; S0.add(x.id); seen.push(x.id); const { id, src, ...rec } = x; rec.c2 = 1; /* (adapt10) 번외가 읽은 줄 표시(장부 길 이름만 · 올리는 칸엔 안 씀) */ q.push(rec); bytes += rec.body ? rec.body.length : 0; add++; }
           while (q.length > 200 || bytes > 6e6) { const x = q.shift(); bytes -= x && x.body ? x.body.length : 0; drop++; } GM_setValue(QK, q); GM_setValue('rn-c2yids', seen.slice(-300)); if (drop) GM_setValue('rn-y24drop', (+gv2('rn-y24drop', 0) || 0) + drop);
           if (add) try { window.__rnLog && window.__rnLog('예스24', 'detail', `🧪 번외 수집기가 화면 없이 읽은 예스24 응답 ${add}개를 받아 올림 줄에 넣음`); } catch (e) {} }
         if (r.jres && typeof r.jres === 'object') { const R = gv2('rn-y24jres', {}), D = gv2('rn-y24jdone', {}); let ch = false; for (const [id, x] of Object.entries(r.jres)) { if (!x || typeof x !== 'object') continue; jack.push(id); if (R[id] && +R[id].at >= +x.at) continue; R[id] = x; D[id] = { at: Date.now(), st: x.state, by: 'col2' }; ch = true; }

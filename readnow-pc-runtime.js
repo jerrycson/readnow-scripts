@@ -1,8 +1,142 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.288의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.289의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.288' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.288', function () {
+/* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg 0.1.7 — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */
+;(function (root) {
+  'use strict';
+  const toInt = (s) => { if (s == null) return null; if (typeof s === 'number') return isFinite(s) ? Math.round(s) : null; const m = String(s).replace(/,/g, '').match(/-?\d+/); return m ? +m[0] : null; };
+  const fmtInt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/* ◆AG-BEGIN — (0.1.7 adapt10) 여기부터 ◆AG-END까지는 수집기(PC)가 머리를 바꾸지 않고 쓰게 split.js가 그대로 떼어 readnow-pc-runtime.js 앞에 넣음(ReadnowAdaptAg) · 이 안에서는 toInt·fmtInt 말고 바깥 이름을 쓰지 않음 */
+  /* ══ (0.1.6 adapt9 · 정범님 11/12 밤 · 약속 64) 🔄 목표·방법 적응 틀 — 전제: '상대(알라딘·예스24 등)는 방식을 바꾼다'
+   *  목표(무엇을 얻나)는 고정하고 방법(어디서·어떤 표기·어떤 경로로)만 바꿈. 엔진마다 '목표 장부' 하나(g):
+   *   methods[방법] = 날짜별 성적 d[[날, 시도, 성공, 비용, 시간ms]](21일) · 최근 회차 rr[[시도, 성공, 시각]](6번) · st: champ(지금 쓰는 길) | cand(후보) | arch(예전 챔피언 — 지우지 않음, 돌아갈 수 있게) | off
+   *  agStep / agAdapt 흐름: ① 판정 agJudge(챔피언 최근 회차 성공률 vs 평소·목표) → ② 떨어지면 바뀐 것 찾기 agDiff·agClassify(잘 되던 원문 표본 vs 지금 원문: 표기·자리·경로·막힘·빈 답)
+   *   → ③ 새 방법 후보 agLabelCands(아는 값이 있는 자리 앞 글 · 같은 뜻 다른 표기 AG_SYN · '이름표 : 숫자' 꼴) → ④ 작은 표본 시험 agTrial(새 요청 없음 — 받아 둔 원문으로)
+   *   → ⑤ 통계로 고르기 agDecide(윌슨 하한 성공률 · 비용당 성공 · 연속 2번 이겨야 바꿈(고수) — 챔피언이 무너졌으면 표본 3개로 바로) → ⑥ 채택, 옛 방법은 보관(arch)
+   *  탐색/활용 agPick: 대부분 챔피언 · ε(평소 6% · 떨어질 때 35%) 만큼 다른 길 — 100%여도 3% 밑으로 내리지 않음(더 싼 길·되돌아온 옛 길을 늘 찾음)
+   *  바뀜·채택·되돌림·회복은 줄 { at, src:'엔진', eng, engL, kind, t, ev } → 부르는 쪽이 '발견 모음'에 넘김(클라우드 findsPush)
+   *  순수 함수 · 저장·네트워크 없음 · reduce 안 씀(알라딘 화면 prototype.js) */
+  const AG_DEF = { eps: 0.06, epsMin: 0.03, epsDrop: 0.35, minN: 12, drop: 0.2, low: 0.5, z: 1.28, effGain: 0.15, rateTie: 0.03, wins: 2, days: 21, win3: 3, ev: 30, arch: 8, target: 0.9, smp: 1200 };
+  const agNow = (t) => (t == null ? Date.now() : typeof t === 'number' ? t : Date.parse(t) || Date.now());
+  const agDay = (t) => new Date(agNow(t) + 9 * 3600e3).toISOString().slice(0, 10);
+  const r3 = (x) => (x == null || !isFinite(x) ? null : Math.round(x * 1000) / 1000);
+  const pct = (x) => (x == null ? '-' : Math.round(x * 100) + '%');
+  function agNew(id, o) { o = o || {}; return { id: String(id), label: o.label || String(id), goal: o.goal || '', unit: o.unit || '건', target: o.target != null ? +o.target : AG_DEF.target, methods: {}, champ: null, arch: [], ev: [], smp: {}, flag: null, at: null, v: 1 }; }
+  function agMethod(g, mid, o) { o = o || {}; mid = String(mid); let m = g.methods[mid]; if (!m) { m = g.methods[mid] = { id: mid, label: o.label || mid, how: o.how || null, from: o.from || 'seed', st: 'cand', d: [], rr: [], win: 0, at: o.at || null }; if (o.re) m.re = o.re; if (o.lbl) m.lbl = o.lbl; } return m; }
+  /* 목표 장부를 만들거나 씨앗(seed: label·goal·unit·target·methods[]·champ)으로 이름·방법을 맞춤 — 성적은 그대로 */
+  function agEnsure(map, id, seed) { let g = map[id]; if (!g || typeof g !== 'object' || !g.methods) g = map[id] = agNew(id, seed); if (seed) { if (seed.label) g.label = seed.label; if (seed.goal) g.goal = seed.goal; if (seed.unit) g.unit = seed.unit; if (seed.target != null) g.target = +seed.target; for (const m of seed.methods || []) agMethod(g, m.id, m); if (!g.champ && seed.champ && g.methods[seed.champ]) { g.champ = seed.champ; g.methods[seed.champ].st = 'champ'; } } return g; }
+  /* 한 회차 결과 넣기 — r = { n 시도, ok 성공, cost 비용(요청 쪽 수 등 · 없으면 n), ms, meta(새 방법이면 그 설명) } */
+  function agRecord(g, mid, r, now) { r = r || {}; const t = agNow(now); const m = agMethod(g, mid, r.meta); const n = Math.max(0, +r.n || 0); if (!n) return m; const ok = Math.min(n, Math.max(0, +r.ok || 0)); const cost = r.cost != null ? Math.max(0, +r.cost || 0) : n; const ms = Math.max(0, +r.ms || 0); const day = agDay(t);
+    let b = m.d.length ? m.d[m.d.length - 1] : null; if (!b || b[0] !== day) { b = [day, 0, 0, 0, 0]; m.d.push(b); if (m.d.length > AG_DEF.days) m.d.splice(0, m.d.length - AG_DEF.days); } b[1] += n; b[2] += ok; b[3] += cost; b[4] += ms;
+    m.rr.push([n, ok, new Date(t).toISOString()]); if (m.rr.length > 6) m.rr.splice(0, m.rr.length - 6); if (m.brk) { m.post = m.post || [0, 0, 0]; m.post[0] += n; m.post[1] += ok; m.post[2] += cost; } g.at = new Date(t).toISOString(); return m; }
+  const agWilson = (ok, n, z) => { if (!(n > 0)) return { lo: 0, hi: 1 }; const p = ok / n, z2 = z * z, d = 1 + z2 / n, c = p + z2 / (2 * n), s = z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n)); return { lo: Math.max(0, (c - s) / d), hi: Math.min(1, (c + s) / d) }; };
+  /* 성적 — 최근 3일 칸(모자라면 21일 전체) · 무너진 뒤 보관된 길은 무너진 뒤 성적(post)만 */
+  function agStat(m, o) { o = o || AG_DEF; if (!m) return { n: 0, ok: 0, cost: 0, r: null, eff: null }; let n = 0, ok = 0, cost = 0;
+    if (m.brk) { const P = m.post || [0, 0, 0]; n = P[0]; ok = P[1]; cost = P[2]; }
+    else { const L = m.d || []; const take = (k) => { n = 0; ok = 0; cost = 0; for (let i = Math.max(0, L.length - k); i < L.length; i++) { n += L[i][1]; ok += L[i][2]; cost += L[i][3]; } }; take(o.win3 || 3); if (n < (o.minN || 12)) take(L.length); }
+    return { n, ok, cost, r: n ? ok / n : null, eff: cost ? ok / cost : null }; }
+  const agRecent = (m, k) => { let n = 0, ok = 0; const L = (m && m.rr) || []; for (let i = Math.max(0, L.length - (k || 3)); i < L.length; i++) { n += L[i][0]; ok += L[i][1]; } return { n, ok, r: n ? ok / n : null }; };
+  /* 평소 = 최근 회차를 뺀 날짜 칸 */
+  const agBase = (m, k) => { const S = agStat(m); const R = agRecent(m, k); const n = S.n - R.n, ok = S.ok - R.ok; return n > 0 ? { n, ok, r: ok / n } : { n: 0, ok: 0, r: null }; };
+  /* ① 판정 — ok | low(목표 밑) | drop(평소보다 크게 떨어짐) | broken(무너짐) | new(챔피언 없음) | idle(기록 없음) */
+  function agJudge(g, o) { o = { ...AG_DEF, ...(o || {}) }; const m = g && g.champ ? g.methods[g.champ] : null; if (!m) return { st: 'new' }; const R = agRecent(m, 3); if (!R.n) return { st: 'idle' }; const B = agBase(m, 3); const ref = B.n >= Math.min(o.minN, 6) ? B.r : g.target; const r = R.r;
+    let st = 'ok'; if (R.n >= 3 && r < o.low * ref) st = 'broken'; else if (R.n >= 3 && ref - r > o.drop) st = 'drop'; else if (R.n >= 3 && r < g.target * 0.8) st = 'low';
+    return { st, r: r3(r), base: r3(B.r), ref: r3(ref), n: R.n }; }
+  /* 탐색/활용 — 이번 회차에 쓸 방법 하나 · rnd(0~1)를 넣으면 시험에서 같은 답 */
+  function agPick(g, rnd, o) { o = { ...AG_DEF, ...(o || {}) }; rnd = rnd == null ? Math.random() : +rnd; const L = Object.values((g && g.methods) || {}).filter((m) => m.st !== 'off'); if (!L.length) return null; const ch = g.champ && g.methods[g.champ] && g.methods[g.champ].st !== 'off' ? g.methods[g.champ] : null;
+    const j = agJudge(g, o); let eps = j.st === 'broken' || j.st === 'drop' ? o.epsDrop : o.eps; eps = Math.max(o.epsMin, eps); if (!ch) eps = 1; const others = L.filter((m) => m !== ch);
+    if (!others.length || rnd >= eps) return { mid: (ch || L[0]).id, why: ch ? '고수' : '처음', eps: r3(eps) };
+    let tot = 0; for (const m of L) tot += agStat(m, o).n; let best = null, bv = -1; for (const m of others) { const S = agStat(m, o); const u = S.n > 0 ? S.r + Math.sqrt((2 * Math.log(tot + 2)) / S.n) : 9; const v = m.st === 'arch' ? u * 0.9 : u; if (v > bv) { bv = v; best = m; } }
+    return { mid: best.id, why: '탐색', eps: r3(eps) }; }
+  const AG_KO = { broken: '옛 방법이 무너짐', better: '성공률이 확실히 높음', cheaper: '성공률은 같고 비용당 성공이 더 좋음' };
+  function agLine(g, kind, t, ev, now) { const L = { at: new Date(agNow(now)).toISOString(), src: '엔진', eng: g.id, engL: g.label, kind, t, ...(ev ? { ev } : {}) }; g.ev = (g.ev || []).concat([{ at: L.at, kind, t }]).slice(-AG_DEF.ev); return L; }
+  /* ⑤ 통계로 고르기 — 바꿀 때만 줄을 돌려줌 */
+  function agDecide(g, now, o) { o = { ...AG_DEF, ...(o || {}) }; const lines = []; const L = Object.values(g.methods || {}).filter((m) => m.st !== 'off'); const ch = g.champ ? g.methods[g.champ] : null;
+    if (!ch || ch.st === 'off') { let c = null, cr = -1; for (const m of L) { const S = agStat(m, o); if (S.n && S.ok && S.r > cr) { c = m; cr = S.r; } } if (c) { c.st = 'champ'; g.champ = c.id; c.since = new Date(agNow(now)).toISOString(); g.ev = (g.ev || []).concat([{ at: c.since, kind: '시작', t: `처음 방법 '${c.label}' (성공률 ${pct(cr)})` }]).slice(-o.ev); } return lines; }
+    const j = agJudge(g, o); const CS = agStat(ch, o); const chR = CS.r == null ? 0 : CS.r; const chE = CS.eff || 0; const rec = agRecent(ch, 3); const broken = j.st === 'broken'; let pick = null, why = null, ps = -1;
+    for (const m of L) { if (m === ch) continue; const S = agStat(m, o); if (!S.n) { m.win = 0; continue; } const w = agWilson(S.ok, S.n, o.z); let win = null;
+      if (broken && S.n >= 3 && S.r >= 0.6 && w.lo > (rec.r || 0) + 0.1) win = 'broken';
+      else if (S.n >= o.minN && w.lo > chR + 0.02) win = 'better';
+      else if (S.n >= o.minN && CS.n >= o.minN && Math.abs(S.r - chR) <= o.rateTie && S.eff != null && S.eff >= chE * (1 + o.effGain) && w.lo >= chR - 0.05) win = 'cheaper';
+      if (win) { m.win = (m.win || 0) + 1; if (win === 'broken' || m.win >= o.wins) { const sc = w.lo + (S.eff || 0) * 0.001; if (sc > ps) { pick = m; why = win; ps = sc; } } } else m.win = 0; }
+    if (pick) { const at = new Date(agNow(now)).toISOString(); const back = pick.st === 'arch'; const S = agStat(pick, o); ch.st = 'arch'; if (broken) { ch.brk = at; ch.post = [0, 0, 0]; } g.arch = (g.arch || []).concat([{ id: ch.id, label: ch.label, at, why, r: r3(broken ? rec.r : chR), n: broken ? rec.n : CS.n }]).slice(-o.arch);
+      pick.st = 'champ'; pick.win = 0; pick.since = at; if (pick.brk) { delete pick.brk; delete pick.post; } g.champ = pick.id;
+      const t = `🔄 ${g.label}: 방법 '${ch.label}' → '${pick.label}'${back ? '(예전 방법으로 되돌림)' : ''} — ${AG_KO[why]} · 새 방법 성공률 ${pct(S.r)}(${Math.round(S.n)}${g.unit}) · 옛 방법 ${pct(broken ? rec.r : chR)}${why === 'cheaper' ? ` · 비용당 성공 ${r3(chE)} → ${r3(S.eff)}` : ''}`;
+      lines.push(agLine(g, back ? '되돌림' : '채택', t, { from: ch.id, to: pick.id, why, newR: r3(S.r), newN: S.n, oldR: r3(broken ? rec.r : chR) }, now)); }
+    return lines; }
+
+  /* ② 바뀐 것 찾기 — 두 원문(잘 되던 것 a · 지금 b)의 낱말·class 이름 차이 */
+  const agToks = (s) => { const S = String(s || ''); const w = new Set(), c = new Set(); for (const m of S.matchAll(/class\s*=\s*["']([^"']+)["']/gi)) for (const x of m[1].split(/\s+/)) if (x) c.add(x); const t = S.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' '); for (const m of t.matchAll(/[가-힣]{2,}|[A-Za-z][A-Za-z]+(?:\s[A-Z][a-z]+)?/g)) w.add(m[0]); return { w, c }; };
+  const jac = (A, B) => { if (!A.size && !B.size) return 1; let i = 0; for (const x of A) if (B.has(x)) i++; return i / (A.size + B.size - i); };
+  function agDiff(a, b) { const A = agToks(a), B = agToks(b); const lostW = [...A.w].filter((x) => !B.w.has(x)), gainW = [...B.w].filter((x) => !A.w.has(x)), lostC = [...A.c].filter((x) => !B.c.has(x)), gainC = [...B.c].filter((x) => !A.c.has(x));
+    return { lostW: lostW.slice(0, 12), gainW: gainW.slice(0, 12), lostC: lostC.slice(0, 12), gainC: gainC.slice(0, 12), jw: r3(jac(A.w, B.w)), jc: r3(jac(A.c, B.c)), nA: String(a || '').length, nB: String(b || '').length }; }
+  const AG_KIND = { label: '표기 바뀜(같은 자리 다른 이름)', place: '자리 바뀜(화면 구조·칸 이름)', path: '경로 바뀜(주소 넘겨짐·로그인)', block: '막힘(요청 많음·로봇 확인)', empty: '빈 답(자료 없음)', page: '화면이 통째로 바뀜', none: '원문은 같음(값 쪽 문제)', unknown: '까닭 아직 모름(원문 표본 없음)' };
+  function agClassify(a, b, info) { info = info || {}; const B = String(b == null ? '' : b); const st = +info.status || 0;
+    if (st === 429 || st === 403 || /captcha|자동\s*입력\s*방지|비정상적인\s*접근|too many requests|access denied/i.test(B)) return { k: 'block', ko: AG_KIND.block };
+    if (info.redirect || /\/login\/|wlogin\.aspx|로그인이\s*필요/i.test(B)) return { k: 'path', ko: AG_KIND.path };
+    if (!B.replace(/<[^>]+>/g, '').trim() || B.length < 40) return { k: 'empty', ko: AG_KIND.empty };
+    if (!a) return { k: 'unknown', ko: AG_KIND.unknown }; const D = agDiff(a, b);
+    if (!D.lostW.length && !D.gainW.length && !D.lostC.length && !D.gainC.length) return { k: 'none', ko: AG_KIND.none, d: D };
+    if (D.jw < 0.35) return { k: 'page', ko: AG_KIND.page, d: D };
+    if (D.lostW.length && D.gainW.length && (D.jc >= 0.8 || !D.lostC.length)) return { k: 'label', ko: AG_KIND.label, d: D };
+    if (D.lostC.length || D.gainC.length) return { k: 'place', ko: AG_KIND.place, d: D };
+    return { k: 'label', ko: AG_KIND.label, d: D }; }
+  /* 원문 표본 — 방법마다 잘 되던 것(good)·안 되던 것(bad) 하나씩 · 1,200자까지 */
+  function agSample(g, mid, raw, good, now, info) { if (raw == null) return; const s = String(raw).slice(0, AG_DEF.smp); const z = (g.smp[mid] = g.smp[mid] || {}); z[good ? 'good' : 'bad'] = { at: new Date(agNow(now)).toISOString(), s, ...(info ? { info } : {}) }; const ks = Object.keys(g.smp); if (ks.length > 5) for (const k of ks) if (k !== g.champ && k !== mid && Object.keys(g.smp).length > 5) delete g.smp[k]; }
+
+  /* ③ 새 방법 후보 — 같은 뜻 다른 표기 · 아는 값 자리 · '이름표 : 숫자' */
+  const AG_SYN = { salesPoint: ['Sales Point', 'SalesPoint', '세일즈포인트', '세일즈 포인트', '판매지수', '판매 지수'], priceSales: ['판매가', '할인가', '구매가', '판매 가격'], priceList: ['정가', '정상가'], usedMin: ['중고 최저가', '최저가'], pages: ['쪽수', '페이지', '면수'], rating: ['평점', '별점'], reviews: ['구매평', '리뷰', '100자평', '한줄평'], items: ['상품 수', '상품수', '전체 상품', '등록 상품'] };
+  const reEsc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const agLblRe = (l) => reEsc(String(l).trim()).replace(/\s+/g, '\\s*') + '\\s*[:：]?\\s*(\\d[\\d,]*)';
+  const agPlain = (s) => String(s == null ? '' : s).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/\s+/g, ' ').trim();
+  function agApply(m, s) { if (!m || !m.re) return null; let re; try { re = new RegExp(m.re); } catch (e) { return null; } const x = agPlain(s).match(re); return x ? toInt(x[1]) : null; }
+  function agLabelCands(samples, spec, o) { o = o || {}; spec = spec || {}; const syn = spec.syn || AG_SYN[spec.field] || []; const S = (samples || []).filter((x) => x && x.s != null); const cnt = new Map();
+    const add = (lbl, src, i) => { lbl = String(lbl || '').replace(/\s+/g, ' ').trim(); if (lbl.length < 2 || lbl.length > 16) return; const z = cnt.get(lbl) || { lbl, src, hit: new Set() }; z.hit.add(i); if (src === 'known') z.src = 'known'; cnt.set(lbl, z); };
+    const pre = (s, k, i) => { const p = s.slice(Math.max(0, k - 28), k); const m = p.match(/([가-힣A-Za-z][가-힣A-Za-z ]{0,14}[가-힣A-Za-z]|[가-힣A-Za-z]{2})\s*[:：]?\s*$/); if (!m) return; const ws = m[1].trim().split(' '); add(m[1], 'known', i); if (ws.length > 1) { add(ws[ws.length - 1], 'known', i); add(ws.slice(-2).join(' '), 'known', i); } };
+    S.forEach((x, i) => { const s = agPlain(x.s);
+      if (x.v != null && isFinite(+x.v)) { for (const f of [...new Set([String(Math.round(+x.v)), fmtInt(Math.round(+x.v))])]) { let k = -1; while ((k = s.indexOf(f, k + 1)) >= 0) { const a = s[k - 1] || '', b = s[k + f.length] || ''; if (/[\d,]/.test(a) || /\d/.test(b) || (b === ',' && /\d/.test(s[k + f.length + 1] || ''))) continue; pre(s, k, i); } } }
+      for (const w of syn) { try { if (new RegExp(agLblRe(w)).test(s)) add(w, 'syn', i); } catch (e) {} }
+      if (o.scan) for (const m of s.matchAll(/([가-힣A-Za-z][가-힣A-Za-z ]{0,14}[가-힣A-Za-z])\s*[:：]\s*(\d[\d,]*)/g)) add(m[1], 'scan', i); });
+    return [...cnt.values()].map((z) => ({ id: 'lbl:' + z.lbl, label: `이름표 '${z.lbl}'`, how: 'label', lbl: z.lbl, re: agLblRe(z.lbl), src: z.src, hit: z.hit.size })).sort((a, b) => b.hit - a.hit || (a.src === 'known' ? -1 : 1)).slice(0, o.max || 8); }
+  /* ④ 작은 표본 시험 — 받아 둔 원문으로(새 요청 0) · 아는 값이 있으면 같아야 성공 · range 밖은 실패 */
+  function agTrial(g, cands, samples, spec, now) { spec = spec || {}; const S = (samples || []).filter((x) => x && x.s != null); const out = []; if (!S.length) return out;
+    for (const c of cands || []) { if (!c || !c.re || (g.champ && c.id === g.champ)) continue; let ok = 0; for (const x of S) { const v = agApply(c, x.s); if (v == null) continue; if (spec.range && (v < spec.range[0] || v > spec.range[1])) continue; if (x.v != null && Math.round(+x.v) !== v) continue; ok++; }
+      agRecord(g, c.id, { n: S.length, ok, cost: S.length, meta: { ...c, from: c.from || 'found', at: new Date(agNow(now)).toISOString() } }, now); out.push({ id: c.id, ok, n: S.length }); }
+    return out; }
+  /* ①~⑥ 한 번에 — samples(지금 원문 [{s, v?(아는 값)}])·spec(field·type·range·syn)·info(status 등)을 주면 떨어졌을 때 스스로 후보를 찾아 시험·채택 · 늘(100%여도) 하루 한 번은 같은 뜻 다른 표기를 찾아 후보 성적을 쌓음 */
+  function agAdapt(g, o) { o = o || {}; const now = agNow(o.now); const lines = []; const j = agJudge(g); const day = agDay(now); const bad = j.st === 'broken' || j.st === 'drop' || j.st === 'low';
+    if (bad && (!g.flag || g.flag.st !== j.st || g.flag.day !== day)) { const ch = g.champ ? g.methods[g.champ] : null; const sm = (g.smp || {})[g.champ] || {}; const cur = o.raw != null ? o.raw : sm.bad ? sm.bad.s : (o.samples && o.samples[0] ? o.samples[0].s : null); const cl = agClassify(sm.good ? sm.good.s : null, cur, o.info || (sm.bad && sm.bad.info));
+      const dd = cl.d ? [cl.d.lostW.length ? `사라진 낱말 ${cl.d.lostW.slice(0, 4).map((x) => `'${x}'`).join('·')}` : '', cl.d.gainW.length ? `새 낱말 ${cl.d.gainW.slice(0, 4).map((x) => `'${x}'`).join('·')}` : '', cl.d.lostC.length ? `사라진 칸 이름 ${cl.d.lostC.slice(0, 3).join('·')}` : ''].filter(Boolean).join(' · ') : '';
+      g.flag = { st: j.st, day, at: new Date(now).toISOString(), k: cl.k }; lines.push(agLine(g, '바뀜', `🔎 ${g.label}: 목표 달성률 ${pct(j.ref)} → ${pct(j.r)}(${ch ? `방법 '${ch.label}'` : '방법 없음'}) — ${cl.ko}${dd ? ' · ' + dd : ''}`, { judge: j, k: cl.k, d: cl.d || null }, now)); }
+    else if (!bad && g.flag && j.st === 'ok') { lines.push(agLine(g, '회복', `✅ ${g.label}: 목표 달성률 ${pct(j.r)}로 돌아옴(방법 '${(g.methods[g.champ] || {}).label || '-'}')`, { judge: j }, now)); g.flag = null; }
+    let tried = null; const explore = !g.lastX || g.lastX !== day; if (o.samples && o.samples.length && (bad || explore || o.force)) { const cands = agLabelCands(o.samples, o.spec, { scan: bad || o.scan }); const arch = Object.values(g.methods).filter((m) => m.re && m.id !== g.champ).map((m) => ({ id: m.id, label: m.label, how: m.how, lbl: m.lbl, re: m.re, from: m.from })); const seen = new Set(); const all = cands.concat(arch).filter((c) => !seen.has(c.id) && seen.add(c.id)); tried = agTrial(g, all, o.samples, o.spec, now); g.lastX = day; }
+    for (const L of agDecide(g, now)) lines.push(L); return { judge: j, tried, lines }; }
+  /* 웹앱 🔬 연구 탭에 보일 작은 요약(문서 작게) */
+  function agSummary(g) { if (!g || !g.methods) return null; const ch = g.champ ? g.methods[g.champ] : null; const S = ch ? agStat(ch) : null; const j = agJudge(g); const R = ch ? agRecent(ch, 3) : null;
+    const others = Object.values(g.methods).filter((m) => m !== ch && m.st !== 'off').map((m) => { const s = agStat(m); return { id: m.id, label: m.label, st: m.st, r: r3(s.r), n: Math.round(s.n), eff: r3(s.eff) }; }).sort((a, b) => (b.r || 0) - (a.r || 0)).slice(0, 3);
+    const last = (g.ev || []).filter((e) => e.kind !== '시작').slice(-1)[0] || null; const fl = g.fl || g.fl0 ? agFlSum(g) : null; return { id: g.id, label: g.label, goal: g.goal, unit: g.unit, st: j.st, ...(fl ? { fl } : {}), champ: ch ? { id: ch.id, label: ch.label, r: r3(S.r), n: Math.round(S.n), eff: r3(S.eff), since: ch.since || null, recent: R ? r3(R.r) : null } : null, cands: others, arch: (g.arch || []).length, last, at: g.at }; }
+
+  /* (0.1.7 adapt10) 🧩 칸마다 길 성적 — 한 화면에서 칸마다 여러 길(운영 파서·글 이름표·구조 데이터 등)로 읽은 값을 견줘 [시도, 채움, 맞음]
+   *  fields = { 칸: { 길: 값|null } } · 기준값 = 가장 많은 길이 낸 값(같으면 main 길) · 길 하나뿐이면 채움 = 맞음
+   *  agFillTally(fields, {main}) → { t: { 칸: { 길: [1, 채움, 맞음] } }, tot: { 길: { n, ok } } } · agFillAdd(가, 나) 더하기 · agFill(g, t, now) 장부 g.fl(오늘)·g.fl0(어제)에 더함 · 칸 24개·길 6개까지 */
+  const agHas = (v) => v != null && v !== '' && !(typeof v === 'number' && !isFinite(v)) && !(Array.isArray(v) && !v.length);
+  const agKey = (v) => (Array.isArray(v) ? v.join('|') : String(v)).replace(/\s+/g, ' ').trim().toLowerCase();
+  function agFillTally(fields, o) { o = o || {}; const t = {}, tot = {}; let nf = 0;
+    for (const f of Object.keys(fields || {})) { const P = fields[f]; if (!P || typeof P !== 'object') continue; if (++nf > 24) break; const ps = Object.keys(P).slice(0, 6); const cnt = new Map(); for (const p of ps) if (agHas(P[p])) { const k = agKey(P[p]); cnt.set(k, (cnt.get(k) || 0) + 1); }
+      let ref = null, rn = 0; const mk = o.main && agHas(P[o.main]) ? agKey(P[o.main]) : null; for (const [k, n] of cnt) if (n > rn || (n === rn && k === mk)) { ref = k; rn = n; }
+      const F = (t[f] = {}); for (const p of ps) { const has = agHas(P[p]) ? 1 : 0; const ag = has && ref != null && agKey(P[p]) === ref ? 1 : 0; F[p] = [1, has, ag]; const z = (tot[p] = tot[p] || { n: 0, ok: 0 }); z.n++; z.ok += ag; } }
+    return { t, tot }; }
+  function agFillAdd(A, B) { A = A || {}; for (const f of Object.keys(B || {})) { const F = (A[f] = A[f] || {}); for (const p of Object.keys(B[f] || {})) { const z = (F[p] = F[p] || [0, 0, 0]); const y = B[f][p] || []; z[0] += +y[0] || 0; z[1] += +y[1] || 0; z[2] += +y[2] || 0; } } return A; }
+  function agFill(g, T, now) { if (!g || !T) return g; const day = agDay(now); if (g.flDay !== day) { if (g.fl && g.flDay) { g.fl0 = g.fl; g.fl0Day = g.flDay; } g.fl = {}; g.flDay = day; }
+    const fs = Object.keys(T); for (const f of fs) { if (!g.fl[f] && Object.keys(g.fl).length >= 24) continue; const F = (g.fl[f] = g.fl[f] || {}); for (const p of Object.keys(T[f] || {})) { if (!F[p] && Object.keys(F).length >= 6) continue; const z = (F[p] = F[p] || [0, 0, 0]); const y = T[f][p] || []; z[0] += +y[0] || 0; z[1] += +y[1] || 0; z[2] += +y[2] || 0; } } return g; }
+  /* 칸별 길 요약(웹앱 · 진단) — 오늘 것이 적으면(칸당 5번 밑) 어제 것 · { day, f: { 칸: { 길: [시도, 채움률, 맞음률] } } } */
+  function agFlSum(g) { if (!g) return null; let F = g.fl, d = g.flDay; const n0 = (X) => { let n = 0; for (const f of Object.keys(X || {})) for (const p of Object.keys(X[f])) n = Math.max(n, X[f][p][0]); return n; }; if ((!F || n0(F) < 5) && g.fl0 && n0(g.fl0) > n0(F)) { F = g.fl0; d = g.fl0Day; } if (!F || !Object.keys(F).length) return null;
+    const f = {}; for (const k of Object.keys(F)) { f[k] = {}; for (const p of Object.keys(F[k])) { const z = F[k][p]; f[k][p] = [z[0], z[0] ? r3(z[1] / z[0]) : null, z[0] ? r3(z[2] / z[0]) : null]; } } return { day: d, f }; }
+  
+  root.ReadnowAdaptAg = { VERSION: '0.1.7', AG_DEF, AG_SYN, AG_KIND, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, agFillTally, agFillAdd, agFill, agFlSum };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.289' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.289', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -1267,6 +1401,90 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (saved === 'prc') setTimeout(() => { if (!bar.querySelector('button[data-t="prc"]')) set('ov'); }, 4000); // 가격 감시기 탭이 안 붙으면 개요로
     setInterval(draw, 1000); };
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+})();
+
+/* ══════════ (adapt10 11/12 밤 · 정범님 '알라딘은 방식을 계속 바꾼다는 전제' · 약속 64) 🔄 수집기(PC) 목표·방법 장부 — 머리 그대로
+ *  틀 = globalThis.ReadnowAdaptAg(공용 readnow-adapt-core.js ◆AG 덩어리를 split.js가 readnow-pc-runtime.js 앞에 그대로 넣음 · 새 @require 없음)
+ *  읽기 성적만 남김 — 수집기 동작(차례·속도·로그인·로거 잠금·네이버 와이파이 규칙)은 바꾸지 않음 · 손님 정보·값 원문은 남기지 않음(칸마다 '채움·맞음' 수만)
+ *  붙인 곳(공용 파서를 감쌈 · 같은 화면은 한 번만 셈): 알라딘 상품 화면(시장 지표·매입·벤치마킹 상세가 같이 씀) · 전체 중고 화면 · 검색 목록 · 샵매니저 목록(운영) · 판매자 숍 요약
+ *   · 예스24 검색 목록·묶음·가게 · 바깥 시세(ReadnowExt.run — 출처가 길) · 🎯 벤치마킹 숍 목록(간단히 보기 vs 상자 길) · 공개 화면 읽기 길(로그인 없이 vs 로그인) · 🟦 예스24 운영 응답 올리기
+ *  칸마다 길: 상품 화면은 운영 파서(op) · 글 이름표(lbl: 'Sales Point'·세일즈포인트·판매가·정가·쪽) · 구조 데이터(ld: meta·JSON-LD)를 견줘 [시도, 채움, 합의값과 같음]
+ *  회차 = 이 PC 모든 탭이 모은 시도 40번 또는 10분(GM 저장소 rn-ag-acc) → 장부(rn-ag-g) → 15분마다 한 탭이 adapt_pc/<PC>{g, lines}·app_settings/adapt_goals sum['pc_<엔진>@<PC>']·발견 모음 넘김(finds_inbox)
+ *  끄기: GM rn-ag-off = 1 · 진단: window.__rnAgPc.peek() */
+(function rnAgPc() { const G = globalThis; const AG = G.ReadnowAdaptAg; if (G.__rnAgPc || !AG || !AG.agRecord || !AG.agFillTally) return;
+  const KG = 'rn-ag-g', KA = 'rn-ag-acc', KL = 'rn-ag-lines', KF = 'rn-ag-flush'; const ROUND_N = 40, ROUND_MS = 10 * 60e3, FLUSH_MS = 15 * 60e3;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
+  const on = () => !gv('rn-ag-off', 0); const pcN = () => { try { return String((window.__rnPcName && window.__rnPcName.get()) || '').replace(/[^\w가-힣-]/g, '_').slice(0, 40); } catch (e) { return ''; } };
+  const SEED = {
+    al_product: { label: '수집기 알라딘 상품 화면 읽기', goal: '상품 화면 칸(SP·판매가·정가·ISBN·출간일·쪽수) — 시장 지표·매입·벤치마킹 상세가 같이 씀', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(products-core)' }, { id: 'lbl', label: "글 이름표('Sales Point'·세일즈포인트·판매가·정가·쪽)" }, { id: 'ld', label: '구조 데이터(meta·JSON-LD)' }], champ: 'op' },
+    al_sp: { label: '수집기 알라딘 상품 화면 SP 읽기', goal: '상품 화면마다 세일즈포인트(시장 지표·벤치마킹의 뼈대)', unit: '권', target: 0.9, methods: [{ id: 'op', label: '운영 파서(순위 상자 Sales Point)' }, { id: 'lbl', label: "글 이름표('Sales Point'·세일즈포인트·판매지수 — 화면 어디든)" }], champ: 'op' },
+    al_used: { label: '수집기 알라딘 전체 중고 화면 읽기', goal: '전체 중고 수·매물 줄', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서' }, { id: 'lbl', label: "글 이름표('전체 중고 (n)')" }, { id: 'cart', label: '장바구니 칸 수' }], champ: 'op' },
+    al_list: { label: '수집기 알라딘 검색 목록 읽기', goal: '목록 줄마다 상품 번호·제목·표지', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(.ss_book_box)' }, { id: 'attr', label: '상자 itemid 속성' }, { id: 'href', label: '제목 링크 주소' }], champ: 'op' },
+    al_scm: { label: '수집기 샵매니저 상품 목록 읽기(운영)', goal: '우리 상품 줄마다 값·수량·상태·관리 코드', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(input.batchChkBox 줄)' }], champ: 'op' },
+    seller_shop: { label: '수집기 판매자 숍 요약 읽기', goal: '숍 첫 화면 6개월 평가·등급·상태', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(sellers-core)' }], champ: 'op' },
+    y24_list: { label: '수집기 예스24 검색 목록 읽기', goal: '줄마다 묶음 번호·중고 수·새상품 값', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(a.gd_name)' }, { id: 'href', label: '묶음 링크 주소' }], champ: 'op' },
+    y24_hub: { label: '수집기 예스24 중고 묶음 읽기', goal: '매물 줄마다 값·등급·가게·배송비', unit: '칸', target: 0.9, methods: [{ id: 'op', label: '운영 파서(li[saleprice])' }], champ: 'op' },
+    y24_shop: { label: '수집기 예스24 가게 읽기', goal: '가게 만족도·평가 수·상품 수', unit: '칸', target: 0.8, methods: [{ id: 'op', label: '운영 파서(글 정규식)' }], champ: 'op' },
+    bench_list: { label: '수집기 🎯 벤치마킹 숍 목록 읽기', goal: '숍 목록 쪽마다 상품(값·등급·제목)', unit: '쪽', target: 0.9, methods: [{ id: 'simple', label: '간단히 보기(장바구니 칸)' }, { id: 'box', label: '상자 단위(자세히 보기)' }], champ: 'simple' },
+    pub_read: { label: '수집기 공개 화면 읽기 길', goal: '공개 화면을 로그인 없이(안 되면 로그인)', unit: '장', target: 0.9, methods: [{ id: 'anon', label: '로그인 없이' }, { id: 'logged', label: '로그인 상태' }] },
+    y24_ops: { label: '수집기 🟦 예스24 운영 응답 올리기', goal: '예스24 판매관리 응답(주문·상품)을 받아 올림', unit: '건', target: 0.9 },
+    ext: { label: '수집기 바깥 시세·책 정보 읽기', goal: 'ISBN마다 바깥 출처(교보·국중·예스24 등) 값', unit: '번', target: 0.6 },
+  };
+  let P = {}; let pend = 0; const seen = new WeakMap();
+  const once = (d, eng) => { if (!d || (typeof d !== 'object' && typeof d !== 'function')) return true; let s = seen.get(d); if (!s) { s = new Set(); try { seen.set(d, s); } catch (e) { return true; } } if (s.has(eng)) return false; s.add(eng); return true; };
+  const box = (eng) => (P[eng] = P[eng] || { m: {}, fl: {}, raw: null });
+  function obs(eng, mid, r) { try { if (!on() || !eng || !mid || !r || pend > 3000) return; const B = box(eng); const z = (B.m[mid] = B.m[mid] || [0, 0, 0, 0]); const n = Math.max(0, +r.n || 1); z[0] += n; z[1] += Math.min(n, Math.max(0, +r.ok || 0)); z[2] += r.cost != null ? Math.max(0, +r.cost || 0) : n; z[3] += Math.max(0, +r.ms || 0); pend += n;
+      if (r.raw != null) smp(eng, mid, r.raw, r.good); } catch (e) {} }
+  /* 원문 표본(바뀐 것 찾기용) — 길마다 안 된 것을 먼저 · 600자 · 전화번호 꼴 가림 */
+  function smp(eng, mid, raw, good) { try { if (!on()) return; const B = box(eng); if (raw != null && (!B.raw || !good)) B.raw = [mid, String(raw).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 600), !!good]; } catch (e) {} }
+  /* 칸마다 길 — fields = { 칸: { 길: 값|null } } → 길마다 성적도 같이(rec !== false) */
+  function fill(eng, fields, o) { o = o || {}; try { if (!on()) return; const T = AG.agFillTally(fields, { main: o.main || 'op' }); AG.agFillAdd(box(eng).fl, T.t); if (o.rec !== false) for (const [p, z] of Object.entries(T.tot)) if (z.n) obs(eng, p, { n: z.n, ok: z.ok }); } catch (e) {} }
+  /* 줄 목록 — 줄마다 칸(op 하나) 채움 + 쪽 하나 = 시도 하나(줄이 있으면 성공) */
+  function rows(eng, mid, L, pick, o) { try { if (!on()) return; const A0 = Array.isArray(L) ? L : []; obs(eng, mid, { n: 1, ok: A0.length ? 1 : 0, ...(o || {}) }); const T = {}; for (const r of A0.slice(0, 60)) { const F = pick(r) || {}; const t = AG.agFillTally(Object.fromEntries(Object.entries(F).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) ? v : { [mid]: v }])), { main: mid }).t; AG.agFillAdd(T, t); } AG.agFillAdd(box(eng).fl, T); } catch (e) {} }
+  /* 이 탭이 모은 것 → GM 저장소 회차 칸 → 회차가 차면 장부 */
+  function push() { if (!pend && !Object.keys(P).length) return; const Pn = P; P = {}; pend = 0; try { const acc = gv(KA, {}) || {}; const t = Date.now();
+      for (const [eng, B] of Object.entries(Pn)) { const a = (acc[eng] = acc[eng] || { t0: t, n: 0, m: {}, fl: {}, raw: null }); for (const [mid, z] of Object.entries(B.m)) { const y = (a.m[mid] = a.m[mid] || [0, 0, 0, 0]); for (let i = 0; i < 4; i++) y[i] += z[i]; a.n += z[0]; } AG.agFillAdd(a.fl, B.fl); if (B.raw && (!a.raw || !B.raw[2])) a.raw = B.raw; }
+      const due = Object.keys(acc).filter((k) => acc[k].n >= ROUND_N || t - acc[k].t0 >= ROUND_MS); if (due.length) { const L = gv(KG, {}) || {}; const lines = gv(KL, []) || [];
+        for (const eng of due) { const a = acc[eng]; delete acc[eng]; const id = 'pc_' + eng; const g = AG.agEnsure(L, id, SEED[eng] || { label: '수집기 ' + eng, unit: '번' }); for (const [mid, z] of Object.entries(a.m)) if (z[0]) AG.agRecord(g, mid, { n: z[0], ok: z[1], cost: z[2], ms: z[3] }, t); if (Object.keys(a.fl).length) AG.agFill(g, a.fl, t);
+          if (a.raw) AG.agSample(g, a.raw[0], a.raw[1], a.raw[2], t); const res = AG.agAdapt(g, { now: t }); for (const x of res.lines || []) lines.push(x); }
+        sv(KG, L); sv(KL, lines.slice(-60)); }
+      sv(KA, acc); } catch (e) {} }
+  /* 15분마다 이 PC 한 탭이 Firestore로 — adapt_pc/<PC>(장부 몸통) · adapt_goals sum(웹앱 🔄 엔진 적응 상태) · finds_inbox(발견 모음 넘김) */
+  async function flush(force) { try { const F = G.firebase; if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return null; const pc = pcN(); if (!pc) return null; const t = Date.now(); const last = +gv(KF, 0) || 0; if (!force && t - last < FLUSH_MS) return null; sv(KF, t); push();
+      const L = gv(KG, {}) || {}; const ks = Object.keys(L); if (!ks.length) return { n: 0 }; const db = F.firestore(); const FP = F.firestore.FieldPath; const at = new Date(t).toISOString(); const lines = (gv(KL, []) || []).slice(-60);
+      await db.collection('adapt_pc').doc(pc).set({ pc, at, ver: (G.ReadnowAdaptAg || {}).VERSION || null, col: G.__rnLiveVer || null, g: JSON.parse(JSON.stringify(L)), lines }, { merge: false });
+      const args = []; for (const k of ks) { const s0 = AG.agSummary(L[k]); if (s0) args.push(new FP('sum', k + '@' + pc), JSON.parse(JSON.stringify({ ...s0, id: k + '@' + pc, label: `${s0.label} · ${pc}`, by: '수집기', pc }))); }
+      if (args.length) { try { await db.collection('app_settings').doc('adapt_goals').update('at', at, ...args); } catch (e) {} }
+      const sent = +gv('rn-ag-sent', 0) || 0; const nw = JSON.parse(JSON.stringify(lines.filter((x) => x && x.t && Date.parse(x.at || 0) > sent).map((x) => ({ ...x, src: '엔진', engL: `${x.engL || x.eng} · ${pc}` }))));
+      if (nw.length) { try { await db.collection('app_settings').doc('finds_inbox').set({ L: F.firestore.FieldValue.arrayUnion(...nw), at }, { merge: true }); sv('rn-ag-sent', Math.max(...nw.map((x) => Date.parse(x.at) || 0))); } catch (e) {} }
+      return { n: ks.length, lines: nw.length }; } catch (e) { return { err: String((e && e.message) || e).slice(0, 120) }; } }
+  setInterval(push, 30e3); setInterval(() => { flush().catch(() => {}); }, 60e3); try { addEventListener('pagehide', push); } catch (e) {}
+  G.__rnAgPc = { obs, fill, rows, smp, push, flush, peek: () => ({ ver: AG.VERSION, pend, acc: gv(KA, {}), goals: Object.fromEntries(Object.entries(gv(KG, {}) || {}).map(([k, g]) => [k, AG.agSummary(g)])), lines: (gv(KL, []) || []).slice(-5) }) };
+  /* ── 공용 파서 감싸기(같은 화면은 한 번만 · 실패해도 원래 결과 그대로) ── */
+  const wrap = (o, k, fn) => { try { const f = o && o[k]; if (typeof f !== 'function' || f.__rnAg) return; const w = function () { const r = f.apply(this, arguments); try { if (on()) fn(arguments, r); } catch (e) {} return r; }; w.__rnAg = 1; o[k] = w; } catch (e) {} };
+  const tx = (el) => (el ? String(el.textContent || '').replace(/[ \s]+/g, ' ').trim() : ''); const num = (s) => { const m = String(s == null ? '' : s).replace(/,/g, '').match(/\d+/); return m ? +m[0] : null; };
+  const mt = (d, p) => { try { const m = d.querySelector(`meta[property="${p}"]`); return m ? m.getAttribute('content') || null : null; } catch (e) { return null; } };
+  const ldOf = (d) => { try { for (const s of d.querySelectorAll('script[type="application/ld+json"]')) { try { const j = JSON.parse(s.textContent); if (j && j['@type'] === 'Book') return j; } catch (e) {} } } catch (e) {} return null; };
+  const PR = G.ReadnowProducts || (typeof window !== 'undefined' && window.ReadnowProducts); const SL = G.ReadnowSellers || (typeof window !== 'undefined' && window.ReadnowSellers); const EX = G.ReadnowExt || (typeof window !== 'undefined' && window.ReadnowExt);
+  if (PR) {
+    wrap(PR, 'parseProductPage', (a, r) => { const d = a[0]; if (!r || !d || !d.querySelector || !once(d, 'p')) return; const bi = tx(d.querySelector('.Ere_prod_Binfowrap')); const rk = tx(d.querySelector('[id$="pnlRanking"]')) || tx(d.querySelector('.Ere_prod_titlewrap')); const ld = ldOf(d); const SPR = /(?:Sales\s*Point|세일즈\s*포인트|판매\s*지수)\s*[:：]?\s*([\d,]+)/i; let all = bi + ' ' + rk; if (!SPR.test(all) && d.body) all += ' ' + tx(d.body).slice(0, 200000); /* 늘 보던 자리에 없으면 화면 글 전체에서(자리가 바뀐 경우) */
+      const spM = all.match(SPR); const sp = spM && spM[1]; const ps = (bi.match(/판매가\s*[:：]?\s*([\d,]+)\s*원/) || [])[1]; const pl = (bi.match(/정가\s*[:：]?\s*([\d,]+)\s*원/) || [])[1]; const pg = (tx(d.querySelector('.conts_info_list1')).match(/(\d+)\s*쪽/) || [])[1];
+      const ldD = ld && ((ld.workExample && ld.workExample[0] && ld.workExample[0].datePublished) || ld.datePublished); const ldI = ld && ((ld.workExample && ld.workExample[0] && ld.workExample[0].isbn) || ld.isbn);
+      fill('al_product', { salesPoint: { op: r.salesPoint, lbl: num(sp) }, priceSales: { op: r.priceSales, lbl: num(ps) }, priceList: { op: r.priceList, lbl: num(pl) }, isbn13: { op: r.isbn13, ld: mt(d, 'books:isbn') || ldI || null }, pubDate: { op: r.pubDate, ld: ldD ? String(ldD).slice(0, 10) : null }, pages: { op: r.pages, lbl: num(pg) }, title: { op: r.title }, publisher: { op: r.publisher } });
+      fill('al_sp', { salesPoint: { op: r.salesPoint, lbl: num(sp) } }); /* SP만 따로 장부(시장 지표의 뼈대) — 운영 파서가 못 읽고 글 이름표만 읽으면 판정이 떨어짐 */
+      if (r.title && all) { const at = spM ? Math.max(0, all.indexOf(spM[0]) - 300) : 0; const sx = all.slice(at, at + 600); smp('al_sp', 'op', sx, r.salesPoint != null); smp('al_product', 'op', sx, r.salesPoint != null); } });
+    wrap(PR, 'parseUsedPage', (a, r) => { const d = a[0]; if (!r || !d || !d.querySelector || !once(d, 'u')) return; const tt = (tx(d.querySelector('.Ere_usedsell_list2')).match(/전체\s*중고\s*\(\s*(\d+)\s*\)/) || [])[1]; const n = Array.isArray(r.listings) ? r.listings.length : null;
+      fill('al_used', { usedTotal: { op: r.usedTotal, lbl: num(tt) }, rows: { op: n, cart: d.querySelectorAll('.Ere_usedsell_table input[name^="chkCart."]').length || null }, lastPage: { op: r.lastPage } }); });
+    wrap(PR, 'parseSearchResults', (a, r) => { const d = a[0]; if (!d || !d.querySelectorAll || !once(d, 's')) return; const B = [...d.querySelectorAll('.ss_book_box')].slice(0, 60); obs('al_list', 'op', { n: 1, ok: r && r.length ? 1 : 0 });
+      const T = {}; (r || []).slice(0, 60).forEach((x, i) => { const b = B[i]; const lk = b && b.querySelector('a.bo3'); AG.agFillAdd(T, AG.agFillTally({ itemId: { op: x.itemId, attr: b ? b.getAttribute('itemid') : null, href: lk ? ((lk.getAttribute('href') || '').match(/ItemId=(\d+)/i) || [])[1] || null : null }, title: { op: x.title || null }, img: { op: x.img || null } }, { main: 'op' }).t); }); AG.agFillAdd(box('al_list').fl, T); });
+    wrap(PR, 'parseScmList', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'm')) return; rows('al_scm', 'op', r.rows, (x) => ({ listingId: x.listingId, title: x.title, price: x.price, qty: x.qty, status: x.status, sku: x.sku, registeredAt: x.registeredAt })); });
+    wrap(PR, 'parseYes24Search', (a, r) => { const d = a[0]; if (!d || !d.querySelectorAll || !once(d, 'ys')) return; const hubs = new Set([...d.querySelectorAll('a[href*="UsedShopHub/Hub/"]')].map((x) => ((x.getAttribute('href') || '').match(/Hub\/(\d+)/) || [])[1]).filter(Boolean)); obs('y24_list', 'op', { n: 1, ok: r && r.length ? 1 : 0 });
+      AG.agFillAdd(box('y24_list').fl, AG.agFillTally({ rows: { op: r ? r.length || null : null, href: hubs.size || null } }, { main: 'op' }).t); const T = {}; for (const x of (r || []).slice(0, 40)) AG.agFillAdd(T, AG.agFillTally({ hubId: { op: x.hubId }, title: { op: x.title || null }, total: { op: x.total }, newPrice: { op: x.newPrice } }).t); AG.agFillAdd(box('y24_list').fl, T); });
+    wrap(PR, 'parseYes24Hub', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'yh')) return; rows('y24_hub', 'op', r.offers, (x) => ({ price: x.price, grade: x.grade, shopId: x.shopId, ship: x.ship, ratingCount: x.ratingCount })); });
+    wrap(PR, 'parseYes24Shop', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'yp')) return; fill('y24_shop', { shopName: { op: r.shopName }, score: { op: r.score }, ratingCount: { op: r.ratingCount }, totalItems: { op: r.totalItems }, shipFee: { op: r.shipFee } }); });
+  }
+  if (SL) wrap(SL, 'parseShopSummary', (a, r) => { const d = a[0]; if (!r || !d || !once(d, 'ss')) return; fill('seller_shop', { rev6m: { op: r.rev6m != null ? r.rev6m : r.rev6mLt3 ? 'lt3' : null }, grade: { op: r.grade }, total: { op: r.total != null ? r.total : r.totalLt3 ? 'lt3' : null }, status: { op: r.status || null } }); });
+  if (EX && typeof EX.run === 'function' && !EX.run.__rnAg) { const f0 = EX.run; const w = async function (src, a) { const t0 = Date.now(); const r = await f0.apply(this, arguments); try { if (r && !r.skip) { const s = (EX.SOURCES || {})[src] || {}; obs('ext', String(src), { n: 1, ok: r.ok === false ? 0 : 1, ms: Date.now() - t0, raw: r.ok === false && r.why ? String(r.why).slice(0, 200) : null, good: r.ok !== false }); fill('ext', { ['grp_' + (s.grp || 'etc')]: { [String(src)]: r.ok === false ? null : 1 } }, { rec: false }); } } catch (e) {} return r; }; w.__rnAg = 1; try { EX.run = w; } catch (e) {} }
 })();
 
 

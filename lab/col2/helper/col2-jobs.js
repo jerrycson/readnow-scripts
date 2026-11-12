@@ -106,6 +106,7 @@ function makeJobs(ctx) {
   async function step() {
     const b = busy(); if (b && b.on) { if (now() - S.busyLog > 10 * 60e3) { S.busyLog = now(); ctx.note(`그림자 일 쉼 — 운영이 바쁨(${b.why || ''}) · 끝나면 이어감`, { k: 'rest', m: '그림자 일' }); } return { did: false, rest: ctx.BUSY.restMs, why: '운영이 바쁨: ' + (b.why || '') }; }
     settle(); benchFeed();
+    if (BF) { let r = null; try { r = await BF.step(); } catch (e) { r = { did: false, rest: 10e3, why: '🎯 끝까지 읽기 ' + e.message }; } if (r && (r.did || !(S.q && Object.values(S.q).some((q) => q && q.length)))) return r; } /* (11/12 handoff3) 🎯 숍 목록 끝까지 — 차례가 있으면 먼저(다른 일이 쉴 때만 기다림) */
     if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); S.kpAt = now(); push('kpipa', { day: kday() }, kday()); }
     else if (inPlan('kpipa') && ctx.handed && ctx.handed('kpipa') && now() - (S.kpAt || 0) > 3 * 3600e3) { S.kpAt = now(); const key = kday() + '_' + new Date(now() + 9 * 3600e3).getUTCHours(); push('kpipa', { day: kday() }, key); } /* (11/11 col2rep2) 넘긴 뒤엔 운영처럼 3시간마다 최근 7일(공표 뒤 고쳐짐) */
     if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C()) && fxReady()) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
@@ -154,6 +155,10 @@ function makeJobs(ctx) {
       if (r && r.ok) SP.ok(); else if (r && !r.needLogin) SP.fail(r.kind === '429' ? '429' : 'error'); }
     else { const tk = await SP.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
       S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
+    /* (0.1.43 adapt10 · 약속 64) 🔄 번외 읽기 성적 → 목표·방법 장부(col2-ag.js) — 알라딘·그려 읽기는 일 종류마다 장부(칸마다 채움) · 바깥 시세는 출처가 길 · 읽기만 셈(차례·속도는 그대로) */
+    try { const AGX = require('./col2-ag.js').get(); const rr = r || {}; if (AGX && !rr.skip && !rr.needLogin) { const isExt = !(t.reader === 'al' || t.reader === 'dyn' || t.reader === 'nb' || t.reader === 'kp'); const eng = isExt ? 'ext' : (t.reader === 'al' ? 'al_' : t.reader + '_') + String(t.k).replace(/[^\w]/g, '').slice(0, 24); const mid = isExt ? String(t.src || t.k) : t.reader;
+      AGX.obs(eng, mid, { n: 1, ok: rr.ok ? 1 : 0, cost: t.cost || 1, ms: now() - t0, why: rr.ok ? null : rr.why });
+      const pg = rr.page; if (rr.ok && pg && typeof pg === 'object') { const F = {}; if (Array.isArray(pg)) F.rows = { [mid]: pg.length || null }; else for (const k of Object.keys(pg).slice(0, 20)) { const v = pg[k]; if (v == null || typeof v !== 'object' || Array.isArray(v)) F[k] = { [mid]: Array.isArray(v) ? (v.length || null) : v }; } AGX.fill(eng, F); } } } catch (e) {}
     r = r || { ok: false, why: '빈 응답' }; const ms = now() - t0;
     if (r.skip) { record(t, a, a.key, 'skip', [], { why: r.skip, ms }); return { did: true }; }
     if (!r.ok && t.cls === 'ext' && DAYSTOP_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'fail', [], { why: String(r.why || '').slice(0, 120), ms }); ctx.note(`${t.name} — '이 PC IP 등록이 필요' 답 → 오늘은 이 PC에서 더 묻지 않음(키 계정에 이 PC 공인 IP를 넣으면 다음 날부터)`, { k: 'read', l: 'warn', m: t.name }); return { did: true }; }
@@ -265,6 +270,7 @@ function makeJobs(ctx) {
     if (!x.quiet) ctx.note(`${t.name} ${id} — ${lab}${reasons && reasons.length ? '(' + reasons.map((r) => TK.WHY[r] || r).join('·') + ')' : ''}${x.why ? ' · ' + x.why : ''}`, { k: 'read', l: v === 'same' ? 'ok' : v === 'diff' && reasons.some((r) => TK.UNEXPLAINED.includes(r)) ? 'warn' : v === 'fail' ? 'warn' : 'info', m: t.name, d: { task: t.k, v, ms: x.ms || null } });
     if (ps.can && !(was && was.can)) ctx.note(`✅ ${t.name} — 오늘 '넘길 수 있음'(표본 ${ps.n} · 같음 ${ps.rate}% · ${ps.rule})`, { k: 'read', l: 'ok', m: t.name });
     save(); }
+  const BF = require('./col2-benchfull.js').makeBenchFull({ ctx, S, save: (f) => save(f), record: (t, a, id, v, rs, x) => record(t, a, id, v, rs, x), own, now }); /* (11/12 handoff3) */
   function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, pre: s.pre || 0, preWhy: s.preWhy || undefined, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
   /* 화면용 — 일 목록(이 PC가 하는지 · 차례 · 오늘 셈 · 넘길 수 있음) */
   function view() { const pl = plan(); const sm = summary(); const lg = kind() === 'logger';
@@ -272,6 +278,6 @@ function makeJobs(ctx) {
       mine: pl.includes(t.k), notMine: pl.includes(t.k) ? null : t.state === 'ended' ? `종료됨(${t.ended}) — 묻지 않음` : t.state !== 'run' ? '아직 안 돎' : t.who === 'logger' && !lg ? '로거 고유 일(사무실 PC는 안 함)' : t.who === 'office' && lg ? '사무실 PC 일(로거는 안 함)' : t.who === 'share' && lg ? '외부 정보 — 사무실 PC가 함(나눔 꺼짐 · col2.json jobs.extShare)' : '꺼 둠', q: (S.q[t.k] || []).length, today: sm[t.k] || null })) }; }
   /* 📘 공개 상품 화면(0.1.2부터 도는 자동 읽기)의 결과도 같은 하루 셈에 — col2_books는 그 길이 이미 씀(여기서는 하루 요약만) */
   function addProduct(itemId, verdict, reasons, why) { const t = TK.byK.product; if (!t || !TK.plan(kind(), C()).includes('product')) return; record(t, { key: String(itemId) }, String(itemId), verdict, reasons || [], { noItem: true, quiet: true, why: why || null }); }
-  return { step, addProduct, pickK, tried, feedBooks, feedShops, feedStale, feedNb, qLen, bookQ, view, plan, summary, _S: () => S, save };
+  return { step, benchFull: () => BF.view(), addProduct, pickK, tried, feedBooks, feedShops, feedStale, feedNb, qLen, bookQ, view, plan, summary, _S: () => S, save };
 }
 module.exports = { makeJobs };

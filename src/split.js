@@ -23,7 +23,17 @@ fs.mkdirSync(OUT, { recursive: true });
  *  모듈 사이에 맨 바깥(전역) 선언을 나눠 쓰지 않음(모두 window.__rn… 으로 주고받음)을 아래에서 확인 — 함수로 감싸도 뜻이 같음 */
 for (const P of parts) { const top = P.split('\n').filter((l) => /^(const|let|var|class) /.test(l)); if (top.length) throw new Error('모듈 맨 바깥 선언이 있어 감쌀 수 없음: ' + top[0].slice(0, 80)); }
 const wrapMod = (k, code) => `;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['${k}', '${ver}', function () {\n${code}\n}]);\n`;
-MODS.forEach(([k, f, what], i) => { const txt = `/* ${f} — 리드나우 수집기 ${ver}의 ${what}\n * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.\n * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */\n${stamp(k)}${wrapMod(k, parts[i])}`; fs.writeFileSync(path.join(OUT, f), txt); });
+/* (adapt10 11/12 밤 · 약속 64) 🔄 목표·방법 적응 틀을 수집기(PC)에도 — 머리(@require 수·로더)를 바꾸지 않으려고 새 @require를 더하지 않고,
+ *  공용 readnow-adapt-core.js의 ◆AG-BEGIN~◆AG-END 덩어리(순수 함수 · 저장·네트워크 없음)를 글자 그대로 떼어 readnow-pc-runtime.js 맨 앞에 넣음 → globalThis.ReadnowAdaptAg
+ *  같은 코드 한 곳(공용 파일)만 고치면 됨 · 이 판의 덩어리 판 번호는 공용 파일 VERSION · 못 찾으면 멈춤(모르고 빠진 채 나가지 않게) */
+const AGF = [path.join(path.dirname(SRC), 'readnow-adapt-core.js'), path.join(__dirname, 'readnow-adapt-core.js'), path.join(__dirname, '..', 'readnow-adapt-core.js')].find((f) => fs.existsSync(f));
+if (!AGF) throw new Error('readnow-adapt-core.js를 못 찾음 — 수집기에 적응 틀(◆AG)을 넣을 수 없음');
+const AG_PRE = (() => { const t = fs.readFileSync(AGF, 'utf8'); const a = t.indexOf('/* ◆AG-BEGIN'), b = t.indexOf('/* ◆AG-END */'); if (a < 0 || b < a) throw new Error('readnow-adapt-core.js에 ◆AG-BEGIN~◆AG-END 표시가 없음');
+  const v = (t.match(/const VERSION = '([\d.]+)'/) || [])[1]; const ti = (t.match(/^  const toInt = .*$/m) || [])[0], fi = (t.match(/^  const fmtInt = .*$/m) || [])[0]; if (!v || !ti || !fi) throw new Error('readnow-adapt-core.js 판 번호·toInt·fmtInt 줄을 못 찾음');
+  const names = ['AG_DEF', 'AG_SYN', 'AG_KIND', 'agNew', 'agEnsure', 'agMethod', 'agRecord', 'agStat', 'agRecent', 'agJudge', 'agPick', 'agDecide', 'agDiff', 'agClassify', 'agSample', 'agLblRe', 'agApply', 'agLabelCands', 'agTrial', 'agAdapt', 'agSummary', 'agWilson', 'agFillTally', 'agFillAdd', 'agFill', 'agFlSum'];
+  const blk = t.slice(a, b); for (const n of names) if (!new RegExp('(function|const)\\s+' + n + '\\b').test(blk)) throw new Error('◆AG 덩어리에 ' + n + '이 없음');
+  return `/* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg ${v} — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */\n;(function (root) {\n  'use strict';\n${ti}\n${fi}\n${blk}\n  root.ReadnowAdaptAg = { VERSION: '${v}', ${names.join(', ')} };\n})(typeof globalThis !== 'undefined' ? globalThis : this);\n`; })();
+MODS.forEach(([k, f, what], i) => { const txt = `/* ${f} — 리드나우 수집기 ${ver}의 ${what}\n * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.\n * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */\n${k === 'runtime' ? AG_PRE : ''}${stamp(k)}${wrapMod(k, parts[i])}`; fs.writeFileSync(path.join(OUT, f), txt); });
 // 본체: 머리(@require에 알라딘 창구·모듈 5개를 판 번호로) + 모듈이 다 왔는지 확인
 const lastReq = [...header.matchAll(/\/\/ @require[^\n]*\n/g)].pop(); // 모듈은 맨 뒤(Firebase·엑셀 프로그램을 다 받은 뒤)에 — 모듈이 불리자마자 firebase를 씀
 let head = header.slice(0, lastReq.index + lastReq[0].length).replace(/[\s\S]*$/, (m) => m + `// @require      ${RAW}readnow-aladin-core.js?v=0.2.1\n` + `// @require      ${RAW}readnow-exec-core.js?v=0.1.1\n` + `// @require      ${RAW}readnow-pc-boot.js?v=${ver}\n` + MODS.map(([, f]) => `// @require      ${RAW}${f}?v=${ver}\n`).join('')) + header.slice(lastReq.index + lastReq[0].length);

@@ -39,16 +39,16 @@ const READ_FN = `async (url, tmo) => { const AL = globalThis.ReadnowAladin, P = 
 
 /* (0.1.9) 그림자 일 읽기 — 같은 길(쿠키 없이 fetch → decode → DOMParser → 점검·로그인 화면 확인) 뒤 정한 해석 함수 하나만(P=상품 · S=판매자 · L=운영 본체에서 떼어 온 함수)
  *  해석 함수 이름은 정해 둔 것만(아래 표) — 다른 글자를 실행하지 않음 */
-const PARSE_OK = ['P.parseProductPage', 'P.parseUsedPage', 'S.parseShopSummary', 'S.parseSurveyPage', 'L.benchParse', /* (11/10) 🗣 판매자 목소리 — 번외 해석(shadow/col2-voice-core.js) */ 'V.findQnaLink', 'V.parseQnaPage'];
+const PARSE_OK = ['P.parseProductPage', 'P.parseUsedPage', 'S.parseShopSummary', 'S.parseSurveyPage', 'L.benchParse', 'L.benchPage', /* (11/12 handoff3) 🎯 끝까지 — 줄 + 끝 쪽 */ /* (11/10) 🗣 판매자 목소리 — 번외 해석(shadow/col2-voice-core.js) */ 'V.findQnaLink', 'V.parseQnaPage'];
 const READ_JOB_FN = `async (url, pn, tmo) => { const AL = globalThis.ReadnowAladin, M = { P: globalThis.ReadnowProducts, S: globalThis.ReadnowSellers, L: globalThis.Col2Lift, V: globalThis.Col2Voice };
-  const [ns, fn] = String(pn).split('.'); const f = M[ns] && M[ns][fn]; if (!AL || typeof f !== 'function') return { ok: false, why: '해석 함수가 안 들어감: ' + pn, kind: 'error' };
+  const [ns, fn] = String(pn).split('.'); const f = pn === 'L.benchPage' ? (M.L && M.L.benchParse && M.L.benchLastPage ? (d, h) => ({ rows: M.L.benchParse(d), last: M.L.benchLastPage(d, h) }) : null) : M[ns] && M[ns][fn]; if (!AL || typeof f !== 'function') return { ok: false, why: '해석 함수가 안 들어감: ' + pn, kind: 'error' };
   const ac = new AbortController(); const to = setTimeout(() => ac.abort(), tmo); let r, buf; const t0 = Date.now();
   try { r = await fetch(url, { credentials: 'omit', cache: 'no-store', signal: ac.signal }); buf = r.ok ? await r.arrayBuffer() : null; } catch (e) { return { ok: false, why: e.name === 'AbortError' ? '알라딘이 ' + Math.round(tmo / 1000) + '초 안에 답하지 않음' : '읽기 실패: ' + e.message, kind: e.name === 'AbortError' ? 'timeout' : 'error' }; } finally { clearTimeout(to); }
   if (!r.ok) return { ok: false, status: r.status, why: '서버 응답 ' + r.status, kind: r.status === 429 || r.status === 503 ? '429' : 'error' };
   const html = AL.decode(buf, r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
   if (AL.isMaintenance(doc)) return { ok: false, why: '알라딘 점검 중', kind: 'error' };
   if (AL.looksLoggedOut(r.url, doc) || /adult/i.test(r.url || '')) return { ok: false, needLogin: true, why: '로그인 없이는 못 보는 화면 — 번외 일꾼은 로그인하지 않으므로 건너뜀' };
-  let page; try { page = ns === 'P' && fn === 'parseProductPage' ? f(doc, r.url) : f(doc); } catch (e) { return { ok: false, why: '해석 오류: ' + e.message, kind: 'error' }; }
+  let page; try { page = ns === 'P' && fn === 'parseProductPage' ? f(doc, r.url) : pn === 'L.benchPage' ? f(doc, html) : f(doc); } catch (e) { return { ok: false, why: '해석 오류: ' + e.message, kind: 'error' }; }
   return { ok: true, page: JSON.parse(JSON.stringify(page == null ? null : page)), finalUrl: r.url, len: html.length, ms: Date.now() - t0 }; }`;
 
 class Browser {

@@ -20,6 +20,7 @@
   "shadow/col2-tasks.js",
   "shadow/col2-jobview.js",
   "helper/col2-jobs.js",
+  "helper/col2-benchfull.js",
   "helper/col2-voice.js",
   "shadow/col2-voice-core.js",
   "helper/col2-lift.js",
@@ -37,6 +38,7 @@
   "helper/col2-settings.js",
   "helper/col2-y24learn.js",
   "helper/col2-solo.js",
-  "helper/col2-load.js"
+  "helper/col2-load.js",
+  "helper/col2-ag.js"
  ]
 }
