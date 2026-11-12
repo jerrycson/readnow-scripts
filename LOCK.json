@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel11 출고 토글",
+ "since": "2026-11-12T05:57:34Z",
+ "beat": "2026-11-12T05:57:34Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "pend1 판 웹앱 1.78.499 · d6368672 · 머리 그대로",
   "at": "2026-11-12T05:41:56Z"
  },
- "host": null
+ "host": "rel11-vm"
 }
