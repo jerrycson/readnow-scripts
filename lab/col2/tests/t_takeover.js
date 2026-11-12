@@ -68,6 +68,7 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     await H.api('POST', '/set', { k: 'y24cfg.takeover', v: true }); await H.api('POST', '/cred/reset', { pf: 'y24' }); await feed({ hold: { on: true, why: '시험 출고' } }); await wait(3000); await feed({ hold: { on: true, why: '시험 출고' } }); await wait(2000);
     ok(takes() === t3 && (await y()).login === 'need', '🚚 출고 중엔 이어받지 않음');
     s = await until(async () => { await feed(); const v = await y(); return v.login === 'ok' && takes() > t3 ? v : null; }, 240); ok(s && takes() === t3 + 1, '출고가 끝나면 이어받음', takes() - t3);
+    { await wait(1500); const v = await y(); ok(v.login === 'ok' && !v.already && !v.reWhy && !v.loginMsg, '(rel10) 로그인이 살아 있음이 확인되면 옛 경고(「이미 로그인된」 시각·다시 로그인 까닭·로그인 필요 글)가 지워짐', { already: v.already, reWhy: v.reWhy, loginMsg: v.loginMsg }); }
     console.log('⑥ 단추를 못 찾음');
     Y.S.btn = '다음에'; cut(); const t5 = takes(); await H.api('POST', '/y24/run', { what: 'ord' });
     s = await until(async () => { await feed(); const v = await st(); return v.y24.tk && v.y24.tk.btns && v.y24.tk.btns.includes('다음에') && v.relogin.y24.last && !v.relogin.y24.last.ok ? v : null; }, 200);
