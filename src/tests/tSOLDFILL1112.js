@@ -72,6 +72,11 @@ async function run(cfgX, seedX) {
   const cur = store['app_settings/adapt_cfg'].spBatchGone; ok(cur && cur.lastId === null && cur.scan === 5 && cur.rounds === 1, '한 쪽 다 읽으면 다음은 처음부터(커서 비움 · 한 바퀴 셈)', cur);
   { const R2 = await run({ spBatch: { goneMax: 2 } }); const c2 = R2.store['app_settings/adapt_cfg'].spBatchGone; ok(R2.r.goneScan === 2 && c2.lastId && c2.rounds === 0, '메모리 가볍게: 회차마다 goneMax(여기선 2)개만 읽고 다음 자리를 남김', c2);
     const R3 = await run({ spBatch: { goneMax: 2 }, spBatchGone: { lastId: c2.lastId } }); ok(R3.r.goneScan === 2 && R3.store['app_settings/adapt_cfg'].spBatchGone.lastId !== c2.lastId, '다음 회차는 남긴 자리 뒤부터', R3.store['app_settings/adapt_cfg'].spBatchGone); }
+  { const T5 = Array.from({ length: 3 }, (_, i) => ['g_t' + i, { sc: '1', title: '제목만 팔린 책 ' + i, goneDay: dAgo(20 + i) }]);
+    const R6 = await run({ spBatch: { maxQ: 1, goneHold: 0 }, spBatchGone: { lastId: null, rounds: 2 } }, T5); const c6 = R6.store['app_settings/adapt_cfg'].spBatchGone;
+    ok(R6.r.qGone === 1 && c6.stay === true && c6.rem >= 1 && c6.lastId === null && c6.stayN === 1 && c6.rounds === 2, '쪽에 못 찾은 팔린 상품이 남으면(goneHold 넘음) 다음 회차도 같은 쪽 — 쪽마다 몫만큼만 찾고 넘어가던 것', c6);
+    const R7 = await run({ spBatch: { maxQ: 1, goneHold: 0, goneStayMax: 3 }, spBatchGone: { lastId: null, stayN: 3 } }, T5); ok(R7.store['app_settings/adapt_cfg'].spBatchGone.stay === false, '같은 쪽에 goneStayMax 회차 넘게 머물면 그래도 넘김(못 찾는 상품에 묶이지 않게)', R7.store['app_settings/adapt_cfg'].spBatchGone);
+    const R8 = await run({ spBatch: { maxQ: 1, goneShare: 0, goneHold: 0 } }, T5); ok(R8.store['app_settings/adapt_cfg'].spBatchGone.stay === false, '팔린 상품 검색을 한 쪽도 못 한 회차(몫 0)는 머물지 않고 넘김', R8.store['app_settings/adapt_cfg'].spBatchGone); }
   { const R4 = await run({ spBatch: { gone: false } }); ok(R4.r.gone === 0 && !R4.w.g_3 && R4.w.s_0 && R4.w.s_0.sp === 100, '끄기 adapt_cfg.spBatch.gone = false → 팔린 상품 넣지 않음(판매 중은 그대로)', R4.r.gone); }
   { const R5 = await run(null, [['g_tried', { sc: '1', coverKey: 'K000000001', title: '7일 쉬는 팔린 책', goneDay: dAgo(4), listTryAt: new Date(Date.now() - 864e5).toISOString(), listTryV: 5 }]]); ok(!R5.urls.some((u) => /K000000001/.test(u)), '팔린 상품도 못 찾은 것은 7일 쉼(listTryAt) — 날마다 같은 검색 되풀이 없음'); }
 
