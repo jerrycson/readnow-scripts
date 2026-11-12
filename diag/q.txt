@@ -1,2 +1,2 @@
-doc=shp_cmds/cx_001-A169760288,app_settings/ship_quiet,app_settings/board_mirror
-# 3109818257
+doc=app_settings/research_pulse
+# 3101917903
