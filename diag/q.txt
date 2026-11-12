@@ -1,2 +1,2 @@
-soldfill=903578&reset=gone&from=2026-11-12T09:50
-# 2444510155
+@mirror mirror/20261112-102811-19453.json
+# 46107756
