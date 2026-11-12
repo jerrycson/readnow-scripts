@@ -69,6 +69,7 @@ console.log('③-2 교보 새 틀(section id) · 알라딘 따로 불러오는 �
   const I = B.alPart('Introduce', '<div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책소개</div><div class="Ere_prod_mconts_R">알라딘 책소개 글</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">목차</div><div class="Ere_prod_mconts_R">1부<br>2부</div></div><div class="Ere_prod_mconts_box"><div class="Ere_prod_mconts_LS">책속에서</div><div class="Ere_prod_mconts_R">한 대목</div></div>');
   ok(I.intro === '알라딘 책소개 글' && I.toc === '1부\n2부' && I.inbook === '한 대목', `알라딘 Introduce: 책소개·목차·책속에서 ${JSON.stringify(I)}`);
   const A = B.alPart('AuthorInfo', '<div>저자 및 역자소개</div><div>지은이 : 김작가<br>서울 사람</div><div>옮긴이 : 이번역<br>번역가</div>'); ok(/^지은이 : 김작가\n서울 사람/.test(A.auth || '') && /^옮긴이 : 이번역\n번역가/.test(A.trans || ''), `알라딘 AuthorInfo: 지은이·옮긴이 나눔 ${JSON.stringify(A)}`);
+  ok(B.alPart('Introduce', '<p>제목 없이 먼저 오는 알라딘 책소개 글입니다. 충분히 긴 글.</p><div class="Ere_prod_mconts_LS">목차</div><div>1장</div>').intro === '제목 없이 먼저 오는 알라딘 책소개 글입니다. 충분히 긴 글.', '알라딘 Introduce: 제목 없이 먼저 오는 책소개');
   ok(B.alPart('PublisherDesc', '<div class="Ere_prod_mconts_LS">출판사 제공 책소개</div><div>출판사 홍보 글</div>').pubrev === '출판사 홍보 글', '알라딘 PublisherDesc → 출판사 서평'); }
 
 console.log('④ 출처 합치기 — 먼저 온 출처 값을 지키고 빈 칸만 채움');

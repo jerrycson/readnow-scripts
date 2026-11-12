@@ -9,7 +9,7 @@
  *     img/preview/isbn_<ISBN>/<n>.jpg · 하루 처음엔 많이, 다 모아 갈수록 적게(pvBudget — 남은 수 기준 자동) · 한 장 900KB · 한 권 16쪽 상한
  *  순수 함수(파서·속도·차례·예산·적응)는 아래에서 내보내 시험(src/tests/tBOOKINFO1112.js)이 그대로 씀 */
 'use strict';
-const VER = '0.1.2'; // (0.1.2) 교보 새 틀 전용(section id) · 알라딘 따로 불러오는 칸(getContents · 자리 이름은 화면에서) · 책 3권 함께 · 간격 자리 먼저 잡기 // (0.1.1) 예스24 번호를 모르면 교보(받아 둔 번호 → 교보 검색)를 먼저 · 그려 읽기는 그 뒤 · 제목 안 태그도 읽음 · 진단 화면 꼴(bkpage)
+const VER = '0.1.3'; // (0.1.3) 알라딘 따로 받은 칸이 짧은 구조 데이터·제목 글 값을 바꿈 · 제목 없는 책소개 // (0.1.2) 교보 새 틀 전용(section id) · 알라딘 따로 불러오는 칸(getContents · 자리 이름은 화면에서) · 책 3권 함께 · 간격 자리 먼저 잡기 // (0.1.1) 예스24 번호를 모르면 교보(받아 둔 번호 → 교보 검색)를 먼저 · 그려 읽기는 그 뒤 · 제목 안 태그도 읽음 · 진단 화면 꼴(bkpage)
 
 /* ── 칸 이름 (웹앱·우리숍·서가가 같이 씀) ── */
 const FIELDS = [ /* [칸, 이름, 최대 글자] */
@@ -135,7 +135,7 @@ const AL_PART = { Introduce: ['intro', 'toc', 'inbook'], AuthorInfo: ['auth', 't
 const AL_URLS = [(i10, n, d) => `https://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=${i10}&name=${n}&type=0&date=${d}`, (i10, n) => `https://www.aladin.co.kr/shop/product/getContents.aspx?ISBN=${i10}&name=${n}`];
 const alParts = (H) => { const o = {}; for (const m of String(H || '').matchAll(/id=["'](\d{9}[\dX])_([A-Za-z]+)["']/g)) if (AL_PART[m[2]]) o[m[2]] = m[1]; return o; };
 function alPart(name, html) { const H = String(html || ''); const out = {}; const G = byHeadings(H); const all = dropHead(htmlText(H)) || '';
-  if (name === 'Introduce') { for (const f of ['intro', 'toc', 'inbook']) if (G[f]) out[f] = G[f]; if (!out.intro && all && !G.toc && !G.inbook) out.intro = all; }
+  if (name === 'Introduce') { for (const f of ['intro', 'toc', 'inbook']) if (G[f]) out[f] = G[f]; if (!out.intro) { const hs = headings(H).filter((h) => h.f !== 'intro'); const pre = dropHead(htmlText(hs.length ? H.slice(0, hs[0].at) : H)); if (pre && pre.length >= 20) out.intro = pre; } } /* (0.1.3) 제목 없이 먼저 오는 책소개 글 */
   if (name === 'AuthorInfo') { const parts = all.split(/\n(?=(?:지은이|저자|글|그림|옮긴이|역자|번역|감수|엮은이)\s*[:：])/); const A = [], T = []; for (const p of parts) (/^(옮긴이|역자|번역)\s*[:：]/.test(p) ? T : A).push(p.trim()); if (A.join('').trim()) out.auth = A.join('\n\n').replace(/^저자\s*및\s*역자\s*소개\s*\n?/, '').trim(); if (T.length) out.trans = T.join('\n\n'); }
   if (name === 'PublisherDesc') { const t = (G.pubrev || all).trim(); if (t) out.pubrev = t; }
   return out; }
@@ -230,8 +230,8 @@ function makeBookInfo(ctx) { const { C, FV, log, W, bucket, render, fetchFn } = 
     const r = await get(src, url); const H = String(r.text || ''); let rsc = ''; H.replace(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g, (m, x) => { try { rsc += JSON.parse('"' + x + '"'); } catch (e2) {} return m; }); return { url, st: r.status, len: H.length, html: H.slice(0, 1200000), rsc: rsc.slice(0, 800000), rscLen: rsc.length }; }
   /* 알라딘 칸 따로 받기 — 주소 꼴은 성공한 꼴을 먼저(ST.alUrl) · 받은 글로 res의 빈 칸을 채움 */
   async function alMore(H, res) { const P = alParts(H); const d = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 13).replace(/\D/g, ''); const order = ST.alUrl != null ? [ST.alUrl, ...AL_URLS.keys()].filter((v, i, a) => a.indexOf(v) === i) : [...AL_URLS.keys()];
-    for (const [name, i10] of Object.entries(P)) { if (AL_PART[name].every((f) => res.t[f])) continue; for (const k of order) { if (!capOk('aladin')) return; const r = await get('aladin', AL_URLS[k](i10, name, d), { headers: { Referer: 'https://www.aladin.co.kr/shop/wproduct.aspx?ISBN=' + i10, 'X-Requested-With': 'XMLHttpRequest' } }); if (!r.ok || !r.text || r.text.length < 40) continue; const got = alPart(name, r.text); const fs = Object.keys(got); if (!fs.length) continue; ST.alUrl = k;
-        for (const f of fs) { const max = (FIELDS.find((x) => x[0] === f) || [])[2] || 6000; if (!res.t[f]) { res.t[f] = clip(got[f], max); res.from[f] = 'part'; res.paths[f] = { ...(res.paths[f] || {}), part: true }; } } res.alVia = 'part' + k; break; } }
+    for (const [name, i10] of Object.entries(P)) { if (AL_PART[name].every((f) => res.t[f] && !['ld', 'meta', 'head'].includes(res.from[f]))) continue; for (const k of order) { if (!capOk('aladin')) return; const r = await get('aladin', AL_URLS[k](i10, name, d), { headers: { Referer: 'https://www.aladin.co.kr/shop/wproduct.aspx?ISBN=' + i10, 'X-Requested-With': 'XMLHttpRequest' } }); if (!r.ok || !r.text || r.text.length < 40) continue; const got = alPart(name, r.text); const fs = Object.keys(got); if (!fs.length) continue; ST.alUrl = k;
+        for (const f of fs) { const max = (FIELDS.find((x) => x[0] === f) || [])[2] || 6000; if (!res.t[f] || (['ld', 'meta', 'head'].includes(res.from[f]) && got[f].length > res.t[f].length * 1.2)) { /* (0.1.3) 구조 데이터·메타·제목 글로 짧게 읽은 칸은 따로 받은 긴 글로 바꿈 */ res.t[f] = clip(got[f], max); res.from[f] = 'part'; res.paths[f] = { ...(res.paths[f] || {}), part: true }; } } res.alVia = 'part' + k; break; } }
     res.filled = FIELDS.map(([f]) => f).filter((f) => res.t[f]); res.miss = FIELDS.map(([f]) => f).filter((f) => !res.t[f]); }
   /* 🔄 적응 틀 장부(adapt9 readnow-adapt-core agRecord — 클라우드 agObs) — 목표: 출처마다 '책 정보 칸 채우기' · 방법: 어느 길로 읽었나(칸 번호·화면 속 데이터·제목 글·메타 글) · 성공 = 핵심 칸(책소개·목차·저자) 중 둘 이상 */
   const AG_LBL = { part: '따로 불러오는 칸(알라딘 getContents)', id: '칸 번호(id)', rsc: '화면 속 데이터(Next.js)', site: '사이트 고유 칸', head: '제목 글 찾기', ld: '구조 데이터', meta: '메타 글(소개만)', none: '못 읽음' };
