@@ -1,2 +1,2 @@
-sizes=ext_basic,prd_listings&n=400&metcov=1
-# 24523585
+doc=app_settings/freeship_stats,shp_enrich/001-A810940688
+# 2263225685
