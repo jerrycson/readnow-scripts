@@ -1,4 +1,4 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.320의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.322의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
 /* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg 0.1.7 — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */
@@ -367,8 +367,8 @@
   if (root) root.ReadnowAnom = API;
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : null);
 
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.320' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.320', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.322' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.322', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -989,11 +989,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 (function rnShipGuard() { if (window.top !== window) return;
   const MJ = 'MJ-MAIN';
   /* (정범님 11/09 저녁 shipsafe2) 출고와 관련된 마지막 수집기 판 — 출고·송장·ALPS·발송 쪽을 바꾼 판을 낼 때 이 번호를 그 판 번호로 올림(판 표시 칸 shipRel) · ⚡ 받아 둔 새 판 글에서 이 줄을 읽어 '출고 관련 업데이트'인지 가름 */
-  const RN_SHIP_REL = '1.89.241'; window.__rnShipRel = RN_SHIP_REL;
+  const RN_SHIP_REL = '1.89.322'; window.__rnShipRel = RN_SHIP_REL;
   function shipGuardDecide(o) { const up = (x) => String(x == null ? '' : x).trim().toUpperCase(); const P = up(o.pc); const maxH = Math.max(0.5, Math.min(12, +o.maxH || 1)); const lim = maxH * 3600e3; const live = [], expired = [];
     for (const [id, h] of Object.entries(o.holds || {})) { if (!h || h.end || !(+h.t0 > 0)) continue; const x = { id, pc: up(h.pc), why: String(h.why || '출고'), t0: +h.t0, ref: Math.max(+h.t0, +h.beat || 0) }; (o.now - x.ref >= lim ? expired : live).push(x); }
     const mine = live.filter((h) => P && h.pc === P); const mjOn = !!P && P === up(o.mj || 'MJ-MAIN') && live.length > 0; const src = mine.length ? mine : mjOn ? live : []; const on = src.length > 0; const t0 = on ? Math.min(...src.map((h) => h.t0)) : 0;
     return { on, why: !on ? null : mine.length ? mine.map((h) => h.why).join(' · ') : `MJ-MAIN 보호 — ${live.map((h) => `${h.pc || '?'} ${h.why}`).join(' · ')}`, since: t0, until: on ? Math.max(...src.map((h) => h.ref)) + lim : 0, maxH, mine: mine.length, live: live.length, mj: mjOn, expired }; } /* ⟦shipGuardDecide 끝⟧ */
+  /* (정범님 11/13 invpc1 · 헌장 제6조 「출고는 MJ-MAIN에서만」 · 바로잡은 사실 F01·F15) 🚚 출고 PC 하나만 출고 쓰기 일을 맡음 — 알라딘 송장 입력(CSV 일괄등록·한 건씩)·발송준비시작
+   *  출고 PC = 출고 표 shp_runs/_guard.cfg.mj(웹앱이 적음 · 기본 MJ-MAIN — 출고 보호가 쓰는 같은 설정) · 다른 PC는 대신 집지 않고 기다림(11/10·11/13 HOME이 먼저 집어 맡은 구멍)
+   *  이름을 모르는 PC도 맡지 않음 · 대소문자·빈칸 무시 */
+  function shipPcDecide(o) { const up = (x) => String(x == null ? '' : x).trim().toUpperCase(); const me = up(o && o.pc); const sp = up(o && o.shipPc) || 'MJ-MAIN';
+    if (!me) return { ok: false, me, shipPc: sp, why: `출고 PC(${sp}) 기다림 — 이 PC 이름을 몰라 출고 쓰기 일을 맡지 않음` };
+    if (me === sp) return { ok: true, me, shipPc: sp, why: null };
+    return { ok: false, me, shipPc: sp, why: `출고 PC(${sp}) 기다림 — ${me}는 출고 쓰기 일을 맡지 않음(출고는 출고 PC에서만 · 헌장 제6조)` }; } /* ⟦shipPcDecide 끝⟧ */
   function sgDefAdd(L, it) { L = Array.isArray(L) ? L : []; if (L.some((x) => x && x.k === it.k)) return { L, added: false }; return { L: [...L, it], added: true }; }
   function sgResumePlan(items) { const L = (items || []).slice().sort((a, b) => (a.at || 0) - (b.at || 0)); const r = L.find((x) => x.reload); return r ? [r] : L; } /* ⟦sgResumePlan 끝⟧ */
   const GK = 'rn-sg-doc', LK = 'rn-sg-local', DK = 'rn-sg-def', CK = 'rn-sg-cfg';
@@ -1003,6 +1010,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const TAB = Math.random().toString(36).slice(2, 9); const CBS = new Map(); const expNoted = {}; let cache = null, cacheAt = 0;
   function hold() { const now = Date.now(); if (cache && now - cacheAt < 1500) return cache; const d = gv(GK, null) || {}; const H = { ...(d.holds || {}) }; const pc = pcName(); const loc = gv(LK, {}) || {}; for (const [id, h] of Object.entries(loc)) if (h && !H[id]) H[id] = { ...h, pc }; /* 서버에 같은 칸이 있으면 서버 것(끝 표시 포함)을 믿음 */
     const c = gv(CK, {}) || {}; cache = shipGuardDecide({ now, pc, holds: H, maxH: (d.cfg && d.cfg.maxH) || c.maxH || 1, mj: (d.cfg && d.cfg.mj) || c.mj || MJ }); cacheAt = now; return cache; }
+  window.__rnShipPcOk = () => { const d = gv(GK, null) || {}; const c = gv(CK, {}) || {}; return shipPcDecide({ pc: pcName(), shipPc: (d.cfg && d.cfg.mj) || c.mj || MJ }); }; /* (11/13 invpc1) 출고 쓰기 일을 이 PC가 맡아도 되나 */
   window.__rnShipHold = hold; window.__rnSgOn = () => { try { return !!hold().on; } catch (e) { return false; } };
   /* 미룸 — k 하나에 한 번만 적고 한 번만 기록 · fn = 출고가 끝나면 이 탭이 다시 할 일(없으면 그 일이 스스로 다시 봄) · o.reload = 새로고침(끝나면 이것 하나만) */
   window.__rnShipDefer = (k, name, fn, o) => { const r = sgDefAdd(gv(DK, []), { k, name: String(name || k).slice(0, 80), tab: TAB, at: Date.now(), reload: !!(o && o.reload) }); if (typeof fn === 'function' && !CBS.has(k)) CBS.set(k, { k, name, fn, reload: !!(o && o.reload), at: Date.now() }); if (r.added) { sv(DK, r.L); L('warn', `🚚 출고 중 — ${name} 미룸(출고 끝나면 이어 감) · ${hold().why || ''}`); } return true; };

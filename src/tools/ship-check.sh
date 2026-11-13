@@ -8,7 +8,13 @@
 #       ③ 바뀐 원본의 판 번호가 main 것보다 커야 함(웹앱 APP_VER · 수집기 @version · 클라우드 VER · 공용 core VERSION · 노선표 · 책방 친구 FRIEND_PIN)
 #       ④ 수집기 머리(@match·@grant·@connect·@require 줄)가 main과 같아야 함(바뀌면 정범님 허락 — RN_HEAD_OK=1로만 통과)
 #       ⑤ 결과물이 원본과 같은 판(app/index.html APP_VER · pc-live.json ver)
-# 급할 때 넘기기: RN_SHIP_SKIP=1 git push … (넘긴 까닭을 커밋 글에 적을 것)
+#       ⑥ 손님 정보 · ⑦ 무게(경고만)
+#       ⑧ (11/13 rv2b) 빠른 시험 묶음(src/tests/QUICK.json — 출고·등록·핵심 · 약 3~4분)을 올리는 커밋 그대로 돌림 → 새로 실패하면 막음
+#          · 이미 실패 중인 시험은 '알려진 실패' 장부 src/tests/KNOWN_FAIL.json(까닭·담당·기한 14일 안)에 있어야만 통과 · 기한 지나면 막음
+#       ⑨ (11/13 rv2b) 바뀐 기능 함수를 부르는 시험이 그대로면 알림(기대값이 바뀐 고침이면 같은 커밋에서 시험도) · 딸린 시험 3개까지 함께 돌려 보여 줌
+#       ⑩ (11/13 rv2b) 이번 웹앱 판·지난 7일 판에 ❓ 업데이트 기록(CHANGELOG) 줄이 비었거나 없으면 막음
+#       (⑧⑨⑩ = src/tools/test-gate.js · 까닭: 11/07~11/13 실패한 시험이 6일 넘게 경보 없이 남음 — 판 내기 어디에도 시험이 없었음)
+# 급할 때 넘기기: RN_SHIP_SKIP=1 git push … (넘긴 까닭을 커밋 글에 적을 것) · 시험만 넘기기: RN_QUICK_SKIP=1 (까닭을 커밋 글에)
 set -uo pipefail
 if [ "${1:-}" = install ]; then who=${2:?이름표}; h=$(git rev-parse --git-path hooks)/pre-push; mkdir -p "$(dirname "$h")"
   printf '#!/usr/bin/env bash\n# (10/29) 리드나우 push 전 검사 — src/tools/ship-check.sh\nwhile read -r l ls r rs; do case "$r" in refs/heads/main) [ -n "${RN_SHIP_SKIP:-}" ] && exit 0; RN_PUSH_SHA="$ls" bash "$(git rev-parse --show-toplevel)/src/tools/ship-check.sh" %s || exit 1;; esac; done\nexit 0\n' "$who" > "$h"; chmod +x "$h"; echo "✓ pre-push 검사 깔림($who) — $h"; exit 0; fi
@@ -52,4 +58,11 @@ if [ -n "$add" ]; then
 fi
 # ⑦ (11/12 perf9) 🪶 무게 — 웹앱 본문 크기·되풀이 타이머·실시간 듣기 수를 app/weigh.json 기준선(앞 판)과 견줌 · 경고만(멈추지 않음) · 판 낼 때 node src/tools/weigh.js --save
 W7=$(dirname "$0")/weigh.js; command -v node >/dev/null && [ -f "$W7" ] && timeout 20 node "$W7" --quick 2>/dev/null | head -2
+# ⑧⑨⑩ 시험 문지기 (11/13 rv2b)
+G8=$(dirname "$0")/test-gate.js
+if [ ! -f "$G8" ]; then say "시험 문지기(src/tools/test-gate.js)가 없음 — 최신 main을 받을 것"
+elif ! command -v node >/dev/null; then say "node가 없어 빠른 시험을 못 돌림 — 급하면 RN_QUICK_SKIP=1(까닭을 커밋 글에)"
+elif [ $bad = 1 ]; then echo "⏭ 앞 검사에서 이미 막혀 ⑧ 빠른 시험(약 3분)은 건너뜀 — 위 ❌를 고친 뒤 다시 push하면 돎"; node "$G8" --base $M --target "$T" --no-tests >/dev/null || true
+elif [ -n "${RN_QUICK_SKIP:-}" ]; then node "$G8" --base $M --target "$T" --no-tests || say "시험 문지기(⑩ 업데이트 기록·장부 꼴)에서 막음 — 위 ❌ 줄"
+else node "$G8" --base $M --target "$T" || say "시험 문지기(⑧ 빠른 시험·⑩ 업데이트 기록)에서 막음 — 위 ❌ 줄"; fi
 [ $bad = 0 ] && echo "✓ push 전 검사 통과($who · $(printf '%s\n' "$changed" | wc -l)개 파일)"; exit $bad

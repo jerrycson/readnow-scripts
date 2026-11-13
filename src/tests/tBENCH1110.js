@@ -11,7 +11,7 @@ const path = require('path'); const fs = require('fs');
   ok(!/정범님 \d|readnow-chats|UX_BENCH|MULTI_CHANNEL|PLATFORM_PLAN|Y24S_|이 세션/.test(raw), '날짜 붙은 지시 인용·비공개 저장소·내부 문서 이름 없음');
   ok((B.cases || []).length >= 20 && (B.items || []).length >= 25 && (B.cases || []).every((c) => c.grade !== '공식' || (c.urls || []).length) && (B.items || []).every((i) => B.states[i.st] || i.st === 'gone'), `사례 ${(B.cases || []).length} · 적용 줄 ${(B.items || []).length} · 공식 사례엔 원문 주소 · 상태 낱말 맞음`);
   ok(['web', 'ui2', 'col2', 'ledger', 'shop'].every((k) => (B.surfaces || {})[k]), '대상 다섯(웹앱·리드나우 2·번외·통합 장부·우리숍)');
-  await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type() + ': ' + d.message().slice(0, 80)); d.dismiss().catch(() => {}); });
+  await require('./harness.js')(async (p) => { if (bf) await p.route(/\/facts-docs\/bench\.json(\?|$)/, async (r) => { const g = await r.fetch().catch(() => null); if (g && g.ok()) return r.fulfill({ response: g }); return r.fulfill({ status: 200, body: raw, contentType: 'application/json' }); }); /* (11/13 rv2) 시험 서버 폴더(srv)에 facts-docs가 없으면 화면이 공개 판을 못 받아 12개가 거짓 실패('main에서도 실패'로 남던 것) — 서버에 없을 때만 위에서 읽은 같은 파일을 넘김 */ const dlg = []; p.on('dialog', (d) => { dlg.push(d.type() + ': ' + d.message().slice(0, 80)); d.dismiss().catch(() => {}); });
     await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
     const r = await p.evaluate(async (NI) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = { err: [] };
       try {

@@ -38,6 +38,6 @@ echo "④ 한 번 돌려 봄(지금 main · 3~6분)"
 B=$(gcloud builds triggers run "$T" --region="$R" --branch=main --format='value(metadata.build.id)' 2>/dev/null || true)
 [ -n "$B" ] && echo "   빌드 $B — 진행: https://console.cloud.google.com/cloud-build/builds;region=$R/$B?project=$P"
 echo
-echo "✓ 끝 — 마지막 한 가지: GitHub 저장소 변수 RN_CLOUD_DEPLOY = cloudbuild"
+echo "✓ 끝 — 리드가 저장소 파일(.github/cloud-deploy-via = cloudbuild)로 GitHub 쪽 배포를 끔(정범님 할 일 없음) · 아래 변수는 리드가 파일을 못 쓸 때만"
 echo "  https://github.com/jerrycson/readnow-scripts/settings/variables/actions/new  (Name: RN_CLOUD_DEPLOY · Value: cloudbuild · Add variable)"
 echo "  그 뒤로는 cloud/ 가 main에 올라오면 Cloud Build가 배포합니다(GitHub Actions 분 0). 되돌리기: 그 변수를 지우면 예전처럼 GitHub Actions가 배포"

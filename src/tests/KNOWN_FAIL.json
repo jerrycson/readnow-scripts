@@ -1,0 +1,1 @@
+{ "about": "알려진 실패 장부 — 빠른 시험(QUICK.json)·딸린 시험 중 이미 실패 중인 것만 · 줄마다 test·items(실패 항목 글 일부 · 비우면 그 시험 전체)·why(까닭)·owner(담당 이름표)·until(기한 YYYY-MM-DD · 14일 안)·since · 기한이 지나면 ship-check ⑧이 push를 막음 · main에서도 실패로 넘기지 말고 여기에 올리고 리드에게 (rv2b 11/13)", "items": [] }
