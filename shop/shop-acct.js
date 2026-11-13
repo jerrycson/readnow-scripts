@@ -13,7 +13,7 @@
   const RD = { want: '읽고 싶어요', ing: '읽는 중', done: '다 읽음' }; const RDI = { want: '🔖', ing: '📖', done: '✅' };
   async function A(b) { try { return await X().api('/shop/a', { method: 'POST', body: JSON.stringify(b), auth: 1 }); } catch (e) { if (e.status === 401 && e.j && e.j.login) { setTok(''); ME = null; navMe(); } throw e; } }
   async function me(force) { if (!tok()) return null; if (!force && ME && Date.now() - meAt < 30e3) return ME; try { const r = await A({ op: 'me' }); ME = r.me; meAt = Date.now(); navMe(); return ME; } catch (e) { return e.status === 401 ? null : ME; } }
-  function navMe() { const a = $('#navMe'); if (!a) return; a.setAttribute('aria-label', ME ? `내 정보(${ME.nick})` : '로그인'); const ic = $('#meIc'); if (ic) ic.textContent = ME ? (ME.test ? '🧪' : '👤') : '👤'; const n = $('#meN'); if (n) { n.hidden = !(ME && ALN.n); n.textContent = ALN.n || ''; } }
+  function navMe() { const a = $('#navMe'); if (!a) return; a.setAttribute('aria-label', ME ? `내 정보(${ME.nick})` : '로그인'); const ic = $('#meIc'); if (ic) { ic.classList.toggle('in', !!ME); a.classList.toggle('in', !!ME); } /* (shopux1) 아이콘은 SVG 그대로 — 로그인하면 색만 */ const n = $('#meN'); if (n) { n.hidden = !(ME && ALN.n); n.textContent = ALN.n || ''; } }
   async function alertDot() { if (!ME || Date.now() - ALN.at < 5 * 60e3) return; ALN.at = Date.now(); try { const r = await A({ op: 'alerts' }); ALN.n = r.L.filter((x) => x.hit).length; navMe(); } catch (e) {} }
   const needLogin = (why) => { X().toast(why || '로그인하면 쓸 수 있습니다'); location.hash = '#/login?' + B.qs({ next: location.hash }); };
   /* ⭐ 별 — v = 별 다섯 기준(반 별) */
@@ -215,7 +215,7 @@
     $('#lcp').onclick = () => X().copy(location.href, '🔗 주소를 복사했습니다'); }
   /* 첫 화면: 새로 올라온 리뷰 */
   async function home(el) { if (!el) return; let r; try { r = await X().api('/shop/rvnew'); } catch (e) { return; } if (!r || !Array.isArray(r.L) || !r.L.length || !el.isConnected) return; const L = r.L.slice(0, 6);
-    el.insertAdjacentHTML('beforeend', `<h2>⭐ 새로 올라온 리뷰</h2><div class="bqa-newrv">${L.map((x) => `<a class="bqa-nr" href="#/b/${esc(x.id || '')}">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}<div><b>${esc(x.t || '')}</b>${stars(st5(x.st), 'sm')}<p>${esc(x.s100)}</p><small>${esc(x.nick)} · ${esc(ago(x.at))}</small></div></a>`).join('')}</div>`); }
+    el.insertAdjacentHTML('beforeend', `<div class="sec-h"><div><h2>새로 올라온 리뷰</h2><p>책을 받은 손님이 남긴 글</p></div></div><div class="bqa-newrv">${L.map((x) => `<a class="bqa-nr" href="#/b/${esc(x.id || '')}">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}<div><b>${esc(x.t || '')}</b>${stars(st5(x.st), 'sm')}<p>${esc(x.s100)}</p><small>${esc(x.nick)} · ${esc(ago(x.at))}</small></div></a>`).join('')}</div>`); }
   /* 최근 본 책도 계정에(로그인했을 때 · 10초 모아서) */
   let sT = 0; function seenSync() { if (!tok()) return; clearTimeout(sT); sT = setTimeout(() => A({ op: 'seen', L: X().LS.get('bq-seen', []) }).catch(() => {}), 10000); }
   window.BQA = { tok, me: () => ME, item, home, wishSync, seenSync, navMe, stars, kOf, shareCard, cardCanvas, routes: { login: (R) => loginPage(R.q), me: (R) => mePage(R.q), u: (R) => userPage(R.arg), l: (R) => listPage(R.arg) } };

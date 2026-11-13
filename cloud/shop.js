@@ -145,7 +145,7 @@ function pubCfg(c, meta, promo) {
   return { open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
     pay: c.open && bankOk ? { how: 'bank', bank: s(bank.name, 20), acct: s(bank.acct, 30), holder: s(bank.holder, 20) } : { how: 'wait' }, pg: 0 /* 카드·간편결제(PG)는 계약 뒤 — 자리만 */,
     biz: { name: s(bz.name, 40) || null, ceo: s(bz.ceo, 20) || null, addr: s(bz.addr, 120) || null, tel: s(bz.tel, 20) || null, email: s(bz.email, 60) || null, no: s(bz.no, 20) || null, mo: s(bz.mo, 40) || null, cpo: s(bz.cpo, 20) || null, host: 'Google Firebase(구글)' },
-    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
+    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), /* (11/13 shopux1) 🎨 꾸밈(app_settings/shop.look · shop/shop-look.js 틀 — 꼴만 지킴 · 범위는 손님 화면 BQL.cfgOf가 다시) · 👑 로고 시안 번호(q01~q10 · 빈 값 = 글자 로고) */ look: shelfPub(c.look), brandLogo: /^q(0[1-9]|10)$/.test(String(c.brandLogo || '')) ? String(c.brandLogo) : '', n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
 }
 
 /* ══ (11/11 shop2) 🔎 검색 노출 — 책마다 미리 만든 HTML · sitemap.xml (순수 셈 · 시험 tSHOP1111)
