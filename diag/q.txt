@@ -1,2 +1,2 @@
-slearn=bg&mem=1
-# 302196481
+mktchk=*&dump=orders&since=2026-11-10&shplog=1&logs=1&pc=MJ-MAIN&from=202611130100&doc=app_settings/col2_handoff,rn_status/MJ-MAIN,rn_status/JS-MAIN,rn_status/CLOUD
+# 2138525182
