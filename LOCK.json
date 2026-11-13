@@ -3,7 +3,11 @@
  "what": "cloudmem 여섯째 판",
  "since": "2026-11-13T02:41:31Z",
  "beat": "2026-11-13T02:41:31Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: led4 판: 판매자 다시 읽기 40MB 먼저 떼기 · 늦음 거절 다시 줄에 · mkt1 lookupBook · 진단 가리개",
+  "at": "2026-11-13T02:42:13Z"
+ },
  "last": {
   "who": "lead",
   "done": "home2: 번외 0.1.50 · c6fb23c9",
