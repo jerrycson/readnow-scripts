@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.316의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.317의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.316' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.316', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.317' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.317', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -591,9 +591,11 @@
     const job = await loadJob('qna');
     if (isFresh(job)) { await syncRemoteJob(job); startJob(job); }
     job.status = 'running'; await saveJob(job);
+    let sig1 = null; /* (qna1 11/13) ❓ 문의 실시간 — 이번에 읽은 목록 첫 쪽 모양(문의 번호:답변여부) · 끝나면 prd_jobs/qna_live.doneSig에 → 가벼운 확인이 같은 모양이면 본문 읽기를 다시 안 함 */
     if (job.phase === 'list') {
-      await crawlPages(job, (p) => `${BASE}wUsedShopC2CQnASellerList.aspx?page=${p}`, async (doc) => {
+      await crawlPages(job, (p) => `${BASE}wUsedShopC2CQnASellerList.aspx?page=${p}`, async (doc, u0, pg) => {
         const rows = P.parseQnaList(doc).map((r) => ({ _key: r.questionId, ...r, collectedAt: now() }));
+        if (pg === 1) sig1 = rows.filter((r) => r.questionId).map((r) => `${r.questionId}:${r.answered == null ? '' : String(r.answered)}`).join(',');
         const det = await dbGetMany('qnaDetail', rows.map((r) => r._key)); const old = await dbGetMany('qnaList', rows.map((r) => r._key));
         // '아는 줄' = 전에 본 줄과 답변여부가 같고 상세도 받아 둔 줄. 답변 없는 질문·취소된 질문도 상태가 그대로면 아는 줄 (예전엔 답변이 없으면 매번 새 줄로 봐서 끝까지 다 넘겼음)
         let fresh = 0;
@@ -640,14 +642,15 @@
       }
     }
     job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); await saveJob(job); shareJobDone(job); log('묻고 답하기 완료', 'ok');
-    await uploadQnaNow();
+    const up = await uploadQnaNow(); window.__rnQnaLastUp = up ? { ...up, at: now() } : null;
+    if (up && up.ok && sig1 != null && fbUser && fdb) { try { await fdb.collection('prd_jobs').doc('qna_live').set({ doneSig: sig1, doneAt: now(), donePc: PC.name || '', doneBy: 'crm:qna', upN: up.n, total: up.total, uploadedAt: FB.firestore.FieldValue.serverTimestamp() }, { merge: true }); } catch (e) {} } /* (qna1 11/13) 웹앱은 이 문서가 바뀌고 upN > 0이면 문의 목록을 저절로 다시 받음 */
   }
   // 묻고 답하기는 수집이 끝나면 바로 Firebase에 올림 (전체 올리기를 기다리지 않음). 답변여부 = 샵매니저 목록 행 5번째 칸 그대로
   async function uploadQnaNow() {
     const list = await dbAll('qnaList'); const det = new Map((await dbAll('qnaDetail')).map((d) => [d._key, d]));
     const cnt = {}; list.forEach((r) => { const k = r.answered == null ? '(빈칸)' : r.answered; cnt[k] = (cnt[k] || 0) + 1; });
     log(`묻고 답하기 목록 ${list.length}건의 답변여부: ${Object.entries(cnt).map(([k, v]) => `${k} ${v}`).join(', ')}`);
-    if (!fbUser || !fdb) { log('Firebase 로그인이 안 되어 묻고 답하기를 올리지 못했습니다 (구글 로그인 후 다시)', 'err'); return; }
+    if (!fbUser || !fdb) { log('Firebase 로그인이 안 되어 묻고 답하기를 올리지 못했습니다 (구글 로그인 후 다시)', 'err'); return { ok: false, n: 0, total: list.length }; }
     const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('qnaNow/')).map((u) => [u._key, u.hash]));
     const todo = [];
     list.forEach((r) => { const q = det.get(r._key) || {}; const cid = q.customerKey ? `aladin_${q.customerKey}` : null;
@@ -655,13 +658,13 @@
       if (q._key) Object.assign(data, { customerId: cid, orderId: q.orderNo ? `aladin_${q.orderNo}` : null, itemId: q.itemId ?? null, title: q.title ?? null, condition: q.condition ?? null, answer: q.answer ?? null });
       Object.keys(data).forEach((k) => { if (data[k] === null || data[k] === undefined || data[k] === '') delete data[k]; }); // 빈 값은 안 보냄 → 서버의 기존 값 유지
       const h = hashStr(stableStr(data)); if (sent.get('qnaNow/' + r._key) !== h) todo.push({ id: r._key, data, h }); });
-    if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return; }
+    if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return { ok: true, n: 0, total: list.length }; }
     const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0;
     for (let i = 0; i < todo.length; i += 300) { const part = todo.slice(i, i + 300); const b = fdb.batch();
       { const olds = await Promise.all(part.map((t) => fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`).get().catch(() => null))); const H = []; part.forEach((t, k) => { const od = olds[k]; if (od && od.exists) { const h = crmHistOf('crm_interactions', `aladin_qna_${t.id}`, od.data(), t.data); if (h) H.push(h); } }); if (H.length) await crmHistCommit(H); } // (1.57.2) 답·상태가 바뀌면 옛 값 먼저
       part.forEach((t) => { b.set(fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`), { ...t.data, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; });
       await commitWithRetry(b, part.length); await dbPut('uploaded', part.map((t) => ({ _key: 'qnaNow/' + t.id, hash: t.h, at: now() }))); }
-    log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok');
+    log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok'); return { ok: true, n, total: list.length };
   }
 
   /* ════════ 4) 구매평 ════════ */

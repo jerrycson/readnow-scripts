@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.316
+// @version      1.89.317
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -2047,9 +2047,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const job = await loadJob('qna');
     if (isFresh(job)) { await syncRemoteJob(job); startJob(job); }
     job.status = 'running'; await saveJob(job);
+    let sig1 = null; /* (qna1 11/13) ❓ 문의 실시간 — 이번에 읽은 목록 첫 쪽 모양(문의 번호:답변여부) · 끝나면 prd_jobs/qna_live.doneSig에 → 가벼운 확인이 같은 모양이면 본문 읽기를 다시 안 함 */
     if (job.phase === 'list') {
-      await crawlPages(job, (p) => `${BASE}wUsedShopC2CQnASellerList.aspx?page=${p}`, async (doc) => {
+      await crawlPages(job, (p) => `${BASE}wUsedShopC2CQnASellerList.aspx?page=${p}`, async (doc, u0, pg) => {
         const rows = P.parseQnaList(doc).map((r) => ({ _key: r.questionId, ...r, collectedAt: now() }));
+        if (pg === 1) sig1 = rows.filter((r) => r.questionId).map((r) => `${r.questionId}:${r.answered == null ? '' : String(r.answered)}`).join(',');
         const det = await dbGetMany('qnaDetail', rows.map((r) => r._key)); const old = await dbGetMany('qnaList', rows.map((r) => r._key));
         // '아는 줄' = 전에 본 줄과 답변여부가 같고 상세도 받아 둔 줄. 답변 없는 질문·취소된 질문도 상태가 그대로면 아는 줄 (예전엔 답변이 없으면 매번 새 줄로 봐서 끝까지 다 넘겼음)
         let fresh = 0;
@@ -2096,14 +2098,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       }
     }
     job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); await saveJob(job); shareJobDone(job); log('묻고 답하기 완료', 'ok');
-    await uploadQnaNow();
+    const up = await uploadQnaNow(); window.__rnQnaLastUp = up ? { ...up, at: now() } : null;
+    if (up && up.ok && sig1 != null && fbUser && fdb) { try { await fdb.collection('prd_jobs').doc('qna_live').set({ doneSig: sig1, doneAt: now(), donePc: PC.name || '', doneBy: 'crm:qna', upN: up.n, total: up.total, uploadedAt: FB.firestore.FieldValue.serverTimestamp() }, { merge: true }); } catch (e) {} } /* (qna1 11/13) 웹앱은 이 문서가 바뀌고 upN > 0이면 문의 목록을 저절로 다시 받음 */
   }
   // 묻고 답하기는 수집이 끝나면 바로 Firebase에 올림 (전체 올리기를 기다리지 않음). 답변여부 = 샵매니저 목록 행 5번째 칸 그대로
   async function uploadQnaNow() {
     const list = await dbAll('qnaList'); const det = new Map((await dbAll('qnaDetail')).map((d) => [d._key, d]));
     const cnt = {}; list.forEach((r) => { const k = r.answered == null ? '(빈칸)' : r.answered; cnt[k] = (cnt[k] || 0) + 1; });
     log(`묻고 답하기 목록 ${list.length}건의 답변여부: ${Object.entries(cnt).map(([k, v]) => `${k} ${v}`).join(', ')}`);
-    if (!fbUser || !fdb) { log('Firebase 로그인이 안 되어 묻고 답하기를 올리지 못했습니다 (구글 로그인 후 다시)', 'err'); return; }
+    if (!fbUser || !fdb) { log('Firebase 로그인이 안 되어 묻고 답하기를 올리지 못했습니다 (구글 로그인 후 다시)', 'err'); return { ok: false, n: 0, total: list.length }; }
     const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('qnaNow/')).map((u) => [u._key, u.hash]));
     const todo = [];
     list.forEach((r) => { const q = det.get(r._key) || {}; const cid = q.customerKey ? `aladin_${q.customerKey}` : null;
@@ -2111,13 +2114,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (q._key) Object.assign(data, { customerId: cid, orderId: q.orderNo ? `aladin_${q.orderNo}` : null, itemId: q.itemId ?? null, title: q.title ?? null, condition: q.condition ?? null, answer: q.answer ?? null });
       Object.keys(data).forEach((k) => { if (data[k] === null || data[k] === undefined || data[k] === '') delete data[k]; }); // 빈 값은 안 보냄 → 서버의 기존 값 유지
       const h = hashStr(stableStr(data)); if (sent.get('qnaNow/' + r._key) !== h) todo.push({ id: r._key, data, h }); });
-    if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return; }
+    if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return { ok: true, n: 0, total: list.length }; }
     const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0;
     for (let i = 0; i < todo.length; i += 300) { const part = todo.slice(i, i + 300); const b = fdb.batch();
       { const olds = await Promise.all(part.map((t) => fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`).get().catch(() => null))); const H = []; part.forEach((t, k) => { const od = olds[k]; if (od && od.exists) { const h = crmHistOf('crm_interactions', `aladin_qna_${t.id}`, od.data(), t.data); if (h) H.push(h); } }); if (H.length) await crmHistCommit(H); } // (1.57.2) 답·상태가 바뀌면 옛 값 먼저
       part.forEach((t) => { b.set(fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`), { ...t.data, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; });
       await commitWithRetry(b, part.length); await dbPut('uploaded', part.map((t) => ({ _key: 'qnaNow/' + t.id, hash: t.h, at: now() }))); }
-    log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok');
+    log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok'); return { ok: true, n, total: list.length };
   }
 
   /* ════════ 4) 구매평 ════════ */
@@ -6944,6 +6947,54 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { window.__rnLoginGov && window.__rnLoginGov.ship && window.__rnLoginGov.ship(); } catch (e) {} /* 🪑 출고·자동 발송 판단 PC = 자리 우선순위 2 */ try { await autoShipPc(rc.orders); } catch (e) {} /* (10/27) 🤖 읽은 바로 그 자리에서 자동 발송요청 판단 */ try { if (window.__rnRbScan && (sigNew || Date.now() - rbAt > 3600e3)) { rbAt = Date.now(); await window.__rnRbScan(rc.orders); } } catch (e) {} /* (1.89.283 🔬 정밀 점검 11/12) 주문 목록이 안 바뀌어도 10분마다 주문마다 shp_cmds 질의(주문 10건 ≈ 3천~4.5만 읽기/일) → 바뀐 때·1시간마다만 */ /* (정범님 11/12) ✖ 부분 취소 뒤 다시 묶여 돌아온 주문 → 다시 발송요청 */ try { await mktBackup(rc.orders); } catch (e) {}
           if (new Date(Date.now() + 9 * 3600e3).getUTCHours() >= 7 && (dvDrop || Date.now() - tabAt > 5 * 60e3)) { tabAt = Date.now(); try { await tabReadPc(false); } catch (e) { log('📦 출고별 매출(배송&구매확정전) 읽기 실패: ' + e.message, 1); } } /* (10/27) 출고별 매출 — 5분마다(발송 요청이 줄면 바로) · 클라우드와 임대로 나눔 */ }
         catch (e) { fails++; } finally { busy = false; } } })(); })();
+  /* ══ (qna1 · 정범님 11/13 14:57 「알라딘 문의를 거의 수시로 확인 · 웹앱에 안 뜨면 다시 읽는 단추」) ❓ 문의 실시간 — 가벼운 확인 + 바뀐 때만 본문 ══
+   *  예전: 문의는 ⏰ 일정표 칸 '고객 문의'(crm:qna · 30분마다 · 하루 약 48번)만 읽음 → 새 문의가 웹앱에 뜨기까지 길면 30분 넘게
+   *  이제: 로그인된 사무실 PC 하나가 샵매니저 묻고 답하기 목록 첫 쪽(사람이 그 화면을 여는 것과 같은 한 장)만 낮 qlGap 분마다(기본 2분 · 밤 🌙 시간엔 10분 · ±20% 흩음) 읽어
+   *        문의 번호·답변여부가 지난번 본문 읽기와 다르면 그때만 본문 읽기(crm:qna — 새 문의·답변여부가 바뀐 문의만 상세를 엶)를 바로 시작 → 웹앱에 올림
+   *  근거: 출고 실시간이 같은 샵매니저의 주문확인요청 화면을 15초마다 읽음(하루 약 5천 장) — 문의 첫 쪽 2분마다는 하루 약 600장(그 10분의 1쯤) · 간격은 ⚙ 설정 › ❓ 문의 실시간(app_settings/qna_live_cfg)
+   *  지킴: 로거 안 함(PUBONLY) · 이 PC 로그인이 풀렸으면 안 함(다른 PC가) · 🚚 출고 중인 PC는 안 함(약속 0-1 · 다른 PC가) · 일시정지·쉬는 탭·수집기 탭(lead)이 아니면 안 함
+   *        PC끼리는 한 번에 하나(prd_jobs/qna_probe 트랜잭션 — 그때 할 수 있는 PC가 맡음 · 담당 PC를 정하지 않음 F28) · 목록을 못 읽으면 쉬는 시간을 늘림(5번 연속이면 30분)
+   *  웹앱 「🔄 문의 다시 읽기」(prd_jobs/qna_live.req) — 그때 할 수 있는 PC가 트랜잭션으로 받아(누른 기기와 같은 PC가 먼저) 본문 읽기 → 결과·시각을 reqRun에 */
+  (function qnaLivePc() { if (PUBONLY) return;
+    const QL_DEF = { on: true, dayMin: 2, nightMin: 10 };
+    const qlCfgOf = (v) => { const o = { ...QL_DEF, ...((v && typeof v === 'object') ? v : {}) }; const cl = (x, d) => { const n = +x; return Number.isFinite(n) ? Math.max(1, Math.min(120, n)) : d; }; return { on: o.on !== false, dayMin: cl(o.dayMin, 2), nightMin: cl(o.nightMin, 10) }; };
+    const qlSig = (rows) => (rows || []).filter((r) => r && r.questionId).map((r) => `${r.questionId}:${r.answered == null ? '' : String(r.answered)}`).join(',');
+    const qlGapMs = (cfg, night) => (night ? cfg.nightMin : cfg.dayMin) * 60e3;
+    window.__rnQlPure = { qlCfgOf, qlSig, qlGapMs, QL_DEF };
+    let CFG = qlCfgOf(null), LIVE = {}, busy = false, fails = 0, backTill = 0, nextAt = Date.now() + 30e3 + Math.random() * 30e3, trig = { sig: null, at: 0 };
+    const PREF = () => C('prd_jobs').doc('qna_probe'), LREF = () => C('prd_jobs').doc('qna_live');
+    const can = () => { try { if (!auth.currentUser || !pcLoggedNow()) return '이 PC 알라딘 로그인 안 됨'; if (window.__rnSgOn && window.__rnSgOn()) return '🚚 출고 중(이 PC 보호)'; if (window.__rnPaused) return '일시정지'; if (window.__rnRest && window.__rnRest()) return '쉬는 탭'; if (window.__rnRole && window.__rnRole() !== 'lead') return '수집기 탭 아님'; const R = window.__rnCrm; if (!R || !R.start) return '고객 수집 모듈 없음'; return ''; } catch (e) { return '확인 실패'; } };
+    const crmFree = () => { const R = window.__rnCrm; try { if (R.busy && R.busy()) return '이 PC가 다른 고객 일 중'; if (R.otherBusy && R.otherBusy()) return '이 PC 다른 탭이 고객 일 중'; } catch (e) {} return ''; };
+    let sub0 = false; const subs = () => { if (sub0 || !auth.currentUser) return; sub0 = true;
+      C('app_settings').doc('qna_live_cfg').onSnapshot((d) => { CFG = qlCfgOf(d.exists ? d.data() : null); }, () => {});
+      LREF().onSnapshot((d) => { LIVE = d.exists ? d.data() || {} : {}; reqSee(); }, () => { sub0 = false; }); };
+    /* 본문 읽기 — 고객 수집 모듈의 '묻고 답하기'(새 문의·답변여부 바뀐 문의만 상세 · 바뀐 것만 Firebase) */
+    async function fullRead(why) { const t0 = Date.now(); window.__rnQnaLastUp = null; let out; try { out = await window.__rnCrm.start('qna'); } catch (e) { out = 'error'; }
+      const up = window.__rnQnaLastUp || null; try { window.__rnCS && window.__rnCS.add('qna_live_full', out === 'done' ? 'ok' : 'fail', 1, out === 'done' ? null : String(out || '시작 못 함')); } catch (e) {}
+      log(`❓ 문의 실시간: 본문 읽기 ${out === 'done' ? '끝' : '못 끝냄(' + (out || '시작 못 함') + ')'} — ${why}${up ? ` · 올림 ${up.n}건` : ''} (${Math.round((Date.now() - t0) / 1000)}초)`, out === 'done' ? 0 : 1); return { out, up }; }
+    /* 가벼운 확인 — 목록 첫 쪽 한 장 */
+    async function probe() { const gap = qlGapMs(CFG, (() => { try { const c = nightCfgSync(); return !!(c && c.on && nightIn(c)); } catch (e) { return false; } })()); nextAt = Date.now() + gap * (0.8 + Math.random() * 0.4);
+      let mine = false; try { await db.runTransaction(async (tx) => { mine = false; const s = await tx.get(PREF()); const v = s.exists ? s.data() || {} : {}; const at = Date.parse(v.at || 0) || 0; if (Date.now() - at < gap * 0.8 && v.pc !== PC_NAME) return; const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); tx.set(PREF(), { at: nowIso(), pc: PC_NAME, gapMin: Math.round(gap / 6e3) / 10, day, n: v.day === day ? (+v.n || 0) + 1 : 1, pcs: { [PC_NAME]: nowIso() }, ver: APP_VER }, { merge: true }); mine = true; }); } catch (e) { return; } if (!mine) return;
+      const O = window.ReadnowOrders || globalThis.ReadnowOrders; if (!O || !O.parseQnaList) return;
+      let rows = null; try { const g = await lookDoc('https://www.aladin.co.kr/scm/wUsedShopC2CQnASellerList.aspx?page=1'); const okPage = !!(g && g.doc && g.doc.querySelector && (g.doc.querySelector('a[href*="wUsedShopC2CAnswer.aspx"]') || /묻고\s*답하기/.test(String((g.doc.body && g.doc.body.textContent) || '').slice(0, 20000)))) && !/login/i.test(String(g.finalUrl || '')); rows = okPage ? O.parseQnaList(g.doc) : null; } catch (e) { rows = null; }
+      if (!rows) { fails++; if (fails >= 5) backTill = Date.now() + 30 * 60e3; try { window.__rnCS && window.__rnCS.add('qna_probe', 'fail', 1, '목록 첫 쪽을 못 읽음'); } catch (e) {} PREF().set({ lastFail: nowIso(), lastFailPc: PC_NAME, fails }, { merge: true }).catch(() => {}); if (fails === 1 || fails % 20 === 0) log(`⚠ ❓ 문의 실시간: 묻고 답하기 목록 첫 쪽을 못 읽음(${fails}번째)${fails >= 5 ? ' — 30분 쉼' : ''}`, 1); return; }
+      fails = 0; const sig = qlSig(rows); try { window.__rnCS && window.__rnCS.add('qna_probe', 'ok', 1); } catch (e) {}
+      const same = sig === String(LIVE.doneSig || ''); PREF().set({ sig, rows: rows.length, same, okAt: nowIso() }, { merge: true }).catch(() => {});
+      if (same || !rows.length) return; if (trig.sig === sig && Date.now() - trig.at < 10 * 60e3) return; /* 같은 모양으로 10분 안에 또 시작하지 않음(본문 읽기가 실패해도 되풀이 막음) */
+      const w = crmFree(); if (w) { nextAt = Date.now() + 60e3; return; } trig = { sig, at: Date.now() };
+      const nNew = rows.filter((r) => !String(LIVE.doneSig || '').split(',').some((x) => x.split(':')[0] === String(r.questionId))).length;
+      const R = await fullRead(`목록 첫 쪽이 바뀜(새로 본 문의 ${nNew}건)`); if (R.out === 'done') LREF().set({ doneSig: sig, doneAt: nowIso(), donePc: PC_NAME, doneBy: 'probe', upN: R.up ? R.up.n : null, uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+    /* 웹앱 「🔄 문의 다시 읽기」 */
+    let reqBusy = false; async function reqSee() { const q = LIVE.req, r = LIVE.reqRun || {}; if (!q || !q.id || reqBusy || r.id !== q.id || r.state !== 'queued') return; if (Date.now() - (+q.atMs || 0) > 15 * 60e3) return; if (r.pcBack && Date.now() - (Date.parse(r.pcBack[PC_NAME] || 0) || 0) < 60e3) return; /* 이 PC가 방금 못 끝낸 것은 1분 동안 다른 PC 차례 */
+      const why = can() || crmFree(); if (why) return; const mineDev = q.dev && String(q.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase(); reqBusy = true;
+      try { await sleep(mineDev ? 0 : 1500 + Math.random() * 2500); if (can() || crmFree()) return; let ok = false;
+        await db.runTransaction(async (tx) => { ok = false; const s = await tx.get(LREF()); const v = s.data() || {}; const x = v.reqRun || {}; if (!v.req || v.req.id !== q.id || x.id !== q.id || x.state !== 'queued') return; tx.set(LREF(), { reqRun: { ...x, state: 'running', pc: PC_NAME, startAt: nowIso(), step: '샵매니저 묻고 답하기 목록·새 문의 상세를 읽는 중' } }, { merge: true }); ok = true; }); if (!ok) return;
+        log(`📨 웹앱 「🔄 문의 다시 읽기」 받음(${String(q.by || '').split('@')[0]}${q.dev ? ' · ' + q.dev : ''}) — 이 PC(${PC_NAME})가 읽음`);
+        const R = await fullRead('웹앱에서 누름'); const up = R.up || {};
+        if (R.out === 'done') await LREF().set({ reqRun: { id: q.id, state: 'done', pc: PC_NAME, endAt: nowIso(), upN: up.n != null ? up.n : null, total: up.total != null ? up.total : null, msg: up.n ? `새로·바뀐 문의 ${up.n}건을 웹앱에 올림` : '알라딘과 웹앱이 같음 — 새로 올릴 문의 없음' }, uploadedAt: TS() }, { merge: true });
+        else await LREF().set({ reqRun: { id: q.id, state: 'queued', pcBack: { [PC_NAME]: nowIso() }, note: `${PC_NAME}: 본문 읽기를 못 끝냄(${R.out || '시작 못 함'}) — 다른 PC·잠시 뒤 다시` }, uploadedAt: TS() }, { merge: true }); }
+      catch (e) { log('❓ 문의 다시 읽기 처리 오류: ' + e.message, 1); } finally { reqBusy = false; } }
+    (async () => { await sleep(20000); for (;;) { await sleep(15000); try { subs(); if (busy || !CFG.on || Date.now() < nextAt || Date.now() < backTill) { reqSee(); continue; } if (can()) { nextAt = Date.now() + 60e3; continue; } busy = true; try { await probe(); } finally { busy = false; } reqSee(); } catch (e) { busy = false; } } })(); })();
   async function lookupBook(url, code) { let g = await lookDoc(url); let p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId && !PUBONLY && /성인\s*인증|19세|청소년\s*(유해|이용불가)|wlogin\.aspx|adult/i.test(String(g.finalUrl || '') + ' ' + String(g.html || (g.doc && g.doc.documentElement ? g.doc.documentElement.outerHTML : '')).slice(0, 30000))) { /* (1.81.0) 🔞 알라딘 제목이 붙은 성인 인증 화면 — 로그인한 채로 다시 */ g = await AL.quick(url, { pace: PACE_P, sleep }); p = P.parseProductPage(g.doc, g.finalUrl); } if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
     const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode, isbnKey: p.isbnKey || null }, code) : String(p.isbn13 || '') === String(code) || String(p.isbnKey || '').toUpperCase() === String(code).toUpperCase())) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
     const uu = `/shop/UsedShop/wuseditemall.aspx?ItemId=${p.aladinItemId}&TabType=0`; let u = P.parseUsedPage((await lookDoc(uu)).doc); let usedErr = null;
