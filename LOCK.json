@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "urg2 긴급: 출고 빈 목록 되살리기 판",
- "since": "2026-11-13T03:57:32Z",
- "beat": "2026-11-13T03:57:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "bovf 판 58f9b560 — 웹앱 1.78.560 · 수집기 1.89.306 · autosched 0.18.29 · 노선표 0.14.186",
-  "at": "2026-11-13T03:57:01Z"
+  "done": "urg2 긴급 판 be31d6dd — 수집기 1.89.307 · 클라우드 0.35.209",
+  "at": "2026-11-13T04:01:18Z"
  },
- "host": "vm-urg2"
+ "host": null
 }
