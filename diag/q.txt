@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261113-113123.json
+doc=app_settings/ship_auto_beat
+# 2415421073
