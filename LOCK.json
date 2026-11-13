@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검 — 자료 보관 칸 끝 강제 저장 묶기",
+ "since": "2026-11-13T19:26:19Z",
+ "beat": "2026-11-13T19:26:19Z",
  "ask": null,
  "last": {
   "who": "y24qty1",
   "done": "웹앱 1.78.616 · 번외 0.1.62 (f939fc68)",
   "at": "2026-11-13T18:48:55Z"
  },
- "host": null
+ "host": "vm"
 }
