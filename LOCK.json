@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shoplogo1",
+ "what": "북스퀸 로고 시안",
+ "since": "2026-11-13T11:28:47Z",
+ "beat": "2026-11-13T11:28:47Z",
  "ask": null,
  "last": {
   "who": "shop2",
   "done": "클라우드 0.35.232·0.35.233 · 우리숍 서가 0.2.8·0.2.9 · 손님 화면 0.1.15 (f7fabfa3·b32b544f)",
   "at": "2026-11-13T11:28:25Z"
  },
- "host": null
+ "host": "vm-shoplogo1"
 }
