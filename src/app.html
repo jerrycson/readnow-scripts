@@ -2209,12 +2209,12 @@ const ICON = {
     }
     let rT = 0; const renderSoon = () => { clearTimeout(rT); rT = setTimeout(function go() { if (U.ptr || Date.now() - (U.ptrUp || 0) < 300 || U.bub || selIn()) { rT = setTimeout(go, 150); return; } render(); }, 60); };
     const selIn = () => { try { const g = window.getSelection(); if (!g || g.isCollapsed) return false; const n = g.anchorNode; return !!(n && root.contains(n.nodeType === 1 ? n : n.parentElement)); } catch (e) { return false; } }; /* 글을 고르는 중·버블이 열린 동안은 뒤에서 다시 그리지 않음(고른 글이 풀리지 않게) */
-    root.addEventListener('pointerdown', () => { U.ptr = true; }, true); const ptrUp = () => { U.ptr = false; U.ptrUp = Date.now(); }; document.addEventListener('pointerup', ptrUp, true); document.addEventListener('pointercancel', ptrUp, true);
+    root.addEventListener('pointerdown', () => { U.ptr = true; }, true); const ptrUp = () => { U.ptr = false; U.ptrUp = Date.now(); }; document.addEventListener('pointerup', ptrUp, true); document.addEventListener('pointercancel', ptrUp, true); U.docL = [['pointerup', ptrUp, true], ['pointercancel', ptrUp, true]]; /* 창을 닫을 때(destroy) 걷음 */
     /* (note5 둘째) 통합 입력칸 — 누르면 설정 높이로 크게 · 칸 밖을 누르면 줄어듦(쓰던 글은 칸에 저장) */
     const dockBig = (on) => { const d = root.querySelector('#jbn-dock'); if (d) d.classList.toggle('big', !!on); };
     root.addEventListener('focusin', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) dockBig(true); });
     root.addEventListener('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) setTimeout(() => { const ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.feedta)) dockBig(false); }, 120); });
-    document.addEventListener('pointerdown', (e) => { const d = root.querySelector('#jbn-dock.big'); if (!d || d.contains(e.target)) return; const ta = d.querySelector('#jbn-feed-ta'); if (ta && document.activeElement === ta) ta.blur(); dockBig(false); }, true);
+    const onOut = (e) => { if (U.dead) return; const d = root.querySelector('#jbn-dock.big'); if (!d || d.contains(e.target)) return; const ta = d.querySelector('#jbn-feed-ta'); if (ta && document.activeElement === ta) ta.blur(); dockBig(false); }; document.addEventListener('pointerdown', onOut, true); U.docL.push(['pointerdown', onOut, true]);
     /* (note5 둘째 · 휴대폰 '목록 보기'가 안 됨) 부드러운 굴림이 다시 그리기에 끊겼음 → 바로 그 자리로 */
     function goFeed() { const f = root.querySelector('#jbn-feed'); if (!f) return; const ta = root.querySelector('#jbn-feed-ta'); if (ta && document.activeElement === ta) ta.blur(); dockBig(false);
       f.style.scrollMarginTop = (8 + (opt.padTop ? +opt.padTop() || 0 : 0)) + 'px'; /* 웹앱 창은 위에 붙은 머리(.sh)만큼 덜 내림 */
@@ -2303,7 +2303,7 @@ const ICON = {
     selBtn.addEventListener('click', () => { const id = selBtn._card, q = selBtn._q, r = selBtn._r || { left: 20, top: 20, bottom: 40 }; selBtn.hidden = true; if (!id) return; bubOpen(id, q, r); });
     jump.addEventListener('click', () => { const f = root.querySelector('#jbn-feed'); if (f) f.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
     render();
-    return { render, destroy() { U.dead = true; document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
+    return { render, destroy() { U.dead = true; for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
   G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '4' };
 })(typeof window !== 'undefined' ? window : globalThis);
