@@ -2,6 +2,7 @@
 //  ① 줄마다 구분선 · 제목 왼쪽 | 내용 오른쪽(세로선) — 위 두 줄은 두 칸씩(등록 방식·상태 / 수량·판매상태)
 //  ② 관리 코드 · 매입처 · 부가 코드는 각각 한 줄 전체(wide)
 //  ③ PC 폭(1400)·휴대폰 폭(390) 겹침·가로 스크롤 없음 · 단추 기능 그대로(상태 고르기)
+//  ④ (셋째 카드) 미등록 상품 정보도 같은 꼴 — 도서명 / 부제·원제 / 상품 구분 / 분류 / 지은이 / 출판사 / 쪽수·규격 / 출간일·정가 · 입력 그대로 저장
 // 실행: cd pw && RN_PORT=<포트> node tMJREG4_1113.js (harness.js·seed.js 옆) · 시험 자료에 손님 정보 없음 · 사진은 RN_SHOTS 폴더(없으면 건너뜀)
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
@@ -11,6 +12,7 @@ const SHOTS = process.env.RN_SHOTS || '';
 console.log('① 코드 꼴');
 ok(/<div class="rgsec rgreg"><div class="rgsh">등록 정보<\/div>/.test(T), '등록 정보 칸 표시(rgreg)');
 ok(/<div class="rgf wide"><label>매입처<\/label>/.test(T) && /<div class="rgf wide"><label>부가 코드<\/label>/.test(T) && /<div class="rgf wide"><label>관리 코드<\/label>/.test(T), '관리 코드·매입처·부가 코드 = 한 줄 전체');
+ok(/<div class="regnew rnt">/.test(T) && /<div class="rnr2 rnr2-dp">/.test(T) && /\.rnt \.rnr\{display:grid/.test(T), '미등록 상품 정보 줄 틀(rnt · 출간일·정가 두 칸)');
 ok(/\.rgreg \.rgf:not\(\.rgpricef\)\{border-bottom:1px solid/.test(T) && /\.rgreg \.rgf:not\(\.rgpricef\)>label\{border-right:1px solid/.test(T), '줄 구분선 · 제목|내용 세로선');
 (async () => {
   if (!process.env.RN_PORT) { console.log(bad ? `❌ tMJREG4_1113 ${bad}개 실패` : '✓ tMJREG4_1113 코드 꼴 통과 (화면 시험은 RN_PORT를 주면)'); process.exit(bad ? 1 : 0); }
@@ -52,6 +54,26 @@ ok(/\.rgreg \.rgf:not\(\.rgpricef\)\{border-bottom:1px solid/.test(T) && /\.rgre
     await p.setViewportSize({ width: 1400, height: 900 }); await seed(p, 'full');
     await p.click('#sheet [data-rgcid="d1"] [data-rgg="d1"][data-v="1"]'); await p.waitForTimeout(900);
     ok(await p.evaluate(() => +(S.regItems.get('d1') || {}).grade === 1), '「최상」 누르면 상태가 최상으로');
+
+    console.log('④ 미등록 상품 정보');
+    const nlay = () => p.evaluate(() => { const c = document.querySelector('#sheet [data-rgcid="n1"]'); if (!c) return null; const box = c.querySelector('.regnew.rnt'); if (!box) return { none: 1 }; const br = box.getBoundingClientRect(); const R = (e) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), r: Math.round(r.right) }; };
+      const rows = [...box.querySelectorAll('.rnr:not(.rnfull)')].map((f) => { const lb = f.querySelector(':scope > .rnl'); const dv = f.querySelector(':scope > .rnv'); const cs = getComputedStyle(f); const ls = getComputedStyle(lb); return { t: lb.textContent.trim().replace(/\s+/g, ' ').slice(0, 10), ...R(f), bb: parseFloat(cs.borderBottomWidth) > 0, br: parseFloat(ls.borderRightWidth) > 0, labR: Math.round(lb.getBoundingClientRect().right), divL: Math.round(dv.getBoundingClientRect().left), inside: f.getBoundingClientRect().right <= br.right + 1 }; });
+      const sheet = document.getElementById('sheet'); return { rows, seg: !!box.querySelector('.rnfull [data-rgbranch]'), over: sheet.scrollWidth - sheet.clientWidth, cover: c.scrollWidth - c.clientWidth }; });
+    const seedN = async () => { await p.evaluate(async () => { const d = { stage: 'sel', method: 'new', branch: 1, grade: 2, qty: 1, price: 9000, ws: regWsCur(), createdAt: new Date().toISOString(), code: 'MJ3CMN', codeManual: true, q: '미등록 시험 책', new: { titleCore: '미등록 시험 책', title: '미등록 시험 책', tPre: [], tSuf: [] } };
+      await db.collection('reg_items').doc('n1').set(d); S.regItems.set('n1', { id: 'n1', ...d }); regRerender(); }); await p.waitForTimeout(1500); };
+    for (const vw of [1400, 390]) { await p.setViewportSize({ width: vw, height: vw > 500 ? 900 : 844 }); await seed(p, 'full'); await seedN();
+      const N = await nlay(); ok(N && N.rows && N.rows.length >= 7, `(폭 ${vw}) 미등록 칸 줄 보임`, N); if (!N || !N.rows) continue;
+      const by = (t) => N.rows.find((r) => r.t.startsWith(t));
+      ok(N.rows.every((r) => r.bb && r.br && r.divL >= r.labR && r.inside), `(폭 ${vw}) 줄마다 구분선 · 제목|내용 세로선 · 카드 안`, N.rows.filter((r) => !(r.bb && r.br && r.divL >= r.labR && r.inside)));
+      ok(N.seg, `(폭 ${vw}) 상품 구분 단추 = 제목 칸 없는 한 줄`);
+      const want = ['도서명', '부제', '원제', '분류', '지은이', '출판사', '쪽수', '규격', '출간일', '정가']; ok(want.every((t) => by(t)), `(폭 ${vw}) 칸 모두 있음`, want.filter((t) => !by(t)));
+      const ord = ['도서명', '부제', '분류', '지은이', '출판사', '쪽수', '출간일'].map((t) => by(t) && by(t).y); ok(ord.every((y, i) => i === 0 || y > ord[i - 1]), `(폭 ${vw}) 차례 = 그림대로`, ord);
+      if (vw > 500) { const pr = [['부제', '원제'], ['쪽수', '규격'], ['출간일', '정가']]; ok(pr.every(([a, b]) => by(a) && by(b) && Math.abs(by(a).y - by(b).y) < 3 && by(b).x > by(a).x), 'PC: 부제·원제 / 쪽수·규격 / 출간일·정가 두 칸씩 한 줄', pr.map(([a, b]) => [by(a), by(b)])); }
+      ok(N.over <= 0 && N.cover <= 0, `(폭 ${vw}) 가로 스크롤 없음`, { over: N.over, cover: N.cover });
+      await shotEl(p, '#sheet [data-rgcid="n1"] .regnew.rnt', `mjreg5_new_${vw}`); }
+    await p.setViewportSize({ width: 1400, height: 900 }); await seed(p, 'full'); await seedN();
+    await p.fill('#sheet [data-rgcid="n1"] [data-rgnf="n1"][data-k="pages"]', '321'); await p.press('#sheet [data-rgcid="n1"] [data-rgnf="n1"][data-k="pages"]', 'Tab'); await p.waitForTimeout(1500);
+    ok(await p.evaluate(() => +((S.regItems.get('n1') || {}).new || {}).pages === 321), '쪽수 입력이 그대로 저장(기능 그대로)', await p.evaluate(() => (S.regItems.get('n1') || {}).new));
   });
   console.log(bad ? `❌ tMJREG4_1113 ${bad}개 실패` : '✓ tMJREG4_1113 모두 통과'); process.exit(bad ? 1 : 0);
 })();
