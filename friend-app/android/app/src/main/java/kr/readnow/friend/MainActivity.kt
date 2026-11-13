@@ -100,7 +100,7 @@ class MainActivity : Activity() {
             startForegroundService(Intent(this, FriendService::class.java).putExtra(FriendService.EXTRA_CODE, v))
             toastLine = "🔐 코드를 보냈어요 — 캐릭터 화면의 🐾 책방 친구 카드에서 결과를 보세요"; draw()
         })
-        box.addView(btn("🌐 리드나우 웹앱 열기", false) { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://jerrycson.github.io/readnow-scripts/app/"))) })
+        box.addView(btn("🌐 리드나우 웹앱 열기", false) { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://readnow.kr/app/"))) })
         box.addView(tv("판 ${try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }} · 새 판은 웹앱 ⚙ 설정 › 🐾 책방 친구 › ⬇ 설치 파일 받기", 12f, color = Color.parseColor("#5B6B66")))
     }
 

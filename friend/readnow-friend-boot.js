@@ -1,6 +1,6 @@
 /* readnow-friend-boot.js — 🐾 책방 친구 혼자 도는 화면(friend/index.html)의 바탕 (웹앱 안에서는 쓰지 않음)
  *  ① readnow-friend.js(캐릭터 본체)가 빌려 쓰는 것을 아주 작게 만듦: db · S · esc · toast · deviceName · isAdminDevice · IS_PHONE · Q_DONE · todayStr · num · won · ALERT_DOC · alShipCX · openShip · openAlert
- *  ② 로그인: 같은 주소(jerrycson.github.io)의 크롬 탭이면 웹앱 로그인을 그대로 씀 · 바깥 프로그램(윈도우 Tauri · 안드로이드)은 처음 한 번 연결 표/코드 → 클라우드 /friend-token → 같은 계정 로그인 열쇠 → 그 뒤엔 프로그램 안 저장소에 남아 저절로
+ *  ② 로그인: 같은 주소(readnow.kr · 11/13 전엔 jerrycson.github.io)의 크롬 탭이면 웹앱 로그인을 그대로 씀 · 바깥 프로그램(윈도우 Tauri · 안드로이드)은 처음 한 번 연결 표/코드 → 클라우드 /friend-token → 같은 계정 로그인 열쇠 → 그 뒤엔 프로그램 안 저장소에 남아 저절로
  *  ③ 알림 재료(작은 것만): 주문확인요청 문서 하나(shp_state/confirm) · 지금부터 올라오는 문의·구매평(crm_interactions) · 사업 알림 요약 문서 하나(app_summary/alerts — 웹앱 대표 탭이 씀)
  *  ④ 프로그램 다리: 살아 있음 신호(app_settings/fhost_<기기> 30초) · 눌리는 칸(rects) 알리기 · 프로그램 명령(window.__rnFriendCmd) · 연결 카드
  *  프로그램 다리 약속: 프로그램이 window.__rnFriendHost = {type:'tauri'|'android', ver, post(kind, data)}를 줌(없으면 RnHostAndroid · __TAURI_INTERNALS__로 만듦)
@@ -107,21 +107,46 @@ function frQuit() { const t = frHostType(); if (t === 'web' || FR.win === 'set' 
 /* (r16 · 10/30 'PC에서 단추가 안 눌림') 진단: 이 화면이 실제로 받은 누름(횟수·마지막 칸 id·시각) — 살아 있음 문서 dbg.clk(누름이 아예 안 오면 프로그램 쪽 클릭 통과 문제) */
 document.addEventListener('pointerdown', (e) => { const t = e.target; const c = FR.clk || (FR.clk = { n: 0 }); c.n++; c.at = new Date().toISOString(); c.t = (t && t.closest && (t.closest('[id]') || {}).id) || (t && t.tagName) || null; c.pt = e.pointerType || null; }, true);
 /* (r16) PC 프로그램이 0.2.1보다 낮으면 10분 뒤(자동 업데이트가 먼저 해 볼 시간)부터 🐾 근처에 작은 띠 — 누르면 새 판 받는 곳 */
-const FR_SHELL_NEW = '0.2.1';
-function frNag() { if (FR.nagOff || frHostType() !== 'tauri' || FR.win === 'set' || frShellAtLeast(FR_SHELL_NEW) || performance.now() < 600e3) return; if (document.getElementById('msc_frnag')) return; const ic = document.getElementById('msc_ico'); if (!ic) return;
+const FR_SHELL_NEW = '0.2.3'; /* (friendmig 11/13) 새 주소 readnow.kr 판 — 옛 판은 GitHub Pages를 끄면 화면이 비므로 띠로 알림(안드로이드는 스스로 업데이트가 없어 띠가 유일한 길) */
+const FR_DL = 'https://readnow.kr/dl/friend/';
+function frNag() { const ht = frHostType(); if (FR.nagOff || (ht !== 'tauri' && !(ht === 'android' && (window.__rnFriendHost || {}).ver)) || FR.win === 'set' || frShellAtLeast(FR_SHELL_NEW) || performance.now() < 600e3) return; /* 안드로이드는 판 글자를 받은 때만(예전 기기 · 판 모름이면 띄우지 않음) */ if (document.getElementById('msc_frnag')) return; const ic = document.getElementById('msc_ico'); if (!ic) return;
   const b = document.createElement('div'); b.id = 'msc_frnag'; b.style.cssText = 'position:fixed;z-index:32;background:#FFF3D6;color:#7A4A00;border:1px solid #E0B65A;border-radius:10px;padding:4px 8px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;white-space:nowrap';
-  b.innerHTML = '🖥 프로그램 새 판 ' + FR_SHELL_NEW + ' — 눌러서 받기 <span data-x="1" style="margin-left:6px;opacity:.6">✕</span>'; b.title = '지금 ' + ((window.__rnFriendHost || {}).ver || '?') + ' · 받은 setup.exe를 실행하면 덮어 설치돼요(트레이 🐾 › 업데이트 확인으로도 됨)';
-  b.addEventListener('click', (e) => { e.stopPropagation(); if (e.target && e.target.dataset && e.target.dataset.x) { FR.nagOff = 1; b.remove(); FR.rk = ''; return; } frOpenUrl('https://github.com/jerrycson/readnow-scripts/releases/tag/friend-v' + FR_SHELL_NEW); });
+  b.innerHTML = (ht === 'android' ? '📱 앱 새 판 ' : '🖥 프로그램 새 판 ') + FR_SHELL_NEW + ' — 눌러서 받기 <span data-x="1" style="margin-left:6px;opacity:.6">✕</span>'; b.title = '지금 ' + ((window.__rnFriendHost || {}).ver || '?') + (ht === 'android' ? ' · 받은 .apk를 열면 덮어 설치돼요(연결·로그인은 그대로)' : ' · 받은 setup.exe를 실행하면 덮어 설치돼요(트레이 🐾 › 업데이트 확인으로도 됨)');
+  b.addEventListener('click', (e) => { e.stopPropagation(); if (e.target && e.target.dataset && e.target.dataset.x) { FR.nagOff = 1; b.remove(); FR.rk = ''; return; } frOpenUrl(FR_DL); });
   document.body.appendChild(b); const place = () => { if (!b.isConnected) return; const q = ic.getBoundingClientRect(); b.style.left = Math.max(4, Math.round(q.right - b.offsetWidth)) + 'px'; b.style.top = Math.max(4, Math.round(q.top - b.offsetHeight - 44)) + 'px'; }; place(); setInterval(place, 2000); FR.rk = ''; }
 setInterval(frNag, 60e3);
 Object.assign(window.RNF_HOOKS, { mvOk: () => !!frHost() && FR.win !== 'set', mvGet: () => FR.pos.slice(), mvStart: frMvStart, mvMove: frMvMove, mvEnd: frMvEnd, quit: frQuit });
 /* ── 로그인 ── */
 function frPairArgs() { const h = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const t = h.get('pair'); const code = String(h.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); const k = String(h.get('k') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return t ? { t, c: h.get('c'), d: h.get('d'), k: k.length === 8 ? k : '' } : code.length === 8 ? { code, c: h.get('c') } : null; } /* #pair=표(링크 · k=같은 표의 코드 8자리 — 카드 칸에 채워 둠) · #code=8자리(안드로이드 앱 칸에서 친 코드) */
-const frCleanUrl = () => { const q = new URLSearchParams(location.search); q.delete('pl'); const s = q.toString(); return location.pathname + (s ? '?' + s : ''); }; /* (P5) 프로그램이 연결 링크로 다시 열 때 붙인 pl(새로 읽기 표시)은 지움 */
+const frCleanUrl = () => { const q = new URLSearchParams(location.search); q.delete('pl'); q.delete('mig'); const s = q.toString(); return location.pathname + (s ? '?' + s : ''); }; /* (P5) 프로그램이 연결 링크로 다시 열 때 붙인 pl(새로 읽기 표시)은 지움 */
 function frCloud(c) { const ok = (u) => /^https:\/\/[a-z0-9.-]+\.run\.app$/i.test(String(u || '')); if (ok(c)) return c.replace(/\/+$/, ''); const v = frLS('rn-friend-cloud'); return ok(v) ? v : FR_CLOUD_DEF; }
-function frAuth(u) { const P = frPairArgs();
+/* ══ (friendmig 11/13 · 정범님 '앱도 이제 현 주소로') 주소 옮기기 — 로그인은 주소(출처)마다 따로 저장됨
+ *  PC 프로그램·안드로이드 앱 새 판(0.2.3)은 화면을 readnow.kr에서 엶 → 거기 로그인이 없으면 한 번만 옛 주소(github.io) 화면에 들러
+ *  거기 남은 로그인으로 같은 계정 연결 표(클라우드 /friend-pair · 10분 1회용)를 받아 #pair=… 로 돌아옴 → 늘 쓰던 연결 그대로(다시 연결 안 해도 됨)
+ *  · 옛 주소가 안 열리거나 새 장치가 아직 없으면(Pages 꺼짐 등) 들르지 않고 연결 카드 그대로 · 들르기는 기기마다 한 번(rn-fr-mig) · 자리·카드 접힘도 함께 옮김 */
+const FR_NEW = 'https://readnow.kr/friend/index.html', FR_OLD = 'https://jerrycson.github.io/readnow-scripts/friend/index.html';
+const FR_MIG_KEY = 'rn-fr-mig', FR_CARRY = ['rn-fr-pos', 'rn-fr-card-pos', 'rn-fr-card-fold', 'rn-friend-cloud'];
+const frOnOld = () => location.hostname === 'jerrycson.github.io';
+function frMigUrl(base, mig, hash) { const q = new URLSearchParams(location.search); q.delete('pl'); q.delete('mig'); if (mig) q.set('mig', mig); return base + '?' + q.toString() + (hash ? '#' + hash : ''); }
+function frCarryOut() { const o = {}; for (const k of FR_CARRY) { const v = frLS(k); if (v != null && v.length < 400) o[k] = v; } try { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); } catch (e) { return ''; } }
+(function frCarryIn() { if (frOnOld() || FR_Q.get('mig') !== 'back') return; try { const h = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const c = h.get('carry'); if (!c) return; const o = JSON.parse(decodeURIComponent(escape(atob(c)))); for (const k of FR_CARRY) if (typeof o[k] === 'string' && frLS(k) == null) frLS(k, o[k]); } catch (e) {} })();
+/* 새 주소: 로그인 없음 + 프로그램 안 + 아직 안 들름 → 옛 주소가 새 장치를 가졌는지 먼저 보고(6초) 들름 */
+async function frMigGo() { if (FR.migGo) return true; FR.migGo = 1;
+  try { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 6000); const r = await fetch(FR_OLD.replace('index.html', 'readnow-friend-boot.js') + '?mig=' + Date.now(), { cache: 'no-store', signal: ac.signal }); clearTimeout(tm);
+    if (!r.ok || !(await r.text()).includes('function frMigOut')) throw new Error('옛 주소에 넘기기 장치 없음 ' + r.status); }
+  catch (e) { FR.migGo = 0; return false; }
+  frLS(FR_MIG_KEY, JSON.stringify({ at: new Date().toISOString(), st: 'go' })); frCard('busy', ''); FR.leaving = 1; location.replace(frMigUrl(FR_OLD, '1')); return true; }
+/* 옛 주소(?mig=1): 로그인돼 있으면 같은 계정 연결 표를 받아 새 주소로 · 아니면 그냥 새 주소로(연결 카드) */
+async function frMigOut(u) { if (FR.migOut) return; FR.migOut = 1; let hash = '';
+  try { const dev = deviceName().trim(); if (u && dev) { const tok = await u.getIdToken(); const c = frCloud(null);
+      const r = await fetch(c + '/friend-pair', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ dev, kind: frHostType() === 'android' ? 'android' : 'desktop' }) }); const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok && j.t) hash = 'pair=' + encodeURIComponent(j.t) + '&c=' + encodeURIComponent(c) + '&d=' + encodeURIComponent(j.dev || dev) + '&k=' + encodeURIComponent(j.code || ''); } } catch (e) {}
+  const cr = frCarryOut(); location.replace(frMigUrl(FR_NEW, 'back', [hash, cr ? 'carry=' + encodeURIComponent(cr) : ''].filter(Boolean).join('&'))); }
+function frAuth(u) { if (frOnOld() && FR_Q.get('mig') === '1') return void frMigOut(u); /* (friendmig) 옛 주소에 들른 것 — 넘기기만 */
+  if (FR_Q.get('mig') === 'back' && !FR.migBack) { FR.migBack = 1; const pa = !!frPairArgs(); frLS(FR_MIG_KEY, JSON.stringify({ at: new Date().toISOString(), st: pa ? 'pair' : 'none' })); if (!pa) try { history.replaceState(null, '', frCleanUrl()); } catch (e) {} } /* 돌아옴 — 표가 있으면 아래 연결이, 없으면 연결 카드 */
+  const P = frPairArgs();
   if (P) { try { history.replaceState(null, '', frCleanUrl()); } catch (e) {} if (!FR.xch) { FR.xch = 1; frExchange(P); } return; } /* 연결 표가 왔으면 먼저(이미 로그인돼 있어도 — 다른 기기 이름일 수 있음) */
-  if (FR.xch === 2) return; if (!u) { S.user = null; return frCard('pair'); } if (!FR.booted) { FR.booted = 1; frBoot(u); } }
+  if (FR.xch === 2) return; if (!u) { S.user = null; if (!frOnOld() && frHostType() !== 'web' && FR.win !== 'set' && !frLS(FR_MIG_KEY) && FR_Q.get('mig') !== 'back') { frCard('busy', ''); frMigGo().then((went) => { if (!went && !S.user) frCard('pair'); }); return; } return frCard('pair'); } if (!FR.booted) { FR.booted = 1; frBoot(u); } }
 async function frExchange(arg) { const c = frCloud(arg.c); FR.code = arg.k || arg.code || ''; frCard('busy', FR.code); FR.xch = 2;
   try { const r = await fetch(c + '/friend-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(arg.t ? { t: arg.t } : { code: arg.code }) }); const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.ok || !j.token || !j.dev) throw new Error(j.err || '클라우드 응답 ' + r.status);
