@@ -1,0 +1,117 @@
+{
+ "v": 1,
+ "note": "북스퀸 로고 시안 목록 — 숍 설정 brandLogo 값(id) · ''(빈 값)=지금 글자 로고(♛북스퀸) 그대로 · light=밝은 바탕 · dark=어두운 바탕(숍 머리띠 남색) · icon=정사각 512(파비콘·앱 아이콘) · ratio=가로형 너비÷높이",
+ "default": "",
+ "logos": [
+  {
+   "id": "q01",
+   "name": "왕관 책",
+   "idea": "펼친 책 위에 왕관 — 「책의 여왕」을 한눈에 읽게 하는 가장 바른 상징",
+   "ratio": 2.859,
+   "files": {
+    "light": "q01.svg",
+    "dark": "q01-dark.svg",
+    "icon": "q01-icon.svg"
+   }
+  },
+  {
+   "id": "q02",
+   "name": "BQ 모노그램",
+   "idea": "B와 Q를 한 원 안에 묶고 Q 꼬리에 빨간 책갈피 — 고급 브랜드식 머리글자",
+   "ratio": 4.405,
+   "files": {
+    "light": "q02.svg",
+    "dark": "q02-dark.svg",
+    "icon": "q02-icon.svg"
+   }
+  },
+  {
+   "id": "q03",
+   "name": "장서표(엑스리브리스)",
+   "idea": "옛 책 속표지에 찍던 장서표의 아치 틀 — 희귀본·고서의 품격",
+   "ratio": 4.497,
+   "files": {
+    "light": "q03.svg",
+    "dark": "q03-dark.svg",
+    "icon": "q03-icon.svg"
+   }
+  },
+  {
+   "id": "q04",
+   "name": "현대 글자로고",
+   "idea": "소문자 booksqueen 한 줄, q 위에 작은 왕관 — 쇼핑 앱처럼 가볍고 또렷하게",
+   "ratio": 3.635,
+   "files": {
+    "light": "q04.svg",
+    "dark": "q04-dark.svg",
+    "icon": "q04-icon.svg"
+   }
+  },
+  {
+   "id": "q05",
+   "name": "붓글씨와 낙관",
+   "idea": "붓으로 쓴 북스퀸 옆에 빨간 도장 — 손때 묻은 헌책의 정겨움",
+   "ratio": 3.168,
+   "files": {
+    "light": "q05.svg",
+    "dark": "q05-dark.svg",
+    "icon": "q05-icon.svg"
+   }
+  },
+  {
+   "id": "q06",
+   "name": "책등 왕관",
+   "idea": "다섯 권의 책등 윗선이 그대로 왕관 꼴 — 우리숍 서가 화면과 이어지는 상징",
+   "ratio": 2.729,
+   "files": {
+    "light": "q06.svg",
+    "dark": "q06-dark.svg",
+    "icon": "q06-icon.svg"
+   }
+  },
+  {
+   "id": "q07",
+   "name": "체스 퀸",
+   "idea": "책 위에 선 체스 퀸 말 — 「여왕」을 지적인 놀이로, 영어권에도 통함",
+   "ratio": 4.047,
+   "files": {
+    "light": "q07.svg",
+    "dark": "q07-dark.svg",
+    "icon": "q07-icon.svg"
+   }
+  },
+  {
+   "id": "q08",
+   "name": "책갈피 리본",
+   "idea": "빨간 책갈피에 왕관을 오려냄 — 「여기까지 읽음」의 따뜻한 표시",
+   "ratio": 3.226,
+   "files": {
+    "light": "q08.svg",
+    "dark": "q08-dark.svg",
+    "icon": "q08-icon.svg"
+   }
+  },
+  {
+   "id": "q09",
+   "name": "한글 북스퀸",
+   "idea": "명조 북스퀸이 주인공, 퀸 위에만 왕관 — 한국 책방다운 글자 중심",
+   "ratio": 3.153,
+   "files": {
+    "light": "q09.svg",
+    "dark": "q09-dark.svg",
+    "icon": "q09-icon.svg"
+   }
+  },
+  {
+   "id": "q10",
+   "name": "미니멀 기하",
+   "idea": "원 하나와 꼬리(Q) 위에 점 셋(왕관) — 가장 작은 크기에서도 남는 꼴",
+   "ratio": 4.431,
+   "files": {
+    "light": "q10.svg",
+    "dark": "q10-dark.svg",
+    "icon": "q10-icon.svg"
+   }
+  }
+ ]
+}
