@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "priv2: cloudbuild.yaml·배포 끄는 문(동작 그대로) main에",
- "since": "2026-11-13T04:32:32Z",
- "beat": "2026-11-13T04:32:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "bfin a0bec497 수집기 1.89.310 대량 사라짐 실제 간격 판단(머리 그대로)",
-  "at": "2026-11-13T04:32:22Z"
+  "done": "priv2 c4e7b99b cloudbuild.yaml·setup-cloudbuild.sh·배포 끄는 문(변수 없으면 그대로 · 판 번호 안 바뀜 · 머리 그대로)",
+  "at": "2026-11-13T04:33:26Z"
  },
- "host": "wk-priv2"
+ "host": null
 }
