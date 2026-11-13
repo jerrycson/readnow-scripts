@@ -75,8 +75,11 @@ window.RN2_MOVE_SYNC = function (db) {
   var q = new URLSearchParams(location.search); var g = q.get('go') || 'home'; if (K.indexOf(g) < 0) g = 'home';
   var sa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
   if (sa && !q.get('st') && !window.RN2_MOVING) { var o = null; try { o = localStorage.getItem('rn-start:' + g); } catch (e) {} if (o && o !== g && K.indexOf(o) >= 0) { location.replace(location.pathname + (o === 'home' ? '?st=1' : '?go=' + o + '&st=1') + location.hash); return; } }
-  var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'm/' + g + '.webmanifest'; document.head.appendChild(l);
-  var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = 'm/' + g + '-180.png'; document.head.appendChild(a);
+  /* (url2 11/13) 설치 파일·아이콘 주소에 판 번호(?v=APP_VER)를 붙임 — 판 표시가 없으면 휴대폰 크롬이 고치기 전에 받은 옛 설치 파일(옛 경로 /readnow-scripts/app/)을 저장본으로 계속 써서 '설치'가 멈추고 바로가기가 옛 경로(404)로 열렸음 · APP_VER는 body 끝에서 정해지므로 문서를 다 읽은 뒤 검 */
+  var put = function () { if (window.__rnMfDone) return; window.__rnMfDone = 1; var v = ''; try { v = typeof APP_VER !== 'undefined' ? '?v=' + encodeURIComponent(APP_VER) : ''; } catch (e) {}
+    var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'm/' + g + '.webmanifest' + v; document.head.appendChild(l);
+    var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = 'm/' + g + '-180.png' + v; document.head.appendChild(a); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', put); else put();
   var t = document.querySelector('meta[name=theme-color]'); if (t) t.content = C[g]; window.__rnAppKey = g; } catch (e) {} })();</script>
 <title>리드나우(북스킹)</title>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" media="print" onload="this.media='all'"><!-- 글꼴 파일이 화면 그리기를 막지 않게 (받으면 바로 바뀜) · Firestore 연결을 미리 염 -->
@@ -1436,7 +1439,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.589';</script>
-<script src="readnow-webapp.js?v=1.78.589"></script>
+<script>const APP_VER = '1.78.590';</script>
+<script src="readnow-webapp.js?v=1.78.590"></script>
 </body>
 </html>
