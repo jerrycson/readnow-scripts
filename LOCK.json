@@ -1,13 +1,13 @@
 {
- "holder": "y24sess1",
- "what": "예스24 로그인 끊김",
- "since": "2026-11-13T15:28:25Z",
- "beat": "2026-11-13T15:28:25Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shelf3",
-  "done": "서가 0.2.11 · 설정 틀 0.3.6 · shop.js 0.2.3 (2ffc86d1)",
-  "at": "2026-11-13T15:28:21Z"
+  "who": "y24sess1",
+  "done": "웹앱 1.78.607 · 번외 0.1.57 (4e1b1ba9)",
+  "at": "2026-11-13T15:35:18Z"
  },
- "host": "vm-y24sess1"
+ "host": null
 }
