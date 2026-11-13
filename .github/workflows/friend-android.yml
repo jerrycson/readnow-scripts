@@ -1,7 +1,7 @@
 # 🐾 책방 친구 안드로이드 앱 — friend-v… 꼬리표를 올리면 APK(사이드로드 · 플레이 스토어 아님)를 만들어 GitHub 판에 붙임
 #  · 서명 열쇠 (friendkey1 11/14) 찾는 차례:
 #    ① Google Secret Manager friend-android-keystore · friend-android-keystore-pass — Cloud Shell 한 줄로 만듦(curl -sL https://readnow.kr/cloud/setup-friend-key.sh | bash)
-#       · 배포 계정(gh-deployer · 열쇠 없이 OIDC)으로 꺼냄 — 그 계정은 main 가지에서만 통하므로 main 푸시·main에서 누른 실행만 ①을 씀
+#       · 서명 전용 계정(friend-signer · 그 두 칸 읽기만 · 열쇠 없이 OIDC)으로 꺼냄 — 전용 통로(readnow-friend)는 main 가지의 이 작업 파일에서만 통하므로 main 푸시·main에서 누른 실행만 ①을 씀
 #    ② 저장소 비밀 FRIEND_KS_B64 · FRIEND_KS_PASS · (선택) FRIEND_KS_ALIAS — 예전 길(friend-app/android/make-keystore.sh)
 #    ③ 둘 다 없으면 디버그 열쇠(그 판끼리는 덮어 설치가 안 될 수 있음 → 경고) — 단 friend-app/android/release-key.sha256(진짜 열쇠 지문)이 저장소에 있으면 디버그로 내지 않고 멈춤
 #  · 다 만든 APK의 서명 지문을 기록·요약에 적고, 지문 파일이 있으면 같은지 견줌(다르면 판에 붙이지 않음)
@@ -13,12 +13,12 @@ on:
     branches: [main]
     paths: ['friend-app/**', '.github/workflows/friend-*.yml']  # (10/28) 껍데기를 고쳐 올리면 저절로 새 판(꼬리표 없이도 · 판 번호는 tauri.conf.json)
   workflow_dispatch:
-permissions: { contents: write, id-token: write }  # id-token = 배포 계정(gh-deployer)으로 Secret Manager 열쇠를 꺼낼 때만
+permissions: { contents: write, id-token: write }  # id-token = 서명 전용 계정(friend-signer)으로 Secret Manager 열쇠를 꺼낼 때만
 concurrency: { group: 'friend-release-${{ github.ref }}', cancel-in-progress: false }
 env:
   PROJECT: readnow-3a385
-  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
-  SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
+  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-friend  # 서명 전용 통로(Cloud Shell setup-friend-key.sh가 만듦 · 배포 통로 readnow-scripts와 따로)
+  SA: friend-signer@readnow-3a385.iam.gserviceaccount.com
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -92,8 +92,8 @@ jobs:
         run: |
           A="dist-friend/readnow-friend-${FRIEND_VERSION}.apk"
           AS=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
-          D=$("$AS" verify --print-certs "$A" 2>/dev/null | grep -m1 -i 'certificate SHA-256 digest' | awk '{print $NF}' | tr 'A-F' 'a-f')
-          W=$(tr -d ': \r\n' < friend-app/android/release-key.sha256 2>/dev/null | tr 'A-F' 'a-f')
+          D=$("$AS" verify --print-certs "$A" 2>/dev/null | grep -m1 -i 'certificate SHA-256 digest' | awk '{print $NF}' | tr 'A-F' 'a-f' || true)
+          W=""; [ -s friend-app/android/release-key.sha256 ] && W=$(tr -d ': \r\n' < friend-app/android/release-key.sha256 | tr 'A-F' 'a-f')
           echo "서명 지문(SHA-256): ${D:-읽지 못함} · 열쇠: ${FRIEND_KS_SRC:-디버그}"; echo "🐾 책방 친구 ${FRIEND_VERSION} · 서명 ${FRIEND_KS_SRC:-디버그 열쇠} · 지문 \`${D:-?}\`" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$W" ] && [ "$D" != "$W" ]; then echo "::error::APK 서명 지문($D)이 저장소 지문 파일($W)과 다름 — 판에 붙이지 않음"; exit 1; fi
           if [ -n "${FRIEND_KS_SRC:-}" ] && [ -z "$W" ] && [ -n "$D" ]; then echo "::notice::진짜 열쇠로 서명함 — 지문 $D 를 friend-app/android/release-key.sha256에 넣으면 그 뒤로 다른 열쇠·디버그 판을 막음"; fi
