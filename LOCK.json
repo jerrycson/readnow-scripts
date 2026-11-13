@@ -1,13 +1,13 @@
 {
- "holder": "train1",
- "what": "redraw2 첫째(클라우드 두 문서 읽기)",
- "since": "2026-11-13T10:54:58Z",
- "beat": "2026-11-13T10:54:58Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "train1",
-  "done": "웹앱 1.78.596 · 클라우드 0.35.230 pxgrow (081a272c)",
-  "at": "2026-11-13T10:14:35Z"
+  "done": "웹앱 1.78.597 · 클라우드 0.35.231 redraw2 첫째 (300bdba2)",
+  "at": "2026-11-13T10:59:41Z"
  },
- "host": "vm-train1"
+ "host": null
 }
