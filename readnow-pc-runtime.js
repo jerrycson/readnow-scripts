@@ -1,4 +1,4 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.303의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.304의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
 /* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg 0.1.7 — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */
@@ -135,8 +135,8 @@
   
   root.ReadnowAdaptAg = { VERSION: '0.1.7', AG_DEF, AG_SYN, AG_KIND, agNew, agEnsure, agMethod, agRecord, agStat, agRecent, agJudge, agPick, agDecide, agDiff, agClassify, agSample, agLblRe, agApply, agLabelCands, agTrial, agAdapt, agSummary, agWilson, agFillTally, agFillAdd, agFill, agFlSum };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.303' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.303', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.304' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.304', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -236,6 +236,13 @@ rnPwEye((inp) => !!(inp.closest && inp.closest('[id^="rn"], .rncard'))); /* 수�
  *  꺼 둔 맡긴 일(출고 시작·현금 판매·등록)은 이 PC가 받지 않고 대기로 남겨 다른 PC가 받음 */
 /* (1.63.8) 연 탭 닫기 + 닫혔는지 확인(6초) — 못 닫으면 기록에 남김(빈 탭이 쌓이지 않게 눈에 보이게) */
 window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await new Promise((r) => setTimeout(r, 500)); } try { window.__rnLog && window.__rnLog('수집기', 'warn', '연 탭(로그인 등)을 닫지 못함 — 남은 탭이 있으면 직접 닫아 주세요'); } catch (e) {} return false; };
+/* (정범님 11/13 11:54 tabfix) 🙈 수집기가 일을 위해 여는 탭은 모두 뒤 탭 — 사람이 보던 화면의 포커스를 뺏지 않음
+ *  __rnTabOpt(): active:false · setParent 없음(닫힐 때 브라우저가 연 탭으로 포커스를 되돌리지 않게) · 사람 창이면 맨 뒤(insert 없음) · 🪟 작업 창 탭이면 같은 창 옆자리(insert — 11/05 작업 창 설계의 전제)
+ *  __rnHumanAt: 이 탭에서 사람이 마지막으로 만진 때(마우스·키·휠·터치) · __rnHumanBusy(초): 이 탭이 화면에 보이고 그 초 안에 만졌으면 true(안전한 새로고침은 손을 놓을 때까지 기다림) */
+window.__rnTabOpt = (o) => { let w = false; try { w = !!(window.__rnWork && window.__rnWork.isWork && window.__rnWork.isWork()); } catch (e) {} return { active: false, insert: w, setParent: false, ...(o || {}) }; };
+window.__rnHumanAt = window.__rnHumanAt || 0;
+try { const hu = (e) => { if (e && e.isTrusted === false) return; window.__rnHumanAt = Date.now(); }; for (const ev of ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'pointerdown']) window.addEventListener(ev, hu, { capture: true, passive: true }); } catch (e) {}
+window.__rnHumanBusy = (sec) => { try { return document.visibilityState === 'visible' && Date.now() - (+window.__rnHumanAt || 0) < (sec || 90) * 1000; } catch (e) { return false; } };
 (function rnFeatInit() {
   window.__rnFeats = [
     ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회·주문확인요청·발송요청 목록의 주문번호 옆 고객 표시', '화면'],
@@ -278,7 +285,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     }
     GM_setValue('rnu-naver-login', { at: Date.now() });
     L('알라딘 로그인이 풀려 네이버로 다시 로그인합니다 (네이버 로그인 상태 유지 사용)');
-    let tab = GM_openInTab(NAVER_URL(ret), { active: false, insert: true }); let ok = false;
+    let tab = GM_openInTab(NAVER_URL(ret), window.__rnTabOpt()); let ok = false;
     for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 5000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } } // 최대 60초
     await window.__rnCloseTab(tab);
     if (!ok && !(stopped && stopped())) { // 네이버 로그인도 풀림 → 사람에게
@@ -830,7 +837,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     d = reviveDecide({ ...base, net: await net() }); if (d.act !== 'open') { if (noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 멈춘 듯하지만 ${d.why}`); } return; }
     const R2 = GM_getValue('rn-revive', null) || {}; if (R2.last && Date.now() - R2.last < base.staleMin * 60e3) return; /* 다른 탭이 방금 엶 */ const opens = [...(R2.opens || []).filter((t) => Date.now() - t < 3600e3), Date.now()];
     GM_setValue('rn-revive', { last: Date.now(), opens, by: location.hostname }); noted = ''; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - seen.at) / 60e3)}분 동안 신호 없음(크롬 'Out of Memory'·인터넷 끊김 화면 추정) — 새 탭으로 알라딘 주문조회를 엶(1시간 ${opens.length}/${base.perHour}번째) · 저장된 자리부터 이어 함`);
-    try { GM_openInTab(URL0, { active: false, insert: true, setParent: false }); } catch (e) { L('err', '🩺 새 탭 열기 실패: ' + e.message); }
+    try { GM_openInTab(URL0, window.__rnTabOpt()); } catch (e) { L('err', '🩺 새 탭 열기 실패: ' + e.message); }
   } catch (e) {} }, 60000);
 })();
 (function rnPcName() {
