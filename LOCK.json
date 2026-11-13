@@ -1,13 +1,13 @@
 {
- "holder": "friendkey1",
- "what": "책방 친구 서명 열쇠 세팅 고침",
- "since": "2026-11-13T16:18:59Z",
- "beat": "2026-11-13T16:18:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shoplogo1",
-  "done": "북스퀸 로고 파격 시안 v3~v12 60개 (판 번호 없음 · 손님 화면 그대로)",
-  "at": "2026-11-13T16:18:54Z"
+  "who": "friendkey1",
+  "done": "책방 친구 서명 열쇠 세팅 고침 · 9839f3c0",
+  "at": "2026-11-13T16:19:14Z"
  },
- "host": "vm-friendkey1"
+ "host": null
 }
