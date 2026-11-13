@@ -9,6 +9,9 @@
 #      저장소 변수 RN_CLOUD_DEPLOY = cloudbuild 이면: push 때 배포 작업을 건너뜀 · 진단·수집기 새 판 알림이 없는 push는 '무엇이 바뀌었나'도 건너뜀(Actions 분 0)
 #      (변수를 못 바꿀 때는 저장소 파일 .github/cloud-deploy-via 에 cloudbuild 한 줄로도 같음 — 배포만 건너뜀) · 손으로 Run workflow는 언제나 배포(비상용)
 #      변수·파일이 없으면 지금과 똑같이 여기서 배포
+#  · (cbuild 11/13) 🧾 Cloud Build에 맡기고 기다리지 않는 길(트리거 연결 전 · 정범님 손 없이) — 변수/파일 값이 cbsubmit 이면 push 배포를
+#      'gcloud builds submit --async'로 Cloud Build(cloud/cloudbuild.yaml)에 맡기고 이 작업은 바로 끝남(회당 ~1분 · 예전 8분)
+#      결과(성공·실패·실패 단계·로그 마지막 줄)는 빌드 끝 report 단계가 클라우드에 남김 → 진단 cbuild=1 · 손으로 Run workflow의 cb 칸 = 시험(build·fail·broken)
 name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
@@ -17,6 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       health_only: { description: '숫자 요약만(배포 안 함)', type: boolean, default: false }
+      cb: { description: 'Cloud Build에 맡기기 — build(진짜 배포) · fail(일부러 실패 · 안 올림) · broken(깨진 파일 · 안 올림) · dry(검사만 · 안 올림) · 비우면 예전처럼 여기서 배포', type: string, default: '' }
   schedule:
     - cron: '41 * * * *'  # (2026-10-22) 매시 41분 🔁 숫자 요약(@health 3시간·24시간)을 health-out 가지에 평문으로 — 예약 점검 세션이 push 없이 읽기만(예약 세션의 권한 검사가 진단 push를 막아 06:15 점검이 숫자를 못 본 것 · 쓰기 폭주를 못 잡은 까닭)
 # (deployfix 11/12) 회차 전체 묶음은 없앰 — 예전엔 진단·숫자 요약 회차가 같은 'deploy-cloud' 묶음의 기다리던 배포를 '취소됨'으로 밀어냄(0.35.155·0.35.158·0.35.168). 묶음은 아래 작업마다 따로
@@ -34,7 +38,7 @@ jobs:
     if: vars.RN_CLOUD_DEPLOY != 'cloudbuild' || github.event_name != 'push' || contains(toJSON(github.event.commits), 'diag/q.txt') || contains(toJSON(github.event.commits), 'pc-live.json')
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    outputs: { deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
+    outputs: { cb: '${{ steps.ch.outputs.cb }}', deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
         with: { fetch-depth: 2 }
@@ -43,11 +47,14 @@ jobs:
         run: |
           # (자동 점검 2026-10-16) 한 번에 여러 커밋을 올리면 HEAD~1과만 비교해 앞 커밋의 cloud/ 바뀜을 놓치고 배포를 건너뛰던 것 → 올리기 전 커밋(event.before)과 비교 · 못 받으면 ALL(배포)
           if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "${{ inputs.health_only }}" = true ]; then echo "health=1" >> "$GITHUB_OUTPUT"; exit 0; fi  # (2026-10-22) 숫자 요약만 — 배포·진단 안 함
+          CB_IN="${{ inputs.cb }}"; if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ -n "$CB_IN" ]; then case "$CB_IN" in build|fail|broken|dry) echo "cb=$CB_IN" >> "$GITHUB_OUTPUT"; echo "::notice::Cloud Build에 맡김($CB_IN)";; *) echo "::error::cb 칸은 build·fail·broken·dry 중 하나"; exit 1;; esac; exit 0; fi  # (cbuild 11/13)
           B="${{ github.event.before }}"
           if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
           VIA="${{ vars.RN_CLOUD_DEPLOY }}"; [ -z "$VIA" ] && [ -f .github/cloud-deploy-via ] && VIA=$(head -c 40 .github/cloud-deploy-via | tr -dc 'a-z')  # (priv2 11/13) 🚪 배포를 Cloud Build가 맡는지
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then
-            if [ "$VIA" = cloudbuild ] && [ "$GITHUB_EVENT_NAME" = push ]; then echo "::notice::배포는 Cloud Build 트리거(rn-cloud-deploy)가 맡음 — 여기서는 건너뜀(RN_CLOUD_DEPLOY=cloudbuild)"; else echo "deploy=1" >> "$GITHUB_OUTPUT"; fi; fi
+            if [ "$VIA" = cloudbuild ] && [ "$GITHUB_EVENT_NAME" = push ]; then echo "::notice::배포는 Cloud Build 트리거(rn-cloud-deploy)가 맡음 — 여기서는 건너뜀(RN_CLOUD_DEPLOY=cloudbuild)"
+            elif [ "$VIA" = cbsubmit ] && [ "$GITHUB_EVENT_NAME" = push ]; then echo "cb=build" >> "$GITHUB_OUTPUT"; echo "::notice::배포를 Cloud Build에 맡김(cbsubmit) — 결과는 진단 cbuild=1"
+            else echo "deploy=1" >> "$GITHUB_OUTPUT"; fi; fi
           if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "diag=1" >> "$GITHUB_OUTPUT"; fi
           if echo "$CH" | grep -q '^pc-live\.json$'; then echo "pclive=1" >> "$GITHUB_OUTPUT"; fi  # (2026-10-18) ⚡ 수집기 새 판 → 클라우드 /pclive → 켜진 PC가 바로
   deploy:
@@ -89,6 +96,31 @@ jobs:
           for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
           echo "### ☁ 클라우드 $GOT 올라감 (기대 $VER)" >> "$GITHUB_STEP_SUMMARY"
           [ "$GOT" = "$VER" ] || { echo "::error::올린 뒤 판이 $GOT — 기대한 $VER 아님"; exit 1; }
+  cbsub:
+    name: Cloud Build에 맡기기 (기다리지 않음)
+    needs: what
+    if: needs.what.outputs.cb != ''
+    concurrency: { group: "cbsub-${{ needs.what.outputs.cb }}", cancel-in-progress: false }
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0 (node24)
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
+      - name: 맡기기 (cloud/cloudbuild.yaml · 결과는 진단 cbuild=1)
+        env: { CB: '${{ needs.what.outputs.cb }}' }
+        run: |
+          # 필요한 파일만 담아 올림(클라우드 코드·공용 파일) — 저장소 전체를 올리지 않음
+          mkdir -p /tmp/cb; cp -r cloud /tmp/cb/; cp readnow-*-core.js readnow-registry.js /tmp/cb/
+          FA=""; DRY=""; TEST=""
+          case "$CB" in fail) FA=check; DRY=1; TEST=fail;; broken) DRY=1; TEST=broken; printf '%s\n' '/* 일부러 깨뜨린 시험 파일(cbuild 시험 · 올리지 않음) */' 'const x = ;' > /tmp/cb/cloud/zz-cbtest-broken.js;; dry) DRY=1; TEST=dry;; esac
+          SUB="_SHA=$GITHUB_SHA,_VIA=submit,_RN_FAIL_AT=$FA,_RN_DRY=$DRY,_RN_TEST=$TEST"
+          go() { gcloud builds submit /tmp/cb --region "$REGION" --project "$PROJECT" --config /tmp/cb/cloud/cloudbuild.yaml --substitutions="$SUB" --async --format='value(id)' "$@" 2>/tmp/sub.err; }
+          B=$(go) || B=$(go --service-account="projects/$PROJECT/serviceAccounts/63884079760-compute@developer.gserviceaccount.com") || { tail -n 20 /tmp/sub.err; grep -iE 'error|denied|permission' /tmp/sub.err | tail -n 4 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
+          echo "### ☁ Cloud Build $B 맡김 ($CB · 커밋 ${GITHUB_SHA:0:7}) — 결과는 진단 cbuild=1" >> "$GITHUB_STEP_SUMMARY"; echo "::notice::Cloud Build $B 맡김($CB)"
   side:
     name: 진단 · 숫자 요약 · 수집기 새 판 알림
     needs: what
