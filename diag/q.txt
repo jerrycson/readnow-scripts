@@ -1,8 +1,2 @@
-doc=prd_jobs/pcBeat,app_settings/y24_mkt_state,app_settings/pxDaily
-sfp=1
-clog=10080&cq=%EC%A0%84%EC%B2%B4%20%EC%83%81%ED%92%88%20%EA%B7%B8%EB%A3%B9&n=100
-clog=10080&cq=%EA%B7%B8%EB%A6%BC%EB%A7%8C%20%EC%8B%9C%ED%97%98&n=200
-cmds=pxExp&n=60
-shplog=1
-heads=1
-# 232909461
+heads=1&sizes=shp_state&recentUp=shp_snapshots&mins=150
+# 2828414151
