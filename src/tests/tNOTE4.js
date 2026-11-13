@@ -109,6 +109,35 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
     await a.press('#jbn-bub-ta', 'Escape');
     await a.close(); }
 
+  // ── ②-3 (정범님 16:00) 단추 즉시 반응(저장은 뒤에서 · 실패하면 되돌림) · 작업판 카드 링크 ──
+  { const a = await b.newPage({ viewport: { width: 1000, height: 900 } }); a.on('pageerror', (e) => errs.push(e.message));
+    await a.setContent('<!doctype html><meta charset="utf-8"><div id="root"></div>'); await a.addScriptTag({ content: core });
+    await a.evaluate(() => { const docs = new Map(); for (let i = 0; i < 40; i++) docs.set('k' + i, { kind: 'card', cat: ['웹앱', '우리숍', '참고LOST'][i % 3], sub: '묶음' + (i % 5), imp: 1 + (i % 3), title: '카드 ' + i, body: ('본문 ' + i + ' ').repeat(60), src: 'lead', readAt: 'x', state: 'open' });
+      docs.set('b1', { kind: 'card', cat: '웹앱', sub: '노트', imp: 3, title: '작업판과 이어진 카드', body: '작업판 n1113p 에서 고르시면 됩니다.', ref: '작업판 n1113p', src: 'lead', readAt: 'x', state: 'open' });
+      const subs = new Set(); window.__docs = docs; window.__slow = 1500; window.__fail = false;
+      const store = { docs: () => docs, onChange: (f) => subs.add(f), status: () => ({ ok: true, label: '시험' }), send: async () => ({ status: 'queued' }),
+        write: (ops) => new Promise((res, rej) => setTimeout(() => { if (window.__fail) return rej(Object.assign(new Error('커넥터 거절'), { code: 'tool_error' })); for (const o of ops) docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); subs.forEach((f) => f()); res(); }, window.__slow)) };
+      try { localStorage.removeItem('jbn-ui'); } catch (e) {}
+      window.__ui = JBN.mount(document.getElementById('root'), store, {}); });
+    const t0 = Date.now(); await a.click('[data-card="k3"] [data-act="done"]');
+    const fast = await a.evaluate(() => ({ gone: !document.querySelector('[data-card="k3"]'), done: (document.querySelector('.jbn-tabs [data-tab="done"] .n') || {}).textContent, saved: window.__docs.get('k3').state }));
+    const dt = Date.now() - t0;
+    ok(fast.gone && fast.done === '1' && fast.saved === 'open' && dt < 600, `②-3 [✅ 완료] → 저장(1.5초 걸리는 커넥터)을 기다리지 않고 화면이 바로 바뀜(${dt}ms) · 저장은 뒤에서`);
+    await a.waitForTimeout(1700); ok(await a.evaluate(() => window.__docs.get('k3').state === 'done' && window.__ui.U.ov.size === 0), '②-3 저장이 끝나면 덧씌움을 걷음(원본 = 완료)');
+    await a.evaluate(() => { window.__fail = true; window.__slow = 400; }); await a.click('[data-card="k5"] [data-act="archive"]');
+    ok(await a.evaluate(() => !document.querySelector('[data-card="k5"]')), '②-3 실패할 쓰기도 먼저 화면에서 옮김');
+    await a.waitForTimeout(700);
+    const rb = await a.evaluate(() => ({ back: !!document.querySelector('[data-card="k5"]'), toast: (document.querySelector('.jbn-toast') || {}).textContent || '' }));
+    ok(rb.back && /되돌렸습니다/.test(rb.toast), '②-3 저장 실패 → 화면을 되돌리고 "저장 못 함 — 되돌렸습니다"');
+    const rms = await a.evaluate(() => { const t = performance.now(); for (let i = 0; i < 10; i++) window.__ui.render(); return (performance.now() - t) / 10; });
+    ok(rms < 60, `②-3 카드 41장 전체 다시 그리기 한 번 ${rms.toFixed(1)}ms`);
+    const ln = await a.evaluate(() => ({ btn: (document.querySelector('[data-card="b1"] .jbn-bdb') || {}).href, txt: (document.querySelector('[data-card="b1"] .jbn-bdb') || {}).textContent }));
+    ok(ln.btn === 'https://claude.ai/artifact/QSpoAQ2dd2PpGNtwHV9QfN#n1113p' && /작업판 n1113p/.test(ln.txt), '②-3 작업판 카드와 이어진 노트 카드 → [📋 작업판 n1113p ↗] (주소 #n1113p로 그 카드)');
+    await a.evaluate(() => { window.__fail = false; window.__slow = 0; }); await a.click('[data-card="b1"] [data-act="toggle"]'); await a.waitForTimeout(150);
+    ok(await a.evaluate(() => (document.querySelector('[data-body="b1"] a.jbn-bd') || {}).href === 'https://claude.ai/artifact/QSpoAQ2dd2PpGNtwHV9QfN#n1113p'), '②-3 본문 속 카드 번호도 링크');
+    console.log(`  (잰 값) 단추 → 화면 바뀜 ${dt}ms · 다시 그리기 ${rms.toFixed(1)}ms`);
+    await a.close(); }
+
   // ── ③ 아티팩트 껍데기 ──
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null;
   if (!ART) console.log('… ③ 아티팩트 화면 시험은 RN_JBNOTE로(건너뜀)');
