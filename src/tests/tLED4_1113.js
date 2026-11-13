@@ -8,7 +8,7 @@ const fs = require('fs'), path = require('path');
 const R = [path.join(__dirname, '../..'), path.join(__dirname, '..'), '/home/user/readnow-scripts'].find((p) => fs.existsSync(path.join(p, 'readnow-autosched-core.js')));
 const rd = (f) => fs.readFileSync(path.join(R, f), 'utf8');
 let bad = 0; const ok = (c, m, x) => { if (!c) bad++; console.log((c ? '  ✓ ' : '  ❌ ') + m + (c || x === undefined ? '' : ' ' + JSON.stringify(x).slice(0, 300))); };
-const G = 1073741824, MB = 1048576;
+const G = 1073741824, MB = 1048576; const DEC = Date.parse('2026-12-02T09:00:00+09:00'); /* (led4 둘째) 11월은 여분 일반 몫에서 — 하루 몫에서 떼는 셈은 12월부터(tSPARE1113 ⑤) */
 require(path.join(R, 'readnow-autosched-core.js')); const AS = globalThis.ReadnowAuto.AS;
 
 console.log('① 🧾 먼저 떼는 몫');
@@ -18,19 +18,19 @@ console.log('① 🧾 먼저 떼는 몫');
   ok(p && !p.on && p.mb === 512, '상품 정보 0.5GB(n1113n)는 꺼 둔 줄', p);
   ok(AS.resvOf({ budget: { resv: { prodInfo: { on: true } } } }).find((r) => r.id === 'prodInfo').on === true, '설정 한 줄(budget.resv.prodInfo.on)로 켤 수 있음');
   ok(AS.resvOf({ budget: { resv: { sellerRe: { mb: 60 } } } }).find((r) => r.id === 'sellerRe').mb === 60, '크기도 설정으로 바꿈');
-  const RV = AS.resvCalc({}, { rev6mStale: 10 * MB, bench: 5 * G });
+  const RV = AS.resvCalc({}, { rev6mStale: 10 * MB, bench: 5 * G }, DEC);
   ok(RV.total === 40 * MB && RV.left === 30 * MB && RV.eff === 10 * MB, '오늘 쓴 10MB → 남은 30MB', { t: RV.total, l: RV.left });
   ok(RV.of('prd:rev6mStale') && RV.of('revTop') && !RV.of('market') && !RV.of('bench'), '그 일만 먼저 떼는 몫을 씀(시장 지표·벤치마킹은 아님)');
-  const RV2 = AS.resvCalc({}, { rev6mStale: 90 * MB }); ok(RV2.left === 0 && RV2.eff === 40 * MB, '몫을 넘겨 쓰면 남은 0(넘친 양은 일반 몫으로 셈)');
+  const RV2 = AS.resvCalc({}, { rev6mStale: 90 * MB }, DEC); ok(RV2.left === 0 && RV2.eff === 40 * MB, '몫을 넘겨 쓰면 남은 0(넘친 양은 일반 몫으로 셈)');
   /* 11/13 08:13 실제 숫자: 하루 몫 8.03GB · 벤치마킹 남겨 둠 7.95GB · 하는 중 */
   const now = Date.parse('2026-11-13T08:13:00+09:00');
   const a = AS.genPace({}, { now, dayCap: 8.03 * G, usedT: 7.5 * G, umT: 7.5 * G, mainCap: 7.95 * G, owe: true });
-  const b = AS.genPace({}, { now, dayCap: 8.03 * G, usedT: 7.5 * G, umT: 7.5 * G, mainCap: 7.95 * G, owe: true, resv: AS.resvCalc({}, {}) });
+  const b = AS.genPace({}, { now, dayCap: 8.03 * G, usedT: 7.5 * G, umT: 7.5 * G, mainCap: 7.95 * G, owe: true, resv: AS.resvCalc({}, {}, DEC) });
   ok(Math.abs(a.mainRes - b.mainRes - 40 * MB) < 2, '벤치마킹 남겨 둘 몫이 40MB 줄어듦', { a: a.mainRes / G, b: b.mainRes / G });
   ok(Math.abs(a.pool - b.pool) < 2, '일반 몫(시간대 나눔 몫)은 그대로 — 먼저 떼는 몫은 따로', { a: a.pool / MB, b: b.pool / MB });
   ok(/먼저 떼는 몫 ⭐ 판매자 다시 읽기 40MB\(오늘 쓴 0MB · 남은 40MB\)/.test(b.txt) && /− 먼저 떼는 몫 40MB =/.test(b.txt), '셈 식 글에 먼저 떼는 몫이 보임: ' + b.txt.slice(0, 200));
   ok(b.resvT === 40 * MB && b.resvLeft === 40 * MB, 'genPace가 먼저 떼는 몫 합·남은 양을 돌려줌');
-  const c = AS.genPace({}, { now, dayCap: 8.03 * G, usedT: 8.0 * G, umT: 7.9 * G, mainCap: 7.95 * G, owe: false, resv: AS.resvCalc({}, { rev6mStale: 30 * MB }) });
+  const c = AS.genPace({}, { now, dayCap: 8.03 * G, usedT: 8.0 * G, umT: 7.9 * G, mainCap: 7.95 * G, owe: false, resv: AS.resvCalc({}, { rev6mStale: 30 * MB }, DEC) });
   ok(Math.abs(c.used - (0.1 * G - 30 * MB)) < 2, '일반에 쓴 양 = 전체 − 벤치마킹 − 먼저 떼는 몫 안에서 쓴 양', c.used / MB);
   ok(AS.genPace({}, { now, dayCap: G, usedT: 0, umT: 0, mainCap: 0.5 * G, owe: true }).txt.indexOf('먼저 떼는') < 0, 'resv를 안 넘기면 예전 글 그대로(옛 수집기와 함께 써도 됨)');
   /* poolCaps keep — 벤치마킹이 하루 몫을 넘겨 써 휴대폰 오늘 몫이 바닥 */
@@ -43,7 +43,7 @@ console.log('① 🧾 먼저 떼는 몫');
 
 console.log('② 수집기');
 { const C = rd('src/readnow-collector.src.js');
-  ok(/const rv = BUD\.resv && BUD\.resv\.of \? BUD\.resv\.of\(k\) : null; return rv && rv\.left > 0 \? rv\.left \+ Math\.max\(0, BUD\.left\.gen\) : BUD\.left\.gen;/.test(C), 'budLeft — 먼저 떼는 몫 일은 그 몫 + 일반 몫');
+  ok(/const rv = BUD\.resv && BUD\.resv\.of \? BUD\.resv\.of\(k\) : null; if \(rv && rv\.left > 0\) return rv\.left \+ Math\.max\(0, BUD\.left\.gen\);/.test(C), 'budLeft — 먼저 떼는 몫 일은 그 몫 + 일반 몫');
   ok(/if \(BUD\.benchOwe\) return 0; const rv = /.test(C), '벤치마킹 한 바퀴 전에는 지금처럼 0(정범님 10/25)');
   ok(/genCap = Math\.max\(0, dayCap - usedT - \(owe \? Math\.max\(0, mainCap - rT - umT\) : 0\) - rL\)/.test(C), '일반 몫 바로잡음에서 먼저 떼는 몫 남은 양을 뺌');
   ok(/AS\.genPace\(SCHED \|\| \{\}, \{ now: Date\.now\(\), dayCap, usedT, umT, mainCap, owe, resv: RV \}\)/.test(C), 'genPace에 resv');
