@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "cbuild",
+ "what": "클라우드 판: Cloud Build 결과 남기기",
+ "since": "2026-11-13T06:10:40Z",
+ "beat": "2026-11-13T06:10:40Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "view1 클라우드 0.35.216 진단 pxreg (b4826bec)",
   "at": "2026-11-13T06:10:37Z"
  },
- "host": null
+ "host": "vm-cbuild"
 }
