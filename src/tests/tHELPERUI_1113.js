@@ -73,6 +73,12 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8');
     fake({ ...on2, ifaces: on2.ifaces.filter((x) => x.name !== '휴대폰 테더링') });
     j = await until('/phcards?v=mini', (x) => x.html && /지금 쓰는 폰/.test(card(x.html, '휴대폰 2 · 새 120GB')) && /✕ 끊김/.test(card(x.html, '휴대폰 1 · 기존')), 10000);
     ok(/지금 쓰는 폰/.test(card(j.html || '', '휴대폰 2 · 새 120GB')) && /✕ 끊김/.test(card(j.html || '', '휴대폰 1 · 기존')), '④ 쓰던 휴대폰 1을 빼면 휴대폰 2가 ● 지금 쓰는 폰 · 휴대폰 1은 끊김 카드로 남음(이번 달 사용 있음)');
+    /* ⑥ 웹앱 📶 테더링 사용 › 휴대폰 칸(netPoolCard)도 같은 모양 — 로거가 알려 준 inet·net·cAt */
+    { const A = fs.readFileSync(path.join(R, 'src/app.html'), 'utf8'); const i = A.indexOf('function netPoolCard(BU)'); const j = A.indexOf('\nasync function openNetUsage', i); const S = { netLive: { phones: [{ id: 'D1', inet: { ok: true, at: '2026-11-13T09:20:00.000+09:00' }, cAt: '2026-11-13T08:00:00.000Z' }, { id: 'D2', net: { bad: true, why: '테더링으로 공인 IP를 못 봄', next: '2026-11-13T09:50:00.000Z' }, inet: { ok: false, hint: '휴대폰 모바일 데이터가 꺼져 있거나' }, cAt: '2026-11-13T09:00:00.000Z' }] } };
+      const f = new Function('S', 'esc', 'isAdminDevice', A.slice(i, j) + '\nreturn netPoolCard;')(S, (x) => String(x == null ? '' : x), () => false);
+      const ph = (id, name, act, con) => ({ id: 'p' + id, name, dev: id, active: act, connected: con, usedT: 1e8, share: 2e9, how: '시험', monthLeft: 5e10, speed: null });
+      const html = f({ pool: { share: 4e9, pct: 70, main: 2.8e9, gen: 1.2e9, used: 2e8, phones: [ph('D1', '휴대폰 1', true, true), ph('D2', '휴대폰 2', false, true), ph('D3', '휴대폰 3', false, false)] } });
+      ok(/● 지금 쓰는 폰/.test(html) && /🌐 인터넷 됨/.test(html) && /📵 인터넷 안 됨/.test(html) && /모바일 데이터/.test(html) && /✕ 끊김/.test(html) && /마지막 확인/.test(html), '⑥ 웹앱 휴대폰 칸: 지금 쓰는 폰 · 인터넷 됨/안 됨(까닭) · 끊김 · 마지막 확인'); }
     const C = fs.readFileSync(fs.existsSync(path.join(R, 'src/readnow-collector.src.js')) ? path.join(R, 'src/readnow-collector.src.js') : path.join(R, 'readnow-collector.user.js'), 'utf8'); const hd = C.slice(0, C.indexOf('==/UserScript=='));
     ok(!/phcards|inet/.test(hd), '수집기 머리는 그대로');
   } catch (e) { bad++; console.log('  ❌ 오류', e && e.stack); }
