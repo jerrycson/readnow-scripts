@@ -3,11 +3,10 @@
  *  견준 사례(헌장 제27조 · readnow-chats reports/SHOPADM1_1113.md 표): Shopify 관리자(실시간 방문·전환 깔때기·손님 시간줄·메모·태그) · 카페24(방문자 분석·유입 경로·인기 검색어) ·
  *   네이버 스마트스토어 센터(비즈어드바이저 — 유입 채널·기기·상품별 조회→결제율) · 쿠팡 윙(상품별 조회·장바구니·판매) · 아임웹(방문 통계·배너) · GA4(실시간·참여·이탈) ·
  *   Amplitude류(행동 깔때기·사용자 경로) · Zendesk류(문의함 — 새 문의·답함·끝남 · 답 글)
- *  개인정보(헌장 제4·9조 · 개인정보 보호법 제3·15·21·30조):
- *   · IP는 저장하지 않음(셈에 안 씀 · 문의 연속 막기는 기억 속 해시 10분) · 방문 셈은 무작위 기기 번호(bq-vid)만 — 그 번호도 저장하지 않고 '오늘 첫 방문' 표시로 셈
- *   · 로그인한 손님만 '활동 시간줄'(본 상품·찾기·담기·주문)을 손님 번호로 남김 — 목적·보존 기간은 개인정보 처리방침에(shop-track.js가 화면에 더함) · 보존 기간 = 설정(기본 365일)
- *   · 브라우저 '추적 안 함'(GPC·DNT)이나 손님이 끈 기기는 시간줄을 남기지 않음(합계 수만)
- *   · 🧪 시험 계정 기록은 백오피스 기록으로만 남고 손님 화면엔 안 나감(F37) · 기록을 지우지 않음(헌장 제7조)
+ *  손님 정보(F39 · 정범님 11/13 23:30 「파기하지 않고 파기 기간도 지금은 정하지 않음 · 오픈 전 법적 자문 뒤 적용 · 손님 정보·IP 수집을 막는 기능은 넣지 않음」):
+ *   · 활동 시간줄을 손님마다(로그인 = 손님 번호 · 비회원 = 무작위 기기 번호) 하루 문서로 남김 · IP 주소(전체)·기기 정보(브라우저 이름 글)도 그 문서에
+ *   · 보존 기간 없음 · 지우지 않음(헌장 제7조) · 개인정보 처리방침 8번에 수집 항목과 '별도 고지 전까지 보관'(shop-track.js가 화면에 넣음)
+ *   · 🧪 시험 계정 행동은 합계에서 빼고 시간줄은 시험 표시로 백오피스 기록에만(F37)
  *  비용: 모은 수는 기억에 두었다가 1분마다 하루 몫 문서 하나(shop_stats/<날짜>)에 더하기(increment)로 한 번 씀 · 로그인 손님 시간줄은 1분마다 손님·하루 문서 하나
  *  창구
  *    POST /shop/t                 손님 화면 shop-track.js가 모아 보냄(text/plain JSON · sendBeacon) → 204
@@ -27,9 +26,6 @@ const dayAdd = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toIS
 
 /* ── 설정(app_settings/shop.anl) — 기본값 · 모두 웹앱 📊 백오피스 › ⚙ 설정에서 바꿈(약속 79) */
 const ANL_DEF = {
-  on: 1, /* 방문 셈 켬 */
-  uact: 1, /* 로그인 손님 활동 시간줄 */
-  uactDays: 365, /* 활동 시간줄 보존(일) — 개인정보 처리방침에 같은 수가 나감 · 근거: 카페24·Shopify 손님 활동 기록 기본 보존이 1년 안팎 */
   aggDays: 730, /* 합계 수(개인 정보 없음) 보여 줄 범위 */
   exTest: 1, /* 🧪 시험 계정 행동은 합계에서 뺌(따로 '시험' 수로만) */
   topN: 20, /* 표마다 줄 수 */
@@ -38,16 +34,12 @@ const ANL_DEF = {
   lowStock: 1, /* 같은 책(ISBN) 판매중 권수가 이 수 이하인데 찜·알림이 걸리면 재고 알림 */
   tiers: [[1, '첫 구매'], [2, '다시 산 손님'], [5, '단골'], [10, 'VIP']], /* [입금 확인 주문 수, 등급 이름] — 0번은 '구매 전' */
   ask: 1, /* 손님 화면 💬 문의 단추 */
-  askKeepDays: 1095, /* 문의 보관(소비자 불만·분쟁 처리 기록 3년 · 전자상거래법 시행령 제6조) */
-  emShow: 0, /* 손님 목록 메일: 0 = 가려서(a***@n***.com) · 1 = 모두 */
+  emShow: 1, /* 손님 목록 메일: 1 = 모두(기본 · F39) · 0 = 가려서(a***@n***.com) */
   dash: ['live', 'sum', 'daily', 'hour', 'ref', 'dev', 'geo', 'funnel', 'exit', 'items', 'search', 'cats'], /* 대시보드에 보일 칸과 차례 */
   bnr: [], /* 📢 배너 [{ id, tx, url, tone, on, from, to }] */
 };
 const DASH_ALL = { live: '🟢 지금', sum: '📈 기간 합계', daily: '📅 날마다', hour: '🕐 시간대', ref: '🧭 유입 경로', dev: '📱 기기·브라우저', geo: '🗺 지역(시·도)', funnel: '🛒 장바구니 → 주문 깔때기', exit: '🚪 이탈 지점', items: '📚 많이 본 상품', search: '🔎 인기 검색어', cats: '🗂 많이 본 분류' };
 const ANL_SCHEMA = [
-  { k: 'on', t: '방문 셈(합계 수)', ty: 'bool', why: '끄면 손님 화면이 보내는 것을 받지 않음(개인 정보 없음)' },
-  { k: 'uact', t: '로그인 손님 활동 시간줄', ty: 'bool', why: '본 상품·찾기·담기·주문을 손님 번호로 남김 — 개인정보 처리방침에 목적·보존 기간이 나감' },
-  { k: 'uactDays', t: '활동 시간줄 보존(일)', ty: 'num', min: 30, max: 1825 },
   { k: 'aggDays', t: '합계 수 보는 범위(일)', ty: 'num', min: 30, max: 3650 },
   { k: 'exTest', t: '🧪 시험 계정 행동은 합계에서 뺌', ty: 'bool' },
   { k: 'topN', t: '표마다 줄 수', ty: 'num', min: 5, max: 100 },
@@ -56,8 +48,7 @@ const ANL_SCHEMA = [
   { k: 'lowStock', t: '재고 알림 — 같은 책 판매중 몇 권 이하', ty: 'num', min: 0, max: 20 },
   { k: 'tiers', t: '손님 등급(입금 확인 주문 수:이름 · 쉼표)', ty: 'tiers' },
   { k: 'ask', t: '손님 화면 💬 문의 단추', ty: 'bool' },
-  { k: 'askKeepDays', t: '문의 보관(일)', ty: 'num', min: 365, max: 3650 },
-  { k: 'emShow', t: '손님 목록에 메일 모두 보이기', ty: 'bool', why: '끄면 가려서(개인 정보 최소 처리)' },
+  { k: 'emShow', t: '손님 목록에 메일 모두 보이기', ty: 'bool', why: '끄면 화면에서만 가려 보임(모으는 것은 그대로)' },
   { k: 'dash', t: '대시보드 칸(차례대로 · 쉼표)', ty: 'list', all: DASH_ALL },
 ];
 function tiersOf(v) { const L = (Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').map((x) => x.split(':')) : []).map((x) => [Math.max(1, Math.round(+x[0] || 0)), s(x[1], 12)]).filter((x) => x[0] > 0 && x[1]); const seen = new Set(); return L.filter((x) => !seen.has(x[0]) && seen.add(x[0])).sort((a, b) => a[0] - b[0]).slice(0, 8); }
@@ -163,19 +154,21 @@ function makeAnl({ db, C, FV, log, authOf, cfg, ready, vw, held, soldX, view, ac
   async function flush() { if (M.busy) return M.busy; const acc = M.acc; const U = M.ua; const t = Date.now(); const lv = [...M.live.values()].filter((x) => t - x < 300e3).length; for (const [k, x] of M.live) if (t - x > 600e3) M.live.delete(k);
     if (!acc.n && !U.size && !(acc.m.uv || acc.m.ss || acc.m.bot || acc.m.tst)) return null; M.acc = accNew(kday()); if (M.acc.day !== acc.day) M.keys = {}; M.ua = new Map(); M.flushAt = t;
     M.busy = (async () => { try { const W = [C('shop_stats').doc(acc.day).set(toWrite(acc, FV, { live: { [INST]: { at: new Date(t).toISOString(), n: lv } } }), { merge: true })];
-        for (const [id, v] of U) W.push(C('shop_uact').doc(id).set({ uid: v.uid, day: v.day, test: v.test, n: FV.increment(v.ev.length), up: new Date(t).toISOString(), ev: FV.arrayUnion(...v.ev) }, { merge: true }));
+        for (const [id, v] of U) W.push(C('shop_uact').doc(id).set({ uid: v.uid, vid: v.vid, day: v.day, test: v.test, n: FV.increment(v.ev.length), up: new Date(t).toISOString(), dev: v.dev, ua: v.ua, ...(v.ref ? { ref: v.ref } : {}), ...(v.utm ? { utm: v.utm } : {}), ...(v.ip.size ? { ip: FV.arrayUnion(...v.ip) } : {}), ...(v.ev.length ? { ev: FV.arrayUnion(...v.ev) } : {}) }, { merge: true }));
         await Promise.all(W); M.err = null; } catch (e) { M.err = s(e.message, 120); log && log('📊 우리숍 방문 셈 쓰기 실패', M.err); } finally { M.busy = null; } })(); return M.busy; }
   const tick = () => { if (M.t) return; M.t = setTimeout(() => { M.t = null; flush().catch(() => {}); }, 60e3); if (M.t.unref) M.t.unref(); };
   /* POST /shop/t */
-  async function ingest(req, body) { const c = await conf(); if (!c.on) return; const B = cleanBatch(body); if (!B.sid || !B.E.length && !B.ns) return; if (kday() !== M.acc.day) await flush();
+  const ipOf = (req) => s(String((req.headers && req.headers['x-forwarded-for']) || (req.socket && req.socket.remoteAddress) || '').split(',')[0], 60) || null; /* (F39) IP 전체 */
+  async function ingest(req, body) { const c = await conf(); const B = cleanBatch(body); if (!B.sid || !B.E.length && !B.ns) return; if (kday() !== M.acc.day) await flush();
     M.live.set(B.sid, Date.now()); M.n++;
     let au = null; if (B.tk && authOf) { try { au = await authOf({ headers: { authorization: 'Bearer ' + B.tk } }); } catch (e) { au = null; } }
-    const r = addBatch(M.acc, B, { ua: req.headers['user-agent'], geo: geoOf(req.headers), test: au && au.u && au.u.test, exTest: c.exTest, login: !!au, keys: M.keys });
-    const dnt = String(req.headers['sec-gpc'] || '') === '1' || String(req.headers.dnt || '') === '1';
-    if (au && c.uact && !B.no && !dnt && !r.bot) { const day = kday(); const id = au.uid + '_' + day.replace(/-/g, ''); const u = M.ua.get(id) || { uid: au.uid, day, test: au.u.test ? 1 : 0, ev: [] };
-      for (const [k, a, x, t] of B.E) { if (k === 'f') continue; if (u.ev.length >= 300) break; const tt = t && Math.abs(t - Date.now()) < 864e5 ? t : Date.now(); u.ev.push({ t: new Date(tt).toISOString(), k, a, ...(x ? { x } : {}), q: M.n % 1000 }); }
-      if (u.ev.length) M.ua.set(id, u); }
-    tick(); }
+    const ua0 = s(req.headers['user-agent'], 300); const r = addBatch(M.acc, B, { ua: ua0, geo: geoOf(req.headers), test: au && au.u && au.u.test, exTest: c.exTest, login: !!au, keys: M.keys });
+    if (r.bot || (!au && !B.vid)) { tick(); return; } /* 시간줄 = 로그인 손님은 손님 번호 · 비회원은 기기 번호(F39) */
+    const day = kday(); const id = (au ? au.uid : 'v' + B.vid) + '_' + day.replace(/-/g, ''); const ui = uaInfo(ua0); const ip = ipOf(req);
+    const u = M.ua.get(id) || { uid: au ? au.uid : null, vid: B.vid || null, day, test: au && au.u.test ? 1 : 0, ev: [], ip: new Set(), dev: ui.dev + ' · ' + ui.os + ' · ' + ui.br, ua: ua0, ref: null };
+    if (ip) u.ip.add(ip); if (B.ns && B.ref) u.ref = B.ref; if (B.ns && B.utm && B.utm.s) u.utm = B.utm.s;
+    for (const [k, a, x, t] of B.E) { if (k === 'f') continue; if (u.ev.length >= 300) break; const tt = t && Math.abs(t - Date.now()) < 864e5 ? t : Date.now(); u.ev.push({ t: new Date(tt).toISOString(), k, a, ...(x ? { x } : {}), q: M.n % 1000 }); }
+    M.ua.set(id, u); tick(); }
   /* 💬 문의 — 손님이 남김(로그인 안 해도 · 연락처 선택) · 답은 같은 화면에서 문의 번호+열쇠로 봄 */
   const ASKW = new Map();
   async function askNew(req, b, ipk) { const c = await conf(); if (!c.ask) return [403, { ok: false, err: '지금은 문의를 받지 않습니다' }]; if (b.hp) return [400, { ok: false, err: '잘못된 요청' }];
@@ -184,7 +177,7 @@ function makeAnl({ db, C, FV, log, authOf, cfg, ready, vw, held, soldX, view, ac
     const kind = ['book', 'order', 'ship', 'etc'].includes(b.kind) ? b.kind : 'etc'; const ct = s(b.ct, 80); const nm = s(b.nm, 20);
     let au = null; if (b.tk && authOf) { try { au = await authOf({ headers: { authorization: 'Bearer ' + b.tk } }); } catch (e) {} }
     const aid = 'q' + kday().replace(/-/g, '').slice(2) + rnd(4); const tok = rnd(8); const at = new Date().toISOString();
-    await C('shop_asks').doc(aid).set({ aid, at, st: 'new', kind, tx, nm: nm || null, ct: ct || null, id: s(b.id, 40) || null, t: s(b.t, 120) || null, no: s(b.no, 30) || null, uid: au ? au.uid : null, nick: au ? au.u.nick : null, test: au && au.u.test ? 1 : 0, tokH: H(tok), ans: [], up: at });
+    await C('shop_asks').doc(aid).set({ aid, at, st: 'new', kind, tx, nm: nm || null, ct: ct || null, id: s(b.id, 40) || null, t: s(b.t, 120) || null, no: s(b.no, 30) || null, uid: au ? au.uid : null, nick: au ? au.u.nick : null, test: au && au.u.test ? 1 : 0, tokH: H(tok), ip: ipOf(req), ua: s(req.headers && req.headers['user-agent'], 300), ans: [], up: at });
     L.push(Date.now()); ASKW.set(k, L); if (ASKW.size > 5000) ASKW.clear(); log && log('💬 우리숍 문의 ' + aid); return [200, { ok: true, aid, t: tok }]; }
   async function askGet(q) { const aid = String(q.aid || ''); if (!/^q\d{6}[0-9a-f]{8}$/.test(aid)) return [400, { ok: false, err: '문의 번호가 이상함' }]; const d = await C('shop_asks').doc(aid).get(); const v = d.exists ? d.data() : null; if (!v || v.tokH !== H(String(q.t || ''))) return [404, { ok: false, err: '문의를 찾을 수 없습니다' }];
     return [200, { ok: true, aid, at: v.at, st: v.st, kind: v.kind, tx: v.tx, t: v.t, ans: (v.ans || []).filter((a) => a && !a.hid).map((a) => ({ tx: a.tx, at: a.at })) }]; }
@@ -238,13 +231,19 @@ function makeAnl({ db, C, FV, log, authOf, cfg, ready, vw, held, soldX, view, ac
       const row = (u, mm) => { const ov = by.get(u.uid) || { n: (u.ords || []).length, paid: 0, sum: 0, last: null }; return { uid: u.uid, nick: u.nick, em: c.emShow ? u.em : maskEm(u.em), at: u.at, last: u.last || null, test: u.test ? 1 : 0, qa: A.qaAcct ? (A.qaAcct(u) ? 1 : 0) : u.test ? 1 : 0, arch: u.arch ? 1 : 0, gone: u.gone ? 1 : 0, ordN: ov.n, paid: ov.paid, sum: ov.sum, lastOrd: ov.last, rvN: u.rvN || 0, wishN: (u.wish || []).length, alertN: Object.values(u.alerts || {}).filter(Boolean).length, rdN: Object.keys(u.rd || {}).length, folN: u.folN || 0, news: u.notif && u.notif.news ? 1 : 0, tier: tierOf(ov.paid, c), tags: (mm && mm.tags) || [], memo: mm && mm.memo ? 1 : 0 }; };
       if (o === 'users') { const L = []; us.forEach((d) => { const u = d.data(); if (u && u.uid) L.push(row(u, memo.get(u.uid))); }); return { L: L.sort((p, q2) => String(q2.last || q2.at).localeCompare(String(p.last || p.at))).slice(0, 3000), tiers: tiersOf(c.tiers) }; }
       const uid = String(b.uid || ''); if (!/^u_[0-9a-f]{16}$/.test(uid)) return { err: '손님 번호가 이상함' }; const [ud, md] = await Promise.all([C('shop_users').doc(uid).get(), C('shop_umemo').doc(uid).get()]); const u = ud.exists ? ud.data() : null; if (!u) return { err: '없는 손님' };
-      const cut = kday(now - c.uactDays * 864e5); const [ua, rv, qs, ls, ak] = await Promise.all([C('shop_uact').where('uid', '==', uid).get(), C('shop_reviews').where('uid', '==', uid).get(), C('shop_quotes').where('uid', '==', uid).get(), C('shop_lists').where('uid', '==', uid).get(), C('shop_asks').where('uid', '==', uid).get()]);
-      const ev = []; ua.forEach((d) => { const v = d.data(); if (v && v.day >= cut) for (const e of v.ev || []) ev.push({ t: e.t, k: e.k, a: e.a, x: e.x || null, w: EV_T[e.k] || e.k }); });
+      const [ua, rv, qs, ls, ak] = await Promise.all([C('shop_uact').where('uid', '==', uid).get(), C('shop_reviews').where('uid', '==', uid).get(), C('shop_quotes').where('uid', '==', uid).get(), C('shop_lists').where('uid', '==', uid).get(), C('shop_asks').where('uid', '==', uid).get()]);
+      const ev = []; ua.forEach((d) => { const v = d.data(); if (v) for (const e of v.ev || []) ev.push({ t: e.t, k: e.k, a: e.a, x: e.x || null, w: EV_T[e.k] || e.k }); });
       rv.forEach((d) => { const r = d.data(); if (r) ev.push({ t: r.at, k: 'rv', a: r.k, x: r.t || null, w: '⭐ 리뷰 ' + (r.st / 2).toFixed(1) + (r.hid ? ' (가려짐)' : ''), tx: s(r.s100, 100) }); }); qs.forEach((d) => { const x = d.data(); if (x) ev.push({ t: x.at, k: 'q', a: x.k, x: x.t || null, w: '✏ 밑줄', tx: s(x.tx, 100) }); });
       ak.forEach((d) => { const x = d.data(); if (x) ev.push({ t: x.at, k: 'ask', a: x.aid, w: '💬 문의', tx: s(x.tx, 100) }); }); for (const x of ords.filter((y) => y.uid === uid)) ev.push({ t: x.at, k: 'ord', a: x.no, w: '🧾 주문 ' + x.no + ' · ' + (x.st || ''), tx: (x.items || []).map((y) => y.t).filter(Boolean).slice(0, 3).join(' · '), sum: x.total });
       ev.push({ t: u.at, k: 'join', w: u.test ? '🧪 시험 계정 만듦' : '👤 가입' }); ev.sort((p, q2) => String(q2.t).localeCompare(String(p.t)));
       const L = []; ls.forEach((d) => { const v = d.data(); if (v && !v.gone) L.push({ nm: v.nm, n: (v.items || []).length, pub: v.pub ? 1 : 0 }); });
-      return { u: { ...row(u, md.exists ? md.data() : null), bio: u.bio || '', notif: u.notif || {}, goal: A.goalOf ? A.goalOf(u) : null, wish: (u.wish || []).slice(0, 60), seen: (u.seen || []).slice(0, 30), alerts: Object.entries(u.alerts || {}).filter(([, a]) => a).slice(0, 60).map(([k, a]) => ({ k, kind: a.k, t: a.t || null, id: a.id || null, isbn: a.isbn || null, at: a.at || null })), lists: L }, memo: md.exists ? md.data() : null, ev: ev.slice(0, 1500), keep: c.uactDays }; }
+      return { u: { ...row(u, md.exists ? md.data() : null), bio: u.bio || '', notif: u.notif || {}, goal: A.goalOf ? A.goalOf(u) : null, wish: (u.wish || []).slice(0, 60), seen: (u.seen || []).slice(0, 30), alerts: Object.entries(u.alerts || {}).filter(([, a]) => a).slice(0, 60).map(([k, a]) => ({ k, kind: a.k, t: a.t || null, id: a.id || null, isbn: a.isbn || null, at: a.at || null })), lists: L }, memo: md.exists ? md.data() : null, ev: ev.slice(0, 3000), ips: [...new Set((() => { const L = []; ua.forEach((d) => { const v = d.data(); for (const x of (v && v.ip) || []) L.push(x); }); return L; })())].slice(0, 50), devs: [...new Set((() => { const L = []; ua.forEach((d) => { const v = d.data(); if (v && v.dev) L.push(v.dev); }); return L; })())].slice(0, 20) }; }
+    if (o === 'visitors') { const days = Math.max(1, Math.min(3650, Math.round(+b.days || 7))); const cut = kday(now - (days - 1) * 864e5); const ss = await C('shop_uact').where('day', '>=', cut).get(); const by = new Map();
+      ss.forEach((d) => { const v = d.data(); if (!v || v.uid) return; const k = v.vid || d.id; const x = by.get(k) || { vid: k, days: 0, n: 0, first: v.day, last: v.day, ip: new Set(), dev: v.dev || null, ref: v.ref || null, test: 0 }; x.days++; x.n += +v.n || 0; if (v.day < x.first) x.first = v.day; if (v.day > x.last) { x.last = v.day; x.dev = v.dev || x.dev; } if (v.ref && !x.ref) x.ref = v.ref; for (const i of v.ip || []) x.ip.add(i); by.set(k, x); });
+      return { days, L: [...by.values()].map((x) => ({ ...x, ip: [...x.ip].slice(0, 10) })).sort((p, q2) => String(q2.last).localeCompare(String(p.last)) || q2.n - p.n).slice(0, 2000) }; } /* 🕶 비회원 방문(기기 번호) */
+    if (o === 'visitor') { const vid = String(b.vid || ''); if (!/^[0-9a-f]{16}$/.test(vid)) return { err: '기기 번호가 이상함' }; const ss = await C('shop_uact').where('vid', '==', vid).get(); const ev = []; const ips = new Set(); const devs = new Set(); let ref = null;
+      ss.forEach((d) => { const v = d.data(); if (!v) return; for (const i of v.ip || []) ips.add(i); if (v.dev) devs.add(v.dev); if (v.ref && !ref) ref = v.ref; for (const e of v.ev || []) ev.push({ t: e.t, k: e.k, a: e.a, x: e.x || null, w: EV_T[e.k] || e.k, who: v.uid || null }); });
+      ev.sort((p, q2) => String(q2.t).localeCompare(String(p.t))); return { vid, ev: ev.slice(0, 3000), ips: [...ips].slice(0, 50), devs: [...devs].slice(0, 20), ref }; }
     if (o === 'memo') { const uid = String(b.uid || ''); if (!/^u_[0-9a-f]{16}$/.test(uid)) return { err: '손님 번호가 이상함' }; const memo = sLong(b.memo, 2000); const tags = [...new Set((Array.isArray(b.tags) ? b.tags : String(b.tags || '').split(',')).map((x) => s(x, 16)).filter(Boolean))].slice(0, 12); const at = new Date().toISOString();
       await C('shop_umemo').doc(uid).set({ uid, memo, tags, by, at, hist: FV.arrayUnion({ at, by, memo: memo.slice(0, 300), tags }) }, { merge: true }); return { ok: 1, memo, tags }; } /* 고친 옛 메모는 hist에 쌓임(지우지 않음) */
     if (o === 'items') { const days = Math.max(1, Math.min(c.aggDays, Math.round(+b.days || 30))); const to = kday(now); const from = dayAdd(to, -(days - 1)); await ready(); const [docs, ords, us] = await Promise.all([statDocs(from, to), ordsSince(days), C('shop_users').get()]); const Mx = mergeDays(docs);
@@ -253,7 +252,7 @@ function makeAnl({ db, C, FV, log, authOf, cfg, ready, vw, held, soldX, view, ac
       const wishBy = {}; us.forEach((d) => { const u = d.data(); if (!u || u.gone || (c.exTest && u.test)) return; for (const w of u.wish || []) { if (w && w.id) wishBy[w.id] = (wishBy[w.id] || 0) + 1; const it = w && V.get(w.id); add((it && it.isbn) || w.isbn, w.t, 'wish'); } for (const a of Object.values(u.alerts || {})) if (a && a.k === 'restock') add(a.isbn, a.t, 'alert'); });
       const R = itemRows(Mx, I, ords.filter((x) => x.st !== 'cancel' && !x.test), c, now, D); const top = (L) => L.slice(0, c.topN * 5);
       return { from, to, days, rows: top(R.rows).map((r) => ({ ...r, wn: wishBy[r.id] || 0 })), hot: top(R.hot), stale: R.stale.slice(0, c.topN * 5), staleN: R.staleN, low: top(R.low), onSale: I.size, cfg: c }; }
-    if (o === 'asks') { const ss = await C('shop_asks').orderBy('at', 'desc').limit(Math.max(10, Math.min(500, +b.n || 200))).get(); const L = []; ss.forEach((d) => { const v = d.data(); if (v) L.push({ aid: v.aid, at: v.at, st: v.st, kind: v.kind, tx: v.tx, nm: v.nm, ct: v.ct, t: v.t, id: v.id, no: v.no, uid: v.uid, nick: v.nick, test: v.test || 0, ans: v.ans || [], up: v.up }); }); return { L }; }
+    if (o === 'asks') { const ss = await C('shop_asks').orderBy('at', 'desc').limit(Math.max(10, Math.min(500, +b.n || 200))).get(); const L = []; ss.forEach((d) => { const v = d.data(); if (v) L.push({ aid: v.aid, at: v.at, st: v.st, kind: v.kind, tx: v.tx, nm: v.nm, ct: v.ct, t: v.t, id: v.id, no: v.no, uid: v.uid, nick: v.nick, test: v.test || 0, ip: v.ip || null, ans: v.ans || [], up: v.up }); }); return { L }; }
     if (o === 'askAns') { const aid = String(b.aid || ''); if (!/^q\d{6}[0-9a-f]{8}$/.test(aid)) return { err: '문의 번호가 이상함' }; const ref = C('shop_asks').doc(aid); const d = await ref.get(); if (!d.exists) return { err: '없는 문의' }; const tx = sLong(b.tx, 2000); const st = ['new', 'ans', 'done'].includes(b.st) ? b.st : tx ? 'ans' : null; const at = new Date().toISOString();
       if ([...tx].length > 1000) return { err: '답은 1,000자까지' }; await ref.set({ ...(tx ? { ans: FV.arrayUnion({ tx, at, by }) } : {}), ...(st ? { st } : {}), up: at, hist: FV.arrayUnion({ at, by, what: tx ? '답 ' + tx.slice(0, 40) : '상태 ' + st }) }, { merge: true }); return { ok: 1 }; }
     if (o === 'pvTicket') { const uid = b.uid ? String(b.uid) : null; let nick = null, test = 0; if (uid) { if (!/^u_[0-9a-f]{16}$/.test(uid)) return { err: '손님 번호가 이상함' }; const d = await C('shop_users').doc(uid).get(); const u = d.exists ? d.data() : null; if (!u || u.gone) return { err: '없는 손님' }; nick = u.nick; test = u.test ? 1 : 0; }

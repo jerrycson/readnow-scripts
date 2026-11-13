@@ -22,7 +22,7 @@ const restConfig = (h = fbj) => ({ headers: (h.headers || []).map((x) => ({ ...p
   /* (11/11 shop2) rewrites [{source, run:{serviceId, region}}] → REST [{glob, run}] — 우리숍 검색 주소(/b/**·sitemap)만 · 관리 사이트(firebase.json)엔 없어 예전과 같음 */
   ...((h.rewrites || []).length ? { rewrites: h.rewrites.filter((x) => x && x.source && x.run && x.run.serviceId).map((x) => ({ glob: x.source, run: { serviceId: x.run.serviceId, region: x.run.region || 'asia-northeast3' } })) } : {}) });
 
-/* (11/12 shopsrv) 넘김 대상 서비스 확인 — rewrite에 run.probe(그 서비스의 /healthz 주소)·run.fallback(대신 쓸 서비스)이 있으면, probe가 200 JSON이고 srv가 그 서비스 이름일 때만 그대로 · 아니면 fallback으로
+/* (11/12 shopsrv) 넘김 대상 서비스 확인 — rewrite에 run.probe(그 서비스의 /status 주소 — /healthz는 Cloud Run 예약 길이라 404 · shopsrv2 11/13)·run.fallback(대신 쓸 서비스)이 있으면, probe가 200 JSON이고 srv가 그 서비스 이름일 때만 그대로 · 아니면 fallback으로
  *  까닭: 숍 전용 서비스(readnow-shop)가 아직 없거나 공개(allUsers 호출 허락)가 안 됐는데 Hosting이 그리로 넘기면 booksqueen.com 숍이 멎음 → 그땐 원래 서비스(readnow-cloud)로 · RUN_WAIT_S초까지 기다려 봄(처음 배포 동안) */
 async function resolveRuns(h, o = {}) { const f = o.fetch || fetch; const waitS = o.waitS == null ? +(process.env.RUN_WAIT_S || 0) : o.waitS; const step = o.stepMs || 20000; const memo = new Map(); const notes = [];
   const alive = async (u, sv) => { if (memo.has(u)) return memo.get(u); const t0 = Date.now(); let ok = false, why = '';
@@ -75,8 +75,10 @@ if (require.main === module) {
   const dir = path.resolve(process.argv[2] || path.join(ROOT, '.hosting', 'public')); const site = process.argv[3] || fbj.site;
   const dry = process.env.HOSTING_DRY === '1';
   if (!dry && !TOKEN) { console.log('::warning::HOSTING_TOKEN 없음 — Hosting 올리기를 건너뜀'); process.exit(0); }
-  resolveRuns(fbj).then((R) => { for (const n of R.notes) console.log((R.fellBack && n.includes('(대신') ? '::warning::' : '') + '🔀 넘김 ' + n); return deploy(dir, site, { dry, conf: R.conf, msg: (process.env.GITHUB_SHA || '').slice(0, 12) }); }).then((r) => {
+  resolveRuns(fbj).then((R) => { for (const n of R.notes) console.log((R.fellBack && n.includes('(대신') ? '::warning::' : '') + '🔀 넘김 ' + n); return deploy(dir, site, { dry, conf: R.conf, msg: (process.env.GITHUB_SHA || '').slice(0, 12) }).then((r) => ({ ...r, fellBack: R.fellBack })); }).then((r) => {
     console.log(r.dry ? `🌐 (시험) 파일 ${r.files}개 · 다른 내용 ${r.blobs}개` : `🌐 Hosting 올림: 파일 ${r.files}개 중 바뀐 ${r.uploaded}개 업로드 · ${r.version}`);
+    /* (11/13 shopsrv2) 🚨 대신 넘김은 조용히 넘기지 않음 — 올리기는 끝까지 하고(숍은 원래 서비스로 계속 삶) 작업은 빨간불(RUN_FALLBACK_RED=1 · 우리숍 내기) */
+    if (r.fellBack && process.env.RUN_FALLBACK_RED === '1') { console.log('::error::넘김 대상 서비스가 답하지 않아 원래 서비스로 대신 넘김 — 위 🔀 줄 · 수집 서버가 죽으면 숍도 같이 멎는 상태'); process.exitCode = 1; }
   }).catch((e) => {
     if ((e.status === 403 || e.status === 404) && process.env.HOSTING_STRICT !== '1') { console.log('::warning::Firebase Hosting 준비 전(권한·사이트 없음) — 건너뜀: ' + e.message + ' · Cloud Shell에서 hosting/setup-hosting.sh를 한 번 실행하면 됩니다'); process.exit(0); }
     console.log('::error::' + e.message); process.exit(1);
