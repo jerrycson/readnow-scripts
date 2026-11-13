@@ -1,8 +1,2 @@
-doc=prd_jobs/net_2026-11-13,prd_jobs/pcBeat,app_settings/omni_recheck,app_settings/cloud_mem,app_settings/board_mirror,app_settings/heavy_run,prd_jobs/c2solo
-col2=2026-11-13
-logs=1&pc=HOME&from=202611130900
-pend=1&n=20
-mem=1
-clog=200&cq=Memory%20limit
-health=1
-# 3088232610
+@kpin kpin/20261113-013257-7286.json
+# 265371231
