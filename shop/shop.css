@@ -396,3 +396,4 @@ body.no-tabs .totop { display: none; }
 /* (shopux1 · 정범님 21:28) ⚙ 보기 설정 — 움직임 줄이기 · 휴대폰 머리엔 보기 설정·장바구니 */
 html.rm *, html.rm *::before, html.rm *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 @media (max-width: 899px) { body.tabs-on .nav a[data-r=wish], body.tabs-on #navMe { display: none; } } /* 휴대폰 아래 탭이 있으면 머리엔 설정·장바구니만(찜·내 정보는 아래 탭) */
+.pcvl { padding: 4px 0 0; } .pcvl .pcvb { min-height: 30px; font-size: var(--fs-xs); padding: 0 10px; }
