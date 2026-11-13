@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "note5",
+ "what": "정범 노트 저장1·2·3·내 메모·즉시 반응 판(note5)",
+ "since": "2026-11-13T09:24:34Z",
+ "beat": "2026-11-13T09:24:34Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "웹앱 1.78.591 y24re 일곱째 (5ce0845a)",
   "at": "2026-11-13T09:22:22Z"
  },
- "host": null
+ "host": "vm-note5"
 }
