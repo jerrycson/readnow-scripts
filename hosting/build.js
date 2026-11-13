@@ -10,7 +10,9 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..'));
 const OUT = path.resolve(process.argv[3] || path.join(ROOT, '.hosting', 'public'));
 /* [뿌리 기준 경로, 폴더면 true] */
-const KEEP = [['index.html'], ['pc-live.json'], ['app', true], ['manual', true], ['friend', true], ['aladin-terms', true], ['yes24-terms', true], ['facts-docs', true], ['local', true], ['lab/col2', true], ['lab/pcdock', true] /* (11/12 pcdock1) 🖥 PC 배치 도우미 묶음·설치 파일 */, ['shop/shelf-core.js'], ['cloud/shop-promo.js'], ['ui2', true] /* (priv1 11/13) 🧩 리드나우 2 — readnow-ui2 저장소의 결과물 사본(그 저장소 tools/to-scripts.sh가 넣음) → readnow.kr/ui2/ */, ['src/readnow-collector.src.js'] /* (priv1 11/13) 웹앱 번외(c2BenchFn·c2PubFn)가 운영 본체 글을 읽는 곳 — 저장소 비공개 뒤에도 */, ['cloud/setup-autodeploy.sh'], ['cloud/setup-billing.sh'], ['cloud/setup-hardening.sh'], ['cloud/setup-static-ip.sh'], ['cloud/setup-diagkey.sh'], ['cloud/setup-cloudbuild.sh'], ['cloud/setup-once.sh'] /* (cbuild 11/13) 🔑🛍☁ 한 번에 준비 — 진단 열쇠·우리숍 공개·Cloud Build 트리거 */ /* (priv2 11/13) ☁ 클라우드 배포를 Cloud Build 트리거로 — Cloud Shell 한 줄 */ /* (priv1 11/13) Cloud Shell 설치 글(비밀 없음) — curl -sL https://readnow.kr/cloud/setup-….sh | bash */]; /* (11/11 shopc1) 관리 웹앱 🏷 할인·배지가 같은 셈 파일을 ../cloud/shop-promo.js로 읽음(순수 셈 하나 · 비밀 없음) */ /* (11/11 shelf1) 관리 웹앱 📚 서가 책장 설정이 같은 주소에서 설정 틀을 읽게(손님 화면 파일 하나만) */
+const KEEP = [['index.html'], ['pc-live.json'], ['app', true], ['manual', true], ['friend', true], ['aladin-terms', true], ['yes24-terms', true], ['facts-docs', true], ['local', true], ['lab/col2', true], ['lab/pcdock', true] /* (11/12 pcdock1) 🖥 PC 배치 도우미 묶음·설치 파일 */, ['shop/shelf-core.js'], ['shop/brand', true] /* (11/13 shoplogo1) 👑 북스퀸 로고 프로젝트 페이지·시안·일지 → readnow.kr/shop/brand/project.html(웹앱 🧪 프로젝트 탭 카드가 엶) */, ['cloud/shop-promo.js'], ['ui2', true] /* (priv1 11/13) 🧩 리드나우 2 — readnow-ui2 저장소의 결과물 사본(그 저장소 tools/to-scripts.sh가 넣음) → readnow.kr/ui2/ */, ['src/readnow-collector.src.js'] /* (priv1 11/13) 웹앱 번외(c2BenchFn·c2PubFn)가 운영 본체 글을 읽는 곳 — 저장소 비공개 뒤에도 */, ['cloud/setup-autodeploy.sh'], ['cloud/setup-billing.sh'], ['cloud/setup-hardening.sh'], ['cloud/setup-static-ip.sh'], ['cloud/setup-diagkey.sh'], ['cloud/setup-cloudbuild.sh'], ['cloud/setup-once.sh'] /* (cbuild 11/13) 🔑🛍☁ 한 번에 준비 — 진단 열쇠·우리숍 공개·Cloud Build 트리거 */ /* (priv2 11/13) ☁ 클라우드 배포를 Cloud Build 트리거로 — Cloud Shell 한 줄 */ /* (priv1 11/13) Cloud Shell 설치 글(비밀 없음) — curl -sL https://readnow.kr/cloud/setup-….sh | bash */]; /* (11/11 shopc1) 관리 웹앱 🏷 할인·배지가 같은 셈 파일을 ../cloud/shop-promo.js로 읽음(순수 셈 하나 · 비밀 없음) */ /* (11/11 shelf1) 관리 웹앱 📚 서가 책장 설정이 같은 주소에서 설정 틀을 읽게(손님 화면 파일 하나만) */
+/* [저장소 경로, 결과물 경로] — 저장소 자리와 받는 주소가 다른 것 (friendkey1 11/14) 🐾🔑 책방 친구 서명 열쇠 Cloud Shell 글 → readnow.kr/cloud/setup-friend-key.sh (cloud/에 두면 클라우드 배포가 돌아서 hosting/에 둠) */
+const MAP = [['hosting/setup-friend-key.sh', 'cloud/setup-friend-key.sh']];
 const TOP_JS = /^readnow-[a-z0-9-]+(\.user)?\.js$/; /* 뿌리의 수집기·감시기·공용 파일(readnow-*.js · *.user.js) */
 const SKIP = (rel) => /(^|\/)\./.test(rel) || /\.md$/i.test(rel) || /\.storage\.json$/i.test(rel) || /(^|\/)node_modules\//.test(rel);
 
@@ -27,6 +29,7 @@ function build(root = ROOT, out = OUT) {
   fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
   const list = [];
   for (const [p] of KEEP) { const s = path.join(root, p); if (fs.existsSync(s)) copyTree(s, path.join(out, p), p, list); }
+  for (const [p, q] of MAP) { const s = path.join(root, p); if (fs.existsSync(s)) copyTree(s, path.join(out, q), q, list); }
   for (const n of fs.readdirSync(root).sort()) if (TOP_JS.test(n)) copyTree(path.join(root, n), path.join(out, n), n, list);
   fs.writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nDisallow: /\n'); list.push({ f: 'robots.txt', n: 26 });
   let commit = process.env.GITHUB_SHA || ''; if (!commit) { try { commit = cp.execSync('git -C "' + root + '" rev-parse HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch (e) {} }
@@ -36,7 +39,7 @@ function build(root = ROOT, out = OUT) {
   return { out, list, stamp };
 }
 
-module.exports = { build, KEEP, TOP_JS, SKIP };
+module.exports = { build, KEEP, MAP, TOP_JS, SKIP };
 if (require.main === module) {
   const r = build();
   console.log(`🌐 Hosting 결과물 ${r.stamp.files}개 · ${(r.stamp.bytes / 1048576).toFixed(1)}MB → ${r.out} (커밋 ${String(r.stamp.commit).slice(0, 7)} · 수집기 ${r.stamp.pcLive})`);

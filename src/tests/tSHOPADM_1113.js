@@ -86,7 +86,7 @@ const SHOT = process.env.RN_SHOT || path.join(os.tmpdir(), 'shopadm1'); fs.mkdir
 const T = []; const ASK = []; const ORD = [];
 const items = Array.from({ length: 12 }, (_, i) => ({ id: 'F' + i, t: ['어린 왕자', '데미안', '노인과 바다', '수레바퀴 아래서'][i % 4] + ' ' + (i + 1), a: '지은이', p: 3000 + i * 500, g: '상', at: '2026-11-0' + ((i % 9) + 1) }));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
-const idx = fs.readFileSync(path.join(ROOT, 'shop/index.html'), 'utf8'); const IDX = /shop-track\.js/.test(idx) ? idx : idx.replace('<script src="shop-core.js', '<script src="shop-track.js?v=0.1.0"></script>\n<script src="shop-core.js'); /* 손님 화면에 끼울 한 줄(shopux1이 넣기 전이면 시험이 넣어 봄) */
+const idx = fs.readFileSync(path.join(ROOT, 'shop/index.html'), 'utf8'); const IDX = /shop-track\.js/.test(idx) ? idx : idx.replace('<script src="shop-core.js', '<script src="shop-track.js?v=0.1.1"></script>\n<script src="shop-core.js'); /* 손님 화면에 끼울 한 줄(shopux1이 넣기 전이면 시험이 넣어 봄) */
 const body = (req) => new Promise((r) => { let s = ''; req.on('data', (c) => (s += c)); req.on('end', () => { try { r(JSON.parse(s || '{}')); } catch (e) { r({}); } }); });
 const srv = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://x'); if (process.env.DBG) console.log('REQ', req.method, req.url.slice(0, 80)); const J = (o, s) => { res.writeHead(s || 200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' }); res.end(JSON.stringify(o)); };
   if (req.method === 'OPTIONS') return J({});

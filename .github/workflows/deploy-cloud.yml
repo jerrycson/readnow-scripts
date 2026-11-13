@@ -205,7 +205,8 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
       - name: 🛍 우리숍 전용 서버 올리기 (같은 이미지)
         run: |
-          pub() { curl -fsS -m 20 "$SHOP_URL/healthz" 2>/dev/null | grep -q "\"srv\":\"$SHOP_SVC\""; }
+          # (shopsrv2 11/13) 확인 주소는 /status — /healthz는 Cloud Run 예약 길(끝이 z)이라 run.app에선 늘 404
+          pub() { curl -fsS -m 20 "$SHOP_URL/status" 2>/dev/null | grep -q "\"srv\":\"$SHOP_SVC\""; }
           IMG=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containers[0].image)')
           RSA=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.serviceAccountName)')
           [ -n "$IMG" ] || { echo "::error::수집 서버 이미지 주소를 못 읽음"; exit 1; }

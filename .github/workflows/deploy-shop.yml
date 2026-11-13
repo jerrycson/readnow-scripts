@@ -30,7 +30,7 @@ jobs:
         env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}' }
         run: node hosting/site.js
       - name: 올리기 (바뀐 파일만)
-        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', HOSTING_CONF: hosting/shop.json }
+        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', HOSTING_CONF: hosting/shop.json, RUN_FALLBACK_RED: '1' }  # (shopsrv2) 숍 전용 서버 대신 원래 서비스로 넘기면 빨간불
         run: |
           SITE=$(node -e "console.log(require('./hosting/shop.json').site)")
           node hosting/deploy.js .hosting/shop "$SITE"

@@ -66,7 +66,7 @@ const sp = U.space(); const uq = BQS.combos().uq;
   const sigs = Object.values(saved).map((c) => U.sigOf(c)); ok(new Set(sigs).size === sigs.length && SHOP.jobs().uniq.n === sigs.length && SHOP.jobs().uniq.space === sp.N, `저장된 ${sigs.length}권 고유 번호 겹침 0`); srv.close(); }
 { const T = fs.readFileSync(path.join(ROOT, 'shop/shelf.js'), 'utf8'); ok(/new FontFace\(al, buf/.test(T) && /n >= 3/.test(T) && /2000 \* Math\.pow\(2, n\)/.test(T) && /fRun < fMax\(\)/.test(T) && /lookFix/.test(T), '손님 화면: 글꼴은 FontFace로 받아 실패하면 2·4·8초 뒤 다시(3번까지) · 한 번에 2~3개씩 · 클라우드가 고친 모양 반영');
   for (const f of ['cloud/shop-uniq.js', 'shop/shelf.js', 'shop/shelf-core.js']) { const t = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(|console\.log/.test(t), f + ': 브라우저 창·console.log 없음'); }
-  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.[5-9]/.test(s) && /shelf\.css\?v=0\.2\.[5-9]/.test(s), '서가 판 0.2.5 이후(새 파일을 받게 주소 꼬리)'); }
+  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.([5-9]|1[0-9])/.test(s) && /shelf\.css\?v=0\.2\.([5-9]|1[0-9])/.test(s), '서가 판 0.2.5 이후(새 파일을 받게 주소 꼬리)'); }
 if (!process.env.RN_SHELF_UI) { console.log(bad ? `❌ tSHELF7_1112 ${bad}개 실패` : '✓ tSHELF7_1112 순수 셈 통과 (화면 시험은 RN_SHELF_UI=1)'); process.exit(bad ? 1 : 0); }
 
 console.log('② 화면');

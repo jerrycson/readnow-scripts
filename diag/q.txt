@@ -1,9 +1,2 @@
-mem=1
-clog=1&n=60
-pend=1
-cbuild=1
-pxreg=1
-recentUp=col2_y24_cmd&mins=1440
-recentUp=prd_listings&mins=1440
-recentUp=jb_notes&mins=1440
-# 184051856
+@kpin kpin/20261113-144607.json
+# 114676745
