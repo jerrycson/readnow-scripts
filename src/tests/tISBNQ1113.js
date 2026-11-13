@@ -6,7 +6,7 @@
 //   ③ 웹앱 regCloudMiss: PC가 '못 찾음'으로 돌려준 ISBN만 클라우드에 한 번 더 · 클라우드가 맡은 답·찾은 것·로그인 오류는 다시 묻지 않음
 // 실행: node src/tests/tISBNQ1113.js
 const fs = require('fs'); const path = require('path');
-const COL = fs.readFileSync(path.join(__dirname, '../readnow-collector.src.js'), 'utf8'); const APP = fs.readFileSync(path.join(__dirname, '../app.html'), 'utf8');
+const COL = fs.readFileSync([path.join(__dirname, '../readnow-collector.src.js'), path.join(__dirname, '../readnow-collector.user.js')].find((p) => fs.existsSync(p)), 'utf8'); const APP = fs.readFileSync(path.join(__dirname, '../app.html'), 'utf8');
 let bad = 0; const ok = (c, m, i) => { console.log((c ? '  ✓ ' : '  ❌ ') + m + (c ? '' : ' ' + JSON.stringify(i === undefined ? '' : i).slice(0, 900))); if (!c) bad++; };
 const cutFn = (src, mark) => { const a = src.indexOf(mark); if (a < 0) { console.log('❌ 덩어리 없음: ' + mark); process.exit(1); } let i = src.indexOf('{', a), d = 0, q = null; for (; i < src.length; i++) { const ch = src[i]; if (q) { if (ch === '\\') { i++; continue; } if (ch === q) q = null; continue; } if (ch === "'" || ch === '"' || ch === '`') { q = ch; continue; } if (ch === '/' && src[i + 1] === '*') { i = src.indexOf('*/', i + 2) + 1; continue; } if (ch === '/' && src[i + 1] === '/') { i = src.indexOf('\n', i); continue; } if (ch === '{') d++; else if (ch === '}') { d--; if (!d) return src.slice(a, i + 1); } } };
 const REGF = cutFn(COL, 'async function regLookupCmd(ref, v)');
