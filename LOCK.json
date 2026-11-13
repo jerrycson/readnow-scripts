@@ -1,13 +1,13 @@
 {
- "holder": "y24qty2",
- "what": "예스24 맡김 줄 열쇠 바뀜 다시 셈 고침 판 내기",
- "since": "2026-11-13T19:34:06Z",
- "beat": "2026-11-13T19:36:34Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
-  "done": "",
-  "at": "2026-11-13T19:33:43Z"
+  "who": "y24qty2",
+  "done": "웹앱 1.78.618 · 수집기 1.89.330 (33843ac7)",
+  "at": "2026-11-13T19:40:43Z"
  },
- "host": "vm"
+ "host": null
 }
