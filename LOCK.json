@@ -1,13 +1,13 @@
 {
- "holder": "shopux1",
- "what": "우리숍 대개편 ① push",
- "since": "2026-11-13T12:58:35Z",
- "beat": "2026-11-13T13:13:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "train1",
-  "done": "시험 tR 기대값 (21e3b036)",
-  "at": "2026-11-13T11:46:58Z"
+  "who": "shopux1",
+  "done": "우리숍 대개편 ① 웹앱 1.78.599 · 클라우드 0.35.235 · 손님 화면 0.2.0 (1fe2afc8)",
+  "at": "2026-11-13T13:22:25Z"
  },
- "host": "vm-shopux1"
+ "host": null
 }
