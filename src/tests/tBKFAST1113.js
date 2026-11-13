@@ -67,4 +67,7 @@ console.log('④ 가짜 Firestore 회차');
   M2.state.haveCacheAt = 0; await M2.tick(500); const hc = store.get('bk_info/_cache_h'); ok(hc && hc.n >= 1 && hc.lines >= 1, `가진 책 표 기억(${hc && hc.lines}줄)`);
   const M3 = mk(); await M3.tick(500); ok(/^cache\+/.test(M3.state.haveVia || '') && M3.state.have.get(A) && M3.state.have.get(A).full, `가진 책도 기억 + 바뀐 것만(${M3.state.haveVia})`);
   ok(M3.state.have.size === M2.state.have.size && ![...M3.state.have.keys()].some((k) => k.startsWith('_')), '기억 문서(_cache)는 책으로 세지 않음');
+  /* (0.1.9) 예스24 글 검색: 목록 틀만 오고 번호가 없으면 그 길을 계속 쓰지 않음 */
+  { const M4 = mk({ rnd: () => 0, fetchFn: async (u) => { urls.push(u); if (/product\/search/.test(u)) return resp(u, '<div id="yesSchList"><ul></ul></div>'); return resp(u, '', 404); } }); await M4.testOne(Bk);
+    ok(M4.state.y24Get === false && (M4.state.y24st.listNoId || 0) >= 1 && urls.some((u) => /order=SINDEX_ONLY/.test(u)), `목록 틀만 → 글 검색 계속 안 씀(${JSON.stringify(M4.state.y24st)})`); }
   console.log(`\n${fail ? '❌' : '✓'} tBKFAST1113: ${pass}개 통과 · ${fail}개 실패`); process.exit(fail ? 1 : 0); })().catch((e) => { console.log('❌ 예외', e); process.exit(1); });

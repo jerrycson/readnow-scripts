@@ -47,8 +47,8 @@ const cut = (S, a, b) => { const i = S.indexOf(a); const j = S.indexOf(b, i + 1)
   console.log('② 🤖 수집기·공용·도우미·번외');
   { require(find('readnow-autosched-core.js')); const AS = globalThis.ReadnowAuto.AS; const G = 1073741824;
     const pc = { phones: [{ id: 'A', dev: 'USB\\A', devUsed: 10 * G, left: 1 * G, monthLeft: 50 * G, active: true, connected: true, name: '휴대폰 1' }, { id: 'B', dev: 'USB\\B', devUsed: 0, left: 0, monthLeft: 100 * G, connected: true, netBad: true, name: '휴대폰 2' }], spare: { phone: 'B', later: false, leftM: 0, leftG: 0, monthLeft: 40 * G } };
-    const c = AS.poolCaps(pc, { must: true }); ok(c['USB\\A'].lim === 60 * G && c['USB\\B'].lim < 41 * G, 'poolCaps — 여분 휴대폰이 인터넷 없음이면 넘쳐 쓸 휴대폰은 지금 쓰는 휴대폰', c);
-    pc.phones[1].netBad = false; const c2 = AS.poolCaps(pc, { must: true }); ok(c2['USB\\B'].lim > 100 * G && c2['USB\\A'].lim === 11 * G, 'poolCaps — 인터넷 되는 여분 휴대폰이면 예전 그대로', c2);
+    const c = AS.poolCaps(pc, { must: true }); ok(c['USB\\A'].lim === 11 * G && c['USB\\B'].lim < 41 * G, 'poolCaps — 여분 휴대폰이 인터넷 없음이면 넘쳐 쓸 휴대폰 없음 · 휴대폰 1은 오늘 몫까지(bovf 11/13 리드 결정 — 휴대폰 1로 넘겨 쓰지 않음)', c);
+    pc.phones[1].netBad = false; const c2 = AS.poolCaps(pc, { must: true }); ok(c2['USB\\B'].lim === 40 * G && c2['USB\\A'].lim === 11 * G, 'poolCaps — 인터넷 되는 여분 휴대폰이면 그 휴대폰만 넘쳐 씀 · 상한 = 오늘 몫 + 여분 남은 양(bovf 11/13 — 예전엔 휴대폰 2 이달 남은 양 + 여분)', c2);
     ok(/netBad: !!\(live && live\.net && live\.net\.bad\)/.test(rd('readnow-autosched-core.js')), 'poolCalc가 도우미 net.bad를 휴대폰 물건에 실음'); }
   if (COL) {
     ok(/REV6M_RUN_MAX = Math\.max\(50, \+SET\.rev6mRunMax \|\| 600\)/.test(COL) && /if \(runPages > 0\) await sleep\(2000 \+ Math\.floor\(Math\.random\(\) \* 2000\)\)/.test(COL) && /return 'partial';/.test(cut(COL, 'async function rev6mJob(mode) {', 'const num6 = ')), '⭐ 6개월 평가 수 — 쪽 사이 2~4초 무작위 · 회차 600곳(남은 곳은 다음 회차가 이어 읽음 · 일괄 표 partial)');

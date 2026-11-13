@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 매입",
+ "short_name": "매입",
+ "start_url": "../index.html?p=purchase",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#1F7A6E",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "purchase.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}

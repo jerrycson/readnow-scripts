@@ -99,6 +99,10 @@ ok(!!BR.AN && BR.AN.VERSION === AN.VERSION, '회차 보고가 공용 엔진을 �
   const runs2 = [mkRun('9200002', day, { total: 20000, add: 100, gone: 100, missOnce: 100, spanDays: 1, goneList: G2 })]; const acc2 = BR.makeAcc({ day, runs: runs2, hist: [...hist, ...runs2], role: {} });
   const M2 = { r0: [5000, '20261112', '상', 0, '팔린 책 0', 0, 0, null, null, null, 0], r1: [5000, '20261112', '상', 0, '팔린 책 1', 0, 0, null, null, null, 0], o: [5000, '20261001', '상', 0, '옛 책', 0, 0, null, null, null, 0] }; acc2.shop('9200002', M2); acc2.endShop('9200002'); acc2.ours([]); const P2 = acc2.done();
   ok(P2.sold.n === 98 && P2.anom.relistCut.n === 2, '평소 회차라도 7일 창 안에 새 번호로 다시 올라온 2권은 팔림에서 뺌', [P2.sold.n, P2.anom.relistCut]); }
+{ /* 대조군은 상품 수 무게 — 옛 책 X 3권+창 안 1권 · 옛 책 Y 1권 → 0.75(제목 수로 세면 0.5) */ const day = '2026-11-13'; const mk = (d, o) => ({ sc: '9300001', name: '가게', day: d, dayId: '9300001_' + d, runAt: d + 'T01:00:00Z', full: true, complete: true, total: 1000, add: 10, gone: 10, missOnce: 10, spanDays: 1, ...o });
+  const hist = ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12'].map((d) => mk(d)); const run = mk(day, { goneList: [JSON.stringify(['z', '사라진 책', 1000, '상', null, '20261001', 0])] });
+  const acc = BR.makeAcc({ day, runs: [run], hist: [...hist, run], role: {} }); acc.shop('9300001', { a: [1, '20261001', '상', 0, 'X', 0, 0], b: [1, '20261001', '상', 0, 'X', 0, 0], c: [1, '20261001', '상', 0, 'X', 0, 0], d: [1, '20261112', '상', 0, 'X', 0, 0], e: [1, '20261001', '상', 0, 'Y', 0, 0] }); acc.endShop('9300001'); acc.ours([]);
+  const P = acc.done(); const a1 = P.anom.list[0]; ok(a1 && a1.relist && a1.relist.ctrl === 0.75, '대조군 = 상품 수 무게 0.75', a1 && a1.relist); }
 const SRC = fs.readFileSync(path.join(ROOT, 'cloud', 'benchrep.js'), 'utf8');
 ok(/doc\('anom_learn'\)/.test(SRC) && /AN\.verify\('bench', a, later\)/.test(SRC) && /AN\.learn\(learnSt, outs\)/.test(SRC) && !/human: x\.excl/.test(SRC), '클라우드: 뒤 회차 증거로 채점 → app_settings/anom_learn 배움(사람 빼기/넣기는 배움에 안 씀)');
 ok(/massGone: mg/.test(SRC) && /if \(same && \(hs \|\| !!v\.massGone === mg\)\) continue;/.test(SRC), '클라우드: 판정이 같으면 안 씀 · 사람 고른 회차는 빼기/넣기 그대로');
