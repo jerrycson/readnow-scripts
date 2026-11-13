@@ -1,6 +1,3 @@
-doc=app_settings/col2_solo
-doc=app_settings/col2_solo_seen
-doc=col2_ctl/HOME
-doc=col2_jday/2026-11-13_HOME
-doc=col2_jday/2026-11-12_HOME
-# 1038428563
+col2=2026-11-13
+logs=1&pc=HOME&from=202611121800
+# 338617208
