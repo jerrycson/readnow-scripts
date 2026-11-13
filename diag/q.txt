@@ -1,2 +1,15 @@
-doc=app_settings/ship_auto_beat
-# 2415421073
+perf=600
+@health&hours=24
+logs=1&pc=LOGGER&from=202611122200
+logs=1&pc=JS-MAIN&from=202611122200
+logs=1&pc=MJ-MAIN&from=202611122200
+logs=1&pc=HOME&from=202611122200
+doc=prd_jobs/pcBeat
+doc=app_settings/write_watch
+doc=app_settings/value_model
+doc=app_settings/buyback_stats
+doc=app_settings/extras_study
+cmds=cancelOrder&n=20
+recentUp=sellers&mins=1440
+recentUp=col2_y24_cmd&mins=1440
+# 777516496
