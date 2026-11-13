@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "y24re 일곱째",
- "since": "2026-11-13T07:01:47Z",
- "beat": "2026-11-13T07:01:47Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: rv1b: 기본 정보 빈 칸 덮지 않음(ext 0.6.23) 판",
-  "at": "2026-11-13T07:03:18Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
-  "who": "redraw1",
-  "done": "웹앱 1.78.585 출고 다시 그리기 부른 곳 기록 (34bdd094)",
-  "at": "2026-11-13T07:01:36Z"
+  "who": "lead",
+  "done": "y24re 일곱째 웹앱 1.78.586",
+  "at": "2026-11-13T07:04:19Z"
  },
- "host": "vm-y24re"
+ "host": null
 }
