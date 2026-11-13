@@ -2,7 +2,7 @@
  * 규칙: rn2- 로 시작하지 않는 저장본은 절대 지우지 않음(지금 웹앱 저장본 rn-app-* 은 그대로)
  * 새 웹앱 파일: 저장본 먼저 보이고 뒤에서 새로 받음 · 지금 웹앱 본문·공용 파일(?v= 판 붙은 주소): 판이 바뀌면 주소가 바뀌므로 저장본 먼저
  * 지금 웹앱 틀(index.html): 늘 새로 받고, 못 받으면 저장본 */
-const CACHE = 'rn2-ui-v15';
+const CACHE = 'rn2-ui-v16';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (/^rn2-ui-v/.test(k) && k !== CACHE) await caches.delete(k); await self.clients.claim(); })()));
 self.addEventListener('fetch', (e) => {

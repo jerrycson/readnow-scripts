@@ -94,7 +94,7 @@ function fakeC() { const D = {}; const L = {};
         await a.click('.jbn-tabs [data-tab="new"]'); await a.click('[data-card="c_ship"] [data-act="toggle"]'); await a.waitForTimeout(400);
         await a.evaluate(() => { const el = document.querySelector('[data-body="c_ship"] p'); const r = document.createRange(); const tn = el.firstChild; r.setStart(tn, 0); r.setEnd(tn, 12); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.dispatchEvent(new Event('selectionchange')); }); await a.waitForTimeout(400);
         ok(await a.evaluate(() => { const b = document.querySelector('.jbn-selbtn'); return b && !b.hidden && b.textContent === '💬 메모 달기'; }), '④ 글을 고르면 떠 있는 [💬 메모 달기]');
-        await a.click('.jbn-selbtn'); await a.fill('[data-ta="c_ship"]', '수수료율도 판매처마다 달라요'); await a.click('[data-card="c_ship"] [data-act="memo"]');
+        await a.click('.jbn-selbtn'); await a.fill('#jbn-bub-ta', '수수료율도 판매처마다 달라요'); await a.press('#jbn-bub-ta', 'Enter'); /* (note4) 고른 글 → 그 자리 버블 → Enter */
         const t1 = Date.now(); let got = ''; for (let i = 0; i < 40 && !/수수료율도/.test(got); i++) { await p.waitForTimeout(150); got = await p.evaluate(() => (document.getElementById('jbn-feed') || {}).innerText || ''); }
         ok(/수수료율도 판매처마다 달라요/.test(got) && /새 공식은 판매가/.test(got) && /순이익 계산 고침/.test(got), `④ 아티팩트 메모(고른 글 + 메모) → 웹앱 통합 노트에 ${Date.now() - t1}ms 안 · 무엇에 대한 메모인지 함께`);
         // 웹앱 통합 노트에 바로 쓰기 → 아티팩트 대기 2개 → 순서 바꾸기

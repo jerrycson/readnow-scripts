@@ -105,4 +105,28 @@
     L.querySelector('[data-mvback]').onclick = (e) => U2.twice(e.currentTarget, '모든 기기 되돌리기(새 웹앱 읽기만)', async () => { await M.back(); L.remove(); U2.moveScreen(); });
     M._fill = fill(); return L;
   };
+  /* ── (0.4.15 rv4 · 지금 웹앱 1.78.559 priv1 따라 들임) 🚚 주소 옮기기 — 옛 주소(jerrycson.github.io/readnow-ui2/) → 새 주소(readnow.kr/ui2/) ──
+   *  까닭: 저장소를 비공개로 바꾸면 GitHub Pages가 꺼져 옛 주소가 닫힘 · 기기 저장(localStorage)은 주소(출처)마다 따로라 새 주소에서 열면 이 기기 이름·설정·리드나우 2 배치가 비어 보임
+   *  지금 웹앱 1.78.559의 노란 띠와 같은 약속(postMessage 'rn-move-ready' → 'rn-move'(rn로 시작하는 칸) → 'rn-move-done')을 씀 — 새 주소 쪽 '짐 받기'는 지금 웹앱 틀 안 글 그대로(리드나우 2가 새 주소에서 그 틀을 불러올 때 돎)
+   *  지금 웹앱 띠는 옛 주소 리드나우 2 안에서 빼고(u2-loader.js skipT) 이 띠를 보임 — 그 띠를 누르면 리드나우 2가 아닌 지금 웹앱 새 주소로 가 버리므로
+   *  저절로 옮기지 않음(사람이 누를 때만) · 브라우저 팝업 없음(새 탭은 화면 안 링크 · rel=opener) · 값은 이 기기 안 두 탭 사이에서만 오감 · 이전 상태(rn2-move)는 넘기지 않음(새 주소가 ui2_site에서 다시 셈) */
+  M.ADDR_OLD = 'https://jerrycson.github.io'; M.ADDR_NEW = 'https://readnow.kr';
+  M.addrOld = () => { try { return location.origin === M.ADDR_OLD; } catch (e) { return false; } };
+  M.addrTo = () => { const pg = new URLSearchParams(M.q0).get('p'); return M.ADDR_NEW + '/ui2/?rnmove=1' + (pg ? '&p=' + encodeURIComponent(pg) : ''); };
+  M.addrItems = () => { const it = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^rn/.test(k) && k !== 'rn2-move') it[k] = localStorage.getItem(k); } } catch (e) {} return it; };
+  M.addrBar = () => {
+    if (!M.addrOld() || !U2.banner || !document.getElementById('u2-banners')) return null;
+    const host = document.getElementById('u2-banners'); const had = document.getElementById('u2-addr'); if (had) { if (host.firstChild !== had) host.insertBefore(had, host.firstChild); return had; } /* 시범 띠보다 늘 위 */
+    const was = U2.ls.get('addrMoved', null);
+    const b = U2.banner('u2-addr', `<b>🚚 리드나우 2 주소가 <u>readnow.kr/ui2/</u> 로 옮겨 갑니다</b> <span class="u2-sub">(이 옛 주소는 저장소 비공개 뒤 닫힘)</span> <a class="u2-btn u2-pri" data-addr href="${esc(M.addrTo())}" target="_blank" rel="opener">이 기기 설정 가지고 새 주소로</a> <small data-addr-msg>${was ? '이미 한 번 옮겼습니다(' + esc(String(was.at || '').slice(5, 16).replace('T', ' ')) + ' · ' + (+was.n || 0) + '칸) — 새 주소를 쓰세요' : '한 번만 누르면 이 기기 이름·설정·리드나우 2 배치를 그대로 가져갑니다(새 주소에서 구글 로그인은 한 번 다시)'}</small>`, 'u2-warn u2-addr');
+    const msg = (t) => { const m = b.querySelector('[data-addr-msg]'); if (m) m.textContent = t; };
+    let tm = 0;
+    b.querySelector('[data-addr]').addEventListener('click', () => { msg('새 탭에 옮기는 중… (새 탭에서 리드나우 2가 다 열리면 저절로 끝남)'); clearTimeout(tm);
+      tm = setTimeout(() => msg('새 탭이 답하지 않음 — 새 탭에서 리드나우 2가 다 열린 뒤(⏳ 불러오는 중 띠가 사라진 뒤) 이 단추를 한 번 더 누르세요'), 90e3); });
+    if (!M._addrL) { M._addrL = true; window.addEventListener('message', (e) => { if (e.origin !== M.ADDR_NEW || !e.data) return;
+      if (e.data.t === 'rn-move-ready') { try { e.source.postMessage({ t: 'rn-move', items: M.addrItems() }, M.ADDR_NEW); } catch (x) {} }
+      if (e.data.t === 'rn-move-done') { clearTimeout(tm); const n = +e.data.n || 0; U2.ls.set('addrMoved', { at: new Date().toISOString(), n }); msg('✅ ' + n + '칸 옮김 — 이제 새 탭(readnow.kr/ui2/)을 쓰고, 북마크도 새 주소로 바꾸세요. 이 탭은 닫아도 됩니다.'); } }); }
+    if (host.firstChild !== b) host.insertBefore(b, host.firstChild);
+    return b;
+  };
 })();
