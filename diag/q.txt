@@ -1,2 +1,2 @@
-clog=60&cq=%EB%B0%9C%EC%86%A1&n=50
-# 87161839
+heads=1&run=1&doc=prd_jobs/pcBeat
+# 647321969
