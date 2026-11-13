@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.303의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.304의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.303' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.303', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.304' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.304', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -849,7 +849,7 @@
     const say = (lv, m) => { try { window.__rnLog && window.__rnLog('예스24', lv, m); } catch (e) {} };
     /* ④ 알라딘 탭을 뒤로 한 번 엶 — 열쇠가 없거나 거절될 때 · 알라딘 일하는 탭이 살아 있으면(rnu-lead 20초 안) 안 엶(그 탭의 Firebase 로그인 문제라 탭을 더 열어도 소용없음) · 30분에 한 번 · 로거 크롬 안 엶 */
     const alOpen = () => { try { if (!/^(notok|deny)$/.test(up.code || '') || GM_getValue('rn-pubChrome', false)) return; const q0 = qGet()[0]; if (!q0 || Date.now() - (+q0.at || Date.now()) < 120e3 * SC) return; const L = GM_getValue('rnu-lead', null); if (L && Date.now() - (+L.at || 0) < 20e3) return;
-        const last = +GM_getValue('rn-y24alOpenAt', 0) || 0; if (Date.now() - last < 30 * 60e3) return; GM_setValue('rn-y24alOpenAt', Date.now()); up.openAt = Date.now(); GM_openInTab('https://www.aladin.co.kr/scm/worders.aspx', { active: false, insert: true, setParent: true }); say('warn', `⬆ 예스24 응답을 이 창에서 못 올림(${up.err}) — 알라딘 주문조회를 뒤 탭으로 엶(그 탭이 올림 · 30분에 한 번까지)`); } catch (e) {} };
+        const last = +GM_getValue('rn-y24alOpenAt', 0) || 0; if (Date.now() - last < 30 * 60e3) return; GM_setValue('rn-y24alOpenAt', Date.now()); up.openAt = Date.now(); GM_openInTab('https://www.aladin.co.kr/scm/worders.aspx', window.__rnTabOpt()); say('warn', `⬆ 예스24 응답을 이 창에서 못 올림(${up.err}) — 알라딘 주문조회를 뒤 탭으로 엶(그 탭이 올림 · 30분에 한 번까지)`); } catch (e) {} };
     const dirTick = async () => { if (up.busy) return; if (!qGet().length) { up.err = null; up.code = null; return; } let da = 0; try { da = +GM_getValue('rn-y24drainAt', 0) || 0; } catch (e) {} if (Date.now() - da < 30000 || lockOther('y24')) return; /* 알라딘 일하는 탭이 올리는 중 */
       up.busy = true; try { if (await y24Off(fsR)) { up.err = '웹앱 설정에서 예스24 모으기를 꺼 둠'; up.code = 'off'; return; } const R = await y24UpAll(fsR, FVR, 'y24'); if (R.ok) { up.n += R.ok; up.okAt = Date.now(); say('detail', `⬆ 예스24 응답 ${R.ok}개를 이 창에서 바로 Firebase에 올림(알라딘 탭 없이 · y24_probe · crm_y24_raw)`); } if (R.err) throw R.err; up.err = null; up.code = null; }
       catch (e) { up.err = String(e.message || e).slice(0, 160); up.code = e.code || 'net'; if (up.errLog !== up.err) { up.errLog = up.err; say('warn', '⬆ 예스24 창에서 바로 올리기 안 됨: ' + up.err); } alOpen(); } finally { up.busy = false; } };
@@ -1188,7 +1188,7 @@
     if (!(res && res.ok)) { const w = String((res && res.why) || '못 읽음').slice(0, 100); if (w !== HN.badWhy || Date.now() - HN.badAt > 10 * 60e3) { HN.badWhy = w; HN.badAt = Date.now(); L('warn', `🖐 번외가 맡긴 샵매니저 읽기(${HN.last}) 못 함 — ${w}`); } }
     if (!HN.at || Date.now() - HN.at > 30 * 60e3) { HN.at = Date.now(); L('info', `🖐 번외가 맡긴 샵매니저 읽기 — 이 탭이 ${HN.n}건 받아 ✓${HN.ok}·✗${HN.bad}(마지막 ${HN.last}) · 결과는 번외가 운영 칸과 견줌`); } } catch (e) {} };
   async function hTake(h, pc, hold) { const was = HSx.on; HSx.on = !!(h && h.on) && !isLogger(); if (was !== HSx.on) L('info', HSx.on ? '🖐 번외 ⚙ 「알라딘은 평소 크롬을 손발로」 — 이 탭이 번외가 맡긴 샵매니저 읽기를 대신 함(번외 크롬은 로그인하지 않음)' : '🖐 손발 길 끔 — 번외 맡김을 받지 않음'); hTitle();
-    if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} /* 🪟 작업 창이면 운영 도우미가 그 창을 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 이 탭을 앞으로 띄움(알라딘 로그인을 확인해 주세요)'); }
+    if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { GM_notification({ title: '🖐 리드나우 — 알라딘 로그인 확인', text: '번외가 사람 손이 필요하다고 함 — 누르면 그 탭을 앞으로 띄움', timeout: 0, onclick: () => { try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} } }); } catch (e) {} /* (정범님 11/13 tabfix) 예전엔 저절로 이 탭·작업 창을 앞으로 띄워 하던 화면의 포커스를 뺏음 → 알림만 · 사람이 알림을 누를 때만 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 알림을 띄움(누르면 이 탭이 앞으로 · 알라딘 로그인을 확인해 주세요)'); }
     const jobs = Array.isArray(h.jobs) ? h.jobs.slice(0, 1) : []; if (!jobs.length || HSx.busy) return; if (hold && hold.on) { for (const j of jobs) HSx.done.push({ id: String(j.id), res: { ok: false, why: '🚚 출고 중 — 읽지 않음', kind: 'error' } }); return; }
     HSx.busy = true; try { for (const j of jobs) { let res; try { res = await hRun(j); } catch (e) { res = { ok: false, why: '읽기 오류: ' + String(e.message || e).slice(0, 100), kind: 'error' }; }
         if (res.ok) { HSx.login = true; HSx.loginAt = Date.now(); HSx.why = ''; } else if (res.login) { HSx.login = false; HSx.loginAt = Date.now(); HSx.why = res.why; }
