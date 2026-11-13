@@ -34,7 +34,8 @@ const ACT = [{ id: 'f2', st: 'hold', at: '2026-11-13T11:00:00Z', holdAt: '2026-1
 for (const [nm, b] of [['웹앱', bA], ['수집기', bC]]) { const F = new Function(b + '; return { y24NosPick, y24NosPatch };')();
   const ids = F.y24NosPick(D, ACT, NOW).map((d) => d.id).sort(); ok(JSON.stringify(ids) === JSON.stringify(['j', 'z2e']), `${nm}: 고른 것 = 가장 새 문서 z2e·j 뿐`, ids);
   const P = F.y24NosPatch(D[0], 'HOME', NOW); ok(P.st === 'hold' && P.reNos && P.retryAt === new Date(NOW).toISOString() && P.res === null && P.lastRes === NOS && P._t && /한 번 더/.test(P._t.m), `${nm}: 줄로 — hold · reNos · 바로 다시 셈 · 옛 결과는 lastRes`, P);
-  ok(F.y24NosPick([{ ...D[0], ...P, st: 'done', res: NOS }], [], NOW).length === 0, `${nm}: 한 번 돌린 문서(reNos)는 다시 닫혀도 또 고르지 않음(되풀이 0)`); }
+  ok(F.y24NosPick([{ ...D[0], ...P, st: 'done', res: NOS }], [], NOW).length === 0, `${nm}: 한 번 돌린 문서(reNos)는 다시 닫혀도 또 고르지 않음(되풀이 0)`);
+  ok(F.y24NosPick([{ ...D[0], reNos: 'x' }], [], NOW, 'reNosW').length === 1 && F.y24NosPick([{ ...D[0], reNosW: 'x' }], [], NOW, 'reNosW').length === 0, `${nm}: 웹앱 표시(reNosW)는 수집기 표시(reNos)와 따로 — 각자 문서마다 한 번`); }
 console.log('① 보내기 직전 다시 셈 — 줄 열쇠만 바뀐 같은 할 일');
 const bR = (A.match(/const y24RkTail = [^\n]*\nfunction y24PRekey\([\s\S]*?return \{ \.\.\.M\[0\], rekey: 1 \}; \}\n\/\*[^\n]*\*\/\nfunction y24PRekeyRow\([^\n]*\n/) || [''])[0];
 ok(!!bR, '웹앱에 y24PRekey 덩어리 있음');
@@ -56,7 +57,11 @@ console.log('③ 붙은 자리');
 ok(/T\.key \+ '\|' \+ \(a\.no \|\| ''\) === r\.rid\) return \{ T, a \};\n  return y24PRekey\(r, TD\); \}/.test(A), 'y24PFind 끝에서 rekey를 봄');
 ok(/if \(it\.rekey\) \{ const nr = y24PRekeyRow\(r, it\.T, it\.a\);[^\n]*keep\.push\(nr\); rek\+\+; continue; \}/.test(A), '맡긴 일 줄 처리가 rekey 줄을 지금 열쇠로 보냄');
 ok(/await y24Re1114b\(\);[^\n]*\n\s*await y24ReNos\(\);/.test(A), '맡긴 일 줄 처리에서 y24ReNos를 부름');
-ok(/async function y24ReNos\(\)[\s\S]{0,900}ledY24Guard\(\) \|\| y24PReady\(\)/.test(A) && /y24NosPick\(docs, act\)\) \{ if \(!\(\(\(d\.job \|\| \{\}\)\.rows\) \|\| \[\]\)\.every\(\(r\) => \{ const it = y24PFind\(r, TD\);/.test(A), '웹앱은 출고 중·자료 덜 옴이면 안 돌고, 장부에 같은 할 일이 남은 것만 줄로');
+const bN = (A.match(/async function y24ReNos\(\) \{[\s\S]*?\n\/\* ◆y24re 끝 \*\//) || [''])[0];
+ok(/ledY24Guard\(\) \|\| y24PReady\(\)\) return;[^\n]*if \(!C0\.on\) return; S\._y24NosAt = Date\.now\(\);/.test(bN), '웹앱은 출고 중·자료 덜 옴·자동 내림 꺼짐이면 안 돎(시각은 자료가 다 온 뒤 찍음)');
+ok(/y24NosPick\(docs, act, Date\.now\(\), 'reNosW'\)/.test(bN) && /const it = y24PFind\(r, TD\);/.test(bN) && /const cu = omniCur\(it\.T, it\.a\); const v = cu \? omniStill\(it\.a, cu\) : \{\}; if \(!v\.go\)/.test(bN), '장부에 같은 할 일이 남고 지금 예스24 값도 아직 필요할 때만');
+ok(/if \(c\.st !== 'done' \|\| c\.reNosW\) return; tx\.set\(ref, \{ reNosW: iso/.test(bN) && /const rk = mx \? b \+ '#' \+ \(mx \+ 1\) : b;[^\n]*omniDo\(\{ T, a, rk \}\)/.test(bN) && !/st: 'hold'/.test(bN), '문서마다 한 번(트랜잭션) · 엔진이 새 열쇠(#n+1)로 바로 맡김 · 줄(hold)로 돌리지 않음');
+ok(/w\.rk === ledY24Row\(T, a\)\.rk && !\/아무것도 안 보냄\/\.test\(String\(w\.msg \|\| ''\)\)\); \};/.test(A), "'할 일 없음(아무것도 안 보냄)' 닫힘 표시는 장부 할 일을 숨기지 않음");
 ok(/function ledNow\(\) \{ const chs = ledChs\(\); const k = \[[^\]]*\(S\.sku && S\.sku\.at\) \|\| 0/.test(A), '장부 기억 열쇠에 SKU 표 시각');
 ok(/await wRe1114b\(fs, pc\);[^\n]*\n\s*await wReNos\(fs, pc\);/.test(C), '수집기 쓰기 다리에서 wReNos를 부름');
 ok(/async function wReNos\(fs, pc\)[\s\S]{0,700}vn\(hv\) < vn\(NOS_NEED\)/.test(C) && /NOS_NEED = '0\.1\.62'/.test(C), '수집기는 맡은 PC 번외 0.1.62 뒤에만');
