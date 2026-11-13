@@ -1,4 +1,4 @@
-/* 📊 북스퀸 손님 화면 — 가벼운 방문 셈 · 📢 배너 · 💬 문의 · 👀 관리자 '손님 화면으로 보기'(읽기만) (11/13 shopadm1 · v0.1.0)
+/* 📊 북스퀸 손님 화면 — 가벼운 방문 셈 · 📢 배너 · 💬 문의 · 👀 관리자 '손님 화면으로 보기'(읽기만) (11/13 shopadm1 · v0.1.1)
  *  index.html에서 다른 스크립트보다 먼저 실림(미리 보기 때 기기 저장소·창구 부름을 먼저 바꿔 둬야 해서) · 외부 라이브러리 없음 · 실패해도 손님 화면은 그대로
  *  보내는 것: 화면 이름·본 상품 번호·찾은 낱말·분류·담기/찜 바뀜·주문 마침 · 들어온 곳(주소의 도메인만 · utm 칸) · 화면 폭
  *  보내지 않는 것: 이름·전화·주소·메일·IP(클라우드가 저장 안 함) · 이 기기 무작위 번호(bq-vid)는 '오늘 첫 방문' 셈에만 쓰고 클라우드에 남지 않음
@@ -6,11 +6,11 @@
  *  👀 미리 보기: 주소에 ?bqpv=<표>(관리 웹앱이 30분 표를 받아 붙임) 또는 ?bqpv=out(로그아웃 손님) — 기기 저장소를 이 탭 기억으로 바꾸고 쓰는 창구(주문·글·찜 저장)는 모두 막음 · 셈 0 */
 (function () {
   'use strict';
-  var W = window, D = document, VER = '0.1.0';
+  var W = window, D = document, VER = '0.1.1';
   var API_SHOP = 'https://readnow-shop-63884079760.asia-northeast3.run.app';
   var SAME = !W.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '');
   var API = String(W.BQ_API || API_SHOP).replace(/\/+$/, '');
-  var getBase = function () { return SAME ? location.origin : API; };
+  var getBase = function () { return SAME ? location.origin : API; }; /* (0.1.1) 쓰는 창구도 같은 주소로 — booksqueen.com/shop/**는 Hosting이 살아 있는 숍 서버로 넘김(readnow-shop이 안 받을 때 readnow-cloud로 · 11/13 실제로 readnow-cloud가 받는 중) */
   var qp = (function () { var o = {}; String(location.search || '').replace(/^\?/, '').split('&').forEach(function (kv) { if (!kv) return; var i = kv.indexOf('='); try { o[decodeURIComponent(i < 0 ? kv : kv.slice(0, i))] = decodeURIComponent(i < 0 ? '' : kv.slice(i + 1).replace(/\+/g, ' ')); } catch (e) {} }); return o; })();
   var PV = qp.bqpv ? (qp.bqpv === 'out' ? { out: 1 } : /^[0-9a-f]{40}$/.test(qp.bqpv) ? { tk: qp.bqpv } : null) : null;
   var BQT = W.BQT = { ver: VER, pv: PV, q: [], cfg: null };
@@ -25,7 +25,7 @@
     var of = W.fetch ? W.fetch.bind(W) : null;
     if (of) W.fetch = function (u, o) { try { var url = String(u && u.url ? u.url : u); var m = String((o && o.method) || 'GET').toUpperCase(); var p = url.replace(/^https?:\/\/[^/]+/, '').split('?')[0];
         if (m !== 'GET' && /^\/shop\//.test(p)) {
-          if (p === '/shop/a' && PV.tk) { var b = {}; try { b = JSON.parse((o && o.body) || '{}'); } catch (e) {} return of(API + '/shop/pv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tk: PV.tk, b: b }) }); }
+          if (p === '/shop/a' && PV.tk) { var b = {}; try { b = JSON.parse((o && o.body) || '{}'); } catch (e) {} return of(getBase() + '/shop/pv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tk: PV.tk, b: b }) }); }
           if (p === '/shop/a' && b0(o) === 'me') return Promise.resolve(new Response(JSON.stringify({ ok: false, login: 1, err: '로그아웃 손님' }), { status: 401, headers: { 'Content-Type': 'application/json' } }));
           if (p === '/shop/quote') return of(u, o); /* 값 셈은 쓰기가 아님 */
           return Promise.resolve(new Response(NO, { status: 403, headers: { 'Content-Type': 'application/json' } })); }
@@ -34,7 +34,7 @@
     var bar = function () { if (D.getElementById('bqtPv')) return; var d = D.createElement('div'); d.id = 'bqtPv'; d.setAttribute('role', 'status');
       d.style.cssText = 'position:sticky;top:0;z-index:9999;background:#5b2a86;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:6px 12px;text-align:center';
       d.textContent = PV.out ? '👀 로그아웃 손님 화면 미리 보기 — 읽기만(주문·저장 안 됨)' : '👀 손님 화면 미리 보기 — 읽기만(주문·저장·글쓰기 안 됨 · 장바구니는 손님 기기에만 있어 비어 보임)'; D.body.insertBefore(d, D.body.firstChild);
-      if (PV.tk && of) of(API + '/shop/pv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tk: PV.tk }) }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) d.textContent = '👀 「' + (j.nick || '손님') + '」 손님 화면 미리 보기 — 읽기만(주문·저장·글쓰기 안 됨 · 장바구니는 손님 기기에만 있어 비어 보임) · 표는 ' + String(j.exp || '').slice(11, 16) + '(UTC)까지'; else d.textContent = '👀 미리 보기 표가 끝났습니다 — 관리 웹앱에서 다시 여세요'; }).catch(function () {}); };
+      if (PV.tk && of) of(getBase() + '/shop/pv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tk: PV.tk }) }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) d.textContent = '👀 「' + (j.nick || '손님') + '」 손님 화면 미리 보기 — 읽기만(주문·저장·글쓰기 안 됨 · 장바구니는 손님 기기에만 있어 비어 보임) · 표는 ' + String(j.exp || '').slice(11, 16) + '(UTC)까지'; else d.textContent = '👀 미리 보기 표가 끝났습니다 — 관리 웹앱에서 다시 여세요'; }).catch(function () {}); };
     if (D.body) bar(); else D.addEventListener('DOMContentLoaded', bar);
     try { if (W.parent && W.parent !== W) W.parent.postMessage({ bqpv: 1, ver: VER, out: PV.out ? 1 : 0 }, '*'); } catch (e) {} /* 관리 웹앱 틀이 '읽기 전용 미리 보기가 켜졌다'를 확인 */
   }
@@ -103,7 +103,7 @@
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); }); ov.querySelector('#bqtX').onclick = close; if (bk) ov.querySelector('#bqtK').value = 'book';
     ov.querySelector('#bqtOff').onchange = function (e) { LSs('bq-notrack', e.target.checked ? '1' : '0'); ov.querySelector('#bqtMsg').textContent = e.target.checked ? '✓ 이 기기 방문 기록을 껐습니다' : '✓ 이 기기 방문 기록을 다시 켰습니다'; };
     var go = ov.querySelector('#bqtGo'); go.onclick = function () { var tx = ov.querySelector('#bqtTx').value.trim(); var msg = ov.querySelector('#bqtMsg'); if (tx.length < 5) { msg.textContent = '⚠ 문의 글을 5자 넘게 적어 주세요'; return; } if (PV) { msg.textContent = '👀 미리 보기라 보내지 않습니다'; return; } go.disabled = true; msg.textContent = '보내는 중…';
-      var tk = LSg('bq-tok') || ''; fetch(API + '/shop/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx: tx, kind: ov.querySelector('#bqtK').value, ct: ov.querySelector('#bqtCt').value.trim(), no: ov.querySelector('#bqtNo').value.trim(), id: bk ? bk.id : '', t: bk ? bk.t : '', hp: ov.querySelector('#bqtHp').value, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '' }) })
+      var tk = LSg('bq-tok') || ''; fetch(getBase() + '/shop/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx: tx, kind: ov.querySelector('#bqtK').value, ct: ov.querySelector('#bqtCt').value.trim(), no: ov.querySelector('#bqtNo').value.trim(), id: bk ? bk.id : '', t: bk ? bk.t : '', hp: ov.querySelector('#bqtHp').value, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '' }) })
         .then(function (r) { return r.json(); }).then(function (j) { if (!j || !j.ok) throw new Error((j && j.err) || '보내지 못했습니다'); var L = myAsks(); L.unshift({ aid: j.aid, t: j.t, at: new Date().toISOString(), tx: tx.slice(0, 60) }); LSs('bq-asks', JSON.stringify(L.slice(0, 30))); msg.textContent = '✓ 문의를 받았습니다(번호 ' + j.aid + ') — 답이 오면 아래 「내 문의」에 나옵니다'; ov.querySelector('#bqtTx').value = ''; go.disabled = false; mine(); })
         .catch(function (e) { go.disabled = false; msg.textContent = '⚠ ' + (e.message || '보내지 못했습니다 — 잠시 뒤 다시'); }); };
     function mine() { var L = myAsks(); var box = ov.querySelector('#bqtMy'); if (!L.length) { box.innerHTML = ''; return; } box.innerHTML = '<b>내 문의</b> <small>(이 기기에서 남긴 것)</small>' + L.slice(0, 10).map(function (x) { return '<div data-aid="' + esc(x.aid) + '"><small>' + esc(String(x.at).slice(0, 10)) + ' · ' + esc(x.aid) + '</small><div>' + esc(x.tx) + '</div><div class="ans"><small>답 확인 중…</small></div></div>'; }).join('');
