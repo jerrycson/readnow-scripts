@@ -1,2 +1,2 @@
-run=1&doc=app_settings/col2_handoff&col2=2026-11-13
-# 702423357
+doc=app_settings/omni_auto
+# 1874315158
