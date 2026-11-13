@@ -1,2 +1,4 @@
-heads=1
-# 736916986
+col2=2026-11-13
+doc=app_settings/col2_solo
+perf=80
+# 127556626
