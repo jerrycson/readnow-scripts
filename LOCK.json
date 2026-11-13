@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "redraw1",
+ "what": "웹앱 출고 다시 그리기 부른 곳 기록 판",
+ "since": "2026-11-13T06:59:17Z",
+ "beat": "2026-11-13T06:59:17Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rv1b 셋째 웹앱 1.78.584 · 수집기 1.89.320 · ext 0.6.22 · 클라우드 0.35.224 (db96ef9f)",
   "at": "2026-11-13T06:58:22Z"
  },
- "host": null
+ "host": "vm-redraw1"
 }
