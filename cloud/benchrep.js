@@ -14,6 +14,8 @@ const massOut = (v) => !!v && v.massGone === true && v.excl !== false; /* 사람
 /* (anom1 11/13) 🧠 자료 이상 판단 엔진 — 고정 기준 대신 판매자마다 평소(35일)를 배우고 벗어난 회차만 가설(다시 올리기·대량 내림·숍 닫음·읽기 잡음·진짜 대량 판매·긴 틈)로 판정
  *  공용 파일 readnow-anom-core.js(이미지 안 사본 cores_ · 시험은 저장소 맨 위) — 못 읽으면 예전 고정 기준(massOf) 그대로 */
 const AN = (() => { for (const f of ['./cores_readnow-anom-core.js', '../readnow-anom-core.js']) { try { return require(f); } catch (e) {} } return null; })();
+/* (anom2 11/13) 🔁 다시 올리기 목적 엔진 — 판매자가 팔림이 아닌 사라짐(내렸다 새 번호로 다시 올림)을 왜 하는지 가설 여덟으로 판정 · 효과 · 스스로 채점(cloud/relist.js · 공용 readnow-relist-core.js) — 못 읽으면 이 칸만 빠짐 */
+const RELIST = (() => { try { return require('./relist.js'); } catch (e) { return null; } })();
 const ymd = (d) => String(d || '').slice(0, 10).replace(/-/g, '');
 const humanSet = (v) => !!v && (v.excl === true || v.excl === false) && !!v.exclBy; /* 사람이 고른 회차 — 엔진은 판정만 적고 빼기/넣기는 안 바꿈(배움 재료로는 안 씀) */
 const nt = (t) => String(t || '').slice(0, 40).replace(/\s+/g, '');
@@ -166,6 +168,7 @@ function netSum(doc, day) { const out = { tetherBytes: null, benchBytes: null, p
 
 function makeBenchRep({ C, db, log, W }) {
   const REF = () => C('app_settings').doc('bench_report'); let busy = false;
+  const RLM = RELIST && RELIST.makeRelist ? RELIST.makeRelist({ C, log }) : null;
   async function run(day, opt) { opt = opt || {}; if (busy) return { skip: 'busy' }; busy = true; const t0 = Date.now(); try {
     const D0 = Date.parse(day + 'T00:00:00+09:00'); const prevDay = kday(D0 - 864e5); const since = kday(D0 - 36 * 864e5); /* (anom1) 기준선 35일 */
     const [cfgS, forceS, netS, prevS] = await Promise.all([C('app_settings').doc('bench').get(), C('prd_jobs').doc('benchForce').get(), C('prd_jobs').doc('net_' + day).get(), C('app_settings').doc('bench_report_' + prevDay).get()]);
@@ -190,9 +193,11 @@ function makeBenchRep({ C, db, log, W }) {
         if (!opt.dry) { if (learnCh) await C('app_settings').doc('anom_learn').set(JSON.parse(JSON.stringify(learnSt))); for (const [id, c] of chkW) await C('bench_days').doc(id).set({ anom: { chk: c } }, { merge: true }).catch(() => {}); } } catch (e) { log('🧠 이상 판단 채점 실패', e.message); } }
     const acc = makeAcc({ day, runs, hist, learn: learnSt, role, force, net, intel, plan: plan.filter((x) => !offS.has(x.sc)), prevRep: prevS.exists ? prevS.data() : null });
     /* 숍 목록 조각 — 한 조각씩 읽어 셈에 넣고 버림 */
-    let chunks = 0; const scs = [...new Set(runs.map((v) => String(v.sc)))]; for (const sc of scs) { const st = (await C('bench_state').doc(sc).get()).data() || {}; const nC = +st.chunks || 0; for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) acc.shop(sc, M); chunks++; M = null; } acc.endShop(sc); }
+    const RLX = RLM ? RLM.begin({ day, dry: !!opt.dry, hist }) : null; /* (anom2) 🔁 다시 올리기 목적 — 숍마다 새 회차의 짝·무리 운명(prep) → 숍 목록 조각으로 우연 몫(feed) → 판정(finish) */
+    let chunks = 0; const scs = [...new Set(runs.map((v) => String(v.sc)))]; for (const sc of scs) { let rlOn = false; if (RLX) { try { await RLX.prep(sc); rlOn = true; } catch (e) { log('🔁 다시 올리기 준비 실패', sc, e.message); } } const st = (await C('bench_state').doc(sc).get()).data() || {}; const nC = +st.chunks || 0; for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) { acc.shop(sc, M); if (rlOn) RLX.feed(sc, M); } chunks++; M = null; } acc.endShop(sc); }
     try { const oq = await C('prd_listings').where('status', '==', '판매중').select('title', 'price').get(); const L = []; oq.forEach((d) => { const v = d.data() || {}; if (v.title && +v.price > 0) L.push({ t: v.title, p: +v.price }); }); acc.ours(L); } catch (e) { log('🎯 회차 보고: 우리 상품 못 읽음', e.message); }
-    const P = acc.done(); const rep = { day, at: new Date().toISOString(), srcAt, ver: 1, by: 'cloud', runs: runs.length, chunks, ms: Date.now() - t0, ...P };
+    const P = acc.done(); if (RLX) { try { P.relist = await RLX.finish(); for (const x of (P.relist.list || [])) if (x.habit === 'strong' || x.habit === 'some') P.problems.push(`🔁 ${x.name}: ${x.line}`); } catch (e) { log('🔁 다시 올리기 판정 실패', e.message); P.relist = { err: String(e.message).slice(0, 120) }; } }
+    const rep = { day, at: new Date().toISOString(), srcAt, ver: 1, by: 'cloud', runs: runs.length, chunks, ms: Date.now() - t0, ...P };
     /* 📦 대량 사라짐 표시가 없는 회차에 표시(수집기 새 판 전 회차 · 11/13 어린왕자·소득공제가능서점) — 사람이 '↩ 다시 넣기'(excl:false)한 회차는 안 건드림 */
     let marked = 0, judged = 0; if (!opt.dry) for (const v of runs) {
       const J = acc.anomBy && acc.anomBy.get(v.dayId);

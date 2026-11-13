@@ -38,7 +38,7 @@ function fakeC() { const D = {}; const L = {};
   const s0 = await tc('note_sync', {}); ok(s0.full && s0.docs.length === 0 && /:/.test(s0.cursor), '② 처음 sync = 전부(빈 저장소)');
   const w1 = await tc('note_write', { ops: [{ op: 'set', id: 'c1', data: { kind: 'card', cat: '웹앱', title: '첫 카드', body: '본문', imp: 9, evil: 'x', state: 'zzz' } }, { op: 'set', id: 'c2', data: { kind: 'card', title: '전화 010-1234-5678' } }] });
   ok(w1.n === 1 && w1.bad.length === 1 && /휴대전화/.test(w1.bad[0]), '② 휴대전화 번호 꼴은 거름');
-  { const d = F.D.jb_notes.get('c1'); ok(d && !('evil' in d) && !('state' in d) && !('imp' in d) && d.updatedAt && d.lastBy === 'artifact', '② 모르는 칸·틀린 값은 버리고 updatedAt·lastBy는 서버가 찍음'); }
+  { const d = F.D.jb_notes.get('c1'); ok(d && !('evil' in d) && !('state' in d) && !('imp' in d) && d.updatedAt && d.lastBy === 'mcp', '② 모르는 칸·틀린 값은 버리고 updatedAt·lastBy는 서버가 찍음(by를 안 주면 mcp — note3)'); }
   await sleep(30); const s1 = await tc('note_sync', { cursor: s0.cursor }); ok(s1.docs.length === 1 && s1.docs[0].id === 'c1' && !s1.full, '② cursor 뒤 바뀐 것만');
   { const t0 = Date.now(); const pr = tc('note_sync', { cursor: s1.cursor, wait: 10 }); await sleep(300); await N.write([{ op: 'merge', id: 'c1', data: { state: 'done' } }], 'lead'); const s2 = await pr; const dt = Date.now() - t0;
     ok(s2.docs.length === 1 && s2.docs[0].state === 'done' && s2.docs[0].lastBy === 'lead' && dt < 1500, `② 길게 기다리던 note_sync가 쓰기 순간 답함(실시간 ${dt}ms · 리드 /kp-in 길 쓰기)`); }
@@ -98,7 +98,7 @@ function fakeC() { const D = {}; const L = {};
         const t1 = Date.now(); let got = ''; for (let i = 0; i < 40 && !/수수료율도/.test(got); i++) { await p.waitForTimeout(150); got = await p.evaluate(() => (document.getElementById('jbn-feed') || {}).innerText || ''); }
         ok(/수수료율도 판매처마다 달라요/.test(got) && /새 공식은 판매가/.test(got) && /순이익 계산 고침/.test(got), `④ 아티팩트 메모(고른 글 + 메모) → 웹앱 통합 노트에 ${Date.now() - t1}ms 안 · 무엇에 대한 메모인지 함께`);
         // 웹앱 통합 노트에 바로 쓰기 → 아티팩트 대기 2개 → 순서 바꾸기
-        await p.fill('#jbn-feed-ta', '오늘 안에 정리해 주세요'); await p.click('[data-act="feedmemo"]'); await a.waitForTimeout(1500);
+        await p.fill('#jbn-feed-ta', '오늘 안에 정리해 주세요'); await p.click('[data-act="feedmemo"]'); for (let i = 0; i < 40; i++) { await a.waitForTimeout(150); if ((await a.evaluate(() => document.querySelectorAll('#jbn-feed .jbn-memo .tx').length)) >= 2) break; } /* (note3) 아티팩트는 2.5초마다 물음 — 1.5초 고정 기다림은 때를 잘못 만나면 거짓 실패 */
         const q1 = await a.evaluate(() => [...document.querySelectorAll('#jbn-feed .jbn-memo .tx')].map((x) => x.textContent));
         ok(q1.length === 2 && /수수료율/.test(q1[0]), '④ 웹앱에서 통합 노트에 쓴 글이 아티팩트 대기에(2개)');
         await a.click('#jbn-feed [data-act="qdown"]'); await a.waitForTimeout(800);

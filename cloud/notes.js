@@ -94,6 +94,9 @@ const PROTOS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 function makeNotes({ C, log, ver }) {
   const live = makeLive(C, log);
   let keyMemo = null, keyAt = 0;
+  /* (note3 11/13) 커넥터로 불린 자취 — 도구마다 마지막 때·횟수·실패·누가(by) · 진단 notes=1의 mcp 칸(아티팩트↔웹앱이 실제로 이어졌는지 리드가 가름) */
+  const seen = { since: nowIso(), tools: {}, deny: 0, denyAt: null };
+  const mark = (nm, by, err) => { const t = seen.tools[nm] || (seen.tools[nm] = { n: 0, at: null, err: 0, errAt: null, lastErr: null, by: null }); t.n++; t.at = nowIso(); if (by) t.by = s(by, 40); if (err) { t.err++; t.errAt = t.at; t.lastErr = s(err, 160); } };
   async function keyIs(k) { if (!k || k.length < 24) return false; if (!keyMemo || Date.now() - keyAt > 60e3) { try { const d = await C('app_secrets').doc('notes_mcp').get(); keyMemo = (d.exists && d.data().key) || ''; keyAt = Date.now(); } catch (e) { keyMemo = keyMemo || ''; } } if (!keyMemo) return false; const a = Buffer.from(String(k)), b = Buffer.from(String(keyMemo)); return a.length === b.length && crypto.timingSafeEqual(a, b); }
   const txt = (o) => ({ content: [{ type: 'text', text: JSON.stringify(o) }], structuredContent: o });
   async function call(name, a, by) {
@@ -101,7 +104,7 @@ function makeNotes({ C, log, ver }) {
     if (name === 'note_info') { const r = await live.sync('', 0); return { ok: true, n: r.n, ver, at: r.at }; }
     if (name === 'note_sync') return live.sync(a.cursor, a.wait);
     if (name === 'note_get') return { docs: await live.get(a.ids) };
-    if (name === 'note_write') return writeOps(C, a.ops, by || a.by || 'artifact');
+    if (name === 'note_write') return writeOps(C, a.ops, (a.by && String(a.by)) || by || 'mcp'); /* (note3) 부른 쪽이 준 by가 먼저(예전엔 늘 'artifact'로 덮여 리드·아티팩트를 못 가렸음) */
     throw Object.assign(new Error('모르는 도구: ' + name), { code: -32602 });
   }
   async function rpc(m, authed) {
@@ -110,8 +113,8 @@ function makeNotes({ C, log, ver }) {
     if (m.method === 'initialize') { const want = m.params && m.params.protocolVersion; return R({ protocolVersion: PROTOS.includes(want) ? want : PROTOS[1], capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'readnow-notes', title: '리드나우 노트', version: String(ver || '0') }, instructions: '정범 노트(카드·메모·통합 노트) 읽기·쓰기. 지우지 않음 — 휴지통으로.' }); }
     if (m.method === 'ping') return R({});
     if (m.method === 'tools/list') return R({ tools: TOOLS });
-    if (m.method === 'tools/call') { if (!authed) return E(-32001, '열쇠가 맞지 않음 — 웹앱 ⚙ 설정 › 📓 노트 연결의 주소를 다시 넣어 주세요');
-      const nm = m.params && m.params.name; try { return R(txt(await call(nm, m.params && m.params.arguments, 'artifact'))); } catch (e) { if (e && e.code === -32602) return E(-32602, e.message); return R({ ...txt({ ok: false, err: String(e.message || e).slice(0, 200) }), isError: true }); } }
+    if (m.method === 'tools/call') { if (!authed) { seen.deny++; seen.denyAt = nowIso(); return E(-32001, '열쇠가 맞지 않음 — 웹앱 📓 노트 › 🔗 아티팩트와 잇기의 주소로 claude.ai 커넥터를 다시 넣어 주세요'); }
+      const nm = m.params && m.params.name; const ar = (m.params && m.params.arguments) || {}; try { const out = await call(nm, ar, null); mark(nm, ar.by); return R(txt(out)); } catch (e) { mark(String(nm || '?'), ar.by, String(e.message || e)); if (e && e.code === -32602) return E(-32602, e.message); return R({ ...txt({ ok: false, err: String(e.message || e).slice(0, 200) }), isError: true }); } }
     if (m.method.startsWith('notifications/')) return null;
     if (m.method === 'resources/list') return R({ resources: [] });
     if (m.method === 'prompts/list') return R({ prompts: [] });
@@ -137,8 +140,8 @@ function makeNotes({ C, log, ver }) {
     const queued = D.filter((d) => d.kind === 'batch' && d.status === 'queued').map((d) => ({ id: d.id, at: d.at, via: d.via, text: s(d.text, 8000), memoIds: d.memoIds || [] }));
     const recent = D.slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, +q.n || 20).map((d) => ({ id: d.id, kind: d.kind || 'card', title: s(d.title || d.text, 80), state: d.state || d.status || null, updatedAt: d.updatedAt, lastBy: d.lastBy || null }));
     const unread = D.filter((d) => (d.kind || 'card') === 'card' && !d.readAt && d.state !== 'trashed').length;
-    return { n: r.n, by, unread, queued, recent, at: r.at };
+    return { n: r.n, by, unread, queued, recent, mcp: seen, at: r.at };
   }
-  return { handle, write: (ops, by) => writeOps(C, ops, by), diag, live, rpc, TOOLS };
+  return { handle, write: (ops, by) => writeOps(C, ops, by), diag, live, rpc, TOOLS, seen };
 }
 module.exports = { makeNotes, clean, writeOps, COL };
