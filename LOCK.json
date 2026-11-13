@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "note2 정범 노트 판(웹앱+클라우드)",
- "since": "2026-11-13T03:37:19Z",
- "beat": "2026-11-13T03:37:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "anom1 c34b42b4 웹앱 1.78.557 · 클라우드 0.35.206 🧠 자료 이상 판단 엔진",
-  "at": "2026-11-13T03:36:52Z"
+  "done": "note2 36271ace 웹앱 1.78.558 · 클라우드 0.35.207 📓 정범 노트",
+  "at": "2026-11-13T03:40:30Z"
  },
- "host": "vm-note2"
+ "host": null
 }
