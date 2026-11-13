@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검 08:13 — 🩺 숍 끝까지 기준·휴대폰 배송 화면 다시 그리기",
+ "since": "2026-11-13T23:24:39Z",
+ "beat": "2026-11-13T23:24:39Z",
  "ask": null,
  "last": {
   "who": "priv4",
   "done": "웹앱 1.78.622 · 번외 0.1.63 · 로컬 도우미 1.8.30 비공개 준비 · d505c1fb",
   "at": "2026-11-13T22:02:22Z"
  },
- "host": null
+ "host": "vm"
 }
