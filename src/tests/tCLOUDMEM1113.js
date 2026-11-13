@@ -86,5 +86,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       for (const v of [500, 700, 1010, 1020, 1030]) { r3 = v; w3._fast(); } const hi = L3.filter((l) => /🩺 고 컨테이너/.test(l));
       ok(hi.length === 3 && /bkinfo/.test(hi[0]), '1000MB 넘는 동안 1초마다 한 줄', L3); ok(w3._S.ring.length === 5 && w3.snap().ring.length === 5 && w3.snap().ring[4][1] === 1030, '1초 고리가 문서에 실림', w3._S.ring); } finally { process.memoryUsage = real3; }
     ok(typeof MW3.memLine === 'function' && /memLine\('무거운 일 시작 ' \+ name\)/.test(CL) && /memLine\('무거운 일 끝 '/.test(CL) && /memLine\('판매자 배우기 단계 '/.test(CL), '무거운 일 시작·끝·단계마다 한 줄'); }
+  console.log('⑧ 크롬 정리(넷째)');
+  { const BT = cut(CL, 'const BR_RESTART_MB = ', 'setInterval(() => { brTidy()'); let cgv = 900; const lines = []; const main = { url: () => 'https://www.aladin.co.kr/', close: async () => {} }; const tabs = [main, { url: () => 'https://www.yes24.com/x', closed: 0, close: async function () { this.closed++; } }];
+    const env = { browser: { connected: true, pages: async () => tabs, close: async () => { env.closedB = 1; }, process: () => null }, page: main };
+    const mk = new Function('env', 'require', 'serial', 'sleep', 'nowIso', 'log', 'CR_N0', 'let browser = env.browser, page = env.page, injectedSrc = null; let tickBusy = false; const CR_N = CR_N0;\n' + BT + '\nreturn { brTidy, BR_ST, get b() { return browser; } };');
+    const T = mk(env, (m) => (/memwatch/.test(m) ? { cgMB: () => cgv, memLine: (x) => lines.push(x) } : require(m)), async (f) => f(), async () => {}, () => 't', () => {}, 0);
+    await T.brTidy(); ok(T.BR_ST.tabs === 2 && T.BR_ST.restarts === 0 && tabs[1].closed === 0, '처음 본 탭은 안 닫음 · 900MB면 그대로', T.BR_ST);
+    cgv = 1400; await T.brTidy(); ok(T.BR_ST.restarts === 1 && env.closedB === 1 && T.b === null && lines.length === 2, '컨테이너 1300MB 넘고 node가 작으면 크롬을 새로 띄움', T.BR_ST);
+    const T2 = mk({ ...env, browser: { ...env.browser } }, (m) => (/memwatch/.test(m) ? { cgMB: () => 1400, memLine: () => {} } : require(m)), async (f) => f(), async () => {}, () => 't', () => {}, 1); await T2.brTidy(); ok(T2.BR_ST.restarts === 0, '그려 읽기 중이면 새로 띄우지 않음'); }
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e.stack); process.exit(1); });
