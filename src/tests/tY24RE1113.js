@@ -24,7 +24,8 @@ for (const [nm, F] of [['웹앱', mk(blkA)], ['수집기', mk(blkC.replace(/^ {4
   const T0 = Date.parse('2026-11-13T05:00:00Z');
   const busy = { state: 'fail', pre: true, msg: '처음 한 건을 확인하는 중 — 그 결과를 본 뒤 이어 맡김(첫 실행은 1건 확인 뒤)' };
   const p1 = F.y24RePatch(doc(), busy, 'HOME', T0);
-  ok(p1 && p1.st === 'hold' && p1.reN === 1 && Date.parse(p1.retryAt) === T0 + 10 * 60e3 && /처음 한 건/.test(p1.holdWhy) && /1\/3/.test(p1.holdWhy) && p1.lastRej.err && p1.lastRes === busy && p1.res === null && p1.ok === null && p1._t && /되돌림\(1\/3\)/.test(p1._t.m), `${nm}: 번외가 '처음 한 건 확인 중'으로 거절 → 같은 문서 hold · 1/3 · 10분 뒤 · 까닭 남김`, p1);
+  ok(p1 && p1.st === 'hold' && p1.reN === 0 && p1.busyN === 1 && Date.parse(p1.retryAt) === T0 + 10 * 60e3 && /처음 한 건/.test(p1.holdWhy) && /기다림 1\/24/.test(p1.holdWhy) && p1.lastRej.err && p1.lastRes === busy && p1.res === null && p1.ok === null && p1._t && /되돌림\(기다림 1\/24\)/.test(p1._t.m), `${nm}: 번외가 '처음 한 건 확인 중'(앞 맡김 하는 중)으로 거절 → 같은 문서 hold · 되돌림 3번은 안 씀(기다림 1/24) · 10분 뒤 · 까닭 남김`, p1);
+  ok(F.y24RePatch(doc({ reN: 3, busyN: 5 }), busy, 'HOME', T0).busyN === 6 && F.y24RePatch(doc({ busyN: 24 }), busy, 'HOME', T0) === null, `${nm}: 기다림은 3번을 다 써도 이어 감 · 24번(≈4시간) 넘으면 끝`);
   const notSaved = { state: 'fail', rows: { 'K1|195142826': { state: 'fail', pre: true, same: true, msg: '눌렀지만 예스24가 아무 물음·알림도 안 띄웠고 등록상품 목록 값도 그대로 판매중·2권·45000원(바라는 값 수량 1권) — 저장되지 않음' } } };
   const p2 = F.y24RePatch(doc({ reN: 1 }), notSaved, 'HOME', T0); ok(p2 && p2.reN === 2 && Date.parse(p2.retryAt) === T0 + 20 * 60e3, `${nm}: '저장되지 않음' → 2/3 · 20분 뒤`, p2);
   ok(F.y24RePatch(doc({ reN: 3 }), notSaved, 'HOME', T0) === null, `${nm}: 3번 넘으면 되돌리지 않음(사람 확인 · 되풀이 0)`);
@@ -35,7 +36,7 @@ for (const [nm, F] of [['웹앱', mk(blkA)], ['수집기', mk(blkC.replace(/^ {4
   ok(F.y24RePatch(doc(), { state: 'fail', msg: '누른 뒤 오류 — x' }, 'HOME', T0) === null, `${nm}: 누른 뒤 실패(pre 아님)는 끝`);
   ok(F.y24RePatch(doc(), { state: 'fail', pre: true, msg: '예스24 195968648의 자체코드가 이미 PNKLUX — 장부가 이은 실물과 달라 아무것도 누르지 않음' }, 'HOME', T0) === null, `${nm}: 다시 해도 소용없는 까닭(자체코드가 이미 다름)은 끝`);
   ok(F.y24RePatch(doc(), { state: 'fail', pre: true, stop: true, msg: '⛔ 예스24 쓰기 멈춤 — x' }, 'HOME', T0) === null, `${nm}: 쓰기 멈춤 거절은 끝(이어 가기 장치가 따로)`);
-  ok(F.y24RePatch(doc(), { state: 'fail', pre: true, msg: 'HOME 번외 도우미(127.0.0.1:8797)에 닿지 못함 — 아무것도 안 누름' }, 'HOME', T0).reN === 1, `${nm}: 번외에 닿지 못함 → 되돌림`);
+  ok(F.y24RePatch(doc(), { state: 'fail', pre: true, msg: 'HOME 번외 도우미(127.0.0.1:8797)에 닿지 못함 — 아무것도 안 누름' }, 'HOME', T0).reN === 1 && F.y24RePatch(doc({ reN: 2 }), notSaved, 'HOME', T0).reN === 3, `${nm}: 번외에 닿지 못함 → 되돌림`);
   ok(F.y24RePatch(doc(), { state: 'fail', pre: true, msg: '맡긴 지 95분 지나 HOME가 받음 — 그사이 재고가 바뀌었을 수 있어 넘기지 않음(아무것도 안 누름) · 늦음 되돌림 3번을 다 씀 — 사람 확인' }, 'HOME', T0) === null, `${nm}: 늦음 되돌림을 다 쓴 맡김은 여기서도 되돌리지 않음(led4 규칙과 겹치지 않음)`);
   const two = doc({ job: { id: 'j', rows: [row(), row({ rid: 'K2|195968648', rk: 'rk2', no: '195968648' })] } });
   ok(F.y24RePatch(two, { state: 'part', rows: { 'K1|195142826': { state: 'done', msg: 'ok' }, 'K2|195968648': notSaved.rows['K1|195142826'] } }, 'HOME', T0).reN === 1, `${nm}: 여러 줄 중 한 줄만 '저장되지 않음'이면 문서째 되돌림(된 줄은 보내기 직전 다시 셈에서 '할 일 없음'으로 닫힘)`);
@@ -56,8 +57,8 @@ console.log('② 한 번짜리 — 걸린 두 건');
   const only = P.y24Re1113Pick([OLD], []); ok(only.length === 1 && only[0].res.state === 'fail' && only[0].res.rows['K1|195142826'].same === true, "옛 판이 '확실하지 않음'으로 닫은 '눌렀지만 목록 값이 그대로(알림 없음)'는 '저장되지 않음'으로 바로잡아 되돌림", only[0] && only[0].res);
   ok(P.y24Re1113Pick([{ ...OLD, res: { state: 'unsure', rows: { x: { state: 'unsure', msg: '눌렀지만 등록상품 목록 값이 2권 — 예스24 알림: 저장되었습니다.' } } } }], []).length === 0, '예스24 알림이 있었던 확실하지 않음은 되돌리지 않음');
   ok(P.y24Re1113Pick([A1], [{ id: 'hold1', st: 'hold', at: '2026-11-13T03:00:00Z', job: { rows: [row()] } }]).length === 0, '같은 줄의 새 맡김이 줄에 있으면(기다림·하는 중) 끝난 옛 문서는 되돌리지 않음(겹침 0)');
-  ok(P.y24Re1113Pick([{ ...A1, re1113: 'x' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, st: 'hold' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, ok: true }], []).length === 0, '이미 한 번 되돌린 문서·끝나지 않은 문서·성공은 아님');
-  ok(/where\('doneAt', '>=', new Date\(Date\.now\(\) - 48 \* 3600e3\)\.toISOString\(\)\)\.limit\(150\)/.test(A) && /localStorage\.getItem\('rn-y24re1113'\)/.test(A) && /if \(c\.st !== 'done' \|\| c\.re1113\) return;/.test(A) && /y24RePatch\(c, pk\.res, me, Date\.now\(\), 0\)/.test(A), '지난 48시간 끝난 맡김만 · 기기마다 한 번 · 문서마다 트랜잭션으로 한 번(re1113) · 바로 보냄');
+  ok(P.y24Re1113Pick([{ ...A1, re1113: 'x', res: { state: 'already', msg: '할 일 없음' } }], []).length === 0 && P.y24Re1113Pick([{ ...A1, re1113: 'x', reN: 3 }], []).length === 1 && P.y24Re1113Pick([{ ...A1, re1113b: 'x' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, st: 'hold' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, ok: true }], []).length === 0, "이미 되돌린 문서(re1113b · 첫 판에서 되돌렸는데 '할 일 없음'으로 닫힌 것)·끝나지 않은 문서·성공은 아님 · 첫 판이 '앞 맡김 하는 중'으로 3번을 다 쓰고 닫은 문서는 한 번 더");
+  ok(/where\('doneAt', '>=', new Date\(Date\.now\(\) - 48 \* 3600e3\)\.toISOString\(\)\)\.limit\(150\)/.test(A) && /localStorage\.getItem\('rn-y24re1113b'\)/.test(A) && /if \(c\.st !== 'done' \|\| c\.re1113b\) return;/.test(A) && /reN: Math\.min\(\+P0\.reN \|\| 0, Y24_RE_MAX - 1\)/.test(A) && /y24RePatch\(c, pk\.res, me, Date\.now\(\), 0\)/.test(A), '지난 48시간 끝난 맡김만 · 기기마다 한 번 · 문서마다 트랜잭션으로 한 번(re1113) · 바로 보냄');
   ok(/await y24Re1113\(\); \/\* \(y24re\)/.test(A), '맡긴 일 줄 처리(ledY24HoldRetry — 1분마다 · 로거·출고 중 PC 빼고) 안에서 불림'); }
 
 console.log('③ 수집기 다리 — 가짜 Firestore·가짜 번외');
@@ -73,10 +74,11 @@ console.log('③ 수집기 다리 — 가짜 Firestore·가짜 번외');
   const now = new Date().toISOString(); const busyR = { ok: false, _st: 409, err: '처음 한 건을 확인하는 중 — 그 결과를 본 뒤 이어 맡김(첫 실행은 1건 확인 뒤)' };
   const n1 = { k: 'w', st: 'new', holder: 'HOME', at: now, job: { id: 'jA', rows: [row()] } };
   let r = await run({ jA: n1 }, (p) => (p === '/y24/w/put' ? busyR : null));
-  ok(r.D.jA.st === 'hold' && r.D.jA.reN === 1 && /처음 한 건/.test(r.D.jA.holdWhy) && r.D.jA.retryAt > now && r.D.jA.tookBy === null && (r.D.jA.trail || []).some((t) => /되돌림\(1\/3\)/.test(t.m)) && r.ins.length === 0, "번외가 '처음 한 건 확인 중'으로 거절 → 같은 문서 hold(새 문서 0) · 자취", r.D.jA);
+  ok(r.D.jA.st === 'hold' && r.D.jA.reN === 0 && r.D.jA.busyN === 1 && /처음 한 건/.test(r.D.jA.holdWhy) && r.D.jA.retryAt > now && r.D.jA.tookBy === null && (r.D.jA.trail || []).some((t) => /기다림 1\/24/.test(t.m)) && r.ins.length === 0, "번외가 '처음 한 건 확인 중'으로 거절 → 같은 문서 hold(새 문서 0) · 자취", r.D.jA);
   r = await run({ jA: { ...n1, job: { id: 'jA', rows: [row({ kind: 'price', src: 'price', to: 9000 })] } } }, (p) => (p === '/y24/w/put' ? busyR : null));
   ok(r.D.jA.st === 'done' && r.D.jA.ok === false, '💲 판매가 맡김은 예전처럼 끝(done · 못 함)', r.D.jA);
-  r = await run({ jA: { ...n1, reN: 3 } }, (p) => (p === '/y24/w/put' ? busyR : null)); ok(r.D.jA.st === 'done', '3번 다 쓴 문서는 끝');
+  r = await run({ jA: { ...n1, reN: 3 } }, (p) => (p === '/y24/w/put' ? { ok: false, err: 'HOME 번외에 닿지 못함' } : null)); ok(r.D.jA.st === 'done', '3번 다 쓴 문서는 끝');
+  { let put = 0; r = await run({ jA: { ...n1, retryAt: new Date(Date.now() + 600e3).toISOString(), reN: 1 } }, (p) => { if (p === '/y24/w/put') put++; return busyR; }); ok(r.D.jA.st === 'hold' && put === 0 && r.D.jA.reN === 1 && !r.D.jA.busyN, '옛 웹앱이 retryAt 전에 다시 보내도 다리가 넘기지 않고 줄로 되돌림(셈 그대로)', r.D.jA); }
   const run1 = { k: 'w', st: 'run', holder: 'HOME', at: now, tookBy: 'HOME', runAt: now, job: { id: 'jB', rows: [row()] } };
   const notSaved = { state: 'fail', rows: { 'K1|195142826': { state: 'fail', pre: true, same: true, msg: '눌렀지만 예스24가 아무 물음·알림도 안 띄웠고 등록상품 목록 값도 그대로 판매중·2권·45000원(바라는 값 수량 1권) — 저장되지 않음 · 칸 고침 setValue · 줄 상태 none · 칸 고칠 수 있음 아니오' } }, msg: 'x' };
   let acked = null; r = await run({ jB: run1 }, (p, b) => { if (p === '/y24/w/state') return { ok: true, res: { jB: notSaved }, wait: [], cur: null }; if (p === '/y24/w/ack') { acked = b; return { ok: true }; } return null; });
