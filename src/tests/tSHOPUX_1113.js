@@ -137,6 +137,16 @@ try {
     await p.click('.qstep [data-qi]'); await p.waitForTimeout(300); const q2 = await p.evaluate(() => ({ n: document.querySelector('.qstep b').textContent, plus: document.querySelector('.qstep [data-qi]').disabled, cartN: document.querySelector('#cartN').textContent })); await shot(p, 'm390_cart_qty', false);
     await p.click('.qstep [data-qd]'); await p.click('.qstep [data-qd]'); await p.waitForTimeout(300); const q3 = await p.evaluate(() => JSON.parse(localStorage.getItem('bq-cart'))[0]);
     ok(/3권까지 함께 담을 수 있습니다/.test(f1) && q1.n === '2' && q1.cart === 2 && q2.n === '3' && q2.plus && q3.n === undefined, '같은 책 여러 권: 책 화면 「한 권 더 담기」 → 장바구니 2권 → + 3권(재고까지 · + 막힘) → − 두 번이면 한 권 줄과 같은 꼴', [f1, q1, q2, q3]); ok(!errs.length, '여러 권 화면 오류 0', errs); await ctx.close(); }
+  /* ⚙ 보기 설정 창 닫기(정범님 11/14 00:29 「우리숍 설정이 안 닫혀」) — 휴대폰 390·PC 1280 · ✕ · 바깥 누름 · Esc · 뒤로 가기 · 주소로 바로 온 쪽의 「닫기」 */
+  for (const [nm, O] of [['m390', M], ['pc1280', PC]]) { const { ctx, p, errs } = await newp(O); await go(p, '#/list?s=new', '#lg .card'); const h0 = await p.evaluate(() => location.hash); const R = {};
+    const open = async () => { await p.click('.nav .nlv'); await p.waitForSelector('.sheet.on', { timeout: 4000 }); await p.waitForTimeout(300); return /보기 설정/.test(await p.textContent('.sheet')); };
+    const gone = async () => { await p.waitForTimeout(500); return !(await p.locator('.sheet').count()) && (await p.evaluate(() => location.hash)) === h0; };
+    R.o1 = await open(); await p.click('.sheet .shh [data-shx]'); R.x = await gone();
+    await open(); await p.keyboard.press('Escape'); R.esc = await gone();
+    await open(); await p.mouse.click(10, 10); R.out = await gone();
+    await open(); await p.click('.sheet [data-vw="fs"][data-vv="112"]'); await p.waitForTimeout(300); R.keep = !!(await p.locator('.sheet').count()) && (await p.evaluate(() => document.documentElement.style.zoom)) === '1.12'; await shot(p, nm + '_view_sheet', false); await p.goBack(); R.back = await gone();
+    await go(p, '#/view', '#vclose'); await p.click('#vclose'); await p.waitForTimeout(500); R.page = await p.evaluate(() => location.hash) !== '#/view'; await p.evaluate(() => localStorage.removeItem('bq-view'));
+    ok(R.o1 && R.x && R.esc && R.out && R.keep && R.back && R.page, `${nm} ⚙ 보기 설정 창: 머리 ⚙ → 창 · ✕ · Esc · 바깥 누름 · 뒤로 가기 모두 닫힘(보던 화면 그대로) · 고르면 창은 그대로 · 주소로 바로 연 쪽은 「닫기」`, R); ok(!errs.length, nm + ' 창 닫기 오류 0', errs); await ctx.close(); }
   /* ⚙ 보기 설정(정범님 21:28 「휴대폰으로 설정이 서가 말고는 안 돼」) — 이 기기만 · 새로고침 뒤 기억 */
   { const { ctx, p, errs } = await newp(M, true); await p.addInitScript(() => { try { if (!sessionStorage.getItem('__v')) { localStorage.clear(); sessionStorage.setItem('__v', '1'); } } catch (e) {} }); await go(p, '#/', '#nwg .card'); const gear = await p.locator('.nav .nlv').isVisible();
     await go(p, '#/view', '.fsec'); await p.click('[data-vw="fs"][data-vv="112"]'); await p.waitForTimeout(200); await p.click('[data-vw="theme"][data-vv="dark"]'); await p.waitForTimeout(200); await p.click('[data-vw="cols"][data-vv="3"]'); await p.waitForTimeout(200); await shot(p, 'm390_view');
