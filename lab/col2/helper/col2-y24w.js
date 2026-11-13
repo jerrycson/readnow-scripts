@@ -148,6 +148,17 @@ const JS_UBCELL = (r) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false
 let c=null;try{c=gv.columnByField('UPDATE_BUTTON')}catch(e){}if(!c)return{ok:false,why:"표에 '상세수정'(UPDATE_BUTTON) 칸이 없음"};try{if(typeof gv.setCurrent==='function')gv.setCurrent({itemIndex:it,fieldName:'UPDATE_BUTTON'})}catch(e){}
 let b=null;try{b=gv.getCellBounds(it,c,true)||gv.getCellBounds(it,'UPDATE_BUTTON')}catch(e){}const gr=g.getBoundingClientRect();if(b&&b.width>0){const x=gr.left+b.x+b.width/2,y=gr.top+b.y+b.height/2;if(x>gr.left&&x<gr.right&&y>gr.top&&y<gr.bottom)return{ok:true,x,y}}
 return{ok:false,why:"'상세수정' 칸 자리를 못 셈(화면 밖이거나 getCellBounds 없음)"}})()`;
+/* (y24qty1 · 11/14 원문 reports/yes24_raw/GRID_HOME_1114_0107.json probe2) 실제 [상세수정] 칸이 하는 일 = 화면 함수 callbackGridButton:
+ *   '"UPDATE_BUTTON"==e.column.name&&this.$router.push({name:"SelectProduct",params:{goodsNo:a.GOODS_NO}})' — 새 창(window.open)이 아니라 같은 탭 Vue 길 이동
+ *   · 0.1.56은 그 칸을 화면 자리로 눌렀는데, 칸이 표 29칸 중 25번째(가로로 화면 밖)라 getCellBounds가 자리를 못 줘 실패(11/14 01:07 ie5)
+ *   → 그 줄의 상품번호(GOODS_NO)가 맡긴 번호와 같은지 표에서 다시 본 뒤, 그 화면이 쓰는 같은 함수($router.push · 길 이름은 그 화면 함수 글에서 읽음 · 없으면 SelectProduct)를 부름 — 누르기와 같은 일 · 저장은 아님
+ *   · 길이 없으면(화면이 바뀜) 예전처럼 칸을 눌러 봄(가로로 그 칸까지 넘긴 뒤) */
+const JS_ROUTE = (r, no) => `(()=>{${GV_JS}const N=${JSON.stringify(String(no))};const gv=findGV();if(gv){let v=null;try{v=gv.getDataSource().getValue(${r},'GOODS_NO')}catch(e){}if(v!=null&&String(v)!==N)return{ok:false,bad:true,why:'표 줄의 상품번호('+String(v).slice(0,20)+')가 맡긴 번호와 달라 열지 않음'}}
+let rt=null,pg=null;const roots=[document.getElementById('productGrid'),document.getElementById('app'),document.body&&document.body.firstElementChild].filter(Boolean);
+for(const r0 of roots){for(let el=r0,d0=0;el&&d0<40;el=el.parentElement,d0++){for(let v=el.__vue__,d=0;v&&d<10;v=v.$parent,d++){const ms=(v.$options&&v.$options.methods)||{};if(!pg&&typeof ms.callbackGridButton==='function')pg=v;if(!rt&&v.$router&&typeof v.$router.push==='function')rt=v.$router}}}
+if(!rt)return{ok:false,why:'화면의 길 이동($router)을 못 찾음'};let name='SelectProduct',from='기본';try{const m=String(pg&&pg.$options.methods.callbackGridButton).match(/UPDATE_BUTTON[^]{0,80}?\\$router\\.push\\(\\{name:["']([A-Za-z0-9_]+)["']/);if(m){name=m[1];from='화면 함수'}}catch(e){}
+let R=null;try{R=rt.resolve({name,params:{goodsNo:N}})}catch(e){return{ok:false,why:'길 '+name+'을 못 풂('+String(e&&e.message||e).slice(0,40)+')'}}const M=(R&&((R.route&&R.route.matched)||R.matched))||[];if(!M.length)return{ok:false,why:'화면에 길 '+name+'이 없음'};
+const href=String(R.href||'');try{const p=rt.push({name,params:{goodsNo:N}});if(p&&typeof p.catch==='function')p.catch(function(){})}catch(e){return{ok:false,why:'길 이동 실패('+String(e&&e.message||e).slice(0,40)+')'}}return{ok:true,name,from,href}})()`;
 const JS_OPEN_HOOK = `(()=>{window.__rnOpen=[];if(!window.__rnOpen0){window.__rnOpen0=window.open;window.open=function(u){try{window.__rnOpen.push(String(u==null?'':u))}catch(e){}return{closed:false,focus:function(){},close:function(){},blur:function(){},postMessage:function(){},document:{},location:{}}}}return true})()`;
 const JS_OPEN_GET = `(()=>{const vis=(x)=>{try{return getComputedStyle(x).display!=='none'&&x.getClientRects().length>0}catch(e){return false}};return{u:(window.__rnOpen||[]).slice(0,3),href:location.href,pop:[...document.querySelectorAll('.layerPop')].filter(vis).map((x)=>((x.querySelector('h1')||{}).innerText||'').replace(/\\s+/g,' ').trim().slice(0,40)).filter(Boolean)}})()`;
 const JS_OPEN_UNHOOK = `(()=>{if(window.__rnOpen0){window.open=window.__rnOpen0;window.__rnOpen0=null}return true})()`;
@@ -220,7 +231,17 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   const fStr = (f) => `${f.k} ¦ ${f.t} ¦ ${f.l} ¦ ${String(f.v).slice(0, 40)} ¦ ${f.vis ? '보임' : '숨음'}${f.dis ? '·잠김' : ''}${f.ro ? '·읽기만' : ''}`;
   const saveDet = (x) => { R.rec.det = { v: 1, at: now(), ...x }; saveRec(); };
   async function readDet(no) { let d = null, prev = ''; for (let k = 0; k < 30; k++) { d = await o.ev(JS_DET(no), 15000); if (d && d.login) return d; const sig = d && d.ok ? JSON.stringify(d.F.map((f) => f.k + '=' + f.v)) : ''; if (d && d.ok && d.F.length >= 2 && sig === prev) return d; prev = sig; await sleep(500 * SC); } return d; }
-  async function openDet(h, no) { const c = await o.ev(JS_UBCELL(h.r)); if (!c || !c.ok) return { err: (c && c.why) || "'상세수정' 칸 자리를 못 셈" };
+  /* (y24qty1) 먼저 화면의 길 이동으로 · 안 되면 칸 누르기 */
+  async function routeDet(h, no) { let href0 = ''; try { href0 = await o.ev('location.href'); } catch (e) {} let x = null;
+    for (let k = 0; k < 8; k++) { x = await o.ev(JS_ROUTE(h.r, no)); if (x && (x.ok || x.bad)) break; await sleep(600 * SC); }
+    if (!x || !x.ok) return { no: true, bad: !!(x && x.bad), why: (x && x.why) || '길 이동 못 함' };
+    let href = href0; for (let k = 0; k < 20; k++) { await sleep(400 * SC); try { href = await o.ev('location.href'); } catch (e) {} if (href !== href0) break; }
+    if (href === href0) return { no: true, why: `길 ${x.name}로 옮겼지만 화면 주소가 그대로` };
+    await sleep(1200 * SC); let d = null; for (let k = 0; k < 10; k++) { d = await readDet(no); if (!d || d.login || !d.ok) break; if (d.F.some((f) => f.vis && QTY_LABEL.test(f.l) && String(f.v).trim() !== '')) break; await sleep(800 * SC); } /* 같은 탭 길 이동은 칸 틀이 먼저 그려지고 값이 나중에 옴 — 재고수량 값이 찰 때까지(8초) */
+    if (d && d.login) return { login: true }; if (!d || !d.ok) return { err: '[상세수정] 화면을 못 읽음', url: href };
+    return { d, url: href, how: `화면 길 이동(${x.name} · ${x.from})`, route: true }; }
+  async function openDet(h, no) { const rd0 = await routeDet(h, no); if (!rd0.no) return rd0; if (rd0.bad) return { err: rd0.why };
+    const c = await o.ev(JS_UBCELL(h.r)); if (!c || !c.ok) return { err: `${(c && c.why) || "'상세수정' 칸 자리를 못 셈"} · 길 이동도 안 됨(${rd0.why})` };
     await o.ev(JS_OPEN_HOOK); let href0 = ''; try { href0 = await o.ev('location.href'); } catch (e) {} let g = null;
     try { await o.inp.click(c.x, c.y); for (let k = 0; k < 12; k++) { await sleep(400 * SC); g = await o.ev(JS_OPEN_GET); if (g && (g.u.length || g.href !== href0 || g.pop.length)) break; } } finally { await o.ev(JS_OPEN_UNHOOK).catch(() => {}); }
     let url = '', how = ''; if (g && g.u.length) { let U = null; try { U = new URL(g.u[0], o.BASE + '/'); } catch (e) { U = null; } const B0 = new URL(o.BASE + '/'); if (!U || U.origin !== B0.origin) return { err: `[상세수정]이 여는 주소가 예스24 판매관리 밖(${String(g.u[0]).slice(0, 60)}) — 열지 않음` }; url = U.href; how = '새 창 주소를 같은 탭으로'; await o.nav(url, 30); }
@@ -247,7 +268,7 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     if (!(df1 && df1.length === 1 && df1[0] === q.k && String(v1) === String(to(r)))) { try { await o.nav(o.BASE + PG + '?t=' + now(), 30); } catch (e) {} return failP(`[상세수정]에 ${to(r)}을 넣은 뒤 다시 읽으니 재고수량 칸만 바뀐 것이 아님(바뀐 칸 ${df1 ? df1.slice(0, 6).join('·') || '없음' : '못 읽음'} · 재고수량 ${v1 == null ? '?' : v1})`); }
     j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [상세수정] 저장 누름`; saveQ(); R.phase = 'qty'; const c = await o.ev(JS_DETSAVE); if (!c || !c.ok) { R.phase = ''; j.st = 'run'; saveQ(); return failP((c && c.why) || '[상세수정] 저장 단추를 못 누름'); }
     await msgPop(); await sleep(2500 * SC); R.phase = ''; const dl = R.dlg.slice(-2).join(' / ');
-    j.step = `${r.no} [상세수정] 화면 다시 열어 확인`; let d2 = null; try { await o.nav(D.url, 30); await sleep(1000 * SC); d2 = await readDet(r.no); } catch (e) { d2 = null; }
+    j.step = `${r.no} [상세수정] 화면 다시 열어 확인`; let d2 = null; try { if (D.route) { const a2 = await look(r); const h2 = a2 && a2.hit && a2.hit.length === 1 ? a2.hit[0] : null; const D2 = h2 ? await routeDet(h2, r.no) : null; d2 = D2 && D2.d ? D2.d : null; } else { await o.nav(D.url, 30); await sleep(1000 * SC); d2 = await readDet(r.no); } } catch (e) { d2 = null; } /* (y24qty1) 길 이동으로 연 화면은 주소만으로 다시 못 열 수 있어(길 params) 목록에서 같은 길로 다시 엶 */
     j.step = `${r.no} 등록상품 목록 다시 읽어 확인`; let b = null; try { b = await look(r); } catch (e) { b = { err: String(e.message || e).slice(0, 100) }; } j.st = 'run'; saveQ();
     const after = b && b.hit && b.hit.length === 1 ? vOf(b.hit[0]) : null; const df2 = d2 && d2.ok ? fDiff(d.F, d2.F) : null; const v2 = d2 && d2.ok ? (fMap(d2.F)[q.k] || {}).v : null;
     R.rec.det.post = { at: now(), save: c.t, dlg: R.dlg.slice(-3).map((m) => String(m).slice(0, 80)), diff: df2 ? df2.slice(0, 10) : null, v: v2 == null ? null : String(v2).slice(0, 10), list: after ? vTxt(after) : null }; saveRec();
