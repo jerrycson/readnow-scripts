@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.319
+// @version      1.89.320
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -25,8 +25,8 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.17
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.190
-// @require      https://readnow.kr/readnow-ext-core.js?v=0.6.21
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.191
+// @require      https://readnow.kr/readnow-ext-core.js?v=0.6.22
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
 // @require      https://readnow.kr/readnow-autosched-core.js?v=0.18.31
@@ -8785,7 +8785,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (prev && prev.at) { const hid = `${col}_${b.isbn}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = C('ext_hist').doc(hid); try { const ex = await hr.get(); if (!ex.exists) await hr.set({ col, isbn: b.isbn, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...(dk ? { dk } : {}), ...W() }); } catch (e) { log(`🌐 옛 값 보관 실패(${src} ${b.isbn}) — 바꾸지 않음: ${e.message}`, 1); return 'err'; } }
     const obj = { at: now, chk: now, sig: sg, none: !!res.none, d, by: PC_NAME, q: (d && d.q) || null };
     if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: TS() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() }, { merge: true }); /* (1.59.0·0.11.0) 같은 책을 다른 출처가 막 만들었으면 그 출처 칸을 지우지 않게 */
-    return prev && (prev.at || prev.sig) ? 'changed' : 'new'; } /* (rv1b 11/13) 받아 둔 값이 없던 칸(앞서 '못 읽음'·'다른 책'만 적힌 칸 — at·sig 없음)에 처음 값이 들어오면 '새로' — 예전엔 '바뀜'으로 셈(옛 값 보관도 없음) · 11/13 로거 교보 '바뀜' 100%의 근원(7일 ext_hist 교보 0건) */
+    return prev && (prev.at || prev.sig) ? (X.fmtShift && (() => { try { return X.fmtShift({ none: !!prev.none, d: prev.d ?? null }, { none: !!res.none, d }, src); } catch (e) { return false; } })() ? 'fmt' : 'changed') : 'new'; } /* (rv1b 11/13) 받아 둔 값이 없던 칸(앞서 '못 읽음'·'다른 책'만 적힌 칸 — at·sig 없음)에 처음 값이 들어오면 '새로' — 예전엔 '바뀜'으로 셈(옛 값 보관도 없음) · 11/13 로거 교보 '바뀜' 100%의 근원(7일 ext_hist 교보 0건) */
   /* 한 책 한 출처: 묻고 → 쓰고 → 색인·오늘 쓴 수·마지막 결과
    *  간격은 사이트(host)마다 — 예스24와 예스24 중고는 한 사이트로 셈 · 자리를 먼저 잡고 기다려 두 일(자동·웹앱 맡김)이 동시에 같은 사이트를 묻지 않게 · 한 번에 여러 화면을 여는 출처(검색 → 상품)는 화면 사이도 쉼 */
   async function extOne(src, b, why) { const X = EXT(); const keys = await extKeys(); const cfg = await extCfg(); const s = X.SOURCES[src]; const h = s.host;
@@ -8809,8 +8809,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (st === 'err') { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) { EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; extRampDown(src); } else if (EXT_S.errs[src] >= 5) { extRampDown(src); EXT_S.pauseN = EXT_S.pauseN || {}; const pn = EXT_S.pauseN[src] = Math.min(5, (EXT_S.pauseN[src] || 0) + 1); const ph = Math.min(24, 2 ** (pn - 1)); EXT_S.pauseUntil[src] = Date.now() + ph * 3600e3; EXT_S.errs[src] = 0; /* (1.72.2 · 클라우드 0.13.4) 계속 실패하는 출처는 쉬는 시간을 1→2→4→8→16시간으로 늘림(한 번이라도 되면 다시 1시간부터) */ log(`🌐 ${s.label}: 5번 잇달아 못 읽어 ${Math.round((EXT_S.pauseUntil[src] - Date.now()) / 3600e3)}시간 쉼 — ${res.why}`, 1); } } }
     { const okR = st !== 'err'; const L0 = { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: PC_NAME, how: why || 'auto' } ; /* (1.24.0 · 클라우드 0.12.2) 출처별 오늘 성공·실패 수(res) + 마지막 실패(lastErr — 성공이 와도 남음) → 웹앱 시장조사 탭 수집 현황에서 '매번 실패'를 바로 봄 */ EXT_RUN().set({ last: { [src]: L0 }, res: { [extKst()]: { [src]: { [okR ? 'ok' : 'err']: firebase.firestore.FieldValue.increment(1) } } }, ...(okR ? {} : { lastErr: { [src]: L0 } }) }, { merge: true }).catch(() => {}); }
     /* (1.57.4) 무엇을 받았는지 한 줄씩(작은 글자 기록 · 웹앱 시장조사 탭 '자동으로 채우기 현황'의 기록에 보임) */
-    try { window.__rnLog && window.__rnLog('상품', 'detail', `🌐 ${s.label} ${b.isbn} 『${String(b.title || '').slice(0, 40)}』 → ${{ new: '새로', changed: '바뀜(옛 값 보관)', same: '같음', err: '못 읽음', mismatch: '다른 책', none1: '없음(한 번)', keep: '없음(받아 둔 값 그대로)' }[st] || st}${res.d && res.d.n != null ? ` ${res.d.n}개` : ''}${st === 'changed' && res._dk && res._dk.length ? ` · 바뀐 칸 ${res._dk.join(',').slice(0, 120)}` : ''}${st === 'err' || st === 'mismatch' ? ' — ' + String(res.why || '').slice(0, 80) : ''}${why === 'webapp' ? ' (웹앱에서 맡김)' : why === 'test' ? ' (시험)' : ''}`); } catch (e) {}
-    try { const CS = window.__rnCS; if (CS) { const k = 'ext:' + src; const kind = ['new', 'changed', 'same'].includes(st) ? 'ok' : st === 'none1' || res.none ? 'none' : st === 'mismatch' ? 'fail' : st === 'err' ? 'fail' : 'skip'; CS.add(k, kind, 1, kind === 'ok' || kind === 'none' ? null : st === 'mismatch' ? '다른 책을 찾음(맞지 않아 쓰지 않음)' : res.why); if (st === 'new' || st === 'changed') CS.add(k, 'n'); if (xp) CS.add(k, 'x'); } } catch (e) {} /* (1.79.0) 📊 n = 새로·바뀐 정보 · x = 무한 차례 */
+    try { window.__rnLog && window.__rnLog('상품', 'detail', `🌐 ${s.label} ${b.isbn} 『${String(b.title || '').slice(0, 40)}』 → ${{ new: '새로', changed: '바뀜(옛 값 보관)', fmt: '꼴만 바뀜(옛 원화 꼴 → 원래 돈 · 같은 매물 수 · 옛 값 보관)', same: '같음', err: '못 읽음', mismatch: '다른 책', none1: '없음(한 번)', keep: '없음(받아 둔 값 그대로)' }[st] || st}${res.d && res.d.n != null ? ` ${res.d.n}개` : ''}${st === 'changed' && res._dk && res._dk.length ? ` · 바뀐 칸 ${res._dk.join(',').slice(0, 120)}` : ''}${st === 'err' || st === 'mismatch' ? ' — ' + String(res.why || '').slice(0, 80) : ''}${why === 'webapp' ? ' (웹앱에서 맡김)' : why === 'test' ? ' (시험)' : ''}`); } catch (e) {}
+    try { const CS = window.__rnCS; if (CS) { const k = 'ext:' + src; const kind = ['new', 'changed', 'same', 'fmt'].includes(st) ? 'ok' : st === 'none1' || res.none ? 'none' : st === 'mismatch' ? 'fail' : st === 'err' ? 'fail' : 'skip'; CS.add(k, kind, 1, kind === 'ok' || kind === 'none' ? null : st === 'mismatch' ? '다른 책을 찾음(맞지 않아 쓰지 않음)' : res.why); if (st === 'new' || st === 'changed') CS.add(k, 'n'); if (xp) CS.add(k, 'x'); } } catch (e) {} /* (1.79.0) 📊 n = 새로·바뀐 정보 · x = 무한 차례 */
     return { src, st, why: res.why || null, n: res.d && (res.d.n ?? null), none: !!res.none, cover: (res.d && res.d.cover) || null }; }
   /* 할 책 목록: 판매중·일시판매중지 + ISBN · 판매가 높은 순 · 6시간마다 다시 만듦 */
   /* (1.59.1) 다른 작업(집중 벤치마킹·일괄 등)이 도는 중이라 상품 기록을 아직 안 읽었을 때: 예전엔 빈 목록 → 외부 정보가 그 작업이 끝날 때까지(밤새) 아무 말 없이 쉼.
@@ -8848,7 +8848,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         let i = EXT_S.cur[src] || 0, b = null; { const PQ = (EXT_S.prio && EXT_S.prio[src]) || null; if (PQ && PQ.length) { if (!EXT_S.cmap || EXT_S.cmapOf !== C0) { EXT_S.cmap = new Map(C0.map((x) => [x.isbn, x])); EXT_S.cmapOf = C0; } while (PQ.length && !b) { const x = EXT_S.cmap.get(PQ[0]); PQ.shift(); if (x && extEligible(src, x, cfg) && extDue(src, x.isbn, cfg) && !hoSkip(src, x)) b = x; } } } /* (1.74.3) 다시 읽을 책 먼저(예스24 '다른 책'·중고 실패로 미뤄 둔 책) */ if (!b) for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligible(src, x, cfg) && extDue(src, x.isbn, cfg) && !hoSkip(src, x)) { b = x; i++; break; } } EXT_S.cur[src] = i % C0.length; if (!b) { done.add(src); continue; } /* 이번 바퀴엔 이 출처로 할 책이 없음 — 다시 훑지 않음 */
         const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* (1.58.0) 중고닷이 아직 안 본 책만 남으면 이번 바퀴엔 그만 — 책마다 기록을 한 번씩 읽어 읽기 수가 수천 번 나던 것 */ if (Date.now() - t0 > box) break; }
       if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
-    const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', keep: '없음(받아 둔 값 그대로)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
+    const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', fmt: '꼴만 바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', keep: '없음(받아 둔 값 그대로)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
     if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`);
     /* (정범님 11/08 '로거 외부 정보가 제대로 안 모임' — eBay·DVDPrime·국립중앙도서관·알라딘 TTB·카카오·네이버가 하루 기록 0줄) 이번 바퀴에 한 권도 묻지 않은 출처는 까닭이 기록에 없어
      *  '안 도는 것'인지 '할 책이 없는 것'인지 몰랐음 → 3시간에 한 번 출처마다 까닭을 한 줄로(요청은 늘지 않음 · 이미 아는 값만 봄) */
