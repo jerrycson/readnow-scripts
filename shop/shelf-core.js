@@ -505,8 +505,9 @@
   const MEDIA = { cd: { n: 'CD', k: 'szCD', f: 'CD 케이스' }, dvd: { n: 'DVD', k: 'szDVD', f: 'DVD 케이스' }, bd: { n: '블루레이', k: 'szBD', f: '블루레이 케이스' }, vhs: { n: 'VHS', k: 'szVHS', f: 'VHS 슬리브' }, lp: { n: 'LP', k: 'szLP', f: 'LP 재킷' } };
   function kindOf(x) { if (!x) return 'book'; const k0 = String(x.cp || '').split('>')[0].trim(); const t = String(x.t || '');
     const tag = /^\s*[\[(【]\s*(블루레이|blu-?ray|BD|4K|UHD|DVD|CD|LP|VHS|비디오)/i.exec(t); const tg = tag ? tag[1].toUpperCase() : '';
-    if (/\bVHS\b|비디오\s*테이프/i.test(t) || tg === 'VHS' || tg === '비디오') return 'vhs';
-    if (k0 === 'LP' || ((k0 === '음반' || tg === 'CD' || tg === 'LP') && /\bLP\b|바이닐|vinyl|12\s*인치/i.test(t))) return 'lp';
+    /* (shelf3 실제 확인) 책 「비디오테이프 그리고 …」(분류 없는 '그 밖')가 VHS로 그려졌음 — 책·그 밖은 상품명 머리 [VHS]·[CD] 같은 표시가 있을 때만 제품 */
+    if (tg === 'VHS' || tg === '비디오' || (k0 === 'DVD' && /\bVHS\b|비디오\s*테이프/i.test(t))) return 'vhs'; /* 상품명 낱말로는 영상 경로(DVD)일 때만 · 분류 없는 '그 밖' 책 제목에 '비디오테이프'가 있어도 책 */
+    if (k0 === 'LP' || tg === 'LP' || ((k0 === '음반' || tg === 'CD') && /\bLP\b|바이닐|vinyl|12\s*인치/i.test(t))) return 'lp';
     if (k0 === '블루레이' || /^(블루레이|BLU-?RAY|BD|4K|UHD)$/.test(tg)) return 'bd';
     if (k0 === 'DVD' || tg === 'DVD') return 'dvd';
     if (k0 === '음반' || tg === 'CD') return 'cd';
@@ -537,5 +538,5 @@
     return { bg, ac, ink: inkFor(bg, R()), pat: ART_PATS[p], lay: ART_LAYS[l], fg, kd, code: [ART_GEN, ci, c2, p, l].join('.'), who: kd === 'book' ? '지은이' : '아티스트' }; }
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.5', MEDIA, kindOf, mdOf, faceOf, artOf, oursIm, ART_PATS, ART_LAYS, ART_GEN, qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.6', MEDIA, kindOf, mdOf, faceOf, artOf, oursIm, ART_PATS, ART_LAYS, ART_GEN, qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });
