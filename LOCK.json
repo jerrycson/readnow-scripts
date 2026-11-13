@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "srch1",
+ "what": "웹앱 검색 칸 판 내기",
+ "since": "2026-11-13T08:08:57Z",
+ "beat": "2026-11-13T08:08:57Z",
  "ask": null,
  "last": {
   "who": "cbuild",
   "done": "클라우드 0.35.227 cbuild 넷째 · Cloud Build에 맡김 켬 (bfff8bc2)",
   "at": "2026-11-13T08:08:23Z"
  },
- "host": null
+ "host": "vm-srch1"
 }
