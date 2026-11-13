@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shelf3",
+ "what": "서가 0.2.11 VHS 가름 고침",
+ "since": "2026-11-13T15:24:14Z",
+ "beat": "2026-11-13T15:24:14Z",
  "ask": null,
  "last": {
   "who": "friendkey1",
   "done": "책방 친구 서명 열쇠 세팅 · bc14f482",
   "at": "2026-11-13T15:24:10Z"
  },
- "host": null
+ "host": "vm-shelf3"
 }
