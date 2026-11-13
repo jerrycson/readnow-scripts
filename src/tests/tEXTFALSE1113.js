@@ -25,4 +25,8 @@ ok(X.sig({ d: { title: 'a;' } }, 'kyobo') !== X.sig({ d: { title: 'a' } }, 'kyob
   ok(X.fmtShift(OLD, NEW2, 'ebay') === false, '③ 매물 수가 다르면(상 2 → 1) 그대로 바뀜');
   ok(X.fmtShift(NEW, NEW2, 'ebay') === false && X.fmtShift(NEW, { none: false, d: { items: [it('new', 30, 'USD'), it('상', 15.2, 'USD', 12, 'GBP'), it('상', 18, 'USD')] } }, 'ebay') === false, '③ 새 꼴끼리는 값이 다르면 그냥 바뀜(꼴만 바뀜 아님)');
   ok(/fmt: '꼴만 바뀜/.test(col) && /\['new', 'changed', 'same', 'fmt'\]\.includes\(st\)/.test(col), '③ 기록 줄·셈에 꼴만 바뀜'); }
+// ④ 기본 정보: 이번에 비워 온 칸은 받아 둔 값 그대로 · 실제로 다른 값은 새 값 · 장터 출처엔 안 씀
+{ const kb = X.keepBasic({ title: '가', priceList: 22000, pages: 300 }, { title: '', priceList: 20000, pages: null, kdc: '813' });
+  ok(kb.d.title === '가' && kb.d.pages === 300 && kb.d.priceList === 20000 && kb.d.kdc === '813' && kb.kept.join() === 'title,pages', '④ 빈 제목·쪽수는 받아 둔 값 · 정가는 새 값 · 새 칸 더함');
+  ok(/X\.SOURCES\[src\]\.grp === 'basic'\) \{ try \{ const kb = X\.keepBasic\(prev\.d, d\)/.test(col) && /X\.SOURCES\[src\]\.grp === 'basic'\) \{ try \{ const kb = X\.keepBasic\(prev\.d, d\)/.test(cl), '④ 수집기·클라우드 모두 기본 정보 묶음만'); }
 console.log(bad ? `❌ tEXTFALSE1113 실패 ${bad}개` : '✓ tEXTFALSE1113 모두 통과'); process.exit(bad ? 1 : 0);
