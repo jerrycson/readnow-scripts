@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "rv1b: 기본 정보 빈 칸 덮지 않음(ext 0.6.23) 판",
- "since": "2026-11-13T07:04:21Z",
- "beat": "2026-11-13T07:05:09Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: note4 둘째: 노트 단추 즉시 반응·작업판 카드 링크 판",
-  "at": "2026-11-13T07:07:18Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24re 일곱째 웹앱 1.78.586",
-  "at": "2026-11-13T07:04:19Z"
+  "done": "rv1b 넷째 웹앱 1.78.586 · 수집기 1.89.321 · ext 0.6.23 · 클라우드 0.35.225 (91a53af3)",
+  "at": "2026-11-13T07:09:45Z"
  },
- "host": "wk-rv1b"
+ "host": null
 }
