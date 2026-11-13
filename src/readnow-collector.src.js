@@ -201,6 +201,13 @@ rnPwEye((inp) => !!(inp.closest && inp.closest('[id^="rn"], .rncard'))); /* 수�
  *  꺼 둔 맡긴 일(출고 시작·현금 판매·등록)은 이 PC가 받지 않고 대기로 남겨 다른 PC가 받음 */
 /* (1.63.8) 연 탭 닫기 + 닫혔는지 확인(6초) — 못 닫으면 기록에 남김(빈 탭이 쌓이지 않게 눈에 보이게) */
 window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await new Promise((r) => setTimeout(r, 500)); } try { window.__rnLog && window.__rnLog('수집기', 'warn', '연 탭(로그인 등)을 닫지 못함 — 남은 탭이 있으면 직접 닫아 주세요'); } catch (e) {} return false; };
+/* (정범님 11/13 11:54 tabfix) 🙈 수집기가 일을 위해 여는 탭은 모두 뒤 탭 — 사람이 보던 화면의 포커스를 뺏지 않음
+ *  __rnTabOpt(): active:false · setParent 없음(닫힐 때 브라우저가 연 탭으로 포커스를 되돌리지 않게) · 사람 창이면 맨 뒤(insert 없음) · 🪟 작업 창 탭이면 같은 창 옆자리(insert — 11/05 작업 창 설계의 전제)
+ *  __rnHumanAt: 이 탭에서 사람이 마지막으로 만진 때(마우스·키·휠·터치) · __rnHumanBusy(초): 이 탭이 화면에 보이고 그 초 안에 만졌으면 true(안전한 새로고침은 손을 놓을 때까지 기다림) */
+window.__rnTabOpt = (o) => { let w = false; try { w = !!(window.__rnWork && window.__rnWork.isWork && window.__rnWork.isWork()); } catch (e) {} return { active: false, insert: w, setParent: false, ...(o || {}) }; };
+window.__rnHumanAt = window.__rnHumanAt || 0;
+try { const hu = (e) => { if (e && e.isTrusted === false) return; window.__rnHumanAt = Date.now(); }; for (const ev of ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'pointerdown']) window.addEventListener(ev, hu, { capture: true, passive: true }); } catch (e) {}
+window.__rnHumanBusy = (sec) => { try { return document.visibilityState === 'visible' && Date.now() - (+window.__rnHumanAt || 0) < (sec || 90) * 1000; } catch (e) { return false; } };
 (function rnFeatInit() {
   window.__rnFeats = [
     ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회·주문확인요청·발송요청 목록의 주문번호 옆 고객 표시', '화면'],
@@ -243,7 +250,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     }
     GM_setValue('rnu-naver-login', { at: Date.now() });
     L('알라딘 로그인이 풀려 네이버로 다시 로그인합니다 (네이버 로그인 상태 유지 사용)');
-    let tab = GM_openInTab(NAVER_URL(ret), { active: false, insert: true }); let ok = false;
+    let tab = GM_openInTab(NAVER_URL(ret), window.__rnTabOpt()); let ok = false;
     for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 5000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } } // 최대 60초
     await window.__rnCloseTab(tab);
     if (!ok && !(stopped && stopped())) { // 네이버 로그인도 풀림 → 사람에게
@@ -795,7 +802,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     d = reviveDecide({ ...base, net: await net() }); if (d.act !== 'open') { if (noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 멈춘 듯하지만 ${d.why}`); } return; }
     const R2 = GM_getValue('rn-revive', null) || {}; if (R2.last && Date.now() - R2.last < base.staleMin * 60e3) return; /* 다른 탭이 방금 엶 */ const opens = [...(R2.opens || []).filter((t) => Date.now() - t < 3600e3), Date.now()];
     GM_setValue('rn-revive', { last: Date.now(), opens, by: location.hostname }); noted = ''; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - seen.at) / 60e3)}분 동안 신호 없음(크롬 'Out of Memory'·인터넷 끊김 화면 추정) — 새 탭으로 알라딘 주문조회를 엶(1시간 ${opens.length}/${base.perHour}번째) · 저장된 자리부터 이어 함`);
-    try { GM_openInTab(URL0, { active: false, insert: true, setParent: false }); } catch (e) { L('err', '🩺 새 탭 열기 실패: ' + e.message); }
+    try { GM_openInTab(URL0, window.__rnTabOpt()); } catch (e) { L('err', '🩺 새 탭 열기 실패: ' + e.message); }
   } catch (e) {} }, 60000);
 })();
 (function rnPcName() {
@@ -1830,7 +1837,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     let url = /login/i.test(loginUrl) ? loginUrl : null;
     url = url || 'https://www.aladin.co.kr/login/wlogin.aspx?returnurl=' + encodeURIComponent(BASE + 'worders.aspx');
     GM_setValue(LOGIN_FLAG, { at: Date.now() });
-    const tab = GM_openInTab(url, { active: false, insert: true });
+    const tab = GM_openInTab(url, window.__rnTabOpt());
     let ok = false;
     for (let i = 0; i < 18; i++) { // 최대 90초
       await sleep(5000);
@@ -4991,7 +4998,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     log('로그인이 풀려 아이디로 한 번 다시 로그인합니다', 1); ui('아이디로 다시 로그인 중', 0, 0);
     const url = /login/i.test(loginUrl || '') ? loginUrl : 'https://www.aladin.co.kr/login/wlogin.aspx?returnurl=' + encodeURIComponent('https://www.aladin.co.kr/scm/wmain.aspx');
     GM_setValue(LOGIN_FLAG, { at: Date.now() });
-    const tab = GM_openInTab(url, { active: false, insert: true });
+    const tab = GM_openInTab(url, window.__rnTabOpt());
     let ok = false;
     for (let i = 0; i < 18; i++) { await sleep(5000); if (stopFlag) break; const f = GM_getValue(LOGIN_FLAG, {}); if (f.result === 'failed' || f.result === 'no-id-field') break; if (await isLoggedIn()) { ok = true; break; } }
     await window.__rnCloseTab(tab);
@@ -6254,7 +6261,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if (rr === false) return false;
         if (stopFlag) throw new Error('멈춤');
         if (ORDER[i + 1]) await C('prd_jobs').doc(DOC).set({ stage: ORDER[i + 1], savedAt: Date.now() }, { merge: true });
-        if (ORDER[i + 1] && window.__rnOutdated && GM_getValue('rnu-reload-for', null) !== window.__rnOutdated && !(window.__rnCrm && window.__rnCrm.busy()) && !(window.__rnSqWait && window.__rnSqWait('verStep', `⚡ 새 수집기 ${window.__rnOutdated}로 바꾸기(단계 사이)`))) { /* (shipq1) 🔕 시간대엔 단계 사이에서도 안 바꿈 */ log(`단계 사이: 새 수집기 ${window.__rnOutdated}로 바꿔 '${STEP_LABEL[ORDER[i + 1]]}'부터 이어갑니다`); GM_setValue('rnu-reload-for', window.__rnOutdated); safeReload('새 버전으로 바꿈', onlyPrd ? 'prdChain' : 'chain'); return 'reload'; }
+        if (ORDER[i + 1] && window.__rnOutdated && GM_getValue('rnu-reload-for', null) !== window.__rnOutdated && !(window.__rnCrm && window.__rnCrm.busy()) && !(window.__rnVerHold && window.__rnVerHold()) /* (tabfix) 📦 판 몰아 받기 10분 */ && !(window.__rnSqWait && window.__rnSqWait('verStep', `⚡ 새 수집기 ${window.__rnOutdated}로 바꾸기(단계 사이)`))) { /* (shipq1) 🔕 시간대엔 단계 사이에서도 안 바꿈 */ log(`단계 사이: 새 수집기 ${window.__rnOutdated}로 바꿔 '${STEP_LABEL[ORDER[i + 1]]}'부터 이어갑니다`); GM_setValue('rnu-reload-for', window.__rnOutdated); safeReload('새 버전으로 바꿈', onlyPrd ? 'prdChain' : 'chain'); return 'reload'; }
       }
       await finishJob(DOC, { finishedBy: PC_NAME });
   }
@@ -8637,7 +8644,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       try { GM_setValue('rnx_q_' + tok, { re: o.re, reFlags: o.reFlags || '', none: o.none || null, html: !!o.html, max, at: Date.now() }); } catch (e) { return res({ ok: false, why: '저장소 쓰기 실패' }); }
       let tab = null, done = false, lid = null; const fin = (v) => { if (done) return; done = true; try { if (lid != null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(lid); } catch (e) {} try { tab && tab.close && tab.close(); } catch (e) {} try { GM_deleteValue('rnx_q_' + tok); GM_deleteValue('rnx_r_' + tok); } catch (e) {} res(v); };
       try { lid = GM_addValueChangeListener('rnx_r_' + tok, (k, ov, nv) => { if (nv) fin(nv); }); } catch (e) {}
-      const u = url + (url.includes('?') ? '&' : '?') + 'rnx=' + tok; try { tab = GM_openInTab(u, { active: false, insert: true, setParent: true }); } catch (e) { return fin({ ok: false, why: '탭을 못 엶: ' + e.message }); }
+      const u = url + (url.includes('?') ? '&' : '?') + 'rnx=' + tok; try { tab = GM_openInTab(u, window.__rnTabOpt()); } catch (e) { return fin({ ok: false, why: '탭을 못 엶: ' + e.message }); }
       const poll = setInterval(() => { if (done) return clearInterval(poll); let v = null; try { v = GM_getValue('rnx_r_' + tok, null); } catch (e) {} if (v) { clearInterval(poll); fin(v); } }, 1500); /* 값 듣기가 안 되는 환경 대비 */
       setTimeout(() => { clearInterval(poll); fin({ ok: false, why: `화면 읽기 시간 초과(${Math.round((max + 20000) / 1000)}초)` }); }, max + 20000); });
   /* (1.89.87 3시간 점검) 외부 출처 쉼(pauseUntil)을 이 PC의 모든 수집기 탭이 함께 지킴(GM rnu-ext-pause) — 탭 메모리에만 있어 새로고침·안전한 새로고침·판 바꿈마다 풀려
@@ -8964,13 +8971,17 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const H = GM_getValue('rn-live', null); if (!(H && H.ver === M.ver && H.hsig === info.hsig)) { let code = null; if (via === RN_NEW) { try { code = await getCode(RN_NEW, M); } catch (e) { code = null; via = RB + v.commit + '/'; } } if (code == null) code = await getCode(RB + v.commit + '/', M); const H2 = GM_getValue('rn-live', null); /* (4시간 점검 11/12) 받는 몇 초 사이 5분마다 확인(로더)이 같은 판을 먼저 적었으면 다시 적지 않음 — 전엔 새 판마다 약 2.8MB 사본을 2초 사이 두 번 적음(JS-MAIN 09:13 GM 쓰기 5분 6.9MB) */ if (!(H2 && H2.ver === M.ver && H2.hsig === info.hsig)) GM_setValue('rn-live', { ver: M.ver, hsig: info.hsig, code, at: Date.now(), n: M.files.length }); }
           log(`⚡ 새 판 ${M.ver}을 ${via === RN_NEW ? '새 주소(readnow.kr)' : 'GitHub 커밋 ' + v.commit.slice(0, 7)}에서 바로 받아 둠 — 쉬는 사이 바꿈`); window.__rnLiveFast = true; window.__rnLiveReady && window.__rnLiveReady(M.ver); } catch (e) { lastC = null; log('⚡ 새 판 바로 받기 실패: ' + e.message + ' — 5분마다 확인으로 이어감', 1); } };
       const sub = () => { try { C('app_settings').doc('pc_live').onSnapshot((d) => { go(d.exists ? d.data() : null); }, () => setTimeout(sub, 60000)); } catch (e) { setTimeout(sub, 60000); } }; setTimeout(sub, 15000); })();
+    /* (정범님 11/13 tabfix) 📦 판 몰아 받기 — 판이 하루 수십 번 나가 판마다 새로고침(새 탭)하던 것 → 처음 새 판을 본 때부터 10분 모아 그때 가장 새 판으로 한 번만 바꿈
+     *  (그 10분 안에 또 나온 판은 같은 한 번에 담김) · 웹앱 '업데이트 먼저 하고 출고'(sgUrgent)·🛰 원격 업데이트·멈춘 작업 다시 열기·메모리 정리는 기다리지 않음 */
+    const VER_BATCH_MS = 10 * 60000;
+    window.__rnVerHold = () => { try { if (sgUrgent()) return false; const b = +window.__rnVerBatch0 || 0; return !!b && Date.now() - b < VER_BATCH_MS; } catch (e) { return false; } };
     function onNewVer(v, src) { if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
-      window.__rnOutdated = v; if (window.__rnFeat && !window.__rnFeat('update')) { log(`새 수집기 ${v}가 있지만 이 PC는 🧩 '새 판 저절로 맞추기'를 꺼 둠 — 직접 새로고침해야 바뀜`, 1); return; } const tried = GM_getValue('rnu-reload-for', null) === v;
+      window.__rnOutdated = v; if (!window.__rnVerBatch0) window.__rnVerBatch0 = Date.now(); if (window.__rnFeat && !window.__rnFeat('update')) { log(`새 수집기 ${v}가 있지만 이 PC는 🧩 '새 판 저절로 맞추기'를 꺼 둠 — 직접 새로고침해야 바뀜`, 1); return; } const tried = GM_getValue('rnu-reload-for', null) === v;
       /* (1.59.2) 한 번 새로고침했는데도 옛 판이면(Tampermonkey 동기화가 아직 안 옴) 예전엔 그 판으로 끝까지 버팀 → 이제 30분마다(쉬는 사이에만) 다시 새로고침해 동기화가 왔는지 봄, 같은 판으로 최대 8번 */
       const RT0 = GM_getValue('rnu-reload-try', null); const nTry = RT0 && RT0.v === v ? +RT0.n || 0 : 0;
       log(`새 수집기 ${v}가 있습니다 (이 탭은 ${VER}). 지금 작업은 그대로 계속합니다${tried ? (nTry >= 8 ? ' (이 PC의 Tampermonkey에 새 판이 아직 없음 — 8번 다시 열어 봐도 그대로라 더 하지 않음 · 그 PC의 Tampermonkey 동기화를 확인하세요)' : ` (이 PC는 아직 동기화 전 — 30분마다 쉬는 사이에 다시 열어 동기화가 왔는지 확인 ${nTry}/8)`) : '. 쉬는 사이나 일괄 수집 단계 사이에 새 버전으로 바꿔 이어갑니다'}`);
       if (tried && nTry >= 8) return; let idleSince = null; const seenAt = Date.now(); let hwNoted = false;
-      const t = verTimer = setInterval(() => { if (window.__rnShipWait && window.__rnShipWait('verReload', `⚡ 새 수집기 ${v}로 바꾸기`)) { idleSince = null; return; } if (window.__rnSqWait && window.__rnSqWait('verReload', `⚡ 새 수집기 ${v}로 바꾸기`)) { idleSince = null; return; } /* (shipq1) 🔕 출고 시간 방해 금지 시간대 — 끝나면 이 지킴이가 그대로 이어서 바꿈 */ const urg = sgUrgent(); /* (11/09 shipfz1) 🚚 출고 중엔 하던 일을 끊지도·새로고침하지도 않음 — 끝나면 이 지킴이가 그대로 이어서 바꿈 */ const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy()); const hw = !!(window.__rnLiveHsigWait && verNum(window.__rnLiveHsigWait) >= verNum(v)); /* (1.72.0) 새 판의 머리·로더가 이 PC의 Tampermonkey 본체와 달라 빠른 업데이트로 못 바꿈 — 새로고침해도 소용없으니 하던 일을 끊지 않고 2시간마다만(Tampermonkey가 스스로 업데이트했는지) */
+      const t = verTimer = setInterval(() => { if (window.__rnShipWait && window.__rnShipWait('verReload', `⚡ 새 수집기 ${v}로 바꾸기`)) { idleSince = null; return; } if (window.__rnSqWait && window.__rnSqWait('verReload', `⚡ 새 수집기 ${v}로 바꾸기`)) { idleSince = null; return; } /* (shipq1) 🔕 출고 시간 방해 금지 시간대 — 끝나면 이 지킴이가 그대로 이어서 바꿈 */ const urg = sgUrgent(); if (!urg && window.__rnVerHold()) { idleSince = null; if (!window.__rnVerHoldNoted) { window.__rnVerHoldNoted = 1; log(`📦 판 몰아 받기 — 새 판을 처음 본 때부터 10분 모아 한 번에 바꿈(그 사이 또 나온 판도 함께 · 남은 ${Math.max(1, Math.round((VER_BATCH_MS - (Date.now() - window.__rnVerBatch0)) / 60000))}분)`); } return; } /* (11/09 shipfz1) 🚚 출고 중엔 하던 일을 끊지도·새로고침하지도 않음 — 끝나면 이 지킴이가 그대로 이어서 바꿈 */ const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy()); const hw = !!(window.__rnLiveHsigWait && verNum(window.__rnLiveHsigWait) >= verNum(v)); /* (1.72.0) 새 판의 머리·로더가 이 PC의 Tampermonkey 본체와 달라 빠른 업데이트로 못 바꿈 — 새로고침해도 소용없으니 하던 일을 끊지 않고 2시간마다만(Tampermonkey가 스스로 업데이트했는지) */
         // (1.38.0) 오래 걸리는 작업 중이면(새 판을 본 지 10분 넘게) 진행 위치 저장 지점에서 멈추고 새로고침해 새 판으로 그 자리부터 이어감
         //   예전: 쉬거나 일괄 단계 사이에서만 바꿔, 몇 시간짜리 단계가 끝날 때까지 옛 판으로 돌았음(10/8: 16:32에 1.37.0을 보고도 계속 1.27.0)
         if (!tried && !hw && busy && running && !imgRunning && !(window.__rnCrm && window.__rnCrm.busy()) && !window.__rnPaused && !memReload && !verReload && curKey && curKey !== 'explore' && JOBS[curKey] && Date.now() - seenAt > (urg ? 0 : (window.__rnLiveFast ? 3 : 10) * 60000)) { clearInterval(t); verReload = true; stopFlag = true; log(`새 수집기 ${v}로 바꾸려고 지금 항목까지 저장하고 멈춥니다 — 새로고침 뒤 '${JOBS[curKey][0]}'을(를) 그 자리부터 자동으로 이어감`, 1); return; }
@@ -9112,6 +9123,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     let lastTab = null; const closeTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await sleep(500); } return !!tb.closed; };
     let wait = 30000; const tStart = Date.now(); log(`[안전한 새로고침] 시작 — 이유: ${reason}${resumeKey ? ` · 새 탭에서 이어갈 작업: '${(JOBS[resumeKey] || [resumeKey])[0]}'` : ''} · 지금 요청 간격 ${PACE.state().gap}ms${PACE.cooling() ? ` · 쉬는 중 ${Math.round(PACE.cooling() / 1000)}초 남음` : ''}`);
     for (let tryN = 1; ; tryN++) {
+      if (window.__rnHumanBusy && window.__rnHumanBusy(90)) { const hw0 = Date.now(); log(`[안전한 새로고침] 사람이 이 탭을 쓰는 중 — 손을 놓은 틈(90초 동안 입력 없음 · 또는 다른 탭으로 감)에 바꿈`); ui(`${reason} — 사람이 쓰는 중이라 손을 놓은 틈에 바꿈`, 0, 0, '90초 동안 마우스·키 입력이 없으면 뒤 탭으로 바꿈'); while (window.__rnHumanBusy(90)) await sleep(5000); log(`[안전한 새로고침] 손을 놓은 틈 — ${Math.round((Date.now() - hw0) / 1000)}초 기다린 뒤 바꿈`); } /* (정범님 11/13 tabfix) 사람이 보던 탭이면 옛 탭이 닫히는 순간 화면이 바뀌므로 입력이 없는 틈에만 */
       if (window.__rnSgOn && window.__rnSgOn()) { window.__rnReloading = 0; try { GM_setValue('rn-sg-upd', { st: 'held', at: Date.now(), v: window.__rnOutdated || null, from: VER }); } catch (e) {} window.__rnShipDefer && window.__rnShipDefer('reload', `안전한 새로고침(${reason})`, () => safeReload(reason, resumeKey), { reload: true }); log(`[안전한 새로고침] 🚚 출고가 시작돼 새 탭을 열기 전에 멈춤 — 이 탭은 지금 판(${VER}) 그대로 · 출고가 끝나면 이어서 바꿈`, 1); return; } /* (정범님 11/09 저녁 shipsafe2) 아직 바꾸기 전(알라딘 서버 확인·기다리는 중)이면 바꾸지 않고 미룸 — 새 탭을 연 뒤(이어받기 2분)는 끝까지 감(되돌리는 것보다 짧고 안전) */
       if (globalThis.__rnPubHome && /새 (버전|판)/.test(reason) && typeof helperGet1 === 'function') { try { const rp = await helperGet1(HLP + '/rpass', { 'X-RN-Meter': '1' }); if (rp && rp.pass && tryN === 1) log(`[안전한 새로고침] 🔄 도우미 새 판 바꿈 통행증 — 몫·상한으로 닫힌 테더링 문을 3분 열어 둠(새 탭 하나 · 수집기 일은 그대로 쉼)`); } catch (e) {} } /* (auditfix 11/13 · 정밀 점검 11/12 ④-7) 로거 새 판 바꿈이 상한 문에 막혀 '알라딘 응답 없음'으로 4시간 못 바꾸던 것 — 옛 도우미(통행증 없음)면 예전 그대로 */
       let st = 0, em = ''; try { const r = await fetch(location.href, { credentials: 'include', cache: 'no-store' }); st = r.status; } catch (e) { st = 0; em = e.message; } log(`[안전한 새로고침] ${tryN}번째 서버 확인: ${st || '응답 없음'}${em ? ' (' + em + ')' : ''}${st === 429 ? ' — 요청 너무 많음' : ''} · 시작한 지 ${Math.round((Date.now() - tStart) / 60000)}분`);
@@ -9122,7 +9134,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         const hq = (fn) => { try { const q = (GM_getValue('rn-handoff-q', null) || []).filter((x) => x && x.id && Date.now() - (x.at || 0) < 10 * 60000); GM_setValue('rn-handoff-q', fn(q)); } catch (e) {} };
         hq((q) => [...q.filter((x) => x.id !== id), { id, at: Date.now() }]); const unq = () => hq((q) => q.filter((x) => x.id !== id));
         if (lastTab && !lastTab.closed && !(await closeTab(lastTab))) { log(`[안전한 새로고침] 앞서 연 새 탭이 닫히지 않아 새 탭을 또 열지 않고 이 탭을 그 자리에서 새로고침합니다 (탭이 쌓이지 않게)`, 1); if (window.__rnFlush) await window.__rnFlush(); GM_setValue('rn-handoff', { id, at: Date.now() }); location.reload(); return; }
-        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, '') + (window.__rnWork && window.__rnWork.mark ? '#rnWork' : ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab; /* (11/05) 🪟 작업 창 탭이면 새 탭도 작업 창 탭(같은 창 안 옆자리에 열림) */
+        log(`${reason}: 새 탭(뒤 탭 · 포커스 안 뺏음)으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { const isW = !!(window.__rnWork && window.__rnWork.isWork && window.__rnWork.isWork()); tab = GM_openInTab(location.href.replace(/#.*$/, '') + (window.__rnWork && window.__rnWork.mark ? '#rnWork' : ''), { active: false, insert: true, setParent: isW }); } catch (e) {} lastTab = tab; /* (11/05) 🪟 작업 창 탭이면 새 탭도 작업 창 탭(같은 창 안 옆자리에 열림) · (정범님 11/13 tabfix) 새 탭은 늘 뒤 탭(active:false) — 예전 active:true가 판마다(하루 수십 번) 사람 창 포커스를 뺏음 · 옆자리(insert)라 옛 탭이 닫히면 크롬이 그 자리의 새 탭을 보여 줌 · setParent는 작업 창에서만(사람 창에서 새 탭이 닫힐 때 포커스를 되돌리지 않게) */
         const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
         if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (2분 끝에 확인) — 이 탭을 닫습니다`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; }
         unq(); const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성${(() => { try { return typeof st !== 'undefined' ? ` · 직전 서버 확인 ${st || '응답 없음'}` : ''; } catch (e) { return ''; } })()}) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
@@ -10418,7 +10430,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const say = (lv, m) => { try { window.__rnLog && window.__rnLog('예스24', lv, m); } catch (e) {} };
     /* ④ 알라딘 탭을 뒤로 한 번 엶 — 열쇠가 없거나 거절될 때 · 알라딘 일하는 탭이 살아 있으면(rnu-lead 20초 안) 안 엶(그 탭의 Firebase 로그인 문제라 탭을 더 열어도 소용없음) · 30분에 한 번 · 로거 크롬 안 엶 */
     const alOpen = () => { try { if (!/^(notok|deny)$/.test(up.code || '') || GM_getValue('rn-pubChrome', false)) return; const q0 = qGet()[0]; if (!q0 || Date.now() - (+q0.at || Date.now()) < 120e3 * SC) return; const L = GM_getValue('rnu-lead', null); if (L && Date.now() - (+L.at || 0) < 20e3) return;
-        const last = +GM_getValue('rn-y24alOpenAt', 0) || 0; if (Date.now() - last < 30 * 60e3) return; GM_setValue('rn-y24alOpenAt', Date.now()); up.openAt = Date.now(); GM_openInTab('https://www.aladin.co.kr/scm/worders.aspx', { active: false, insert: true, setParent: true }); say('warn', `⬆ 예스24 응답을 이 창에서 못 올림(${up.err}) — 알라딘 주문조회를 뒤 탭으로 엶(그 탭이 올림 · 30분에 한 번까지)`); } catch (e) {} };
+        const last = +GM_getValue('rn-y24alOpenAt', 0) || 0; if (Date.now() - last < 30 * 60e3) return; GM_setValue('rn-y24alOpenAt', Date.now()); up.openAt = Date.now(); GM_openInTab('https://www.aladin.co.kr/scm/worders.aspx', window.__rnTabOpt()); say('warn', `⬆ 예스24 응답을 이 창에서 못 올림(${up.err}) — 알라딘 주문조회를 뒤 탭으로 엶(그 탭이 올림 · 30분에 한 번까지)`); } catch (e) {} };
     const dirTick = async () => { if (up.busy) return; if (!qGet().length) { up.err = null; up.code = null; return; } let da = 0; try { da = +GM_getValue('rn-y24drainAt', 0) || 0; } catch (e) {} if (Date.now() - da < 30000 || lockOther('y24')) return; /* 알라딘 일하는 탭이 올리는 중 */
       up.busy = true; try { if (await y24Off(fsR)) { up.err = '웹앱 설정에서 예스24 모으기를 꺼 둠'; up.code = 'off'; return; } const R = await y24UpAll(fsR, FVR, 'y24'); if (R.ok) { up.n += R.ok; up.okAt = Date.now(); say('detail', `⬆ 예스24 응답 ${R.ok}개를 이 창에서 바로 Firebase에 올림(알라딘 탭 없이 · y24_probe · crm_y24_raw)`); } if (R.err) throw R.err; up.err = null; up.code = null; }
       catch (e) { up.err = String(e.message || e).slice(0, 160); up.code = e.code || 'net'; if (up.errLog !== up.err) { up.errLog = up.err; say('warn', '⬆ 예스24 창에서 바로 올리기 안 됨: ' + up.err); } alOpen(); } finally { up.busy = false; } };
@@ -10757,7 +10769,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!(res && res.ok)) { const w = String((res && res.why) || '못 읽음').slice(0, 100); if (w !== HN.badWhy || Date.now() - HN.badAt > 10 * 60e3) { HN.badWhy = w; HN.badAt = Date.now(); L('warn', `🖐 번외가 맡긴 샵매니저 읽기(${HN.last}) 못 함 — ${w}`); } }
     if (!HN.at || Date.now() - HN.at > 30 * 60e3) { HN.at = Date.now(); L('info', `🖐 번외가 맡긴 샵매니저 읽기 — 이 탭이 ${HN.n}건 받아 ✓${HN.ok}·✗${HN.bad}(마지막 ${HN.last}) · 결과는 번외가 운영 칸과 견줌`); } } catch (e) {} };
   async function hTake(h, pc, hold) { const was = HSx.on; HSx.on = !!(h && h.on) && !isLogger(); if (was !== HSx.on) L('info', HSx.on ? '🖐 번외 ⚙ 「알라딘은 평소 크롬을 손발로」 — 이 탭이 번외가 맡긴 샵매니저 읽기를 대신 함(번외 크롬은 로그인하지 않음)' : '🖐 손발 길 끔 — 번외 맡김을 받지 않음'); hTitle();
-    if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} /* 🪟 작업 창이면 운영 도우미가 그 창을 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 이 탭을 앞으로 띄움(알라딘 로그인을 확인해 주세요)'); }
+    if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { GM_notification({ title: '🖐 리드나우 — 알라딘 로그인 확인', text: '번외가 사람 손이 필요하다고 함 — 누르면 그 탭을 앞으로 띄움', timeout: 0, onclick: () => { try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} } }); } catch (e) {} /* (정범님 11/13 tabfix) 예전엔 저절로 이 탭·작업 창을 앞으로 띄워 하던 화면의 포커스를 뺏음 → 알림만 · 사람이 알림을 누를 때만 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 알림을 띄움(누르면 이 탭이 앞으로 · 알라딘 로그인을 확인해 주세요)'); }
     const jobs = Array.isArray(h.jobs) ? h.jobs.slice(0, 1) : []; if (!jobs.length || HSx.busy) return; if (hold && hold.on) { for (const j of jobs) HSx.done.push({ id: String(j.id), res: { ok: false, why: '🚚 출고 중 — 읽지 않음', kind: 'error' } }); return; }
     HSx.busy = true; try { for (const j of jobs) { let res; try { res = await hRun(j); } catch (e) { res = { ok: false, why: '읽기 오류: ' + String(e.message || e).slice(0, 100), kind: 'error' }; }
         if (res.ok) { HSx.login = true; HSx.loginAt = Date.now(); HSx.why = ''; } else if (res.login) { HSx.login = false; HSx.loginAt = Date.now(); HSx.why = res.why; }

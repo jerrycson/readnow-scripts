@@ -1,7 +1,7 @@
 // tBUYP — 정범님 11/10: 💰 매입가 기입(어느 탭이든 떠 있는 단추 · 등록 탭에서 고른 상품 → 창 · 총매입가 나눔 · 확정 = 새 매입 기록과 같은 길 · 카드 💰 칸 두 번 누르기)
 //   + 안전장치 여덟: ① 두 번 세기 막기(묶인 기록은 그 몫만) ② 나눔 방식(똑같이·정가 비율) ③ 판매가 하한 미리 보기 ④ 구글 시트 맞추기와 안 부딪힘 ⑤ 두 기기(덮을 땐 물음)
 //                   ⑥ 다시 바꿈(합계·묶인 기록·매입처 함께 · 예전 값 내역 · ↩) ⑦ 등록 전 매입가 → 등록된 상품으로 옮김 ⑧ 같은 ISBN 여러 권(SKU 다름)은 따로
-// (11/10 정범님 손질 buyp2) ⑨ 나눔 기본 = 똑같이 나눔(정범님 11/10 02:11 · 정가 비율로는 고를 때만) ⑩ 떠 있는 💰 단추 없음 → 👁 살핀 상품 패널 안 💰 구획·등록 고르기 줄 · 패널·머리 불투명
+// (11/10 정범님 손질 buyp2) ⑨ 나눔 기본 = 정가 비율로(정범님 11/13 11:54 바로잡음 — 11/10 똑같이에 동의한 뒤 정가 비율로 바꿨음 · 똑같이는 고를 때만) ⑩ 떠 있는 💰 단추 없음 → 👁 살핀 상품 패널 안 💰 구획·등록 고르기 줄 · 패널·머리 불투명
 //   ⑪ 카드 💰 한 번 누름이 카드(펼침·다시 그림·현재 카드·상품 열기)에 닿지 않음 · 두 번 누름에 창 한 번 ⑫ 모든 상품 카드(상품 카드·출고 카드)에 💰 칸 · 팔린 상품 경고
 //   ⑬ 진행 중 기록 → 확인 완료(빈 매입가 품목이 있으면 그대로 · 미리 보기 · 끄기) ⑭ 알라딘 주문 자동 기록·묶음 가격 기록은 건너뜀
 //  쓰는 법: cd pw && RN_PORT=<포트> node tBUYP.js   (시험 자료는 지어낸 값 — 손님 정보 없음)
@@ -28,7 +28,7 @@ require('./harness.js')(async (p) => { let dialogs = 0; p.on('dialog', (d) => { 
   { const r = await ev(() => buypSelSplit()); ok(r.n === 5, '고른 수 5', r); }
   await openSel();
   { const r = await ev(() => ({ rows: document.querySelectorAll('.buyp .brow').length, inp: document.querySelectorAll('.buyp [data-bi]').length, skip: document.querySelector('.buyp .brow.skip') ? document.querySelector('.buyp .brow.skip').innerText : '', bound: [...document.querySelectorAll('.buyp .brow')].map((x) => x.innerText).join(' | '), set: !!document.querySelector('.buyp details[data-bset]:not([open])') })); ok(r.rows === 5 && r.inp === 4, '상품 5줄 · 헌옷도라이 대량 매입 몫은 칸 없음(바꾸지 않음)', r); ok(/헌옷도라이/.test(r.skip), '건너뛰는 까닭 보임', r.skip); ok(/기존 기록 2026-11-01 당근에 묶임/.test(r.bound) && /지금 매입가 3,000/.test(r.bound), '묶인 기록·지금 매입가 표시', r.bound); ok(r.set, '설정은 접힌 채 시작'); }
-  { const r = await ev(() => (document.querySelector('.buyp input[name="buyp_how"]:checked') || {}).value); ok(r === 'eq', '⑨ 나눔 기본 = 똑같이 나눔', r); }
+  { const r = await ev(() => (document.querySelector('.buyp input[name="buyp_how"]:checked') || {}).value); ok(r === 'list', '⑨ 나눔 기본 = 정가 비율로(정범님 11/13 11:54 바로잡음)', r); }
   { const r = await ev(() => { const L = [...document.querySelectorAll('.buyp .btot label')].map((x) => { const i = x.querySelector('input').getBoundingClientRect(), b = x.getBoundingClientRect(); return b.right - i.right; }); return L; }); ok(r.length === 2 && r.every((d) => d < 120), '라디오와 글자가 붙어 있음(떨어져 보이지 않음)', r); }
   await p.check('.buyp input[name="buyp_how"][value="list"]'); await wait(100);
   await p.fill('.buyp [data-btotal]', '10001'); await wait(100);
