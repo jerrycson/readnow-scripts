@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "home2 번외 0.1.50 예스24 화면 안 확인 상자",
+ "since": "2026-11-13T02:37:27Z",
+ "beat": "2026-11-13T02:37:27Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "긴급 col2mig 기본 끔 1.78.553·1.89.302 b6745a3f",
   "at": "2026-11-13T02:36:50Z"
  },
- "host": null
+ "host": "vm-home2"
 }
