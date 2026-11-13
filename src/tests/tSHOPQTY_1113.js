@@ -1,0 +1,60 @@
+// tSHOPQTY_1113 — (11/13 shopux1 · 정범님 20:47 카드 n1113cartqty ⓑ 「2권 이상 담기 열기 · 설정 변경 가능」) 🛍 같은 책 여러 권 담기
+//   ① 한 권 주문은 예전과 바이트 하나 다르지 않음 — 옛 판(b32b544f) 셈과 새 셈을 같은 입력으로 견줌: 장바구니 담기·합계·주문 글(orderBody) · 클라우드 주문 검사(checkOrder)
+//   ② 클라우드 창구(가짜 Firestore + 진짜 http): 수량 3권 책을 2권 주문 → 주문 기록 줄 2개(각 1권 · 같은 상품) · 합계 2권 값 · '주문 중' 한 번 · 재고보다 많이/설정보다 많이/설정 끔이면 거절 · 견적도 2권 값
+//   ③ 웹앱 현금 판매 기록(bqCashDoc · 출고 목록·송장·알라딘 판매중지가 읽는 기록): 2권 주문 → 줄 2개 · 줄마다 1권 · 같은 상품 · 책값 합 = 낸 책값
+// 실행: node src/tests/tSHOPQTY_1113.js · 손님 정보 없음(손님A · 010-0000-0000)
+const fs = require('fs'); const path = require('path'); const http = require('http'); const cp = require('child_process'); const vm = require('vm'); const os = require('os');
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
+const ROOT = path.resolve(__dirname, '..', '..'); const SH = require(path.join(ROOT, 'cloud/shop.js')); const BQ = require(path.join(ROOT, 'shop/shop-core.js'));
+const OLD = 'b32b544f'; /* shopux1 앞 판(shop2 둘째) */
+const git = (f) => cp.execSync(`git -C "${ROOT}" show ${OLD}:${f}`, { encoding: 'utf8', maxBuffer: 64e6 });
+(async () => {
+console.log('① 한 권 주문은 예전과 똑같음(옛 판 셈과 견줌)');
+{ const sb = { module: { exports: {} } }; sb.exports = sb.module.exports; vm.runInNewContext(git('shop/shop-core.js'), sb); const OB = sb.module.exports;
+  const it = (i, q) => ({ id: 'aladin_U' + i, t: '시험 책 ' + i, g: '상', p: 4000 + i * 1000, im: null, ...(q ? { q } : {}) }); const f = { name: '손님A', phone: '010-0000-0000', same: true, zip: '06000', addr1: '서울 어딘가 1길 1', addr2: '101호', memo: '문 앞', dep: '', agreeP: true, agreeT: true, hp: '', cp: '', expect: 9000 };
+  let c0 = [], c1 = []; const steps = [[it(1), 20], [it(2), 20], [it(1), 20], [it(3, 3), 20], [it(4), 2]]; let same = true;
+  for (const [x, mx] of steps) { const a = OB.cartAdd(c0, x, mx), b = BQ.cartAdd(c1, x, mx); if (JSON.stringify(a) !== JSON.stringify(b)) same = false; c0 = a.cart; c1 = b.cart; }
+  ok(same && JSON.stringify(OB.cartSum(c0, { shipFee: 3500 })) === JSON.stringify(BQ.cartSum(c1, { shipFee: 3500 })) && JSON.stringify(OB.orderBody(f, c0)) === JSON.stringify(BQ.orderBody(f, c1)), '담기(같은 책 또 담기 · 수량 3권 책도 · 최대 권 수) · 합계 · 주문 글이 옛 판과 바이트까지 같음(여러 권 설정을 주지 않으면)');
+  const b1 = BQ.orderBody(f, [it(1)]); ok(!('qty' in b1) && JSON.stringify(b1) === JSON.stringify(OB.orderBody(f, [it(1)])), '한 권 주문 글에는 qty 칸 없음');
+  const tmp = path.join(ROOT, 'cloud', '_old_shop_' + process.pid + '.js'); fs.writeFileSync(tmp, git('cloud/shop.js')); let OSH = null; try { OSH = require(tmp); } finally { fs.unlinkSync(tmp); } /* 옛 판 클라우드 셈을 잠깐 불러 견줌(이 시험이 만든 임시 파일만 치움) */
+  const B = { items: ['aladin_U1', 'aladin_U2'], buyer: { name: '손님A', phone: '010-0000-0000' }, rcv: { zip: '06000', addr1: '서울 어딘가 1길 1' }, agree: { privacy: true, terms: true }, cp: 'ab-1', expect: 9000 };
+  ok(JSON.stringify(OSH.checkOrder(B)) === JSON.stringify(SH.checkOrder(B)) && JSON.stringify(OSH.checkOrder({ ...B, items: [] })) === JSON.stringify(SH.checkOrder({ ...B, items: [] })), '클라우드 주문 검사(checkOrder): qty가 없으면 옛 판과 결과가 같음');
+  const Q = SH.checkOrder({ ...B, qty: { aladin_U2: 3, aladin_U9: 4, aladin_U1: 1 } }); ok(Q.ok && JSON.stringify(Q.v.qty) === '{"aladin_U2":3}' && !SH.checkOrder({ ...B, qty: { aladin_U2: 30 } }, { maxItems: 20 }).ok, 'qty: 담은 책·2권 넘는 것만 · 권 수 합이 한 번에 최대를 넘으면 거절');
+  let c = []; for (let k = 0; k < 4; k++) c = BQ.cartAdd(c, it(3, 3), 20, 10).cart; ok(c.length === 1 && c[0].n === 3 && BQ.cartAdd(c, it(3, 3), 20, 10).why && BQ.cartSum(c, {}).sum === 21000 && BQ.cartSum(c, {}).n === 3 && JSON.stringify(BQ.qtyOf(c)) === '{"aladin_U3":3}' && BQ.cartSetN(c, 'aladin_U3', 1)[0].n === undefined, '여러 권 설정: 재고 3권 책은 3권까지 · 합계 3권 값 · −로 1권이면 한 권 줄과 같은 꼴');
+  ok(BQ.cartAdd([it(1)], it(2), 1, 10).why === '한 번에 1권까지' && BQ.cartAdd([{ ...it(3, 3), n: 2 }], it(3, 3), 2, 10).why === '한 번에 2권까지', '여러 권도 한 번에 담는 최대(권 수 합)를 지킴'); }
+
+console.log('② 클라우드 창구(가짜 Firestore)');
+const store = {}; const col = (n) => (store[n] = store[n] || {}); const clone = (x) => JSON.parse(JSON.stringify(x));
+const FV = { serverTimestamp: () => new Date().toISOString(), arrayUnion: (...a) => ({ __au: a }) }; const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) o[k] = x && x.__au ? [...(o[k] || []), ...x.__au] : x; return o; };
+const snap = (n, id) => { const d = col(n)[id]; return { id, exists: d != null, data: () => (d == null ? undefined : clone(d)), ref: ref(n, id) }; };
+function ref(n, id) { return { _n: n, id, get: async () => snap(n, id), set: async (v, o) => { col(n)[id] = o && o.merge ? merge(col(n)[id], v) : merge({}, v); } }; }
+const C = (n) => { const q = (flt) => ({ where: (f, op, v) => q([...flt, [f, op, v]]), select: () => q(flt), get: async () => { const docs = Object.keys(col(n)).filter((id) => flt.every(([f, op, v]) => { const x = col(n)[id][f]; return op === '==' ? x === v : op === '>' ? String(x) > String(v instanceof Date ? v.toISOString() : v) : true; })).map((id) => snap(n, id)); return { size: docs.length, forEach: (f) => docs.forEach(f), docs }; } }); return { ...q([]), doc: (id) => ref(n, id) }; };
+let txSets = 0; const db = { getAll: async (...r) => r.map((x) => snap(x._n, x.id)), runTransaction: async (fn) => { const W = []; await fn({ get: (r) => r.get(), getAll: async (...r) => r.map((x) => snap(x._n, x.id)), set: (r, v, o) => { if (r._n === 'shop_holds') txSets++; W.push(() => r.set(v, o)); } }); for (const w of W) await w(); } };
+const L0 = (o) => ({ status: '판매중', active: true, qty: 1, price: 8000, grade: '상', sku: 'A01BC123PK', title: '시험 책', isbn13: '9788900000001', bookId: 'bk1', registeredAt: '2026-11-10T01:00:00Z', photos: [{ stored: 'p/1.jpg', thumb: 'p/1_t.jpg' }], ...o });
+for (let i = 1; i <= 4; i++) col('prd_listings')['aladin_U' + i] = L0({ title: '시험 책 ' + i, sku: 'A01BC12' + i + 'PK', bookId: 'bk' + i, isbn13: '978890000000' + i, price: 4000 + i * 1000, qty: i === 3 ? 3 : 1 });
+for (let i = 1; i <= 4; i++) col('prd_books')['bk' + i] = { author: '지은이A', publisher: '출판사A', pubDate: '2020-05-01', categories: [{ path: '국내도서>소설/시/희곡>한국소설' }], priceList: 15000, title: '시험 책 ' + i };
+col('app_settings').shop = { open: 1, shipFee: 3500, payDays: 2, bank: { name: '시험은행', acct: '000-000', holder: '가게' }, biz: { name: '가게' } };
+const SHOP = SH.makeShop({ db, C, FV, log: () => {} }); const srv = http.createServer(async (req, res) => { const p0 = (req.url || '/').split('?')[0]; if (await SHOP.handle(req, res, p0)) return; res.writeHead(404); res.end(); });
+await new Promise((r) => srv.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + srv.address().port; let ipn = 20;
+const J = async (p, o) => { const r = await fetch(base + p, o ? { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://booksqueen.com', 'X-Forwarded-For': '8.8.8.' + ipn++ }, body: JSON.stringify(o) } : { headers: { Origin: 'https://booksqueen.com' } }); return { s: r.status, j: await r.json() }; };
+const body = (ids, qty) => ({ items: ids, ...(qty ? { qty } : {}), buyer: { name: '손님A', phone: '010-0000-0000' }, rcv: { zip: '06000', addr1: '서울 어딘가 1길 1', addr2: '101호', memo: '문 앞' }, agree: { privacy: true, terms: true } });
+let o2 = null;
+{ const q = await J('/shop/quote', { items: ['aladin_U3', 'aladin_U1'], qty: { aladin_U3: 2 } }); const q1 = await J('/shop/quote', { items: ['aladin_U3'] }); ok(q.j.sum === 7000 * 2 + 5000 && q1.j.sum === 7000 && q.j.items.length === 2, `견적: 같은 책 2권 값 ${q.j.sum}원 · 한 권 견적은 예전대로 ${q1.j.sum}원`, [q.j, q1.j]);
+  const over = await J('/shop/order', body(['aladin_U3'], { aladin_U3: 4 })); ok(over.s === 409 && /남은 수량이 3권/.test(JSON.stringify(over.j)) && !Object.keys(col('shop_orders')).length, '재고보다 많이 → 거절(주문 기록·잡아 둠 0)', over.j);
+  const side = async (look) => { col('app_settings').shop.look = look; const S2 = SH.makeShop({ db, C, FV, log: () => {} }); const v2 = http.createServer(async (req, res) => { const p0 = (req.url || '/').split('?')[0]; if (await S2.handle(req, res, p0)) return; res.writeHead(404); res.end(); }); await new Promise((r) => v2.listen(0, '127.0.0.1', r)); const rr = await fetch('http://127.0.0.1:' + v2.address().port + '/shop/order', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://booksqueen.com', 'X-Forwarded-For': '7.7.7.' + ipn++ }, body: JSON.stringify(body(['aladin_U3'], { aladin_U3: 2 })) }); const j = { s: rr.status, j: await rr.json() }; v2.close(); delete col('app_settings').shop.look; return j; }; /* 설정은 클라우드가 1분 기억 — 설정마다 새 창구 */
+  const mx = await side({ multiMax: 1 }); const off = await side({ multiOn: false });
+  ok(mx.s === 409 && /한 번에 1권까지/.test(JSON.stringify(mx.j)) && off.s === 409 && /한 권씩만/.test(JSON.stringify(off.j)) && !Object.keys(col('shop_orders')).length, '설정 「같은 책 최대 1권」·「여러 권 담기 끔」이면 거절', [mx.j, off.j]);
+  txSets = 0; const r = await J('/shop/order', body(['aladin_U3', 'aladin_U1'], { aladin_U3: 2 })); o2 = col('shop_orders')[r.j.no];
+  ok(r.s === 200 && o2.items.length === 3 && o2.items.filter((x) => x.lid === 'aladin_U3').length === 2 && o2.items.every((x) => x.qty === 1) && o2.sum === 19000 && r.j.total === 19000 + 3500 && col('shop_holds').aladin_U3.on === 1 && txSets === 2 && /주문 접수 3권/.test(o2.hist[0].what), `주문: 같은 책 2권 → 주문 기록 줄 2개(각 1권) + 다른 책 1줄 · 책값 ${o2.sum}원 · 잡아 두기는 책마다 한 번(${txSets}번)`, o2.items);
+  const again = await J('/shop/order', body(['aladin_U3'])); ok(again.s === 409, '주문한 책은 다른 손님이 못 주문(주문 중 — 예전과 같음)'); }
+srv.close();
+console.log('③ 웹앱 현금 판매 기록(출고 목록·송장·알라딘 판매중지가 읽는 기록)');
+{ const T = fs.readFileSync(path.join(ROOT, 'src/app.html'), 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); return T.slice(i, j); };
+  const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + cut('/* ◆shop 시작', '/* ◆shop 끝 */') + '\nreturn { bqCashDoc };')();
+  const Lm = new Map([['aladin_U3', { id: 'aladin_U3', title: '시험 책 3', grade: '상', price: 7000, sku: 'S3', qty: 3, listingId: 'L3' }], ['aladin_U1', { id: 'aladin_U1', title: '시험 책 1', grade: '상', price: 5000, sku: 'S1', qty: 1, listingId: 'L1' }]]);
+  const cd = F.bqCashDoc({ ...o2, paidAt: o2.at }, Lm, 'admin', '2026-11-13T12:00:00Z'); const L3 = cd.items.filter((x) => x.listingKey === 'aladin_U3');
+  ok(cd.items.length === 3 && L3.length === 2 && cd.items.every((x) => x.qty === 1) && cd.items.reduce((a, x) => a + x.price, 0) === o2.sum && L3.every((x) => x.qtyBefore === 3 && x.aladinStop.status === 'todo') && cd.items.map((x) => x.lineNo).join() === '1,2,3', '현금 판매 기록: 같은 책 2권 = 줄 2개(줄 번호 1·2·3 · 줄마다 1권) · 책값 합 = 낸 책값 · 알라딘 내림 할 일은 줄마다(예전 현금 판매와 같은 길)', cd.items.map((x) => [x.lineNo, x.listingKey, x.qty, x.price]));
+  const one = F.bqCashDoc({ no: 'BQ20261113-AAAAA', at: '2026-11-13T01:00:00Z', depositor: '손님A', shipFee: 3500, buyer: { name: '손님A', phone: '01000000000' }, rcv: { name: '손님A', phone: '01000000000', zip: '06000', addr1: '서울', memo: '' }, items: [{ lid: 'aladin_U1', t: '시험 책 1', g: '상', p: 5000, qty: 1 }], paidAt: '2026-11-13T02:00:00Z' }, Lm, 'admin', '2026-11-13T12:00:00Z');
+  ok(one.items.length === 1 && one.items[0].qty === 1 && one.items[0].price === 5000, '한 권 주문의 현금 기록은 예전 그대로(줄 1개 · 1권)'); }
+console.log(bad ? `❌ tSHOPQTY_1113 ${bad}개 실패` : '✓ tSHOPQTY_1113 모두 통과'); process.exit(bad ? 1 : 0);
+})().catch((e) => { console.log('❌ 멈춤', e); process.exit(1); });

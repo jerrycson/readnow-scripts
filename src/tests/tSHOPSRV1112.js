@@ -70,7 +70,7 @@ console.log('④ 배포 작업·손님 화면·비용 기록');
   ok(!/set-secrets/.test(job) && !/ALADIN/.test(job), '숍 전용 서버엔 알라딘 비밀을 넣지 않음');
   ok(/actions: write/.test(job) && /id-token: write/.test(job), '그 일만 actions: write(우리숍 내기 다시 돌림)');
   const sj = fs.readFileSync(R('shop/shop.js'), 'utf8'); ok(/API_SHOP = 'https:\/\/readnow-shop-63884079760\.asia-northeast3\.run\.app'/.test(sj) && /if \(!\(get && SAME\.on\)\) await pickApi\(\);/.test(sj), '손님 화면: 주문·로그인(POST) 전에 숍 전용 서버를 먼저 봄');
-  ok(/shop\.js\?v=0\.1\.(1[3-9]|[2-9]\d)/.test(fs.readFileSync(R('shop/index.html'), 'utf8')), '손님 화면 파일 판 표시 0.1.13(새로 받게)');
+  ok(/shop\.js\?v=(0\.1\.(1[3-9]|[2-9]\d)|0\.([2-9]|\d\d)\.\d+)/.test(fs.readFileSync(R('shop/index.html'), 'utf8')), '손님 화면 파일 판 표시 0.1.13(새로 받게)');
   /* pickApi 동작 — shop.js에서 그 부분만 떼어 돌림 */
   const a = sj.indexOf('  const API_CLOUD'), b = sj.indexOf('  const $ = (s, r)'); const part = sj.slice(a, b);
   const run = async (fx, ss, bqApi) => { const S = { window: bqApi ? { BQ_API: bqApi } : {}, fetch: fx, AbortController, setTimeout, clearTimeout, sessionStorage: ss || { getItem: () => null, setItem: () => {} }, JSON, Date, Promise, out: null }; vm.createContext(S); vm.runInContext(part + '\nout = { pickApi, get: () => API };', S); await S.out.pickApi(); return S.out.get(); };
