@@ -68,6 +68,19 @@ let child = null; let out = ''; const L = fs.readFileSync(SRC, 'utf8'); const C 
     ok(lbl(false, null, false, false) === null && lbl(undefined, 'x@d@s0000', false, false) === null, '③ 손으로 누른 실행(자동 아님) = null → 예전 그대로 \'강제 실행\'');
     ok(/RUNLBL \? `🎯 \$\{RUNLBL\.a\} 시작\(\$\{RUNLBL\.t\}\)/.test(C) && /`🎯 강제 실행 시작 — 주기와 상관없이 맨 처음 판매자부터/.test(C), '③ 시작 글: 자동이면 회차 이름 · 아니면 강제 실행');
   } catch (e) { bad++; console.log('  ❌ 회차 글 오류', e && e.stack); }
+  /* ④ 하루 몫·넘쳐 쓰기 — 휴대폰 2가 인터넷 없음·빠짐(11/13 로거) → 하루 몫은 휴대폰 1 몫만 · 벤치 중 넘쳐 쓰기도 휴대폰 1 남은 날 몫을 남겨 둔 만큼만 */
+  try {
+    const AF = path.join(R, 'readnow-autosched-core.js'); delete require.cache[AF]; require(AF); const AS = globalThis.ReadnowAuto.AS; const at = (x) => Date.parse(x + '+09:00'); const g2 = (b) => Math.round(b / G * 100) / 100;
+    const pool = { on: true, fb: 'p1', list: { p1: { name: '휴대폰 1 · 기존', gb: 120, dev: 'USB\\A', order: 1 }, p2: { name: '휴대폰 2 · 새', gb: 120, dev: 'USB\\B', order: 2 } }, month: { '2026-11': { p2: { from: '2026-11-13', remainGB: 72 } } }, spare: { '2026-11': { gb: 48, from: '2026-11-12', phone: 'p2', pace: true } } };
+    const doc = { budget: { mainPct: 87.5, pool } }; const days = { '2026-11-12': { tether: 49.5 * G, phones: { 'USB\\A': 49.5 * G } } };
+    const mk = (b) => ({ capGB: 242.63, days, phones: [{ id: 'USB\\A', used: 50 * G, active: true, connected: true }, { id: 'USB\\B', used: 0, connected: b !== 'out', net: b === 'bad' ? { bad: true } : null }], today: { key: '2026-11-13', tether: 0.5 * G, tiers: { main: 0.5 * G }, phones: { 'USB\\A': 0.5 * G } } });
+    const both = AS.poolCalc(doc, mk('ok'), at('2026-11-13T09:00:00')); const out1 = AS.poolCalc(doc, mk('out'), at('2026-11-13T09:00:00')); const bad1 = AS.poolCalc(doc, mk('bad'), at('2026-11-13T09:00:00'));
+    ok(g2(both.share) === 8, '④ 두 대 다 됨 = 240GB ÷ 30일 = 하루 8GB(정범님 11/12 지시) · ' + g2(both.share));
+    ok(g2(out1.share) === 4 && g2(bad1.share) === 4 && g2(out1.shareAll) === 8 && out1.off.length === 1, '④ 휴대폰 2가 빠짐·인터넷 없음 = 쓸 수 있는 휴대폰 1 몫(4GB)만 · ' + g2(out1.share) + '/' + g2(bad1.share));
+    const cm = AS.poolCaps(bad1, { must: true }); const p1 = bad1.phones[0]; const room = (cm['USB\\A'].lim - 50 * G) / G;
+    ok(room < 5 && room >= Math.max(0, p1.left) / G - 0.01, '④ 벤치 한 바퀴 중에도 휴대폰 1은 남은 날 몫을 남겨 둠(이번 달 남은 ' + g2(p1.monthLeft) + 'GB 전부가 아니라 ' + room.toFixed(2) + 'GB까지)');
+    const cm2 = AS.poolCaps(both, { must: true }); ok(cm2['USB\\B'].lim > 40 * G, '④ 여분 휴대폰(휴대폰 2)이 되면 넘쳐 쓰기는 예전대로 여분까지');
+  } catch (e) { bad++; console.log('  ❌ 몫 셈 오류', e && e.stack); }
   if (bad) console.log(out.split('\n').slice(-30).join('\n'));
   try { fs.rmSync(HOME, { recursive: true, force: true }); } catch (e) {}
   console.log(bad ? `❌ 실패 ${bad}` : '✓ 통과'); process.exit(bad ? 1 : 0);
