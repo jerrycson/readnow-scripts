@@ -105,25 +105,27 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
   const HP = pick(process.env.RN_HARNESS, path.join(__dirname, 'harness.js'), '/home/user/w/pw/harness.js');
   if (HP && process.env.RN_PORT) { const harness = require(HP);
     await harness(async (p) => { try {
+      /* 터치 누름 — 손가락이 닿는 자리(좌표)에 tap · Playwright 기본 tap은 누르기 전에 창을 부드럽게 굴려(붙은 입력칸을 맨 끝까지) 실제 휴대폰과 달라짐 */
+      const tt = async (sel) => { const bx = await p.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return null; const r0 = e.getBoundingClientRect(); const hb = (document.querySelector('#sheet .sh') || { getBoundingClientRect: () => ({ bottom: 0 }) }).getBoundingClientRect().bottom; if (r0.top < hb + 4 || r0.bottom > innerHeight - 4) { const sh = document.querySelector('#sheet'); sh.scrollTo({ top: sh.scrollTop + r0.top - hb - 120, behavior: 'instant' }); } const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, sel); if (!bx) throw new Error('없음 ' + sel); await p.touchscreen.tap(bx.x, bx.y); };
       await p.evaluate(async (ops) => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; for (const o of ops) await db.collection('jb_notes').doc(o.id).set(o.data); }, seedOps());
       await p.evaluate(() => openNotes()); await p.waitForTimeout(1200);
-      await p.tap('#jbn_root [data-act="tofeed"]'); await p.waitForTimeout(800);
+      await tt('#jbn_root [data-act="tofeed"]'); await p.waitForTimeout(800);
       const fr = await p.evaluate(() => { const sh = document.querySelector('#sheet'); const f = document.querySelector('#jbn-feed'); const hd = sh.querySelector('.sh'); const hb = hd ? hd.getBoundingClientRect().bottom : sh.getBoundingClientRect().top; return Math.round(f.getBoundingClientRect().top - hb); });
       ok(fr >= -2 && fr <= 70, '⑦ 웹앱 📓 [목록 보기 ↓] → 쌓인 목록이 머리 아래 맨 위(' + fr + 'px)');
       const sh = await p.evaluate(() => [...document.querySelectorAll('#jbn_root .jbn-slot')].map((x) => Math.round(x.getBoundingClientRect().height)));
       ok(sh.length === 3 && sh.every((h) => h <= 32), '⑦ 웹앱 저장 단추 작게 — ' + sh.join('·'));
-      await p.tap('#jbn_root #jbn-feed-ta'); await p.waitForTimeout(250);
+      await tt('#jbn_root #jbn-feed-ta'); await p.waitForTimeout(250);
       ok(await p.evaluate(() => document.querySelector('#jbn-dock').classList.contains('big')), '⑦ 웹앱 입력칸 누르면 크게');
-      await p.tap('#jbn_root .jbn-top h2'); await p.evaluate(() => { document.querySelector('#sheet').scrollTop = 0; }); await p.waitForTimeout(300); /* 사람처럼 위로 올려 탭을 누름 */
-      await p.tap('#jbn_root .jbn-tabs [data-tab="mine"]'); await p.waitForTimeout(400);
-      await p.tap('#jbn_root [data-mine="j1"] [data-act="mtoggle"]'); await p.waitForTimeout(300);
-      await p.tap('#jbn_root [data-mine="j1"] [data-act="medit"]'); await p.waitForTimeout(300);
-      await p.fill('#jbn-med', '웹앱에서 고침'); await p.tap('#jbn_root [data-act="msave"]'); await p.waitForTimeout(600);
+      await p.evaluate(() => { const ta = document.querySelector('#jbn-feed-ta'); if (ta) ta.blur(); document.querySelector('#sheet').scrollTo({ top: 0, behavior: 'instant' }); }); await p.waitForTimeout(300); /* 사람처럼 위로 올려 탭을 누름 */
+      await tt('#jbn_root .jbn-tabs [data-tab="mine"]'); await p.waitForTimeout(400);
+      await tt('#jbn_root [data-mine="j1"] [data-act="mtoggle"]'); await p.waitForTimeout(300);
+      await tt('#jbn_root [data-mine="j1"] [data-act="medit"]'); await p.waitForTimeout(300);
+      await p.fill('#jbn-med', '웹앱에서 고침'); await tt('#jbn_root [data-act="msave"]'); await p.waitForTimeout(600);
       const t = await p.evaluate(async () => (await db.collection('jb_notes').doc('j1').get()).data().text);
       ok(t === '웹앱에서 고침', '⑦ 웹앱 📝 내 메모 [✏ 고치기] → 저장');
-      await p.tap('#jbn_root [data-mine="j1"] [data-act="mfav"]'); await p.waitForTimeout(400);
-      if (!(await p.$('#jbn_root [data-mine="j1"] [data-act="march"]'))) { await p.tap('#jbn_root [data-mine="j1"] [data-act="mtoggle"]'); await p.waitForTimeout(300); }
-      await p.tap('#jbn_root [data-mine="j1"] [data-act="march"]'); await p.waitForTimeout(500);
+      await tt('#jbn_root [data-mine="j1"] [data-act="mfav"]'); await p.waitForTimeout(400);
+      if (!(await p.$('#jbn_root [data-mine="j1"] [data-act="march"]'))) { await tt('#jbn_root [data-mine="j1"] [data-act="mtoggle"]'); await p.waitForTimeout(300); }
+      await tt('#jbn_root [data-mine="j1"] [data-act="march"]'); await p.waitForTimeout(500);
       const d = await p.evaluate(async () => (await db.collection('jb_notes').doc('j1').get()).data());
       ok(d.pinned === true && d.state === 'archived', '⑦ 웹앱 내 메모 ⭐ · 🗄 보관');
       if (process.env.RN_SHOT) await p.screenshot({ path: process.env.RN_SHOT + '/n5b_web.png' });
