@@ -66,7 +66,7 @@ console.log('③ 수집기 다리 — 가짜 Firestore·가짜 번외');
 { const i0 = C.indexOf("    const W_CMD = 'col2_y24_cmd'"), i1 = C.indexOf('    G.__rnC2yWRelay = wRelay;'); ok(i0 > 0 && i1 > i0, '다리 덩어리');
   const run = async (docs, net) => { const D = JSON.parse(JSON.stringify(docs)); const writes = []; const ins = [];
     const ref = (id) => ({ id, get: async () => ({ exists: !!D[id], data: () => D[id] }), set: async (v, o) => { writes.push([id, v]); const c = D[id] || {}; for (const [k, x] of Object.entries(v)) { if (x && x.__au) c[k] = [...(c[k] || []), ...x.__au]; else c[k] = x; } D[id] = c; } });
-    const fsx = { collection: () => ({ doc: (id) => { if (!D[id]) ins.push(id); return ref(id); }, where: (f, op, v) => ({ limit: () => ({ get: async () => ({ docs: Object.keys(D).filter((id) => D[id][f] === v).map((id) => ({ id, ref: ref(id), data: () => D[id] })) }) }) }) }),
+    const fsx = { collection: (cn) => ({ doc: (id) => { if (!D[id] && cn === 'col2_y24_cmd') ins.push(id); /* (y24qty2) 새 맡김 문서만 셈 — col2_ctl(맡은 PC 번외 판) 읽기는 새 문서가 아님 */ return ref(id); }, where: (f, op, v) => ({ limit: () => ({ get: async () => ({ docs: Object.keys(D).filter((id) => D[id][f] === v).map((id) => ({ id, ref: ref(id), data: () => D[id] })) }) }) }) }),
       runTransaction: async (fn) => fn({ get: (r) => r.get(), set: (r, v, o) => r.set(v, o) }) };
     const G = {}; const firebase = { firestore: Object.assign(() => fsx, { FieldValue: { arrayUnion: (...a) => ({ __au: a }) } }) };
     const GM_xmlhttpRequest = (o) => { const p = o.url.replace('http://127.0.0.1:8797', ''); const r = net(p, o.data ? JSON.parse(o.data) : null); setTimeout(() => (r == null ? o.onerror() : o.onload({ status: r._st || 200, responseText: JSON.stringify(r) })), 0); };
