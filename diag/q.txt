@@ -1,2 +1,2 @@
-doc=prd_system/autoSched,prd_jobs/qna,app_settings/qna_notify
-# 4029303
+doc=app_settings/aladin_login
+# 2545928699
