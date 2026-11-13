@@ -1,7 +1,7 @@
 /* 📓 정범 노트 — 한 곳(Firestore jb_notes)에 두고 웹앱·아티팩트·리드가 함께 읽고 씀 (note2 · 정범님 11/13 11:54)
  *  자리: Firestore jb_notes/{id} — 한 문서 = 카드 하나(kind 'card') · 메모 하나(kind 'memo') · 보낸 묶음 하나(kind 'batch') · 설정 '_meta'
  *    카드  { kind:'card', cat(대분류), sub(중분류), leaf(소분류), imp(1~3 중요도), title, body(마크다운), src('lead'|'jb'|'worker:<이름>'|…), srcAt, ref,
- *            state('open'|'done'|'archived'|'trashed'), stateAt, readAt(정범님이 읽은 때 · 없으면 '새로 온 것'), tags[], pinned, color, createdAt, updatedAt }
+ *            state('open'|'held'(⏸ 보류)|'done'|'archived'|'trashed'), stateAt, readAt(정범님이 읽은 때 · 없으면 '새로 온 것'), tags[], pinned, color, createdAt, updatedAt }
  *    메모  { kind:'memo', cardId(없으면 통합 노트에 바로 쓴 것), cardTitle, quote(고른 문장), text, by('jb'), at, batchId(보낸 묶음), state('open'|'trashed'), updatedAt }
  *    묶음  { kind:'batch', memoIds[], text(보낸 글), at, via('mcp'|'outbox'), status('sent'|'queued'|'picked'|'failed'), err, pickedAt, updatedAt }
  *  쓰는 길: ① 아티팩트 → claude.ai 연결 「리드나우 노트」(이 파일의 MCP 길 /mcp/n/<열쇠>) ② 웹앱 → Firestore 직접 ③ 리드·일꾼 → /kp-in 암호문 notes:{ops}
@@ -11,7 +11,7 @@
 const crypto = require('crypto');
 const COL = 'jb_notes';
 const KINDS = ['card', 'memo', 'batch', 'meta'];
-const STATES = ['open', 'done', 'archived', 'trashed'];
+const STATES = ['open', 'held', 'done', 'archived', 'trashed']; // held = ⏸ 보류(note4 11/13)
 const BST = ['sent', 'queued', 'picked', 'failed'];
 const STR = { cat: 40, sub: 60, leaf: 60, title: 300, src: 60, srcAt: 40, ref: 300, stateAt: 40, readAt: 40, cardId: 80, cardTitle: 300, quote: 2000, text: 20000, by: 40, at: 40, via: 20, status: 20, err: 400, pickedAt: 40, createdAt: 40, updatedAt: 40, editedAt: 40, color: 12, trashedAt: 40, folder: 60, leadSession: 120 };
 const BODY_MAX = 200000;
