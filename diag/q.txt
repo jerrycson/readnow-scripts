@@ -1,2 +1,2 @@
-mem=1&slearn=2
-# 163324583
+doc=prd_jobs/pcBeat&regfind=9788982912856&cmdsince=2026-11-13T00:59:00&types=regLookup
+# 2117122238
