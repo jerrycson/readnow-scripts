@@ -1,3 +1,2 @@
-sizes=shp_state
-delivchk=1
-# 235629372
+loginnow=1&delivchk=1
+# 3141424769
