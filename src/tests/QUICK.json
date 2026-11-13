@@ -1,0 +1,22 @@
+{
+ "about": "빠른 시험 묶음 — 판 내기 직전 ship-check ⑧(src/tools/test-gate.js)이 밀어 올리는 커밋 그대로 돌림 · 출고·등록·핵심만 · 몇 분 안 · 새로 실패하면 push를 막음(이미 실패 중이면 KNOWN_FAIL.json에 있어야 통과) · 더하고 뺄 때는 까닭을 why에 (rv2b 11/13)",
+ "timeout": 240,
+ "parallel": 3,
+ "follow_max": 3,
+ "tests": [
+  { "t": "tSHIPSAFE", "why": "출고 — 출고 중 수집기·도우미 안전한 새로고침(헌장 제6조)" },
+  { "t": "tSHIP1110", "why": "출고 — 출고 화면" },
+  { "t": "tSHIPDAY", "why": "출고 — 그날 출고" },
+  { "t": "tSHIPUNI", "why": "출고" },
+  { "t": "tSHIPMID", "why": "출고 공용 파일" },
+  { "t": "tSHIPGRADE", "why": "출고 공용 파일 — 등급" },
+  { "t": "tY24AUTO", "why": "출고 — 예스24·ALPS·알라딘 송장 저절로" },
+  { "t": "tREGGL", "why": "등록 — 한눈에 줄" },
+  { "t": "tREGPLAT1111", "why": "등록 — 판매처" },
+  { "t": "tMJREG2_1112", "why": "등록 — 자세히 카드·빠른 설명" },
+  { "t": "tY24REG", "why": "등록 — 예스24 등록" },
+  { "t": "tLED1111", "why": "핵심 — 통합 장부 처리할 일" },
+  { "t": "tTHIN", "why": "핵심 — 휴대폰 반영" },
+  { "t": "tBIG1", "why": "핵심 — 클라우드 공용 파일 한 길" }
+ ]
+}
