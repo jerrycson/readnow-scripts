@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "bkfast+spine2 클라우드 판 다시 올림",
- "since": "2026-11-13T02:28:09Z",
- "beat": "2026-11-13T02:28:09Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "spine2+bkfast 클라우드 0.35.201",
-  "at": "2026-11-13T02:27:58Z"
+  "done": "spine2+bkfast 클라우드 0.35.201 · e980dfd4",
+  "at": "2026-11-13T02:28:15Z"
  },
- "host": "vm-bkfast"
+ "host": null
 }
