@@ -114,6 +114,7 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
       ok(sh.length === 3 && sh.every((h) => h <= 32), '⑦ 웹앱 저장 단추 작게 — ' + sh.join('·'));
       await p.tap('#jbn_root #jbn-feed-ta'); await p.waitForTimeout(250);
       ok(await p.evaluate(() => document.querySelector('#jbn-dock').classList.contains('big')), '⑦ 웹앱 입력칸 누르면 크게');
+      await p.tap('#jbn_root .jbn-top h2'); await p.evaluate(() => { document.querySelector('#sheet').scrollTop = 0; }); await p.waitForTimeout(300); /* 사람처럼 위로 올려 탭을 누름 */
       await p.tap('#jbn_root .jbn-tabs [data-tab="mine"]'); await p.waitForTimeout(400);
       await p.tap('#jbn_root [data-mine="j1"] [data-act="mtoggle"]'); await p.waitForTimeout(300);
       await p.tap('#jbn_root [data-mine="j1"] [data-act="medit"]'); await p.waitForTimeout(300);
