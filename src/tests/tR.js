@@ -47,7 +47,7 @@ function cloudCtx(F) { const pushes = []; const ctx = { C: F.C, db: F.db, W: () 
     ok(ran.length === 1 && ran[0] === 'auto_P-1', '그 PC가 바로 처리(runCmd 불림)');
     ok(A['P-2'].state === 'review' && A['P-2'].pushWant === true && !K['auto_P-2'], '검토 → pushWant(클라우드가 알림) · 발송준비시작 안 맡김');
     ok(A['P-3'].state === 'wait' && A['P-3'].by === 'JS-MAIN', '시장 없음 → 기다림 기록');
-    const SA = F.col('app_settings').ship_auto; ok(SA.beatBy === 'JS-MAIN' && SA.beats && SA.beats['JS-MAIN'] && SA.beatAt, '판단 신호 beatAt + beatBy(JS-MAIN)');
+    const SA = F.col('app_settings').ship_auto_beat || {}; ok(SA.beatBy === 'JS-MAIN' && SA.beats && SA.beats['JS-MAIN'] && SA.beatAt && !F.col('app_settings').ship_auto.beatAt, '판단 신호 beatAt + beatBy(JS-MAIN) — 따로 문서 ship_auto_beat에(설정 문서엔 안 씀 · redraw2 둘째 1.89.325)');
     // 두 번째 고리: 같은 주문 다시 판단 안 함 · 시장 들어오면 기다림 → 통과
     F.col('shp_enrich')['33'] = E([row('green', '상', 9500)]); const r2 = await ctx.autoShipPc([o1, o2, o3]);
     ok(r2 && r2.sent === 1 && ran.length === 2 && ran[1] === 'auto_P-3' && A['P-3'].state === 'sent', '기다리던 주문은 시장이 오면 통과 · 끝난 주문은 다시 안 함');
