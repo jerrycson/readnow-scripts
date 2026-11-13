@@ -57,8 +57,8 @@ console.log('② 한 번짜리 — 걸린 두 건');
   const only = P.y24Re1113Pick([OLD], []); ok(only.length === 1 && only[0].res.state === 'fail' && only[0].res.rows['K1|195142826'].same === true, "옛 판이 '확실하지 않음'으로 닫은 '눌렀지만 목록 값이 그대로(알림 없음)'는 '저장되지 않음'으로 바로잡아 되돌림", only[0] && only[0].res);
   ok(P.y24Re1113Pick([{ ...OLD, res: { state: 'unsure', rows: { x: { state: 'unsure', msg: '눌렀지만 등록상품 목록 값이 2권 — 예스24 알림: 저장되었습니다.' } } } }], []).length === 0, '예스24 알림이 있었던 확실하지 않음은 되돌리지 않음');
   ok(P.y24Re1113Pick([A1], [{ id: 'hold1', st: 'hold', at: '2026-11-13T03:00:00Z', job: { rows: [row()] } }]).length === 0, '같은 줄의 새 맡김이 줄에 있으면(기다림·하는 중) 끝난 옛 문서는 되돌리지 않음(겹침 0)');
-  ok(P.y24Re1113Pick([{ ...A1, re1113: 'x', res: { state: 'already', msg: '할 일 없음' } }], []).length === 0 && P.y24Re1113Pick([{ ...A1, re1113: 'x', reN: 3 }], []).length === 1 && P.y24Re1113Pick([{ ...A1, re1113b: 'x' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, st: 'hold' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, ok: true }], []).length === 0, "이미 되돌린 문서(re1113b · 첫 판에서 되돌렸는데 '할 일 없음'으로 닫힌 것)·끝나지 않은 문서·성공은 아님 · 첫 판이 '앞 맡김 하는 중'으로 3번을 다 쓰고 닫은 문서는 한 번 더");
-  ok(/where\('doneAt', '>=', new Date\(Date\.now\(\) - 48 \* 3600e3\)\.toISOString\(\)\)\.limit\(150\)/.test(A) && /localStorage\.getItem\('rn-y24re1113b'\)/.test(A) && /if \(c\.st !== 'done' \|\| c\.re1113b\) return;/.test(A) && /reN: Math\.min\(\+P0\.reN \|\| 0, Y24_RE_MAX - 1\)/.test(A) && /y24RePatch\(c, pk\.res, me, Date\.now\(\), 0\)/.test(A), '지난 48시간 끝난 맡김만 · 기기마다 한 번 · 문서마다 트랜잭션으로 한 번(re1113) · 바로 보냄');
+  ok(P.y24Re1113Pick([{ ...A1, re1113: 'x', res: { state: 'already', msg: '할 일 없음' } }], []).length === 0 && P.y24Re1113Pick([{ ...A1, re1113: 'x', reN: 3 }], []).length === 1 && P.y24Re1113Pick([{ ...A1, re1113c: 'x' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, re1113: 'x', res: { state: 'fail', pre: true, msg: '⛔ 예스24 쓰기 멈춤 — 눌렀지만 등록상품 목록 값이 판매중·2권 — 예스24 알림: 화면 상자: 경고 × [×] · 칸 고침 setValue · 줄 상태 updated · 칸 고칠 수 있음 아니오' } }], []).length === 1 && P.y24Re1113Pick([{ ...OLD, re1113: 'x', res: { state: 'unsure', rows: { 'K1|195142826': { state: 'unsure', msg: '눌렀지만 등록상품 목록 값이 판매중·2권 — 예스24 알림: 화면 상자: 경고 × [×] · 칸 고침 setValue · 줄 상태 updated · 칸 고칠 수 있음 아니오' } } } }], []).length === 1 && P.y24Re1113Pick([{ ...A1, st: 'hold' }], []).length === 0 && P.y24Re1113Pick([{ ...A1, ok: true }], []).length === 0, "이미 되돌린 문서(re1113b · 첫 판에서 되돌렸는데 '할 일 없음'으로 닫힌 것)·끝나지 않은 문서·성공은 아님 · 첫 판이 '앞 맡김 하는 중'으로 3번을 다 쓰고 닫은 문서는 한 번 더");
+  ok(/where\('doneAt', '>=', new Date\(Date\.now\(\) - 48 \* 3600e3\)\.toISOString\(\)\)\.limit\(150\)/.test(A) && /localStorage\.getItem\('rn-y24re1113c'\)/.test(A) && /if \(c\.st !== 'done' \|\| c\.re1113c\) return;/.test(A) && /reN: Math\.min\(\+P0\.reN \|\| 0, Y24_RE_MAX - 1\)/.test(A) && /y24RePatch\(c, pk\.res, me, Date\.now\(\), 0\)/.test(A), '지난 48시간 끝난 맡김만 · 기기마다 한 번 · 문서마다 트랜잭션으로 한 번(re1113) · 바로 보냄');
   ok(/await y24Re1113\(\); \/\* \(y24re\)/.test(A), '맡긴 일 줄 처리(ledY24HoldRetry — 1분마다 · 로거·출고 중 PC 빼고) 안에서 불림'); }
 
 console.log('③ 수집기 다리 — 가짜 Firestore·가짜 번외');
@@ -106,7 +106,7 @@ console.log('⑤ 번외 0.1.52');
 { const W = rd('lab/col2/helper/col2-y24w.js'); ok(/rs=typeof ds\.getRowState==='function'/.test(W) && /ce=c\?c\.editable!==false:null/.test(W), '재고수량 칸 고친 뒤 줄 상태(rs)·칸 고칠 수 있음(ce)을 받음');
   ok(/저장되지 않음\$\{R\.qhow \|\| ''\}/.test(W) && /칸 고침 \$\{e\.how \|\| '\?'\} · 줄 상태/.test(W), "'저장되지 않음' 글에 칸 고침·줄 상태·칸 고칠 수 있음 — 근원 진단(hist)");
   ok(/slice\(0, 220\)/.test(W), '자취 글 220자');
-  ok(/COL2_VER: '0\.1\.(5[2-9]|[6-9]\d)'/.test(rd('lab/col2/col2-config.js')), '번외 0.1.52 이상'); }
+  ok(/COL2_VER: '0\.1\.(5[3-9]|[6-9]\d)'/.test(rd('lab/col2/col2-config.js')), '번외 0.1.53 이상'); }
 
 console.log(bad ? `❌ tY24RE1113 실패 ${bad}` : '✓ tY24RE1113 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 오류', e); process.exit(1); });
