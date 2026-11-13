@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "helperui2: 도우미 1.8.27 판 내기",
+ "since": "2026-11-13T01:08:09Z",
+ "beat": "2026-11-13T01:08:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "isbnq 판: 웹앱 1.78.545 · 수집기 1.89.297 (ISBN 조회 공개 검색 대안) · 234b5506",
   "at": "2026-11-13T01:05:58Z"
  },
- "host": null
+ "host": "vm-helperui"
 }
