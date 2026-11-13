@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24re 둘째 올리기",
+ "since": "2026-11-13T04:45:24Z",
+ "beat": "2026-11-13T04:45:24Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24re 둘째 웹앱 1.78.564 · 수집기 1.89.311",
   "at": "2026-11-13T04:45:14Z"
  },
- "host": null
+ "host": "vm-y24re"
 }
