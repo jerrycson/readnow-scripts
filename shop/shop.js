@@ -100,12 +100,13 @@
   const LOOK = { c: null, pv: null, logo: null };
   try { const pv = JSON.parse(sessionStorage.getItem('bq-lookpv') || 'null'); if (pv) { LOOK.pv = pv.look || null; LOOK.logo = pv.logo != null ? pv.logo : null; } } catch (e) {}
   function lookOf() { const c = ST.cfg || {}; const raw = { ...((c && c.look) || {}), ...(LOOK.pv || {}) }; return window.BQL ? window.BQL.cfgOf(raw) : null; }
-  function logoSet(c, L) { const a = $('.top .logo'); if (!a || !L) return; const id0 = LOOK.logo != null ? LOOK.logo : c.brandLogo; const B0 = window.BQB; const id = B0 ? B0.of(id0) : ''; const key = [id, L.headStyle, L.mode, L.tagline, VW.get().theme || ''].join('|'); if (a.dataset.bq === key) return; a.dataset.bq = key;
-    if (!id) { a.innerHTML = `<span class="crown" aria-hidden="true">♛</span><span class="lt">${esc(c.name || '북스퀸')}</span>${L.tagline ? `<small id="logoTag">${esc(L.tagline)}</small>` : ''}`; return; }
-    const info = B0.info(id); const h = 34; const w = Math.round(h * info.ratio); const dk = B0.src(id, 'dark'), lt = B0.src(id, 'light');
-    const img = (s) => `<img class="logo-img" src="${s}" alt="${esc(c.name || '북스퀸')}" width="${w}" height="${h}" decoding="async">`;
-    const md = (VW.get().theme) || L.mode; a.innerHTML = L.headStyle === 'brand' || md === 'dark' ? img(dk) : md === 'light' ? img(lt) : `<picture><source media="(prefers-color-scheme: dark)" srcset="${dk}">${img(lt)}</picture>`;
-    const fv = $('#favi'); if (fv) { fv.setAttribute('href', B0.src(id, 'icon')); fv.setAttribute('type', 'image/svg+xml'); } }
+  function logoSet(c, L) { const a = $('.top .logo'); if (!a || !L) return; const id0 = LOOK.logo != null ? LOOK.logo : c.brandLogo; const B0 = window.BQB; const id = B0 ? B0.of(id0) : ''; const md = (VW.get().theme) || L.mode; const ui = { ...(c.brandUi || {}), h: L.logoH, hm: Math.round(L.logoH * 0.85) };
+    const key = [id, L.headStyle, md, L.tagline, L.logoH, JSON.stringify(c.brandUi || {})].join('|'); if (a.dataset.bq === key) return; a.dataset.bq = key;
+    const fv = $('#favi'); if (!id) { a.innerHTML = `<span class="crown" aria-hidden="true">♛</span><span class="lt">${esc(c.name || '북스퀸')}</span>${L.tagline ? `<small id="logoTag">${esc(L.tagline)}</small>` : ''}`; return; }
+    /* (shopux1 · shoplogo1 v2) 👑 보이는 꼴(가로형·아이콘만·아이콘+글자 — app_settings/shop.brandUi)·판 고정(q01@v1)은 BQB.headerHtml이 셈 · 흰 머리띠는 밝은 바탕용 · 밤 화면 '기기 따라'면 두 꼴을 두고 CSS가 고름 */
+    const H = (bg) => B0.headerHtml(id0, ui, innerWidth < 520, undefined, bg); const dark = L.headStyle === 'brand' || md === 'dark';
+    a.innerHTML = dark ? H('dark') : md === 'light' ? H('light') : `<span class="lg-l">${H('light')}</span><span class="lg-d">${H('dark')}</span>`;
+    const f = B0.favicon(id0, c.brandUi); if (fv && f) { fv.setAttribute('href', f); fv.setAttribute('type', 'image/svg+xml'); } } /* 파비콘 끔이면 그대로 */
   function lookApply() { const c = ST.cfg || {}; const L = lookOf(); if (!L) return; LOOK.c = L; let st = $('#bqLook'); if (!st) { st = document.createElement('style'); st.id = 'bqLook'; document.head.appendChild(st); } const css = window.BQL.cssText(L); if (st.textContent !== css) st.textContent = css;
     const R = document.documentElement; if (L.mode === 'auto') R.removeAttribute('data-theme'); else R.dataset.theme = L.mode;
     document.body.classList.toggle('hs-brand', L.headStyle === 'brand'); document.body.classList.toggle('no-au', !L.showAuthor); document.body.classList.toggle('tabs-on', !!L.tabbar); const tb = $('#tabbar'); if (tb) tb.hidden = !L.tabbar;
