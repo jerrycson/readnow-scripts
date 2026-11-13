@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "capfix 상한 까닭 판 내기",
- "since": "2026-11-13T00:22:16Z",
- "beat": "2026-11-13T00:22:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "fix1113 판 9cfe4b5e 웹앱 1.78.542·수집기 1.89.294·번외 0.1.48",
-  "at": "2026-11-13T00:15:23Z"
+  "done": "capfix 판 76e640da 웹앱 1.78.543·수집기 1.89.295·도우미 1.8.25",
+  "at": "2026-11-13T00:25:55Z"
  },
- "host": "vm-capfix"
+ "host": null
 }
