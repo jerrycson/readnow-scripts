@@ -38,14 +38,15 @@ ok(/const Y24_RE1114B_NEED = '0\.1\.60'/.test(A) && /if \(vn\(hv\) < vn\(Y24_RE1
 ok(/await y24Re1114\(\);[^\n]*\n    await y24Re1114b\(\);/.test(A), '맡긴 일 줄 처리 안에서 y24Re1114 다음에 불림');
 console.log('③ 번외 0.1.58·0.1.59');
 const W = rd('lab/col2/helper/col2-y24w.js');
-{ const cv = (rd('lab/col2/col2-config.js').match(/COL2_VER: '([\d.]+)'/) || [])[1] || '0'; const vn = (x) => x.split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); ok(vn(cv) >= vn('0.1.61'), '번외 판 0.1.61 이상(지금 ' + cv + ')'); }
-ok(/const chkPick = \(\) =>/.test(W) && /R\.rec\.stop && d && d\.post && d\.no && !d\.chk/.test(W) && /W\.chkPick && W\.chkPick\(\)/.test(rd('lab/col2/helper/col2-y24.js')) && !/chkOnce[\s\S]{0,1600}JS_DETSAVE/.test(W.slice(W.indexOf('async function chkOnce'), W.indexOf('async function chkOnce') + 1700)), "(0.1.61) '확실하지 않음' 멈춤 뒤 읽기만 한 번(저장 단추를 누르지 않음) · 멈춤은 그대로");
+{ const cv = (rd('lab/col2/col2-config.js').match(/COL2_VER: '([\d.]+)'/) || [])[1] || '0'; const vn = (x) => x.split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); ok(vn(cv) >= vn('0.1.62'), '번외 판 0.1.62 이상(지금 ' + cv + ')'); }
+ok(/const chkPick = \(\) =>/.test(W) && /R\.rec\.stop && d && d\.post && d\.no && !\(d\.chk && d\.chk\.v >= 2\)/.test(W) && /W\.chkPick && W\.chkPick\(\)/.test(rd('lab/col2/helper/col2-y24.js')) && !/chkOnce[\s\S]{0,1600}JS_DETSAVE/.test(W.slice(W.indexOf('async function chkOnce'), W.indexOf('async function chkOnce') + 1700)), "(0.1.61·0.1.62) '확실하지 않음' 멈춤 뒤 읽기만 한 번(저장 단추를 누르지 않음 · 0.1.62에서 한 번 더 읽음)");
 ok(/const JS_ROUTE = /.test(W) && /name='SelectProduct'/.test(W) && /callbackGridButton/.test(W) && /맡긴 번호와 달라 열지 않음/.test(W), '[상세수정] = 화면 함수와 같은 길 이동(SelectProduct · 화면 함수 글에서 이름) · 표 줄 상품번호가 다르면 안 엶');
 ok(/async function openDet\(h, no\) \{ const rd0 = await routeDet\(h, no\);/.test(W) && W.indexOf('const rd0 = await routeDet') < W.indexOf('const c = await o.ev(JS_UBCELL(h.r))'), '길 이동이 먼저 · 칸 누르기는 그 뒤(길이 없을 때만)');
 ok(/if \(D\.route\) \{ const a2 = await look\(r\);/.test(W), '저장 뒤 확인도 목록에서 같은 길로 다시 엶');
 ok(/if\(ck\.disabled\)\{const d0=dateSt\(P\);if\(!ck\.checked&&d0\.cy!=='Y'\)return\{ok:true,auto:true\}/.test(W) && /a0\.cy !== 'Y'/.test(W), "판매중지 창: 꺼진 채 잠긴 체크는 받아들임 · 켜진 채 잠김·창 자료 changeDateYn 'Y'는 멈춤");
 ok(/const JS_PRICE = /.test(W), '판매가 쪽(JS_PRICE)은 그대로');
 ok(/const SV_PICK_JS = /.test(W) && /if \(d\.sv !== 1\) return failP\(/.test(W) && /\/\^삭제\$\/\.test\(svTx\(x\)\)/.test(W) && /if\(\/삭제\|등록\/\.test\(t\)\)return\{ok:false/.test(W), "(0.1.60) '수정'이 여럿이면 바로 다음이 [삭제]인 맨 아래 짝 하나만 · 고른 단추 이름이 삭제·등록이면 안 누름");
+ok(/const sideSplit = /.test(W) && /df2\.includes\(q\.k\) && sd && !sd\.bad\.length && keep/.test(W) && /R\.rec\.stop = null; out\.clear = now\(\);/.test(W) && /\+out\.list\.price === pr0/.test(W), "(0.1.62) 예스24가 스스로 바꾼 판매기간 시작일(저장한 날)·빈칸은 '다른 칸 바뀜'으로 안 봄(목록 판매기간·판매가·상태 그대로일 때만) · 확인 읽기가 그 꼴이면 그 멈춤만 풂");
 console.log('④ 수집기 한 번짜리(웹앱이 밤에 안 열려 있어도)');
 { const C = rd('src/readnow-collector.src.js'); const b = (C.match(/    const RE14B_WHY = [\s\S]*?\n    function re14bPick\([\s\S]*?return out; \}\n/) || [''])[0];
   ok(!!b, '수집기에 고르기 덩어리 있음'); const G = b ? new Function(b.replace(/^\s+/, '') + '; return re14bPick;')() : null;
