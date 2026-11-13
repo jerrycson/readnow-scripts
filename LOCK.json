@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "isbnq 2: 대량 못 받는 상품 개별 자동 판 내기",
+ "since": "2026-11-13T02:21:31Z",
+ "beat": "2026-11-13T02:21:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "bkfast 클라우드 0.35.200 책 정보 0.1.7 · 87ac0791",
   "at": "2026-11-13T02:21:16Z"
  },
- "host": null
+ "host": "vm-isbnq"
 }
