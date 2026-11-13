@@ -1,17 +1,17 @@
 {
- "holder": "invpc1",
- "what": "출고 PC만 송장 입력 맡기 판 — 출고 중 확인",
- "since": "2026-11-13T07:11:09Z",
- "beat": "2026-11-13T07:24:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": {
   "who": "lead",
   "why": "판 내기 기다림: rv1b: 넷째 판 올리기(ext 0.6.23)",
   "at": "2026-11-13T07:20:18Z"
  },
  "last": {
-  "who": "lead",
-  "done": "spare2 넷째 웹앱 1.78.586 · 수집기 1.89.321 (f928dbbf)",
-  "at": "2026-11-13T07:10:57Z"
+  "who": "invpc1",
+  "done": "invpc1 수집기 1.89.322 (100e6ad3) — 출고 쓰기 일은 출고 PC만",
+  "at": "2026-11-13T07:26:44Z"
  },
- "host": "vm-invpc1"
+ "host": null
 }
