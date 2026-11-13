@@ -22,6 +22,7 @@ const mkCol = (o) => { const calls = { scm: [], look: [], doc: [] };
   console.log('① 공개 검색에만 나오는 책');
   { const t = mkCol({ keyHit: true, search: [{ itemId: '999', title: '다른 책' }, { itemId: IID, title: '100명의 세계인' }], books: { 999: { itemId: '999', title: '다른 책', isbn13: '9780000000000' }, [IID]: { itemId: IID, title: '100명의 세계인', isbn13: ISBN, isbnKey: KEY } } }); const r = await t.run();
     ok(r && r.items && r.items[ISBN] && r.items[ISBN].itemId === IID, '번호가 맞는 두 번째 검색 결과(131196017)를 씀', r);
+    ok(r && r.items[ISBN] && r.items[ISBN].scmMiss === true, '등록 검색 0줄 표시(scmMiss)', r && r.items[ISBN]);
     ok(r && r.items[ISBN] && r.items[ISBN].scmCode === KEY, '알라딘 상품 코드로 등록 검색 → 등록 코드 K602532199', r && r.items[ISBN]);
     ok(!(r.errs || {})[ISBN], '오류 없음', r.errs); ok(t.calls.doc.some((u) => /SearchTarget=Book&SearchWord=9791188915002/.test(u)), '국내도서(Book)로 공개 검색', t.calls.doc); ok(r.status === 'done', '맡긴 일 done'); }
   console.log('② 번호가 안 맞으면 쓰지 않음');
@@ -31,9 +32,21 @@ const mkCol = (o) => { const calls = { scm: [], look: [], doc: [] };
   const RCM = cutFn(APP, 'async function regCloudMiss(j, req)'); const mkW = (cloud, url) => { const sent = []; const f = new Function('cloudCall', 'pptCloudUrl', RCM + '; return regCloudMiss;')(async (p, b) => { sent.push([p, b]); return cloud(b); }, () => url); return { f, sent }; };
   { const w = mkW(() => ({ items: { [ISBN]: { title: '100명의 세계인', itemId: IID } } }), 'https://c'); const j = await w.f({ items: {}, cands: {}, errs: { [ISBN]: '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요 (알라딘에서 이 책을 못 찾음)', '9788900000001': '샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요' } }, { branch: 1, isbns: [ISBN, '9788900000001'] });
     ok(w.sent.length === 1 && w.sent[0][0] === '/lookup' && JSON.stringify(w.sent[0][1].isbns) === JSON.stringify([ISBN]), "옛 PC가 '못 찾음'으로 돌려준 ISBN만 클라우드에(로그인 오류는 안 보냄)", w.sent);
+    ok(j.items[ISBN] && j.items[ISBN].scmMiss === true, '클라우드로 찾은 것도 등록 검색 0줄 표시');
     ok(j.items[ISBN] && j.items[ISBN].itemId === IID && !j.errs[ISBN], '클라우드가 찾은 정보로 채움 · 오류 지움', j); }
   { const w = mkW(() => ({}), 'https://c'); await w.f({ via0: 'cloud', items: {}, errs: { [ISBN]: '못 찾음' } }, { isbns: [ISBN] }); await w.f({ items: { [ISBN]: { title: 'x' } }, errs: {} }, { isbns: [ISBN] }); ok(!w.sent.length, '클라우드가 맡은 답·이미 찾은 것은 다시 묻지 않음', w.sent); }
   { const w = mkW(() => { throw new Error('클라우드 꺼짐'); }, 'https://c'); const j0 = { items: {}, errs: { [ISBN]: '못 찾음' } }; const j = await w.f(j0, { isbns: [ISBN] }); ok(j === j0, '클라우드 실패면 PC 답 그대로'); }
   { const w = mkW(() => ({}), null); await w.f({ items: {}, errs: { [ISBN]: '못 찾음' } }, { isbns: [ISBN] }); ok(!w.sent.length, '클라우드 주소가 없으면 묻지 않음'); }
   { ok((APP.match(/regCloudMiss\(j, req\)/g) || []).length === 3, '등록 조회(묶음)·한 상품 조회 둘 다 거침'); }
+  console.log('④ 대량 등록이 ISBN으로 못 찾는 상품 → 개별 자동(11/13 미리보기 0줄 두 번)');
+  { const ln = (mark) => { const a = APP.indexOf(mark); return APP.slice(a, APP.indexOf('\n', a)); }; const RAK = cutFn(APP, 'function regAlKeyOnly(it)');
+    const M = new Function(ln('const regByName = (it)') + '\n' + RAK + '\n' + ln('const regMethodOf = (it)') + '\n; return { regMethodOf, regAlKeyOnly };')();
+    const cats = [{ path: ['국내도서'], cids: [1] }];
+    ok(M.regMethodOf({ isbn: ISBN, itemId: IID, info: { itemId: IID, isbn13: ISBN, isbnKey: KEY, scmMiss: true, categories: cats } }) === 'one', '등록 검색 0줄(공개 검색으로 찾음)이면 개별');
+    ok(M.regMethodOf({ isbn: '9791190000000', itemId: '2', info: { itemId: '2', isbn13: '9791190000000', isbnKey: 'K112233445', categories: cats } }) === 'bulk', '979 책이 K 코드만 있으면 그대로 대량(K 코드는 979 책에 흔함)');
+    ok(M.regMethodOf({ isbn: '9788936477196', itemId: '1', info: { itemId: '1', isbn13: '9788936477196', isbnKey: '8936477190', categories: cats } }) === 'bulk', '보통 책(숨은 칸 = ISBN)은 그대로 대량');
+    ok(M.regMethodOf({ isbn: '9788936477196', itemId: '1', regProblem: { kind: 'bulkMiss' }, info: { itemId: '1', isbn13: '9788936477196', categories: cats } }) === 'one', '대량에서 알라딘이 ISBN 줄을 안 받았던 상품도 개별');
+    ok(M.regMethodOf({ isbn: ISBN, itemId: IID, bulkOk: true, info: { itemId: IID, isbnKey: KEY, scmMiss: true, categories: cats } }) === 'bulk', "사람이 '대량'을 고르면 그대로");
+    ok(M.regMethodOf({ isbn: ISBN, method: 'bulk', info: { isbnKey: KEY, categories: cats } }) === 'bulk', '직접 정한 방식은 그대로');
+    ok(!M.regAlKeyOnly({ isbn: ISBN, info: { isbnKey: KEY, scmMiss: true, categories: cats } }), '상품 번호가 없으면 개별로 안 보냄(개별은 상품 번호로 엶)'); }
   console.log(bad ? `❌ tISBNQ1113 실패 ${bad}` : '✅ tISBNQ1113 모두 통과'); process.exit(bad ? 1 : 0); })();
