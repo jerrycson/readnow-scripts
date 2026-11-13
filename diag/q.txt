@@ -1,4 +1,2 @@
-doc=prd_jobs/net_2026-11-13
-doc=prd_jobs/benchForce
-benchday=2026-11-13
-# 3162815585
+doc=shp_runs/_guard,app_settings/ship_auto&shelfjobs=1
+# 583730310
