@@ -1,2 +1,2 @@
-doc=app_settings/cons_study,app_settings/research_pulse,app_settings/relist_learn,app_settings/voice_study,app_settings/front_bump_eval
-# 3168710659
+@kpin kpin/20261113-065648-4167.json
+# 296655533
