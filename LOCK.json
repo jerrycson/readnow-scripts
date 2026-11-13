@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shop2",
+ "what": "우리숍 서가 설정 묶음",
+ "since": "2026-11-13T11:00:18Z",
+ "beat": "2026-11-13T11:00:18Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "웹앱 1.78.597 · 클라우드 0.35.231 redraw2 첫째 (300bdba2)",
   "at": "2026-11-13T10:59:41Z"
  },
- "host": null
+ "host": "vm-shop2"
 }
