@@ -1,2 +1,2 @@
-slearn=bg&mem=1
-# 816928642
+logs=1&pc=LOGGER&from=202611130940
+# 48857951
