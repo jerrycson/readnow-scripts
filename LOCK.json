@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24re 넷째 — 번외 0.1.54",
+ "since": "2026-11-13T05:18:50Z",
+ "beat": "2026-11-13T05:18:50Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "friendmig 책방 친구 앱 0.2.3 8bd3b057",
   "at": "2026-11-13T05:18:00Z"
  },
- "host": null
+ "host": "vm-y24re"
 }
