@@ -10,7 +10,7 @@
 //! · 연결 링크 readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶(한 번만 쓰는 표 → 같은 계정 로그인)
 //! · 바깥 알림(10/29): ① 같은 PC 창구 http://127.0.0.1:47613/say?m=글(&f=보낸 곳) · /open?p=order|qna|bad (브라우저 요청은 뺌)
 //! · 바깥 알림 ③ 연결 주소 readnow-friend://say?m=글(&f=보낸 곳) · readnow-friend://open?p=order|qna|bad — 허용 명령은 이 셋뿐
-//! · 껍데기 새 판: GitHub 판(friend-v…)을 6시간마다 확인 → …-setup.exe 를 받아 조용히(/S) 설치하고 다시 켬
+//! · 껍데기 새 판: readnow.kr/dl/friend/latest.json(없으면 GitHub 판 friend-v…)을 6시간마다 확인 → …-setup.exe 를 받아 조용히(/S) 설치하고 다시 켬
 //! · (0.2.2 · 정범님 10/30) 전역 단축키: 화면이 쓰는 단축키 목록(friend_post "gkeys")을 윈도우 전역 단축키로 등록 → 눌리면 화면에 gkey로 넘김(캐릭터 창은 투명·클릭 통과라 키보드 초점이 없어 단축키가 하나도 안 됐음) · 다른 프로그램이 이미 쓰면 화면에 bad로 알림
 //! · (0.2.2) ⚙ 설정 창은 캐릭터가 있는 모니터(작업 영역 가운데)에 · 이미 떠 있으면 그 모니터로 옮겨 앞으로 · window.open·새 창 요청은 막고 https 주소만 기본 브라우저로 · 문맥 메뉴(오른쪽 클릭·길게 누름) 막음(글 칸 빼고)
 use std::sync::{
@@ -29,15 +29,21 @@ use tauri_plugin_autostart::ManagerExt as AutostartExt;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_opener::OpenerExt;
 
-const PAGE: &str = "https://jerrycson.github.io/readnow-scripts/friend/index.html?host=tauri";
+/// (0.2.3 · 11/13 정범님 '앱도 이제 현 주소로') 화면은 readnow.kr — 옛 주소(jerrycson.github.io)는 GitHub Pages를 끄기 전까지 받침으로만
+/// (로그인은 주소마다 따로 저장되므로, 새 주소 화면이 처음 한 번 옛 주소 화면에 들러 같은 계정 연결 표를 받아 돌아옴 — friend/readnow-friend-boot.js frMig*)
+const PAGE: &str = "https://readnow.kr/friend/index.html?host=tauri";
 /// (0.2.0) ⚙ 설정 창 — 같은 화면을 설정만 보이는 모드로(캐릭터·알림·살아 있음 신호 없음)
-const PAGE_SET: &str = "https://jerrycson.github.io/readnow-scripts/friend/index.html?settings=1&win=set";
+const PAGE_SET: &str = "https://readnow.kr/friend/index.html?settings=1&win=set";
 const LABEL_SET: &str = "friend-set";
 /// 두 창(캐릭터·설정)이 같은 WebView2 저장소(로그인·기기 이름)를 쓰려면 브라우저 인자가 똑같아야 함 — 다르면 둘째 창이 안 만들어짐
 /// 창이 투명해도 숨은 창으로 보고 타이머를 늦추지 않게(살아 있음 신호 30초가 밀리지 않게) · 앞 세 개는 Tauri 기본값
 const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows";
-const WEBAPP: &str = "https://jerrycson.github.io/readnow-scripts/app/";
+const WEBAPP: &str = "https://readnow.kr/app/";
+/// (0.2.3) 업데이트 확인: readnow.kr/dl/friend/latest.json 먼저(저장소가 비공개여도 됨 · hosting/friend-dl.js가 만듦) → 안 되면 GitHub 판 목록(공개일 때만)
+const LATEST_JSON: &str = "https://readnow.kr/dl/friend/latest.json";
 const RELEASES_API: &str = "https://api.github.com/repos/jerrycson/readnow-scripts/releases?per_page=30";
+/// 받아도 되는 설치 파일 주소의 앞부분(이 밖의 주소는 받지 않음)
+const DL_OK: [&str; 2] = ["https://readnow.kr/dl/friend/", "https://github.com/jerrycson/readnow-scripts/releases/download/"];
 const LABEL: &str = "friend";
 const VER: &str = env!("CARGO_PKG_VERSION");
 
@@ -960,6 +966,23 @@ fn ver_tuple(s: &str) -> (u64, u64, u64) {
     (it.next().unwrap_or(0), it.next().unwrap_or(0), it.next().unwrap_or(0))
 }
 
+/// (0.2.3) 설치 파일 주소 검사 — readnow.kr/dl/friend/ 또는 GitHub 판 받기 주소로 시작해야만(그 밖은 받지 않음)
+fn dl_ok(url: &str) -> bool {
+    DL_OK.iter().any(|p| url.starts_with(p)) && !url.contains("..")
+}
+
+/// (0.2.3) readnow.kr/dl/friend/latest.json → (판, 윈도우 setup.exe 주소)
+fn pick_latest_json(j: &serde_json::Value) -> Option<((u64, u64, u64), String)> {
+    let v = j["ver"].as_str().or_else(|| j["tag"].as_str().and_then(|t| t.strip_prefix("friend-v")))?;
+    let url = j["files"].as_array()?.iter().find_map(|f| {
+        let n = f["name"].as_str().unwrap_or("");
+        let u = f["url"].as_str().unwrap_or("");
+        (f["kind"].as_str() == Some("win") && n.ends_with("-setup.exe") && dl_ok(u)).then(|| u.to_string())
+    })?;
+    let vt = ver_tuple(v);
+    (vt != (0, 0, 0)).then_some((vt, url))
+}
+
 /// 껍데기 새 판 확인 → 있으면 받아 조용히 설치하고 다시 켬. manual = 트레이에서 누름(결과를 화면에 알림)
 fn check_update(app: &AppHandle, manual: bool) {
     let app = app.clone();
@@ -971,11 +994,21 @@ fn check_update(app: &AppHandle, manual: bool) {
         };
         say("🖥 업데이트 확인하는 중…");
         let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(30)).user_agent(&format!("readnow-friend/{VER}")).build();
-        let list: serde_json::Value = match agent.get(RELEASES_API).call().and_then(|r| r.into_json().map_err(|e| e.into())) {
-            Ok(v) => v,
-            Err(_) => return say("🖥 업데이트 확인 실패 — 인터넷 연결을 확인해 주세요"),
+        // (0.2.3) readnow.kr 먼저 — { tag, ver, files:[{ name, kind:'win'|'android', url }] }
+        let mut best: Option<((u64, u64, u64), String)> = agent
+            .get(LATEST_JSON)
+            .call()
+            .ok()
+            .and_then(|r| r.into_json::<serde_json::Value>().ok())
+            .and_then(|j| pick_latest_json(&j));
+        let list: serde_json::Value = if best.is_some() {
+            serde_json::Value::Null
+        } else {
+            match agent.get(RELEASES_API).call().and_then(|r| r.into_json().map_err(|e| e.into())) {
+                Ok(v) => v,
+                Err(_) => return say("🖥 업데이트 확인 실패 — 인터넷 연결을 확인해 주세요"),
+            }
         };
-        let mut best: Option<((u64, u64, u64), String)> = None;
         for r in list.as_array().cloned().unwrap_or_default() {
             if r["draft"].as_bool().unwrap_or(false) || r["prerelease"].as_bool().unwrap_or(false) {
                 continue;
@@ -1001,7 +1034,7 @@ fn check_update(app: &AppHandle, manual: bool) {
         if vt <= ver_tuple(VER) {
             return say(&format!("🖥 최신 판({VER})입니다"));
         }
-        if !url.starts_with("https://github.com/jerrycson/readnow-scripts/releases/download/") {
+        if !dl_ok(&url) {
             return;
         }
         say(&format!("🖥 새 판 {}.{}.{} 받는 중 … 받으면 저절로 설치하고 다시 켜져요", vt.0, vt.1, vt.2));
@@ -1272,11 +1305,29 @@ mod tests {
         let hit = |u: &str| { let u = url::Url::parse(u).unwrap(); pats.iter().any(|p| p.test(&u)) };
         assert!(hit("https://jerrycson.github.io"), "Origin 머리(윈도우 fetch 경로)");
         assert!(hit("https://jerrycson.github.io/readnow-scripts/friend/index.html?host=tauri"), "전체 주소(postMessage 경로)");
+        // (0.2.3) 새 주소 readnow.kr — 출처 그 자체와 책방 친구 화면
+        assert!(hit("https://readnow.kr"), "새 주소 Origin 머리");
+        assert!(hit(PAGE) && hit(PAGE_SET), "새 주소 전체 주소");
+        assert!(!hit("https://evil.readnow.kr.example.com"));
         assert!(!hit("https://evil.example.com"));
         assert!(!hit("http://jerrycson.github.io"));
         // 예전 주소 하나만으로는 Origin 머리와 안 맞음(먹통 재현)
         let old: RemoteUrlPattern = "https://jerrycson.github.io/readnow-scripts/*".parse().unwrap();
         assert!(!old.test(&url::Url::parse("https://jerrycson.github.io").unwrap()));
+    }
+
+    /// (0.2.3) 업데이트: readnow.kr latest.json 읽기 · 받는 주소 검사(두 곳만)
+    #[test]
+    fn update_sources() {
+        let j = serde_json::json!({"tag":"friend-v0.2.3","ver":"0.2.3","files":[
+            {"name":"readnow-friend-0.2.3.apk","kind":"android","url":"https://readnow.kr/dl/friend/readnow-friend-0.2.3.apk"},
+            {"name":"readnow-friend_0.2.3_x64-setup.exe","kind":"win","url":"https://readnow.kr/dl/friend/readnow-friend_0.2.3_x64-setup.exe"}]});
+        assert_eq!(pick_latest_json(&j), Some(((0, 2, 3), "https://readnow.kr/dl/friend/readnow-friend_0.2.3_x64-setup.exe".to_string())));
+        let bad = serde_json::json!({"ver":"0.2.3","files":[{"name":"x-setup.exe","kind":"win","url":"https://evil.example.com/x-setup.exe"}]});
+        assert_eq!(pick_latest_json(&bad), None);
+        assert!(dl_ok("https://github.com/jerrycson/readnow-scripts/releases/download/friend-v0.2.3/readnow-friend_0.2.3_x64-setup.exe"));
+        assert!(!dl_ok("https://readnow.kr/dl/friend/../app/x-setup.exe"));
+        assert!(!dl_ok("https://readnow.kr/app/x-setup.exe"));
     }
 
     #[test]
