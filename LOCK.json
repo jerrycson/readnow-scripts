@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "bump1 — 🔼 끌올 평생 기록·효과 웹앱 판",
+ "since": "2026-11-13T06:13:20Z",
+ "beat": "2026-11-13T06:13:20Z",
  "ask": null,
  "last": {
   "who": "cbuild",
   "done": "클라우드 0.35.217 Cloud Build 결과 남기기 (5c4d2b08)",
   "at": "2026-11-13T06:12:20Z"
  },
- "host": null
+ "host": "wk-bump1"
 }
