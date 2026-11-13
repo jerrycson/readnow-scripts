@@ -1,2 +1,2 @@
-clog=180&call=1&n=300&shpauto=10&health=1
-# 1472126555
+run=1&slearn=bg&mem=1
+# 1711132122
