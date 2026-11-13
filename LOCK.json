@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "bovf2 판: 여분 이중 차감 고침(autosched 0.18.30)",
+ "since": "2026-11-13T04:21:35Z",
+ "beat": "2026-11-13T04:21:35Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24re 222068f3 웹앱 1.78.562 · 수집기 1.89.308 · 번외 0.1.52 예스24 실패 맡김 다시 줄로",
   "at": "2026-11-13T04:21:30Z"
  },
- "host": null
+ "host": "wk-bovf2"
 }
