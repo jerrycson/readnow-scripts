@@ -1,15 +1,9 @@
 mem=1
-clog=1&n=80
+clog=1&n=60
 pend=1
 cbuild=1
-exth=1
 pxreg=1
-webOrigin=1
-doc=app_settings/pxDaily
-doc=app_settings/write_watch
 recentUp=col2_y24_cmd&mins=1440
 recentUp=prd_listings&mins=1440
-recentUp=shp_cmds&mins=1440
 recentUp=jb_notes&mins=1440
-recentUp=px_exp_groups&mins=1440
-# 2209630651
+# 184051856
