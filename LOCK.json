@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "spare2 둘째 판 — 여분 남으면 쉴 때 일이 여분 일을 고름",
+ "since": "2026-11-13T06:23:30Z",
+ "beat": "2026-11-13T06:23:30Z",
  "ask": null,
  "last": {
   "who": "cbuild",
   "done": "Cloud Build 맡기기 고침 (eeeaf247)",
   "at": "2026-11-13T06:23:16Z"
  },
- "host": null
+ "host": "wk-spare2"
 }
