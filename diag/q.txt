@@ -1,2 +1,2 @@
-doc=app_settings/col2_handoff
-# 130121049
+heads=1&sizes=shp_state&recentUp=shp_snapshots&mins=150
+# 3059514730
