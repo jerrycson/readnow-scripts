@@ -66,10 +66,14 @@ data = json.dumps(body, ensure_ascii=False).encode()
 sent = False
 tok = idt()
 if tok:
-    try:
-        rq = urllib.request.Request(cloud + '/cb-in', data=data, method='POST', headers={'Authorization': 'Bearer ' + tok, 'content-type': 'application/json'})
-        r = json.loads(urllib.request.urlopen(rq, timeout=30).read().decode() or '{}'); sent = bool(r.get('ok')); print('→ /cb-in', r)
-    except Exception as e: print('→ /cb-in 실패', type(e).__name__, str(e)[:200])
+    import time
+    for t in range(4):  # 배포 직후엔 새 판으로 넘어가는 몇십 초 동안 못 받을 수 있음(11/13 첫 진짜 빌드) — 15초씩 네 번
+        try:
+            rq = urllib.request.Request(cloud + '/cb-in', data=data, method='POST', headers={'Authorization': 'Bearer ' + tok, 'content-type': 'application/json'})
+            r = json.loads(urllib.request.urlopen(rq, timeout=30).read().decode() or '{}'); sent = bool(r.get('ok')); print('→ /cb-in', r)
+        except Exception as e: print('→ /cb-in 실패', t + 1, type(e).__name__, str(e)[:200])
+        if sent: break
+        time.sleep(15)
 else: print('→ ID 토큰을 못 받음')
 if not sent and bid:
     try:  # 클라우드가 안 받으면 Firestore에 직접(빌드 계정 권한이 있을 때만 됨)
