@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "train1",
+ "what": "redraw2 둘째(웹앱·수집기·클라우드 신호 옮김)",
+ "since": "2026-11-13T11:34:52Z",
+ "beat": "2026-11-13T11:34:52Z",
  "ask": null,
  "last": {
   "who": "shoplogo1",
   "done": "북스퀸 로고 시안 10개 shop/brand · 판 번호 없음(화면에 아직 안 쓰임) (e92641cc)",
   "at": "2026-11-13T11:33:58Z"
  },
- "host": null
+ "host": "vm-train1"
 }
