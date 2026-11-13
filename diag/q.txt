@@ -1,2 +1,2 @@
-run=1&mem=1
-# 1691817082
+pend=1&n=30&shpauto=15&bkinfo=1&doc=app_settings/shop,app_settings/bkinfo
+# 1091615944
