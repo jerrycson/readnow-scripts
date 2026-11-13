@@ -1,13 +1,13 @@
 {
- "holder": "shelf3",
- "what": "서가 0.2.11 — push",
- "since": "2026-11-13T15:24:14Z",
- "beat": "2026-11-13T15:24:41Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "friendkey1",
-  "done": "책방 친구 서명 열쇠 세팅 · bc14f482",
-  "at": "2026-11-13T15:24:10Z"
+  "who": "shelf3",
+  "done": "서가 0.2.11 · 설정 틀 0.3.6 · shop.js 0.2.3 (2ffc86d1)",
+  "at": "2026-11-13T15:28:21Z"
  },
- "host": "vm-shelf3"
+ "host": null
 }
