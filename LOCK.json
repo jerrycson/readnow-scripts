@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "cbuild",
+ "what": "클라우드 판: Cloud Build 결과 남기기(다시 2)",
+ "since": "2026-11-13T06:12:14Z",
+ "beat": "2026-11-13T06:12:14Z",
  "ask": null,
  "last": {
   "who": "cbuild",
   "done": "클라우드 0.35.217 Cloud Build 결과 남기기 (ca642c30)",
   "at": "2026-11-13T06:12:02Z"
  },
- "host": null
+ "host": "vm-cbuild"
 }
