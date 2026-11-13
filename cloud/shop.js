@@ -140,12 +140,16 @@ function shelfPub(v) { if (!v || typeof v !== 'object' || Array.isArray(v)) retu
     if (typeof x === 'number' && Number.isFinite(x)) o[k] = x; else if (typeof x === 'boolean') o[k] = x; else if (typeof x === 'string') o[k] = s(x, k === 'picks' ? 8000 : 200).replace(/[<>]/g, '');
     else if (Array.isArray(x)) o[k] = x.filter((y) => typeof y === 'string' || typeof y === 'number').slice(0, 60).map((y) => s(y, 30)); }
   return o; }
+/* (11/13 shoplogo1) 👑 북스퀸 로고 — app_settings/shop.brandLogo('q01' · 'q01@v2' · '' = 지금 글자 로고)·brandUi(머리띠 세세 설정)를 꼴만 지켜 손님 화면에 넘김
+ *  값의 뜻·범위는 shop/brand/brand-core.js(BQB.parse·uiOf)가 다시 지킴 — 클라우드는 shop/ 파일을 담지 않아 여기선 모양만 거름 */
+function brandPub(c) { const lg = String(c.brandLogo == null ? '' : c.brandLogo).trim().toLowerCase(); const u = c.brandUi && typeof c.brandUi === 'object' ? c.brandUi : {}; const n = (v, lo, hi) => { const x = Math.round(+v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : null; };
+  return { brandLogo: /^q\d{2}(@v\d{1,2})?$/.test(lg) ? lg : '', brandUi: { mode: ['full', 'icon', 'iconText'].includes(u.mode) ? u.mode : null, h: n(u.h, 20, 56), hm: n(u.hm, 18, 44), fav: typeof u.fav === 'boolean' ? u.fav : null, tag: typeof u.tag === 'boolean' ? u.tag : null } }; }
 function pubCfg(c, meta, promo) {
   c = { ...DEF, ...(c || {}) }; const bz = c.biz || {}; const bank = c.bank || {}; const bankOk = !!(bank.name && bank.acct && bank.holder);
   return { open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
     pay: c.open && bankOk ? { how: 'bank', bank: s(bank.name, 20), acct: s(bank.acct, 30), holder: s(bank.holder, 20) } : { how: 'wait' }, pg: 0 /* 카드·간편결제(PG)는 계약 뒤 — 자리만 */,
     biz: { name: s(bz.name, 40) || null, ceo: s(bz.ceo, 20) || null, addr: s(bz.addr, 120) || null, tel: s(bz.tel, 20) || null, email: s(bz.email, 60) || null, no: s(bz.no, 20) || null, mo: s(bz.mo, 40) || null, cpo: s(bz.cpo, 20) || null, host: 'Google Firebase(구글)' },
-    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
+    notice: s(c.notice, 300) || null, ...brandPub(c), shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
 }
 
 /* ══ (11/11 shop2) 🔎 검색 노출 — 책마다 미리 만든 HTML · sitemap.xml (순수 셈 · 시험 tSHOP1111)
