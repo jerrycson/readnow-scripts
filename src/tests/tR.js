@@ -84,7 +84,7 @@ function cloudCtx(F) { const pushes = []; const ctx = { C: F.C, db: F.db, W: () 
     await cl2.ctx.shipAutoTick({ enrich: { 11: F.col('shp_enrich')['11'] }, viaPc: 'JS-MAIN' }, { cmds: true, confirm: true });
     const K = F.col('shp_cmds')['auto_S-1']; ok(K && K.dev === 'JS-MAIN' && /JS-MAIN 처리/.test(K.by) && F.col('shp_auto')['S-1'].by === 'cloud' && F.col('shp_auto')['S-1'].list === 'JS-MAIN', '클라우드 받침 판단 → 발송준비시작은 목록을 읽은 PC(dev JS-MAIN)가 바로');
     ok(cl2.ctx.kickFlag === false, 'PC 몫이라 클라우드를 깨우지 않음(kickFlag 그대로)');
-    ok(F.col('app_settings').ship_auto.beatBy === 'cloud', '받침으로 판단한 동안 판단 신호 = cloud'); }
+    ok((F.col('app_settings').ship_auto_beat || {}).beatBy === 'cloud', '받침으로 판단한 동안 판단 신호 = cloud(따로 문서 ship_auto_beat · redraw2 둘째)'); }
 
   console.log('④ 따라가기·알림 (판단한 기기와 상관없이 클라우드가 · 한 번만)');
   { const F = mkStore(); F.col('shp_auto')['T-1'] = { orderNo: 'T-1', state: 'review', by: 'JS-MAIN', pushWant: true, reasons: ['30% 쌈'], total: 7000, qty: 1 };
