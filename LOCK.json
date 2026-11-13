@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "spare2 둘째 판 — 여분 남으면 쉴 때 일이 여분 일을 고름",
- "since": "2026-11-13T06:23:30Z",
- "beat": "2026-11-13T06:23:30Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: view1 클라우드 진단 pxreg 둘째",
-  "at": "2026-11-13T06:24:44Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
-  "who": "cbuild",
-  "done": "Cloud Build 맡기기 고침 (eeeaf247)",
-  "at": "2026-11-13T06:23:16Z"
+  "who": "lead",
+  "done": "spare2 둘째 웹앱 1.78.577 · 수집기 1.89.315 — 여분 남으면 쉴 때 일이 여분 일을 고름 (f9527c67)",
+  "at": "2026-11-13T06:27:23Z"
  },
- "host": "wk-spare2"
+ "host": null
 }
