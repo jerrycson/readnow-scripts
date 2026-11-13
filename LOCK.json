@@ -1,13 +1,13 @@
 {
- "holder": "spland2",
- "what": "spland2: 시험만 올림 — tREGGL 흔들림 확인 중",
- "since": "2026-11-13T21:14:38Z",
- "beat": "2026-11-13T21:19:06Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 0개 넣음 · 남은 0개",
-  "at": "2026-11-13T20:52:45Z"
+  "who": "spland2",
+  "done": "spland2: tSPARE2_1113 기대값 맞춤 d46503d8(시험만 · 판 번호 없음 · land1+spare2 합친 판은 train1이 1.89.324로 이미 냄)",
+  "at": "2026-11-13T21:23:29Z"
  },
- "host": "vm-spland2"
+ "host": null
 }
