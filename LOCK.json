@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24re 다섯째 — 번외 0.1.55",
+ "since": "2026-11-13T05:50:56Z",
+ "beat": "2026-11-13T05:50:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "note3 웹앱 1.78.571 · 클라우드 0.35.213 5829b60b",
   "at": "2026-11-13T05:50:53Z"
  },
- "host": null
+ "host": "vm-y24re"
 }
