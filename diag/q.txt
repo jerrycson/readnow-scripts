@@ -1,2 +1,12 @@
-bkinfo=1
-# 224815268
+heads=1
+col2=2026-11-13
+logs=1&pc=HOME&from=202611131100
+doc=prd_jobs/net_2026-11-13
+mem=1
+clog=100
+regfind=9791188915002
+doc=shp_state/current
+doc=shp_state/confirm
+doc=app_settings/logger_watch
+logs=1&pc=LOGGER&from=202611131100
+# 1543429443
