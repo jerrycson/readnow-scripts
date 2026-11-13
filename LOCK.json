@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty1",
+ "what": "번외 0.1.62 판매기간 시작일",
+ "since": "2026-11-13T18:44:29Z",
+ "beat": "2026-11-13T18:44:29Z",
  "ask": null,
  "last": {
   "who": "y24qty1",
   "done": "웹앱 1.78.615 · 번외 0.1.61 (a6234d62)",
   "at": "2026-11-13T18:33:19Z"
  },
- "host": null
+ "host": "vm"
 }
