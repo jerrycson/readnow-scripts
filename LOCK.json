@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "ship1",
+ "what": "ip1+rv4+const3+view1 판",
+ "since": "2026-11-13T06:41:41Z",
+ "beat": "2026-11-13T06:41:41Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "qna1 웹앱 1.78.580·수집기 1.89.317·클라우드 0.35.220 (253df822)",
   "at": "2026-11-13T06:41:33Z"
  },
- "host": null
+ "host": "vm-ship1"
 }
