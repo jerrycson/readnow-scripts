@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "train1",
+ "what": "mjbtn MJ 등록 화면 세 가지(웹앱)",
+ "since": "2026-11-13T09:53:55Z",
+ "beat": "2026-11-13T09:53:55Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "웹앱 1.78.593 · 수집기 1.89.324 land1+spare2·y24hb (7c565389)",
   "at": "2026-11-13T09:53:40Z"
  },
- "host": null
+ "host": "vm-train1"
 }
