@@ -1,10 +1,10 @@
 # 리드나우 — 크롬 '메모리 절약'이 수집기·웹앱 탭을 잠재우지 않게 (먼저 관리자 아닌 터미널로 · 안 되면 안내대로 관리자 터미널로 · 다시 실행해도 같은 결과)
 # 사무실 PC·HOME에서 한 번: 시작 단추 오른쪽 클릭 → '터미널'(관리자 아님)에서
-#   irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/keep-tabs.ps1 | iex
+#   irm https://readnow.kr/local/keep-tabs.ps1 | iex
 # 로거는 도우미 1.6.6부터 스스로 갖추기(self-setup.ps1)가 같은 일을 자동으로 함
 # 하는 일: 크롬 정책 TabDiscardingExceptions(크롬 108부터 · 사용자 정책 HKCU)에 알라딘·우리 웹앱·도우미 주소를 넣음
 #   = 크롬 설정 '성능 → 항상 활성 상태로 유지할 사이트'에 넣는 것과 같음(사람이 손으로 넣을 필요 없음) · 크롬을 다시 켜면 적용(chrome://policy 에서 확인)
-# 되돌리기: $env:RN_UNDO = '1'; irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/keep-tabs.ps1 | iex
+# 되돌리기: $env:RN_UNDO = '1'; irm https://readnow.kr/local/keep-tabs.ps1 | iex
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $pk = 'HKCU:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'
 $want = @('[*.]aladin.co.kr', 'jerrycson.github.io', 'readnow.kr', '127.0.0.1', 'localhost', 'rn.local')

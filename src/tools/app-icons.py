@@ -3,7 +3,7 @@ import json, os, sys
 from PIL import Image, ImageDraw, ImageFont
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 FONT = '/usr/share/fonts/opentype/noto/NotoSansCJK-Black.ttc'
-BASE = '/readnow-scripts/app/'
+BASE = '../'  # (url1 11/13) 설치 파일(app/m/)에서 본 상대 경로 — 옛 주소(…/readnow-scripts/app/)·새 주소(readnow.kr/app/) 어디서나 웹앱 첫 화면 · 예전 '/readnow-scripts/app/'는 새 주소에서 없는 주소(404)라 휴대폰 설치가 안 됐음
 PAGES = [  # key, 이름, 짧은 이름, 아이콘 글자, 색
   ('home', '리드나우', '리드나우', '홈', '#2F5D50'),
   ('confirm', '주문확인요청 (리드나우)', '주문확인', '주문', '#B0322A'),
@@ -26,8 +26,8 @@ def icon(sz, txt, col, mask=False):
 for key, name, short, txt, col in PAGES:
   for z in (192, 512, 180): icon(z, txt, col).save(os.path.join(OUT, f'{key}-{z}.png'))
   icon(512, txt, col, True).save(os.path.join(OUT, f'{key}-512m.png'))
-  start = BASE if key == 'home' else BASE + '?go=' + key
-  man = { 'id': start, 'name': name, 'short_name': short, 'start_url': start, 'scope': BASE, 'display': 'standalone', 'display_override': ['standalone'], 'orientation': 'any',
+  start = BASE if key == 'home' else BASE + '?go=' + key  # id는 두지 않음 — 없으면 start_url이 id(상대 id는 주소 뿌리 기준으로 풀려 틀어짐)
+  man = { 'name': name, 'short_name': short, 'start_url': start, 'scope': BASE, 'display': 'standalone', 'display_override': ['standalone'], 'orientation': 'any',
     'background_color': '#ffffff', 'theme_color': col, 'lang': 'ko', 'dir': 'ltr', 'description': f'리드나우 — {short} 화면으로 바로 열림',
     'icons': [{ 'src': f'{key}-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any' }, { 'src': f'{key}-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any' }, { 'src': f'{key}-512m.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable' }],
     # 아이콘을 길게 누르면 나오는 바로 가기(안드로이드)

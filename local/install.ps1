@@ -1,6 +1,6 @@
 # 리드나우 로컬 도우미 설치 — 자동 수집 담당 PC(공개 전용 PC)에서 한 번
 # PowerShell에 아래 한 줄을 붙여 넣고 Enter:
-#   irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/install.ps1 | iex
+#   irm https://readnow.kr/local/install.ps1 | iex
 # 하는 일: ① Node.js 확인(없으면 설치) ② D:\ReadNow\local 에 도우미 받기 ③ 로그온하면 저절로 켜짐(꺼지면 5초 뒤 다시)
 #          ④ '리드나우 공개 수집' 전용 크롬 — 이 크롬만 도우미를 거침(알라딘은 테더링으로만, 우리 서비스는 와이파이로 · 도우미가 꺼지면 이 크롬은 아무 데도 못 나감)
 #             따로 된 프로필(알라딘 로그인 기록 없음)·WebRTC 새는 길 막음 · 바탕화면·시작 프로그램에

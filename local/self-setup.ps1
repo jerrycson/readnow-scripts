@@ -125,7 +125,7 @@ $R.adminMiss = $miss; $R.admin = ($miss.Count -eq 0)
 # 관리자 부분이 빠져 있으면 바탕화면에 '리드나우 관리자 설치'(두 번 클릭 → 윈도우가 '변경을 허용할까요?' → 예 → 설치 한 줄이 관리자로 돎) · 다 돼 있으면 지움
 $adm = Join-Path $L 'admin-install.cmd'; $alk = Join-Path $desk '리드나우 관리자 설치.lnk'
 if ($miss.Count -gt 0) {
-  [IO.File]::WriteAllText($adm, "@echo off`r`npowershell -NoProfile -Command `"Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -NoExit -Command irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/install.ps1 | iex'`"`r`n")
+  [IO.File]::WriteAllText($adm, "@echo off`r`npowershell -NoProfile -Command `"Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -NoExit -Command irm https://readnow.kr/local/install.ps1 | iex'`"`r`n")
   $lnk = $sh.CreateShortcut($alk); $lnk.TargetPath = $adm; $lnk.WorkingDirectory = $L; $lnk.IconLocation = "$env:SystemRoot\System32\imageres.dll,73"; $lnk.Save()
 } elseif (Test-Path $alk) { Remove-Item $alk -Force -ErrorAction SilentlyContinue }
 

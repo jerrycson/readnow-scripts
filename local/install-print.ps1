@@ -1,6 +1,6 @@
 # 리드나우 라벨 인쇄 도우미 설치 — 라벨을 뽑을 PC에서 한 번 (정범님 10/25)
 # PowerShell에 아래 한 줄을 붙여 넣고 Enter:
-#   irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/install-print.ps1 | iex
+#   irm https://readnow.kr/local/install-print.ps1 | iex
 # 하는 일: ① Node.js 확인(없으면 설치) ② %USERPROFILE%\ReadNow\print 에 인쇄 도우미(+ 📦 ALPS 자동 처리 모듈 + 🪟 수집 작업 창 모듈) 받기 ③ 로그온하면 저절로 켜짐(꺼지면 5초 뒤 다시 · 창 없음) ④ 이 PC의 프린터 목록 보여 줌
 # 윈도우 기본 프린터·크롬·로거 도우미는 건드리지 않음 · 다시 실행해도 됨(덮어씀)
 # (정범님 11/05 HOME 'HOME에는 ALPS가 아니라 외부 수집기가 필요') 선택: -With col2 를 넘기면 🧪 외부 수집기(시험 · 저장소 lab/col2)도 %USERPROFILE%\ReadNow\col2\app 에 받아(node --check) 두고 켬

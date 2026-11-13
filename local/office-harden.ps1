@@ -1,7 +1,7 @@
 # 리드나우 사무실 PC 광고·통계 스크립트 막기 (적용 보류 — 사장님이 정하면 사무실 PC마다 한 번)
 # 관리자 PowerShell(시작 단추 오른쪽 클릭 → '터미널(관리자)')에서:
-#   irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/office-harden.ps1 | iex
-# 되돌리기: 같은 창에서  $env:RN_UNDO = '1'; irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/office-harden.ps1 | iex
+#   irm https://readnow.kr/local/office-harden.ps1 | iex
+# 되돌리기: 같은 창에서  $env:RN_UNDO = '1'; irm https://readnow.kr/local/office-harden.ps1 | iex
 #
 # 하는 일: 이 PC의 크롬에 광고·추적 차단 확장 'uBlock Origin Lite'를 크롬 정책으로 깔아 둠(사람이 지울 수 없음 · 크롬을 다시 켜면 적용)
 #   왜: 알라딘 화면에는 광고·통계 스크립트(구글·네이버·카카오·크리테오 등)가 함께 돌고, 이 스크립트들은 같은 화면에서 브라우저 특징을 모아 기기를 알아봅니다.

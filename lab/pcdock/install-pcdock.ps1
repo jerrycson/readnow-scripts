@@ -1,6 +1,6 @@
 # 리드나우 PC 배치 도우미 설치 — 그 PC에서 한 번(정범님 11/12 'JS-MAIN 실행·배치 작은 창')
 # 가장 쉬운 길: install-pcdock.cmd 를 받아 더블클릭(이 파일을 받아 실행함)
-# 또는 PowerShell에 한 줄:  irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/lab/pcdock/install-pcdock.ps1 | iex
+# 또는 PowerShell에 한 줄:  irm https://readnow.kr/lab/pcdock/install-pcdock.ps1 | iex
 # 하는 일: ① Node.js 22 찾기(인쇄 도우미가 깐 %USERPROFILE%\ReadNow\node 를 그대로 씀 · 없으면 휴대용 Node를 같은 자리에 — 관리자 허락 창 없음)
 #          ② 묶음(bundle.json 목록)을 %LOCALAPPDATA%\ReadNow\pcdock\app 에 받아 node --check 검사 뒤 바꿔 끼움
 #          ③ 바탕 화면·시작 메뉴에 「리드나우 PC 배치」 아이콘 ④ 지금 한 번 켬

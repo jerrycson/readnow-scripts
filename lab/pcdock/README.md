@@ -17,7 +17,7 @@
 자료: `%LOCALAPPDATA%\ReadNow\pcdock` — `settings.json`(비밀값 없음) · 예전 설정 `old\` · 기록 `pcdock.log`.
 
 ## 설치(정범님 손 2번)
-1. `install-pcdock.cmd`를 받아 더블클릭(또는 PowerShell에 `irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/lab/pcdock/install-pcdock.ps1 | iex`).
+1. `install-pcdock.cmd`를 받아 더블클릭(또는 PowerShell에 `irm https://readnow.kr/lab/pcdock/install-pcdock.ps1 | iex`).
    Node는 인쇄 도우미가 깐 `%USERPROFILE%\ReadNow\node`를 그대로 씀(없으면 같은 자리에 휴대용 Node).
 2. 바탕 화면 「리드나우 PC 배치」 아이콘(설치 끝에 한 번 저절로 켜짐).
 새 판은 켤 때 받아 두고 다음에 켤 때 바뀜(사람 손 없음).
