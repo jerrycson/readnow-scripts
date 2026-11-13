@@ -11,7 +11,7 @@ const seed = () => { const now = Date.now(); const iso = (ms) => new Date(ms).to
   const it = (lid, t, pr) => ({ listingId: lid, title: t, price: pr, qty: 1, grade: '상', sku: 'BLKAAA_ms' });
   FS.shp_state = { confirm: { orders: [{ orderNo: 'C-1', buyer: '손님A', orderedAt: '2026-11-13 09:10', items: [it('L1', '첫 책', 5000)] }, { orderNo: 'C-2', buyer: '손님B', orderedAt: '2026-11-13 09:11', items: [it('L2', '둘째 책', 5100)] }], at: iso(now), sig: 's1' },
     current: { orders: [{ orderNo: 'D-1', buyer: '손님C', orderedAt: '2026-11-12 09:00', items: [it('L9', '셋째 책', 6000)] }], at: iso(now), tabCounts: {}, sig: 'c1' } };
-  FS.app_settings = { ...(FS.app_settings || {}), ship_auto: { on: true, cheapPct: 25, since: iso(now - 3600e3), beatAt: iso(now - 30 * 60e3), beatBy: 'JS-MAIN', beats: { 'JS-MAIN': iso(now - 30 * 60e3) } } };
+  FS.app_settings = { ...(FS.app_settings || {}), ship_auto: { on: true, cheapPct: 25, since: iso(now - 3600e3), beatAt: iso(now - 5 * 60e3), beatBy: 'JS-MAIN', beats: { 'JS-MAIN': iso(now - 5 * 60e3) } } /* (train1 11/13) 5분 전 신호 — 30분 전이면 첫 옛 신호가 '10분 넘음 → 안'으로 상태를 바꿔 설계대로 한 번 다시 그려, '칸만 바뀜' 시험이 거짓으로 실패했음 */ };
   try { localStorage.setItem('rn-ship-view', 'order'); localStorage.removeItem('rn-shipwhy'); localStorage.removeItem('rn-dperf'); } catch (e) {} };
 (async () => {
   await H(async (p) => {
@@ -45,7 +45,7 @@ const seed = () => { const now = Date.now(); const iso = (ms) => new Date(ms).to
       try { y24oRedraw(true); await W(650); o.y24soft = { ...cnt }; cnt.k = 0; cnt.s = 0; y24oRedraw(); await W(650); o.y24hard = { ...cnt }; cnt.k = 0; cnt.s = 0; y24oRedraw(true); y24oRedraw(); await W(650); o.y24mix = { ...cnt }; } finally { window.shipRedrawKeep = oK; window.shipRedrawSoon = oS; }
       // ④ 출고 열기 측정 — 받기 감쌈 · 받기 중 · 이어 세기
       o.bzWrapped = ['syncCustomers', 'syncOrders', 'syncSellersNow', 'syncCollNow'].every((n) => window[n] && window[n].__rnBz);
-      const n0 = (window.__rnBZ || []).length; try { await window.syncCollNow('zz_test_coll', null, new Map(), 'zz', 'zz', () => {}); } catch (e) {} o.bzRec = (window.__rnBZ || []).length > n0 && (window.__rnBZ || []).slice(-1)[0][2] != null;
+      const n0 = (window.__rnBZ || []).length; try { const pr = window.syncCollNow('zz_test_coll', null, new Map(), 'zz', 'zz', () => {}); if (pr && pr.catch) pr.catch(() => {}); await Promise.race([pr, W(1500)]); } catch (e) {} { const b = (window.__rnBZ || []).slice(n0).find((x) => x && x[0] === 'syncColl:zz_test_coll'); o.bzRec = !!b && typeof b[1] === 'number'; } /* (train1 11/13) 진짜 받기는 가짜 Firestore에서 끝나지 않아 시험이 여기서 멈췄음 — 끝을 기다리지 않고 감싸개가 시작 기록(이름·시각)을 남겼는지만 봄 · 끝 시각 셈은 아래 가짜 기록으로 봄 */
       await W(4500); const P0 = Object.keys((window.__FS || {}).perf_logs || {}).length;
       const fake = ['syncCustomers', Math.round(performance.now()), null]; window.__rnBZ.push(fake);
       openShip(S.shipTab || 'confirm'); await W(300); openShip(S.shipTab || 'confirm'); await W(200);
@@ -72,6 +72,7 @@ const seed = () => { const now = Date.now(); const iso = (ms) => new Date(ms).to
   // PC: 예스24 소식(soft)도 예전처럼 바로
   await H(async (p) => {
     await p.addInitScript(seed);
+    await p.evaluate(async () => { try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch (e) {} }); /* (train1 11/13) 휴대폰 회차처럼 서비스 워커를 풀고 다시 엶 — 안 풀면 워커가 가짜 Firebase 대신 바깥 주소로 가 'firebase is not defined'로 멈췄음 */
     await p.goto('http://localhost:' + (process.env.RN_PORT || 8765) + '/app/index.html'); await p.waitForTimeout(3500);
     const R = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; try { openShip('confirm'); } catch (e) { o.err = e.message; } await W(1500); o.open = !!(S.detail && S.detail.ship); o.phone = IS_PHONE;
       const oK = window.shipRedrawKeep, oS = window.shipRedrawSoon; const cnt = { k: 0, s: 0 }; window.shipRedrawKeep = function () { cnt.k++; }; window.shipRedrawSoon = function () { cnt.s++; };
