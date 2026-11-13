@@ -81,6 +81,7 @@ function makeCbuild({ C, log, gToken }) {
     const now = Date.now();
     out.list = (d.list || []).map((x) => ({ ...x, noEnd: !x.endAt && x.startAt && now - Date.parse(x.startAt) > 40 * 6e4 ? true : undefined }));
     out.at = d.at || null;
+    for (const x of out.list.filter((y) => !y.endAt).slice(0, 5)) { try { const r0 = (await C(COL).doc(x.id).get()).data() || {}; if (r0.j) { const j = JSON.parse(r0.j); Object.assign(x, { st: j.st || x.st, fail: j.fail || '', warn: j.warn || [], last: (j.tail || []).slice(-3), direct: true }); } } catch (e) {} } /* 클라우드가 못 받아 빌드가 Firestore에 직접 넣은 끝 보고도 목록에 */
     const id = /^[0-9a-f-]{20,64}$/.test(v) ? v : (d.last && d.last.id);
     if (id) { let r = (await C(COL).doc(id).get()).data(); if (r && r.j && !r.endAt) { try { r = { ...r, ...JSON.parse(r.j), direct: '클라우드 /cb-in이 못 받아 빌드가 Firestore에 직접 넣음' }; delete r.j; } catch (e) {} } out.run = r || null; if (r && !r.endAt && r.startAt && now - Date.parse(r.startAt) > 40 * 6e4) out.run.noEnd = '시작 보고만 있고 40분 넘게 끝 보고가 없음 — 빌드 시간 넘김이나 기계가 죽은 것(구글 콘솔 Cloud Build › 기록에서 확인)'; }
     return out;
