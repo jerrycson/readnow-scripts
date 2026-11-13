@@ -1,2 +1,2 @@
-logs=1&pc=HOME&from=2026111309&to=2026111315
-# 152445280
+run=1&doc=app_settings/col2_handoff&col2=2026-11-13
+# 702423357
