@@ -1,2 +1,2 @@
-doc=app_settings/voice_lex,app_settings/seller_aud,app_settings/oop_study
-# 93836610
+pxreg=7&n=60
+# 56146330
