@@ -30,6 +30,8 @@
     { k: 'pcSwitch', group: '휴대폰', label: '휴대폰에서 「PC 화면으로 보기 ↔ 휴대폰 화면으로 보기」 전환 단추 보이기(바닥글·서가)', type: 'check', def: true, help: '정범님 11/13 20:49 · 손님이 고른 값은 그 기기에 기억' },
     { k: 'pcWidth', group: '휴대폰', label: 'PC 화면으로 볼 때 화면 폭(px)', type: 'number', def: 1280, min: 960, max: 1600, help: '손가락으로 확대·축소해 봄' },
     { k: 'tabbar', group: '휴대폰', label: '휴대폰 아래 탭 막대(홈·분류·서가·찜·내 정보)', type: 'check', def: true },
+    { k: 'multiOn', group: '담기·주문', label: '수량이 2권 넘는 책은 손님이 여러 권 담기(재고 수량까지)', type: 'check', def: true, help: '정범님 11/13 20:47 · 끄면 예전처럼 한 권씩 · 클라우드 주문 검사도 이 값을 따름' },
+    { k: 'multiMax', group: '담기·주문', label: '같은 책 한 번에 최대 권 수', type: 'number', def: 10, min: 1, max: 50 },
     { k: 'shipNote', group: '책 한 권 화면', label: '배송 안내 한 줄', type: 'text', def: '입금이 확인되면 1~3일(영업일) 안에 보냅니다', max: 80 },
     { k: 'gradeTable', group: '책 한 권 화면', label: '등급 기준표(최상·상·중·하 풀이) 보이기', type: 'check', def: true },
     { k: 'shareOn', group: '책 한 권 화면', label: '공유 단추(휴대폰 공유 창 · 안 되면 주소 복사)', type: 'check', def: true },
@@ -71,6 +73,6 @@
   /* 관리 화면 미리 보기 주소 꼬리(저장 없이 손님 화면에서 보기) — #/?look=<base64url JSON> */
   const previewArg = (c) => { const s = JSON.stringify(cfgDiff(c)); try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const previewCfg = (a) => { try { const b = String(a || '').replace(/-/g, '+').replace(/_/g, '/'); const s = typeof atob === 'function' ? decodeURIComponent(escape(atob(b))) : Buffer.from(b, 'base64').toString('utf8'); const o = JSON.parse(s); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
-  const API = { VER: '0.1.0', THEMES, ROWS, SCHEMA, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
+  const API = { VER: '0.1.1', THEMES, ROWS, SCHEMA, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
   if (typeof module === 'object' && module.exports) module.exports = API; else root.BQL = API;
 })(typeof window !== 'undefined' ? window : this);

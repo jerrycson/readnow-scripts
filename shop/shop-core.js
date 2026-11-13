@@ -8,10 +8,15 @@
   const gradeOf = (g) => GRADE[g] || [g || '등급 모름', ''];
   const offPct = (p, lp) => (lp > 0 && p > 0 && p < lp ? Math.round((1 - p / lp) * 100) : 0);
   /* 장바구니 = [{ id, t, g, p, im }] · 한 권 상품이라 같은 책은 한 번만 */
-  const cartAdd = (cart, it, max) => { const c = (cart || []).filter((x) => x && x.id); if (c.some((x) => x.id === it.id)) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}) }], why: null }; }; /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
+  /* (11/13 shopux1) 같은 책 여러 권 — mul = 같은 책 최대 권 수(설정 · 없으면 예전처럼 한 권) · 줄의 n = 권 수(2 넘을 때만 · q = 재고 수량) · max는 권 수 합 */
+  const units = (c) => (c || []).reduce((a, x) => a + (x && x.n > 1 ? x.n : 1), 0);
+  const cartAdd = (cart, it, max, mul) => { const c = (cart || []).filter((x) => x && x.id); const ex = c.find((x) => x.id === it.id); if (ex && mul > 1 && +it.q > 1) { const lim = Math.min(+it.q, mul); const n = ex.n > 1 ? ex.n : 1; if (n >= lim) return { cart: c, why: `이 책은 ${lim}권까지 담을 수 있습니다` }; if (units(c) >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: c.map((x) => (x.id === it.id ? { ...x, n: n + 1, q: +it.q } : x)), why: null, n: n + 1 }; }
+    if (ex) return { cart: c, why: '이미 담은 책' }; if (mul > 1 && units(c) >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}) }], why: null }; }; /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
+  /* 같은 책 권 수 바꾸기(장바구니 −·+) — 1이면 n을 뺌(한 권 줄과 같은 꼴) */
+  const cartSetN = (cart, id, n, lim) => (cart || []).map((x) => { if (!x || x.id !== id) return x; const k = Math.max(1, Math.min(Math.round(+n) || 1, lim || 50, +x.q > 1 ? +x.q : 1)); const o = { ...x }; if (k > 1) o.n = k; else delete o.n; return o; });
   const shipFee = (sum, cfg) => { const f = Math.max(0, +((cfg || {}).shipFee) || 0); const fo = Math.max(0, +((cfg || {}).freeOver) || 0); return sum <= 0 ? 0 : fo && sum >= fo ? 0 : f; };
-  const cartSum = (cart, cfg) => { const sum = (cart || []).reduce((a, x) => a + (+x.p || 0), 0); const fee = shipFee(sum, cfg); return { n: (cart || []).length, sum, fee, total: sum + fee }; };
+  const cartSum = (cart, cfg) => { const sum = (cart || []).reduce((a, x) => a + (+x.p || 0) * (x.n > 1 ? x.n : 1), 0); const fee = shipFee(sum, cfg); return { n: units(cart), sum, fee, total: sum + fee }; };
   /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 클라우드 /shop/check 결과(st: 상품 → s 판매중·o 주문 중·x 팔림/내림 · p: 지금 값)로 고침 → { cart, gone:[{…, why}], moved:[{t, a, b}] }
    *  근거: 쿠팡·아마존 장바구니는 품절·가격 바뀜을 결제 전에 먼저 알림 — 주문 단추를 누른 뒤에야 '팔린 책' 오류가 나지 않게 */
   const cartFix = (cart, st, p) => { const out = [], gone = [], moved = []; for (const x of cart || []) { if (!x || !x.id) continue; const k = st && st[x.id];
@@ -27,7 +32,8 @@
     if (!/^\d{5}$/.test(String(f.zip || '').replace(/\D/g, ''))) E.zip = '우편번호 5자리'; if (String(f.addr1 || '').trim().length < 5) E.addr1 = '주소(도로명·지번)';
     if (String(f.email || '').trim() && !EMAIL.test(String(f.email).trim())) E.email = '메일 주소 꼴이 아닙니다(비워 두어도 됩니다)';
     if (!f.agreeP) E.agreeP = '개인정보 수집·이용 동의가 필요합니다'; if (!f.agreeT) E.agreeT = '구매 조건 확인 동의가 필요합니다'; return E; }
-  const orderBody = (f, cart) => ({ items: (cart || []).map((x) => x.id), buyer: { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), ...(String(f.email || '').trim() ? { email: String(f.email).trim() } : {}) },
+  const qtyOf = (cart) => { const o = {}; (cart || []).forEach((x) => { if (x && x.n > 1) o[x.id] = x.n; }); return Object.keys(o).length ? o : null; }; /* 2권 넘게 담은 책만 — 한 권뿐이면 null(주문 글이 예전과 똑같음) */
+  const orderBody = (f, cart) => ({ items: (cart || []).map((x) => x.id), ...(qtyOf(cart) ? { qty: qtyOf(cart) } : {}), buyer: { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), ...(String(f.email || '').trim() ? { email: String(f.email).trim() } : {}) },
     rcv: f.same ? { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() }
       : { name: String(f.rname || '').trim(), phone: String(f.rphone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() },
     depositor: String(f.dep || '').trim() || String(f.name || '').trim(), agree: { privacy: !!f.agreeP, terms: !!f.agreeT }, hp: f.hp || '', ...(String(f.cp || '').trim() ? { cp: String(f.cp).trim() } : {}), ...(f.expect != null ? { expect: +f.expect } : {}) });
@@ -53,5 +59,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { units, cartSetN, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
