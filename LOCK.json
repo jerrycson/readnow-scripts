@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "home2 번외 0.1.51",
+ "since": "2026-11-13T03:05:31Z",
+ "beat": "2026-11-13T03:05:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "led4 판 b5f8dcf8 · 웹앱 1.78.554 · 수집기 1.89.303 · 클라우드 0.35.203",
   "at": "2026-11-13T03:04:56Z"
  },
- "host": null
+ "host": "vm-home2"
 }
