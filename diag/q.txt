@@ -1,2 +1,2 @@
-run=1
-# 21130644
+doc=app_settings/cons_study,app_settings/research_pulse,app_settings/relist_learn,app_settings/voice_study,app_settings/front_bump_eval
+# 1673026415
