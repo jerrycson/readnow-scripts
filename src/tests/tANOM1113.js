@@ -17,10 +17,18 @@ console.log('① 공용 틀');
 { const H = [{ id: 'a', name: 'A', act: 'out' }, { id: 'b', name: 'B', act: 'in' }];
   const r = AN.ach(H, [{ k: 'e1', w: 1, c: { a: 2, b: 1 } }, { k: 'e2', w: 1, c: { a: 1, b: -1 } }]); ok(r.pick && r.pick.id === 'a' && r.ranked[1].score === -0.5, 'ACH: 어긋남은 1.5배 · 덜 반박된 가설', r);
   const r2 = AN.ach(H, [{ k: 'e1', w: 1, c: { a: 2, b: 2 } }]); ok(!r2.pick, 'ACH: 1·2등이 비슷하면 모름', r2); }
-{ let L = AN.learnInit(); const fb = [{ id: 'x1', dom: 'bench', key: '9', was: 'out', pickId: 'relist', human: 'in' }];
-  const a = AN.learn(L, fb); ok(a.changed === 1 && a.learn.sc['bench:9'] === 0.5 && a.learn.bias.bench.relist === -0.5 && a.learn.n.fp === 1, '배움: 사람이 다시 넣음 → 그 판매자 기준 +0.5 · 그 가설 −0.5', a.learn);
-  const b = AN.learn(a.learn, fb); ok(b.changed === 0, '같은 되먹임은 한 번만');
-  const c = AN.learn(b.learn, [{ id: 'x2', dom: 'bench', key: '9', was: 'in', human: 'out' }]); ok(c.learn.zCut.bench === 2.75 && c.learn.n.fn === 1, '배움: 사람이 뺌(엔진 놓침) → 도메인 기준 −0.25', c.learn); }
+{ /* (정범님 11/13 12:16) 사람 판단은 배움 재료가 아님 — 판정 뒤 다음 회차 증거로 스스로 채점 */
+  const rec = (id, o) => ({ act: id === 'longgap' ? 'in' : id === 'noise' ? 'unk' : 'out', anom: true, pick: { id }, f: { g: 2000, total: 18100, totP: 20000, add: 100 }, z: [['rGone', 0.1, 0.005, 9]], ...o });
+  const back = [{ total: 19900, spanDays: 1, gone: 90 }, { total: 20000, spanDays: 1, gone: 100 }]; const stay = [{ total: 18000, spanDays: 1, gone: 90 }, { total: 17950, spanDays: 1, gone: 100 }];
+  ok(AN.verify('bench', rec('relist'), back).ok === true && AN.verify('bench', rec('relist'), stay).ok === false, '채점: 다시 올리기 — 상품 수 돌아옴 = 맞음 · 줄어든 채 = 틀림');
+  ok(AN.verify('bench', rec('takedown'), stay).ok === true && AN.verify('bench', rec('takedown'), back).ok === false, '채점: 대량 내림 — 줄어든 채 = 맞음 · 돌아옴 = 틀림(다시 올리기였음)');
+  ok(AN.verify('bench', rec('noise'), back).ok === true, '채점: 읽기 잡음 — 상품이 그대로 있었음 = 맞음');
+  ok(AN.verify('bench', rec('longgap'), [{ total: 20000, spanDays: 1, gone: 100 }]).ok === true && AN.verify('bench', rec('longgap'), [{ total: 20000, spanDays: 1, gone: 2000 }]).ok === false, '채점: 넣었던 판정 — 다음 짧은 회차 사라짐이 평소면 맞음 · 20배면 틀림(놓침)');
+  ok(AN.verify('bench', rec('relist'), []).ok === null && AN.verify('bench', rec('takedown'), stay.slice(0, 1)).ok === null, '뒤 회차가 모자라면 아직 모름(채점 안 함)');
+  let L = AN.learnInit(); const a = AN.learn(L, [{ id: 'x1', dom: 'bench', key: '9', act: 'out', pickId: 'relist', ok: false, why: '줄어든 채' }]); ok(a.changed === 1 && a.learn.sc['bench:9'] === 0.25 && a.learn.bias.bench.relist === -0.5 && a.learn.n.fp === 1, '배움: 틀린 경보 → 그 판매자 기준 +0.25 · 그 가설 −0.5', a.learn);
+  const b = AN.learn(a.learn, [{ id: 'x1', dom: 'bench', key: '9', act: 'out', pickId: 'relist', ok: false }]); ok(b.changed === 0, '같은 판정은 한 번만 채점');
+  const c = AN.learn(b.learn, [{ id: 'x2', dom: 'bench', key: '9', act: 'in', pickId: 'longgap', ok: false }, { id: 'x3', dom: 'bench', key: '9', act: 'out', pickId: 'takedown', ok: true }]); ok(c.learn.zCut.bench === 2.75 && c.learn.n.fn === 1 && c.learn.n.ok === 1 && c.learn.bias.bench.takedown === 0.1, '배움: 놓침 → 도메인 기준 −0.25 · 맞음 → 그 가설 +0.1', c.learn);
+  ok(!/human/.test(String(AN.learn)), '배움 함수에 사람 판단 칸 없음'); }
 
 /* 실제 회차로 차례대로 판정(그때까지의 회차만 기준선) */
 const all = []; for (const S of Object.values(FX.shops)) for (const v of S.runs) all.push({ ...v, _tag: S.tag });
@@ -92,7 +100,7 @@ ok(!!BR.AN && BR.AN.VERSION === AN.VERSION, '회차 보고가 공용 엔진을 �
   const M2 = { r0: [5000, '20261112', '상', 0, '팔린 책 0', 0, 0, null, null, null, 0], r1: [5000, '20261112', '상', 0, '팔린 책 1', 0, 0, null, null, null, 0], o: [5000, '20261001', '상', 0, '옛 책', 0, 0, null, null, null, 0] }; acc2.shop('9200002', M2); acc2.endShop('9200002'); acc2.ours([]); const P2 = acc2.done();
   ok(P2.sold.n === 98 && P2.anom.relistCut.n === 2, '평소 회차라도 7일 창 안에 새 번호로 다시 올라온 2권은 팔림에서 뺌', [P2.sold.n, P2.anom.relistCut]); }
 const SRC = fs.readFileSync(path.join(ROOT, 'cloud', 'benchrep.js'), 'utf8');
-ok(/doc\('anom_learn'\)/.test(SRC) && /AN\.learn\(learnSt, fb\)/.test(SRC), '클라우드: 사람 되먹임 → app_settings/anom_learn 배움');
+ok(/doc\('anom_learn'\)/.test(SRC) && /AN\.verify\('bench', a, later\)/.test(SRC) && /AN\.learn\(learnSt, outs\)/.test(SRC) && !/human: x\.excl/.test(SRC), '클라우드: 뒤 회차 증거로 채점 → app_settings/anom_learn 배움(사람 빼기/넣기는 배움에 안 씀)');
 ok(/massGone: mg/.test(SRC) && /if \(same && \(hs \|\| !!v\.massGone === mg\)\) continue;/.test(SRC), '클라우드: 판정이 같으면 안 씀 · 사람 고른 회차는 빼기/넣기 그대로');
 ok(/kday\(D0 - 36 \* 864e5\)/.test(SRC), '기준선 35일 재료');
 const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy-cloud.yml'), 'utf8'); ok(/for f in \.\.\/readnow-\*-core\.js/.test(WF), '배포가 readnow-*-core.js를 이미지에 넣음(엔진 파일도 함께)');
@@ -100,7 +108,7 @@ const WF = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy-cloud
 console.log('⑥ 웹앱 🎯 회차 보고');
 const APP = fs.readFileSync(path.join(ROOT, 'src', 'app.html'), 'utf8');
 ok(/🧠 자료 이상 판단/.test(APP) && /data-anomx=/.test(APP), '회차 보고 6번 칸 = 🧠 자료 이상 판단(판정·근거·가설 점수 · ↩ 다시 넣기/📉 빼기)');
-ok(/benchExclSet\(sc, \[id\], out, /.test(APP), '다시 넣기·빼기 단추가 기존 회차 빼기 장치(benchExclSet)를 씀 → 엔진이 다음 셈에 배움');
+ok(/benchExclSet\(sc, \[id\], out, /.test(APP), '다시 넣기·빼기 단추가 기존 회차 빼기 장치(benchExclSet)를 씀 — 통계 처리만(기록만)');
 ok(!/\b(alert|confirm|prompt)\(/.test(APP.slice(APP.indexOf('🧠 자료 이상 판단'), APP.indexOf('🧠 자료 이상 판단') + 6000)), '브라우저 창 없음');
 
 console.log(bad ? `❌ 실패 ${bad}` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
