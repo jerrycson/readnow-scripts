@@ -1,2 +1,2 @@
-run=1
-# 3267811461
+doc=app_settings/ship_rescue
+# 19995221
