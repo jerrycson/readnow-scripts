@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty1",
+ "what": "번외 0.1.60 · 수집기 · 웹앱 — 예스24 상세수정 맨 아래 수정",
+ "since": "2026-11-13T17:58:28Z",
+ "beat": "2026-11-13T17:58:28Z",
  "ask": null,
  "last": {
   "who": "y24qty1",
   "done": "웹앱 1.78.613 · 수집기 1.89.327 (33134d35)",
   "at": "2026-11-13T17:38:04Z"
  },
- "host": null
+ "host": "vm"
 }
