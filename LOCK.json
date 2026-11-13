@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "bovf: 벤치마킹 넘쳐 쓰기 차례 고침 판 내기",
- "since": "2026-11-13T03:50:44Z",
- "beat": "2026-11-13T03:50:44Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: urg2 긴급: 출고 빈 목록 되살리기 판",
-  "at": "2026-11-13T03:52:28Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "priv1 판 f3d608d2 — 웹앱 1.78.559 · 클라우드 0.35.208 (비공개 전 옮기기)",
-  "at": "2026-11-13T03:50:33Z"
+  "done": "bovf 판 58f9b560 — 웹앱 1.78.560 · 수집기 1.89.306 · autosched 0.18.29 · 노선표 0.14.186",
+  "at": "2026-11-13T03:57:01Z"
  },
- "host": "wk-bovf"
+ "host": null
 }
