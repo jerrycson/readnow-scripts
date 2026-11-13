@@ -108,7 +108,7 @@ function runOne(P, t, port, tmo) {
 }
 function judge(t, out, code, ms) {
   const L = out.split('\n'); const items = []; let summary = false, pass = false;
-  for (const l of L) { if (/^\s*✓/.test(l)) { if (/통과|PASS/.test(l)) pass = true; continue; } const m = /^(\s*)(?:❌|✗)\s*(.*)$/.exec(l); if (!m) continue; if (m[1].length) items.push(m[2].trim().slice(0, 200)); else summary = true; }
+  for (const l of L) { if (/(✓|✅).*(통과|PASS)/.test(l)) pass = true; if (/^\s*(✓|✅)/.test(l)) continue; const m = /^(\s*)(?:❌|✗)\s*(.*)$/.exec(l); if (!m) continue; if (m[1].length) items.push(m[2].trim().slice(0, 110)); else summary = true; }
   const tErr = (/ERRORS:\s*(\[[\s\S]*?\])/.exec(out) || [])[1] || ''; if (/"TEST /.test(tErr)) items.push('시험 안 오류: ' + (/"TEST ([^"]{0,160})/.exec(tErr) || [])[1]);
   const ok = !items.length && !summary && code === 0 && pass; const why = ok ? '' : !items.length && !summary ? (code !== 0 ? `끝 코드 ${code}` : '통과 줄 없음') : '';
   return { t, ok, items, why, ms, tail: L.filter((l) => l.trim()).slice(-6).join('\n') };
