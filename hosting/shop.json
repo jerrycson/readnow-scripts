@@ -9,11 +9,13 @@
     { "source": "/sitemap*.xml", "run": { "serviceId": "readnow-shop", "region": "asia-northeast3", "probe": "https://readnow-shop-63884079760.asia-northeast3.run.app/healthz", "fallback": "readnow-cloud" } },
     { "source": "/shop/**", "run": { "serviceId": "readnow-shop", "region": "asia-northeast3", "probe": "https://readnow-shop-63884079760.asia-northeast3.run.app/healthz", "fallback": "readnow-cloud" } } ],
   "_rewrites_shelf6": "(11/12 shelf6) /shop/** 읽기 창구(서가 자료·글꼴·설정·목록)도 같은 주소로 — 손님 화면이 booksqueen.com/shop/…로 부르면 출처 미리 묻기(CORS) 없이 · Firebase CDN이 s-maxage 동안 대신 답해 클라우드(한 대 · 동시 4개)에 덜 감 · 주문(POST)은 그대로 클라우드 주소로",
+  "_headers_shopadm1": "(11/13 shopadm1) 👀 관리 웹앱 📊 백오피스 › 손님 화면 보기가 우리숍을 휴대폰·PC 틀(iframe) 안에 띄움 — 요즘 브라우저는 CSP frame-ancestors(관리 사이트 주소만)를 따르고 X-Frame-Options DENY는 옛 브라우저용으로 그대로(남의 사이트는 여전히 못 띄움)",
   "headers": [
     { "source": "**", "headers": [
       { "key": "X-Content-Type-Options", "value": "nosniff" },
       { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
       { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://readnow.kr https://www.readnow.kr https://readnow-3a385.web.app https://readnow-3a385.firebaseapp.com" },
       { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" } ] },
     { "source": "**/*.@(js|css|html|json|txt)", "headers": [
       { "key": "Cache-Control", "value": "no-cache" } ] }
