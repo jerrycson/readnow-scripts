@@ -36,9 +36,9 @@ ok(/const Y24_RE1114_NEED = '0\.1\.56'/.test(A) && /if \(vn\(hv\) < vn\(Y24_RE11
 ok(/await y24Re1113\(\);[^\n]*\n    await y24Re1114\(\);/.test(A), '맡긴 일 줄 처리(ledY24HoldRetry) 안에서 불림');
 console.log('③ 번외 0.1.56');
 const W = rd('lab/col2/helper/col2-y24w.js'), Y = rd('lab/col2/helper/col2-y24.js');
-ok(/COL2_VER: '0\.1\.56'/.test(rd('lab/col2/col2-config.js')), '번외 판 0.1.56');
+{ const cv = (rd('lab/col2/col2-config.js').match(/COL2_VER: '([\d.]+)'/) || [])[1] || '0'; const vn = (x) => x.split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); ok(vn(cv) >= vn('0.1.56'), '번외 판 0.1.56 이상(지금 ' + cv + ')'); } /* (y24qty1) 다음 판에서도 깨지지 않게 '이상'으로 */
 ok(/async function detQty\(/.test(W) && /if \(ce === false\) return await detQty\(/.test(W) && /const SAVE_RE = /.test(W) && !/등록\|/.test((W.match(/const SAVE_RE = [^;]*;/) || [''])[0]), "표가 재고수량 칸을 잠그면 [상세수정] 길 · 저장 단추 이름에 '등록' 없음");
-ok(/const JS_POP_UNDATE = /.test(W) && /a0\.on === false && a0\.dv === b0\.dv && a0\.act === b0\.act/.test(W), "판매중지 창 '기간변경' 체크 끈 뒤 꺼짐·판매종료일·기간 단추가 그대로일 때만 [변경]");
+ok(/const JS_POP_UNDATE = /.test(W) && /a0\.on === false && (a0\.cy !== 'Y' && )?a0\.dv === b0\.dv && a0\.act === b0\.act/.test(W), "판매중지 창 '기간변경' 체크 끈 뒤 꺼짐·판매종료일·기간 단추가 그대로일 때만 [변경]");
 ok(/const JS_PROBE2 = /.test(W) && /probe2: r\.grid\.probe2 \|\| null, det: r\.det \|\| null, pop: r\.pop \|\| null/.test(Y), '화면 함수 원문 둘째·[상세수정]·판매상태 창 원문이 💓 grid 안에(수집기 판 없이 올라감)');
 ok(/const JS_PRICE = \(r, kP, to\) =>/.test(W) && !/detQty[^\n]*kind === 'price'/.test(W), '판매가 길은 그대로(이번 판이 건드리지 않음)');
 console.log(bad ? `❌ tY24RE8_1113 실패 ${bad}` : '✓ tY24RE8_1113 모두 통과'); process.exit(bad ? 1 : 0);
