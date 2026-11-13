@@ -1,15 +1,15 @@
-perf=600
-@health&hours=24
-logs=1&pc=LOGGER&from=202611122200
-logs=1&pc=JS-MAIN&from=202611122200
-logs=1&pc=MJ-MAIN&from=202611122200
-logs=1&pc=HOME&from=202611122200
-doc=prd_jobs/pcBeat
+mem=1
+clog=1&n=80
+pend=1
+cbuild=1
+exth=1
+pxreg=1
+webOrigin=1
+doc=app_settings/pxDaily
 doc=app_settings/write_watch
-doc=app_settings/value_model
-doc=app_settings/buyback_stats
-doc=app_settings/extras_study
-cmds=cancelOrder&n=20
-recentUp=sellers&mins=1440
 recentUp=col2_y24_cmd&mins=1440
-# 777516496
+recentUp=prd_listings&mins=1440
+recentUp=shp_cmds&mins=1440
+recentUp=jb_notes&mins=1440
+recentUp=px_exp_groups&mins=1440
+# 2209630651
