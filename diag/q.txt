@@ -1,2 +1,2 @@
-doc=app_settings/research_pulse
-# 189908796
+logs=1&pc=HOME&from=202611131510&to=202611131600
+# 159219918
