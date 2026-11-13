@@ -162,6 +162,13 @@ const href=String(R.href||'');try{const p=rt.push({name,params:{goodsNo:N}});if(
 const JS_OPEN_HOOK = `(()=>{window.__rnOpen=[];if(!window.__rnOpen0){window.__rnOpen0=window.open;window.open=function(u){try{window.__rnOpen.push(String(u==null?'':u))}catch(e){}return{closed:false,focus:function(){},close:function(){},blur:function(){},postMessage:function(){},document:{},location:{}}}}return true})()`;
 const JS_OPEN_GET = `(()=>{const vis=(x)=>{try{return getComputedStyle(x).display!=='none'&&x.getClientRects().length>0}catch(e){return false}};return{u:(window.__rnOpen||[]).slice(0,3),href:location.href,pop:[...document.querySelectorAll('.layerPop')].filter(vis).map((x)=>((x.querySelector('h1')||{}).innerText||'').replace(/\\s+/g,' ').trim().slice(0,40)).filter(Boolean)}})()`;
 const JS_OPEN_UNHOOK = `(()=>{if(window.__rnOpen0){window.open=window.__rnOpen0;window.__rnOpen0=null}return true})()`;
+/* (y24qty1 · HOME 11/14 02:52 실제 [상세수정] 화면 /Product/SelectProduct/<번호> 원문: 단추 '수정'이 둘(위쪽 하나 · 맨 아래 [수정]·[삭제] 짝 하나)이라 '저장 단추를 하나로 못 찾음'으로 멈췄음 — 아무것도 저장 안 됨)
+ *  → 저장 이름 단추가 하나면 그것 · 여럿이면 바로 다음 단추가 '삭제'인 것(맨 아래 짝)이 꼭 하나일 때만 그것 · 아니면 누르지 않음([삭제]는 절대 누르지 않음)
+ *  · 단추마다 둘레 원문(앞 머리글·부모 칸 이름·다음 단추·그 화면 구성 요소 함수 중 저장·수정 낱말이 든 것)을 det.sbx·det.vm에 남김 */
+const SV_PICK_JS = `const svTx=(b)=>String(b.innerText||b.value||'').replace(/\\s+/g,' ').trim();const svVis=(b)=>{try{return b.getClientRects().length>0&&getComputedStyle(b).visibility!=='hidden'}catch(e){return false}};
+const svNx=(b)=>{let s=b.nextElementSibling;while(s&&!/^(BUTTON|A|INPUT)$/.test(s.tagName))s=s.nextElementSibling;return s};
+const svPick=()=>{const RE=${SAVE_RE.toString()};const L=[...document.querySelectorAll('button,input[type=button],input[type=submit],a.btn')].filter((b)=>svVis(b)&&!b.disabled&&!(b.closest&&b.closest('.layerPop'))&&RE.test(svTx(b)));if(L.length<=1)return{L,pick:L[0]||null,how:L.length?'저장 단추 하나':'없음'};
+const P=L.filter((b)=>{const x=svNx(b);return !!x&&/^삭제$/.test(svTx(x))});return{L,pick:P.length===1?P[0]:null,how:P.length===1?"맨 아래 [수정]·[삭제] 짝(저장 이름 단추 "+L.length+"개 중)":"저장 이름 단추 "+L.length+"개 · [삭제] 짝 "+P.length+"개"}};`;
 /* 그 화면 칸 모두 읽기(누르지 않음) — 칸마다 열쇠 k(name·id·라벨+차례) · 라벨 · 값 · 보임·잠김 · 단추 이름 · 머리글 · 불러온 api 주소 · 그 상품 번호가 화면에 있는지 */
 const JS_DET = (no) => `(()=>{const vis=(e)=>{try{return e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden'}catch(x){return false}};const cl=(v,n)=>String(v==null?'':v).replace(/\\s+/g,' ').trim().slice(0,n||40);
 if(/login/i.test(location.pathname)||document.querySelector('input[type=password]'))return{login:true};
@@ -175,11 +182,14 @@ const B=[...document.querySelectorAll('button,input[type=button],input[type=subm
 const H=[...document.querySelectorAll('h1,h2,h3')].filter((x)=>vis(x)&&!hid(x)).map((x)=>cl(x.innerText,40)).filter(Boolean).slice(0,10);
 let api=[];try{api=[...new Set(performance.getEntriesByType('resource').map((x)=>x.name).filter((n)=>/\\/api\\//i.test(n)).map((n)=>{try{return new URL(n).pathname}catch(x){return ''}}))].slice(0,30)}catch(x){}
 const N=${JSON.stringify(String(no))};const hasNo=!!N&&(location.href.indexOf(N)>=0||F.some((f)=>f.v===N||f.v.indexOf(N)>=0)||((document.body&&document.body.innerText)||'').indexOf(N)>=0);
-return{ok:true,url:location.pathname+location.search,F,B,H,api,hasNo}})()`;
+${SV_PICK_JS}const sp=svPick();const hb=(b)=>{let t='';try{const all=[...document.querySelectorAll('h1,h2,h3,h4,button,input[type=button],a.btn')];const i=all.indexOf(b);for(let j=i-1;j>=0;j--){if(/^H[1-4]$/.test(all[j].tagName)){t=all[j].innerText;break}}}catch(x){}return cl(t,30)};
+const sbx=sp.L.slice(0,6).map((b)=>{const x=svNx(b);const pa=b.parentElement;return cl(svTx(b),12)+' ¦ 앞 머리글 '+hb(b)+' ¦ 부모 '+cl(pa&&pa.className,40)+' ¦ 다음 '+cl(x?svTx(x):'',12)+(b===sp.pick?' ¦ ★고름':'')});
+let vm=[];try{const seen=new Set();for(const b of sp.L.slice(0,4)){for(let e=b;e&&!e.__vue__;e=e.parentElement){}let e=b;while(e&&!e.__vue__)e=e.parentElement;for(let v=e&&e.__vue__,d=0;v&&d<4;v=v.$parent,d++){if(seen.has(v))continue;seen.add(v);const ms=(v.$options&&v.$options.methods)||{};for(const k of Object.keys(ms)){if(!/save|update|modify|edit|regist|delete|click/i.test(k))continue;let src='';try{src=String(ms[k]).replace(/\s+/g,' ')}catch(x){}if(vm.length<12)vm.push(cl((v.$options.name||'?')+'.'+k+' ¦ '+src,500))}}}}catch(x){}
+return{ok:true,url:location.pathname+location.search,F,B,H,api,hasNo,sv:sp.pick?1:0,svHow:sp.how,sbx,vm}})()`;
 const JS_KPOS = (k) => `(()=>{const e=document.querySelector('[data-rn3-k="'+CSS.escape(${JSON.stringify(k)})+'"]');if(!e)return{ok:false};try{e.scrollIntoView({block:'center'})}catch(x){}const r=e.getBoundingClientRect();return r.width>0?{ok:true,x:r.left+Math.min(r.width/2,40),y:r.top+r.height/2}:{ok:false}})()`;
 const JS_KSEL = (k) => `(()=>{const e=document.querySelector('[data-rn3-k="'+CSS.escape(${JSON.stringify(k)})+'"]');if(!e)return false;try{e.focus();e.select()}catch(x){}return document.activeElement===e})()`;
 const JS_KBLUR = (k) => `(()=>{const e=document.querySelector('[data-rn3-k="'+CSS.escape(${JSON.stringify(k)})+'"]');if(!e)return false;try{e.dispatchEvent(new Event('change',{bubbles:true}));e.blur()}catch(x){}return true})()`;
-const JS_DETSAVE = `(()=>{const vis=(b)=>{try{return b.getClientRects().length>0&&getComputedStyle(b).visibility!=='hidden'}catch(e){return false}};const RE=${SAVE_RE.toString()};const L=[...document.querySelectorAll('button,input[type=button],input[type=submit],a.btn')].filter((b)=>vis(b)&&!b.disabled&&!(b.closest&&b.closest('.layerPop'))&&RE.test(String(b.innerText||b.value||'').replace(/\\s+/g,' ').trim()));if(L.length!==1)return{ok:false,why:'저장 단추를 하나로 못 찾음('+L.length+'개)'};L[0].click();return{ok:true,t:String(L[0].innerText||L[0].value||'').trim()}})()`;
+const JS_DETSAVE = `(()=>{${SV_PICK_JS}const sp=svPick();if(!sp.pick)return{ok:false,why:'저장 단추를 하나로 못 찾음('+sp.how+')'};const t=svTx(sp.pick);if(/삭제|등록/.test(t))return{ok:false,why:'고른 단추 이름이 이상함('+t+')'};sp.pick.click();return{ok:true,t,how:sp.how}})()`;
 /* (y24re8) 화면 함수 원문 둘째(누르지 않음) — 0.1.54 probe는 공용 함수(showWindowPopup 등)로 16칸을 다 채워 정작 이 화면 함수(상세수정·판매상태 창)를 못 담았음
  *  → 표 둘레·판매상태 창 둘레 구성 요소마다: 이름 · 함수 이름 목록 · 이 화면 낱말(UPDATE_BUTTON·window.open·changeDate·goodsStatGb·Product/ …)이 든 함수·mounted·watch 글(앞 1500자) · 판매상태 창 data(글자·수·참거짓만) */
 const GEN_M = /^(showWindowPopup|showMsgPopup|showPopup|closePopup|showBalloonPopup|showGridProgressPopup|checkValidation|checkServiceResult|showOrderDetailPopup|setGridCheckbarVisible|setColumnEditable|setColumnStyleToCheckBox|setColumnTextBoxEditorStyle)$/;
@@ -256,11 +266,11 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   async function detQty(j, r, h, before, what) { const failP = (msg, todo, x) => ({ state: 'fail', pre: true, msg: `${msg} — 아무것도 저장하지 않음`, before, todo: todo || '예스24 판매관리 › 등록상품 관리 › 그 상품 [상세수정]에서 손으로 고친 뒤 「✓ 예스24에서 고쳤음」 · 리드나우 방에 알려 주세요(원문은 남김)', ...(x || {}) });
     j.step = `${r.no} [상세수정] 화면 여는 중`; const D = await openDet(h, r.no); if (D.login) return { state: 'login' };
     if (D.err) { saveDet({ err: D.err, url: D.url || null, pop: D.pop || null }); return failP(D.err); }
-    const d = D.d; saveDet({ url: d.url, how: D.how, F: d.F.slice(0, 90).map(fStr), B: d.B, H: d.H, api: d.api, hasNo: d.hasNo, no: r.no });
+    const d = D.d; saveDet({ url: d.url, how: D.how, F: d.F.slice(0, 90).map(fStr), B: d.B, H: d.H, api: d.api, hasNo: d.hasNo, no: r.no, svHow: d.svHow || null, sbx: d.sbx || null, vm: d.vm || null });
     if (!d.hasNo) return failP(`[상세수정] 화면에서 상품번호 ${r.no}를 못 봄(그 상품 화면인지 확인 못 함)`);
     const Q = d.F.filter((f) => f.vis && !f.dis && !f.ro && /^(text|number|tel)$/.test(f.t) && QTY_LABEL.test(f.l)); if (Q.length !== 1) return failP(`[상세수정] 화면에서 재고수량 칸을 하나로 못 찾음(${Q.length}개 · 칸 라벨 ${d.F.filter((f) => f.vis).map((f) => f.l).filter(Boolean).slice(0, 12).join('·')})`);
     const q = Q[0]; if (String(+q.v) !== String(+h.qty)) return failP(`[상세수정] 화면 재고수량(${q.v})이 등록상품 목록 값(${h.qty})과 달라 고치지 않음`);
-    const SB = d.B.filter((t) => SAVE_RE.test(t)); if (SB.length !== 1) return failP(`[상세수정] 화면에서 저장 단추를 하나로 못 찾음(단추 ${d.B.slice(0, 12).join('·')})`);
+    if (d.sv !== 1) return failP(`[상세수정] 화면에서 저장 단추를 하나로 못 찾음(${d.svHow || ''} · 단추 ${d.B.slice(0, 12).join('·')})`);
     if (o.holdOn()) return { state: 'hold' };
     j.step = `${r.no} [상세수정] 재고수량 칸 고치는 중`; const p = await o.ev(JS_KPOS(q.k)); if (!p || !p.ok) return failP('[상세수정] 재고수량 칸 자리를 못 셈');
     await o.inp.click(p.x, p.y); await sleep(300 * SC); await o.ev(JS_KSEL(q.k)); await o.inp.text(String(to(r))); await sleep(300 * SC); await o.ev(JS_KBLUR(q.k)); await sleep(600 * SC);

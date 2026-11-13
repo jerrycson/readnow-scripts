@@ -22,30 +22,32 @@ const D = [
   { id: 'd', k: 'w', st: 'done', at: '2026-11-13T10:06:00Z', job: job('d', 'price', { src: 'price' }), res: res("'상세수정' 칸 자리를 못 셈") },
   { id: 'e', k: 'w', st: 'done', at: '2026-11-13T10:07:00Z', job: job('e', 'qty'), res: res('수량 1권 — 등록상품 목록에서 확인', 'done') },
   { id: 'f', k: 'w', st: 'done', at: '2026-11-13T10:08:00Z', job: job('f', 'stop'), res: res('예스24 1951f의 자체코드가 이미 PNKLUX — 장부가 이은 실물과 달라 아무것도 누르지 않음') },
-  { id: 'g', k: 'w', st: 'done', at: '2026-11-13T10:09:00Z', re1114b: 'x', job: job('g', 'qty'), res: res("'상세수정' 칸 자리를 못 셈") },
+  { id: 'g', k: 'w', st: 'done', at: '2026-11-13T10:09:00Z', re1114c: 'x', job: job('g', 'qty'), res: res("'상세수정' 칸 자리를 못 셈") },
+  { id: 'i', k: 'w', st: 'done', at: '2026-11-13T10:11:00Z', job: job('i', 'qty'), res: res('[상세수정] 화면에서 저장 단추를 하나로 못 찾음(저장 이름 단추 2개 · [삭제] 짝 0개) — 아무것도 저장하지 않음') },
   { id: 'h', k: 'w', st: 'done', at: '2026-11-13T10:10:00Z', job: job('h', 'qty'), res: res('[상세수정]에서 저장을 누른 뒤 다시 읽으니 바라던 꼴이 아님', 'unsure') },
 ];
 const old = { id: 'b0', k: 'w', st: 'done', at: '2026-11-13T10:05:00Z', job: { id: 'b0', rows: [{ ...job('b', 'stop').rows[0] }] }, res: res("창의 '기간변경'이 켜져 있어 멈춤") };
 const P = F.y24Re1114bPick([...D, old], []); const ids = P.map((d) => d.id).sort().join(',');
-ok(ids === 'a,b,c', "상세수정 칸 못 셈·기간변경 잠김·처음 한 건 세 꼴만 · 판매가·이미 됨·자체코드 다름·확실하지 않음·re1114b 표시·같은 줄 옛 문서는 뺌", ids);
-ok(F.y24Re1114bPick(D, [{ id: 'live', st: 'hold', at: '2026-11-14T01:00:00Z', job: job('a', 'qty') }]).map((d) => d.id).sort().join(',') === 'b,c', '그 줄의 맡김이 지금 줄에 있으면 끝난 옛 문서는 되돌리지 않음');
+ok(ids === 'a,b,c,i', "상세수정 칸 못 셈·기간변경 잠김·처음 한 건·저장 단추 못 찾음 네 꼴만 · 판매가·이미 됨·자체코드 다름·확실하지 않음·re1114c 표시·같은 줄 옛 문서는 뺌", ids);
+ok(F.y24Re1114bPick(D, [{ id: 'live', st: 'hold', at: '2026-11-14T01:00:00Z', job: job('a', 'qty') }]).map((d) => d.id).sort().join(',') === 'b,c,i', '그 줄의 맡김이 지금 줄에 있으면 끝난 옛 문서는 되돌리지 않음');
 console.log('② 되돌림');
-const RS = [...A.matchAll(/const RES = (\{ state: 'fail', pre: true, same: true, msg: '[^']*' \});/g)].map((m) => m[1]).find((x) => /0\.1\.59/.test(x)); const res0 = RS ? new Function('return ' + RS)() : null;
+const RS = [...A.matchAll(/const RES = (\{ state: 'fail', pre: true, same: true, msg: '[^']*' \});/g)].map((m) => m[1]).find((x) => /0\.1\.60/.test(x)); const res0 = RS ? new Function('return ' + RS)() : null;
 ok(res0 && !/기간변경/.test(res0.msg), "되돌림 까닭 글에 '기간변경' 낱말이 없음(실패 셈에 막히지 않게)", RS);
 for (const d of P) { const p = F.y24RePatch({ ...d, reN: Math.min(+d.reN || 0, F.Y24_RE_MAX - 1) }, res0, '시험', Date.parse('2026-11-14T02:10:00Z'), 0); ok(p && p.st === 'hold' && p.reN <= F.Y24_RE_MAX, `문서 ${d.id} 맡긴 일 줄로(hold) 되돌릴 수 있음`, p); }
-ok(/const Y24_RE1114B_NEED = '0\.1\.59'/.test(A) && /if \(vn\(hv\) < vn\(Y24_RE1114B_NEED\)\) return;/.test(A) && /localStorage\.getItem\('rn-y24re1114b'\)/.test(A) && /c\.re1114b \|\| !y24Re1114bPick\(/.test(A) && /re1114b: iso/.test(A), '맡은 PC 번외 0.1.59 뒤에만 · 기기마다 한 번 · 문서마다 re1114b 표시로 한 번(거래 안에서 다시 확인)');
+ok(/const Y24_RE1114B_NEED = '0\.1\.60'/.test(A) && /if \(vn\(hv\) < vn\(Y24_RE1114B_NEED\)\) return;/.test(A) && /localStorage\.getItem\('rn-y24re1114c'\)/.test(A) && /c\.re1114c \|\| !y24Re1114bPick\(/.test(A) && /re1114c: iso/.test(A), '맡은 PC 번외 0.1.59 뒤에만 · 기기마다 한 번 · 문서마다 re1114b 표시로 한 번(거래 안에서 다시 확인)');
 ok(/await y24Re1114\(\);[^\n]*\n    await y24Re1114b\(\);/.test(A), '맡긴 일 줄 처리 안에서 y24Re1114 다음에 불림');
 console.log('③ 번외 0.1.58·0.1.59');
 const W = rd('lab/col2/helper/col2-y24w.js');
-ok(/COL2_VER: '0\.1\.59'/.test(rd('lab/col2/col2-config.js')), '번외 판 0.1.59');
+ok(/COL2_VER: '0\.1\.60'/.test(rd('lab/col2/col2-config.js')), '번외 판 0.1.60');
 ok(/const JS_ROUTE = /.test(W) && /name='SelectProduct'/.test(W) && /callbackGridButton/.test(W) && /맡긴 번호와 달라 열지 않음/.test(W), '[상세수정] = 화면 함수와 같은 길 이동(SelectProduct · 화면 함수 글에서 이름) · 표 줄 상품번호가 다르면 안 엶');
 ok(/async function openDet\(h, no\) \{ const rd0 = await routeDet\(h, no\);/.test(W) && W.indexOf('const rd0 = await routeDet') < W.indexOf('const c = await o.ev(JS_UBCELL(h.r))'), '길 이동이 먼저 · 칸 누르기는 그 뒤(길이 없을 때만)');
 ok(/if \(D\.route\) \{ const a2 = await look\(r\);/.test(W), '저장 뒤 확인도 목록에서 같은 길로 다시 엶');
 ok(/if\(ck\.disabled\)\{const d0=dateSt\(P\);if\(!ck\.checked&&d0\.cy!=='Y'\)return\{ok:true,auto:true\}/.test(W) && /a0\.cy !== 'Y'/.test(W), "판매중지 창: 꺼진 채 잠긴 체크는 받아들임 · 켜진 채 잠김·창 자료 changeDateYn 'Y'는 멈춤");
 ok(/const JS_PRICE = /.test(W), '판매가 쪽(JS_PRICE)은 그대로');
+ok(/const SV_PICK_JS = /.test(W) && /if \(d\.sv !== 1\) return failP\(/.test(W) && /\/\^삭제\$\/\.test\(svTx\(x\)\)/.test(W) && /if\(\/삭제\|등록\/\.test\(t\)\)return\{ok:false/.test(W), "(0.1.60) '수정'이 여럿이면 바로 다음이 [삭제]인 맨 아래 짝 하나만 · 고른 단추 이름이 삭제·등록이면 안 누름");
 console.log('④ 수집기 한 번짜리(웹앱이 밤에 안 열려 있어도)');
 { const C = rd('src/readnow-collector.src.js'); const b = (C.match(/    const RE14B_WHY = [\s\S]*?\n    function re14bPick\([\s\S]*?return out; \}\n/) || [''])[0];
   ok(!!b, '수집기에 고르기 덩어리 있음'); const G = b ? new Function(b.replace(/^\s+/, '') + '; return re14bPick;')() : null;
-  ok(G && G([...D, old], []).map((d) => d.id).sort().join(',') === 'a,b,c', '수집기 고르기 = 웹앱 고르기(같은 세 꼴)', G && G([...D, old], []).map((d) => d.id));
-  ok(/await wRe1114b\(fs, pc\);/.test(C) && /RE14B_NEED = '0\.1\.59'/.test(C) && /GM_setValue\('rn-y24re1114b'/.test(C) && /c\.re1114b \|\| !re14bPick\(/.test(C) && /y24RePatch\(\{ \.\.\.c, reN: Math\.min\(\+c\.reN \|\| 0, Y24_RE_MAX - 1\) \}, RES, pc, Date\.now\(\), 0\)/.test(C), '맡은 PC 수집기 다리 안에서 · 그 PC 번외 0.1.59 뒤 · 이 PC 한 번 · 문서마다 re1114b 한 번(거래 안에서 다시 확인)'); }
+  ok(G && G([...D, old], []).map((d) => d.id).sort().join(',') === 'a,b,c,i', '수집기 고르기 = 웹앱 고르기(같은 네 꼴)', G && G([...D, old], []).map((d) => d.id));
+  ok(/await wRe1114b\(fs, pc\);/.test(C) && /RE14B_NEED = '0\.1\.60'/.test(C) && /GM_setValue\('rn-y24re1114c'/.test(C) && /c\.re1114c \|\| !re14bPick\(/.test(C) && /y24RePatch\(\{ \.\.\.c, reN: Math\.min\(\+c\.reN \|\| 0, Y24_RE_MAX - 1\) \}, RES, pc, Date\.now\(\), 0\)/.test(C), '맡은 PC 수집기 다리 안에서 · 그 PC 번외 0.1.59 뒤 · 이 PC 한 번 · 문서마다 re1114b 한 번(거래 안에서 다시 확인)'); }
 console.log(bad ? `❌ tY24QTY1_1114 실패 ${bad}` : '✓ tY24QTY1_1114 모두 통과'); process.exit(bad ? 1 : 0);

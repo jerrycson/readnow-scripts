@@ -10940,21 +10940,21 @@ async function y24Re1114() { try { if (Date.now() > Y24_RE1114_END || localStora
     try { localStorage.setItem('rn-y24re1114', iso + ' ' + n); } catch (e) {} if (n) { S._y24hAt = 0; toast(`🔁 🟦 예스24 — 수량·판매중지가 걸려 있던 맡김 ${num(n)}건을 새 길로 한 번 더 맡김(정범님 손 필요 없음)`); } } catch (e) {} }
 /* (y24qty1 · 11/14 HOME 원문 reports/yes24_raw/GRID_HOME_1114_0107.json) 번외 0.1.58 = [상세수정]을 화면 함수와 같은 길 이동($router.push SelectProduct)으로 엶(칸이 가로로 화면 밖이라 자리를 못 셈) · 판매중지 창이 '기간변경'을 스스로 끄고 잠근 것은 바라는 꼴로 봄
  *  → 맡은 PC 번외가 0.1.59를 받은 뒤 한 번: 끝난 실패 맡김 중 그 두 까닭이거나 '처음 한 건을 확인하는 중'(아무것도 안 누른 채 끝남)인, 그 줄의 가장 새 문서만 맡긴 일 줄로(보내기 직전 다시 셈 · 되풀이 0) · 판매가 맡김은 건드리지 않음 · 문서마다 re1114b 표시로 한 번만 */
-const Y24_RE1114B_NEED = '0.1.59'; const Y24_RE1114B_END = Date.parse('2026-11-18T00:00:00+09:00'); /* 근거: 없음 — 걸린 맡김을 위한 한 번짜리 · 나흘 뒤엔 돌지 않음 */
-const Y24_RE1114B_WHY = /'상세수정' 칸 자리를 못 셈|'기간변경' 체크가 잠겨 있어 끌 수 없음|처음 한 건을 확인하는 중/;
+const Y24_RE1114B_NEED = '0.1.60'; /* (y24qty1 둘째) 0.1.60 = [상세수정] 맨 아래 [수정] · 표시 re1114c */ const Y24_RE1114B_END = Date.parse('2026-11-18T00:00:00+09:00'); /* 근거: 없음 — 걸린 맡김을 위한 한 번짜리 · 나흘 뒤엔 돌지 않음 */
+const Y24_RE1114B_WHY = /'상세수정' 칸 자리를 못 셈|'기간변경' 체크가 잠겨 있어 끌 수 없음|처음 한 건을 확인하는 중|\[상세수정\] 화면에서 저장 단추를 하나로 못 찾음/;
 function y24Re1114bPick(docs, act) { const newest = {}; for (const d of [...(docs || []), ...(act || [])]) for (const r of ((d.job || {}).rows || [])) if (r && r.rid) { const t = Date.parse(d.at || '') || 0; if (!newest[r.rid] || t > newest[r.rid].t) newest[r.rid] = { t, id: d.id }; }
-  const out = []; for (const d of docs || []) { if (d.st !== 'done' || d.re1114b || d.ok === true) continue; const R = ((d.job || {}).rows || []); if (!R.length || R.some((r) => !r || !newest[r.rid] || newest[r.rid].id !== d.id || !['qty', 'stop'].includes(r.kind) || r.src === 'price')) continue;
+  const out = []; for (const d of docs || []) { if (d.st !== 'done' || d.re1114c || d.ok === true) continue; const R = ((d.job || {}).rows || []); if (!R.length || R.some((r) => !r || !newest[r.rid] || newest[r.rid].id !== d.id || !['qty', 'stop'].includes(r.kind) || r.src === 'price')) continue;
     const res = d.res || {}; const L = res.rows && Object.keys(res.rows).length ? Object.values(res.rows) : [res]; if (L.every((x) => ['done', 'already'].includes(String((x && (x.state || x.st)) || '')))) continue;
     if (!Y24_RE1114B_WHY.test(JSON.stringify(res) + String(d.msg || '') + String(d.holdWhy || ''))) continue; out.push(d); } return out; } /* y24Re1114Pick과 같은 꼴 · 까닭 글과 표시만 다름 */
-async function y24Re1114b() { try { if (Date.now() > Y24_RE1114B_END || localStorage.getItem('rn-y24re1114b')) return; } catch (e) { return; } if (typeof db === 'undefined' || !db || !S.user || ledY24Guard()) return;
+async function y24Re1114b() { try { if (Date.now() > Y24_RE1114B_END || localStorage.getItem('rn-y24re1114c')) return; } catch (e) { return; } if (typeof db === 'undefined' || !db || !S.user || ledY24Guard()) return;
   { let hv = ''; try { const hd = await db.collection('col2_ctl').doc(y24HolderOf(S.app && S.app.platforms)).get(); hv = String((((hd.exists && hd.data()) || {}).st || {}).ver || ''); } catch (e) { return; } const vn = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (vn(hv) < vn(Y24_RE1114B_NEED)) return; }
-  const iso = new Date().toISOString(); const me = (typeof deviceName === 'function' && deviceName()) || ''; let n = 0; const RES = { state: 'fail', pre: true, same: true, msg: '저장되지 않음 — 번외 0.1.59 새 길로 한 번 더' };
+  const iso = new Date().toISOString(); const me = (typeof deviceName === 'function' && deviceName()) || ''; let n = 0; const RES = { state: 'fail', pre: true, same: true, msg: '저장되지 않음 — 번외 0.1.60 새 길로 한 번 더' };
   try { const qs = await db.collection(Y24W_CMD).where('doneAt', '>=', new Date(Date.now() - 72 * 3600e3).toISOString()).limit(200).get(); const docs = qs.docs.map((x) => ({ ...(x.data() || {}), id: x.id })).filter((v) => !v.k || v.k === 'w');
     const act = ((await y24PLoad(true)) || []).filter((x) => x.st !== 'done');
     for (const d of y24Re1114bPick(docs, act)) { const ref = db.collection(Y24W_CMD).doc(d.id);
-      try { await db.runTransaction(async (tx) => { const c = (await tx.get(ref)).data() || {}; if (c.st !== 'done' || c.re1114b || !y24Re1114bPick([{ ...c, id: d.id }], []).length) return; const P = y24RePatch({ ...c, reN: Math.min(+c.reN || 0, Y24_RE_MAX - 1) }, RES, me, Date.now(), 0); if (!P) return; const { _t, ...P0 } = P;
-          tx.set(ref, { ...P0, reN: Math.min(+P0.reN || 0, Y24_RE_MAX - 1), re1114b: iso, trail: firebase.firestore.FieldValue.arrayUnion({ ..._t, m: '🔁 번외 0.1.59 새 길([상세수정] 길 이동 · 판매중지 창이 스스로 끈 기간 체크)로 한 번 — ' + _t.m }) }, { merge: true }); n++; }); } catch (e) {} }
-    try { localStorage.setItem('rn-y24re1114b', iso + ' ' + n); } catch (e) {} if (n) { S._y24hAt = 0; toast(`🔁 🟦 예스24 — 수량·판매중지가 걸려 있던 맡김 ${num(n)}건을 새 길(0.1.59)로 한 번 더 맡김(정범님 손 필요 없음)`); } } catch (e) {} }
+      try { await db.runTransaction(async (tx) => { const c = (await tx.get(ref)).data() || {}; if (c.st !== 'done' || c.re1114c || !y24Re1114bPick([{ ...c, id: d.id }], []).length) return; const P = y24RePatch({ ...c, reN: Math.min(+c.reN || 0, Y24_RE_MAX - 1) }, RES, me, Date.now(), 0); if (!P) return; const { _t, ...P0 } = P;
+          tx.set(ref, { ...P0, reN: Math.min(+P0.reN || 0, Y24_RE_MAX - 1), re1114c: iso, trail: firebase.firestore.FieldValue.arrayUnion({ ..._t, m: '🔁 번외 0.1.60 새 길([상세수정] 길 이동 · 맨 아래 [수정] · 판매중지 창이 스스로 끈 기간 체크)로 한 번 — ' + _t.m }) }, { merge: true }); n++; }); } catch (e) {} }
+    try { localStorage.setItem('rn-y24re1114c', iso + ' ' + n); } catch (e) {} if (n) { S._y24hAt = 0; toast(`🔁 🟦 예스24 — 수량·판매중지가 걸려 있던 맡김 ${num(n)}건을 새 길(0.1.60)로 한 번 더 맡김(정범님 손 필요 없음)`); } } catch (e) {} }
 /* ◆y24re 끝 */
 /* 맡긴 일 줄 처리 — 1분에 한 번(ledY24WPoll) · 이름은 예전 그대로 */
 async function ledY24HoldRetry() { if (S._y24hBusy || Date.now() - (S._y24hAt || 0) < 55e3) return; S._y24hBusy = 1; S._y24hAt = Date.now();
