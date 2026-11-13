@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "train1",
+ "what": "rv2b 시험 문지기 둘째(웹앱)",
+ "since": "2026-11-13T10:02:25Z",
+ "beat": "2026-11-13T10:02:25Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "웹앱 1.78.594 mjbtn (9e2ffd2e)",
   "at": "2026-11-13T09:58:57Z"
  },
- "host": null
+ "host": "vm-train1"
 }
