@@ -1,2 +1,4 @@
-benchday=2026-11-12&bstudy=1
-# 299716610
+doc=app_settings/col2_solo
+doc=app_settings/col2_solo_seen
+doc=col2_ctl/HOME
+# 863226669
