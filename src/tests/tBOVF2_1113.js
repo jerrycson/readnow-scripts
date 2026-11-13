@@ -10,7 +10,7 @@ const R = [path.join(__dirname, '../..'), path.join(__dirname, '..'), '/home/use
 let bad = 0; const ok = (c, m, x) => { if (!c) bad++; console.log((c ? '  ✓ ' : '  ❌ ') + m + (c || x === undefined ? '' : ' ' + JSON.stringify(x).slice(0, 300))); };
 require(process.env.RN_AS || path.join(R, 'readnow-autosched-core.js')); const AS = globalThis.ReadnowAuto.AS;
 const G = 1073741824; const at = (s) => Date.parse(s + '+09:00'); const g2 = (b) => Math.round(b / G * 100) / 100; const eq = (a, b, t) => Math.abs(a - b) < (t || 0.005 * G);
-const pool = { on: true, fb: 'p1', list: { p1: { name: '휴대폰 1', gb: 120, dev: 'USB\\A', order: 1 }, p2: { name: '휴대폰 2', gb: 120, dev: 'USB\\B', order: 2 } }, month: { '2026-11': { p1: { from: '2026-11-13', remainGB: 72.54 }, p2: { from: '2026-11-13', remainGB: 72 } } }, spare: { '2026-11': { gb: 48, from: '2026-11-12', phone: 'p2', pace: true } } };
+const pool = { on: true, carry: false, alloc: { on: false } /* (spare2 11/13) 이 시험은 그 판의 옛 셈(배정표·쌓인 남은 양 끔)을 그대로 봄 — 새 기본값은 tSPARE2_1113 */, fb: 'p1', list: { p1: { name: '휴대폰 1', gb: 120, dev: 'USB\\A', order: 1 }, p2: { name: '휴대폰 2', gb: 120, dev: 'USB\\B', order: 2 } }, month: { '2026-11': { p1: { from: '2026-11-13', remainGB: 72.54 }, p2: { from: '2026-11-13', remainGB: 72 } } }, spare: { '2026-11': { gb: 48, from: '2026-11-12', phone: 'p2', pace: true } } };
 const doc = { budget: { mainPct: 87.5, pool } };
 const noSp = { budget: { mainPct: 87.5, pool: { ...pool, spare: {} } } };
 /* 지난 날 기록: [날, 휴대폰 1 바이트, 휴대폰 2 바이트, 여분 주요 sm, 여분 일반 sg] (GB) */

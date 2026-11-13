@@ -10,7 +10,7 @@ let bad = 0; const ok = (c, m, x) => { if (!c) bad++; console.log((c ? '  ✓ ' 
 require(path.join(R, 'readnow-autosched-core.js')); const AS = globalThis.ReadnowAuto.AS;
 const G = 1073741824, MB = 1048576; const at = (s) => Date.parse(s + '+09:00'); const g2 = (b) => Math.round(b / G * 100) / 100;
 const C = rd('src/readnow-collector.src.js');
-const pool = { on: true, fb: 'p1', list: { p1: { name: '휴대폰 1', gb: 120, dev: 'USB\\A', order: 1 }, p2: { name: '휴대폰 2', gb: 120, dev: 'USB\\B', order: 2 } }, month: { '2026-11': { p1: { from: '2026-11-13', remainGB: 72.54 }, p2: { from: '2026-11-13', remainGB: 72 } } }, spare: { '2026-11': { gb: 48, from: '2026-11-12', phone: 'p2', pace: true } } };
+const pool = { on: true, carry: false, alloc: { on: false } /* (spare2 11/13) 이 시험은 그 판의 옛 셈(배정표·쌓인 남은 양 끔)을 그대로 봄 — 새 기본값은 tSPARE2_1113 */, fb: 'p1', list: { p1: { name: '휴대폰 1', gb: 120, dev: 'USB\\A', order: 1 }, p2: { name: '휴대폰 2', gb: 120, dev: 'USB\\B', order: 2 } }, month: { '2026-11': { p1: { from: '2026-11-13', remainGB: 72.54 }, p2: { from: '2026-11-13', remainGB: 72 } } }, spare: { '2026-11': { gb: 48, from: '2026-11-12', phone: 'p2', pace: true } } };
 const doc = { budget: { mainPct: 87.5, pool } };
 const mkNet = (key, act, usedA, usedB) => ({ capGB: 240, days: {}, phones: [{ id: 'USB\\A', used: 60 * G, active: act === 'p1', connected: true }, { id: 'USB\\B', used: 4 * G, active: act === 'p2', connected: true }], today: { key, tether: (usedA + usedB) * G, tiers: { main: 7.9 * G, gen: (usedA + usedB - 7.9) * G }, phones: { 'USB\\A': usedA * G, 'USB\\B': usedB * G }, jobs: { bench: 7.9 * G } } });
 /* 수집기 budTick의 여분 칸 + 바로잡음 조건을 그대로 떼어 돌림(같은 글자) */

@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.311의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.313의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.311' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.311', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.313' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.313', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -911,9 +911,9 @@
       const rows = {}; for (const [k, y] of Object.entries(x.rows || {}).slice(0, 30)) rows[String(k).slice(0, 200)] = one(y); return { ...one(x), stop: !!x.stop, rows }; };
     /* (y24re 11/13) 실패·'저장되지 않음'으로 끝난 맡김을 같은 문서로 맡긴 일 줄(hold)에 되돌림 — 웹앱 ◆y24re(y24ReOf·y24RePatch)와 글자 그대로 같은 셈(시험 tY24RE1113이 두 곳을 같은 표로 돌림) · 다시 보내기는 열려 있는 웹앱이 보내기 직전 다시 세어 함 */
     const Y24_RE_MAX = 3; /* 근거: 없음 — led4 늦음 되돌림(PEND_LATE_MAX 3)과 같음 · 세 번 잇달아 실패면 사람이 봄 */ const Y24_RE_GAP = 10 * 60e3; /* 근거: 없음 — n번째 되돌림은 n×10분 뒤(10·20·30분) */
-    const Y24_RE_OK = /저장되지 않음|처음 한 건을 확인하는 중|이미 맡김 줄에 있음|로그인|출고 중|닿지 못함|다시 켜짐|앞 줄이 멈춰|잠시 뒤|꺼져 있음|창이 안 뜸|못 누름|못 고름|칸이 바뀌지 않음|칸을 못 고침|줄을 못 찾음|표를 못 찾음|줄 위치를 못 찾음/;
-    const Y24_RE_BUSY = /처음 한 건을 확인하는 중|이미 맡김 줄에 있음/; const Y24_RE_BUSY_MAX = 24; /* (y24re 판 뒤 확인 11/13 13:40) '번외가 앞 맡김을 하는 중'이라 받지 못한 것은 실패가 아니라 기다림 — 되돌림 3번(reN)을 쓰지 않고 따로 셈(busyN · 24번 ≈ 4시간) · 근거: 실제로 3번을 5분 안에 다 씀(옛 웹앱이 retryAt을 모름) */
-    const Y24_RE_NO = /자체코드가 이미|짝이 다를|넘게 바뀜|이상함|로거 PC|MJ-MAIN|옛 판|쓰기 멈춤|판매중이 아닌|판매중지가 아닌|기간변경|위험한 말|한 번에 \d+줄까지/;
+    const Y24_RE_OK = /저장되지 않음|쓰기 멈춤|처음 한 건을 확인하는 중|이미 맡김 줄에 있음|로그인|출고 중|닿지 못함|다시 켜짐|앞 줄이 멈춰|잠시 뒤|꺼져 있음|창이 안 뜸|못 누름|못 고름|칸이 바뀌지 않음|칸을 못 고침|줄을 못 찾음|표를 못 찾음|줄 위치를 못 찾음/;
+    const Y24_RE_BUSY = /처음 한 건을 확인하는 중|이미 맡김 줄에 있음|쓰기 멈춤/; /* (y24re 넷째) '쓰기 멈춤'으로 받지 못한 것도 기다림 — 멈춤은 번외가 풀거나(fix) 사람이 이어 가기 · 그동안 닫지 않고 10분마다 다시(24번) */ const Y24_RE_BUSY_MAX = 24; /* (y24re 판 뒤 확인 11/13 13:40) '번외가 앞 맡김을 하는 중'이라 받지 못한 것은 실패가 아니라 기다림 — 되돌림 3번(reN)을 쓰지 않고 따로 셈(busyN · 24번 ≈ 4시간) · 근거: 실제로 3번을 5분 안에 다 씀(옛 웹앱이 retryAt을 모름) */
+    const Y24_RE_NO = /자체코드가 이미|짝이 다를|넘게 바뀜|이상함|로거 PC|MJ-MAIN|옛 판|판매중이 아닌|판매중지가 아닌|기간변경|위험한 말|한 번에 \d+줄까지/;
     function y24ReOf(v, res) { if (!v || (v.k && v.k !== 'w')) return null; const R = ((v.job || {}).rows) || []; if (!R.length || !R.every((r) => r && r.rid && r.rk && r.src !== 'price' && r.kind !== 'price')) return null;
       if (!res || typeof res !== 'object') return null; const L = res.rows && typeof res.rows === 'object' && Object.keys(res.rows).length ? Object.values(res.rows) : [res];
       const stOf = (x) => String((x && (x.state || x.st)) || 'fail'); const bad = L.filter((x) => !['done', 'already'].includes(stOf(x))); if (!bad.length) return null;

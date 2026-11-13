@@ -43,8 +43,13 @@ import org.json.JSONObject
  */
 class FriendService : Service() {
     companion object {
-        const val PAGE = "https://jerrycson.github.io/readnow-scripts/friend/index.html?host=android"
-        const val ORIGIN = "https://jerrycson.github.io"
+        // (0.2.3 · 11/13 정범님 '앱도 이제 현 주소로') 화면은 readnow.kr — 옛 주소(jerrycson.github.io)는 GitHub Pages를 끄기 전까지 받침으로만
+        // (로그인은 주소마다 따로 저장되므로 새 주소 화면이 처음 한 번 옛 주소 화면에 들러 같은 계정 연결 표를 받아 돌아옴 — friend/readnow-friend-boot.js frMig*)
+        const val PAGE = "https://readnow.kr/friend/index.html?host=android"
+        const val ORIGIN = "https://readnow.kr"
+        const val ORIGIN_OLD = "https://jerrycson.github.io"
+        /** 앱 안에서 그대로 여는 책방 친구 화면(그 밖은 기본 브라우저로) */
+        fun isFriendPage(u: Uri): Boolean = u.scheme == "https" && ((u.host == "readnow.kr" && u.path?.startsWith("/friend/") == true) || (u.host == "jerrycson.github.io" && u.path?.startsWith("/readnow-scripts/friend/") == true))
         const val CH_RUN = "run"
         const val CH_MSG = "msg"
         const val ACT_STOP = "kr.readnow.friend.STOP"
@@ -140,12 +145,12 @@ class FriendService : Service() {
         }
         w.addJavascriptInterface(Bridge(), "RnHostAndroid")
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-            WebViewCompat.addDocumentStartJavaScript(w, "window.__rnFriendHost={type:'android',ver:'${BuildConfigLite.VER}',post:function(k,d){RnHostAndroid.post(String(k),JSON.stringify(d==null?null:d));}};", setOf(ORIGIN))
+            WebViewCompat.addDocumentStartJavaScript(w, "window.__rnFriendHost={type:'android',ver:'${BuildConfigLite.VER}',post:function(k,d){RnHostAndroid.post(String(k),JSON.stringify(d==null?null:d));}};", setOf(ORIGIN, ORIGIN_OLD))
         }
         w.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
                 val u = req.url
-                if (u.host == "jerrycson.github.io" && u.path?.startsWith("/readnow-scripts/friend/") == true) return false
+                if (isFriendPage(u)) return false
                 openUrl(u.toString()); return true // 그 밖의 주소는 기본 브라우저로
             }
         }
