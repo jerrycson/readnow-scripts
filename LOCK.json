@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "tabfix 판: 수집기 뒤 탭·판 몰아 받기·매입가 나눔 기본",
+ "since": "2026-11-13T03:12:34Z",
+ "beat": "2026-11-13T03:12:34Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.204(urgord 긴급 발송요청 보호·delivchk)",
   "at": "2026-11-13T03:06:40Z"
  },
- "host": null
+ "host": "vm-tabfix"
 }
