@@ -6366,7 +6366,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!cc || cc.sig !== csig) { const bc = db.batch(); bc.set(C('shp_state').doc('confirm'), { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: PC_NAME, enrich: (cc && cc.enrich) || {}, ...W() });
       for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
       await bc.commit(); return true; } await C('shp_state').doc('confirm').set({ at, tabCounts: rc.tabCounts, ...W() }, { merge: true }); return false; }
-  async function saveDelivLite(r, at) { const cur = (await C('shp_state').doc('current').get()).data(); const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo]));
+  /* (urg2 11/13) 🚚 빈 화면 보호 — 발송 요청 화면을 주문 0줄로 읽었는데 탭 숫자가 없거나·탭엔 1건 이상이거나·로그인 화면이면 쓰지 않음(빈 목록으로 오늘 출고를 덮지 않음 · 클라우드 0.35.204와 같은 기준) */
+  const delivBad = (r, doc) => { const tc = (r && r.tabCounts) || {}; const n = ((r && r.orders) || []).length; const login = !!(doc && doc.querySelector && doc.querySelector('input[type="password"]') && !/샵매니저/.test(doc.title || '')); return n === 0 && (login || !Object.keys(tc).length || (+tc['발송 요청'] || 0) > 0) ? (login ? '로그인 화면' : !Object.keys(tc).length ? '탭 숫자 없음' : `탭 발송 요청 ${tc['발송 요청']}건인데 주문 0줄`) : null; };
+  async function saveDelivLite(r, at) { if (delivBad(r, null)) return false; const cur = (await C('shp_state').doc('current').get()).data(); const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo]));
     if (cur && cur.sig === sig) { await C('shp_state').doc('current').set({ at, tabCounts: r.tabCounts, pc: PC_NAME, ...W() }, { merge: true }); return false; }
     const b = db.batch(); b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: PC_NAME, ...W() }, { merge: true }); // 엑셀은 그대로 둠
     b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, ...W() });
@@ -6374,7 +6376,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     await b.commit(); return true; }
   async function shipLiteRead(SH, gcDoc) { const at = nowIso(); const out = {};
     try { const rc = SH.parseDeliveryPage(gcDoc || (await getDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx')).doc); if (rc && rc.tabCounts && Object.keys(rc.tabCounts).length) { out.confirm = rc.orders.length; await saveConfirmState(rc, at); } } catch (e) { log('주문확인요청 빠른 읽기 실패: ' + e.message, 1); }
-    try { const r = SH.parseDeliveryPage((await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4')).doc); if (r && r.tabCounts && Object.keys(r.tabCounts).length) { out.deliv = r.orders.length; await saveDelivLite(r, at); } } catch (e) { log('발송 요청 빠른 읽기 실패: ' + e.message, 1); }
+    try { const gd = (await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4')).doc; const r = SH.parseDeliveryPage(gd); const bd = delivBad(r, gd); if (bd) log(`🚚 발송 요청 화면을 제대로 못 읽음(${bd}) — 빈 목록으로 덮지 않음`, 1); else if (r && r.tabCounts && Object.keys(r.tabCounts).length) { out.deliv = r.orders.length; await saveDelivLite(r, at); } } catch (e) { log('발송 요청 빠른 읽기 실패: ' + e.message, 1); }
     if (out.confirm != null || out.deliv != null) log(`출고 목록 바로 반영: 주문확인요청 ${out.confirm ?? '?'}건 · 발송 요청 ${out.deliv ?? '?'}건`); return out; }
   async function shipReadJob() {
     const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) { log('출고 기준 파일(readnow-shipping-core.js)을 못 불러옴', 1); return false; }
@@ -6382,7 +6384,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; }
     try {
       ui('발송 요청 읽기', 0, 1, '판매관리 → 발송 요청');
-      const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); const r = SH.parseDeliveryPage(g.doc); const at = nowIso();
+      const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); const r = SH.parseDeliveryPage(g.doc); const at = nowIso(); { const bd = delivBad(r, g.doc); if (bd) { log(`🚚 발송 요청 화면을 제대로 못 읽음(${bd}) — 빈 목록으로 덮지 않음(오늘 출고 목록 그대로)`, 1); return false; } }
       const want = r.tabCounts['발송 요청']; if (want != null && want > r.orders.length) log(`발송 요청 ${want}건인데 이 쪽에서 ${r.orders.length}건만 읽힘 — 여러 쪽으로 나뉜 경우 (그때 화면을 저장해 보내 주시면 다음 쪽 읽기를 넣겠습니다)`, 1);
       const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId); let nInfo = 0, nRead = 0;
       for (let k = 0; k < items.length; k++) { const it = items[k]; if (stopFlag) throw new Error('멈춤');
@@ -7643,7 +7645,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const L = d.exists && d.data().last; if (!L || !L.at || !(L.pcOpen || []).includes(PC_NAME)) return; if (Date.now() - Date.parse(L.at) > 3600e3) return; if (GM_getValue('rn-shipopen', '') === L.at) return; GM_setValue('rn-shipopen', L.at);
     const SURL = 'https://jerrycson.github.io/readnow-scripts/app/?go=deliv'; (async () => { /* (11/13 col2mig) 🔀 번외 이전(보이지 않는 작업 창) 탭이면 그 창 안에 열면 안 보임 → 이 PC 도우미가 사람 크롬에 엶(/work/open) · 안 되면 예전처럼 */ const W0 = window.__rnWork; let ok = false; if (W0 && W0.isWork && W0.isWork()) { try { const r = await W0.call('/work/open', { url: SURL, why: '🔔 출고 알림' }, 10000); ok = !!(r && r.ok); } catch (e) {} } if (!ok) GM_openInTab(SURL, { active: true, insert: true, setParent: true }); })(); try { GM_notification({ title: L.title || '📦 오늘 출고', text: L.body || '', timeout: 0 }); } catch (e) {} log(`🔔 출고 알림 — 웹앱 발송 요청 탭을 앞으로 엶 (${L.n || 0}건)`); } catch (e) {} }, () => {}); });
   let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
-  const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false)); // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
+  const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false) && cloudBeat.login === 'ok' && cloudBeat.lastDelivAt && Date.now() - Date.parse(cloudBeat.lastDelivAt) < 20 * 60000); /* (urg2 11/13 근원) 클라우드가 살아 있어도 알라딘 로그인이 풀렸으면(신호 login 'off'·'fail') 또는 발송 요청을 20분 넘게 못 읽었으면 PC 칸이 맡음 — 11/13 10시 뒤 클라우드가 로그아웃된 채 '살아 있음'만 보내 PC 발송 요청 읽기가 계속 건너뛰어졌음 */ // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
 
   /* (10/27) 예전 '우리 상품 사진'(photosJob · 10/20~26) — 받은 것의 거의 전부가 알라딘 표지·미리보기였음(정범님 10/26 22:38 멈춤 · 10/27 '제품 사진만(!!!) 다시') → 이 일은 이제 '📷 제품 사진 다시 받기'(제품 사진 판정만)로 돎
