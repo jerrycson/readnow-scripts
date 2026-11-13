@@ -119,9 +119,9 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
         write: (ops) => new Promise((res, rej) => setTimeout(() => { if (window.__fail) return rej(Object.assign(new Error('커넥터 거절'), { code: 'tool_error' })); for (const o of ops) docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); subs.forEach((f) => f()); res(); }, window.__slow)) };
       try { localStorage.removeItem('jbn-ui'); } catch (e) {}
       window.__ui = JBN.mount(document.getElementById('root'), store, {}); });
-    const t0 = Date.now(); await a.click('[data-card="k3"] [data-act="done"]');
-    const fast = await a.evaluate(() => ({ gone: !document.querySelector('[data-card="k3"]'), done: (document.querySelector('.jbn-tabs [data-tab="done"] .n') || {}).textContent, saved: window.__docs.get('k3').state }));
-    const dt = Date.now() - t0;
+    await a.waitForSelector('[data-card="k3"] [data-act="done"]'); /* (note5) 잰 값 = 페이지 안에서 누름 → 화면 바뀜(Playwright가 누르기 전에 기다리는 시간은 빼고 — 컴퓨터가 바쁠 때 1초 넘게 튀었음) */
+    const fast = await a.evaluate(() => { const t0 = performance.now(); document.querySelector('[data-card="k3"] [data-act="done"]').click(); return { gone: !document.querySelector('[data-card="k3"]'), done: (document.querySelector('.jbn-tabs [data-tab="done"] .n') || {}).textContent, saved: window.__docs.get('k3').state, dt: Math.round(performance.now() - t0) }; });
+    const dt = fast.dt;
     ok(fast.gone && fast.done === '1' && fast.saved === 'open' && dt < 600, `②-3 [✅ 완료] → 저장(1.5초 걸리는 커넥터)을 기다리지 않고 화면이 바로 바뀜(${dt}ms) · 저장은 뒤에서`);
     await a.waitForTimeout(1700); ok(await a.evaluate(() => window.__docs.get('k3').state === 'done' && window.__ui.U.ov.size === 0), '②-3 저장이 끝나면 덧씌움을 걷음(원본 = 완료)');
     await a.evaluate(() => { window.__fail = true; window.__slow = 400; }); await a.click('[data-card="k5"] [data-act="archive"]');

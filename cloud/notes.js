@@ -31,6 +31,9 @@ function clean(d, isMeta) {
     if (k === 'kind') { if (KINDS.includes(v)) o.kind = v; continue; }
     if (k === 'state') { if (STATES.includes(v)) o.state = v; continue; }
     if (k === 'status') { if (BST.includes(v)) o.status = v; continue; }
+    if (k === 'uiDockH') { const n = Math.round(+v); if (n >= 20 && n <= 95) o.uiDockH = n; continue; } // (note5 둘째) 노트 설정 — 입력칸 펼침 높이(화면 %)
+    if (k === 'uiSlotSz') { if (v === 's' || v === 'm') o.uiSlotSz = v; continue; } // 저장 단추 크기
+    if (k === 'uiMineOpen') { o.uiMineOpen = !!v; continue; } // 내 메모 처음 펼침
     if (k === 'slot' || k === 'slotCur') { const n = Math.round(+v); if (n >= 1 && n <= 3) o[k] = n; continue; }
     if (k === 'ord') { const n = +v; if (Number.isFinite(n)) o.ord = n; continue; }
     if (k === 'imp') { const n = Math.round(+v); if (n >= 1 && n <= 3) o.imp = n; continue; }

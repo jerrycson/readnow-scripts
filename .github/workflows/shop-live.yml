@@ -51,6 +51,35 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with: { name: domain-status, path: domain-status.json, if-no-files-found: ignore, retention-days: 7 }
+  srv:
+    # (11/13 shopsrv2) 🛍 숍 전용 서버 직접 확인 — '수집 서버가 죽어도 숍은 산다' 시험 길(작업 환경 프록시는 *.run.app을 막아 바깥에서 봄)
+    #  · 숍 전용 서버(readnow-shop)만 부르는 주소: /status · /shop/ping · /shop/cats — 응답 머리 X-RN-Srv가 readnow-shop이어야 함
+    #  · booksqueen.com/shop/cats 응답 머리가 readnow-shop이면 손님 길이 수집 서버(readnow-cloud)를 거치지 않음
+    #  · /healthz는 Cloud Run이 예약한 주소(끝이 z인 길)라 run.app 주소에선 서비스까지 안 가고 구글이 404를 냄 — 상태 확인은 /status로
+    #  · 숍 전용 서버는 답하는데 booksqueen.com이 아직 원래 서비스로 가면(main에서 돌 때) '우리숍 내기'를 저절로 다시 돌림 → Hosting 넘김이 숍 전용 서버로 바뀜
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read, actions: write }
+    env: { SHOP_URL: 'https://readnow-shop-63884079760.asia-northeast3.run.app', CLOUD_URL: 'https://readnow-cloud-63884079760.asia-northeast3.run.app' }
+    steps:
+      - name: 숍 전용 서버·수집 서버·booksqueen.com 응답 견주기
+        run: |
+          hd() { curl -sS -m 25 -D - -o /tmp/b.txt "$1" 2>/dev/null | tr -d '\r' | awk 'NR==1{c=$2} tolower($1)=="x-rn-srv:"{s=$2} tolower($1)=="server:"{v=$2" "$3} END{printf "%s · srv=%s · server=%s", c, (s?s:"-"), v}'; printf ' · 몸 %s\n' "$(head -c 90 /tmp/b.txt | tr '\n' ' ')"; }
+          { echo "### 🛍 숍 전용 서버 직접 확인 · $(date -u +%FT%TZ)"; echo '```'
+            for p in /healthz /status /shop/ping /shop/cats; do echo "readnow-shop  $p → $(hd "$SHOP_URL$p")"; done
+            echo "readnow-cloud /status → $(hd "$CLOUD_URL/status" | cut -c1-60)"
+            echo "booksqueen.com /shop/cats → $(hd "https://booksqueen.com/shop/cats?t=$(date +%s)" | cut -c1-80)"
+            echo '```'
+            S=$(curl -sS -m 25 -D - -o /dev/null "$SHOP_URL/shop/cats" | tr -d '\r' | grep -i '^x-rn-srv:' || true)
+            B=$(curl -sS -m 25 -D - -o /dev/null "https://booksqueen.com/shop/cats?t=$(date +%s)" | tr -d '\r' | grep -i '^x-rn-srv:' || true)
+            echo "$S" | grep -qi readnow-shop && echo '✅ 숍 전용 서버가 혼자 /shop/cats에 답함' || echo "❌ 숍 전용 서버가 /shop/cats에 답하지 않음(${S:-머리 없음})"
+            echo "$B" | grep -qi readnow-shop && echo '✅ booksqueen.com /shop/**이 숍 전용 서버로 감(수집 서버가 죽어도 숍은 삶)' || echo "❌ booksqueen.com /shop/**이 아직 ${B:-모름}로 감 — '수집 서버가 죽어도 숍은 산다'가 안 지켜짐"
+          } | tee -a "$GITHUB_STEP_SUMMARY" > /tmp/sum.txt
+          cat /tmp/sum.txt
+          if grep -q '✅ 숍 전용 서버가 혼자' /tmp/sum.txt && grep -q '❌ booksqueen.com' /tmp/sum.txt && [ "$GITHUB_REF" = refs/heads/main ]; then
+            gh workflow run deploy-shop.yml -R "$GITHUB_REPOSITORY" --ref main && echo "🔁 '우리숍 내기'를 다시 돌림 — Hosting 넘김을 숍 전용 서버로" | tee -a "$GITHUB_STEP_SUMMARY"; fi
+          grep -q '❌' /tmp/sum.txt && { echo "::error::숍 전용 서버 확인 실패(위 표)"; exit 1; } || true
+        env: { GH_TOKEN: '${{ github.token }}' }
   live:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04 # (playwright가 26.04 크롬을 아직 못 받음)

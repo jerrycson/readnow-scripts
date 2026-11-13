@@ -47,5 +47,5 @@ ok(/okId/.test(H) && /esc\(it\.name\)/.test(H), 'ideas.html: 번호 꼴 거름 �
 const P = fs.readFileSync(path.join(BD, 'project.html'), 'utf8');
 ok((P.match(/href="ideas\.html"/g) || []).length === 1, 'project.html: 💡 아이디어 100 링크 한 줄');
 const JN = JSON.parse(fs.readFileSync(path.join(BD, 'journal.json'), 'utf8')).entries;
-ok(JN[0].at === '2026-11-13 20:12' && JN.some((x) => x.who === 'logo100') && JN.some((x) => x.at === '2026-11-13 23:30' && x.kind === '지시'), '일지: 처음 줄 그대로 · 지시·작업 줄 덧붙임');
+ok(JN[0].at === '2026-11-13 20:12' && JN.some((x) => x.who === 'logo100') && JN.some((x) => x.at === '2026-11-13 23:30' && x.kind === '지시' && /100개/.test(x.t)), '일지: 처음 줄 그대로 · 지시·작업 줄 덧붙임');
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
