@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "bovf2 판: 여분 이중 차감 고침(autosched 0.18.30)",
- "since": "2026-11-13T04:21:35Z",
- "beat": "2026-11-13T04:21:35Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: bfin 수집기 대량 사라짐 실제 간격 판",
-  "at": "2026-11-13T04:27:25Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24re 222068f3 웹앱 1.78.562 · 수집기 1.89.308 · 번외 0.1.52 예스24 실패 맡김 다시 줄로",
-  "at": "2026-11-13T04:21:30Z"
+  "done": "bovf2 e5fd4fd7 웹앱 1.78.563 · 수집기 1.89.309 · autosched 0.18.30 여분 이중 차감 고침",
+  "at": "2026-11-13T04:28:20Z"
  },
- "host": "wk-bovf2"
+ "host": null
 }
