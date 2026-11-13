@@ -10359,6 +10359,15 @@ function nvCmdRes(cid, rid) { try { let un = null; const end = () => { try { if 
  *  ② 열려 있는 웹앱 아무 곳(로거·출고 중 PC 빼고)이 1분마다 다시 셈 → 이미 맞으면 '할 일 없음'으로 닫음 · 할 일 열쇠(마지막 주문 시각·값)가 바뀌면 그 맡김은 닫음 · 그대로면 new로(트랜잭션)
  *  ③ 보냈는데 로거가 10분 넘게 안 받으면 다시 hold로 되돌림(다시 셈 뒤에만 다시 보냄) · 번외도 job.sendAt 30분 넘은 맡김·job.exp 지난 맡김은 받지 않음(col2-nv.js)
  *  ④ 재고·판매중지는 만료 없음(얼마나 늦어도 보내기 직전 다시 셈 · 늦은 시간만 표시) · 가격·등록은 종류별 시한(◆pendpol) 지나면 '⏸ 만료 — 사람 확인 필요' + 홈 알림 → ↻ 다시 맡기기 · 취소는 '↩ 맡김 취소'(두 번 · 로거가 받기 전)만 */
+/* (led4 11/13 · 리드 결정 · pend2 남은 위험) 늦게 받아 거절된 맡김 저절로 다시 줄에 — 로거(네이버)·예스24 맡은 PC가 보낸 지 30분 넘은 재고·판매중지 맡김을 받으면 번외가 '늦게 받은 맡김'으로 거절하고 끝(done)이 되어
+ *  사람이 🛠 처리할 일에서 다시 맡겨야 했음 → 같은 문서를 맡긴 일 줄(hold)로 되돌림: 열려 있는 웹앱이 보내기 직전 할 일을 다시 세어(이미 맞으면 닫음 · 할 일이 바뀌면 닫음) 새 sendAt으로 보냄
+ *  되풀이 0: 같은 문서만 되돌림(새 맡김을 만들지 않음 — 🤖 자동 내림·엔진 처리(led3)·단추가 같은 줄을 보고 '이미 맡김'으로 겹치지 않음) · 문서마다 PEND_LATE_MAX번까지 · 넘으면 끝(거절)으로 두고 사람 확인
+ *  다시 셀 수 있는 일(재고·판매중지 = status · led 있음)만 — 가격·등록(사람이 그때 정한 값)은 예전처럼 거절로 끝 · 거절 까닭은 lastRej·trail에 남김 */
+const PEND_LATE_MAX = 3; /* 근거: 없음 — 로거가 30분 넘게 늦게 받는 일이 세 번 겹치면 로거가 자주 꺼지는 것 → 사람이 봄 */
+const nvLateRej = (r) => !!(r && !r.ok && (r.late || /늦게 받은 맡김/.test(String(r.err || ''))));
+function nvLateRequeue(c, r) { if (!nvLateRej(r) || !c || c.k !== 'job' || !c.led || !c.led.rid || String((c.job || {}).k || '') !== 'status') return null; const n = (+c.lateN || 0) + 1; if (n > PEND_LATE_MAX) return null; const iso = new Date().toISOString(); const by = (typeof deviceName === 'function' && deviceName()) || '';
+  const why = `로거 번외가 늦게 받은 맡김으로 거절(${String(r.err || '보낸 지 30분 넘음').slice(0, 80)}) — 저절로 맡긴 일 줄로 되돌림 ${n}/${PEND_LATE_MAX}번 · 보내기 직전 다시 셈`;
+  return { st: 'hold', holdAt: iso, holdWhy: why.slice(0, 200), lateN: n, lastRej: { at: iso, err: String(r.err || '').slice(0, 200), by }, tookBy: null, tookAt: null, _t: { at: iso, m: '늦게 받아 거절 → 맡긴 일 줄로 되돌림(' + n + '/' + PEND_LATE_MAX + ')', by } }; }
 const NVP_ST = ['hold', 'expired', 'new', 'took']; const NVP_STALE_MS = 10 * 60e3; /* 근거: 로거 웹앱·다리는 30초마다 받음 — 10분 넘게 new면 로거가 꺼진 것 */
 /* (pend2 · 종류별 정책) 재고·판매중지(status) = (가) 만료 없음 · 💲 가격 = (나) 가격 시한 · 📥 등록 = (나) 등록 시한 · 그 밖 = 6시간 */
 S.nvp = S.nvp || { L: [], at: 0, busy: 0 };
@@ -31437,7 +31446,8 @@ async function nvRelayTick() { let next = 60e3; try { if (!(S.user && typeof db 
     for (const c of L.sort((a, b) => String(a.at).localeCompare(String(b.at)))) { const ref = db.collection('col2_naver_cmd').doc(c.id); let got = false; /* (11/11 nvfix1) 붙잡기는 트랜잭션 — 로거 수집기 다리(rnC2nv)와 겹쳐도 한 봉투를 한 번만 넘김 */
       try { got = await db.runTransaction(async (t) => { const d = await t.get(ref); if (!d.exists || (d.data() || {}).st !== 'new') return false; t.set(ref, { st: 'took', tookAt: new Date().toISOString(), tookBy: deviceName() }, { merge: true }); return true; }); } catch (e) { got = false; } if (!got) continue;
       let r; try { r = await f('/nv/cmd', { k: c.k, env: c.env, on: c.on, prd: c.prd, job: c.job, ip: c.ip, by: c.by || '' }, 90e3); } catch (e) { r = { ok: false, err: '이 PC 번외에 닿지 못함: ' + errKo(e) }; } if (r && r._404) r = { ok: false, err: '이 PC 번외가 옛 판(네이버 없음) — 번외 새 판을 받은 뒤 다시' };
-      const res = { ok: !!(r && r.ok), saved: r && r.saved, err: (r && r.err) || null, test: r && r.test ? { ok: !!r.test.ok, msg: r.test.msg || '', ip: !!r.test.ip } : null };
+      const res = { ok: !!(r && r.ok), saved: r && r.saved, err: (r && r.err) || null, test: r && r.test ? { ok: !!r.test.ok, msg: r.test.msg || '', ip: !!r.test.ip } : null, ...(nvLateRej(r) ? { late: true } : {}) };
+      { const rq = nvLateRequeue(c, r); if (rq) { const { _t, ...rq0 } = rq; await db.collection('col2_naver_cmd').doc(c.id).set({ ...rq0, env: firebase.firestore.FieldValue.delete(), trail: firebase.firestore.FieldValue.arrayUnion(_t) }, { merge: true }); next = 3e3; continue; } } /* (led4 11/13 · pend2 남은 위험) 번외가 '늦게 받은 맡김'으로 거절한 재고·판매중지 → 같은 문서를 맡긴 일 줄(hold)로 되돌림(보내기 직전 다시 셈) */
       await db.collection('col2_naver_cmd').doc(c.id).set({ st: 'done', doneAt: new Date().toISOString(), res, env: firebase.firestore.FieldValue.delete() }, { merge: true }); if (r && r.nv) s.nv = r.nv; next = 3e3; }
     /* 읽은 것 쓰기 */
     const fd = await f('/nv/feed', {}); const keys = []; for (const o of ((fd && fd.out) || []).slice(0, 150)) { const re = NV_OUT_OK[o.c]; if (!re || !re.test(String(o.id))) continue; try { await db.collection(o.c).doc(String(o.id)).set(o.v || {}, { merge: true }); keys.push(o.k); } catch (e) {} }
