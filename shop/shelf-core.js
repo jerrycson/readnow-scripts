@@ -213,6 +213,26 @@
     { k: 'artOn', group: '제품·사진', label: '표지 모드에서 그런 상품은 고유 디자인 표지로(상품 번호로 정해져 늘 같은 모습)', type: 'check', def: true },
     { k: 'artText', group: '제품·사진', label: '고유 디자인 표지에 제목·지은이(음반·영상은 아티스트) 보이기', type: 'check', def: true },
     { k: 'photoScope', group: '제품·사진', label: '클라우드가 사진을 판정할 상품', type: 'select', def: 'unreg', opts: { unreg: '미등록 상품 + 음반·LP·DVD·블루레이·그 밖', all: '모든 상품(알라딘 표지 포함 · 처음 한 바퀴 오래 걸림)' } },
+    /* ══ (shelfset1 · 정범님 11/14 00:29) 📚 세트 상품 — 권 수만큼 나눠 꽂기 · 누르면 기차처럼 한 권씩 빠져 앞에 쌓임 · 닫으면 역순 */
+    { k: 'setOn', group: '세트', label: '세트 상품(전 N권·총 N권·N권 세트·1~N 세트)을 권 수만큼 책등으로 나눠 꽂기', type: 'check', def: true, help: '권 수를 못 읽으면 예전처럼 한 덩어리 · 음반·영상 박스는 그대로' },
+    { k: 'setMax', group: '세트', label: '나눠 꽂을 가장 많은 권 수(넘으면 한 덩어리로)', type: 'number', def: 60, min: 2, max: 200 },
+    { k: 'setMinD', group: '세트', label: '한 권 가장 얇은 두께(mm)', type: 'number', def: 4, min: 1, max: 30, help: '권 두께 = 전체 두께 ÷ 권 수 · 두께가 없으면 (쪽수 ÷ 권 수)로 · 둘 다 없으면 15mm' },
+    { k: 'setColor', group: '세트', label: '권마다 책등 색', type: 'select', def: 'tone', opts: { tone: '같은 색 안에서 아주 조금씩 짙고 옅게(한 벌로 보이며 권이 나뉨)', same: '모든 권 같은 색', grad: '앞표지 색에서 곁색으로 차례로 물듦' } },
+    { k: 'setNum', group: '세트', label: '권 번호 자리(모든 권 같은 자리)', type: 'select', def: 'band', opts: { band: '아래 권 번호 띠', top: '위 권 번호 띠', off: '권 번호 없음' } },
+    { k: 'setSpImg', group: '세트', label: '세트에 알라딘 책등 그림이 하나 있으면', type: 'select', def: 'all', opts: { all: '모든 권에 그 그림 + 권 번호(같은 디자인 전집처럼)', skip: '그림 대신 앞표지 색으로 만든 세트 디자인' } },
+    { k: 'setAnim', group: '세트', label: '세트를 누르면', type: 'select', def: 'stack', opts: { stack: '한 권씩 기차처럼 빠져 앞에 차곡차곡 쌓임', fan: '한 권씩 빠져 부채꼴로 펼쳐짐', row: '한 권씩 빠져 앞에 나란히 섬', lean: '한 권씩 빠져 비스듬히 기대어 섬', one: '1권만 크게 앞으로 · 나머지는 뒤에 비스듬히', off: '움직임 없이 바로 쌓인 모습' } },
+    { k: 'setGap', group: '세트', label: '권 사이 출발 간격(ms · 기차처럼 연달아)', type: 'number', def: 70, min: 0, max: 600, step: 10 },
+    { k: 'setMs', group: '세트', label: '한 권이 날아가는 시간(ms)', type: 'number', def: 460, min: 120, max: 2500, step: 20 },
+    { k: 'setBack', group: '세트', label: '닫을 때 들어가는 차례', type: 'select', def: 'rev', opts: { rev: '역순(마지막에 나온 권부터 · 1권이 마지막)', same: '나온 차례대로(1권부터)', all: '한꺼번에' } },
+    { k: 'setPad', group: '세트', label: '나란히·부채꼴·기대어 설 때 권 사이 틈(px)', type: 'number', def: 3, min: 0, max: 40 },
+    { k: 'setJit', group: '세트', label: '쌓일 때 흐트러짐(도 · 0이면 반듯)', type: 'number', def: 2, min: 0, max: 10, step: 0.5 },
+    { k: 'setFan', group: '세트', label: '부채꼴 펼침 각도(도)', type: 'number', def: 80, min: 20, max: 170 },
+    { k: 'setTilt', group: '세트', label: '비스듬히 기대는 기울기(도)', type: 'number', def: 12, min: 0, max: 35 },
+    { k: 'setBig', group: '세트', label: '앞에 나온 책 크기 상한(배)', type: 'number', def: 2.6, min: 1, max: 5, step: 0.1 },
+    { k: 'setMob', group: '세트', label: '휴대폰에서 세트를 누르면', type: 'select', def: 'anim', opts: { anim: '넓은 화면과 같은 움직임', sheet: '아래에서 정보 창(예전처럼)' } },
+    { k: 'setPv', group: '세트', label: '세트도 샘플 페이지 보이기(기본 없음 — 켜면 1권 샘플 보기 단추)', type: 'check', def: false },
+    { k: 'setFix', group: '세트', label: '세트 권 수 바로잡기(관리자 · 한 줄에 「상품번호 권수 [첫 권 번호]」 · 권수 0 = 세트 아님)', type: 'area', def: '', help: '예: aladin_U123 12 · aladin_U456 5 11(11~15권) · 관리자 값이 제목 판정보다 먼저' },
+    { k: 'setSp', group: '세트', label: '권별 책등 그림(관리자 · 한 줄에 「상품번호 권번호 그림주소」)', type: 'area', def: '', help: '우리 저장소·알라딘 그림 주소만 · 차례: 관리자 그림 › 알라딘 책등 그림 › 앞표지 색으로 만든 세트 디자인' },
     { k: 'zoom0', group: '확대', label: '처음 확대(배)', type: 'number', def: 1, min: 0.5, max: 2.5, step: 0.1 },
     { k: 'viewerCfg', group: '확대', label: '손님이 ⚙ 보기에서 책장 종류·움직임·글 방향을 자기 기기만 바꿀 수 있음', type: 'check', def: true }];
   const DEF = Object.fromEntries(SCHEMA.map((p) => [p.k, p.def]));
@@ -364,7 +384,7 @@
   const C2T = [4, 5, 6, 8, 12, 13, 17, 18, 23, 30, 31, 34, 40, 43, 46, 51, 56]; /* (shelf7) 곁색 칸이 글 자리에 걸치는 디자인 */
   const zoneOf = (d) => { const z = ZONE_D[d] || []; return { zt: z[0] || 6, zb: z[1] || 5, zs: z[2] || 6 }; };
   /* 책등 하나의 모든 것(화면이 쓰는 꼴) — A(조합)는 저장된 것 또는 assign() 결과 */
-  function dress(it, A, c) { c = c || DEF; const z = sizeOf(it, c); const col = COLORS[A.ci - 1]; const base = col.hex; const R = rng(hash(((it && it.id) || '') + '|ink'));
+  function dress(it, A, c) { c = c || DEF; const z = sizeOf(it, c); const col = COLORS[A.ci - 1]; const base = A.hx || col.hex; /* (shelfset1) 세트 권마다 색(화면에서만 · 저장하는 모양 글엔 없음) */ const R = rng(hash(((it && it.id) || '') + '|ink'));
     const kc = A.k && COLORS[A.k - 1] ? COLORS[A.k - 1].hex : null; /* (shelf7) 곁색이 정해진 책등 — 띠·덮개(--c2), 장식색만 쓰는 디자인은 장식(--g)도 곁색 */
     const c2 = kc || (lum(base) > 0.4 ? shade(base, -0.28) : shade(base, 0.32)); const k = A.d === 9 || A.d === 44 ? '#1b1712' : inkFor(base, R());
     const g = kc && UQ.GONLY.includes(A.d) ? kc : ['#d9b45a', '#cfd3d8', lum(base) > 0.35 ? '#1b1712' : '#f4efe4', lum(base) > 0.4 ? shade(base, -0.45) : shade(base, 0.55)][A.a - 1]; const f = FONTS[A.fi - 1];
@@ -536,7 +556,43 @@
   function artOf(x) { const id = String((x && x.id) || ''); const R = rng(hash('art' + ART_GEN + '|' + id)); const n = COLORS.length; const ci = Math.floor(R() * n); let c2 = Math.floor(R() * (n - 1)); if (c2 >= ci) c2++;
     const bg = COLORS[ci].hex, ac = COLORS[c2].hex; const kd = kindOf(x); const p = Math.floor(R() * ART_PATS.length), l = Math.floor(R() * ART_LAYS.length); const fg = ['my', 'go', 'bd'][Math.floor(R() * 3)];
     return { bg, ac, ink: inkFor(bg, R()), pat: ART_PATS[p], lay: ART_LAYS[l], fg, kd, code: [ART_GEN, ci, c2, p, l].join('.'), who: kd === 'book' ? '지은이' : '아티스트' }; }
+  /* ══ (shelfset1 · 정범님 11/14 00:29) 📚 세트 — 제목에서 권 수 읽기 · 권마다 책등(같은 디자인·글꼴·무늬 · 권 번호 자리 통일)
+   *  실제 우리숍 판매중 16,174권 중 세트 꼴 제목 435개를 모아 본 꼴(11/14): 「… 세트 - 전4권」 335 · 「[세트] 신부이야기 1~14 (상급…)」 · 「… 총 27권」 · 「9권 세트」 · 「Volumes 1 to 3」 · 「6-Book Boxed Set」 · 「(4, 5권 결권)」 · 「30, 33 없음」
+   *  안 나누는 것: 음반·영상 박스 · 합본 · 「세트 1-2 (2025년용)」(학년-학기) · 쪽수가 권당 24쪽도 안 되는 것(「Set 1-44」 64쪽 = 한 권) */
+  const SET_MARK = /세트|셋트|\bset\b|boxed|박스|전집|완결|전권|\bvol(?:ume)?s?\b|\bbooks?\b/i;
+  const FIXC = { k: null, m: {} }, SPC = { k: null, m: {} };
+  const SP_OK = /^https:\/\/(firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\/|image\.aladin\.co\.kr\/)[^\s"'<>]{1,400}$/;
+  function setFixOf(c) { const s = String((c && c.setFix) || ''); if (FIXC.k === s) return FIXC.m; const m = {}; for (const ln of s.split(/\n+/)) { const p = ln.trim().split(/[\s,]+/); if (p.length >= 2 && /^[\w-]{1,60}$/.test(p[0]) && /^\d{1,3}$/.test(p[1])) m[p[0]] = { n: +p[1], a: /^\d{1,4}$/.test(p[2] || '') ? +p[2] : 1 }; } FIXC.k = s; FIXC.m = m; return m; }
+  function setSpOf(c) { const s = String((c && c.setSp) || ''); if (SPC.k === s) return SPC.m; const m = {}; for (const ln of s.split(/\n+/)) { const p = ln.trim().split(/\s+/); if (p.length >= 3 && /^[\w-]{1,60}$/.test(p[0]) && /^\d{1,4}$/.test(p[1]) && SP_OK.test(p[2])) (m[p[0]] = m[p[0]] || {})[+p[1]] = p[2]; } SPC.k = s; SPC.m = m; return m; }
+  const setVolSp = (x, vn, c) => { const m = setSpOf(c)[x && x.id]; return (m && m[vn]) || null; };
+  function setBase(t) { const t0 = String(t || ''); let s = t0.replace(/^\s*\[[^\]]*세트[^\]]*\]\s*/, '').replace(/\s*[-–]\s*(?:전|총)\s*\d+\s*권.*$/, '').replace(/\s*\/.*$/, '').replace(/\s*[(（][^)）]*[)）]/g, ' ')
+      .replace(/[:\s]*#?\d{1,3}\s*(?:[~\-–]|to)\s*\d{1,3}\s*권?/gi, ' ').replace(/(?:전|총)\s*\d+\s*권/g, ' ').replace(/\d{1,3}\s*권\s*(?:세트|셋트|묶음)/g, ' ').replace(/(?:풀\s*)?(?:세트|셋트)|박스\s*세트|완결|전권|\bBox(?:ed)?\s*S+et\b|\bGift\s*Set\b|\bSet\b|\bVolumes?\b|\bBooks?\b/gi, ' ')
+      .replace(/(?:^|\s)\d{1,2}(?:\s*[,.&]\s*\d{1,2})+(?=\s|$)/g, ' ').replace(/\b\d{1,2}\s*-\s*Book\b|[-–]\s*선물용|\bIntroduction\b.*$/gi, ' ').replace(/\s*[,:]\s*(?=[,:]|$)/g, '').replace(/\s{2,}/g, ' ').replace(/^[\s:·,+\-–]+|[\s:·,+\-–]+$/g, '').replace(/:\s*\d{1,2}$/, '').trim(); return s.length >= 2 ? s : t0.trim(); }
+  function setOf(x, c) { c = c || DEF; if (!x || !x.id || c.setOn === false) return null; const t = String(x.t || ''); const fx = setFixOf(c)[x.id];
+    const mk = (n, a, labs, how) => { if (!(n >= 2) || n > (c.setMax || 60)) return null; const v = labs && labs.length === n ? labs : Array.from({ length: n }, (_, i) => a + i); return { n, v, a: v[0], base: setBase(t), how }; };
+    if (fx) return fx.n >= 2 ? mk(fx.n, fx.a, null, 'admin') : null; /* 관리자 값이 먼저 · 0 = 세트 아님 */
+    const kd = x.kd || kindOf(x); if (kd !== 'book') return null;
+    const ex = /(?:전|총)\s*(\d{1,3})\s*권/.exec(t); const yr = /학년|학기|년용/.test(t);
+    if (/합본|합권/.test(t) && !ex) return null;
+    let rg = null; if (!yr) { const R = /(\d{1,3})\s*(?:[~\-–]|\bto\b)\s*(\d{1,3})(?!\s*(?:년|월|일|%|쪽|p\b|cm|mm|disc|장|부|기|학년))/gi; let m; while ((m = R.exec(t))) { const a = +m[1], b = +m[2]; if (b > a && b - a < 200) { rg = { a, b, k: /^\s*권/.test(t.slice(m.index + m[0].length)) }; break; } } }
+    let miss = []; { const mm = /([\d\s,·]+?)\s*권?\s*(?:결권|없음|제외|빠짐)/.exec(t); if (mm) miss = mm[1].split(/[\s,·]+/).filter(Boolean).map(Number).filter((v) => v > 0); }
+    const labsOf = (a, b) => { const L = []; for (let i = a; i <= b; i++) if (!miss.includes(i)) L.push(i); return L; };
+    const pgBad = (n) => { const pg = +x.pg || 0; return pg >= 40 && pg / n < 24; };
+    if (ex) { const n = +ex[1]; const labs = rg ? labsOf(rg.a, rg.b) : null; return mk(n, rg && rg.b - rg.a + 1 === n ? rg.a : 1, labs && labs.length === n ? labs : null, 'all'); }
+    if (rg && (rg.k || SET_MARK.test(t))) { const labs = labsOf(rg.a, rg.b); if (!rg.k && pgBad(labs.length)) return null; /* 「1~23권」처럼 권이 붙으면 쪽수(틀린 값이 많음)로 막지 않음 */ return mk(labs.length, rg.a, labs, 'range'); }
+    { const m = /(\d{1,3})\s*권\s*(?:세트|셋트|묶음|박스|set)/i.exec(t) || /\b(\d{1,2})\s*-\s*Book\b/i.exec(t); if (m && !pgBad(+m[1])) return mk(+m[1], 1, null, 'n'); }
+    if (SET_MARK.test(t) && !/합본/.test(t)) { const m = /(?:^|\s)(\d{1,2}(?:\s*[,.&]\s*\d{1,2})+)(?=\s|$|권|-)/.exec(t); if (m) { const L = m[1].split(/\s*[,.&]\s*/).map(Number); if (L.every((v, i) => !i || v === L[i - 1] + 1) && !pgBad(L.length)) return mk(L.length, L[0], L, 'list'); } }
+    return null; }
+  const mixHex = (a, b, t) => { const A = hex2(a), Bb = hex2(b); return '#' + A.map((v, i) => clamp(Math.round(v + (Bb[i] - v) * t), 0, 255).toString(16).padStart(2, '0')).join(''); };
+  /* 권마다 모양 — 세트의 모양(A: 디자인·무늬·글꼴·모양·장식·글 방향)을 모든 권이 같이 씀 · 바탕색만 setColor대로 · 두께 = 전체 ÷ 권 수 · 키는 같음 · 글 = 세트 이름(권 번호는 따로 같은 자리) */
+  function setDress(x, A, c, S) { c = c || DEF; const n = S.n; const m = SZ_RE.exec(String((x && x.sz) || '')); const pg = +(x && x.pg) || 0; const D0 = m && m[3] ? +m[3] : 0;
+    let per = D0 ? D0 / n : pg >= 40 ? (pg / n) * 0.06 + 2 : 15; per = clamp(per, +c.setMinD || 4, 80); const g = m ? null : fmtGuess(x);
+    const sz = (m ? m[1] + 'x' + m[2] : g.W + 'x' + g.H) + 'x' + Math.max(1, Math.round(per));
+    const b0 = COLORS[A.ci - 1].hex; const end = A.k && COLORS[A.k - 1] ? COLORS[A.k - 1].hex : shade(b0, lum(b0) > 0.4 ? -0.32 : 0.32); const TONE = [0, -0.07, 0.05, -0.03, 0.07, -0.05];
+    const out = []; for (let i = 0; i < n; i++) { const hx = c.setColor === 'same' ? b0 : c.setColor === 'grad' ? mixHex(b0, end, n > 1 ? (i / (n - 1)) * 0.7 : 0) : shade(b0, TONE[i % TONE.length]);
+      const L = dress({ ...x, sz, t: S.base, kd: 'book' }, { ...A, hx }, c); L.zb = Math.max(L.zb || 5, c.setNum === 'band' ? 15 : L.zb || 5); L.zt = Math.max(L.zt || 6, c.setNum === 'top' ? 15 : L.zt || 6); L.vn = S.v[i]; L.vi = i; L.dmm = Math.round(per * 10) / 10; out.push(L); }
+    return out; }
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.6', MEDIA, kindOf, mdOf, faceOf, artOf, oursIm, ART_PATS, ART_LAYS, ART_GEN, qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.7', setOf, setBase, setDress, setFixOf, setSpOf, setVolSp, mixHex, MEDIA, kindOf, mdOf, faceOf, artOf, oursIm, ART_PATS, ART_LAYS, ART_GEN, qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

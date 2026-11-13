@@ -149,7 +149,7 @@ const hashTok = (t) => crypto.createHash('sha256').update('bq|' + String(t || ''
 /* (11/11 shelf1) 📚 서가 책장 설정(app_settings/shop.shelf) — 관리 웹앱이 shop/shelf-core.js 틀로 저장 · 여기선 꼴만 지킴(칸 이름 영문·숫자 · 값은 수·참거짓·짧은 글·글 목록) · 범위는 손님 화면 BQS.cfgOf가 다시 지킴 */
 function shelfPub(v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return {}; const o = {}; let n = 0;
   for (const [k, x] of Object.entries(v)) { if (!/^[A-Za-z][A-Za-z0-9]{0,23}$/.test(k) || ++n > 60) continue;
-    if (typeof x === 'number' && Number.isFinite(x)) o[k] = x; else if (typeof x === 'boolean') o[k] = x; else if (typeof x === 'string') o[k] = s(x, k === 'picks' ? 8000 : 200).replace(/[<>]/g, '');
+    if (typeof x === 'number' && Number.isFinite(x)) o[k] = x; else if (typeof x === 'boolean') o[k] = x; else if (typeof x === 'string') o[k] = s(x, k === 'picks' || k === 'setFix' || k === 'setSp' ? 8000 : 200) /* (shelfset1) 세트 권 수 바로잡기·권별 책등 그림은 여러 줄 */.replace(/[<>]/g, '');
     else if (Array.isArray(x)) o[k] = x.filter((y) => typeof y === 'string' || typeof y === 'number').slice(0, 60).map((y) => s(y, 30)); }
   return o; }
 /* (11/13 shoplogo1) 👑 북스퀸 로고 머리띠 세세 설정(app_settings/shop.brandUi — 보이는 꼴·파비콘)을 꼴만 지켜 손님 화면에 넘김 · 로고 높이·작은 글·머리띠 모양은 🎨 꾸밈(look) 칸
