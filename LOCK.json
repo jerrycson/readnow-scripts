@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24re8",
+ "what": "예스24 상세수정 수량 판",
+ "since": "2026-11-13T13:23:39Z",
+ "beat": "2026-11-13T13:23:39Z",
  "ask": null,
  "last": {
   "who": "shopux1",
   "done": "우리숍 대개편 ① 웹앱 1.78.599 · 클라우드 0.35.235 · 손님 화면 0.2.0 (1fe2afc8)",
   "at": "2026-11-13T13:22:25Z"
  },
- "host": null
+ "host": "vm-y24re8"
 }
