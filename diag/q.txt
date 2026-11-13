@@ -1,2 +1,8 @@
-logs=1&pc=MJ-MAIN&from=202611121510&to=202611121545&regitems=20&recentUp=pur_entries&mins=240
-# 804418196
+doc=prd_jobs/net_2026-11-13,prd_jobs/pcBeat,app_settings/omni_recheck,app_settings/cloud_mem,app_settings/board_mirror,app_settings/heavy_run,prd_jobs/c2solo
+col2=2026-11-13
+logs=1&pc=HOME&from=202611130900
+pend=1&n=20
+mem=1
+clog=200&cq=Memory%20limit
+health=1
+# 3088232610
