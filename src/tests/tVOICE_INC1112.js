@@ -94,7 +94,7 @@ const mkVS = (F, extra) => V.makeVoiceStudy({ C: F.C, FieldPath: F.FieldPath, lo
     const F6 = mkFS(clone(D1)); const r6 = await mkVS(F6).run(true, false, { page: 1, memMB: -1 }); ok(r6.why === 'mem' && r6.partial === true, "memMB를 넘으면 거기까지('mem') · 다음 회차가 이어 셈", r6); }
 
   console.log('⑤ 클라우드 연결 · 메모리 감시');
-  ok(/makeVoiceStudy\(\{ C, FieldPath, log, W \}\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 30분마다 확인(처음 전체는 나눠 이어 셈 · 다 센 뒤엔 20시간 막이)');
+  ok(/makeVoiceStudy\(\{ C, FieldPath, log, W \}\)/.test(SRC) && /setInterval\(\(\) => (?:HVG\('voice', \(\) => )?VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 30분마다 확인(처음 전체는 나눠 이어 셈 · 다 센 뒤엔 20시간 막이)');
   ok(/require\('\.\/memwatch\.js'\)\.makeMemWatch\(/.test(SRC) && /MEMW\.start\(\)/.test(SRC) && /MEMW\.reqStart\(req\.url\)/.test(SRC), '메모리 감시 켜짐 · 요청마다 처리 중 주소 셈');
   ok(/if \(q\.mem\) \{/.test(SRC) && /if \(q\.clog\) \{[^\n]*readCloudLog/.test(SRC), '진단 mem=1(지금·앞 판 마지막 모습) · clog=<분>(Cloud Logging 읽기)');
   ok(/VOICE\.busy\(\)/.test(SRC) && /bx\('learn'/.test(SRC) && /bx\('sellerLearn'/.test(SRC), "바쁜 일 이름(구매평·배우기·판매자 배우기·tick·daily …)을 표본에 남김");
