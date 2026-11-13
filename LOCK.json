@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "priv2: cloudbuild.yaml·배포 끄는 문(동작 그대로) main에",
+ "since": "2026-11-13T04:32:32Z",
+ "beat": "2026-11-13T04:32:32Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "bfin a0bec497 수집기 1.89.310 대량 사라짐 실제 간격 판단(머리 그대로)",
   "at": "2026-11-13T04:32:22Z"
  },
- "host": null
+ "host": "wk-priv2"
 }
