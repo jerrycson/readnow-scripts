@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.328
+// @version      1.89.329
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4783,7 +4783,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
              *  → 문서 50개마다 숨 돌리며 한 줄씩 글자로 바꾸고, 모인 글자가 4MB를 넘으면 그 자리에서 도우미로 보내고 비움(같은 파일에 덧붙임 · 읽는 문서·순서·내용 같음) · 한 쪽이 12MB를 넘으면 다음 쪽 크기를 반으로(최소 20 · 작으면 다시 늘림) */
             if (full && g === 0 && cs.after) cs.resumed = true; let pb = 0; { let parts = [], pbytes = 0; const D0 = qs.docs; for (let i = 0; i < D0.length; i++) { const d = D0[i]; const v = d.data() || {}; const u = v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0; if (u > mx) mx = u; const ln = JSON.stringify({ id: d.id, path: d.ref.path, d: bkSer(v) }); parts.push(ln); pbytes += ln.length; if (pbytes > 4e6) { pb += (await put(key, kind, parts, true)) || 0; parts = []; pbytes = 0; await sleep(50); } else if (i % 50 === 49) await sleep(0); } if (parts.length) pb += (await put(key, kind, parts, true)) || 0; parts = null; }
             if (pb > 12e6 && lim > 20) lim = Math.max(20, Math.floor(lim / 2)); else if (pb < 2e6 && lim < LIM) lim = Math.min(LIM, lim * 2); const lines = { length: nDocs }; /* 아래 셈(문서 수)만 씀 */ if (full) { cs.nF = (+cs.nF || 0) + lines.length; cs.bF = (+cs.bF || 0) + (pb || 0); } else { cs.incN = (+cs.incN || 0) + lines.length; cs.bI = (+cs.bI || 0) + (pb || 0); } BKX.docs += lines.length; left -= lines.length; jl -= lines.length; ST.read.n += lines.length; if (full) { cs.after = lastId; if (mx > (+cs.tsF || 0)) cs.tsF = mx; } else cs.ts = mx; save(); if (g % 10 === 9) bkRep(); if (nDocs < limNow) { fin = true; break; } await sleep(400); for (let w = 0; w < 12 && bkHeap() > 0.4; w++) { if (!w) BKX.memWait++; await sleep(5000); } }
-          if (fin || !full) { if (full) { cs.nFull = +cs.nF || 0; cs.bFull = +cs.bF || 0; cs.nF = 0; cs.bF = 0; cs.full = nowIso(); cs.after = null; cs.ts = Math.min(Math.max(+cs.ts || 0, +cs.tsF || 0), +cs.fullStart || Infinity); cs.tsF = 0; cs.fullStart = null; BKX.full++; if (!jb.g && !cs.resumed) fullNow.push(jb.c); cs.resumed = false; } cs.at = nowIso(); } BKX.done++; save(true);
+          if (fin || !full) { if (full) { cs.nFull = +cs.nF || 0; cs.bFull = +cs.bF || 0; cs.nF = 0; cs.bF = 0; cs.full = nowIso(); cs.after = null; cs.ts = Math.min(Math.max(+cs.ts || 0, +cs.tsF || 0), +cs.fullStart || Infinity); cs.tsF = 0; cs.fullStart = null; BKX.full++; if (!jb.g && !cs.resumed) fullNow.push(jb.c); cs.resumed = false; } cs.at = nowIso(); } BKX.done++; save(!!(full && fin)); /* (4시간 점검 11/14) 칸 끝 저장도 5초에 한 번 — 처음/30일 전부 받기를 끝낸 칸만 바로(f) · 바뀐 것만 받는 작은 칸 200여 개가 칸마다 상태 전체(약 40KB)를 GM·도우미에 적어 11/14 02:59 5분 191번 7.8MB(11/12 고침 뒤에도) · 끊기면 몇 칸 '바뀐 것만'을 다시 읽음(id로 거름) */
         cs.err = null; } catch (e) { BKX.errs[key] = String(e.code || e.message).slice(0, 120); cs.err = BKX.errs[key]; /* 이 칸만 건너뜀(권한·색인 없음 등) — 다음 날 다시 */ }
         await sleep(100); }
       if (left > 0) { ST.day = day; /* 오늘 몫을 다 쓰지 않고 끝 = 오늘 일 끝(못 한 칸은 내일 다시) */
