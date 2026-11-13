@@ -19,7 +19,7 @@
   /* 기본값은 col2-config.js(COL2)와 각 일 파일 기본값에서 — 여기 적은 숫자는 그 파일에 기본값이 없을 때만(시험 t_settings가 일 파일 글과 견줌) */
   const AL_DEF = { chkMin: 20, confirmMin: 30, delivMin: 30, listMin: 60, qnaMin: 120, gapA: 3000, gapB: 6000, hourCap: 30, dayCap: 300, cool429Min: 30, nightFrom: 1, nightTo: 5 }; /* col2-al.js C() 기본값과 같음 */
   const Y24_DEF = { ordMin: 5, prdH: 24, tourH: 24, takeover: true, tkHour: 3 }; /* col2-y24.js C() 기본값과 같음 */
-  const RLG_DEF = { perHour: 3, perDay: 10, gapMin: 5, failStop: 2 }; /* col2-relogin.js DEF와 같음 */
+  const RLG_DEF = { perHour: 3, perDay: 30, gapMin: 5, failStop: 2, shortMin: 20, backMaxMin: 120 }; /* col2-relogin.js DEF와 같음 */
   /* 표 한 줄: k 이름 · g 묶음 · t 이름표 · sc 범위 · ty int|num|bool|time · lo~hi(저장 값 단위) · mul(보이는 값 = 저장 값 ÷ mul) · u 단위 · f 자주(often)/가끔(some)/드묾(rare)
    *  · p = col2.json 안 경로 · dk = 기본값 찾는 곳(COL2 경로 'PACE.dayCap' 또는 'AL.chkMin' 같은 일 파일 기본값) · i = ⓘ 설명(숨김) */
   const S = (k, g, t, sc, ty, lo, hi, p, dk, o) => ({ k, g, t, sc, ty, lo, hi, p, dk, mul: 1, u: '', f: 'some', i: '', ...(o || {}) });
@@ -40,6 +40,8 @@
     S('relogin.perDay', 'limit', '🔐 다시 로그인 하루', 'all', 'int', 1, 100, ['relogin', 'perDay'], 'RLG.perDay', { u: '번' }),
     S('relogin.gapMin', 'limit', '🔐 다시 로그인 사이', 'all', 'int', 1, 240, ['relogin', 'gapMin'], 'RLG.gapMin', { u: '분', f: 'rare' }),
     S('relogin.failStop', 'limit', '🔐 연속 실패면 멈춤', 'all', 'int', 1, 10, ['relogin', 'failStop'], 'RLG.failStop', { u: '번', f: 'rare', i: '이만큼 연속으로 틀리면 멈추고 알림(정범님이 [다시 해 보기]를 누를 때까지 — 계정 잠김 막기)' }),
+    S('relogin.shortMin', 'limit', '🔐 금방 끊김으로 볼 시간', 'all', 'int', 1, 240, ['relogin', 'shortMin'], 'RLG.shortMin', { u: '분', f: 'rare', i: '스스로 다시 로그인한 세션이 이 시간 안에 풀리거나 「이미 로그인된」 화면으로 끊기면 금방 끊김으로 셈 — 연달아 n번이면 다음 다시 로그인을 「사이」×2^n분 뒤로 미룸(다른 곳 세션과 서로 끊기 되풀이 막기)' }),
+    S('relogin.backMaxMin', 'limit', '🔐 끊김 뒤 기다림 최대', 'all', 'int', 1, 1440, ['relogin', 'backMaxMin'], 'RLG.backMaxMin', { u: '분', f: 'rare', i: '금방 끊김이 이어질 때 늘려 가는 기다림의 끝(5 → 10 → 20 … 이 값까지)' }),
     /* ── ⏰ 주기·시간대 (모든 PC) ── */
     S('nightOn', 'time', '🌙 새벽에도 읽기', 'all', 'bool', 0, 1, ['nightOn'], 'AUTO.nightOn', { f: 'often', i: '끄면 새벽(아래 시각) 동안 공개 화면 그림자 읽기를 쉼 · 운영 수집기의 밤 쉼과 따로' }),
     S('nightFrom', 'time', '🌙 새벽 쉼 시작', 'all', 'int', 0, 23, ['nightFrom'], 'AUTO.nightFrom', { u: '시', f: 'rare' }),
