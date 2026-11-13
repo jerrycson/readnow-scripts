@@ -140,6 +140,9 @@
     { k: 'room', group: '책장', label: '방 바탕', type: 'select', def: 'warm', opts: { warm: '따뜻한 조명', paper: '한지', night: '밤 서재', green: '초록 벽' } },
     { k: 'cap', group: '책장', label: '책장 하나에 꽂는 책 수', type: 'number', def: 200, min: 20, max: 300, step: 10, help: '넘치면 책장이 저절로 늘어남' },
     { k: 'pack', group: '책장', label: '작은 분야는 한 책장에 표찰로 나눠 함께 꽂기', type: 'check', def: true },
+    /* (shop2 · 정범님 11/13) 수량이 2권 넘는 상품 — 서가에 모두 꽂을지 · 한 권만 꽂고 수량을 표시할지(장바구니·주문은 그대로 상품 하나씩) */
+    { k: 'qtyMode', group: '책장', label: '수량이 여러 권인 상품', type: 'select', def: 'one', opts: { one: '한 권만 진열하고 수량 표시(×3)', all: '여러 권 모두 진열(같은 책등을 수량만큼 나란히)' } },
+    { k: 'qtyMax', group: '책장', label: '여러 권 모두 진열할 때 한 상품 최대 권 수', type: 'number', def: 10, min: 2, max: 50, help: '수량이 이보다 많으면 이만큼만 꽂고 나머지는 수량 표시' },
     { k: 'bayW', group: '책장', label: '칸 너비(px · 넓은 화면에서 칸이 몇 개로 나뉠지)', type: 'number', def: 460, min: 240, max: 1400, step: 20 },
     { k: 'rowH', group: '책장', label: '선반 높이(px · 확대 1배 기준 · A4 297mm가 선반 높이 − 24px)', type: 'number', def: 220, min: 120, max: 360, step: 10 }, /* (shelf8) 190 → 220 — 책 두께를 실제 비율로 그리며(아래 thickK) 보통 책(21mm)이 15px 안팎이 되게 */
     { k: 'sort0', group: '정렬', label: '처음 정렬', type: 'select', def: 'cat', opts: opt(SORTS) },
@@ -148,7 +151,16 @@
     { k: 'regDir', group: '정렬', label: '등록순 방향', type: 'select', def: 'new', opts: { new: '새로 들어온 책 먼저', old: '먼저 들어온 책 먼저' } },
     { k: 'catOrder', group: '정렬', label: '분야 차례(손님이 들어오자마자 보는 책장)', type: 'select', def: 'shop', opts: { shop: '서점 일반 차례(소설·에세이·인문… 종교는 뒤)', sales: '많이 팔리는 분야 먼저', n: '책이 많은 분야 먼저', name: '분야 이름 가나다' } },
     { k: 'catFirst', group: '정렬', label: '맨 앞에 둘 분야(쉼표 · 예: 소설·시,에세이)', type: 'text', def: '', max: 200, help: '여기 적은 큰 분야가 차례보다 먼저' },
-    { k: 'bands', group: '정렬', label: '가격대 경계(원 · 쉼표)', type: 'text', def: '5000,10000,20000,30000' },
+    { k: 'bands', group: '정렬', label: '가격대 경계(원 · 쉼표 · 최대 12개)', type: 'text', def: '1000,2000,3000,4000,5000,10000,20000,30000,40000,50000', help: '정범님 11/13 기본: 1천원대·2천원대·3천원대·4천원대 · 5천원대(5,000~9,999) · 1만원대·2만원대·3만원대·4만원대 · 5만원 이상' },
+    { k: 'bandStyle', group: '정렬', label: '가격대 이름', type: 'select', def: 'dae', opts: { dae: '「1천원대」처럼(마지막은 「5만원 이상」)', range: '「1천원~2천원」처럼 범위로' } },
+    { k: 'titleGroup', group: '정렬', label: '상품명 정렬의 글자 묶음', type: 'select', def: 'cho', opts: { cho: '한글 첫소리 ㄱ·ㄴ·ㄷ…(ㄲ은 ㄱ에) · 영문 한 묶음(A–Z) · 숫자 · 기호', az: '한글 첫소리 ㄱ·ㄴ·ㄷ… · 영문은 글자마다(A·B·C…) · 숫자 · 기호', wide: '크게 다섯 묶음(ㄱ~ㄷ·ㄹ~ㅂ·ㅅ~ㅇ·ㅈ~ㅊ·ㅋ~ㅎ) · 영문 · 숫자·기호' } },
+    /* (shop2 · 정범님 11/13) 🔖 구역 바로 가기 — 서가 위에 그 구역(주제·글자·가격대) 첫 자리로 가는 링크 줄 · 위치 길잡이(‹ 책장 ›)는 그대로 */
+    { k: 'jumpOn', group: '구역 바로 가기', label: '서가 위에 구역 바로 가기 링크 줄 보이기', type: 'check', def: true, help: '누르면 그 구역이 있는 책장(쪽)으로 넘어가 그 자리로' },
+    { k: 'jumpSorts', group: '구역 바로 가기', label: '링크 줄을 보일 정렬', type: 'multi', def: ['cat', 'title', 'price', 'pv'], opts: { cat: '주제 분류', title: '상품명(가나다)', price: '가격대', pv: '샘플 있는 책' } },
+    { k: 'jumpCat', group: '구역 바로 가기', label: '주제 분류 링크 나누기', type: 'select', def: 'big', opts: { big: '큰 주제마다(소설·시 · 에세이 · 인문 …)', small: '작은 주제까지(소설·시 › 한국소설 · 외국소설 …)' } },
+    { k: 'jumpN', group: '구역 바로 가기', label: '링크에 권 수 함께 보이기', type: 'check', def: true },
+    { k: 'jumpMob', group: '구역 바로 가기', label: '휴대폰 링크 줄', type: 'select', def: 'scroll', opts: { scroll: '한 줄 — 옆으로 밀어 보기(쿠팡·무신사 앱 분류 줄처럼)', wrap: '여러 줄로 모두 펼치기' } },
+    { k: 'jumpStick', group: '구역 바로 가기', label: '휴대폰에서 위치 표시·링크 줄을 화면 위에 붙여 두기(내려도 보임)', type: 'check', def: true },
     { k: 'picks', group: '정렬', label: '추천 책 상품 번호(한 줄에 하나 · 추천순 맨 앞)', type: 'area', def: '' },
     { k: 'remember', group: '정렬', label: '손님이 고른 정렬을 그 기기에 기억', type: 'check', def: true },
     { k: 'spineImg', group: '책등', label: '알라딘 책등 그림이 있으면 쓰기', type: 'check', def: true },
@@ -176,6 +188,7 @@
     { k: 'seed', group: '책등', label: '섞기 번호(바꾸면 새로 정하는 책의 색·디자인·글꼴이 새로 섞임)', type: 'number', def: 1, min: 0, max: 99999 },
     { k: 'fontsOn', group: '글꼴', label: '무료 한글 글꼴 받아 쓰기(끄면 기기 글꼴만 — 더 가벼움)', type: 'check', def: true },
     { k: 'fonts', group: '글꼴', label: '쓸 글꼴(비우면 68가지 모두)', type: 'multi', def: [], opts: Object.fromEntries(FONTS.map((f) => [f.id, f.label])) },
+    { k: 'mobPop', group: '움직임', label: '책등을 누르면(휴대폰)', type: 'select', def: 'sheet', opts: { sheet: '아래에서 책 정보 창이 올라옴(지금까지 방식)', open: '책이 뽑혀 앞으로 나와 펼쳐짐(넓은 화면과 같음)', lift: '첫 누름에 책등이 앞으로 쏙 나오고 · 한 번 더 누르면 펼쳐짐' }, help: '손님도 ⚙ 보기에서 자기 기기만 바꿀 수 있음' },
     { k: 'popMode', group: '움직임', label: '책등을 누르면(넓은 화면)', type: 'select', def: 'open', opts: { open: '책이 뽑혀 앞으로 나와 펼쳐짐(앞·책등·뒤 표지 + 책 정보)', spine: '책등 표면에 바로 단추(장바구니·찜·자세히)', bubble: '책등 위 말풍선 창' } },
     { k: 'cartAnim', group: '움직임', label: '장바구니 담기 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(CART_ANIMS), off: '움직임 없음' } },
     { k: 'wishAnim', group: '움직임', label: '찜 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(WISH_ANIMS), off: '움직임 없음' } },
@@ -247,7 +260,7 @@
     for (const [re, o] of WORDS) if (re.test(t)) { add(o); break; } const c = String((it && it.c) || ''); for (const [re, o] of CATS) if (re.test(c)) { add(o); break; } return Object.keys(out).length ? out : null; }
   /* ── (shelf3) 큰 분야 — 알라딘 분류 경로('국내도서>소설/시/희곡>한국소설' 또는 쉼표로 이은 것)에서 사람이 읽는 짧은 이름 · 서점 일반 차례
    *  근거(약속 42): 교보·영풍 매장 안내도(문학 → 에세이 → 인문 → 역사 → 사회 → 경제경영 → 자기계발 → 과학 → 예술 → 어린이·청소년 → 취미·실용 → 외국어·수험 → 종교) · 알라딘 1단계 분류 이름 */
-  const BIG = [['novel', '소설·시', /소설|시\/|희곡|^시$|^(한국|외국|세계|영미|일본|고전)?문학$/], ['essay', '에세이', /에세이/], ['human', '인문', /인문|철학|심리/], ['history', '역사', /역사|문화/], ['society', '사회·정치', /사회|정치|법/],
+  const BIG = [['novel', '소설·시', /소설|시\/|희곡|^시$|^(한국|외국|세계|영미|일본|고전)?문학$/], ['essay', '에세이', /에세이/], ['human', '인문', /인문|철학|심리/], ['history', '역사', /역사|(?<!대중)문화/] /* (shop2) 알라딘 '예술/대중문화'가 역사로 가던 것 */, ['society', '사회·정치', /사회|정치|법/],
     ['econ', '경제경영', /경제|경영/], ['self', '자기계발', /자기계발/], ['science', '과학', /과학|공학|의학/], ['art', '예술', /예술|대중문화|음악|미술|사진|건축/], ['kids', '어린이', /어린이|초등/], ['baby', '유아', /유아/],
     ['teen', '청소년', /청소년/], ['comic', '만화', /만화|라이트\s?노벨/], ['family', '가정·육아', /가정|육아|부모|임신/], ['cook', '요리·살림', /요리|살림/], ['travel', '여행', /여행/], ['health', '건강·취미', /건강|취미|레저|스포츠/],
     ['lang', '외국어', /외국어|영어|일본어|중국어/], ['it', '컴퓨터·IT', /컴퓨터|모바일|IT/], ['exam', '수험서·참고서', /수험|자격|참고서|교재|대학교재|전집|교육/], ['religion', '종교', /종교|역학|기독교|불교|천주교|가톨릭/], ['etc', '여러 분야', /$^/]];
@@ -355,10 +368,19 @@
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'; const CHO1 = { ㄲ: 'ㄱ', ㄸ: 'ㄷ', ㅃ: 'ㅂ', ㅆ: 'ㅅ', ㅉ: 'ㅈ' };
   const initial = (t) => { const s = String(t || '').replace(/^[\s"'(\[{<〈《「『【]+/, ''); const ch = s.charCodeAt(0); if (ch >= 0xac00 && ch <= 0xd7a3) { const c = CHO[Math.floor((ch - 0xac00) / 588)]; return CHO1[c] || c; } if (/[a-z]/i.test(s[0] || '')) return 'A–Z'; if (/[0-9]/.test(s[0] || '')) return '숫자'; if (/[ㄱ-ㅎ]/.test(s[0] || '')) return CHO1[s[0]] || s[0]; return '기호·그 밖'; };
   const ORDER_INIT = [...'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ', 'A–Z', '숫자', '기호·그 밖'];
+  /* (shop2 · 정범님 11/13 '상품명은 철자로') 글자 묶음 — cho: 첫소리 14 + A–Z 한 묶음 · az: 영문은 글자마다 · wide: 크게 다섯 + 영문 + 숫자·기호 */
+  const WIDE = { ㄱ: 'ㄱ~ㄷ', ㄴ: 'ㄱ~ㄷ', ㄷ: 'ㄱ~ㄷ', ㄹ: 'ㄹ~ㅂ', ㅁ: 'ㄹ~ㅂ', ㅂ: 'ㄹ~ㅂ', ㅅ: 'ㅅ~ㅇ', ㅇ: 'ㅅ~ㅇ', ㅈ: 'ㅈ~ㅊ', ㅊ: 'ㅈ~ㅊ', ㅋ: 'ㅋ~ㅎ', ㅌ: 'ㅋ~ㅎ', ㅍ: 'ㅋ~ㅎ', ㅎ: 'ㅋ~ㅎ', 'A–Z': 'A–Z', 숫자: '숫자·기호', '기호·그 밖': '숫자·기호' };
+  const AZ = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+  const titleKey = (t, mode) => { const k = initial(t); if (mode === 'wide') return WIDE[k] || '숫자·기호'; if (mode === 'az' && k === 'A–Z') { const s = String(t || '').replace(/^[\s"'(\[{<〈《「『【]+/, ''); return (s[0] || 'A').toUpperCase(); } return k; };
+  const titleOrder = (mode) => (mode === 'wide' ? ['ㄱ~ㄷ', 'ㄹ~ㅂ', 'ㅅ~ㅇ', 'ㅈ~ㅊ', 'ㅋ~ㅎ', 'A–Z', '숫자·기호'] : mode === 'az' ? [...ORDER_INIT.slice(0, 14), ...AZ, '숫자', '기호·그 밖'] : ORDER_INIT);
   const KO = typeof Intl !== 'undefined' && Intl.Collator ? new Intl.Collator('ko', { numeric: true, sensitivity: 'base' }) : { compare: (a, b) => (a < b ? -1 : a > b ? 1 : 0) };
   const bandsOf = (s) => [...new Set(String(s || '').split(/[,\s]+/).map((x) => Math.round(+x)).filter((x) => x > 0))].sort((a, b) => a - b).slice(0, 12);
   const wonS = (n) => (n >= 10000 ? (n % 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') : n / 10000) + '만' : n >= 1000 ? n / 1000 + '천' : n) + '원';
-  const bandName = (B, p) => { let i = 0; while (i < B.length && p >= B[i]) i++; return [i, i === 0 ? wonS(B[0]) + ' 아래' : i === B.length ? wonS(B[B.length - 1]) + ' 넘게' : wonS(B[i - 1]) + '~' + wonS(B[i])]; };
+  /* (shop2) style 'dae' = 「1천원대」(경계 아래 칸은 「1천원 아래」 · 마지막 칸은 「5만원 이상」) · 없거나 'range' = 옛 「5천원~1만원」 */
+  const bandName = (B, p, style) => { let i = 0; while (i < B.length && p >= B[i]) i++; if (style === 'dae') return [i, i === 0 ? wonS(B[0]) + ' 아래' : i === B.length ? wonS(B[B.length - 1]) + ' 이상' : wonS(B[i - 1]).replace(/원$/, '원대')];
+    return [i, i === 0 ? wonS(B[0]) + ' 아래' : i === B.length ? wonS(B[B.length - 1]) + ' 넘게' : wonS(B[i - 1]) + '~' + wonS(B[i])]; };
+  /* (shop2) 가격대 칸의 실제 범위 글(링크 풀이용) — 「5,000~9,999원」 */
+  const bandRange = (B, i) => { const f = (n) => n.toLocaleString('ko-KR'); return i === 0 ? f(B[0] - 1) + '원까지' : i === B.length ? f(B[B.length - 1]) + '원부터' : f(B[i - 1]) + '~' + f(B[i] - 1) + '원'; };
   const GW = { 최상: 3, 상: 2, 중: 1, 하: 0 };
   /* 추천 점수: 정범님 추천(맨 앞) → 많이 팔리는 책 + 정가보다 많이 쌈 + 좋은 등급 + 새로 들어옴 (근거: 알라딘 중고 '추천' = 판매·할인·상태를 함께 봄 — 무게는 근거 없음 → 설정의 추천 책으로 손봄) */
   function recScore(x, now) { const off = x.lp > 0 && x.p > 0 && x.p < x.lp ? 1 - x.p / x.lp : 0; const sr = x.sr ? 1 / Math.log2(1 + x.sr) : 0; const age = x.at ? (now - Date.parse(x.at)) / 864e5 : 365; return sr * 3 + off * 2 + (GW[x.g] || 0) * 0.35 + (age < 14 ? 0.6 : age < 60 ? 0.25 : 0); }
@@ -368,7 +390,16 @@
     if (key === 'rec') return (a, b) => b._rs - a._rs || regCmp('new')(a, b); return regCmp(c.regDir); }
   /* ── 책장 묶음 짜기: 정렬 → 무리(분야·첫소리·가격대 · 없으면 하나) → 책장(수용 cap)마다 자리(slots: 책 또는 표찰 {lab})
    *  pack: 작은 무리는 앞 책장의 남은 자리에 표찰을 세워 이어 꽂음(실제 서점처럼) · 큰 무리는 cap마다 나눠 '문학 2/3' */
-  function plan(items, c, key, now) { c = c || DEF; now = now || Date.now(); key = SORTS.some((s) => s[0] === key) ? key : c.sort0; const key0 = key; const L = (items || []).filter((x) => x && x.id && (key0 !== 'pv' || x.pv)); if (key === 'pv') key = 'cat'; /* (shelf8) 샘플 있는 책 = 샘플 모은 책만 주제 분류로 */
+  /* (shop2 · 정범님 11/13) 수량 q가 2 넘는 상품 — qtyMode 'all'이면 같은 책을 수량만큼(최대 qtyMax) 나란히 꽂음(사본 _dup = 2,3… · 같은 상품 번호) · 'one'이면 한 권(화면이 ×수량 표시) */
+  function qtyOut(L, c) { if (!c || c.qtyMode !== 'all') return L; const out = []; for (const x of L) { const q = Math.min(Math.max(1, Math.floor(+x.q || 1)), c.qtyMax || 10); out.push(x); for (let k = 2; k <= q; k++) out.push({ ...x, _dup: k, _dq: q }); } return out; }
+  /* (shop2) 🔖 구역 바로 가기 목록 — plan 결과의 표찰에서 무리마다 첫 자리 [{ k, name, ci(책장 번호), n(권), lv 0 큰 · 1 작은 주제, tip }] · 설정이 끄거나 이 정렬이 아니면 빈 목록 */
+  function jumps(P, c) { c = c || DEF; if (!P || !c.jumpOn || !(c.jumpSorts || []).includes(P.key)) return []; const out = [], M = new Map(); const sub = c.jumpCat === 'small' && (P.key === 'cat' || P.key === 'pv');
+    P.cases.forEach((cs, ci) => cs.slots.forEach((s) => { if (!s.lab || s.gi == null) return; const k = 'g' + s.gi; let J = M.get(k); if (!J) { J = { k, name: s.g, ci, n: 0, lv: 0, ...(s.tip ? { tip: s.tip } : {}) }; M.set(k, J); out.push(J); } J.n += s.n || 0;
+      if (sub && s.sm != null) { const k2 = k + '|' + s.sm; let J2 = M.get(k2); if (!J2) { J2 = { k: k2, name: s.sm || '그 밖', ci, n: 0, lv: 1, up: k }; M.set(k2, J2); out.push(J2); } J2.n += s.n || 0; } }));
+    if (sub) { const L = []; for (const J of out.filter((x) => !x.lv)) { L.push(J); const S = out.filter((x) => x.up === J.k); if (S.length > 1 || (S.length === 1 && S[0].name !== '그 밖')) L.push(...S); } return L; } return out; }
+  /* 표찰의 링크 열쇠(화면 data-jk · data-jk2) */
+  const jumpKeys = (s) => (s && s.gi != null ? ['g' + s.gi, s.sm != null ? 'g' + s.gi + '|' + s.sm : ''] : ['', '']);
+  function plan(items, c, key, now) { c = c || DEF; now = now || Date.now(); key = SORTS.some((s) => s[0] === key) ? key : c.sort0; const key0 = key; const L = qtyOut((items || []).filter((x) => x && x.id && (key0 !== 'pv' || x.pv)), c); if (key === 'pv') key = 'cat'; /* (shelf8) 샘플 있는 책 = 샘플 모은 책만 주제 분류로 */
     const picks = String(c.picks || '').split(/[\s,]+/).map((x) => x.trim()).filter(Boolean); const P = new Map(picks.map((id, i) => [id, i]));
     if (key === 'rec') for (const x of L) x._rs = P.has(x.id) ? 1e6 - P.get(x.id) : recScore(x, now);
     let groups;
@@ -379,13 +410,14 @@
         const subs = [...SM].sort((a, b) => (a[0] === '') - (b[0] === '') || b[1].length - a[1].length || KO.compare(a[0], b[0])); g.xs = subs.flatMap(([k, xs]) => xs.sort(ic)); g.subs = subs.map(([k, xs]) => [k, xs.length]); }
       const ord = c.catOrder === 'name' ? (a, b) => KO.compare(a.name, b.name) : c.catOrder === 'n' ? (a, b) => b.xs.length - a.xs.length : c.catOrder === 'sales' ? (a, b) => salesOf(b) - salesOf(a) || b.xs.length - a.xs.length : (a, b) => BIGK[a.key] - BIGK[b.key];
       groups.sort((a, b) => (a.key === 'etc') - (b.key === 'etc') || fi(a) - fi(b) || ord(a, b) || KO.compare(a.name, b.name)); }
-    else if (key === 'title') { const M = new Map(); for (const x of L.slice().sort(cmpOf('title'))) { const g = initial(x.t); if (!M.has(g)) M.set(g, []); M.get(g).push(x); } groups = ORDER_INIT.filter((g) => M.has(g)).map((g) => ({ name: g, xs: M.get(g) })); }
-    else if (key === 'price') { const B = bandsOf(c.bands).length ? bandsOf(c.bands) : bandsOf(DEF.bands); const M = new Map(); for (const x of L.slice().sort(cmpOf('price'))) { const [i, nm] = bandName(B, x.p); if (!M.has(i)) M.set(i, { name: nm, xs: [] }); M.get(i).xs.push(x); } groups = [...M.keys()].sort((a, b) => a - b).map((i) => M.get(i)); }
+    else if (key === 'title') { const M = new Map(); for (const x of L.slice().sort(cmpOf('title'))) { const g = titleKey(x.t, c.titleGroup); if (!M.has(g)) M.set(g, []); M.get(g).push(x); } groups = titleOrder(c.titleGroup).filter((g) => M.has(g)).map((g) => ({ name: g, xs: M.get(g) })); }
+    else if (key === 'price') { const B = bandsOf(c.bands).length ? bandsOf(c.bands) : bandsOf(DEF.bands); const M = new Map(); for (const x of L.slice().sort(cmpOf('price'))) { const [i, nm] = bandName(B, x.p, c.bandStyle); if (!M.has(i)) M.set(i, { name: nm, xs: [], tip: bandRange(B, i) }); M.get(i).xs.push(x); } groups = [...M.keys()].sort((a, b) => a - b).map((i) => M.get(i)); }
     else { const nm = { reg: c.regDir === 'old' ? '먼저 들어온 차례' : '새로 들어온 차례', sales: '많이 팔리는 차례', rec: '추천 차례' }[key]; groups = [{ name: nm, xs: L.slice().sort(cmpOf(key, c, now)), seq: 1 }]; }
     const cap = c.cap; const cases = []; let cur = null; const open = () => { cur = { slots: [], groups: [], n: 0 }; cases.push(cur); };
+    groups.forEach((g, gi) => { g.gi = gi; }); /* (shop2) 표찰마다 무리 번호(gi)·이름(g) — 구역 바로 가기 링크가 그 첫 자리를 찾음 */
     for (const g of groups) { const parts = Math.ceil(g.xs.length / cap) || 1;
       if (g.seq) { for (let i = 0; i < parts; i++) { open(); const xs = g.xs.slice(i * cap, (i + 1) * cap); cur.slots = xs; cur.n = xs.length; cur.groups.push({ name: g.name, from: i * cap + 1, to: i * cap + xs.length, of: g.xs.length }); cur.name = g.name; cur.sub = `${(i * cap + 1).toLocaleString('ko-KR')}~${(i * cap + xs.length).toLocaleString('ko-KR')}번째`; } cur = null; continue; }
-      const labsOf = (xs, head) => { if (!g.subs) return [{ lab: head, n: xs.length }, ...xs]; const out = []; let k = null, at = -1; xs.forEach((x) => { const sk = (x._k && x._k.s) || ''; if (sk !== k) { k = sk; at = out.length; out.push({ lab: out.length ? (sk || '그 밖') : (sk ? g.name + ' › ' + sk : head), n: 0, big: g.name, sm: sk }); } out[at].n++; out.push(x); }); return out; };
+      const labsOf = (xs, head) => { if (!g.subs) return [{ lab: head, n: xs.length, g: g.name, gi: g.gi, ...(g.tip ? { tip: g.tip } : {}) }, ...xs]; const out = []; let k = null, at = -1; xs.forEach((x) => { const sk = (x._k && x._k.s) || ''; if (sk !== k) { k = sk; at = out.length; out.push({ lab: out.length ? (sk || '그 밖') : (sk ? g.name + ' › ' + sk : head), n: 0, big: g.name, sm: sk, g: g.name, gi: g.gi }); } out[at].n++; out.push(x); }); return out; };
       if (c.pack && cur && g.xs.length <= cap - cur.n && cur.n > 0) { cur.slots.push(...labsOf(g.xs, g.name)); cur.n += g.xs.length; cur.groups.push({ name: g.name, n: g.xs.length }); continue; }
       for (let i = 0; i < parts; i++) { open(); const xs = g.xs.slice(i * cap, (i + 1) * cap); cur.slots.push(...labsOf(xs, parts > 1 ? `${g.name} ${i + 1}/${parts}` : g.name)); cur.n = xs.length; cur.groups.push({ name: g.name, part: parts > 1 ? i + 1 : 0, parts, n: xs.length }); }
       if (!c.pack) cur = null; }
@@ -415,7 +447,7 @@
   /* (shelf4) 클라우드가 앞표지를 미리 셈한 칸 cv = 'rrggbb' 또는 'rrggbb.갈래' (예 '8a2b1c.my') · 'x' = 셈했는데 쓸 만한 색 없음 */
   const cvOf = (v) => { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/.exec(String(v || '')); return m ? { cc: '#' + m[1], fg: GENRES[m[2]] ? m[2] : null, cv: 1 } : v === 'x' ? { cv: 1 } : {}; };
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, q: ix.q != null ? Math.max(1, +r[ix.q] || 1) : 1, /* (shop2) 수량 */ rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
@@ -446,5 +478,5 @@
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.2', UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.3', qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });
