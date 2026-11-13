@@ -259,7 +259,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   async function itemMore(id, it) { const k = String(id); const h = MORE.get(k); if (h && Date.now() - h.at < MORE_MS) return h.v; const v = {};
     const bid = CAT.bk.get(k); const isbn = it && it.isbn; const get = (col, doc) => (doc ? C(col).doc(String(doc)).get().then((d) => (d.exists ? d.data() || {} : null), () => null) : Promise.resolve(null));
     const lget = C('prd_listings').doc(k).get ? C('prd_listings').doc(k).get().then((d) => (d.exists ? d.data() || {} : null), () => null) : Promise.resolve(null);
-    const [b, x, bi, l] = await Promise.all([get('prd_books', bid), get('ext_basic', isbn), get('book_info', isbn), lget]);
+    const [b, x, bi, l] = await Promise.all([get('prd_books', bid), get('ext_basic', isbn), get('bk_info', isbn) /* (🔬 정밀 점검 11/13) 칸 이름이 틀려 늘 빈 답이었음 — 실제 칸은 bk_info(📖 책 정보 모으기가 쓰는 곳) */, lget]);
     const xs = (x && x.src) || {}; const bi2 = bi || (b && (b.bookInfo || b.bi)) || {};
     const tr = (b && (b.contributors || []).filter((c) => c && /옮|역/.test(String(c.role || ''))).map((c) => c.name).filter(Boolean).join(', ')) || firstOf(xs, 'translators'); if (tr) v.tr = s(Array.isArray(tr) ? tr.join(', ') : tr, 60);
     const wt = num((b && (b.weightG || b.weight)) || firstOf(xs, 'weightG')); if (wt && wt < 20000) v.wt = wt;
