@@ -1,2 +1,2 @@
-doc=app_settings/cons_study
-# 39948102
+doc=ext_basic/9788972912569
+# 1764820655
