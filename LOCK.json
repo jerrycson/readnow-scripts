@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "anom1 둘째 판 — 이상 판단 대조군 고침(클라우드)",
- "since": "2026-11-13T04:01:24Z",
- "beat": "2026-11-13T04:01:24Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "urg2 긴급 판 be31d6dd — 수집기 1.89.307 · 클라우드 0.35.209",
-  "at": "2026-11-13T04:01:18Z"
+  "done": "anom1 둘째 판 웹앱 1.78.561 · 클라우드 0.35.210",
+  "at": "2026-11-13T04:02:55Z"
  },
- "host": "vm-anom1"
+ "host": null
 }
