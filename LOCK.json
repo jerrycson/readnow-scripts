@@ -3,7 +3,11 @@
  "what": "led4 둘째 판: 테더링 여분 48GB 쓰이게(recall3 ②)",
  "since": "2026-11-13T03:21:54Z",
  "beat": "2026-11-13T03:21:54Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: const1: CLAUDE.md 헌장 첫 줄(문서만)",
+  "at": "2026-11-13T03:24:37Z"
+ },
  "last": {
   "who": "lead",
   "done": "tabfix 5f86276d 웹앱 1.78.555 · 수집기 1.89.304",
