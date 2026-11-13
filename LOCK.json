@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cloudmem 다섯째 진단 판",
+ "since": "2026-11-13T02:14:02Z",
+ "beat": "2026-11-13T02:14:02Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "col2mig 웹앱 1.78.551·수집기 1.89.300·작업 창 0.1.4 · 27e51041",
   "at": "2026-11-13T02:12:35Z"
  },
- "host": null
+ "host": "vm-cloudmem"
 }
