@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "긴급(urgord): 클라우드 발송요청 빈 화면 덮어쓰기 막기·진단 delivchk",
+ "since": "2026-11-13T03:05:42Z",
+ "beat": "2026-11-13T03:05:42Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "home2: 번외 0.1.51 · b9e9a3d1",
   "at": "2026-11-13T03:05:39Z"
  },
- "host": null
+ "host": "vm"
 }
