@@ -1,2 +1,2 @@
-slearn=bg&mem=1
-# 17095983
+doc=shp_state/confirm,shp_state/current,shp_state/fast,shp_state/excel,shp_state/tabRead,app_settings/col2_handoff,app_settings/cloud_jobs
+# 138827454
