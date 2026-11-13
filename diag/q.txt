@@ -1,2 +1,2 @@
-ping=1
-# 2707429709
+doc=app_settings/col2_handoff
+# 770332346
