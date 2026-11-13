@@ -1,4 +1,2 @@
-col2=2026-11-13
-doc=app_settings/col2_solo
-pend=1
-# 1758716357
+logs=1&pc=LOGGER&from=202611130700&pend=1&heads=1&bkinfo=1&ag=1
+# 254701497
