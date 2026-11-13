@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "intel1 정보 수집 방법 연구 판 내기",
+ "since": "2026-11-13T01:21:28Z",
+ "beat": "2026-11-13T01:21:28Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "capfix2 판 aa73d123 웹앱 1.78.546·수집기 1.89.298·autosched 0.18.26",
   "at": "2026-11-13T01:19:38Z"
  },
- "host": null
+ "host": "vm-intel1"
 }
