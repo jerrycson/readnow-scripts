@@ -29,7 +29,8 @@
     catch (e) { if (e.name === 'AbortError') { const x = new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); x.slow = 1; throw x; } if (e instanceof TypeError) { const x = new Error('인터넷 연결을 확인해 주세요'); x.net = 1; throw x; } throw e; } finally { clearTimeout(t); } }
   async function api(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const tries = get && !(opt && opt.retry === false) ? 3 : 0;
     for (let i = 0; ; i++) { try { return await api1(path, opt); }
-      catch (e) { const again = i < tries && (e.net || RETRY_ST.includes(e.status)) && navigator.onLine !== false; if (!again) throw e;
+      catch (e) { if (e.slow && get && i < 1 && !(opt && opt.retry === false)) { opt = { ...(opt || {}), ms: Math.max(30000, (opt && opt.ms) || 0) }; continue; } /* (shopux1) 읽기가 15초를 넘기면(클라우드가 막 깨어날 때 · 실제 게시본에서 겪음) 한 번 더 30초 기다림 — 주문(POST)은 그대로 다시 안 보냄 */
+        const again = i < tries && (e.net || RETRY_ST.includes(e.status)) && navigator.onLine !== false; if (!again) throw e;
         await sleep(Math.min(20000, e.wait || [1500, 4000, 8000][i]) + Math.round(Math.random() * 700)); } } }
   async function cfg(force) { if (!force && ST.cfg && Date.now() - ST.cfgAt < 60e3) return ST.cfg; ST.cfg = await api('/shop/cfg'); ST.cfgAt = Date.now(); lookApply(); foot(); try { const L = lookOf(); if (L) LS.set('bq-pcw', L.pcWidth); } catch (e) {} return ST.cfg; }
   let tT = null; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 2600); }
