@@ -47,7 +47,7 @@ console.log('② 클라우드 /shop/item');
   ok(r2.item && r2.item.info && r2.item.info.intro === '외부 소개' && !r2.item.info.toc, '책소개 칸이 아직 없으면 외부 기본 정보(교보·예스24 등) 소개로 · 목차는 없으면 비움');
   srv.close(); srv2.close(); }
 { const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); const t = fs.readFileSync(path.join(ROOT, 'shop/shelf.js'), 'utf8');
-  ok(/shelf-core\.js\?v=0\.2\.[6-9]/.test(s) && /shelf\.js\?v=0\.2\.[6-9]/.test(s) && /fetchpriority="high"/.test(t) && /item: demo \? null/.test(s) && /data-backshelf/.test(s) && /bq-shelf-ret/.test(t), '우리숍: 서가 0.2.6 이후 · 펼친 책 그림은 먼저 받음(fetchpriority) · 펼친 책 정보(/shop/item) · 상세 → 서가 그 책 자리로(Esc·뒤로가기·단추)');
+  ok(/shelf-core\.js\?v=0\.2\.([6-9]|1[0-9])/.test(s) && /shelf\.js\?v=0\.2\.([6-9]|1[0-9])/.test(s) && /fetchpriority="high"/.test(t) && /item: demo \? null/.test(s) && /data-backshelf/.test(s) && /bq-shelf-ret/.test(t), '우리숍: 서가 0.2.6 이후 · 펼친 책 그림은 먼저 받음(fetchpriority) · 펼친 책 정보(/shop/item) · 상세 → 서가 그 책 자리로(Esc·뒤로가기·단추)');
   for (const f of ['shop/shelf.js', 'shop/shop.js', 'cloud/shop.js']) { const x = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(x), f + ': 브라우저 창 없음'); } }
 if (!process.env.RN_SHELF_UI) { console.log(bad ? `❌ tSHELF8_1112 ${bad}개 실패` : '✓ tSHELF8_1112 순수 셈 통과 (화면 시험은 RN_SHELF_UI=1)'); process.exit(bad ? 1 : 0); }
 

@@ -60,7 +60,10 @@ if ev == 'end':
         if os.path.exists(lf): tail = [mask(x) for x in open(lf, errors='replace').read().splitlines()[-6:]]
         if warn and os.path.exists(RN + '/log_shop'): tail += ['— 🛍 우리숍 단계(실패해도 되는 단계) —'] + [mask(x) for x in open(RN + '/log_shop', errors='replace').read().splitlines()[-8:]]
     body.update({'st': st, 'fail': fail, 'warn': warn, 'steps': steps, 'tail': tail})
-    rc = 1 if st == 'FAILURE' else 0
+    # (11/13 shopsrv2) 🛍 우리숍 단계만 실패면 진단(cbuild=1)엔 FAILURE(fail=shop · 빨간불)지만 빌드 종료 코드는 0 —
+    #  readnow-cloud는 이미 새 판이고, 빌드가 '실패'로 끝나면 더 늦게 도는 옛 빌드가 이 빌드를 '더 새 빌드'로 안 세어(newer.sh는 SUCCESS만 셈) 옛 판으로 덮을 수 있어서
+    rc = 1 if st == 'FAILURE' and failed != ['shop'] else 0
+    if failed == ['shop']: print('❌ 🛍 우리숍 전용 서버 단계 실패 — readnow-cloud 새 판은 올라감 · 진단 cbuild=1에 FAILURE(fail=shop)로 남김')
     print(f'☁ 결과 {st}' + (f' · 실패 단계 {fail}' if fail else '') + f' · 단계 {json.dumps(steps, ensure_ascii=False)}')
 data = json.dumps(body, ensure_ascii=False).encode()
 sent = False

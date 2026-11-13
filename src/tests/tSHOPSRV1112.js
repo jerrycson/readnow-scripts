@@ -34,6 +34,7 @@ await new Promise((r) => A.server.listen(0, '127.0.0.1', r)); await new Promise(
 const bA = 'http://127.0.0.1:' + A.server.address().port, bO = 'http://127.0.0.1:' + orig.address().port;
 const G = async (b, p, o) => { const r = await realFetch(b + p, { headers: { Origin: 'https://booksqueen.com', ...(o ? { 'Content-Type': 'application/json' } : {}) }, ...(o ? { method: 'POST', body: JSON.stringify(o) } : {}) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {} return { s: r.status, h: r.headers, j }; };
 { const h = await G(bA, '/healthz'); ok(h.s === 200 && h.j.srv === 'readnow-shop' && h.j.bg === 0 && h.h.get('x-rn-srv') === 'readnow-shop' && h.j.mem && h.j.req.n >= 1, '/healthz: 서비스 이름·뒷일 끔·요청 수·메모리', h.j);
+  const st = await G(bA, '/status'); ok(st.s === 200 && st.j.srv === 'readnow-shop' && st.h.get('x-rn-srv') === 'readnow-shop', '/status: 바깥 확인 주소(Cloud Run 예약 길이 아님)도 서비스 이름', st.j);
   const p = await G(bA, '/shop/ping'); ok(p.s === 200 && p.j.srv === 'readnow-shop' && p.h.get('access-control-allow-origin') === 'https://booksqueen.com' && p.h.get('cache-control') === 'no-store', '/shop/ping: 서비스 이름 · booksqueen.com 출처 허락 · 저장 안 함', p.j);
   const c = await G(bA, '/shop/cfg'); ok(c.s === 200 && c.j.n === 4 && c.h.get('x-rn-srv') === 'readnow-shop', '/shop/cfg: 판매 4권 · 응답 머리 X-RN-Srv: readnow-shop');
   const sh = await G(bA, '/shop/shelf?k=0'); ok(sh.s === 200 && sh.j.rows.length === 4, '서가 첫 묶음 4권');
@@ -53,7 +54,7 @@ A.server.close();
 
 console.log('③ Hosting 넘김 대신 길');
 { const DEP = require(R('hosting/deploy.js')); const conf = JSON.parse(fs.readFileSync(R('hosting/shop.json'), 'utf8'));
-  ok(conf.rewrites.length === 3 && conf.rewrites.every((x) => x.run.serviceId === 'readnow-shop' && x.run.fallback === 'readnow-cloud' && /readnow-shop-63884079760\.asia-northeast3\.run\.app\/healthz$/.test(x.run.probe)), 'shop.json: 세 넘김 모두 readnow-shop · 대신 readnow-cloud · probe /healthz');
+  ok(conf.rewrites.length === 3 && conf.rewrites.every((x) => x.run.serviceId === 'readnow-shop' && x.run.fallback === 'readnow-cloud' && /readnow-shop-63884079760\.asia-northeast3\.run\.app\/status$/.test(x.run.probe)), 'shop.json: 세 넘김 모두 readnow-shop · 대신 readnow-cloud · probe /status(11/13 shopsrv2 — /healthz는 Cloud Run 예약 길이라 run.app에선 404)');
   const RC = DEP.restConfig(conf); ok(RC.rewrites.every((x) => Object.keys(x.run).sort().join() === 'region,serviceId'), 'REST 설정엔 serviceId·region만(probe·fallback 안 나감)');
   const fk = (st, srv) => async () => ({ status: st, json: async () => (srv ? { ok: true, srv } : null) });
   let r = await DEP.resolveRuns(conf, { fetch: fk(200, 'readnow-shop'), waitS: 0 }); ok(!r.fellBack && r.conf.rewrites.every((x) => x.run.serviceId === 'readnow-shop'), '새 서비스가 답하면 그리로');
@@ -84,6 +85,23 @@ console.log('④ 배포 작업·손님 화면·비용 기록');
   ok(/service_name="readnow-shop"/.test(ix) && /L\('run_shop'/.test(ix), '비용 기록(costs_auto)에 🛍 우리숍 전용 서버 줄');
   ok(/if \(q\.shopsrv\)/.test(ix) && /monthUsdEst/.test(ix), '진단 shopsrv=1: 날마다 요청 수·인스턴스 시간·어림 비용');
   ok(/setInterval\(\(\) => SHOP\.build\(\)\.catch\(\(\) => \{\}\), 10 \* 60e3\)/.test(ix), '원래 서비스가 목록을 계속 들고 뒷일(표지 셈·책등)을 이어 함'); }
+console.log('⑥ (11/13 shopsrv2) 확인 주소 /status · 숍 서버 실패는 빨간불');
+{ const cb = fs.readFileSync(R('cloud/cloudbuild.yaml'), 'utf8'); const st = cb.slice(cb.indexOf('- id: shop'), cb.indexOf('- id: report'));
+  const dc = fs.readFileSync(R('.github/workflows/deploy-cloud.yml'), 'utf8'); const ds = fs.readFileSync(R('.github/workflows/deploy-shop.yml'), 'utf8'); const sl = fs.readFileSync(R('.github/workflows/shop-live.yml'), 'utf8');
+  const all = [cb, dc, fs.readFileSync(R('hosting/shop.json'), 'utf8'), fs.readFileSync(R('cloud/index.js'), 'utf8')].join('\n');
+  ok(!/run\.app\/healthz/.test(all) && !/SHOP_URL\/healthz/.test(cb + dc), 'run.app 주소로 /healthz를 묻는 곳이 없음(배포·넘김·진단)');
+  ok(/pub\(\) \{ curl -fsS -m 20 "\$SHOP_URL\/status"/.test(st) && /pub\(\) \{ curl -fsS -m 20 "\$SHOP_URL\/status"/.test(dc), 'Cloud Build·Actions 숍 단계 확인 = /status');
+  ok(!/^\s*RN_SOFT=1/m.test(st) && /grep -qi "\$_SHOP" \|\| \{[^}]*exit 1; \}/.test(st), 'Cloud Build 숍 단계: 부드러운 실패(RN_SOFT) 없음 · booksqueen.com이 원래 서비스로 가면 실패(빨간불)');
+  ok(/RUN_FALLBACK_RED: '1'/.test(ds), "우리숍 내기: 대신 넘김이면 빨간불(RUN_FALLBACK_RED)");
+  ok(/\n  srv:/.test(sl) && /\$SHOP_URL\$p/.test(sl) && /booksqueen\.com\/shop\/cats/.test(sl) && /gh workflow run deploy-shop\.yml/.test(sl), "우리숍 실제 점검: 숍 전용 서버 직접 확인 · booksqueen.com 견주기 · 넘김 저절로 다시");
+  /* deploy.js 빨간불: 대신 넘김 + RUN_FALLBACK_RED=1이면 종료 코드 1 · 아니면 0 (HOSTING_DRY · 가짜 probe 서버) */
+  const srv = http.createServer((q, r) => { r.writeHead(404); r.end('x'); }); await new Promise((z) => srv.listen(0, '127.0.0.1', z));
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'shopsrv2-')); const cf = path.join(tmp, 'c.json'); fs.mkdirSync(path.join(tmp, 'pub')); fs.writeFileSync(path.join(tmp, 'pub', 'a.txt'), 'a');
+  fs.writeFileSync(cf, JSON.stringify({ site: 'x', rewrites: [{ source: '/shop/**', run: { serviceId: 'readnow-shop', region: 'r', probe: 'http://127.0.0.1:' + srv.address().port + '/status', fallback: 'readnow-cloud' } }] }));
+  const runD = (red) => new Promise((z) => require('child_process').execFile(process.execPath, [R('hosting/deploy.js'), path.join(tmp, 'pub'), 'x'], { env: { ...process.env, HOSTING_DRY: '1', HOSTING_CONF: cf, RUN_WAIT_S: '0', ...(red ? { RUN_FALLBACK_RED: '1' } : {}) } }, (e, so) => z({ code: e ? e.code : 0, so })));
+  const r1 = await runD(true), r0 = await runD(false); srv.close(); fs.rmSync(tmp, { recursive: true, force: true });
+  ok(r1.code === 1 && /::error::넘김 대상 서비스/.test(r1.so) && /readnow-cloud \(대신/.test(r1.so), '대신 넘김 + RUN_FALLBACK_RED=1 → 빨간불(종료 1)', r1);
+  ok(r0.code === 0, '그 스위치가 없으면(관리 사이트 등) 그대로 0', r0); }
 global.fetch = realFetch;
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e.stack); process.exit(1); });
