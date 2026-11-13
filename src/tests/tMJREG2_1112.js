@@ -43,7 +43,7 @@ ok(/id: 'desc-btn'/.test(T) && /<b>📝 빠른 설명 단추<\/b>/.test(T) && /<
     ok(s1.btns && s1.btns.join(',') === '도서관책,북카페' && !s1.on.length, '단추 둘(도서관책·북카페) · 처음엔 꺼짐', s1);
     ok(await p.evaluate(() => !!document.querySelector('#sheet [data-rgcid="d1"] .rgsh [data-rgdbedit]')), '✎ 단추');
     await shotEl(p, '#sheet [data-rgcid="d1"] .rgsh:has([data-rgdb])', 'mjreg2_card_desc_before');
-    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(700);
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(700); await p.waitForFunction((want) => { const c = document.querySelector('#sheet [data-rgcid="d1"]'); return !!c && [...c.querySelectorAll('[data-rgdb].on')].map((b) => b.textContent.trim()).join(',') === want; }, '도서관책', { timeout: 4000 }).catch(() => {}); /* (11/13 rv2) 다시 그리기는 regRerender가 모아서 함(최대 regRrMax) — 일꾼 여럿이 함께 돌 땐 0.7초 안에 안 끝나 '켜짐'이 옛 모양으로 읽혀 가끔 실패 → 켜짐이 바뀔 때까지(최대 4초) 기다린 뒤 봄 */ 
     s1 = await st(p, 'd1');
     ok(s1.mode === 'manual' && s1.own === LIB, '도서관책 → 상품 설명 = 도서관 글(직접 입력)', s1);
     ok(s1.fin.includes(LIB), '알라딘에 들어갈 설명(regDescFinal)에 그대로', s1);
@@ -53,7 +53,7 @@ ok(/id: 'desc-btn'/.test(T) && /<b>📝 빠른 설명 단추<\/b>/.test(T) && /<
     await shotEl(p, '#sheet [data-rgcid="d1"] .rgsh:has([data-rgdb])', 'mjreg2_card_desc_lib');
     await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="0"]'); await p.waitForTimeout(400);
     ok((await st(p, 'd1')).own === LIB, '켜진 단추를 다시 눌러도 그대로');
-    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="1"]'); await p.waitForTimeout(700);
+    await p.click('#sheet [data-rgcid="d1"] [data-rgdb][data-i="1"]'); await p.waitForTimeout(700); await p.waitForFunction((want) => { const c = document.querySelector('#sheet [data-rgcid="d1"]'); return !!c && [...c.querySelectorAll('[data-rgdb].on')].map((b) => b.textContent.trim()).join(',') === want; }, '북카페', { timeout: 4000 }).catch(() => {}); /* (11/13 rv2) 다시 그리기는 regRerender가 모아서 함(최대 regRrMax) — 일꾼 여럿이 함께 돌 땐 0.7초 안에 안 끝나 '켜짐'이 옛 모양으로 읽혀 가끔 실패 → 켜짐이 바뀔 때까지(최대 4초) 기다린 뒤 봄 */ 
     s1 = await st(p, 'd1');
     ok(s1.own === CAFE && s1.on.join(',') === '북카페' && s1.before === LIB, '북카페 → 북카페 글 · 북카페만 켜짐 · 예전 글 기록', s1);
     const s2 = await st(p, 'd2');

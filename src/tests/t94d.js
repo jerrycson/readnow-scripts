@@ -6,7 +6,7 @@ const peRead = async (p, lid) => { clock += 3000; return { ok: true, uid: lid, n
 const peFormSubmit = async (lid, w) => { clock += 2000; notes[lid] = w.noteHtml; return {}; };
 const curPage = () => ({ evaluate: async () => ({ http: 200, kept: true }) });
 const FV = { arrayUnion: (x) => x, serverTimestamp: () => 'ts' };
-const mk = new Function('C', 'peRead', 'peFormSubmit', 'curPage', 'FV', 'sleep', 'nowIso', 'log', 'W', 'login', 'peTxt', 'Date', code + '\nreturn pxExpRun;');
+const mk0 = new Function('C', 'peRead', 'peFormSubmit', 'curPage', 'FV', 'sleep', 'nowIso', 'log', 'W', 'login', 'peTxt', 'Date', 'jsleep', 'PXON', 'asMod', code + '\nreturn pxExpRun;'); const mk = (...a) => mk0(...a, a[5], { set: null }, async () => null); /* (11/13 rv2) pxExpRun이 11/02부터 jsleep(쉼 ±15% 흩기)·PXON(방금 붙인 번호 바로 셈)·asMod(공용 일정 파일 — 매일 일 문지기)를 함께 씀 → 떼어 돌리는 시험도 그 셋을 넣어 줌(jsleep = 가짜 시계 sleep · PXON 빈 칸 · asMod 못 받음 = 예전 규칙) */
 const FakeDate = { now: () => clock }; const peTxt = (h) => String(h || '').replace(/<[^>]+>/g, '');
 const run = mk(C, peRead, peFormSubmit, curPage, FV, async (ms) => { clock += ms; }, () => new Date(1e12 + clock).toISOString(), () => {}, () => ({}), async () => {}, peTxt, FakeDate);
 (async () => { const R = {}; const ids = Array.from({ length: 23 }, (_, i) => String(404935100 + i)); let cmd = { type: 'pxExp', op: 'add', listingIds: ids, status: 'running' };

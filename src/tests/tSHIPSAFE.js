@@ -62,7 +62,7 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
 
   // ── ③ 수집기 원본 글 ──
   const has = (re, m) => ok(re.test(s), m);
-  has(/for \(let tryN = 1; ; tryN\+\+\) \{\n      if \(window\.__rnSgOn && window\.__rnSgOn\(\)\) \{ window\.__rnReloading = 0;[^\n]*__rnShipDefer\('reload'[^\n]*return; \}/, '③ 안전한 새로고침: 새 탭을 열기 전(알라딘 확인·기다림)에 출고가 시작되면 멈추고 미룸 — 이 탭은 옛 판 그대로');
+  has(/for \(let tryN = 1; ; tryN\+\+\) \{\n(?:(?![^\n]*(?:GM_openInTab|window\.open\())[^\n]*\n){0,2}      if \(window\.__rnSgOn && window\.__rnSgOn\(\)\) \{ window\.__rnReloading = 0;[^\n]*__rnShipDefer\('reload'[^\n]*return; \}/, '③ 안전한 새로고침: 새 탭을 열기 전(알라딘 확인·기다림)에 출고가 시작되면 멈추고 미룸 — 이 탭은 옛 판 그대로'); /* (11/13 rv2) 11/13 tabfix가 반복 맨 앞에 '사람이 쓰는 중이면 손 놓을 때까지 기다림' 줄을 넣어 출고 확인이 둘째 줄로 내려감 — 새 탭을 여는 줄이 아닌 줄 2개까지는 앞에 있어도 됨(출고 확인은 여전히 새 탭을 열기 전) */
   has(/window\.__rnReloading = Date\.now\(\);[^\n]*GM_setValue\('rn-sg-upd', \{ st: 'reloading'/, "③ 바꾸기 시작에 '바꾸는 중' 표시(웹앱이 봄)");
   has(/__rnClaimHeir\(\); try \{ const ux = GM_getValue\('rn-sg-upd', null\); if \(ux && ux\.st === 'reloading'\) GM_setValue\('rn-sg-upd', \{ \.\.\.ux, st: 'done'/, "③ 새 탭이 이어받는 순간 '바꾸기 끝'");
   has(/const urg = sgUrgent\(\);/, "③ 새 판 지킴이가 '업데이트 먼저' 신호를 봄"); has(/if \(!urg && Date\.now\(\) - idleSince </, '③ 업데이트 먼저면 쉬는 사이 45초를 기다리지 않음'); has(/Date\.now\(\) - seenAt > \(urg \? 0 :/, '③ 긴 작업 중이면 지금 항목까지 저장하고 바로 바꿈');

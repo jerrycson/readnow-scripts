@@ -15,7 +15,7 @@ const sha = (t) => crypto.createHash('sha256').update(t, 'utf8').digest('hex');
   /* ① 클라우드 */
   console.log('① 클라우드 공용 파일');
   { const S = rd('cloud/index.js'); const code = line(S, 'const CORE_LOCAL_OK') + '\n' + line(S, 'const coreFetch');
-    ok((S.match(/fetch\(RAW \+/g) || []).length === 1 && (S.match(/coreFetch\(/g) || []).length === 6 && !/return coreFetch\(f\)/.test(S), '공용 파일 받기 6곳(코어·노선표·실행·자동 일정·학습·외부 정보)이 모두 coreFetch로(GitHub 부르기는 coreFetch 안 한 곳뿐)');
+    ok((S.match(/fetch\(RAW \+/g) || []).length === 1 && (S.match(/coreFetch\(/g) || []).length >= 6 && ['readnow-registry.js', 'readnow-exec-core.js', 'readnow-autosched-core.js', 'readnow-ml-core.js', 'readnow-ext-core.js'].every((f) => S.includes("coreFetch('" + f + "')")) && !/return coreFetch\(f\)/.test(S), '공용 파일 받기 6곳(코어·노선표·실행·자동 일정·학습·외부 정보)이 모두 coreFetch로(GitHub 부르기는 coreFetch 안 한 곳뿐)'); /* (11/13 rv2) 11/09 뒤 판매자 학습·적응·번외(col2) 넘김 파일·수집기 원본도 coreFetch로 받게 늘어 '정확히 6곳'은 낡음 — 6곳 이상 + 이름 있는 5개가 coreFetch인지 + GitHub 직접 부르기 1곳뿐으로 봄 */
     const mk = (env, sha1, commitFile, files) => { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'tbig1c_')); for (const [k, v] of Object.entries(files)) fs.writeFileSync(path.join(D, k), v); if (commitFile) fs.writeFileSync(path.join(D, 'cores_commit.js'), `module.exports = '${commitFile}';`);
       const fetched = []; const fakeFetch = async (u) => { fetched.push(u); return { ok: true, status: 200, text: async () => 'GITHUB' }; };
       const req = (m) => (m === './cores_commit.js' ? require(path.join(D, 'cores_commit.js')) : require(m));
