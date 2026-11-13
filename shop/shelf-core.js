@@ -199,6 +199,20 @@
     { k: 'turnMs', group: '움직임', label: '책장 도는 시간(ms)', type: 'number', def: 900, min: 250, max: 2500, step: 50 },
     { k: 'tip', group: '움직임', label: '책등에 마우스를 올리면 앞·뒤 표지와 책 정보', type: 'check', def: true },
     { k: 'tipMs', group: '움직임', label: '정보가 뜨기까지(ms)', type: 'number', def: 280, min: 0, max: 1500, step: 20 },
+    /* (shelf3 · 정범님 11/13 21:28·21:40) 📀 책이 아닌 제품 · 📷 표지 그림이 아닌 물건 사진 · 🎨 고유 표지 — 차례: ① 관리자가 고른 표지 ② 알라딘 표지 ③ '표지로 알맞음' 판정 난 우리 사진 ④ 고유 디자인 */
+    { k: 'mediaOn', group: '제품·사진', label: '책이 아닌 제품(CD·DVD·블루레이·VHS·LP)을 실제 제품 크기·모양으로 꽂기', type: 'check', def: true, help: '종류는 알라딘 분류 경로(음반·LP·DVD·블루레이)와 상품명 [CD]·[LP]·[DVD]·[블루레이]·VHS로 가름' },
+    { k: 'szCD', group: '제품·사진', label: 'CD 케이스 크기(가로x세로x두께 mm)', type: 'text', def: '142x125x10', max: 20, help: '표준 주얼 케이스 142×125×10.4mm' },
+    { k: 'szDVD', group: '제품·사진', label: 'DVD 케이스 크기(가로x세로x두께 mm)', type: 'text', def: '135x190x14', max: 20, help: '표준 킵 케이스 135×190×14mm' },
+    { k: 'szBD', group: '제품·사진', label: '블루레이 케이스 크기(가로x세로x두께 mm)', type: 'text', def: '135x171x12', max: 20, help: '표준 블루레이 케이스 135×171.5×12mm(위 띠 파랑)' },
+    { k: 'szVHS', group: '제품·사진', label: 'VHS 슬리브 크기(가로x세로x두께 mm)', type: 'text', def: '104x188x25', max: 20 },
+    { k: 'szLP', group: '제품·사진', label: 'LP 재킷 크기(가로x세로x두께 mm)', type: 'text', def: '314x314x3', max: 20, help: '선반보다 키가 크면 선반 높이에 맞춤(가로 비율은 그대로)' },
+    { k: 'mediaOpen', group: '제품·사진', label: '제품을 누르면', type: 'select', def: 'prod', opts: { prod: '제품답게 열림(CD는 케이스가 열리며 디스크가 살짝 · LP는 재킷에서 판이 반쯤 · DVD·블루레이는 케이스가 펼쳐져 디스크 · VHS는 슬리브에서 테이프)', book: '책처럼 펼침(예전 방식)' } },
+    { k: 'mediaMs', group: '제품·사진', label: '제품이 열리는 시간(ms · 움직임 줄이기 설정이면 움직이지 않음)', type: 'number', def: 700, min: 0, max: 2500, step: 50 },
+    { k: 'photoJudge', group: '제품·사진', label: '표지 그림이 아닌 물건 전체 사진(비스듬히 찍은 책·상자 세트·「이미지 없음」 그림)은 표지로 쓰지 않기', type: 'check', def: true, help: '클라우드가 사진마다 한 번 판정해 영구 저장 · 관리자가 🛍 우리숍 주문 › 📷 서가 표지·사진 바로잡기에서 고친 값이 늘 이김' },
+    { k: 'photoOpen', group: '제품·사진', label: '물건 전체 사진인 상품을 누르면', type: 'select', def: 'photo', opts: { photo: '책 펼침 대신 사진 자체가 앞으로 나옴', book: '책 펼침(사진을 표지처럼)' } },
+    { k: 'artOn', group: '제품·사진', label: '표지 모드에서 그런 상품은 고유 디자인 표지로(상품 번호로 정해져 늘 같은 모습)', type: 'check', def: true },
+    { k: 'artText', group: '제품·사진', label: '고유 디자인 표지에 제목·지은이(음반·영상은 아티스트) 보이기', type: 'check', def: true },
+    { k: 'photoScope', group: '제품·사진', label: '클라우드가 사진을 판정할 상품', type: 'select', def: 'unreg', opts: { unreg: '미등록 상품 + 음반·LP·DVD·블루레이·그 밖', all: '모든 상품(알라딘 표지 포함 · 처음 한 바퀴 오래 걸림)' } },
     { k: 'zoom0', group: '확대', label: '처음 확대(배)', type: 'number', def: 1, min: 0.5, max: 2.5, step: 0.1 },
     { k: 'viewerCfg', group: '확대', label: '손님이 ⚙ 보기에서 책장 종류·움직임·글 방향을 자기 기기만 바꿀 수 있음', type: 'check', def: true }];
   const DEF = Object.fromEntries(SCHEMA.map((p) => [p.k, p.def]));
@@ -330,12 +344,12 @@
   const FMT_N = { '128x188': '46판', '125x185': '만화책(46판)', '140x205': '변형 46판', '152x225': '신국판', '152x210': '어린이 단행본', '200x230': '유아 그림책', '230x260': '그림책', '176x248': '크라운판', '188x240': '변형 크라운판', '188x257': '46배판' };
   function fmtGuess(it) { const k = (BIG[bigOfCat(it && it.c)] || [])[0]; const pg = +(it && it.pg) || 0; let f = FMT[k] || FMT._; if (k === 'kids' && pg && pg < 80) f = [230, 260]; const key = f[0] + 'x' + f[1]; return { W: f[0], H: f[1], name: FMT_N[key] || '' }; }
   /* 실제 크기(mm)와 어디서 왔는지 — 화면 글·펼친 책 비율이 함께 씀 · real = 판형 칸이 있음 · dEst = 두께는 쪽수로 셈 · est = 판형도 어림 */
-  function dimOf(it) { const m = SZ_RE.exec(String((it && it.sz) || '')); const pg = +(it && it.pg) || 0; const g = m ? null : fmtGuess(it);
+  function dimOf(it, c) { const md = mdOf(it, c); if (md) return md; const m = SZ_RE.exec(String((it && it.sz) || '')); const pg = +(it && it.pg) || 0; const g = m ? null : fmtGuess(it);
     const W = m ? +m[1] : g.W, H = m ? +m[2] : g.H; const D0 = m && m[3] ? +m[3] : 0; const D = D0 || (pg ? Math.round(pg * 0.06 + 2) : 15);
     return { W, H, D, real: !!m, dReal: !!D0, dEst: !D0, est: !m, fmt: g ? g.name : '' }; }
-  function sizeOf(it, c) { c = c || DEF; const R = rng(hash(((it && it.id) || '') + '|sz')); const on = c.sizeOn !== false; const d = dimOf(it);
+  function sizeOf(it, c) { c = c || DEF; const R = rng(hash(((it && it.id) || '') + '|sz')); const on = c.sizeOn !== false || !!mdOf(it, c); const d = dimOf(it, c);
     const pxmm = (c.rowH - 24) / 297; const w = on ? d.D * pxmm * (+c.thickK || 1) : c.wMin + R() * (c.wMax - c.wMin) * 0.4;
-    const h = on ? clamp(d.H / 2.97, 30, 100) : clamp((225 + (R() - 0.5) * 2 * (c.hVar / 16) * 35) / 2.97, 50, 100);
+    const h = on ? clamp(d.H / 2.97, d.kd ? 10 : 30, 100) : clamp((225 + (R() - 0.5) * 2 * (c.hVar / 16) * 35) / 2.97, 50, 100);
     return { w: Math.round(clamp(w, c.wMin, c.wMax) * 10) / 10, h: Math.round(h * 10) / 10, tilt: 0 /* (shelf8 · 정범님 '반듯한 직사각형만') 비스듬히 기댄 책도 없앰 */, real: on && (d.real || !!(it && it.pg)), est: d.est, mm: d }; }
   const glen = (s) => [...String(s || '')].length;
   function textFit(t, a, w, hp) { const W = Math.max(6, w * 0.8), nt = Math.max(1, glen(t)), na = glen(a); const Ht = hp * (na ? 0.66 : 0.86), Ha = hp * 0.22;
@@ -456,7 +470,7 @@
   /* (shelf4) 클라우드가 앞표지를 미리 셈한 칸 cv = 'rrggbb' 또는 'rrggbb.갈래' (예 '8a2b1c.my') · 'x' = 셈했는데 쓸 만한 색 없음 */
   const cvOf = (v) => { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/.exec(String(v || '')); return m ? { cc: '#' + m[1], fg: GENRES[m[2]] ? m[2] : null, cv: 1 } : v === 'x' ? { cv: 1 } : {}; };
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, q: ix.q != null ? Math.max(1, +r[ix.q] || 1) : 1, /* (shop2) 수량 */ cp: ix.cp != null ? r[ix.cp] || null : null, /* (shop2) 종류>분류 경로 */ rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, q: ix.q != null ? Math.max(1, +r[ix.q] || 1) : 1, /* (shop2) 수량 */ cp: ix.cp != null ? r[ix.cp] || null : null, /* (shop2) 종류>분류 경로 */ rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), pk: ix.pk != null && /^[conCON]\d{0,3}$/.test(String(r[ix.pk] || '')) ? r[ix.pk] : null, /* (shelf3) 사진 판정 */ ac: ix.ac != null ? U(r[ix.ac]) : null, /* (shelf3) 관리자 표지 */ _o: o })).map((x) => { x.kd = kindOf(x); return x; }); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
@@ -485,7 +499,43 @@
   /* 설정 미리 보기 주소(관리 화면 → 손님 화면 #/shelf?cfg=… · 저장 안 하고 그 화면만) */
   const b64e = (s) => { try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
+  /* ══ (shelf3 · 정범님 11/13 21:28) 📀 책이 아닌 제품 — 종류 · 실제 크기(mm)
+   *  종류: 알라딘 분류 경로 첫 칸(cp · cloud/shop.js kindPath — 음반·LP·DVD·블루레이) → 상품명 머리 [CD]·[LP]·[DVD]·[블루레이]·VHS · 음반 경로라도 상품명에 LP·바이닐이면 LP
+   *  크기: 설정 szCD·szDVD·szBD·szVHS·szLP('가로x세로x두께' mm) — 표준: CD 주얼 142×125×10.4 · DVD 킵 135×190×14 · 블루레이 135×171.5×12 · VHS 슬리브 104×188×25 · LP 재킷 314×314×3 */
+  const MEDIA = { cd: { n: 'CD', k: 'szCD', f: 'CD 케이스' }, dvd: { n: 'DVD', k: 'szDVD', f: 'DVD 케이스' }, bd: { n: '블루레이', k: 'szBD', f: '블루레이 케이스' }, vhs: { n: 'VHS', k: 'szVHS', f: 'VHS 슬리브' }, lp: { n: 'LP', k: 'szLP', f: 'LP 재킷' } };
+  function kindOf(x) { if (!x) return 'book'; const k0 = String(x.cp || '').split('>')[0].trim(); const t = String(x.t || '');
+    const tag = /^\s*[\[(【]\s*(블루레이|blu-?ray|BD|4K|UHD|DVD|CD|LP|VHS|비디오)/i.exec(t); const tg = tag ? tag[1].toUpperCase() : '';
+    if (/\bVHS\b|비디오\s*테이프/i.test(t) || tg === 'VHS' || tg === '비디오') return 'vhs';
+    if (k0 === 'LP' || ((k0 === '음반' || tg === 'CD' || tg === 'LP') && /\bLP\b|바이닐|vinyl|12\s*인치/i.test(t))) return 'lp';
+    if (k0 === '블루레이' || /^(블루레이|BLU-?RAY|BD|4K|UHD)$/.test(tg)) return 'bd';
+    if (k0 === 'DVD' || tg === 'DVD') return 'dvd';
+    if (k0 === '음반' || tg === 'CD') return 'cd';
+    return 'book'; }
+  const szParse = (v, d) => { const m = /^\s*(\d{2,3}(?:\.\d)?)\s*[x×*]\s*(\d{2,3}(?:\.\d)?)\s*[x×*]\s*(\d{1,2}(?:\.\d)?)\s*$/.exec(String(v || '')); return m ? [+m[1], +m[2], +m[3]] : d; };
+  function mdOf(it, c) { c = c || DEF; if (c.mediaOn === false) return null; const kd = it && (it.kd || kindOf(it)); if (!kd || kd === 'book' || !MEDIA[kd]) return null; const p = SCHEMA.find((q) => q.k === MEDIA[kd].k);
+    const [W, H, D] = szParse(c[MEDIA[kd].k], szParse(p && p.def, [135, 190, 14])); return { W, H, D, real: true, dReal: true, dEst: false, est: false, fmt: MEDIA[kd].f, kd }; }
+  /* ══ (shelf3) 📷 표지 차례 — 정범님 11/13 21:40 「관리자가 표지를 정하면 당연히 그 표지가 우선」
+   *  서가 자료 칸: pk = 클라우드 판정(소문자 c 표지 · o 물건 전체 사진 · n 자리 그림 + 점수) 또는 관리자 판정(대문자 C·O·N — 코드가 덮지 않음) · ac = 관리자가 고른 표지 사진 주소
+   *  차례: ① 관리자 표지(ac · 또는 관리자 C) ② 알라딘 표지(우리 사진 폴더 bk_x가 아닌 그림 · 판정이 o·n이 아니면) ③ 우리 사진 중 판정 c(또는 아직 판정 전) ④ 고유 디자인
+   *  돌려줌 { use: 'cover'(그림을 표지로) | 'photo'(물건 사진 — 누르면 사진 · 표지 모드는 고유 디자인) | 'art'(그림 없음·자리 그림 — 고유 디자인), src, step(①~④ = 1~4), by: admin|aladin|auto|none } */
+  const oursIm = (u) => /img(?:%2F|\/)bk_x/.test(String(u || ''));
+  function faceOf(x, c) { c = c || DEF; if (!x) return { use: 'art', src: null, step: 4, by: 'none' }; const pk = String(x.pk || ''); const k = pk ? pk[0] : ''; const adm = /^[CON]$/.test(k);
+    if (x.ac) return { use: 'cover', src: x.ac, step: 1, by: 'admin' };
+    if (adm && k === 'C' && x.im) return { use: 'cover', src: x.im, step: 1, by: 'admin' };
+    if (adm && k === 'O' && x.im) return { use: 'photo', src: x.im, step: 4, by: 'admin' };
+    if (adm && (k === 'N' || !x.im)) return { use: 'art', src: null, step: 4, by: 'admin' };
+    if (!x.im) return { use: 'art', src: null, step: 4, by: 'none' };
+    if (c.photoJudge !== false && (k === 'o' || k === 'n')) return k === 'o' ? { use: 'photo', src: x.im, step: 4, by: 'auto' } : { use: 'art', src: null, step: 4, by: 'auto' };
+    return oursIm(x.im) ? { use: 'cover', src: x.im, step: 3, by: 'auto' } : { use: 'cover', src: x.im, step: 2, by: 'aladin' }; }
+  /* ══ (shelf3) 🎨 고유 디자인 표지 — 상품 번호 해시로 바탕색·곁색·무늬·글자 배치·글꼴 갈래를 정함(늘 같은 모습 · 영구)
+   *  ⚠ ART_PATS·ART_LAYS·COLORS는 '뒤에 덧붙이기만'(순서를 바꾸면 이미 보인 표지가 달라짐) · 세대 번호 ART_GEN을 올리면 모두 새로 */
+  const ART_GEN = 1;
+  const ART_PATS = ['band', 'stripe', 'diag', 'dots', 'grid', 'rings', 'sun', 'wave', 'chev', 'split', 'frame', 'tri', 'circle', 'bars', 'check', 'arc'];
+  const ART_LAYS = ['tl', 'tc', 'cc', 'bl', 'bc', 'side'];
+  function artOf(x) { const id = String((x && x.id) || ''); const R = rng(hash('art' + ART_GEN + '|' + id)); const n = COLORS.length; const ci = Math.floor(R() * n); let c2 = Math.floor(R() * (n - 1)); if (c2 >= ci) c2++;
+    const bg = COLORS[ci].hex, ac = COLORS[c2].hex; const kd = kindOf(x); const p = Math.floor(R() * ART_PATS.length), l = Math.floor(R() * ART_LAYS.length); const fg = ['my', 'go', 'bd'][Math.floor(R() * 3)];
+    return { bg, ac, ink: inkFor(bg, R()), pat: ART_PATS[p], lay: ART_LAYS[l], fg, kd, code: [ART_GEN, ci, c2, p, l].join('.'), who: kd === 'book' ? '지은이' : '아티스트' }; }
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.4', qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.5', MEDIA, kindOf, mdOf, faceOf, artOf, oursIm, ART_PATS, ART_LAYS, ART_GEN, qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

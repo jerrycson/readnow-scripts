@@ -538,3 +538,100 @@ html.bqs-lock { overflow: hidden; }
 .bqs-lcap b { display: block; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .bqs-lcap small { display: block; opacity: .85; } .bqs-lcap small s { opacity: .7; } .bqs-lcap em { display: block; margin-top: 3px; font-style: normal; color: #f3d58a; font-weight: 700; }
 .bqs-lcap::after { content: ""; position: absolute; left: var(--ax); bottom: -6px; width: 12px; height: 12px; margin-left: -6px; background: #1d2b45; transform: rotate(45deg); } .bqs-lcap.below::after { bottom: auto; top: -6px; }
 @media (prefers-reduced-motion: reduce) { .sp.lift .sk { transition: none; } .lab.hit, .mrow.hit > h3 { animation: none; outline: 3px solid #f1c75a; } }
+
+/* ══ (shelf3 · 정범님 11/13 21:28·21:40) 📀 책이 아닌 제품 · 🎨 고유 디자인 표지 · 📷 실물 사진 보기 · 제품 열림
+ *  크기는 shelf-core.js mdOf(설정 szCD·szDVD·szBD·szVHS·szLP)가 실제 mm 비율로 --bw·--bh를 정함 — 여기선 모양만 */
+/* 책등 — 케이스 옆면 */
+.sp.md .sk { border-radius: 1px; background-image: none; }
+.sp.md .mk { position: absolute; z-index: 3; left: 0; right: 0; font: 800 calc(6.5px * var(--z))/1 system-ui, sans-serif; text-align: center; letter-spacing: .02em; pointer-events: none; }
+.sp.md-cd .sk { background: linear-gradient(90deg, rgba(255,255,255,.55), rgba(255,255,255,.12) 18%, rgba(255,255,255,0) 40%, rgba(0,0,0,.06) 70%, rgba(255,255,255,.4)), linear-gradient(var(--c), var(--c)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), inset 0 calc(4px * var(--z)) 0 rgba(255,255,255,.35), inset 0 calc(-4px * var(--z)) 0 rgba(255,255,255,.35); } /* 주얼 케이스: 투명 플라스틱 + 속지 띠 · 위아래 경첩 */
+.sp.md-cd .mk { bottom: 3%; color: var(--k); opacity: .7; }
+.sp.md-dvd .sk { background: linear-gradient(90deg, #111 0 7%, transparent 7% 93%, #111 93%), linear-gradient(var(--c), var(--c)); box-shadow: inset 0 0 0 1px rgba(0,0,0,.6); } /* 검은 킵 케이스 + 투명 겉 비닐 속 표지 띠 */
+.sp.md-dvd .mk { top: 2.5%; color: #fff; background: #111; padding: 2px 0; }
+.sp.md-bd .sk { background: linear-gradient(#1d5fbf 0 9%, transparent 9%), linear-gradient(90deg, rgba(30,90,190,.85) 0 6%, transparent 6% 94%, rgba(30,90,190,.85) 94%), linear-gradient(var(--c), var(--c)); box-shadow: inset 0 0 0 1px rgba(20,60,140,.8); } /* 블루레이: 파란 케이스 · 위 띠 */
+.sp.md-bd .mk { top: 1.5%; color: #fff; font-size: calc(5.5px * var(--z)); }
+.sp.md-bd .tx { top: 11%; }
+.sp.md-vhs .sk { background: linear-gradient(90deg, rgba(0,0,0,.28), rgba(255,255,255,.08) 15%, rgba(0,0,0,0) 50%, rgba(0,0,0,.22)), linear-gradient(var(--c), var(--c)); border-radius: 2px; box-shadow: inset 0 0 0 calc(1.5px * var(--z)) rgba(0,0,0,.35); } /* 두꺼운 종이 슬리브 */
+.sp.md-vhs .mk { bottom: 4%; color: var(--k); border: 1px solid currentColor; margin: 0 18%; padding: 1px 0; }
+.sp.md-lp .sk { background: linear-gradient(90deg, rgba(0,0,0,.35), rgba(255,255,255,.18) 45%, rgba(0,0,0,.35)), linear-gradient(var(--c), var(--c)); border-radius: 0; } /* 얇은 재킷 */
+.sp.md-lp .mk, .sp.md-lp .tx { display: none; }
+/* 표지 보기 — 케이스 테두리 */
+.sp.cvb.md-cd .cvf { border-radius: 2px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6), inset calc(9px * var(--z)) 0 0 rgba(255,255,255,.18), 2px 4px 8px rgba(0,0,0,.45); }
+.sp.cvb.md-cd .cvf::after { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgba(255,255,255,.35), rgba(255,255,255,0) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,.18)); pointer-events: none; }
+.sp.cvb.md-dvd .cvf { border: calc(3px * var(--z)) solid #111; border-radius: 3px; }
+.sp.cvb.md-bd .cvf { border: calc(3px * var(--z)) solid #1d5fbf; border-top-width: calc(12px * var(--z)); border-radius: 3px; }
+.sp.cvb.md-bd .cvf::before { content: "Blu-ray Disc"; position: absolute; top: calc(-11px * var(--z)); left: 0; right: 0; text-align: center; color: #fff; font: 700 calc(7px * var(--z))/calc(10px * var(--z)) system-ui, sans-serif; z-index: 2; }
+.sp.cvb.md-vhs .cvf { border-radius: 2px; box-shadow: inset 0 0 0 calc(2px * var(--z)) rgba(0,0,0,.35), 3px 4px 8px rgba(0,0,0,.45); }
+.sp.cvb.md-lp .cvf { border-radius: 1px; box-shadow: 1px 2px 6px rgba(0,0,0,.45); }
+.bqs.mob .mstrip.cov .cvb.md-cd .cvf { aspect-ratio: 142 / 125; } .bqs.mob .mstrip.cov .cvb.md-dvd .cvf { aspect-ratio: 135 / 190; } .bqs.mob .mstrip.cov .cvb.md-bd .cvf { aspect-ratio: 135 / 171; }
+.bqs.mob .mstrip.cov .cvb.md-vhs .cvf { aspect-ratio: 104 / 188; } .bqs.mob .mstrip.cov .cvb.md-lp .cvf { aspect-ratio: 1 / 1; }
+/* 🎨 고유 디자인 표지 — 바탕(--a1)·곁색(--a2)·글색(--ak) · 무늬 16 · 배치 6 */
+.art { position: absolute; inset: 0; display: flex; flex-direction: column; gap: .3em; padding: 9% 9%; background-color: var(--a1); color: var(--ak); overflow: hidden; font-size: calc(11px * var(--z, 1)); line-height: 1.2; text-align: left; container-type: inline-size; }
+.art b { position: relative; z-index: 2; font-weight: 800; font-size: clamp(9px, 11cqw, 26px); word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.art small { position: relative; z-index: 2; font-size: clamp(7px, 7cqw, 15px); font-weight: 700; }
+.art .ak { position: absolute; z-index: 2; right: 6%; bottom: 4%; font: 800 clamp(6px, 6cqw, 13px)/1 system-ui, sans-serif; font-style: normal; letter-spacing: .05em; opacity: .85; }
+.art.af-my b { font-family: 'Noto Serif KR', 'Batang', serif; } .art.af-bd b { font-weight: 900; letter-spacing: -.02em; }
+.art::before, .art::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.art.al-tl { justify-content: flex-start; } .art.al-tc { justify-content: flex-start; align-items: center; text-align: center; } .art.al-cc { justify-content: center; align-items: center; text-align: center; }
+.art.al-bl { justify-content: flex-end; } .art.al-bc { justify-content: flex-end; align-items: center; text-align: center; } .art.al-side { justify-content: center; padding-left: 22%; }
+.art.ap-band::before { background: linear-gradient(transparent 58%, var(--a2) 58% 74%, transparent 74%); }
+.art.ap-stripe::before { background: repeating-linear-gradient(90deg, var(--a2) 0 6%, transparent 6% 14%); opacity: .55; }
+.art.ap-diag::before { background: repeating-linear-gradient(45deg, var(--a2) 0 5%, transparent 5% 12%); opacity: .45; }
+.art.ap-dots::before { background: radial-gradient(circle, var(--a2) 0 22%, transparent 24%) 0 0 / 14% 10%; opacity: .6; }
+.art.ap-grid::before { background: linear-gradient(var(--a2) 0 1px, transparent 1px) 0 0 / 100% 12%, linear-gradient(90deg, var(--a2) 0 1px, transparent 1px) 0 0 / 16% 100%; opacity: .55; }
+.art.ap-rings::before { background: repeating-radial-gradient(circle at 80% 85%, var(--a2) 0 3%, transparent 3% 7%); opacity: .5; }
+.art.ap-sun::before { background: repeating-conic-gradient(from 0deg at 50% 100%, var(--a2) 0 6deg, transparent 6deg 16deg); opacity: .45; }
+.art.ap-wave::before { background: radial-gradient(circle at 50% 0, transparent 0 60%, var(--a2) 61% 70%, transparent 71%) 0 75% / 25% 12% repeat-x; }
+.art.ap-chev::before { background: linear-gradient(135deg, var(--a2) 25%, transparent 25%) -6% 0 / 12% 8%, linear-gradient(225deg, var(--a2) 25%, transparent 25%) -6% 0 / 12% 8%; opacity: .5; }
+.art.ap-split::before { background: linear-gradient(160deg, transparent 55%, var(--a2) 55%); }
+.art.ap-frame::before { inset: 5%; border: calc(3px * var(--z, 1)) double var(--a2); }
+.art.ap-tri::before { background: linear-gradient(to top right, var(--a2) 50%, transparent 50%) 100% 100% / 60% 45% no-repeat; }
+.art.ap-circle::before { background: radial-gradient(circle at 70% 70%, var(--a2) 0 30%, transparent 31%); }
+.art.ap-bars::before { background: linear-gradient(var(--a2) 0 10%, transparent 10% 88%, var(--a2) 88%); }
+.art.ap-check::before { background: conic-gradient(var(--a2) 25%, transparent 0 50%, var(--a2) 0 75%, transparent 0) 0 0 / 20% 14%; opacity: .35; }
+.art.ap-arc::before { background: radial-gradient(circle at 0 100%, transparent 0 40%, var(--a2) 41% 52%, transparent 53%); }
+.art::after { background: linear-gradient(90deg, rgba(0,0,0,.18), rgba(0,0,0,0) 6%); } /* 표지 왼쪽 접힘 그늘 */
+.cvb .cvf .art, .ob-art .art { position: absolute; inset: 0; }
+.ob-art { position: absolute; inset: 0; } .ob-art .art { --z: 2; }
+.sh-art { position: relative; display: block; width: 72px; height: 100px; flex: 0 0 auto; border-radius: 4px; overflow: hidden; }
+/* 📷 실물 사진 보기 · 📀 제품 열림 — 펼친 책과 같은 자리(정보 카드 그대로) */
+.bqs-pvw .pv-stage { position: relative; display: flex; justify-content: center; align-items: center; margin: 0 auto 12px; min-height: 160px; perspective: 1600px; }
+.bqs-pvw .pv-ph { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bqs-pvw .pv-ph img { max-width: min(92vw, 640px); max-height: min(50vh, 440px); border-radius: 6px; background: #fff; box-shadow: 0 24px 40px -14px rgba(0,0,0,.65); object-fit: contain; }
+.bqs-pvw .pv-ph figcaption { font-size: 13px; color: #f4efe4; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.pm { position: relative; width: var(--w); height: var(--h); transform-style: preserve-3d; }
+.pm img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pm .dsc { position: absolute; display: block; border-radius: 50%; background: conic-gradient(from 30deg, #d9dde3, #f7f7f9, #b7c0cc, #eef0f4, #c9ced6, #f7f7f9, #d9dde3); box-shadow: 0 2px 6px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.15); }
+.pm .dsc::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14%; height: 14%; margin: -7% 0 0 -7%; border-radius: 50%; background: #222; box-shadow: 0 0 0 4px rgba(255,255,255,.7); }
+.pm .dl { position: absolute; left: 32%; top: 32%; width: 36%; height: 36%; border-radius: 50%; background: var(--c); opacity: .85; }
+/* CD·DVD·블루레이: 왼쪽 경첩 뚜껑 */
+.pm .cs { position: absolute; inset: 0; transform-style: preserve-3d; }
+.pm .in { position: absolute; inset: 0; border-radius: 3px; background: #2b2b2e; box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), 0 20px 34px -14px rgba(0,0,0,.7); }
+.pm .in .dsc { width: 86%; aspect-ratio: 1; left: 7%; top: 50%; transform: translateY(-50%); transition: transform var(--ms) cubic-bezier(.3,.1,.2,1) calc(var(--ms) * .55); }
+.pm .lid { position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d; transition: transform var(--ms) cubic-bezier(.35,.05,.2,1); }
+.pm .lid .lf, .pm .lid .lb { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.pm .lid .lb { transform: rotateY(180deg); background: linear-gradient(90deg, #ddd, #f4f4f4 40%, #ddd); }
+.pm-cd .in { background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(220,225,232,.35)), #9aa3ad; } .pm-cd .lid .lf { box-shadow: inset 0 0 0 3px rgba(255,255,255,.6); } .pm-cd .lid .lf::after { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgba(255,255,255,.4), rgba(255,255,255,0) 40%); }
+.pm-dvd .in, .pm-dvd .lid .lb { background: #18181a; } .pm-dvd .lid .lf { box-shadow: inset 0 0 0 4px #111; }
+.pm-bd .in, .pm-bd .lid .lb { background: #1d5fbf; } .pm-bd .lid .lf { box-shadow: inset 0 0 0 4px #1d5fbf, inset 0 14px 0 #1d5fbf; }
+.pm-dvd .in .dsc, .pm-bd .in .dsc { width: 80%; left: 10%; }
+.bqs-pvw.go .pm .lid { transform: rotateY(-178deg); } /* 열림 */
+.bqs-pvw.go .pm-cd .in .dsc { transform: translate(18%, -50%) rotate(25deg); } /* CD: 디스크가 살짝 나옴 */
+.bqs-pvw.go .pm-dvd .in .dsc, .bqs-pvw.go .pm-bd .in .dsc { transform: translate(0, -56%) rotate(18deg); }
+.pm { transition: transform var(--ms) ease; } /* 열리면 펼친 폭의 가운데로 */
+.bqs-pvw.go .pm-cd, .bqs-pvw.go .pm-dvd, .bqs-pvw.go .pm-bd { transform: translateX(48%); }
+/* VHS: 슬리브에서 테이프가 위로 나옴 */
+.pm-vhs .slv { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; box-shadow: 0 20px 34px -14px rgba(0,0,0,.7); z-index: 2; }
+.pm-vhs .tape { position: absolute; left: 6%; right: 6%; top: 4%; bottom: 4%; border-radius: 4px; background: #151515; z-index: 1; transition: transform var(--ms) cubic-bezier(.3,.1,.2,1); display: flex; justify-content: center; align-items: flex-start; padding-top: 8%; }
+.pm-vhs .tape span { background: #f4efe4; color: #222; font: 700 11px/1.2 system-ui, sans-serif; padding: 3px 6px; max-width: 80%; border-radius: 2px; writing-mode: vertical-rl; max-height: 45%; overflow: hidden; }
+.pm-vhs .rl { position: absolute; bottom: 18%; width: 30%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #eee 0 18%, #333 19% 60%, #555 61%); } .pm-vhs .rl.l { left: 12%; } .pm-vhs .rl.r { right: 12%; }
+.bqs-pvw.go .pm-vhs .tape { transform: translateY(-58%); }
+/* LP: 재킷에서 판이 반쯤 나옴 */
+.pm-lp .jk { position: absolute; inset: 0; z-index: 2; box-shadow: 0 20px 34px -14px rgba(0,0,0,.7); }
+.pm-lp .vin { position: absolute; inset: 2%; z-index: 1; transition: transform var(--ms) cubic-bezier(.3,.1,.2,1); }
+.pm-lp .vin .dsc { position: absolute; inset: 0; background: repeating-radial-gradient(circle, #111 0 1.2%, #1e1e1e 1.2% 1.6%); }
+.pm-lp .vin .dl { left: 34%; top: 34%; width: 32%; height: 32%; opacity: 1; }
+.bqs-pvw.go .pm-lp .vin { transform: translateX(50%) rotate(40deg); }
+.bqs-pvw.go .pm-lp { transform: translateX(-24%); }
+@media (prefers-reduced-motion: reduce) { .pm .lid, .pm .in .dsc, .pm-vhs .tape, .pm-lp .vin, .pm { transition: none !important; } }
+@media (max-width: 639px) { .bqs-pvw .pv-ph img { max-height: 40vh; } }
