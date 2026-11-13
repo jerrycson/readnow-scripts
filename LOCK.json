@@ -1,13 +1,13 @@
 {
- "holder": "shopux1",
- "what": "③ push",
- "since": "2026-11-13T15:35:25Z",
- "beat": "2026-11-13T15:55:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "y24sess1",
-  "done": "웹앱 1.78.607 · 번외 0.1.57 (4e1b1ba9)",
-  "at": "2026-11-13T15:35:18Z"
+  "who": "shopux1",
+  "done": "③ 웹앱 1.78.608 · 클라우드 0.35.243 · 손님 화면 0.2.5 (8ca07a9e)",
+  "at": "2026-11-13T16:03:40Z"
  },
- "host": "vm-shopux1"
+ "host": null
 }
