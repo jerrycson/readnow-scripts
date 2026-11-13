@@ -1,13 +1,13 @@
 {
- "holder": "y24qty1",
- "what": "번외 0.1.61 확인 읽기",
- "since": "2026-11-13T18:29:07Z",
- "beat": "2026-11-13T18:29:07Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "y24qty1",
-  "done": "웹앱 1.78.614 · 수집기 1.89.328 · 번외 0.1.60 (8a5cfc2d)",
-  "at": "2026-11-13T18:02:57Z"
+  "done": "웹앱 1.78.615 · 번외 0.1.61 (a6234d62)",
+  "at": "2026-11-13T18:33:19Z"
  },
- "host": "vm"
+ "host": null
 }
