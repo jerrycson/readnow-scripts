@@ -13,7 +13,7 @@ const N_BUCKET = 32;
 /* (shelf5) 셈 속도 — 전엔 10분마다 120권(16,000권에 약 22시간) → 5분마다 300권 · 셋씩 나란히(약 4시간) · 차례는 '책등 그림 없는 책 → 새로 들어온 책'(책등 그림이 있으면 대표색을 안 씀 · 첫 책장이 새 책) */
 const PAR = 3, TICK_N = 300, TICK_MS = 300e3;
 /* 셈할 차례: 책등 그림(sp) 없는 것 먼저 · 그 안에서 새로 들어온(at) 것 먼저 · 우리 저장소 표지만 */
-const order = (items) => (items || []).filter((x) => x && keyOfIm(x.im)).sort((a, b) => (a.sp ? 1 : 0) - (b.sp ? 1 : 0) || String(b.at || '').localeCompare(String(a.at || '')));
+const order = (items) => (items || []).filter((x) => x && (keyOfIm(x.im) || keyOfIm(x.bk))) /* (shelfset2) 앞표지가 알라딘 주소여도 뒤표지가 우리 저장소면 뒤표지 셈에 들어감 */.sort((a, b) => (a.sp ? 1 : 0) - (b.sp ? 1 : 0) || String(b.at || '').localeCompare(String(a.at || '')));
 const bucketOf = (k) => { let h = 2166136261 >>> 0; const t = String(k); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return 'b' + String(h % N_BUCKET).padStart(2, '0'); };
 /* 표지 주소(서가 칸 im) → 저장소 폴더 키 'bk_123' (우리 저장소 그림만) */
 const keyOfIm = (im) => { const m = /img(?:%2F|\/)(bk_[0-9A-Za-z_-]{1,40})(?:%2F|\/)/.exec(String(im || '')); return m ? m[1] : null; };
@@ -46,29 +46,44 @@ function genreOf(rgba, w, h) { const W = Math.min(w, 360), sc = w / W, H = Math.
 /* 표지 한 장 → 'rrggbb.갈래' | 'rrggbb' | 'x' */
 function analyze(rgba, w, h) { if (!rgba || !w || !h) return 'x'; const c = dominant(shrink(rgba, w, h, 16)); if (!c) return 'x'; const g = genreOf(rgba, w, h); return c + (g.fg ? '.' + g.fg : ''); }
 const CV_RE = /^(?:[0-9a-f]{6}(?:\.[a-z]{2})?|x)$/;
+/* (shelfset2 · 정범님 11/14 00:29 「세트는 … 책등 표본이 없으면 최대한 앞뒤 표지를 기준으로 참고해서 각 권의 디자인이 조화롭게 일체감이 살도록」)
+ *  🔙 뒤표지 대표색 — 세트 책등 디자인(앞표지 색 + 뒤표지 색 한 벌)에만 씀 → 세트 꼴 제목(또는 관리자 「세트 권 수 바로잡기」에 적힌 상품)이면서 뒤표지 그림이 있는 책만 셈
+ *   · 그림: 도서 정보 images.back(수집기가 알라딘 화면에서 모아 우리 저장소 img/<도서>/back.* 로 받아 둔 것 · 없으면 알라딘 원래 주소를 JPEG·PNG로 다시 받음 — 앞표지와 같은 길)
+ *   · 저장: 앞표지와 같은 shop_cover/b00~b31 · 열쇠 'b:<도서>' · 값 'rrggbb' | 'x'(셈했는데 쓸 색 없음 · 다시 안 셈)
+ *   · 실제 자료(11/14 booksqueen.com 판매중 16,173권): 세트 꼴 427개 중 뒤표지 그림이 있는 것 18개 — 나머지는 지금처럼 앞표지 색만(손님 화면이 그대로 그림) */
+const SET_LIKE = /세트|셋트|\bset\b|boxed|박스|전집|완결|전권|\bvol(?:ume)?s?\b|\bbooks?\b|(?:전|총)\s*\d{1,3}\s*권|\d{1,3}\s*[~\-–]\s*\d{1,3}\s*권|\d{1,3}\s*권\s*(?:세트|묶음)/i;
+const BACK_N = 60; /* 회차마다 뒤표지 최대 수 */
+const bkKey = (x) => keyOfIm(x && x.bk) || keyOfIm(x && x.im);
+const wantBack = (x, ids) => !!(x && x.bk && bkKey(x) && ((ids && ids.has(String(x.id))) || SET_LIKE.test(String(x.t || ''))));
+const backOf = (rgba, w, h) => { if (!rgba || !w || !h) return 'x'; return dominant(shrink(rgba, w, h, 16)) || 'x'; };
 
 /* (shelf6) 표지 한 장 받기·풀기 — 저장소 그림(도서 정보의 실제 길 · 없으면 front.jpg)을 꼴대로 풂(JPEG·PNG·GIF)
  *  WebP·AVIF 등 못 푸는 꼴이면 알라딘 원래 주소를 'JPEG·PNG만 받겠다'(Accept)고 다시 받아 풂 — 공개 그림 한 장 · 로그인·쿠키 없음(약속 0)
  *  deps: B(저장소) · jpeg(jpeg-js) · pathOf(k)/srcOf(k)(도서 정보에서) · fx(시험용 fetch) */
 const IMG = require('./shop-img.js');
 const ALADIN_IMG = /^https:\/\/image\.aladin\.co\.kr\//i;
-async function loadCover(k, d) { const path = (d.pathOf && d.pathOf(k)) || `img/${k}/front.jpg`; let fmt = null;
-  try { const [buf] = await d.B.file(path).download(); return { im: IMG.decode(buf, d.jpeg), how: IMG.sniff(buf) }; }
-  catch (e) { const m = /^fmt:(.+)$/.exec(String(e.message || '')); if (!m) throw e; fmt = m[1]; }
+async function loadCover(k, d, slot) { const p0 = d.pathOf && d.pathOf(k); const path = p0 || `img/${k}/${slot || 'front'}.jpg`; let fmt = null; /* (shelfset2) slot 'back' = 뒤표지 — 우리 저장소에 아직 안 받은 뒤표지는 알라딘 원래 주소로 바로 */
+  if (slot === 'back' && !p0 && d.srcOf && d.srcOf(k)) fmt = 'none';
+  else { try { const [buf] = await d.B.file(path).download(); return { im: IMG.decode(buf, d.jpeg), how: IMG.sniff(buf) }; }
+    catch (e) { const m = /^fmt:(.+)$/.exec(String(e.message || '')); if (!m) throw e; fmt = m[1]; } }
   const src = d.srcOf && d.srcOf(k); if (!src || !ALADIN_IMG.test(src)) throw new Error('fmt:' + fmt + ' (다시 받을 원래 주소 없음)');
   const r = await d.fx(src, { headers: { Accept: 'image/jpeg,image/png;q=0.9,image/gif;q=0.8' }, redirect: 'follow', signal: AbortSignal.timeout(10000) }); if (!r.ok) throw new Error('원래 주소 HTTP ' + r.status);
   const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 8e6) throw new Error('원래 그림 너무 큼'); return { im: IMG.decode(buf, d.jpeg), how: fmt + '→원래 ' + IMG.sniff(buf) }; }
 
 /* 클라우드 일 — makeShop이 부름 · deps: { C(컬렉션), bucket()(저장소), log, pathOf, srcOf, fetch } */
-function makeCover({ C, bucket, log, pathOf, srcOf, fetch: F }) {
+function makeCover({ C, bucket, log, pathOf, srcOf, backPathOf, backSrcOf, fetch: F }) {
   const fx = F || ((u, o) => fetch(u, o));
   const ST = { m: new Map(), at: 0, busy: null, dirty: new Map(), runAt: 0, done: 0, fail: 0, lastErr: null, how: {} };
   const load = async () => { if (ST.at && Date.now() - ST.at < 3600e3) return; try { const ss = await C('shop_cover').get(); ss.forEach((d) => { const m = (d.data() || {}).m || {}; for (const k in m) if (CV_RE.test(m[k])) ST.m.set(k, m[k]); }); ST.at = Date.now(); } catch (e) { log && log('📚 표지 셈 읽기 실패', e.message); } };
   const flush = async () => { const by = new Map(); for (const [k, v] of ST.dirty) { const b = bucketOf(k); if (!by.has(b)) by.set(b, {}); by.get(b)[k] = v; } ST.dirty.clear();
     for (const [b, m] of by) { try { await C('shop_cover').doc(b).set({ m, at: new Date().toISOString(), writer: 'cloud-shop' }, { merge: true }); } catch (e) { log && log('📚 표지 셈 쓰기 실패', b, e.message); } } };
   /* 회차: 아직 셈하지 않은 책 최대 n권 */
-  async function tick(items, n) { if (ST.busy) return ST.busy; ST.busy = (async () => { await load(); let jpeg = null; try { jpeg = require('jpeg-js'); } catch (e) { ST.lastErr = 'jpeg-js 없음'; return 0; }
+  async function tick(items, n, setIds) { if (ST.busy) return ST.busy; ST.busy = (async () => { await load(); let jpeg = null; try { jpeg = require('jpeg-js'); } catch (e) { ST.lastErr = 'jpeg-js 없음'; return 0; }
     const want = []; const seen = new Set(); for (const x of items) { const k = keyOfIm(x.im); if (!k || seen.has(k) || ST.m.has(k)) continue; seen.add(k); want.push(k); if (want.length >= (n || 120)) break; }
+    /* (shelfset2) 🔙 세트 뒤표지 — 앞표지보다 먼저(몇 권 안 됨) · 열쇠 'b:<도서>' */
+    const wantB = []; { const sb = new Set(); for (const x of items) { if (!wantBack(x, setIds)) continue; const k = bkKey(x); if (sb.has(k) || ST.m.has('b:' + k)) continue; sb.add(k); wantB.push(k); if (wantB.length >= BACK_N) break; } }
+    if (wantB.length) { const B0 = bucket(); for (const k of wantB) { try { const { im, how } = await loadCover(k, { B: B0, jpeg, pathOf: backPathOf, srcOf: backSrcOf, fx }, 'back'); const v = backOf(im.data, im.width, im.height); ST.m.set('b:' + k, v); ST.dirty.set('b:' + k, v); ST.nb = (ST.nb || 0) + 1; ST.how['back ' + how] = (ST.how['back ' + how] || 0) + 1; }
+      catch (e) { ST.fail++; ST.lastErr = '뒤표지 ' + String(e.message || e).slice(0, 110); if (/No such object|404|^fmt:|SOI not found|png |gif /.test(String(e.message || e))) { ST.m.set('b:' + k, 'x'); ST.dirty.set('b:' + k, 'x'); ST.how['back x'] = (ST.how['back x'] || 0) + 1; } } } }
     const B = bucket(); let done = 0; const t0 = Date.now();
     /* (shelf5) 셋씩 나란히 받음 — 한 권 시간의 대부분이 그림 받기 기다림(셈은 30~60ms) · 풀기는 한 번에 하나라 메모리는 그대로(그림 한 장 ≈ 1MB) · 150권마다 중간 저장(회차가 끊겨도 한 일은 남음 · 쓰기 수는 회차당 약 60번) */
     let qi = 0; const one = async () => { while (qi < want.length) { const k = want[qi++]; try { const { im, how } = await loadCover(k, { B, jpeg, pathOf, srcOf, fx }); const v = analyze(im.data, im.width, im.height); ST.m.set(k, v); ST.dirty.set(k, v); done++; ST.how[how] = (ST.how[how] || 0) + 1; }
@@ -77,6 +92,8 @@ function makeCover({ C, bucket, log, pathOf, srcOf, fetch: F }) {
     await Promise.all(Array.from({ length: Math.min(PAR, want.length) }, one));
     if (ST.dirty.size) await flush(); ST.done += done; ST.runAt = Date.now(); ST.lastMs = Date.now() - t0; ST.lastN = done; return done; })().finally(() => { ST.busy = null; }); return ST.busy; }
   const cvOf = (im) => { const k = keyOfIm(im); return k ? ST.m.get(k) || null : null; };
-  return { tick, cvOf, load, state: () => ({ n: ST.m.size, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr, lastMs: ST.lastMs || null, lastN: ST.lastN || 0, how: ST.how }) };
+  /* (shelfset2) 서가 칸 cb — 뒤표지 대표색 'rrggbb'(셈해 둔 세트만 · 'x'·없음은 null — 손님 화면은 앞표지 색만) */
+  const cbOf = (x) => { const k = bkKey(x); const v = k ? ST.m.get('b:' + k) : null; return v && /^[0-9a-f]{6}$/.test(v) ? v : null; };
+  return { tick, cvOf, cbOf, load, state: () => ({ n: ST.m.size, nb: [...ST.m.keys()].filter((k) => k.startsWith('b:')).length, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr, lastMs: ST.lastMs || null, lastN: ST.lastN || 0, how: ST.how }) };
 }
-module.exports = { loadCover, order, PAR, TICK_N, TICK_MS, analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };
+module.exports = { SET_LIKE, BACK_N, bkKey, wantBack, backOf, loadCover, order, PAR, TICK_N, TICK_MS, analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };
