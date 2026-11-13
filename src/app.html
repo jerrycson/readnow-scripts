@@ -1387,7 +1387,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
 const APP_SHIP_REL = '1.78.436'; /* (정범님 11/09 저녁 shipsafe2) 출고와 관련된 마지막 웹앱 판 — 출고·송장·ALPS·발송·원스톱 쪽을 바꾼 판을 낼 때 이 번호를 그 판 번호로(판 표시 칸 shipRel) · 새 판 확인이 이 줄을 읽어 '출고 관련 업데이트'인지 가름(APP_VER 바로 앞 줄이어야 앞부분만 받아도 읽힘) */
-const APP_VER = '1.78.547';
+const APP_VER = '1.78.548';
 const WATCH_GROUP_MIN = '0.8.0'; // 감시 그룹(자동·반자동·추격자 전략)을 지키는 가장 낮은 가격 감시기 판
 const WATCH_MIN = '0.6.0'; // 수동 일괄 실행·그룹 켜기/끄기를 지키는 가장 낮은 가격 감시기 판 (이 한 곳에서만 정함)
 const pm = (k) => { try { if (window.__pm[k] == null) window.__pm[k] = Math.round(performance.now()); } catch (e) {} }; pm('js'); // 속도 기록: 웹앱이 열리는 단계마다 걸린 시각(ms)
