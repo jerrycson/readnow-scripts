@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "cloudmem 둘째 클라우드 판",
- "since": "2026-11-13T01:32:52Z",
- "beat": "2026-11-13T01:32:52Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: benchfix 벤치마킹 고침·회차 보고 판 내기",
-  "at": "2026-11-13T01:42:07Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "intel1 판 b9581fcc 웹앱 1.78.547·클라우드 0.35.193 — 🕵 정보 수집 방법 연구",
-  "at": "2026-11-13T01:24:56Z"
+  "done": "클라우드 0.35.194·0.35.195(cloudmem 둘째·셋째) · b58d6c55",
+  "at": "2026-11-13T01:44:44Z"
  },
- "host": "vm-cloudmem"
+ "host": null
 }
