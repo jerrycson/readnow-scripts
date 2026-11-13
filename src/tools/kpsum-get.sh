@@ -6,6 +6,12 @@
 #  개인 열쇠는 예약 작업 설명 안에만 있음(저장소에 없음) — 그 PEM을 임시 파일로 써서 넘김
 set -euo pipefail
 KEY="$1"; N="${2:-25}"; [ -f "$KEY" ] || { echo "열쇠 파일 없음"; exit 1; }
+# (priv1 11/13) 🔑 클라우드 열쇠 길 — 작업 환경 네트워크 비밀(X-RN-Diag-Key)이 있으면 push 없이 바로 받음(몇 초 · Actions 분 0) · 안 되면 아래 예전 길
+CU=${RN_CLOUD_URL:-https://readnow-cloud-63884079760.asia-northeast3.run.app}; DK=${RN_DIAG_KEY:-from-network-secret-00000000000000000000000000000000}
+if [ "${RN_DIAG_VIA:-}" != actions ] && [ "$(curl -sS -m 30 -o /dev/null -w '%{http_code}' -H "X-RN-Diag-Key: $DK" "$CU/diag?ping=1" 2>/dev/null || true)" = 200 ]; then
+  rm -rf kpq; mkdir -p kpq; for t in 1 2 3 4; do curl -sS -m 280 -H "X-RN-Diag-Key: $DK" "$CU/diag?kpq=$N&kpcap=3000&kpper=150000&r=$(date -u +%Y%m%d%H%M%S)" > kpq/r1.json || echo '{"ok":false,"err":"curl"}' > kpq/r1.json; grep -q '^Rate exceeded' kpq/r1.json || break; sleep 20; done
+  python3 -c "import json;d=json.load(open('kpq/r1.json'));q=d.get('kpq',{});print('(바로 받음) 남은 글',q.get('left'),'· 받은 글',len(q.get('posts',[])),q.get('err') or '')"; exit 0
+fi
 git pull -q --rebase || true
 echo "@kpq kpq=$N&kpcap=3000&kpper=150000&r=$(date -u +%Y%m%d%H%M%S)" > diag/q.txt
 git add diag/q.txt && git -c user.email=jerrycson@gmail.com -c user.name=jerrycson commit -qm "📰 요약할 출판 정보 글 받기 (kpq $N)" && git push -q origin HEAD:main

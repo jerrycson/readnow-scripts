@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 홈",
+ "short_name": "홈",
+ "start_url": "../index.html?p=home",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#2F5D50",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "home.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}

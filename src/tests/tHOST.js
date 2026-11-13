@@ -16,7 +16,10 @@ const { deploy, hashFiles, restConfig } = require(path.join(ROOT, 'hosting/deplo
   ok(has('app/index.html') && has('app/readnow-webapp.js') && has('index.html'), '웹앱 담음(app/ · 뿌리 index.html)');
   ok(has('readnow-collector.user.js') && has('readnow-price-watch.user.js') && has('readnow-core.js') && has('readnow-pc-products.js') && has('pc-live.json'), '수집기·감시기·공용·pc-live.json 담음(뿌리 경로 그대로)');
   ok(has('local/readnow-local.js') && has('local/install.ps1') && has('manual/latest.json') && has('friend'), '도우미·설치 글·설명서·책방 친구 담음');
-  ok(!has('diag') && !has('src') && !has('cloud') && !has('research') && !has('backups') && !has('friend-app') && !has('.github'), '진단·원본·클라우드·근거·백업·앱 원본은 담지 않음');
+  const ls = (d) => { try { return fs.readdirSync(path.join(OUT, d)).sort(); } catch (e) { return []; } };
+  ok(JSON.stringify(ls('src')) === JSON.stringify(['readnow-collector.src.js']) && ls('cloud').every((n) => n === 'shop-promo.js' || /^setup-[a-z-]+\.sh$/.test(n)) && !has('cloud/index.js'), '(priv1 11/13) src는 운영 본체 글 하나 · cloud는 shop-promo.js·setup-*.sh만', { src: ls('src'), cloud: ls('cloud') });
+  ok(has('ui2/index.html') && has('ui2/u2-config.js') && !has('ui2/tests') && !has('ui2/CLAUDE.md'), '(priv1 11/13) 리드나우 2 사본(ui2/) 담음 · 시험·설명 글 안 담음');
+  ok(!has('diag') && !has('research') && !has('backups') && !has('friend-app') && !has('.github'), '진단·근거·백업·앱 원본은 담지 않음');
   const mds = []; (function w(d) { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) w(p); else if (/\.md$/i.test(n) || n.startsWith('.')) mds.push(p); } })(OUT);
   ok(mds.length === 0, '설명 글(.md)·숨김 파일 없음 ' + mds.slice(0, 3).join(','));
   ok(/Disallow: \//.test(fs.readFileSync(path.join(OUT, 'robots.txt'), 'utf8')), 'robots.txt = 검색 막음');

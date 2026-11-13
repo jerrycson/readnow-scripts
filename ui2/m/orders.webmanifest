@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 주문·매출",
+ "short_name": "주문·매출",
+ "start_url": "../index.html?p=orders",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#A8661B",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "orders.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}
