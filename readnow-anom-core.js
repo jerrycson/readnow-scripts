@@ -77,19 +77,24 @@
     return { dom: domId, v: VERSION, key: f.key, metrics, anom: true, warn, pick, act: pick.act, ranked: A.ranked.map((h) => ({ id: h.id, name: h.name, score: h.score, inc: h.inc, ev: h.ev })), margin: A.margin, why, cut, at: ctx.now || null, f: D.keep ? D.keep(f) : undefined };
   }
 
-  /* ── ④ 사람 되먹임으로 배움 ──
-   *  fb = [{ id(회차·점 열쇠), dom, key(대상), was:'in'|'out'|'unk'(엔진 판정), pickId, human:'in'|'out', at }]
-   *  사람이 넣었는데 엔진이 뺐음(틀린 경보) → 그 대상 기준 +0.5 · 그 가설 무게 −0.5 · 사람이 뺐는데 엔진이 넣었음(놓침) → 그 도메인 기준 −0.25(바닥 2)
-   *  같은 되먹임은 한 번만(seen) · 기록 log 최근 50 */
-  function learn(state, fb) {
+  /* ── ④ 스스로 채점하고 배움 (정범님 11/13 12:16 「내가 필요하지 않게 해 … 확신되지 않는 건 나를 표본으로 삼지 마」) ──
+   *  사람의 '↩ 다시 넣기'는 배움 재료가 아님(기록만). 판정 뒤에 저절로 드러나는 증거(다음 회차들의 숍 상품 수 회복·새로 올림·사라짐 흐름 등)로
+   *  도메인의 verify(판정 기록, 뒤 기록들)가 맞음/틀림/아직 모름을 매기고, 그 결과로 기준·가설 무게를 고침.
+   *  out = [{ id, dom, key, pickId, pickName, act, ok:true|false, why, at }]
+   *  틀림 + 뺐던 판정(틀린 경보) → 그 대상 기준 +0.25 · 그 가설 −0.5 / 틀림 + 넣었던 판정(놓침) → 도메인 기준 −0.25(바닥 2) · 그 가설 −0.5 / 맞음 → 그 가설 +0.1(위 1)
+   *  같은 판정은 한 번만 채점(seen) · 기록 log 최근 50 */
+  function verify(domId, rec, later) { const D = DOMAINS[domId]; if (!D || !D.verify || !rec) return null; try { return D.verify(rec, (later || []).filter(Boolean)); } catch (e) { return null; } }
+  function learn(state, outs) {
     const L = state && state.v ? state : { ...learnInit(), ...(state || {}) }; L.zCut = L.zCut || {}; L.bias = L.bias || {}; L.sc = L.sc || {}; L.n = L.n || { fp: 0, fn: 0, ok: 0 }; L.seen = L.seen || []; L.log = L.log || [];
     const seen = new Set(L.seen); let ch = 0;
-    for (const x of fb || []) { if (!x || !x.id || seen.has(x.id + ':' + x.human)) continue; seen.add(x.id + ':' + x.human); const D = DOMAINS[x.dom] || {}; const def = D.zCut || 3;
-      const engOut = x.was === 'out' || x.was === 'unk'; const humOut = x.human === 'out';
-      if (engOut && !humOut) { L.n.fp++; const k = x.dom + ':' + x.key; L.sc[k] = Math.min(3, (L.sc[k] || 0) + 0.5); if (x.pickId) { const B = (L.bias[x.dom] = L.bias[x.dom] || {}); B[x.pickId] = Math.max(-4, (B[x.pickId] || 0) - 0.5); } L.log.unshift({ id: x.id, at: x.at || null, k: 'fp', why: `사람이 다시 넣음 — '${x.pickName || x.pickId || '빼기'}' 판정이 틀림 → ${x.key} 기준 +0.5 · 그 가설 −0.5` }); ch++; }
-      else if (!engOut && humOut) { L.n.fn++; L.zCut[x.dom] = Math.max(2, (L.zCut[x.dom] || def) - 0.25); L.log.unshift({ id: x.id, at: x.at || null, k: 'fn', why: `사람이 뺌 — 엔진이 놓침 → ${x.dom} 기준 −0.25` }); ch++; }
-      else { L.n.ok++; } }
-    L.seen = [...seen].slice(-400); L.log = L.log.slice(0, 50); L.v = VERSION; return { learn: L, changed: ch };
+    for (const x of outs || []) { if (!x || !x.id || x.ok == null || seen.has(x.id)) continue; seen.add(x.id); const D = DOMAINS[x.dom] || {}; const def = D.zCut || 3; const B = (L.bias[x.dom] = L.bias[x.dom] || {});
+      if (x.ok) { L.n.ok++; if (x.pickId) B[x.pickId] = Math.min(1, (B[x.pickId] || 0) + 0.1); ch++; continue; }
+      const wasOut = x.act === 'out' || x.act === 'unk';
+      if (wasOut) { L.n.fp++; const k = x.dom + ':' + x.key; L.sc[k] = Math.min(3, (L.sc[k] || 0) + 0.25); }
+      else { L.n.fn++; L.zCut[x.dom] = Math.max(2, (L.zCut[x.dom] || def) - 0.25); }
+      if (x.pickId) B[x.pickId] = Math.max(-4, (B[x.pickId] || 0) - 0.5);
+      L.log.unshift({ id: x.id, at: x.at || null, k: wasOut ? 'fp' : 'fn', why: `뒤 증거로 틀림 — '${x.pickName || x.pickId || '?'}': ${String(x.why || '').slice(0, 140)} → ${wasOut ? `${x.key} 기준 +0.25` : `${x.dom} 기준 −0.25`} · 그 가설 −0.5` }); ch++; }
+    L.seen = [...seen].slice(-600); L.log = L.log.slice(0, 50); L.v = VERSION; return { learn: L, changed: ch };
   }
 
   /* ════ 도메인: bench — 벤치마킹 회차의 '사라짐' ════
@@ -123,7 +128,24 @@
         missBack: +v.missBack || 0, goneNew: +v.goneNew || 0, cover: v.cover != null ? +v.cover : 1, notRead: +v.notRead || 0, lastPage: +v.runLastPage || null, lastPageP: p ? +p.runLastPage || null : null,
         relist: E.relist || null, cheapG: E.cheapG, cheapT: E.cheapT, out, name: v.name || null };
     },
-    keep: (f) => ({ win: r3(f.win), twoStep: f.twoStep, rGoneNaive: r3(f.rGoneNaive), prevN: f.prevN, addWin: f.addWin, relist: f.relist }),
+    keep: (f) => ({ win: r3(f.win), twoStep: f.twoStep, rGoneNaive: r3(f.rGoneNaive), prevN: f.prevN, addWin: f.addWin, relist: f.relist, g: f.g, add: f.add, total: f.total, totP: f.totP, rGone: r3(f.rGone) }),
+    /* 뒤 증거로 채점 — rec = 회차 문서의 anom(판정 · f 숫자 · z 칸) · later = 그 뒤 숍 전체 회차(시간 순 · 2회차까지 봄)
+     *  다시 올리기: 뒤 회차에 숍 상품 수가 앞 수준으로 돌아옴(새로 올림이 채움) = 맞음 · 줄어든 채 그대로 = 틀림(내림이었음)
+     *  대량 내림·진짜 판매: 줄어든 채 그대로 = 맞음 · 앞 수준으로 돌아옴 = 틀림(다시 올리기였음)
+     *  숍 닫음: 뒤에도 앞 수의 30% 아래 = 맞음 · 돌아옴 = 틀림
+     *  읽기 잡음·모름: 뒤 회차에 상품 수가 그대로(사라진 게 아니었음) = 맞음 · 실제로 줄어 그대로 = 틀림
+     *  긴 틈·평소(넣음): 뒤 짧은 간격 회차의 하루 사라짐이 기준선 안 = 맞음 · 기준선을 크게 넘음 = 틀림(사건의 시작을 놓침) */
+    verify(rec, later) { const a = rec || {}; const f = a.f || {}; const id = (a.pick && a.pick.id) || (a.act === 'in' ? 'normal' : 'unk'); const L = later.filter((x) => x && x.full !== false && !x.base && !x.light && !x.partial && x.complete !== false).slice(0, 2);
+      if (!L.length) return { ok: null, why: '뒤 회차 아직 없음' }; const totP = +f.totP || 0; const g = +f.g || 0; const tot = Math.max(...L.map((x) => +x.total || 0)); if (!totP || !g) return { ok: null, why: '숫자 모자람' };
+      const back = tot >= totP - 0.2 * g; const stay = tot <= totP - 0.5 * g; const tx = `뒤 ${L.length}회차 상품 수 최고 ${nf(tot)}(판정 전 ${nf(totP)} · 사라짐 ${nf(g)})`;
+      if (id === 'relist') return back ? { ok: true, why: `${tx} — 돌아옴` } : stay && L.length >= 2 ? { ok: false, why: `${tx} — 줄어든 채 그대로(내림이었음)` } : { ok: null, why: tx };
+      if (id === 'takedown' || id === 'sale') return stay && L.length >= 2 ? { ok: true, why: `${tx} — 줄어든 채 그대로` } : back ? { ok: false, why: `${tx} — 앞 수준으로 돌아옴(다시 올리기였음)` } : { ok: null, why: tx };
+      if (id === 'close') return tot <= 0.3 * totP ? (L.length >= 2 ? { ok: true, why: `${tx} — 비운 채 그대로` } : { ok: null, why: tx }) : { ok: false, why: `${tx} — 다시 찼음` };
+      if (id === 'noise' || id === 'unk') return back ? { ok: true, why: `${tx} — 상품이 그대로 있었음` } : stay && L.length >= 2 ? { ok: false, why: `${tx} — 실제로 줄었음` } : { ok: null, why: tx };
+      /* 넣었던 판정 — 짧은 간격의 다음 회차 하루 사라짐을 그때 기준선(z 칸의 가운데)과 견줌 */
+      const zg = (a.z || []).find((r) => r[0] === 'rGone'); const med = zg ? +zg[2] : null; const x = L.find((y) => +y.spanDays > 0 && +y.spanDays <= 4); if (!x || !(med > 0)) return { ok: null, why: '견줄 짧은 간격 회차 없음' };
+      const r2 = (+x.gone || 0) / Math.max(1, +x.total || 1) / Math.max(0.25, +x.spanDays); const ratio = r2 / med;
+      return ratio <= 4 ? { ok: true, why: `다음 짧은 회차 하루 사라짐 ${pct(r2, 100)} — 평소(${pct(med, 100)})의 ${Math.round(ratio * 10) / 10}배` } : { ok: false, why: `다음 짧은 회차 하루 사라짐 ${pct(r2, 100)} — 평소의 ${Math.round(ratio)}배(사건의 시작을 놓침)` }; },
     hyps: [
       { id: 'longgap', name: '긴 틈에 쌓인 평소 사라짐', act: 'in', prior: 0 },
       { id: 'relist', name: '다시 올리기(내렸다 새 번호로 올림)', act: 'out', prior: 0 },
@@ -202,7 +224,7 @@
   /* 판정 결과를 사람이 읽는 한 줄로 */
   function line(r) { if (!r) return ''; if (!r.anom) return `✓ ${r.pick ? r.pick.name : '평소'}`; const a = r.act === 'out' ? '통계에서 뺌' : r.act === 'unk' ? '모름(통계에서 뺌)' : r.act === 'tag' ? '표시만' : '통계에 넣음'; return `${r.act === 'in' ? '🟢' : r.act === 'out' ? '📦' : r.act === 'tag' ? '🏷' : '❔'} ${r.pick ? r.pick.name : '모름'} → ${a}${r.pick && r.pick.conf != null ? ` (확신 ${Math.round(r.pick.conf * 100)}%)` : ''}`; }
 
-  const API = { VERSION, baseline, zOf, ach, domain, DOMAINS, judge, judgeSeries, learn, learnInit, line, _ln: ln };
+  const API = { VERSION, baseline, zOf, ach, domain, DOMAINS, judge, judgeSeries, verify, learn, learnInit, line, _ln: ln };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (root) root.ReadnowAnom = API;
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : null);
