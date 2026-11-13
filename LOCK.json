@@ -1,13 +1,13 @@
 {
- "holder": "train1",
- "what": "y24re 일곱째 판(웹앱)",
- "since": "2026-11-13T09:17:06Z",
- "beat": "2026-11-13T09:17:06Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "url2",
-  "done": "웹앱 1.78.590 휴대폰 앱 설치 고침 (6291b97c)",
-  "at": "2026-11-13T08:22:32Z"
+  "who": "train1",
+  "done": "웹앱 1.78.591 y24re 일곱째 (5ce0845a)",
+  "at": "2026-11-13T09:22:22Z"
  },
- "host": "vm-train1"
+ "host": null
 }
