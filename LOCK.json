@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "friendmig 책방 친구 앱 0.2.3 새 주소",
- "since": "2026-11-13T05:17:15Z",
- "beat": "2026-11-13T05:17:15Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: y24re 넷째 — 번외 0.1.54",
-  "at": "2026-11-13T05:17:47Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24re 셋째 웹앱 1.78.566 · 번외 0.1.53",
-  "at": "2026-11-13T04:55:51Z"
+  "done": "friendmig 책방 친구 앱 0.2.3 8bd3b057",
+  "at": "2026-11-13T05:18:00Z"
  },
- "host": "wk-friendmig"
+ "host": null
 }
