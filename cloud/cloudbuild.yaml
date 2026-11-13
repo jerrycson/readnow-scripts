@@ -37,12 +37,12 @@ steps:
       #!/usr/bin/env bash
       set -uo pipefail
       . /workspace/cloud/cb-lib.sh newer
-      python3 /workspace/cloud/cb-report.py start || true
+      "$RN_PY" /workspace/cloud/cb-report.py start || true
       # 뒤 단계(배포 직전)에서도 다시 부르는 확인 — 이 빌드보다 뒤에 만들어진 rn-cloud 빌드가 살아 있으면 그 번호
       cat > /workspace/.rn/newer.sh <<'EOF'
       #!/usr/bin/env bash
       CT=$(gcloud builds describe "$BUILD_ID" --region="$_REGION" --format='value(createTime)' 2>/dev/null)
-      gcloud builds list --region="$_REGION" --filter='tags:rn-cloud' --limit=15 --format=json 2>/dev/null | CT="$CT" ME="$BUILD_ID" python3 -c "
+      gcloud builds list --region="$_REGION" --filter='tags:rn-cloud' --limit=15 --format=json 2>/dev/null | CT="$CT" ME="$BUILD_ID" "${RN_PY:-python3}" -c "
       import json,os,sys
       from datetime import datetime as D
       import re
@@ -131,7 +131,7 @@ steps:
       echo "🛍 우리숍 전용 서버 올라감 · booksqueen.com 지금 넘김: ${B:-모름}"
       echo "$B" | grep -qi "$_SHOP" || echo "⚠ booksqueen.com이 아직 원래 서비스로 넘어감 — GitHub Actions '우리숍 내기'를 한 번 Run workflow"
   - id: report
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    name: python:3.12-slim   # cloud-sdk:slim엔 python3가 없음(11/13 첫 시험 — 보고 단계가 127로 끝남) · 보고는 urllib·메타데이터만 씀
     # 🧾 빌드 끝 결과 남기기 — 앞 단계가 실패해도 여기는 언제나 돎(앞 단계 allowFailure) · 실패가 있으면 1로 끝나 빌드 전체가 '실패'
     script: |
       #!/usr/bin/env bash

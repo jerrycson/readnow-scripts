@@ -8,6 +8,8 @@
 RN=${RN_WS:-/workspace}/.rn; mkdir -p "$RN"
 SHA=${COMMIT_SHA:-${_SHA:-}}; export SHA
 RN_STEP=${1:-step}
+# cloud-sdk:slim 이미지엔 python3가 따로 없음(11/13 첫 시험) — gcloud에 딸린 python을 씀
+RN_PY=$(command -v python3 2>/dev/null || ls -1 /usr/lib/google-cloud-sdk/platform/bundledpythonunix/bin/python3 2>/dev/null || echo python3); export RN_PY
 exec > >(tee -a "$RN/log_$RN_STEP") 2>&1
 RN_T0=$SECONDS
 rn_end() { local rc=$?; local sk=""; [ -f "$RN/skipped_$RN_STEP" ] && sk=" skip"; echo "$rc $((SECONDS-RN_T0))$sk" > "$RN/st_$RN_STEP"; if [ "$rc" != 0 ] && [ -z "${RN_SOFT:-}" ]; then echo "$RN_STEP" >> "$RN/failed"; fi; }
