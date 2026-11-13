@@ -3,6 +3,8 @@
  *    카드  { kind:'card', cat(대분류), sub(중분류), leaf(소분류), imp(1~3 중요도), title, body(마크다운), src('lead'|'jb'|'worker:<이름>'|…), srcAt, ref,
  *            state('open'|'held'(⏸ 보류)|'done'|'archived'|'trashed'), stateAt, readAt(정범님이 읽은 때 · 없으면 '새로 온 것'), tags[], pinned, color, createdAt, updatedAt }
  *    메모  { kind:'memo', cardId(없으면 통합 노트에 바로 쓴 것), cardTitle, quote(고른 문장), text, by('jb'), at, batchId(보낸 묶음), state('open'|'trashed'), updatedAt }
+ *    칸    { kind:'slot', slot(1~3), draft(쓰던 글), at, sentAt } — id slot_<n> · 💾 저장1·2·3(note5 · 메모·묶음에도 slot) · 고른 칸 = _meta.slotCur
+ *    내 메모 { kind:'jbmemo', text, by('jb'), at, state('open'|'trashed'), editedAt, stateAt } — 정범님 혼자 쓰는 노트 · 리드 받은 편지(queued 묶음)·진단 목록에 글이 나오지 않음
  *    묶음  { kind:'batch', memoIds[], text(보낸 글), at, via('mcp'|'outbox'), status('sent'|'queued'|'picked'|'failed'), err, pickedAt, updatedAt }
  *  쓰는 길: ① 아티팩트 → claude.ai 연결 「리드나우 노트」(이 파일의 MCP 길 /mcp/n/<열쇠>) ② 웹앱 → Firestore 직접 ③ 리드·일꾼 → /kp-in 암호문 notes:{ops}
  *  읽는 길: 웹앱 onSnapshot · 아티팩트 note_sync(길게 기다리기 — 바뀌면 바로 답) · 리드 진단 notes=1
@@ -10,10 +12,10 @@
 'use strict';
 const crypto = require('crypto');
 const COL = 'jb_notes';
-const KINDS = ['card', 'memo', 'batch', 'meta'];
+const KINDS = ['card', 'memo', 'batch', 'meta', 'slot', 'jbmemo']; // (note5 11/13) slot = 💾 저장1·2·3 칸(쓰던 글 draft) · jbmemo = 📝 내 메모(정범님 혼자 · 리드에게 안 감)
 const STATES = ['open', 'held', 'done', 'archived', 'trashed']; // held = ⏸ 보류(note4 11/13)
 const BST = ['sent', 'queued', 'picked', 'failed'];
-const STR = { cat: 40, sub: 60, leaf: 60, title: 300, src: 60, srcAt: 40, ref: 300, stateAt: 40, readAt: 40, cardId: 80, cardTitle: 300, quote: 2000, text: 20000, by: 40, at: 40, via: 20, status: 20, err: 400, pickedAt: 40, createdAt: 40, updatedAt: 40, editedAt: 40, color: 12, trashedAt: 40, folder: 60, leadSession: 120 };
+const STR = { cat: 40, sub: 60, leaf: 60, title: 300, src: 60, srcAt: 40, ref: 300, stateAt: 40, readAt: 40, cardId: 80, cardTitle: 300, quote: 2000, text: 20000, by: 40, at: 40, via: 20, status: 20, err: 400, pickedAt: 40, createdAt: 40, updatedAt: 40, editedAt: 40, color: 12, trashedAt: 40, folder: 60, leadSession: 120, draft: 20000, sentAt: 40, batchId: 80 }; // (note5) batchId — 예전엔 버려져 아티팩트에서 보낸 메모가 다음 전체 받기 때 '아직 안 보냄'으로 되돌아왔음
 const BODY_MAX = 200000;
 const s = (x, n) => (x == null ? '' : String(x).slice(0, n));
 const nowIso = () => new Date().toISOString();
@@ -29,6 +31,7 @@ function clean(d, isMeta) {
     if (k === 'kind') { if (KINDS.includes(v)) o.kind = v; continue; }
     if (k === 'state') { if (STATES.includes(v)) o.state = v; continue; }
     if (k === 'status') { if (BST.includes(v)) o.status = v; continue; }
+    if (k === 'slot' || k === 'slotCur') { const n = Math.round(+v); if (n >= 1 && n <= 3) o[k] = n; continue; }
     if (k === 'ord') { const n = +v; if (Number.isFinite(n)) o.ord = n; continue; }
     if (k === 'imp') { const n = Math.round(+v); if (n >= 1 && n <= 3) o.imp = n; continue; }
     if (k === 'tags' || k === 'memoIds') { if (Array.isArray(v)) o[k] = v.map((x) => s(x, 80)).filter(Boolean).slice(0, k === 'tags' ? 12 : 300); continue; }
@@ -88,7 +91,7 @@ const TOOLS = [
   { name: 'note_info', description: '정범 노트 저장소 연결 확인 — 문서 수·판 번호(읽기만)', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true } },
   { name: 'note_sync', description: '정범 노트의 바뀐 문서 받기. cursor 없이 부르면 전부, 앞 답의 cursor를 주면 그 뒤 바뀐 것만. wait(초, 0~25)를 주면 바뀐 것이 없을 때 그만큼 기다렸다가 바뀌는 순간 답함(실시간).', inputSchema: { type: 'object', properties: { cursor: { type: 'string' }, wait: { type: 'number', minimum: 0, maximum: 25 } }, additionalProperties: false }, annotations: { readOnlyHint: true } },
   { name: 'note_get', description: '본문이 빠져 온 문서(_noBody)의 전체를 id로 받기(최대 40개)', inputSchema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' }, maxItems: 40 } }, required: ['ids'], additionalProperties: false }, annotations: { readOnlyHint: true } },
-  { name: 'note_write', description: '정범 노트 쓰기 — ops:[{op:"set"|"merge", id, data}] (최대 60) · kind card·memo·batch · 지우지 않음(state "trashed")', inputSchema: { type: 'object', properties: { ops: { type: 'array', maxItems: 60, items: { type: 'object', properties: { op: { type: 'string', enum: ['set', 'merge'] }, id: { type: 'string' }, data: { type: 'object' } }, required: ['op', 'id', 'data'] } }, by: { type: 'string' } }, required: ['ops'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false } },
+  { name: 'note_write', description: '정범 노트 쓰기 — ops:[{op:"set"|"merge", id, data}] (최대 60) · kind card·memo·batch·slot(💾 저장 칸)·jbmemo(정범님 내 메모 — 리드는 쓰지 않음) · 지우지 않음(state "trashed")', inputSchema: { type: 'object', properties: { ops: { type: 'array', maxItems: 60, items: { type: 'object', properties: { op: { type: 'string', enum: ['set', 'merge'] }, id: { type: 'string' }, data: { type: 'object' } }, required: ['op', 'id', 'data'] } }, by: { type: 'string' } }, required: ['ops'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false } },
 ];
 const PROTOS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 function makeNotes({ C, log, ver }) {
@@ -138,9 +141,11 @@ function makeNotes({ C, log, ver }) {
   async function diag(q) {
     const r = await live.sync('', 0); const D = r.docs; const by = {}; for (const d of D) { const k = (d.kind || 'card') + ':' + (d.state || d.status || '-'); by[k] = (by[k] || 0) + 1; }
     const queued = D.filter((d) => d.kind === 'batch' && d.status === 'queued').map((d) => ({ id: d.id, at: d.at, via: d.via, text: s(d.text, 8000), memoIds: d.memoIds || [] }));
-    const recent = D.slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, +q.n || 20).map((d) => ({ id: d.id, kind: d.kind || 'card', title: s(d.title || d.text, 80), state: d.state || d.status || null, updatedAt: d.updatedAt, lastBy: d.lastBy || null }));
+    const priv = (d) => d.kind === 'jbmemo' || d.kind === 'slot'; /* (note5) 내 메모·쓰던 글은 리드 진단에 글을 싣지 않음(수만) */
+    const recent = D.filter((d) => !priv(d)).slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, +q.n || 20).map((d) => ({ id: d.id, kind: d.kind || 'card', title: s(d.title || d.text, 80), state: d.state || d.status || null, updatedAt: d.updatedAt, lastBy: d.lastBy || null }));
     const unread = D.filter((d) => (d.kind || 'card') === 'card' && !d.readAt && d.state !== 'trashed').length;
-    return { n: r.n, by, unread, queued, recent, mcp: seen, at: r.at };
+    const mine = D.filter((d) => d.kind === 'jbmemo').length; const slots = D.filter((d) => d.kind === 'slot').map((d) => ({ slot: d.slot, draftLen: String(d.draft || '').length, at: d.at || null }));
+    return { n: r.n, by, unread, queued, recent, mine, slots, mcp: seen, at: r.at };
   }
   return { handle, write: (ops, by) => writeOps(C, ops, by), diag, live, rpc, TOOLS, seen };
 }

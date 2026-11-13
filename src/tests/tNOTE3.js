@@ -20,7 +20,7 @@ function fakeC() { const D = {}; const L = {};
 (async () => {
   // ── ① 화면 핵심 ──
   const core = fs.readFileSync(COREF, 'utf8'); const vm = require('vm'); const ctx = { window: {}, console }; vm.createContext(ctx); vm.runInContext(core, ctx); const J = ctx.window.JBN;
-  ok(J.version === '2' && typeof J.isFav === 'function', '① 핵심 판 2 · isFav');
+  ok(+J.version >= 2 && typeof J.isFav === 'function', '① 핵심 판 2 이상 · isFav');
   ok(J.isFav({ pinned: true }) && !J.isFav({ pinned: true, state: 'trashed' }) && !J.isFav({ pinned: false }) && J.isFav({ pinned: true, state: 'done' }), '① ⭐ = pinned · 휴지통은 빠짐 · 완료한 카드도 ⭐에 남음');
 
   // ── ② 클라우드 ──
