@@ -1,5 +1,4 @@
-run=1
-doc=app_settings/col2_solo
 col2=2026-11-13
+doc=app_settings/col2_solo
 pend=1
-# 2531425369
+# 1758716357
