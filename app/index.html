@@ -2,6 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<script>/* (url1 11/13) 🌐 Firebase 기본 주소(readnow-3a385.web.app · firebaseapp.com)로 연 웹앱은 우리 주소 readnow.kr로 바로 넘김(경로·?·# 그대로)
+ *  까닭: 클라우드 허락 출처·수집기 @match·도우미 /whoami·번외 출처가 readnow.kr(와 옛 주소)만 알아서, 기본 주소에서 쓰면 휴대폰 앱 설치·클라우드 호출·로그인 넘기기가 안 됨
+ *  기기 저장도 주소마다 따로라 한 주소로 모음 · ?stay=1 이면 넘기지 않음(점검용) · 다른 창 안(iframe)에서는 그대로 */
+(function () { try { var h = location.hostname; if ((h === 'readnow-3a385.web.app' || h === 'readnow-3a385.firebaseapp.com') && window.top === window && !/[?&]stay=1/.test(location.search)) { window.RN2_MOVING = true; location.replace('https://readnow.kr' + location.pathname + location.search + location.hash); } } catch (e) {} })();
+</script>
 <script>/* (리드나우 2 이전 · 단계 13 · 정범님 ㉮) 이 기기 저장 rn2-move(새 웹앱만 씀)가 'on'이면 본문을 받기 전에 새 웹앱으로 넘김(?·# 그대로 + from=old) · 글이 없거나 'off'·'back'이면 아무 일 없음
  *  ?old=1(옛 화면 주소)로 연 탭은 닫을 때까지 옛 화면(sessionStorage rn2-old) + 머리 띠 '옛 화면 — ○일 뒤 닫힘 · 리드나우 2로 ›' · 새 웹앱 안(window.U2)·다른 창 안(iframe)에서는 아무것도 안 함
  *  RN2_MOVE_SYNC(db) = 로그인 뒤 한 번 ui2_site/main 문서 1개 읽기(새 웹앱을 한 번도 안 연 기기) · 견본 readnow-ui2 tools/move-snippet.js · 시험 tU2MOVE1111 */
@@ -1431,7 +1436,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.586';</script>
-<script src="readnow-webapp.js?v=1.78.586"></script>
+<script>const APP_VER = '1.78.587';</script>
+<script src="readnow-webapp.js?v=1.78.587"></script>
 </body>
 </html>
