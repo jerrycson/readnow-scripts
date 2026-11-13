@@ -1,13 +1,13 @@
 {
- "holder": "shelfset1",
- "what": "서가 세트 0.2.12 · 클라우드 0.35.246 — 시험 중",
- "since": "2026-11-13T16:30:52Z",
- "beat": "2026-11-13T16:32:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "logo100",
-  "done": "💡 로고 아이디어 100 · 32404c06 (판 번호 없음)",
-  "at": "2026-11-13T16:30:12Z"
+  "who": "shelfset1",
+  "done": "서가 0.2.12 · 숍 0.2.7 · 설정 틀 0.3.7 · 클라우드 0.35.246 (4dbbe40e)",
+  "at": "2026-11-13T16:36:48Z"
  },
- "host": "vm"
+ "host": null
 }
