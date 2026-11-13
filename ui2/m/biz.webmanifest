@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 경영",
+ "short_name": "경영",
+ "start_url": "../index.html?p=biz",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#6B3FA0",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "biz.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}

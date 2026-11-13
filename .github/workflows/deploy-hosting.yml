@@ -6,8 +6,11 @@ name: 결과물 함께 내기 (Firebase Hosting)
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'yes24-terms/**', 'facts-docs/**', 'local/**', 'lab/col2/**', 'firebase.json', 'hosting/**', 'cloud/shop-promo.js', '.github/workflows/deploy-hosting.yml']
+    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'yes24-terms/**', 'facts-docs/**', 'local/**', 'lab/col2/**', 'firebase.json', 'hosting/**', 'cloud/shop-promo.js', 'cloud/setup-*.sh', 'ui2/**', 'src/readnow-collector.src.js', '.github/workflows/deploy-hosting.yml']
   workflow_dispatch:
+  workflow_run:  # (priv1 11/13) 🐾 책방 친구 새 판(friend-v…)이 만들어지면 readnow.kr/dl/friend/에도 바로(판 만들기는 GitHub 열쇠로 해서 release 사건이 다른 작업을 깨우지 못함)
+    workflows: ['책방 친구 안드로이드 앱', '책방 친구 PC 프로그램 (Windows)']
+    types: [completed]
 concurrency: { group: deploy-hosting, cancel-in-progress: true }
 permissions: { contents: read, id-token: write }
 env:
@@ -22,6 +25,9 @@ jobs:
         with: { fetch-depth: 1 }
       - name: 결과물 모으기
         run: node hosting/build.js
+      - name: 🐾 책방 친구 설치 파일(가장 새 friend-v… 판) → dl/friend/ (priv1 11/13 · 저장소가 비공개여도 readnow.kr에서 받힘)
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: node hosting/friend-dl.js .hosting/public/dl/friend || echo "::warning::책방 친구 설치 파일을 못 받음 — 다른 결과물은 그대로 올림"
       - id: auth
         name: 구글 로그인 (열쇠 없이 OIDC)
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0

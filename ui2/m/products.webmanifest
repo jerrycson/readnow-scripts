@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 상품",
+ "short_name": "상품",
+ "start_url": "../index.html?p=products",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#3B6E2F",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "products.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}

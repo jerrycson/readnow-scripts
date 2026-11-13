@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 판매자",
+ "short_name": "판매자",
+ "start_url": "../index.html?p=sellers",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#2F5D50",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "sellers.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}
