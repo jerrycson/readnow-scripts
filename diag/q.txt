@@ -1,2 +1,2 @@
-doc=col2_y24_cmd/y24w-261112115511z2e,col2_y24_cmd/y24w-261113000331ie5,col2_ctl/HOME
-# 165552502
+logs=1&pc=LOGGER&from=202611131340
+# 543529793
