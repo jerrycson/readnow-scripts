@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty1",
+ "what": "수집기 판 — 예스24 걸린 맡김 한 번 더(머리 그대로)",
+ "since": "2026-11-13T17:32:00Z",
+ "beat": "2026-11-13T17:32:00Z",
  "ask": null,
  "last": {
   "who": "shelfset2",
   "done": "서가 0.2.13 · 숍 0.2.8 · 클라우드 0.35.247 — 세트 앞·뒤표지 색 한 벌 (4f099d53)",
   "at": "2026-11-13T17:04:30Z"
  },
- "host": null
+ "host": "vm"
 }
