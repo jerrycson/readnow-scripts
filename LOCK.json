@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "train1",
+ "what": "시험 tR 기대값(redraw2 둘째 신호 문서)",
+ "since": "2026-11-13T11:42:32Z",
+ "beat": "2026-11-13T11:42:32Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "웹앱 1.78.598 · 수집기 1.89.325 · 클라우드 0.35.234 redraw2 둘째 (49c0b6c5)",
   "at": "2026-11-13T11:41:21Z"
  },
- "host": null
+ "host": "vm-train1"
 }
