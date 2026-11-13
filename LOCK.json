@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "cbuild",
+ "what": "클라우드 cbuild 둘째",
+ "since": "2026-11-13T06:38:48Z",
+ "beat": "2026-11-13T06:38:48Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24re 여섯째 웹앱 1.78.579",
   "at": "2026-11-13T06:38:46Z"
  },
- "host": null
+ "host": "vm-cbuild"
 }
