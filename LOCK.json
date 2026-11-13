@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "view1 클라우드 진단 pxreg 판",
+ "since": "2026-11-13T06:09:55Z",
+ "beat": "2026-11-13T06:09:55Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rv1b 웹앱 1.78.575 · 수집기 1.89.314 · ext 0.6.20 · 노선표 0.14.189 · 클라우드 0.35.215 (00fe2f96)",
   "at": "2026-11-13T06:09:23Z"
  },
- "host": null
+ "host": "vm-view1"
 }
