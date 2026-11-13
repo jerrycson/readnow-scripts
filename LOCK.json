@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "cbuild",
+ "what": "클라우드 cbuild 둘째",
+ "since": "2026-11-13T06:49:30Z",
+ "beat": "2026-11-13T06:49:30Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "spare2 셋째 웹앱 1.78.582 · 수집기 1.89.319 — 배정표 쓴 양 부풂 고침 (9e8b2bfb)",
   "at": "2026-11-13T06:49:10Z"
  },
- "host": null
+ "host": "vm-cbuild"
 }
