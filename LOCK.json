@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "bump1 — 🔼 끌올 평생 기록·효과 웹앱 판",
- "since": "2026-11-13T06:13:20Z",
- "beat": "2026-11-13T06:13:20Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: note4 정범 노트 보류 탭·버블 메모·아래 입력칸 판 내기",
-  "at": "2026-11-13T06:21:49Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
-  "who": "cbuild",
-  "done": "클라우드 0.35.217 Cloud Build 결과 남기기 (5c4d2b08)",
-  "at": "2026-11-13T06:12:20Z"
+  "who": "lead",
+  "done": "bump1 웹앱 1.78.576 끌올 평생 기록·효과 f732d2bd",
+  "at": "2026-11-13T06:23:08Z"
  },
- "host": "wk-bump1"
+ "host": null
 }
