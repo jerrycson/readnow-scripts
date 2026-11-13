@@ -23,7 +23,7 @@ const io = L.pxIncObj(j1.det, (v) => ({ inc: v })); ok('incObj', io.dv.mobile.in
 
 // ── ② pxExpRun
 const pa = src.indexOf('async function pxExpRun('); const endS = "log('🔬 조회수 실험', v.op || 'add', JSON.stringify(res).slice(0, 300)); }"; const pb = src.indexOf(endS, pa) + endS.length; const code = src.slice(pa, pb);
-const mk = new Function('C', 'peRead', 'peFormSubmit', 'curPage', 'FV', 'sleep', 'nowIso', 'log', 'W', 'login', 'peTxt', 'Date', code + '\nreturn pxExpRun;');
+const mk0 = new Function('C', 'peRead', 'peFormSubmit', 'curPage', 'FV', 'sleep', 'nowIso', 'log', 'W', 'login', 'peTxt', 'Date', 'jsleep', 'PXON', 'asMod', code + '\nreturn pxExpRun;'); const mk = (...a) => mk0(...a, a[5], { set: null }, async () => null); /* (11/13 rv2) pxExpRun이 11/02부터 jsleep(쉼 ±15% 흩기)·PXON(방금 붙인 번호 바로 셈)·asMod(공용 일정 파일 — 매일 일 문지기)를 함께 씀 → 떼어 돌리는 시험도 그 셋을 넣어 줌(jsleep = 가짜 시계 sleep · PXON 빈 칸 · asMod 못 받음 = 예전 규칙) */
 const peTxt = (h) => String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
 let clock = 0; const FakeDate = class extends Date { static now() { return clock; } };
 function env(notes, grades, store0, opt) { opt = opt || {}; const store = store0 || { px_exp: {}, px_exp_groups: {} }; const edits = []; let logins = 0;
@@ -76,7 +76,7 @@ function env(notes, grades, store0, opt) { opt = opt || {}; const store = store0
   const Cd = (n, id) => ({ id, get: async () => ({ id, exists: !!(S[n] || {})[id], data: () => ((S[n] || {})[id] ? JSON.parse(JSON.stringify(S[n][id])) : undefined) }), set: async (o, m) => { S[n] = S[n] || {}; S[n][id] = m && m.merge ? mergeD(S[n][id] || {}, o) : mergeD({}, o); } });
   const Cx = (n) => mkq(n); const dbx = { runTransaction: async (fn) => fn({ get: (r) => r.get(), set: (r, v, o) => r.set(v, { merge: true }), update: (r, v) => r.set(v, { merge: true }) }), getAll: async (...refs) => { refs = refs.filter((x) => x && x.get); return Promise.all(refs.map((r) => r.get())); } };
   const MathR = Object.create(Math); MathR.random = rnd; const logs = [];
-  const mk2 = new Function('C', 'db', 'FV', 'nowIso', 'log', 'realNote', 'Math', dcode + '\nreturn { pxDailyTick, pxSpGroup };'); const F = mk2(Cx, dbx, { arrayUnion: (x) => ({ __au: x }), serverTimestamp: () => 'ts', increment: (n) => ({ __inc: n }) }, () => new Date().toISOString(), (...x) => logs.push(x.join(' ')), realNote, MathR);
+  const asP = [__dirname + '/../readnow-autosched-core.js', __dirname + '/../../readnow-autosched-core.js'].find((f) => fs.existsSync(f)); const coreFetchX = async (f) => (f === 'readnow-autosched-core.js' && asP ? { ok: true, text: async () => fs.readFileSync(asP, 'utf8') } : { ok: false }); /* (11/13 rv2) 매일 계획은 10/27 뒤 공용 파일 readnow-autosched-core.js의 AS.pxPlan이 함(클라우드는 asMod → coreFetch로 받아 씀) — 떼어 돌리는 시험도 그 파일을 저장소에서 읽어 넘김 · PC 신호(pcReader)는 없음으로 */ const mk2 = new Function('C', 'db', 'FV', 'nowIso', 'log', 'realNote', 'Math', 'coreFetch', 'coreVer', 'pcReader', dcode + '\nreturn { pxDailyTick, pxSpGroup };'); const F = mk2(Cx, dbx, { arrayUnion: (x) => ({ __au: x }), serverTimestamp: () => 'ts', increment: (n) => ({ __inc: n }) }, () => new Date().toISOString(), (...x) => logs.push(x.join(' ')), realNote, MathR, coreFetchX, {}, async () => null);
   S.app_settings.pxDaily = { at: '00:00' };
   const t1 = await F.pxDailyTick(); const g = S.px_exp_groups.sp_grade_2000;
   const cnt = (c) => g.lids.filter((k) => g.cell[k] === c).length; const findL = (lid) => Object.values(S.prd_listings).find((x) => x.listingId === lid); const noteOf = (lid) => (S.prd_used_info[lid] || {}).note;
@@ -86,8 +86,8 @@ function env(notes, grades, store0, opt) { opt = opt || {}; const store = store0
   ok('spSp', g.lids.every((k) => { const sp = g.sp[k]; return (g.cell[k] <= 'B' ? sp >= 5000 : sp <= 500); }) && !g.lids.includes('999') && g.lids.every((k) => ['중', '상'].includes(findL(k).grade)) && g.cells.A.short === 100 && g.cells.A.noteFirst === 300, g.cells);
   ok('spOnce', S.app_settings.pxSpGroup1027.done === true);
   const D1 = Object.values(S.shp_cmds).filter((x) => x.daily); const nPlan = D1.reduce((a, x) => a + x.listingIds.length, 0);
-  ok('dailyPlan', D1.length === 3 && nPlan === 300 && D1.every((x) => x.status === 'held' && x.gid === 'sp_grade_2000' && x.rid && x.listingIds.length <= 100 && x.grades) && S.app_settings.pxDaily.lastDay && S.px_exp_groups.sp_grade_2000.runs[S.app_settings.pxDaily.lastDay].plan === 300, { n: D1.length, nPlan, t1 });
-  const t2 = await F.pxDailyTick(); const D2 = Object.values(S.shp_cmds).filter((x) => x.daily); ok('dailyOnce', D2.length === 3, D2.length);
+  ok('dailyPlan', D1.length === 19 && nPlan === 1900 && /* (11/13 rv2) 하루 붙이기 기본 300 → 3,000(정범님 11/08 · autosched 0.18.19) — 후보 1,900개가 모두 하루 몫 안 = 100개씩 19묶음 · 하루 최대는 아래 day2(cap 5)가 봄 */ D1.every((x) => x.status === 'held' && x.gid === 'sp_grade_2000' && x.rid && x.listingIds.length <= 100 && x.grades) && S.app_settings.pxDaily.lastDay && S.px_exp_groups.sp_grade_2000.runs[S.app_settings.pxDaily.lastDay].plan === 1900, { n: D1.length, nPlan, t1 });
+  const t2 = await F.pxDailyTick(); const D2 = Object.values(S.shp_cmds).filter((x) => x.daily); ok('dailyOnce', D2.length === 19, D2.length);
   // 차례: 하나도 대기·하는 중이 아니면 nextAt 지난 held 하나만 대기로
   for (const x of D2) x.nextAt = '2000-01-01T00:00:00Z'; await F.pxDailyTick(); const q1 = Object.values(S.shp_cmds).filter((x) => x.status === 'queued').length; await F.pxDailyTick(); const q2 = Object.values(S.shp_cmds).filter((x) => x.status === 'queued').length; ok('promoteOne', q1 === 1 && q2 === 1, { q1, q2 });
   // 다음 날 — 사람이 끝낸 것·이미 실험 중(→ 확인)·판매 끝난 것
