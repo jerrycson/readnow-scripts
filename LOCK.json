@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shoplogo1",
+ "what": "북스퀸 로고 파격 시안 v3~v12",
+ "since": "2026-11-13T16:14:20Z",
+ "beat": "2026-11-13T16:14:20Z",
  "ask": null,
  "last": {
   "who": "shopadm1",
   "done": "웹앱 1.78.609 · 클라우드 0.35.244 F39 (c9f5caf0)",
   "at": "2026-11-13T16:14:10Z"
  },
- "host": null
+ "host": "vm-shoplogo1"
 }
