@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "const1: CLAUDE.md 헌장 첫 줄(문서만)",
- "since": "2026-11-13T03:31:42Z",
- "beat": "2026-11-13T03:31:42Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: note2 정범 노트 판(웹앱+클라우드)",
-  "at": "2026-11-13T03:32:15Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "클라우드 0.35.205(urgord delivchk 고침)",
-  "at": "2026-11-13T03:31:04Z"
+  "done": "const1: CLAUDE.md 헌장·참고LOST 첫 줄 5ff31854(문서만 · 판 없음)",
+  "at": "2026-11-13T03:32:19Z"
  },
- "host": "vm-const1"
+ "host": null
 }
