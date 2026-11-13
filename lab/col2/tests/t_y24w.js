@@ -163,6 +163,7 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
       ok(xS && xS.state === 'fail' && /저장되지 않음/.test(xS.msg) && !(await ws()).stop && P('300000005').ORD_REMAIN_CNT === 2, '눌러도 예스24가 아무 반응 없고 값이 그대로 = 저장 안 됨(실패) · 쓰기를 멈추지 않음', xS && xS.msg); Y.S.silent = false; }
     ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 10, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
     const st = (await H.api('GET', '/status')).j.y24; ok(st.w && st.w.ok1 && st.w.stop == null, '상태(/status y24.w)에 쓰기 줄 요약');
+    ok(st.w.grid && st.w.grid.probe && st.w.grid.probe.v === 1 && Array.isArray(st.w.grid.probe.M) && Array.isArray(st.w.grid.probe.cols) && JSON.stringify(st.w.grid.probe).length < 30000 && !Y.S.log.some((l) => /Save|Modify/i.test(l.p) && l.probe), '(y24re 0.1.54) 등록상품 표 칸·화면 함수 원문을 한 번 읽어 상태에 실음(누르지 않음 · 30KB 아래) — 칸 ' + ((st.w.grid && st.w.grid.probe && st.w.grid.probe.cols) || []).length);
   } finally { try { await H.stop(); } catch (e) {} killDir(D); }
   Y.srv.close(); L.done('t_y24w');
 })();

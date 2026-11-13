@@ -59,6 +59,13 @@ const rowsOf=(gv)=>{const ds=gv.getDataSource();const n=+ds.getRowCount()||0;con
 const JS_GRID = `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표 없음'};const ds=gv.getDataSource();const o=ds.getRowCount()>0&&ds.getJsonRow?ds.getJsonRow(0):null;const keys=o?Object.keys(o).slice(0,90):[];
 const ed=(f)=>{try{const c=typeof gv.columnByField==='function'?gv.columnByField(f):null;if(!c)return null;return{e:c.editable!==false&&!(c.editor&&c.editor.readOnly)&&c.readOnly!==true,h:String((c.header&&(c.header.text||c.header))||'').slice(0,30)}}catch(e){return null}};
 const W=keys.filter((k)=>/PRICE|PR$|PRC|ENTR_GOODS_CD|MAN_NO|REMAIN|REM_CNT|STATE_GB$|STAT_GB$/i.test(k));const cols={};for(const k of W)cols[k]=ed(k);let gopt=null;try{gopt=typeof gv.getEditOptions==='function'?gv.getEditOptions():null;gopt=gopt?{editable:gopt.editable!==false,commitByCell:!!gopt.commitByCell}:null}catch(e){}return{ok:true,n:+ds.getRowCount()||0,keys,cols,opt:gopt}})()`;
+/* (y24re 0.1.54 · 정범님 '웹앱이 예스24에 직접 반영하는 첫 일 — 실제 반영을 확인' · 헌장 제13조 원문부터) 재고수량 칸을 표가 못 고치게 해 저장이 안 됨(HOME 11/13 13:40 '경고' 상자)
+ *  → 사람은 어떤 길로 수량을 바꾸는지 화면 코드에서 읽기만: 표 칸 목록(이름·칸·머리·고칠 수 있음·그림 종류) + 이 화면 구성 요소의 함수 중 상세·수정·저장·재고 관련 함수 글(앞 500자) — 누르는 것 0 · 값·손님 정보 없음(코드 글만)
+ *  → 상태 grid.probe → 수집기가 col2_ctl/<PC>.y24hb.w.grid로 올림 → 진단으로 읽고 다음 판에서 그 길(상세수정 등)을 만듦 */
+const JS_PROBE = `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false};const cl=(v,n)=>String(v==null?'':v).replace(/\\s+/g,' ').slice(0,n||40);let cols=[];try{const C=typeof gv.getColumns==='function'?gv.getColumns():[];cols=C.slice(0,70).map((c)=>[cl(c.name),cl(c.fieldName),cl(c.header&&(c.header.text||c.header)),c.editable===false?0:1,cl(c.renderer&&(c.renderer.type||c.renderer.name)||c.type,20),cl(c.button,10)])}catch(e){}
+const M=[];const seen=new Set();const g=document.getElementById('productGrid');for(let el=g;el;el=el.parentElement){for(let v=el.__vue__,d=0;v&&d<8;v=v.$parent,d++){if(seen.has(v))continue;seen.add(v);const ms=(v.$options&&v.$options.methods)||{};for(const k of Object.keys(ms)){if(M.length>=16)break;if(!/detail|modify|edit|save|upd|stock|cnt|qty|remain|popup|open|valid|check|상세/i.test(k))continue;let src='';try{src=String(ms[k]).replace(/\\s+/g,' ').slice(0,500)}catch(e){}M.push([cl(k,40),src])}}}
+let cbs=[];try{cbs=['onCellEditable','onGetEditValue','onEditCommit','onCellEdited','onEditRowChanged','onCellButtonClicked','onCellItemClicked','onCellClicked'].filter((k)=>typeof gv[k]==='function').map((k)=>[k,String(gv[k]).replace(/\\s+/g,' ').slice(0,400)])}catch(e){}
+return{ok:true,url:location.pathname,cols,M,cbs}})()`;
 /* ① 검색 칸 채우고 [조회] — 읽기만(자체상품코드 = 우리 SKU · 기간 1년 · 판매상태 전체) */
 const SRCH = { 5: ['자체상품코드', '자체상품코드'], 3: ['ISBN', 'ISBN'], 0: ['상품명', '상품명'] };
 const JS_SEARCH = (self, opt) => { const op = String(opt == null ? 5 : opt); const nm = (SRCH[op] || SRCH[5])[0]; return `(()=>{${GV_JS}if(/login/i.test(location.pathname)||document.querySelector('input[type=password]'))return{login:true};
@@ -162,7 +169,8 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     if (!(f && f.ok && !f.busy && f.n === 0)) break; }
     if (f && how) f.how = how;
     if (!f || f.busy) return { err: '등록상품 목록이 다 그려지지 않음' }; if (!f.ok) return { err: f.why, shape: !!f.nogv }; if (!(o.Y.plAt > t0)) return { err: '[조회] 뒤 등록상품 목록 응답을 못 봄' };
-    if (f.n > 0 && !(R.rec.grid && now() - (+R.rec.grid.at || 0) < 6 * 3600e3)) { try { const g = await o.ev(JS_GRID); if (g && g.ok) { R.rec.grid = { at: now(), n: g.n, keys: g.keys, cols: g.cols, opt: g.opt }; saveRec(); } } catch (e) {} } return f; }
+    if (f.n > 0 && !(R.rec.grid && now() - (+R.rec.grid.at || 0) < 6 * 3600e3)) { try { const g = await o.ev(JS_GRID); if (g && g.ok) { R.rec.grid = { at: now(), n: g.n, keys: g.keys, cols: g.cols, opt: g.opt, probe: (R.rec.grid && R.rec.grid.probe) || null }; saveRec(); } } catch (e) {} }
+    if (f.n > 0 && R.rec.grid && !(R.rec.grid.probe && R.rec.grid.probe.v === 1)) { try { const p = await o.ev(JS_PROBE, 15000); if (p && p.ok) { R.rec.grid.probe = { v: 1, at: now(), url: p.url, cols: p.cols, M: p.M, cbs: p.cbs }; saveRec(); note(`🔬 예스24 등록상품 표·화면 함수 읽음(누르지 않음) — 칸 ${p.cols.length} · 함수 ${p.M.length} · 표 이벤트 ${p.cbs.length}`); } } catch (e) {} } /* (y24re 0.1.54) 한 번만 — 수량을 바꾸는 사람의 길 원문 */ return f; }
   const vOf = (h) => (h ? { qty: h.qty, st: h.st, stNm: h.stNm, price: h.price == null ? null : +h.price } : null);
   const vTxt = (v) => (v ? `${v.stNm || v.st || '?'}·${v.qty == null ? '?' : v.qty}권${v.price != null ? '·' + v.price + '원' : ''}` : '?');
   /* 줄 하나 — 돌려줌 { state: done|already|fail|unsure|login, pre, msg, todo, before, after } */
