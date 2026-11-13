@@ -1,2 +1,5 @@
-slearn=2&mem=1
-# 222629527
+run=1
+doc=app_settings/col2_solo
+col2=2026-11-13
+pend=1
+# 2531425369
