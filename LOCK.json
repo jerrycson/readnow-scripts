@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "kpsum",
+ "what": "출판 정보 요약",
+ "since": "2026-11-13T20:50:46Z",
+ "beat": "2026-11-13T20:50:46Z",
  "ask": null,
  "last": {
   "who": "y24qty2",
   "done": "웹앱 1.78.619 · 수집기 1.89.331 (1f11d6df)",
   "at": "2026-11-13T20:02:09Z"
  },
- "host": null
+ "host": "vm"
 }
