@@ -1,2 +1,2 @@
-doc=app_settings/bi_x
-# 2279123938
+@kpin kpin/aud_20261113-193708.json
+# 192730082
