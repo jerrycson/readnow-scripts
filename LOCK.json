@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cloudmem 여섯째 판",
+ "since": "2026-11-13T02:41:31Z",
+ "beat": "2026-11-13T02:41:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "home2: 번외 0.1.50 · c6fb23c9",
   "at": "2026-11-13T02:37:59Z"
  },
- "host": null
+ "host": "vm-cloudmem"
 }
