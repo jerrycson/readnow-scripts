@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "home2 번외 홀로 연결 저절로 등록·예스24 다시 로그인 판",
- "since": "2026-11-13T01:44:55Z",
- "beat": "2026-11-13T01:44:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "클라우드 0.35.194·0.35.195(cloudmem 둘째·셋째) · b58d6c55",
-  "at": "2026-11-13T01:44:44Z"
+  "done": "home2: 웹앱 1.78.548 · 클라우드 0.35.196 · 번외 0.1.49 · 288d1ef3",
+  "at": "2026-11-13T01:47:27Z"
  },
- "host": "vm-home2"
+ "host": null
 }
