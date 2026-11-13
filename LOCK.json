@@ -3,11 +3,7 @@
  "what": "rv1b: 넷째 판 올리기(ext 0.6.23)",
  "since": "2026-11-13T07:48:35Z",
  "beat": "2026-11-13T07:53:31Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: land1: h4 19금 멈춤 고침 + 노트 대분류 이름",
-  "at": "2026-11-13T07:59:13Z"
- },
+ "ask": null,
  "last": {
   "who": "url1",
   "done": "웹앱 1.78.587 새 주소 휴대폰 앱 설치(manifest 상대 경로·web.app→readnow.kr) (06b16daf)",
