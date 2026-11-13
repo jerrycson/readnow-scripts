@@ -38,10 +38,10 @@ if (process.env.RN_PORT && fs.existsSync(path.join(process.cwd(), 'harness.js'))
       o.logos = sh.querySelectorAll('#bq_look input[name="bql_logo"]').length; o.checked = (sh.querySelector('#bq_look input[name="bql_logo"]:checked') || {}).value; o.theme = (sh.querySelector('#bql_theme') || {}).value; o.groups = sh.querySelectorAll('#bq_look fieldset').length; o.imgs = [...sh.querySelectorAll('#bq_look .bqlg img')].map((i) => i.getAttribute('src')).slice(0, 2);
       const q7 = sh.querySelector('#bq_look input[name="bql_logo"][value="q07"]'); q7.checked = true; q7.dispatchEvent(new Event('change', { bubbles: true })); await Wt(300);
       const t = sh.querySelector('#bql_theme'); t.value = 'wine'; t.dispatchEvent(new Event('change', { bubbles: true })); await Wt(300); const hs = sh.querySelector('#bql_heroTitle'); hs.value = '시험 제목'; hs.dispatchEvent(new Event('input', { bubbles: true })); await Wt(100);
-      o.pv = sh.querySelector('#bql_pv').href; window.__FSW = []; const sv = sh.querySelector('#bql_save'); sv.click(); await Wt(200); o.once = (window.__FS.app_settings.shop || {}).brandLogo; sh.querySelector('#bql_save').click(); await Wt(700);
+      o.pv = sh.querySelector('#bql_pv').href; window.__FSW = []; await Wt(1500); /* 다른 카드(👑 판 고르기)가 늦게 받아 다시 그리는 것이 끝난 뒤 */ const sv = sh.querySelector('#bql_save'); sv.click(); await Wt(200); o.once = (window.__FS.app_settings.shop || {}).brandLogo; sh.querySelector('#bql_save').click(); await Wt(700);
       const d = window.__FS.app_settings.shop || {}; o.saved = { logo: d.brandLogo, look: d.look, open: d.open }; return o; }).catch((e) => { bad++; console.log('  ❌ 관리 화면 시험 멈춤', e.message); return null; });
     if (!r) return; const pv = new URL(r.pv); const pq = new URLSearchParams(pv.hash.split('?')[1] || '');
-    ok(r.card && r.logos === 11 && r.checked === 'q02' && r.theme === 'forest' && r.groups >= 7 && /booksqueen\.com\/brand\/q01\.svg$/.test(r.imgs[0] || ''), `🎨 우리숍 꾸밈 카드: 로고 고르기 ${r.logos}칸(글자 로고 + 시안 10 · 그림으로) · 저장된 q02·숲 색 그대로 · 칸 묶음 ${r.groups}개`, r);
+    ok(r.card && r.logos === 11 && r.checked === 'q02' && r.theme === 'forest' && r.groups >= 7 && /booksqueen\.com\/brand\/q01(\/v\d+)?\.svg$/.test(r.imgs[0] || ''), `🎨 우리숍 꾸밈 카드: 로고 고르기 ${r.logos}칸(글자 로고 + 시안 10 · 그림으로) · 저장된 q02·숲 색 그대로 · 칸 묶음 ${r.groups}개`, r);
     ok(pq.get('logo') === 'q07' && BQL.previewCfg(pq.get('look')).theme === 'wine' && BQL.previewCfg(pq.get('look')).heroTitle === '시험 제목', '고치는 대로 「👀 미리 보기」 주소가 따라감(저장 안 함 · 손님 화면 #/?look=…&logo=q07)', r.pv);
     ok(r.once === 'q02' && r.saved.logo === 'q07' && r.saved.look.theme === 'wine' && r.saved.look.heroTitle === '시험 제목' && Object.keys(r.saved.look).length === 2 && r.saved.open === 0 && !dlg.length, '저장은 두 번 눌러야 · brandLogo + look(기본과 다른 칸만) · 다른 우리숍 설정(문 열기)은 그대로 · 브라우저 창 0', r.saved);
     await p.evaluate(() => document.querySelector('#bq_look').scrollIntoView());
@@ -56,6 +56,8 @@ if (process.env.RN_PORT && fs.existsSync(path.join(process.cwd(), 'harness.js'))
     await p.evaluate(() => document.querySelector('#bq_look .bqlg:nth-child(4)').scrollIntoView({ block: 'center' })); await p.waitForTimeout(300); await p.tap('#bq_look .bqlg:nth-child(4)'); await p.waitForTimeout(700); /* (정범님 23:08 「휴대폰에서 로고 선택이 안 돼」) 손가락 누름 */
     const t = await p.evaluate(() => ({ ed: S._bqLookEd && S._bqLookEd.logo, mark: [...document.querySelectorAll('#bq_look .bqlg small')].map((x) => x.textContent).filter((x) => /✓/.test(x)) }));
     ok(t.ed === 'q03' && t.mark.length === 1 && /q03/.test(t.mark[0]), '휴대폰 손가락 누름(터치)으로 로고 q03 고름 → 그 칸에 ✓ 하나(전엔 값만 바뀌고 ✓가 그대로라 안 골라진 것처럼 보였음)', t);
+    await p.evaluate(() => document.querySelector('#bql_save').scrollIntoView({ block: 'center' })); await p.waitForTimeout(1500); await p.tap('#bql_save'); await p.waitForTimeout(400); await p.tap('#bql_save'); await p.waitForTimeout(1200);
+    const sv = await p.evaluate(() => (window.__FS.app_settings.shop || {}).brandLogo); ok(sv === 'q03', '휴대폰 손가락으로 저장 두 번 → app_settings/shop.brandLogo = q03(손님 머리띠에 1분 안)', sv);
     await p.screenshot({ path: path.join(process.env.RN_SHOT || os.tmpdir(), 'webapp390_look_card.png'), fullPage: false }); }, { vp: { width: 390, height: 844 }, touch: 1 }); }
 if (!process.env.RN_UI) { console.log(bad ? `❌ tSHOPUX_1113 ${bad}개 실패` : '✓ tSHOPUX_1113 순수 셈 통과 (화면 시험은 RN_UI=1)'); process.exit(bad ? 1 : 0); }
 
