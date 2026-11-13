@@ -1,2 +1,6 @@
-notes=1&n=10
-# 1912617826
+cmdsince=2026-11-09T15:00&types=alpsRun
+shplog=1&n=5
+cmds=alpsRun&n=40
+recentUp=shp_invoices&mins=240
+recentUp=shp_runs&mins=240
+# 16999647
