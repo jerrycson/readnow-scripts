@@ -340,6 +340,7 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
     if (Y.feed.cfg && Y.feed.cfg.off) { Y.msg = '웹앱 설정에서 예스24 모으기를 꺼 둠'; return 60e3; }
     if (Y.q.length >= 190) { Y.msg = `올리지 못한 예스24 응답 ${Y.q.length}개 — 수집기가 받아 갈 때까지 쉼`; return 15e3; }
     if (jobsOn() && jobPick()) { await jobOnce(); Y.msg = '🤖 맡긴 일 끝 — 다음'; return 500; }
+    if (W && W.chkPick && W.chkPick()) { await W.chkOnce(); Y.keepAt = now(); Y.msg = '🔎 예스24 쓰기 멈춤 확인 읽기 끝(누르지 않음)'; return 1500; } /* (y24qty1 0.1.61) 멈춘 쓰기의 지금 값을 한 번 읽어 남김 */
     if (W && W.pick()) { await W.once(); Y.keepAt = now(); Y.msg = '🟦 예스24 쓰기 한 묶음 끝 — ' + (W.R.msg || ''); return 1500; } /* (11/11 y24w) 수량·판매중지 — 자동 올림보다 먼저(팔린 책을 빨리 내림) */
     if (REG && REG.pick()) { await REG.once(); Y.keepAt = now(); Y.msg = '🟦 예스24 자동 올림 한 묶음 끝 — ' + (REG.R.msg || ''); return 1500; }
     const ordMin = ordMinNow();
