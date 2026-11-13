@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "priv4",
+ "what": "비공개 준비 — 웹앱 org 기록·번외 readnow.kr 먼저·도우미 1.8.30",
+ "since": "2026-11-13T21:56:21Z",
+ "beat": "2026-11-13T21:56:21Z",
  "ask": null,
  "last": {
   "who": "shopview2",
   "done": "웹앱 1.78.621 · 클라우드 0.35.248 👀 손님 화면으로 보기 · a6c212e0",
   "at": "2026-11-13T21:38:51Z"
  },
- "host": null
+ "host": "vm-priv4"
 }
