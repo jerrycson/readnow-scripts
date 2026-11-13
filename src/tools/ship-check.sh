@@ -62,6 +62,7 @@ W7=$(dirname "$0")/weigh.js; command -v node >/dev/null && [ -f "$W7" ] && timeo
 G8=$(dirname "$0")/test-gate.js
 if [ ! -f "$G8" ]; then say "시험 문지기(src/tools/test-gate.js)가 없음 — 최신 main을 받을 것"
 elif ! command -v node >/dev/null; then say "node가 없어 빠른 시험을 못 돌림 — 급하면 RN_QUICK_SKIP=1(까닭을 커밋 글에)"
+elif [ $bad = 1 ]; then echo "⏭ 앞 검사에서 이미 막혀 ⑧ 빠른 시험(약 3분)은 건너뜀 — 위 ❌를 고친 뒤 다시 push하면 돎"; node "$G8" --base $M --target "$T" --no-tests >/dev/null || true
 elif [ -n "${RN_QUICK_SKIP:-}" ]; then node "$G8" --base $M --target "$T" --no-tests || say "시험 문지기(⑩ 업데이트 기록·장부 꼴)에서 막음 — 위 ❌ 줄"
 else node "$G8" --base $M --target "$T" || say "시험 문지기(⑧ 빠른 시험·⑩ 업데이트 기록)에서 막음 — 위 ❌ 줄"; fi
 [ $bad = 0 ] && echo "✓ push 전 검사 통과($who · $(printf '%s\n' "$changed" | wc -l)개 파일)"; exit $bad
