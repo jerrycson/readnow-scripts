@@ -1,2 +1,2 @@
-notes=1&n=10
-# 100856156
+doc=app_settings/col2_solo
+# 2569627311
