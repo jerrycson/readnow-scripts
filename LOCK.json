@@ -1,13 +1,13 @@
 {
- "holder": "shopview2",
- "what": "👀 손님 화면으로 보기 판 내기",
- "since": "2026-11-13T21:30:19Z",
- "beat": "2026-11-13T21:30:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "rel14",
-  "done": "웹앱 1.78.620 검색 칸 이어 하기(srch1 ②③④) · 99057047",
-  "at": "2026-11-13T21:29:43Z"
+  "who": "shopview2",
+  "done": "웹앱 1.78.621 · 클라우드 0.35.248 👀 손님 화면으로 보기 · a6c212e0",
+  "at": "2026-11-13T21:38:51Z"
  },
- "host": "vm-shopview2"
+ "host": null
 }
