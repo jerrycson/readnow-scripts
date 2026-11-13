@@ -1,2 +1,2 @@
-heads=1&shopsrv=1
-# 262523710
+slearn=2&mem=1
+# 222629527
