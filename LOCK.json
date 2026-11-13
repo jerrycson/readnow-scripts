@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "rv3 웹앱 판 — 재고 맞추기 네이버·우리숍 진열 점검",
- "since": "2026-11-13T05:53:32Z",
- "beat": "2026-11-13T05:53:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24re 다섯째 웹앱 1.78.572 · 번외 0.1.55",
-  "at": "2026-11-13T05:53:24Z"
+  "done": "rv3 웹앱 1.78.573 재고 맞추기 네이버·우리숍 진열 점검 d8eb5721",
+  "at": "2026-11-13T05:57:34Z"
  },
- "host": "vm-rv3"
+ "host": null
 }
