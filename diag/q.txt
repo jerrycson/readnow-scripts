@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202611131623
-# 321412000
+doc=app_settings/ship_auto_beat
+# 2415421073
