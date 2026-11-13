@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>북스퀸 로고 아이디어 100</title>
+<!-- 💡 북스퀸 로고 아이디어 100(11/13 logo100 · 정범님 23:30 「서로 엄격히 다른 스타일의 새로운 로고 100개 브레인스토밍」)
+     자료 하나만 읽어 그림: ideas/ideas.json(번호·이름·축·의도·추천 10) · 그림 ideas/iNNN/{h,h-dark,icon}.svg
+     관리 사이트(readnow.kr/shop/brand/)에만 올라감 — 손님 사이트(booksqueen.com) 결과물에는 ideas/를 담지 않음(hosting/build-shop.js)
+     주소 끝 ?top=1 = 추천 10만 · ?q=낱말 = 이름·축·의도에서 찾기 · 다음 판은 iNNN/v2… 로 더하고 ideas.json에 적음(약속 79) -->
+<style>
+:root { --bg: #f4f1ea; --card: #fff; --ink: #1f2430; --mut: #646a78; --line: #e2dccd; --navy: #1d2b45; --gold: #a8801f; --chip: #efe9da; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14171d; --card: #1d2129; --ink: #ecebe6; --mut: #a2a7b3; --line: #2e3440; --gold: #f3d58a; --chip: #262b35; } }
+:root[data-theme="dark"] { --bg: #14171d; --card: #1d2129; --ink: #ecebe6; --mut: #a2a7b3; --line: #2e3440; --gold: #f3d58a; --chip: #262b35; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
+header.pg { padding: 22px 0 6px; } header.pg h1 { margin: 0 0 4px; font-size: 24px; } header.pg p { margin: 0; color: var(--mut); }
+header.pg a { color: var(--gold); }
+.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+.bar a, .bar button { text-decoration: none; color: var(--ink); background: var(--chip); border: 0; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.bar a.on, .bar button.on { background: var(--navy); color: #fff; }
+.bar input { flex: 1 1 200px; min-width: 0; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-width: 0; }
+.card.top { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.card h3 { margin: 0 0 4px; font-size: 16px; } .card h3 code { font-size: 12px; color: var(--mut); margin-right: 6px; } .card h3 .st { color: var(--gold); margin-left: 4px; }
+.lt, .dk { border-radius: 10px; padding: 10px; height: 76px; display: flex; align-items: center; overflow: hidden; }
+.lt { background: #faf7f0; border: 1px solid #e7e1d3; } .dk { background: #1d2b45; margin-top: 6px; }
+.lt img, .dk img { max-height: 56px; max-width: 100%; display: block; }
+.ics { display: flex; align-items: flex-end; gap: 10px; margin: 8px 0 4px; } .ics img { display: block; }
+.hd { display: flex; align-items: center; gap: 6px; background: #1d2b45; border-radius: 8px; padding: 0 10px; height: 44px; flex: 1; min-width: 0; overflow: hidden; } .hd img { height: 28px; max-width: 100%; object-fit: contain; object-position: left; }
+.int { font-size: 14px; margin: 6px 0; }
+.ax { display: flex; flex-wrap: wrap; gap: 4px; } .ax span { font-size: 12px; background: var(--chip); border-radius: 6px; padding: 1px 6px; color: var(--mut); } .ax b { font-weight: 600; color: var(--ink); margin-right: 3px; }
+.why { font-size: 13px; color: var(--mut); border-top: 1px dashed var(--line); margin-top: 8px; padding-top: 6px; } .why b { color: var(--gold); }
+.fonts { font-size: 12px; color: var(--mut); margin-top: 4px; }
+h2.sec { font-size: 18px; margin: 22px 0 8px; }
+.err { color: #b0322a; }
+footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="pg"><h1>💡 북스퀸 로고 아이디어 100</h1>
+<p>시안(q01~q10)과 겹치지 않게 시대·매체·형태·문화·상징 다섯 축을 엇갈려 짠 새 방향 100개 — 그림마다 가로형(밝은·어두운 바탕) · 아이콘 · 휴대폰 머리띠(28px) 크기 · <a href="project.html">👑 로고 프로젝트로 돌아가기</a></p>
+<nav class="bar" id="bar"></nav></header>
+<section id="topsec"></section>
+<h2 class="sec" id="h_all">아이디어 모두</h2>
+<main class="grid" id="list"><p>자료를 읽는 중…</p></main>
+<footer>자료: ideas/ideas.json · 그림: ideas/iNNN/(h.svg 밝은 바탕 · h-dark.svg 어두운 바탕 · icon.svg 정사각) — 글자는 모두 SIL OFL 글꼴의 윤곽선이라 기기 글꼴과 상관없이 똑같이 보입니다. 아이디어 단계라 손님 사이트에는 올리지 않습니다. 고른 것은 시안(qNN)으로 옮겨 판을 붙여 다듬습니다.</footer>
+</div>
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const Q = new URLSearchParams(location.search);
+  const base = (() => { const b = Q.get('base'); return b && /^(\.\.?\/|https:\/\/readnow\.kr\/)[\w./-]*$/.test(b) ? b : ''; })();
+  const D = base + 'ideas/';
+  let M = null; let onlyTop = Q.get('top') === '1'; let q = Q.get('q') || '';
+  const okId = (id) => /^i\d{3}$/.test(id);
+  function card(it, top) {
+    if (!okId(it.id)) return '';
+    const w = M.top10_why && M.top10_why[it.id];
+    const ax = Object.keys(it.axes || {}).map((k) => '<span><b>' + esc(k) + '</b>' + esc(it.axes[k]) + '</span>').join('');
+    const p = D + it.id + '/';
+    return '<article class="card' + (top ? ' top' : '') + '" id="' + it.id + '"><h3><code>' + it.no + '</code>' + esc(it.name) + (top ? '<span class="st">★ 추천</span>' : '') + '</h3>' +
+      '<div class="lt"><img loading="lazy" src="' + p + 'h.svg" alt="' + esc(it.name) + ' 밝은 바탕"></div>' +
+      '<div class="dk"><img loading="lazy" src="' + p + 'h-dark.svg" alt="' + esc(it.name) + ' 어두운 바탕"></div>' +
+      '<div class="ics"><img loading="lazy" src="' + p + 'icon.svg" width="56" height="56" alt="아이콘"><img loading="lazy" src="' + p + 'icon.svg" width="32" height="32" alt=""><img loading="lazy" src="' + p + 'icon.svg" width="16" height="16" alt=""><div class="hd"><img loading="lazy" src="' + p + 'h-dark.svg" alt="머리띠 크기"></div></div>' +
+      '<p class="int">' + esc(it.intent) + '</p><div class="ax">' + ax + '</div>' +
+      '<div class="fonts">글꼴: ' + esc((it.fonts || []).join(' · ')) + '</div>' +
+      (w ? '<div class="why"><b>추천 까닭</b> (가독성 ' + w.score['가독성'] + ' · 기억 ' + w.score['기억'] + ' · 책방 ' + w.score['책방'] + ' · 여왕 ' + w.score['여왕'] + ' = ' + w.sum + '/20) ' + esc(w.why) + '</div>' : '') + '</article>';
+  }
+  function draw() {
+    const top = new Set(M.top10 || []);
+    const all = M.ideas || [];
+    $('#bar').innerHTML = '<button type="button" data-t="0"' + (onlyTop ? '' : ' class="on"') + '>아이디어 ' + all.length + '개 모두</button><button type="button" data-t="1"' + (onlyTop ? ' class="on"' : '') + '>★ 리드 추천 ' + top.size + '개만</button><input id="q" type="search" placeholder="찾기 — 예: 한글 · 네온 · 고양이 · 아르데코" value="' + esc(q) + '">';
+    const lq = q.trim().toLowerCase();
+    const hit = (it) => !lq || [it.name, it.intent, JSON.stringify(it.axes || {}), String(it.no)].join(' ').toLowerCase().indexOf(lq) >= 0;
+    const tops = (M.top10 || []).map((id) => all.find((x) => x.id === id)).filter(Boolean);
+    $('#topsec').innerHTML = tops.length && !lq ? '<h2 class="sec">★ 리드 추천 10</h2><p style="color:var(--mut);font-size:14px;margin:0 0 8px">' + esc(M.top10_note || '') + '</p><div class="grid">' + tops.map((it) => card(it, true)).join('') + '</div>' : '';
+    const rest = all.filter((it) => hit(it) && (!onlyTop || top.has(it.id)));
+    $('#h_all').textContent = onlyTop ? '' : (lq ? '찾은 아이디어 ' + rest.length + '개' : '아이디어 모두 ' + all.length + '개');
+    $('#list').innerHTML = onlyTop ? '' : (rest.map((it) => card(it, top.has(it.id))).join('') || '<p>찾은 것이 없습니다.</p>');
+    $('#bar').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { onlyTop = b.dataset.t === '1'; draw(); }));
+    const inp = $('#q'); inp.addEventListener('input', () => { q = inp.value; const pos = inp.selectionStart; draw(); const n = $('#q'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} });
+  }
+  fetch(D + 'ideas.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error('ideas.json ' + r.status); return r.json(); })
+    .then((j) => { M = j; draw(); })
+    .catch((e) => { $('#list').innerHTML = '<p class="err">아이디어 목록을 읽지 못했습니다(' + esc(e.message) + ') — 잠시 뒤 새로고침해 주세요.</p>'; });
+})();
+</script>
+</body>
+</html>
