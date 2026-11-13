@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shipwarn1",
+ "what": "출고 검토 경고 이유 요약",
+ "since": "2026-11-13T15:06:37Z",
+ "beat": "2026-11-13T15:06:37Z",
  "ask": null,
  "last": {
   "who": "shopsrv2",
   "done": "클라우드 0.35.242 숍 전용 서버 /status · 356d52ac",
   "at": "2026-11-13T15:06:31Z"
  },
- "host": null
+ "host": "vm-shipwarn1"
 }
