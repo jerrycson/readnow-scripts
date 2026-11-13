@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "tabfix 판: 수집기 뒤 탭·판 몰아 받기·매입가 나눔 기본",
- "since": "2026-11-13T03:12:34Z",
- "beat": "2026-11-13T03:12:34Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: anom1 판 내기 — 🧠 자료 이상 판단 엔진(웹앱·클라우드)",
-  "at": "2026-11-13T03:19:57Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "클라우드 0.35.204(urgord 긴급 발송요청 보호·delivchk)",
-  "at": "2026-11-13T03:06:40Z"
+  "done": "tabfix 5f86276d 웹앱 1.78.555 · 수집기 1.89.304",
+  "at": "2026-11-13T03:21:04Z"
  },
- "host": "vm-tabfix"
+ "host": null
 }
