@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rv1b: 기본 정보 빈 칸 덮지 않음(ext 0.6.23) 판",
+ "since": "2026-11-13T07:04:21Z",
+ "beat": "2026-11-13T07:04:21Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24re 일곱째 웹앱 1.78.586",
   "at": "2026-11-13T07:04:19Z"
  },
- "host": null
+ "host": "wk-rv1b"
 }
