@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "url2",
+ "what": "휴대폰 앱 설치 고침 판 내기(url2)",
+ "since": "2026-11-13T08:14:17Z",
+ "beat": "2026-11-13T08:14:17Z",
  "ask": null,
  "last": {
   "who": "srch1",
   "done": "웹앱 1.78.589 검색 칸 (1c63e97c)",
   "at": "2026-11-13T08:13:37Z"
  },
- "host": null
+ "host": "vm-url2"
 }
