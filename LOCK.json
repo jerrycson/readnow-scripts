@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty1",
+ "what": "번외 0.1.59 · 웹앱 판 예스24 판매중지 창·다시 맡기기",
+ "since": "2026-11-13T16:51:37Z",
+ "beat": "2026-11-13T16:51:37Z",
  "ask": null,
  "last": {
   "who": "y24qty1",
   "done": "웹앱 1.78.611 · 번외 0.1.58 예스24 [상세수정] 길 이동 (7799cfd7)",
   "at": "2026-11-13T16:42:30Z"
  },
- "host": null
+ "host": "vm"
 }
