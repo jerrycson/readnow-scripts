@@ -1375,6 +1375,7 @@ body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:f
 .pmk-src{margin:0 4px;vertical-align:middle}.pmk-src button{font-size:11px;padding:1px 8px}.pmk-why{font-size:10.5px}.pmk-y24g{margin:2px 0 4px;display:flex;flex-wrap:wrap;gap:4px}.pmk-y24o{font-size:12px;margin:2px 0}.pmk-y24t td,.pmk-y24t th{font-size:11.5px;padding:2px 5px}.pmk-y24me{background:#eaf2ff}
 /* (11/10 ux2) 🧩 화면 고침 — ① 알림 자리 ② 빠른 작업 ④ 머리 칸 점 ⑤ 검색 범위 칩 ⑥ 처리할 주문 줄 ⑧ 설정 묶음 */
 #ux2dock{position:fixed;left:10px;bottom:66px;z-index:9990;display:flex;flex-direction:column;gap:6px;width:min(330px,calc(100vw - 20px));pointer-events:none}#ux2dock.empty{display:none}
+@media (max-width:520px){body.jbn-on #ux2dock{display:none!important}} /* (note5 둘째 · 정범님 11/13 20:47) 휴대폰에서 📓 노트를 연 동안 아래 작은 알림 모음(내려받기·진행 띠)이 노트 아래 입력칸·[목록 보기]를 덮어 눌리지 않던 것 — 노트를 닫으면 다시 보임 */
 #ux2dock>*{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:auto!important;max-width:100%!important;pointer-events:auto}#ux2dock>#dlp{pointer-events:none}#ux2dock>#dlp>*{pointer-events:auto}
 #ux2dock>.ux2dk-hide{display:none!important}#ux2dock .ux2dk-sum{align-self:flex-start;border:0;border-radius:14px;padding:5px 11px;background:rgba(30,43,40,.9);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}#ux2dock .ux2dk-sum[hidden]{display:none}
 
@@ -1440,7 +1441,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.603';</script>
-<script src="readnow-webapp.js?v=1.78.603"></script>
+<script>const APP_VER = '1.78.605';</script>
+<script src="readnow-webapp.js?v=1.78.605"></script>
 </body>
 </html>
