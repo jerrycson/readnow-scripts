@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "rv1b: eBay 꼴만 바뀜(ext 0.6.22) 판",
- "since": "2026-11-13T06:53:11Z",
- "beat": "2026-11-13T06:54:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "note4 웹앱 1.78.583 · 클라우드 0.35.223 (4183bb6e)",
-  "at": "2026-11-13T06:52:50Z"
+  "done": "rv1b 셋째 웹앱 1.78.584 · 수집기 1.89.320 · ext 0.6.22 · 클라우드 0.35.224 (db96ef9f)",
+  "at": "2026-11-13T06:58:22Z"
  },
- "host": "wk-rv1b"
+ "host": null
 }
