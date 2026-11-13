@@ -1,2 +1,2 @@
-run=1&slearn=bg&mem=1
-# 1711132122
+slearn=2&mem=1
+# 583529580
