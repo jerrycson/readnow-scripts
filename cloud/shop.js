@@ -15,7 +15,7 @@
  *  넣지 않는 것: SKU(서가·매입처 칸이 들어 있음)·매입가·판매자 분류·시장 지표·손님 정보 · 미끼(DUPES)·19금·판매중 아님·값 없음은 목록에서 뺌
  *  읽기 비용: 처음(또는 FULL_H시간마다) 판매중 상품 전체 + 그 도서 정보 한 번 → 그 뒤 DELTA_MIN분마다 바뀐 상품(uploadedAt)만 · 도서 정보는 새 책만 */
 'use strict';
-const crypto = require('crypto'); const zlib = require('zlib'); const BQP = require('./shop-promo.js'); /* (11/11 shopc1) 🏷 우리숍 판매가 규칙·배지·묶음 할인·쿠폰 */
+const crypto = require('crypto'); const zlib = require('zlib'); const BQP = require('./shop-promo.js'); const ANLX = require('./shop-analytics.js'); /* (11/13 shopadm1) 📊 백오피스 방문 셈·배너·문의·미리 보기 */ /* (11/11 shopc1) 🏷 우리숍 판매가 규칙·배지·묶음 할인·쿠폰 */
 const IMG_BASE = 'https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/';
 const SHOP_ORIGINS = ['https://booksqueen.com', 'https://www.booksqueen.com', 'https://booksqueen.web.app', 'https://booksqueen.firebaseapp.com'];
 const DEF = { open: 0, name: '북스퀸', shipFee: 3500, freeOver: 0, payDays: 2, maxItems: 20, fullH: 12, deltaMin: 10 };
@@ -145,7 +145,7 @@ function pubCfg(c, meta, promo) {
   return { open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
     pay: c.open && bankOk ? { how: 'bank', bank: s(bank.name, 20), acct: s(bank.acct, 30), holder: s(bank.holder, 20) } : { how: 'wait' }, pg: 0 /* 카드·간편결제(PG)는 계약 뒤 — 자리만 */,
     biz: { name: s(bz.name, 40) || null, ceo: s(bz.ceo, 20) || null, addr: s(bz.addr, 120) || null, tel: s(bz.tel, 20) || null, email: s(bz.email, 60) || null, no: s(bz.no, 20) || null, mo: s(bz.mo, 40) || null, cpo: s(bz.cpo, 20) || null, host: 'Google Firebase(구글)' },
-    notice: s(c.notice, 300) || null, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
+    notice: s(c.notice, 300) || null, bnr: ANLX.bnrPub(c.anl && c.anl.bnr), trk: { on: ANLX.cfgOf(c.anl).on, ask: ANLX.cfgOf(c.anl).ask, keep: ANLX.cfgOf(c.anl).uactDays, ua: ANLX.cfgOf(c.anl).uact } /* (shopadm1) 📢 배너 · 💬 문의 · 방문 셈 켬/끔 · 시간줄 보존 일(개인정보 처리방침에 나감) */, shelf: shelfPub(c.shelf), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
 }
 
 /* ══ (11/11 shop2) 🔎 검색 노출 — 책마다 미리 만든 HTML · sitemap.xml (순수 셈 · 시험 tSHOP1111)
@@ -322,6 +322,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
     const a = Buffer.from(String(o.tokH || '')), b = Buffer.from(hashTok(tok)); if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null; return { ref: d.ref, o }; }
   const ST = { new: '주문 접수 — 입금을 기다립니다', paid: '입금 확인 — 포장 준비 중', ship: '출고 준비 중', sent: '보냈습니다', done: '끝', cancel: '취소됨' };
   const ACCT = require('./shop-acct.js').makeAcct({ db, C, FV, log, bucket, ready: () => ready(), vw: () => vw(), held: () => held(), soldX: () => soldX(), ipKey: (r) => ipKey(r), limitWait: (k, n, ms) => limitWait(k, n, ms), view: (o) => view(o) }); /* (11/12 shop9) 👤⭐ */
+  const ANL = ANLX.makeAnl({ db, C, FV, log, srv: SRV, authOf: (r) => ACCT.authOf(r), cfg: () => cfg(), ready: () => ready(), vw: () => vw(), held: () => held(), soldX: () => soldX(), view: (o) => view(o), acctLib: require('./shop-acct.js') }); /* (11/13 shopadm1) 📊 */
   const rvTag = (L, V) => (L || []).map((x) => { const y = V && V.get(x.id); const v = ACCT.ratingOf(y || x); return v ? { ...x, rv: v } : x; }); /* (shop9 2회) ⭐ 카드 별점 [평균, 수] */
   const view = (o) => ({ ok: true, no: o.no, at: o.at, st: o.st, stTxt: ST[o.st] || o.st, due: o.due, total: o.total, sum: o.sum, shipFee: o.shipFee, disc: (o.disc && o.disc.total) || 0, pay: o.st === 'new' ? o.pay : { how: (o.pay || {}).how }, name: maskName(o.buyer && o.buyer.name), dep: maskName(o.depositor),
     items: (o.items || []).map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p })), inv: o.inv && o.inv.no ? { courier: o.inv.courier || null, no: o.inv.no } : null, cxl: o.st === 'cancel' ? (o.cxl || {}).why || null : null });
@@ -390,6 +391,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
         catch (e) { return send(e.code === 404 ? 404 : e.code === 400 ? 400 : 502, { ok: false, err: e.code ? e.message : '글꼴을 잠시 못 만듦' }); } }
       if (path === '/shop/spines' && req.method === 'POST') { { const w = limitWait('sp' + ipKey(req), 40, 600e3); if (w) return busy(w, '잠시 뒤 다시'); } const body = await readBody(req); await ready(); await spinesLoad(); const c = await cfg(); const gen = Math.max(0, Math.round(+((c.shelf || {}).lookGen) || 0));
         uqSync(gen); const fix = []; const take = spineTake(body.L, SPN.m, (id) => CAT.items.has(id), gen); for (const [id, code0] of take) { const r = SPN.uq.claim(id, code0); const code = r.code; if (r.fixed) fix.push([id, code]); SPN.m.set(id, code); SPN.dirty.set(id, code); } if (take.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); } return send(200, { ok: true, n: take.length, gen, fix }); } /* (shelf7) 이미 다른 책이 쓴 조합이면 고친 모양을 돌려줌(손님 화면이 바로 바꿈) */
+      { const r = await ANL.handle(req, res, path, q, send, readBody, ipKey); if (r) return r; } /* (11/13 shopadm1) 📊 /shop/t 방문 셈 · 💬 /shop/ask · 👀 /shop/pv */
       { const r = await ACCT.handle(req, res, path, q, send, readBody); if (r) return r; } /* (11/12 shop9) 👤 손님 계정·⭐ 리뷰·서재(cloud/shop-acct.js) */
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
@@ -408,7 +410,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   async function promoPreview(b) { b = b || {}; await ready(); const P = await promo(true); const items = [...CAT.items.values()]; const kinds = {}; for (const x of items) { const k = (CAT.pv.get(x.id) || {}).k || 'etc'; kinds[k] = (kinds[k] || 0) + 1; }
     const live = P.rules.filter((r) => BQP.ruleSt(r) === 'on').length; if (!b.rule) return { n: items.length, kinds, live, at: CAT.meta && CAT.meta.at };
     return { ...BQP.preview(items, (id) => CAT.pv.get(id), P, b.rule, Date.now()), kinds0: kinds, live, at: CAT.meta && CAT.meta.at }; }
-  return { BG, SRV, handle, build, check, promoPreview, acctAdmin: (b, who) => ACCT.admin(b, who), _acct: ACCT, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
+  return { BG, SRV, handle, build, check, promoPreview, acctAdmin: (b, who) => ACCT.admin(b, who), anlAdmin: (b, who) => ANL.admin(b, who), anlFlush: () => ANL.flush(), _anl: ANL, _acct: ACCT, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV, _spx: SPX, jobs: () => ({ font: FONT.state(), cover: COV ? COV.state() : null, spine: SPX.state(), uniq: { ...SPN.uq.state(), space: UQX.space().N }, items: CAT.items.size, noSpine: [...CAT.items.values()].filter((x) => !x.sp).length }) };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억

@@ -36,7 +36,7 @@ if (require.main === module) {
   process.on('uncaughtException', (e) => { try { console.error('잡히지 않은 오류', e && e.message ? e.message : String(e)); } catch (x) {} });
   const { server, SHOP } = makeServer({ db, C, FV: FieldValue, log, bucket: () => require('firebase-admin/storage').getStorage().bucket(BUCKET) });
   /* 끌 때(Cloud Run이 대수를 줄임 · 10초 줌) — 모아 둔 책등 모양을 먼저 씀 */
-  process.on('SIGTERM', () => { log('🛍 숍 전용 서버 끄는 중'); Promise.resolve(SHOP.spinesFlush && SHOP.spinesFlush()).catch(() => {}).finally(() => { server.close(); setTimeout(() => process.exit(0), 3000).unref(); }); });
+  process.on('SIGTERM', () => { log('🛍 숍 전용 서버 끄는 중'); Promise.all([Promise.resolve(SHOP.spinesFlush && SHOP.spinesFlush()), Promise.resolve(SHOP.anlFlush && SHOP.anlFlush()) /* (shopadm1) 📊 모은 방문 수 */]).catch(() => {}).finally(() => { server.close(); setTimeout(() => process.exit(0), 3000).unref(); }); });
   server.listen(process.env.PORT || 8080, () => log(`🛍 숍 전용 서버 ${process.env.K_SERVICE || 'local'} (${VER}) 시작`));
 }
 module.exports = { makeServer, VER };
