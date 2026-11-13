@@ -80,5 +80,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     mb = 1600; const r2 = await CR.cloudRender('d'); ok(r2 && r2.ok === false && r2.mem && CR.CR_ST.skipMem === 1 && !runs.includes('d'), '컨테이너 1450MB 넘으면 그리지 않음', r2);
     mb = 500; const r3 = await CR.cloudRender('e'); ok(r3.ok && runs.includes('e'), '내려가면 다시 그림');
     ok(/fs\.writeSync\(1,/.test(fs.readFileSync(path.join(ROOT, 'cloud', 'memwatch.js'), 'utf8')), '급등 줄은 동기 쓰기(곧 죽어도 남음)'); }
+  console.log('⑦ 1초 고리·넘치기 직전 줄(셋째)');
+  { const MW3 = require(path.join(ROOT, 'cloud', 'memwatch.js')); const L3 = []; let r3 = 500; const real3 = process.memoryUsage; const f3 = () => ({ rss: r3 * 1048576, heapUsed: 80 * 1048576, heapTotal: 1e8, external: 0, arrayBuffers: 0 }); f3.rss = () => r3 * 1048576; process.memoryUsage = f3;
+    try { const w3 = MW3.makeMemWatch({ C: () => ({ doc: () => ({ get: async () => ({ data: () => null }), set: async () => {} }) }), log: () => {}, ver: 't', busyOf: () => ['bkinfo'], cgMB: () => null, write: (l) => L3.push(l) });
+      for (const v of [500, 700, 1010, 1020, 1030]) { r3 = v; w3._fast(); } const hi = L3.filter((l) => /🩺 고 컨테이너/.test(l));
+      ok(hi.length === 3 && /bkinfo/.test(hi[0]), '1000MB 넘는 동안 1초마다 한 줄', L3); ok(w3._S.ring.length === 5 && w3.snap().ring.length === 5 && w3.snap().ring[4][1] === 1030, '1초 고리가 문서에 실림', w3._S.ring); } finally { process.memoryUsage = real3; }
+    ok(typeof MW3.memLine === 'function' && /memLine\('무거운 일 시작 ' \+ name\)/.test(CL) && /memLine\('무거운 일 끝 '/.test(CL) && /memLine\('판매자 배우기 단계 '/.test(CL), '무거운 일 시작·끝·단계마다 한 줄'); }
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e.stack); process.exit(1); });
