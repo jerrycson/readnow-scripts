@@ -1,2 +1,2 @@
-run=1&qnalat=7&doc=prd_jobs/qna_probe,prd_jobs/qna_live
-# 2840230766
+cmds=pxExp&n=40
+# 486011120
