@@ -1,13 +1,13 @@
 {
- "holder": "cbuild",
- "what": "Cloud Build 맡기기 고침",
- "since": "2026-11-13T06:23:11Z",
- "beat": "2026-11-13T06:23:11Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "bump1 웹앱 1.78.576 끌올 평생 기록·효과 f732d2bd",
-  "at": "2026-11-13T06:23:08Z"
+  "who": "cbuild",
+  "done": "Cloud Build 맡기기 고침 (eeeaf247)",
+  "at": "2026-11-13T06:23:16Z"
  },
- "host": "vm-cbuild"
+ "host": null
 }
