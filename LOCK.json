@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "y24re 둘째 — 앞 맡김 기다림 따로 셈",
+ "since": "2026-11-13T04:42:19Z",
+ "beat": "2026-11-13T04:42:19Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "priv2 c4e7b99b cloudbuild.yaml·setup-cloudbuild.sh·배포 끄는 문(변수 없으면 그대로 · 판 번호 안 바뀜 · 머리 그대로)",
   "at": "2026-11-13T04:33:26Z"
  },
- "host": null
+ "host": "vm-y24re"
 }
