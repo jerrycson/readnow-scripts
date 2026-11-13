@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "capfix2 하루 몫 판 내기",
+ "since": "2026-11-13T01:16:18Z",
+ "beat": "2026-11-13T01:16:18Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "helperui2 판 27e324b5 도우미 1.8.27",
   "at": "2026-11-13T01:08:40Z"
  },
- "host": null
+ "host": "vm-capfix"
 }
