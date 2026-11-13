@@ -92,7 +92,9 @@ const ALW = makeAlw({ HOME, note: (m, x) => note(m, x || { k: 'al', m: '알라�
 
 /* ── 운영 공용 파일(그대로 받아 씀 · 6시간마다 새로) ── */
 const CORE = { src: [], ver: {}, at: 0, err: null };
-function getText(url) { return new Promise((res, rej) => { https.get(url, { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return rej(new Error('받기 ' + r.statusCode)); } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => res(b)); }).on('error', rej).on('timeout', function () { this.destroy(new Error('시간 넘음')); }); }); }
+/* (0.1.63 priv4 11/14) 🌐 운영 공용 파일·본체는 readnow.kr 먼저(COL2.CORE_BASE) — 못 받으면 같은 경로를 옛 주소(GitHub raw)로 한 번 더(저장소가 공개일 때만 됨) */
+function getText(url) { const o = COL2.CORE_BASE_OLD; return getText1(url).catch((e) => (o && url.startsWith(COL2.CORE_BASE) && o !== COL2.CORE_BASE ? getText1(o + url.slice(COL2.CORE_BASE.length)) : Promise.reject(e))); }
+function getText1(url) { return new Promise((res, rej) => { https.get(url, { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return rej(new Error('받기 ' + r.statusCode)); } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => res(b)); }).on('error', rej).on('timeout', function () { this.destroy(new Error('시간 넘음')); }); }); }
 async function loadCore(force) { if (!force && CORE.src.length && now() - CORE.at < 6 * 3600e3) return CORE; const out = [], ver = {}; fs.mkdirSync(CORE_D, { recursive: true });
   for (const f of COL2.CORE_FILES) { let s = null;
     if (process.env.RN_COL2_CORE_DIR) { s = fs.readFileSync(path.join(process.env.RN_COL2_CORE_DIR, f), 'utf8'); }

@@ -11,7 +11,8 @@
     WEB_ORIGIN: 'https://jerrycson.github.io', /* 비교 화면을 Pages에 올리면 이 출처 — 웹앱과 같은 출처라 구글 로그인을 나눠 씀 */
     WEB_ORIGINS: ['https://jerrycson.github.io', 'https://readnow.kr'], /* (0.1.19 🔬 정밀 점검 11/10) 웹앱이 부를 수 있는 출처 모두 — 11/10 readnow.kr(Hosting) 판부터 새 주소에서 열면 도우미 8899·8898·클라우드는 받는데 번외만 403으로 거절해 그림자·🟦 자동 올림 맡김이 조용히 멈췄음 */
     /* 운영 공용 파일을 그대로 받아 씀(복사하지 않음) — 판은 받은 파일의 VERSION을 기록에 남김 */
-    CORE_BASE: 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/',
+    CORE_BASE: 'https://readnow.kr/', /* (0.1.63 priv4 11/14) 🌐 저장소 비공개 준비 — 우리 주소(readnow.kr · 같은 main 파일)를 먼저 · 안 되면 아래 옛 주소(GitHub raw · 공개일 때만) */
+    CORE_BASE_OLD: 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/',
     CORE_FILES: ['readnow-aladin-core.js', 'readnow-products-core.js'],
     /* (0.1.9) 그림자 일에 더 쓰는 운영 공용 파일(그대로 받아 씀) — 판매자(숍 요약·평가 쪽)는 번외 크롬 떨어진 칸에 · 외부 정보(교보·장터 등)는 도우미(Node)에서 운영과 같은 ReadnowExt.run */
     CORE_MORE: ['readnow-sellers-core.js'], CORE_NODE: ['readnow-ext-core.js', 'readnow-adapt-core.js'], /* (0.1.43 adapt10) 🔄 목표·방법 장부 틀(◆AG)도 그대로 받아 씀 */
