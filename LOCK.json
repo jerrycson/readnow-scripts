@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty1",
+ "what": "수집기 판 1.89.327 push(앞 push가 검사 이름표 때문에 막힘)",
+ "since": "2026-11-13T17:33:37Z",
+ "beat": "2026-11-13T17:33:37Z",
  "ask": null,
  "last": {
   "who": "y24qty1",
   "done": "웹앱 1.78.613 · 수집기 1.89.327 (33134d35)",
   "at": "2026-11-13T17:33:19Z"
  },
- "host": null
+ "host": "vm"
 }
