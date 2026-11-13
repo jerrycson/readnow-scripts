@@ -392,3 +392,7 @@ body.no-tabs .totop { display: none; }
 }
 .gbox span { color: var(--c-text); }
 @media (min-width: 900px) { .det .info { display: flex; flex-direction: column; } .det .info > * { order: 0; } .det .info > .facts, .det .info > .same { order: 2; } .det .info > .buy, .det .info > #bqaAct { order: 1; } .det .info > .shipbox { order: 3; } .det .info > .gdet { margin-bottom: var(--sp-2); } }
+
+/* (shopux1 · 정범님 21:28) ⚙ 보기 설정 — 움직임 줄이기 · 휴대폰 머리엔 보기 설정·장바구니 */
+html.rm *, html.rm *::before, html.rm *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+@media (max-width: 899px) { body.tabs-on .nav a[data-r=wish], body.tabs-on #navMe { display: none; } } /* 휴대폰 아래 탭이 있으면 머리엔 설정·장바구니만(찜·내 정보는 아래 탭) */
