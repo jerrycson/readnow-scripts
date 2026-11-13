@@ -73,6 +73,6 @@
   /* 관리 화면 미리 보기 주소 꼬리(저장 없이 손님 화면에서 보기) — #/?look=<base64url JSON> */
   const previewArg = (c) => { const s = JSON.stringify(cfgDiff(c)); try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const previewCfg = (a) => { try { const b = String(a || '').replace(/-/g, '+').replace(/_/g, '/'); const s = typeof atob === 'function' ? decodeURIComponent(escape(atob(b))) : Buffer.from(b, 'base64').toString('utf8'); const o = JSON.parse(s); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
-  const API = { VER: '0.1.0', THEMES, ROWS, SCHEMA, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
+  const API = { VER: '0.1.1', THEMES, ROWS, SCHEMA, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
   if (typeof module === 'object' && module.exports) module.exports = API; else root.BQL = API;
 })(typeof window !== 'undefined' ? window : this);
