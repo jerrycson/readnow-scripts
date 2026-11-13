@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "view1 클라우드 진단 pxreg 둘째",
+ "since": "2026-11-13T06:27:48Z",
+ "beat": "2026-11-13T06:27:48Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "spare2 둘째 웹앱 1.78.577 · 수집기 1.89.315 — 여분 남으면 쉴 때 일이 여분 일을 고름 (f9527c67)",
   "at": "2026-11-13T06:27:23Z"
  },
- "host": null
+ "host": "vm-view1"
 }
