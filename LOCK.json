@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "note3 정범 노트 즐겨찾기·잇기 고침 판",
+ "since": "2026-11-13T05:42:46Z",
+ "beat": "2026-11-13T05:42:46Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rv5 클라우드 0.35.212 번외 넘김 차례표 57ffde9a",
   "at": "2026-11-13T05:42:41Z"
  },
- "host": null
+ "host": "vm-note3"
 }
