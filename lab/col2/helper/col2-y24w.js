@@ -100,6 +100,17 @@ const POP_JS = `const pop=()=>[...document.querySelectorAll('.layerPop')].find((
 const JS_POP_PICK = (code) => `(()=>{${GV_JS}${POP_JS}const P=pop();if(!P)return{ok:false,wait:true,why:"'판매상태/기간 변경' 창이 안 뜸"};const rd=[...P.querySelectorAll('input[type=radio][name=goodsStatGb]')].find((x)=>x.value===${JSON.stringify(code)});if(!rd)return{ok:false,why:'창에 그 판매상태 라디오가 없음'};
 if(!rd.checked){const lb=P.querySelector('label[for="'+rd.id+'"]');(lb||rd).click()}const ck=P.querySelector('input[type=checkbox][name=changeDateYn]');return rd.checked?{ok:true,date:!!(ck&&ck.checked)}:{ok:false,why:'라디오가 골라지지 않음'}})()`;
 const JS_POP_GO = `(()=>{${POP_JS}const P=pop();if(!P)return{ok:false,why:"'판매상태/기간 변경' 창이 없음"};const b=[...P.querySelectorAll('button')].filter((x)=>/^\\s*변경\\s*$/.test(x.innerText||'')&&!x.disabled);if(b.length!==1)return{ok:false,why:'[변경] 단추를 하나로 못 찾음('+b.length+'개)'};b[0].click();return{ok:true}})()`;
+/* (11/13 home2 · 판 뒤 확인 — HOME 11:07 hot banana fudge 수량 1권: [수정항목 저장]을 눌렀는데 브라우저 물음(confirm)이 하나도 안 뜨고 목록은 그대로 2권 → '확실하지 않음'으로 멈춤)
+ *  판매관리 화면은 확인 물음을 브라우저 창이 아니라 화면 안 알림 상자(GtMessagePopup — 화면이 그때 만드는 상자)로 띄울 수 있음 → 예전엔 그 상자를 아무도 안 눌러 저장이 안 된 것으로 보임
+ *  → [수정항목 저장]·[변경]을 누른 뒤 5초 동안 화면 안 상자를 살펴: 그 글을 R.dlg(진단 hist dlg)에 남기고, '저장/수정하시겠습니까' 꼴이고 위험한 말(BAD_DLG)이 없을 때만 그 상자 안 [확인]/[예]를 누름(브라우저 물음 규칙과 같음)
+ *  · '수정된 … 없습니다' 같은 알림이면 그 글을 결과에 남김 · 판매상태 창(.layerPop h1 판매상태/기간 변경)은 건드리지 않음 */
+const JS_MSGPOP = (click) => `(()=>{const vis=(b)=>{try{const r=b.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(b).visibility!=='hidden'&&getComputedStyle(b).display!=='none'}catch(e){return false}};
+const tx=(x)=>(x.innerText||'').replace(/\\s+/g,' ').trim();const C=[...document.querySelectorAll('[class*="layerPop"],[class*="msgPop"],[class*="MsgPop"],[class*="message"],[class*="Message"],[class*="modal"],[class*="alert"],[role="dialog"],[role="alertdialog"]')].filter((x)=>vis(x)&&!(x.querySelector('h1')&&/판매상태\\s*\\/\\s*기간\\s*변경/.test(tx(x.querySelector('h1'))))&&!x.closest('#productGrid'));
+const P=C.filter((x)=>{const t=tx(x);return t.length>2&&t.length<400&&[...x.querySelectorAll('button,a,input[type=button]')].some((b)=>vis(b))}).sort((a,b)=>tx(a).length-tx(b).length)[0];if(!P)return{none:true};
+const t=tx(P).slice(0,160);const B=[...P.querySelectorAll('button,a,input[type=button]')].filter((b)=>vis(b));const bt=B.map((b)=>(b.innerText||b.value||'').replace(/\\s+/g,' ').trim().slice(0,10)).filter(Boolean).slice(0,6);
+const ask=/(저장|수정)\\s*하?시겠|(저장|수정)할까|(저장|수정)\\s*됩니다/.test(t);const bad=${BAD_DLG.toString()}.test(t);let did=false;
+if(${click ? 'true' : 'false'}&&ask&&!bad){const b=B.find((b)=>/^(확인|예|저장)$/.test((b.innerText||b.value||'').replace(/\\s+/g,'').trim()));if(b){b.click();did=true}}
+return{t,bt,ask,bad,did}})()`;
 const JS_POP_CLOSE = `(()=>{${POP_JS}const P=pop();const c=P&&P.querySelector('button.close');if(c)c.click();return !!c})()`;
 
 function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); const sleep = (ms) => new Promise((r) => setTimeout(r, ms)); const SC = o.SC || 1;
@@ -128,6 +139,9 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   const pick = () => !R.cur && !why0() && R.q.jobs.find((j) => j.st === 'wait');
   const cur = () => !!R.cur;
   /* 확인 물음 — 이 일의 저장·변경 단추를 누른 뒤에만 '예'(그 일에 맞는 낱말 · 위험 낱말 없음) · 그 밖은 늘 '아니오' · 알림(alert)은 닫음 */
+  /* (11/13 home2) 누른 뒤 화면 안 알림 상자 — 5초 동안 · 글은 R.dlg에(진단) · 저장 물음이면 [확인] 한 번 */
+  async function msgPop() { let seen = ''; for (let k = 0; k < 10; k++) { await sleep(500 * SC); let m = null; try { m = await o.ev(JS_MSGPOP(true), 8000); } catch (e) { m = null; } if (!m || m.none) { if (seen) break; continue; }
+      if (m.t && m.t !== seen) { seen = m.t; R.dlg.push('화면 상자: ' + m.t + (m.bt && m.bt.length ? ' [' + m.bt.join('|') + ']' : '') + (m.did ? ' → [확인] 누름' : m.bad ? ' → 위험한 말이라 안 누름' : '')); note(`🟦 예스24 쓰기 — 화면 안 상자: ${m.t.slice(0, 80)}${m.did ? ' → [확인] 누름' : ''}`); } if (!m.did) break; } return seen; }
   function dialog(p) { const m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 160); R.dlg.push(m); if (p.type === 'alert') return true; if (R.phase === 'qty') return /저장|수정/.test(m) && !BAD_DLG.test(m); if (R.phase === 'state') return /변경|판매\s*중|상태/.test(m) && !BAD_DLG.test(m); return false; }
   /* 화면을 열고 검색 → 우리 줄 찾기 (읽기만) — { login } | { err } | { hit, same, n } */
   async function look(r) { await o.nav(o.BASE + PG + '?t=' + now(), 30); if (o.isLoginSt(await o.ev(o.JS_STATE))) return { login: true }; await sleep(1500 * SC);
@@ -175,13 +189,13 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     if (o.holdOn()) return { state: 'hold' }; R.dlg = [];
     if (r.kind === 'qty' || r.kind === 'price') { const pr = r.kind === 'price'; j.step = `${r.no} ${pr ? '판매가' : '재고수량'} 칸 고치는 중`; const e = await o.ev(pr ? JS_PRICE(h.r, h.kP, r.to) : JS_QTY(h.r, h.kQ, r.to));
       if (pr && e && e.lock) return { state: 'fail', pre: true, lock: true, msg: '등록상품 관리 표에서 판매가 칸을 고칠 수 없게 돼 있음 — 아무것도 누르지 않음', before, todo: '예스24 판매관리 › 등록상품 관리에서 그 상품을 열어 손으로 판매가를 고친 뒤 「✓ 예스24에서 고쳤음」(다른 길은 리드나우 방이 원문을 보고 만듦)' }; if (!e || !e.ok) return { state: 'fail', pre: true, msg: `${(e && e.why) || (pr ? '판매가' : '재고수량') + ' 칸을 못 고침'} — 저장하지 않음`, before, todo: '예스24 판매관리에서 손으로 고친 뒤 「✓ 예스24에서 고쳤음」' };
-      await sleep(800 * SC); j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [수정항목 저장] 누름`; saveQ(); R.phase = 'qty'; const c = await o.ev(JS_BTN('수정항목 저장')); if (!c || !c.ok) { R.phase = ''; j.st = 'run'; saveQ(); return { state: 'fail', pre: true, msg: `${(c && c.why) || '[수정항목 저장]을 못 누름'} — 아무것도 저장되지 않음`, before, todo: '예스24 판매관리에서 손으로' }; } }
+      await sleep(800 * SC); j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [수정항목 저장] 누름`; saveQ(); R.phase = 'qty'; const c = await o.ev(JS_BTN('수정항목 저장')); if (!c || !c.ok) { R.phase = ''; j.st = 'run'; saveQ(); return { state: 'fail', pre: true, msg: `${(c && c.why) || '[수정항목 저장]을 못 누름'} — 아무것도 저장되지 않음`, before, todo: '예스24 판매관리에서 손으로' }; } await msgPop(); }
     else { j.step = `${r.no} 줄 고르는 중`; const c1 = await o.ev(JS_CHECK(h.r)); if (!c1 || !c1.ok) return { state: 'fail', pre: true, msg: `${(c1 && c1.why) || '줄을 못 고름'} — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 손으로' };
       const c2 = await o.ev(JS_BTN('판매상태/기간 변경')); if (!c2 || !c2.ok) return { state: 'fail', pre: true, msg: `${(c2 && c2.why) || '[판매상태/기간 변경]을 못 누름'} — 아무것도 바뀌지 않음`, before, todo: '예스24 판매관리에서 손으로' };
       let pk = null; for (let k = 0; k < 20; k++) { await sleep(300 * SC); pk = await o.ev(JS_POP_PICK(ST_CODE[r.kind])); if (pk && (pk.ok || !pk.wait)) break; }
       if (!pk || !pk.ok) { await o.ev(JS_POP_CLOSE).catch(() => {}); return { state: 'fail', pre: true, msg: `${(pk && pk.why) || '판매상태 창이 안 뜸'}${R.dlg.length ? ' — 예스24 알림: ' + R.dlg.slice(-1)[0] : ''} — [변경]은 누르지 않음`, before, todo: '예스24 판매관리에서 손으로' }; }
       if (pk.date) { await o.ev(JS_POP_CLOSE).catch(() => {}); return { state: 'fail', pre: true, msg: "창의 '기간변경'이 켜져 있어 멈춤(판매기간은 건드리지 않음) — [변경]은 누르지 않음", before, todo: '예스24 판매관리에서 손으로' }; }
-      await sleep(600 * SC); j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [변경] 누름`; saveQ(); R.phase = 'state'; const c3 = await o.ev(JS_POP_GO); if (!c3 || !c3.ok) { R.phase = ''; j.st = 'run'; saveQ(); await o.ev(JS_POP_CLOSE).catch(() => {}); return { state: 'fail', pre: true, msg: `${(c3 && c3.why) || '[변경]을 못 누름'} — 아무것도 바뀌지 않음`, before, todo: '예스24 판매관리에서 손으로' }; } }
+      await sleep(600 * SC); j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [변경] 누름`; saveQ(); R.phase = 'state'; const c3 = await o.ev(JS_POP_GO); if (!c3 || !c3.ok) { R.phase = ''; j.st = 'run'; saveQ(); await o.ev(JS_POP_CLOSE).catch(() => {}); return { state: 'fail', pre: true, msg: `${(c3 && c3.why) || '[변경]을 못 누름'} — 아무것도 바뀌지 않음`, before, todo: '예스24 판매관리에서 손으로' }; } await msgPop(); }
     /* 이 줄 뒤로는 다시 누르지 않음 — 목록을 새로 읽어 확인만 */
     await sleep(2500 * SC); R.phase = ''; await o.ev(JS_POP_CLOSE).catch(() => {}); const dl = R.dlg.slice(-2).join(' / ');
     j.step = `${r.no} 등록상품 목록 다시 읽어 확인`; let b = null; try { b = await look(r); } catch (e) { b = { err: String(e.message || e).slice(0, 100) }; }
