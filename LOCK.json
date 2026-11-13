@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "benchfix 벤치마킹 고침·회차 보고 판 내기",
- "since": "2026-11-13T01:51:14Z",
- "beat": "2026-11-13T01:51:14Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: cloudmem 넷째 크롬 정리 판",
-  "at": "2026-11-13T01:56:04Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "orderchk 판 0e6ad33b 웹앱 1.78.549 — 💰 매입가 나눔 기본 똑같이 나눔으로 되돌림",
-  "at": "2026-11-13T01:50:36Z"
+  "done": "benchfix 판 bbc821ac 웹앱 1.78.550 · 수집기 1.89.299 · 클라우드 0.35.197 — 벤치마킹 끝 닿음 판정·대량 사라짐·상품 정보 몫·🎯 회차 보고",
+  "at": "2026-11-13T01:58:03Z"
  },
- "host": "vm-benchfix"
+ "host": null
 }
