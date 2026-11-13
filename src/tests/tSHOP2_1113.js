@@ -29,7 +29,8 @@ console.log('① 순수 셈');
   const K = BQS.SCHEMA.map((p) => p.k); ok(['bandStyle', 'titleGroup', 'jumpOn', 'jumpSorts', 'jumpCat', 'jumpN', 'jumpMob', 'jumpStick', 'qtyMode', 'qtyMax', 'mobPop'].every((k) => K.includes(k)) && c.mobPop === 'sheet' && BQS.cfgOf({ mobPop: 'open' }).mobPop === 'open' && BQS.cfgOf({ mobPop: 'x' }).mobPop === 'sheet',
     '새 설정 칸 11개가 설정 틀에 있음(관리 웹앱 📚 서가 책장 설정이 그대로 그림) · 휴대폰 책 누름 기본 = 아래 창(지금 동작)');
   for (const f of ['shop/shelf.js', 'shop/shelf-core.js']) { const x = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(x), f + ': 브라우저 창 없음'); }
-  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.css\?v=0\.2\.(8|9)/.test(s), '우리숍: 서가 0.2.8 판 맞춤'); }
+  const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.css\?v=0\.2\.(8|9)/.test(s), '우리숍: 서가 0.2.8 판 맞춤');
+  ok(/x\.cpk \? `<li class="crumbs">/.test(s) && /v\.cpk = it\.cp/.test(fs.readFileSync(path.join(ROOT, 'cloud/shop.js'), 'utf8')) && /cnavH\(r, p0\)/.test(s), '상세: 🗂 종류 › 분류 › … 길 링크(누르면 그 분류 목록) · 책 찾기 분류 고르기'); }
 console.log('①-2 종류·분류(정범님 11/13 19:42)');
 { const K = (p, sku) => { const r = SH.kindPath({ categories: [{ path: p }] }, sku); return r.k + (r.rest.length ? ':' + r.rest.join('/') : ''); };
   const C = [['온라인 중고샵>중고국내도서>소설/시/희곡>세계의 소설>중동/튀르키예소설', '국내도서:소설/시/희곡/세계의 소설/중동/튀르키예소설'], ['외국도서>ELT/어학/사전>워크북', '외국도서:ELT/어학/사전/워크북'], ['온라인 중고샵>중고외국도서>어린이>놀이책', '외국도서:어린이/놀이책'],
