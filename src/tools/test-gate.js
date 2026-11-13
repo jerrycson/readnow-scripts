@@ -135,6 +135,10 @@ function knownCheck(K) { // 장부 꼴: { "items": [ { "test", "items"?: [항목
   if (!codeChanged && !has('--only')) { say('✓ ⑧ 코드·결과물이 안 바뀜 — 빠른 시험 건너뜀'); process.exit(bad); }
   if (!QJ || !Array.isArray(QJ.tests) || !QJ.tests.length) { no('src/tests/QUICK.json(빠른 시험 묶음)이 없거나 비었음'); process.exit(1); }
   const follow = followCheck();
+  /* 같은 내용(진단·백업 기록만 다름)으로 이미 통과했으면 다시 돌리지 않음 — 시험 3분 사이 진단 묻기 커밋이 main에 올라와 ②에 걸린 뒤 합쳐 다시 push할 때 */
+  const ck = require('crypto').createHash('sha256').update((gitOk('ls-tree', '-r', TARGET) || '').split('\n').filter((l) => !/\t(diag|backups)\//.test(l)).join('\n')).digest('hex').slice(0, 20);
+  const CD = path.join(path.resolve(TOP, git('rev-parse', '--git-common-dir').trim()), 'rn-gate-pass'); const CF = path.join(CD, ck);
+  if (!has('--only') && !has('--fresh') && fs.existsSync(CF) && Date.now() - fs.statSync(CF).mtimeMs < 6 * 3600e3) { say(`✓ ⑧ 빠른 시험: 같은 내용(진단·백업만 다름)으로 ${Math.round((Date.now() - fs.statSync(CF).mtimeMs) / 60e3)}분 전 통과 — 다시 돌리지 않음 (${fs.readFileSync(CF, 'utf8').trim().slice(0, 80)})`); process.exit(bad); }
   const quick = has('--only') ? arg('--only').split(',') : QJ.tests.map((x) => x.t);
   const extra = has('--only') || process.env.RN_QUICK_FOLLOW === '0' ? [] : follow.filter((t) => !quick.includes(t)).slice(0, QJ.follow_max == null ? 3 : QJ.follow_max);
   const B = bed(); if (B.err) { console.log('❌ ⑧ 빠른 시험 자리를 못 꾸림: ' + B.err + ' — 급하면 RN_QUICK_SKIP=1(까닭을 커밋 글에)'); process.exit(2); }
@@ -154,6 +158,7 @@ function knownCheck(K) { // 장부 꼴: { "items": [ { "test", "items"?: [항목
   if (blocked.length) say('   → 이번 고침 탓이면 고치고, 기능 규칙을 일부러 바꾼 것이면 같은 커밋에서 시험 기대값을 고치고, 원래부터 실패라면 \'main에서도 실패\'로 넘기지 말고 src/tests/KNOWN_FAIL.json에 {test·items·why·owner·until(14일 안)} 한 줄 + 리드에게 알림');
   for (const t of extra) { const r = R[t]; say(r.ok ? `   ✓ 딸린 시험 ${t} 통과` : `   ⚠ 딸린 시험 ${t} 실패 — ${(r.items[0] || r.why || '').slice(0, 140)} (이번 바뀜에 딸린 시험 · 기대값이 바뀐 것이면 같은 커밋에서 고칠 것 · 원래 실패면 KNOWN_FAIL에)`); }
   if (has('--json')) fs.writeFileSync(arg('--json'), JSON.stringify(R, null, 1));
+  if (!bad && !has('--only')) { try { fs.mkdirSync(CD, { recursive: true }); fs.writeFileSync(CF, `${TARGET} · ${quick.length}개 통과 · ${new Date().toISOString()}`); } catch (e) {} }
   if (has('--keep')) say('시험 자리 남김: ' + B.Q); else fs.rmSync(B.Q, { recursive: true, force: true });
   process.exit(bad);
 })().catch((e) => { console.log('❌ 시험 문지기 오류: ' + (e && e.stack || e)); process.exit(2); });
