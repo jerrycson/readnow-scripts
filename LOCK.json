@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friendlink1",
+ "what": "책방 친구 잇기",
+ "since": "2026-11-13T16:19:18Z",
+ "beat": "2026-11-13T16:19:18Z",
  "ask": null,
  "last": {
   "who": "friendkey1",
   "done": "책방 친구 서명 열쇠 세팅 고침 · 9839f3c0",
   "at": "2026-11-13T16:19:14Z"
  },
- "host": null
+ "host": "vm-friendlink1"
 }
