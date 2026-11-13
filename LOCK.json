@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rv1b: 외부 정보 거짓 바뀜 고침(ext 0.6.21) 판",
+ "since": "2026-11-13T06:28:13Z",
+ "beat": "2026-11-13T06:28:13Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "view1 클라우드 0.35.218 진단 pxreg 둘째 (89b39faf)",
   "at": "2026-11-13T06:28:10Z"
  },
- "host": null
+ "host": "wk-rv1b"
 }
