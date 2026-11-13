@@ -1,2 +1,2 @@
-shplog=1&cmds=read&n=10
-# 2099212198
+recentUp=shp_snapshots&mins=90
+# 527614289
