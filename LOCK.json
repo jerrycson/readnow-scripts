@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "mjui2 ⚙ 가격·등록 조건 2열 표 판 내기",
+ "since": "2026-11-13T05:22:56Z",
+ "beat": "2026-11-13T05:22:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "y24re 넷째 웹앱 1.78.567 · 수집기 1.89.312 · 번외 0.1.54",
   "at": "2026-11-13T05:21:17Z"
  },
- "host": null
+ "host": "wk-mjui2"
 }
