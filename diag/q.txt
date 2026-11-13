@@ -1,2 +1,9 @@
-doc=app_settings/col2_solo,app_settings/col2_handoff,app_settings/work_win,crm_system/work_win&col2=2026-11-13
-# 2866221979
+logs=1&pc=MJ-MAIN&from=202611121300&to=202611121700
+logs=1&pc=MJ-MAIN&from=202611111230&to=202611111600
+logs=1&pc=HOME&from=202611101400&to=202611101700
+logs=1&pc=MJ-MAIN&from=202611101400&to=202611101700
+logs=1&pc=LOGGER&from=202611060000&to=202611062359
+logs=1&pc=LOGGER&from=202611070000&to=202611072359
+logs=1&pc=LOGGER&from=202611080000&to=202611082359
+logs=1&pc=LOGGER&from=202611090000&to=202611092359
+# 1431629337
