@@ -1,7 +1,7 @@
 {
- "ver": "1.89.297",
+ "ver": "1.89.298",
  "hsig": "8ab2f661d1d8afa8",
- "at": "2026-11-13T00:58:21.415Z",
+ "at": "2026-11-13T01:18:23.189Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.182",
-   "sha": "8f02532b361128c4859b527144922177d963482e6ed91c7cd0e65ea85797cfc6",
-   "n": 79787
+   "v": "0.14.183",
+   "sha": "66287d61c9ad0232d6ab140fefdafe4b0625d57778a0d42d98e16cd93c28d32b",
+   "n": 79835
   },
   {
    "f": "readnow-ext-core.js",
@@ -65,9 +65,9 @@
   },
   {
    "f": "readnow-autosched-core.js",
-   "v": "0.18.25",
-   "sha": "a9c313085bd7fcbccca36790915049e9aded70a947e740b516ccb522076b966c",
-   "n": 331812
+   "v": "0.18.26",
+   "sha": "821310edd281db3172bf90d738ab13acbfb357848171c613f87a3f65de6524cb",
+   "n": 333416
   },
   {
    "f": "readnow-aladin-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.297",
-   "sha": "3073d1268d9a917ee734a4c066ce7acb55f08942d8be795c20273e262bc54d3e",
+   "v": "1.89.298",
+   "sha": "ebad1b9710decafd1a49ac1007220f2d51dc45fd5b0a5c8121458a0ba9192d7f",
    "n": 51727
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.297",
-   "sha": "da7ecaecbe94e17576a0d606dd6ed88fdf61c4d45293512e7d2c4a1db73157f0",
+   "v": "1.89.298",
+   "sha": "12fe4e8b7ecd049ba51b6cd3ac3b4c3350652397a5e4213e6bfe0ee945cee972",
    "n": 317171
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.297",
-   "sha": "f401c4209711bdaa4dbe5babea2f331752b01badc2eb6de2c8bbcc811bd66e13",
+   "v": "1.89.298",
+   "sha": "da83192383052edc8e610197008e3b3beef94201e167d0e4757f70ee2678ee9a",
    "n": 263963
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.297",
-   "sha": "e022697d23d5266a11cdf5d75a1bb86c02e727c65b3f1c6d999d8144a82c7ec2",
+   "v": "1.89.298",
+   "sha": "ed5df988e5ecbbf9c90868e95362439093995428a2aa52da6f320176e07c244e",
    "n": 1277088
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.297",
-   "sha": "4a1c73260d82c3041bedf41ae0b963378c420915af3e660dc17d15902aae2fc8",
+   "v": "1.89.298",
+   "sha": "bc7eee6d9045d5462e2f7c204142a92b41edb00a60125bfb677d68bf9d005e31",
    "n": 66152
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.297",
-   "sha": "1fc688e6d370f26502387bd47f3c5da2d371aec7a1810138df7dcfb8112cd408",
+   "v": "1.89.298",
+   "sha": "771985f75ddd8095c22790acf9e53d187bc3a38fdcbb579f61d147d28d3ada32",
    "n": 353906
   }
  ]
