@@ -125,7 +125,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
     ok(d5 && !d5.res.ok && /자리를 쥐고 있지 않음/.test(d5.res.why) && AQ.length === n0, `이 탭이 알라딘 자리를 쥐지 않으면 읽지 않음(동시 로그인 4대 규칙): ${JSON.stringify(d5 && d5.res)}`);
     await p.evaluate(() => { window.__IN = true; window.__HOLD = true; }); J.push({ id: 'h6', k: 'chk' }); const n1 = AQ.length; await tick(p); await p.waitForTimeout(400); await tick(p); const d6 = [...hd(), ...HL.filter((x) => x.p === '/al/feed').flatMap((x) => (x.b.hands && x.b.hands.done) || [])].find((x) => x && x.id === 'h6');
     ok(d6 && !d6.res.ok && /출고 중/.test(d6.res.why) && AQ.length === n1, `🚚 출고 중엔 맡김을 읽지 않고 그대로 돌려줌(약속 0-1): ${JSON.stringify(d6)}`); await p.evaluate(() => { window.__HOLD = false; });
-    front = 'f1'; await tick(p); await tick(p); ok((await p.evaluate(() => window.__FOCUS)) === 1, "번외가 '사람 손 필요'(front)라고 하면 이 탭을 앞으로(window.focus) — 같은 신호엔 한 번만");
+    front = 'f1'; await tick(p); await tick(p); ok((await p.evaluate(() => window.__FOCUS)) === 0, "번외가 '사람 손 필요'(front)라고 해도 저절로 앞으로 띄우지 않음(정범님 11/13 tabfix — 알림만 · 누를 때만 앞으로)");
     hon = false; await tick(p, true); await p.waitForTimeout(1600); await tick(p, true); const t2 = await p.title(); ok(!t2.startsWith('🖐') && (await p.evaluate(() => window.__rnC2hands().on)) === false, `손발 길이 꺼지면 제목 표시를 지우고 맡김을 받지 않음: ${t2}`);
     await p.context().close(); }
   { const { p, HL } = await mk({}, (pth) => (pth === '/al/feed' ? { ok: true, al: { ...AL }, hands: { on: true, jobs: [{ id: 'x', k: 'chk' }] } } : null), {}, 'LOGGER'); await tick(p); await p.waitForTimeout(400);

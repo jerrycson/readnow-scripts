@@ -102,7 +102,7 @@ const MIN = 60e3;
   ok(reviveDecide({ ...R0, off: true }).act === 'none', "⑤ 끌 수 있음(GM 'rn-revive-cfg'.on=false)");
   { let seenAt = 0, opens = [], last = 0, n = 0; for (let t = 0; t < 120 * MIN; t += MIN) { const d = reviveDecide({ ...R0, now: 1e9 + t, seen: { at: 1e9 + seenAt }, watchFrom: 1e9 - 10 * MIN, opens, last }); if (d.act === 'open') { n++; opens = [...opens.filter((x) => 1e9 + t - x < 3600e3), 1e9 + t]; last = 1e9 + t; } } ok(n === 4, `⑤ 탭이 끝내 안 살아나는 2시간: 연 횟수 ${n}번(1시간 2번)`); }
   const rv = cut('(function rnRevive()', '(function rnPcName()');
-  ok(/GM_openInTab\(URL0, \{ active: false/.test(rv) && rv.includes("'https://www.aladin.co.kr/scm/worders.aspx'") && !/location\.reload|window\.close|\.close\(\)/.test(rv), '⑤ 뒤쪽 새 탭으로 주문조회만 엶(다른 탭·크롬은 닫지 않음)');
+  ok(/GM_openInTab\(URL0, (\{ active: false|window\.__rnTabOpt\(\))/.test(rv) /* (tabfix 11/13) 뒤 탭 도우미 */ && rv.includes("'https://www.aladin.co.kr/scm/worders.aspx'") && !/location\.reload|window\.close|\.close\(\)/.test(rv), '⑤ 뒤쪽 새 탭으로 주문조회만 엶(다른 탭·크롬은 닫지 않음)');
   ok(/generate_204/.test(rv) && (rv.match(/https:\/\/www\.aladin\.co\.kr\/[^'"`\s]*/g) || []).every((u) => u === 'https://www.aladin.co.kr/scm/worders.aspx'), '⑤ 인터넷 확인은 알라딘이 아닌 곳(알라딘 요청을 늘리지 않음)');
   ok(/GM_setValue\('rnu-lead-seen'/.test(cut('const beat = () =>', 'const heirOther')), "⑤ 수집기 탭은 30초마다 'rnu-lead-seen'을 남김(닫아도 지우지 않음)");
   ok(/call\('\/work\/lead'/.test(s) && /window\.__rnRole\(\) !== 'lead'/.test(s), '⑤ 일하는 수집기 탭이 PC 도우미에 1분마다 살아 있음을 알림');
