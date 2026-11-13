@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>북스퀸 로고 프로젝트</title>
+<!-- 👑 북스퀸 로고 프로젝트 페이지(11/13 shoplogo1 · 정범님 20:47 「웹앱 프로젝트에 페이지를 만들어 진행 사항 · 설명 · 일지」)
+     자료만 읽어 그림: logos.json(시안·판·바꾼 점) + journal.json(일지·결정) — 다음 개선은 자료에 한 줄 더하면 저절로 늘어남 · 웹앱 🧪 프로젝트 탭 › 👑 북스퀸 로고 카드에서 엶
+     주소 끝 ?only=changed = 판이 둘 이상인 시안만 · &log=0 = 일지 숨김 -->
+<style>
+:root { --bg: #f4f1ea; --card: #fff; --ink: #1f2430; --mut: #646a78; --line: #e2dccd; --navy: #1d2b45; --gold: #a8801f; --chip: #efe9da; --new: #1f6f4a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14171d; --card: #1d2129; --ink: #ecebe6; --mut: #a2a7b3; --line: #2e3440; --gold: #f3d58a; --chip: #262b35; --new: #4fbf86; } }
+:root[data-theme="dark"] { --bg: #14171d; --card: #1d2129; --ink: #ecebe6; --mut: #a2a7b3; --line: #2e3440; --gold: #f3d58a; --chip: #262b35; --new: #4fbf86; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "WenQuanYi Zen Hei", sans-serif; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
+header.pg { padding: 22px 0 6px; } header.pg h1 { margin: 0 0 4px; font-size: 24px; } header.pg p { margin: 0; color: var(--mut); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; } .tabs a { text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px; padding: 6px 12px; font-size: 14px; } .tabs a.on { background: var(--navy); color: #fff; }
+.sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; } .sum div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; } .sum b { display: block; font-size: 22px; } .sum small { color: var(--mut); }
+h2.sec { font-size: 18px; margin: 22px 0 8px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+.card h3 { margin: 0; font-size: 18px; } .card h3 code { font-size: 13px; color: var(--mut); margin-right: 6px; } .idea { margin: 2px 0 8px; color: var(--mut); font-size: 14px; }
+.badge { display: inline-block; font-size: 12px; border-radius: 999px; padding: 1px 8px; margin-left: 6px; background: var(--chip); color: var(--mut); vertical-align: 2px; } .badge.cur { background: var(--navy); color: #fff; }
+.vers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 12px; }
+.ver { border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-width: 0; } .ver.cur { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.ver h4 { margin: 0 0 6px; font-size: 15px; } .ver h4 small { color: var(--mut); font-weight: 400; margin-left: 6px; }
+.lab { font-size: 11px; opacity: .7; margin-bottom: 3px; }
+.hdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #1d2b45; color: #fff; padding: 11px 14px; border-radius: 10px; overflow: hidden; } .hdr .nv { font-size: 13px; opacity: .9; white-space: nowrap; }
+.row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; } .box { flex: 1 1 220px; border-radius: 10px; padding: 10px; min-width: 0; overflow: hidden; }
+.lt { background: #faf7f0; color: #1d2b45; border: 1px solid #e7e1d3; } .dk { background: #0f1726; color: #e8e6df; } .ic { background: #e9e4d8; color: #1d2b45; flex: 0 1 230px; }
+.box img, .hdr img { display: block; max-width: 100%; object-fit: contain; object-position: left center; } .icons { display: flex; align-items: flex-end; gap: 10px; } .icons img { max-width: none; }
+ul.ch { margin: 8px 0 0; padding-left: 18px; font-size: 14px; } ul.ch li { margin: 2px 0; } .note { font-size: 13px; color: var(--mut); margin-top: 6px; }
+.log { list-style: none; margin: 0; padding: 0; } .log li { display: grid; grid-template-columns: 132px 54px 1fr; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; } .log li:first-child { border-top: 0; }
+.log time { color: var(--mut); font-variant-numeric: tabular-nums; } .kind { font-size: 12px; border-radius: 6px; padding: 1px 6px; background: var(--chip); text-align: center; align-self: start; } .k-결정 { background: var(--navy); color: #fff; } .k-지시 { background: #b0322a; color: #fff; } .k-판 { background: var(--new); color: #fff; }
+.log .why { color: var(--mut); font-size: 13px; } .log .who { color: var(--mut); font-size: 12px; margin-left: 4px; }
+@media (max-width: 560px) { .log li { grid-template-columns: 1fr; gap: 2px; } .kind { justify-self: start; } }
+.err { color: #b0322a; }
+footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="pg"><h1>👑 북스퀸 로고 프로젝트</h1><p>booksqueen.com 중고·희귀 책방 로고 — 시안·판(v1·v2…)을 버리지 않고 나란히 견줌 · 설명·바꾼 점·일지·정범님 결정 기록</p>
+<nav class="tabs" id="tabs"></nav></header>
+<div class="sum" id="sum"></div>
+<section id="dec"></section>
+<h2 class="sec" id="h_logos">시안별 판 견주기</h2>
+<main id="logos"><p>자료를 읽는 중…</p></main>
+<section id="logsec"><h2 class="sec">📓 일지</h2><div class="card"><ul class="log" id="log"></ul></div></section>
+<footer>자료: logos.json(시안·판) · journal.json(일지) — 다음 판은 shop/brand/&lt;시안&gt;/에 파일을 더하고 두 자료에 한 줄씩 더하면 이 페이지·웹앱 설정 고르기에 저절로 나옵니다. 글자는 모두 윤곽선(OFL 글꼴)이라 기기 글꼴과 상관없이 똑같이 보입니다.</footer>
+</div>
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const Q = new URLSearchParams(location.search); const only = Q.get('only') === 'changed'; const showLog = Q.get('log') !== '0';
+  const base = (() => { const b = Q.get('base'); return b && /^(\.\.?\/|https:\/\/(booksqueen\.com|readnow\.kr)\/)[\w./-]*$/.test(b) ? b : ''; })();
+  const get = (f) => fetch(base + f, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
+  const img = (f, h, w) => '<img src="' + esc(base + f) + '" alt="" loading="lazy" style="height:' + h + 'px;width:' + (w ? w + 'px' : 'auto') + '">';
+  function verHtml(L, V) {
+    const cur = V.v === L.cur; const f = V.files; const r = +V.ratio || 3;
+    return '<div class="ver' + (cur ? ' cur' : '') + '"><h4>' + esc(V.v) + (cur ? ' <span class="badge cur">지금 판</span>' : '') + '<small>' + esc(V.at || '') + '</small></h4>' +
+      '<div class="lab">숍 머리띠(PC 높이 34)</div><div class="hdr">' + img(f.dark, 34, Math.round(34 * r)) + '<span class="nv">책 찾기 · 서가 · 🛒</span></div>' +
+      '<div class="row"><div class="box lt"><div class="lab">밝은 바탕</div>' + img(f.light, 60, Math.round(60 * r)) + '</div><div class="box dk"><div class="lab">어두운 바탕</div>' + img(f.dark, 60, Math.round(60 * r)) + '</div>' +
+      '<div class="box ic"><div class="lab">아이콘 72 · 40 · 24 · 16</div><div class="icons">' + img(f.icon, 72, 72) + img(f.icon, 40, 40) + img(f.icon, 24, 24) + img(f.icon, 16, 16) + '</div></div></div>' +
+      (V.changes && V.changes.length ? '<ul class="ch">' + V.changes.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>' : '') + (V.note ? '<div class="note">' + esc(V.note) + '</div>' : '') + '</div>';
+  }
+  Promise.all([get('logos.json'), get('journal.json').catch(() => ({ entries: [] }))]).then(([D, J]) => {
+    const all = D.logos || []; const list = only ? all.filter((l) => (l.versions || []).length > 1) : all; const E = (J.entries || []).slice();
+    const nV = all.reduce((a, l) => a + (l.versions || []).length, 0); const nC = all.filter((l) => (l.versions || []).length > 1).length; const last = E.length ? E[E.length - 1].at : '';
+    $('#tabs').innerHTML = '<a href="?' + (showLog ? '' : 'log=0') + '"' + (only ? '' : ' class="on"') + '>시안 ' + all.length + '개 모두</a><a href="?only=changed' + (showLog ? '' : '&log=0') + '"' + (only ? ' class="on"' : '') + '>고친 시안 ' + nC + '개만</a><a href="#logsec">📓 일지 ' + E.length + '줄</a>';
+    $('#sum').innerHTML = [['시안', all.length + '개'], ['판(모두)', nV + '개'], ['더 다듬은 시안', nC + '개'], ['마지막 기록', esc(last)]].map((x) => '<div><small>' + x[0] + '</small><b>' + x[1] + '</b></div>').join('');
+    const dec = E.filter((e) => e.kind === '결정');
+    $('#dec').innerHTML = '<h2 class="sec">🧭 정범님 결정 기록</h2><div class="card"><ul class="log">' + (dec.length ? dec.map((e) => '<li><time>' + esc(e.at) + '</time><span class="kind k-결정">결정</span><div>' + esc(e.t) + '</div></li>').join('') : '<li><div>아직 없음</div></li>') + '</ul></div>';
+    $('#logos').innerHTML = list.map((L) => '<section class="card" id="' + esc(L.id) + '"><h3><code>' + esc(L.id) + '</code>' + esc(L.name) + '<span class="badge">판 ' + (L.versions || []).length + '개</span></h3><p class="idea">' + esc(L.idea) + '</p><div class="vers">' +
+      (L.versions || []).map((V) => verHtml(L, V)).join('') + '</div></section>').join('') || '<p>시안이 없음</p>';
+    if (showLog) $('#log').innerHTML = E.slice().reverse().map((e) => '<li><time>' + esc(e.at) + '</time><span class="kind k-' + esc(e.kind) + '">' + esc(e.kind) + '</span><div>' + esc(e.t) + '<span class="who">— ' + esc(e.who || '') + '</span>' + (e.why ? '<div class="why">왜: ' + esc(e.why) + '</div>' : '') + '</div></li>').join('');
+    else $('#logsec').hidden = true;
+    document.documentElement.dataset.ready = '1';
+  }).catch((e) => { $('#logos').innerHTML = '<p class="err">자료를 읽지 못함: ' + esc(e.message) + ' — 잠시 뒤 새로고침</p>'; document.documentElement.dataset.ready = 'err'; });
+})();
+</script>
+</body>
+</html>
