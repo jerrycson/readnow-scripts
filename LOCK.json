@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shopux1",
+ "what": "우리숍 로고 휴대폰 고르기 고침 + 여러 권 한 줄 수량(정범님 23:08·22:53)",
+ "since": "2026-11-13T15:35:25Z",
+ "beat": "2026-11-13T15:35:25Z",
  "ask": null,
  "last": {
   "who": "y24sess1",
   "done": "웹앱 1.78.607 · 번외 0.1.57 (4e1b1ba9)",
   "at": "2026-11-13T15:35:18Z"
  },
- "host": null
+ "host": "vm-shopux1"
 }
