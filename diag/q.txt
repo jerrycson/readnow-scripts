@@ -1,2 +1,2 @@
-sizes=prd_bump,prd_bump_snap&n=3000&doc=app_settings/front_bump_eval,app_settings/front_bump_cfg,app_settings/research_pulse
-# 1472417244
+col2=2026-11-13
+# 1734012796
