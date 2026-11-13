@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "cloudmem 여섯째 판",
- "since": "2026-11-13T02:41:31Z",
- "beat": "2026-11-13T02:41:31Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: 긴급(urgord): 클라우드 발송요청 빈 화면 덮어쓰기 막기",
-  "at": "2026-11-13T02:46:06Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "home2: 번외 0.1.50 · c6fb23c9",
-  "at": "2026-11-13T02:37:59Z"
+  "done": "클라우드 0.35.202(cloudmem 여섯째)",
+  "at": "2026-11-13T02:47:13Z"
  },
- "host": "vm-cloudmem"
+ "host": null
 }
