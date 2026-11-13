@@ -1,17 +1,17 @@
 {
- "holder": "shopadm1",
- "what": "shop-track 0.1.1",
- "since": "2026-11-13T14:08:37Z",
- "beat": "2026-11-13T14:08:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": {
   "who": "note5",
   "why": "정범님 11/13 20:47 휴대폰 노트 고침 판(빌드·시험 끝남 · 1.78.599) — 지금 판 마치면 한 번 넘겨 주세요",
   "at": "2026-11-13T13:35:28Z"
  },
  "last": {
-  "who": "shoplogo1",
-  "done": "북스퀸 로고 v2 · 웹앱 1.78.602 · 클라우드 0.35.238 (f8c97bf0)",
-  "at": "2026-11-13T14:08:22Z"
+  "who": "shopadm1",
+  "done": "shop-track 0.1.1 (4f42ea97)",
+  "at": "2026-11-13T14:13:20Z"
  },
- "host": "vm-shopadm1"
+ "host": null
 }
