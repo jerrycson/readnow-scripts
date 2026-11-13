@@ -1031,6 +1031,16 @@ html .rgsetrow.rgtabs.rgtabs>details.card[open]>summary>b:first-child{color:var(
 html .rgsetrow.rgtabs.rgtabs>details.card:not([open])>summary .vztg{display:none}
 :root[data-theme="dark"] .rgsetrow.rgtabs{--rgt-bg:#1F3320;--rgt-line:#557F45;--rgt-ink:#D2EBC2}:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open]{color:#E3EEDD}:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open] .hint,:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open] label{color:#B9CDB0}
 @media (max-width:560px){.rgsetrow.rgtabs{--rgt-gap:5px;--rgt-h:46px}html .rgsetrow.rgtabs.rgtabs>details.card>summary{padding:5px 18px 5px 7px;font-size:11px}html .rgsetrow.rgtabs.rgtabs>details.card>summary>b:first-child{font-size:12px}html .rgsetrow.rgtabs.rgtabs>details.card>summary .hint{font-size:10.5px}html .rgsetrow.rgtabs.rgtabs>details.card>summary::after{right:5px;font-size:11px}html .rgsetrow.rgtabs.rgtabs>details.card[open]{padding:10px 10px 12px!important;border-radius:14px}}
+/* (mjui2 11/13 MJ님 요청) ⚙ 가격·등록 조건 펼친 판 안 — 선으로 나뉜 2열 표(왼쪽 제목 칸 고정 폭 · 오른쪽 세부 내용 칸) · 줄마다 가로선 · 제목과 내용 윗줄 맞춤 · 휴대폰 폭(560px 아래)은 제목 위·내용 아래로 쌓임 · 겉모양만(안의 값·저장·적용 동작 그대로) */
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform{--rgc-lw:158px;margin-top:10px!important;background:var(--paper);border:1px solid var(--rgt-line);border-radius:10px;overflow:hidden}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>.brow{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;box-sizing:border-box;min-height:46px;margin:0!important;padding:8px 12px 8px calc(var(--rgc-lw) + 14px)!important;border:0;border-bottom:1px solid var(--line);border-radius:0!important}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>.brow>*{min-width:0;max-width:100%}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>.brow>label:first-child{position:absolute;left:0;top:0;bottom:0;width:var(--rgc-lw);max-width:none;flex:none;box-sizing:border-box;margin:0;padding:14px 10px 8px 12px;border-right:1px solid var(--line);font-weight:700;font-size:13px;line-height:1.35;color:var(--ink);white-space:normal;word-break:keep-all;overflow-wrap:break-word}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint{position:relative;margin:0!important;padding:6px 12px 8px calc(var(--rgc-lw) + 14px);border-bottom:1px solid var(--line);line-height:1.45}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint::before{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--rgc-lw);border-right:1px solid var(--line);box-sizing:border-box}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint:last-child{padding:8px 12px;border-bottom:0;background:color-mix(in srgb,var(--rgt-bg) 35%,var(--paper))}
+html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint:last-child::before{content:none}
+@media (max-width:560px){html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>.brow{padding:8px 10px!important;min-height:0}html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>.brow>label:first-child{position:static;width:auto;flex:1 1 100%;padding:0 0 4px;border-right:0;border-bottom:1px dashed var(--line)}html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint{padding:6px 10px 8px}html .rgsetrow.rgtabs.rgtabs>details.regcfg>.bform>p.hint::before{content:none}}
 .rgsearch{border:2px solid var(--cloth);border-radius:16px;box-shadow:0 6px 18px -12px rgba(47,93,80,.5)}.rgsearch-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:0 0 8px}.rgsearch-h b{font-size:15px}
 .rgsearch #rg_in{border-radius:12px;border:2px solid var(--line)!important}.rgsearch #rg_in:focus{border-color:var(--cloth)!important;outline:0;box-shadow:0 0 0 4px var(--soft)}
 .rgcandc{display:block!important}.rgcandc>*{width:auto;max-width:none}.rgcandc .rgtop{margin-bottom:4px;display:flex;gap:10px;align-items:flex-start}.rgcandc .rgtopm{flex:1;min-width:0}.rgcandc .rgwarn{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:8px}.rgcand-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:10px 0 6px}
@@ -1421,7 +1431,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.567';</script>
-<script src="readnow-webapp.js?v=1.78.567"></script>
+<script>const APP_VER = '1.78.568';</script>
+<script src="readnow-webapp.js?v=1.78.568"></script>
 </body>
 </html>
