@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shopux1",
+ "what": "우리숍 같은 책 여러 권 담기 판",
+ "since": "2026-11-13T13:29:32Z",
+ "beat": "2026-11-13T13:29:32Z",
  "ask": null,
  "last": {
   "who": "y24re8",
   "done": "웹앱 1.78.600 · 번외 0.1.56 (9f91d586)",
   "at": "2026-11-13T13:29:21Z"
  },
- "host": null
+ "host": "vm-shopux1"
 }
