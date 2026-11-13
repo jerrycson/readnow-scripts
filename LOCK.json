@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shopsrv2",
+ "what": "숍 전용 서버",
+ "since": "2026-11-13T15:00:59Z",
+ "beat": "2026-11-13T15:00:59Z",
  "ask": null,
  "last": {
   "who": "note5",
   "done": "웹앱 1.78.605 · 클라우드 0.35.241 정범 노트 둘째(휴대폰 목록 보기·입력칸 펼침·단추 작게·내 메모 고치기·접기·⭐·보관·설정) (151cb1db)",
   "at": "2026-11-13T15:00:52Z"
  },
- "host": null
+ "host": "vm-shopsrv2"
 }
