@@ -15,7 +15,10 @@ const TOKEN = process.env.HOSTING_TOKEN || '';
 const fbj = process.env.HOSTING_CONF ? JSON.parse(fs.readFileSync(path.resolve(ROOT, process.env.HOSTING_CONF), 'utf8')) : JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8')).hosting;
 
 /* firebase.json의 headers([{source, headers:[{key,value}]}]) → REST 설정([{glob, headers:{키:값}}]) */
-const restConfig = (h = fbj) => ({ headers: (h.headers || []).map((x) => ({ glob: x.source, headers: Object.fromEntries((x.headers || []).map((k) => [k.key, k.value])) })),
+/* (url2 11/13) headers에 regex(폴더 주소 /app/ 처럼 파일 이름이 없는 주소) · redirects(옛 경로 /readnow-scripts/… → 새 경로 · ?go=… 그대로)도 넘김 */
+const pat = (x) => (x.regex ? { regex: x.regex } : { glob: x.source });
+const restConfig = (h = fbj) => ({ headers: (h.headers || []).map((x) => ({ ...pat(x), headers: Object.fromEntries((x.headers || []).map((k) => [k.key, k.value])) })),
+  ...((h.redirects || []).length ? { redirects: h.redirects.map((x) => ({ ...pat(x), statusCode: x.type || 301, location: x.destination })) } : {}),
   /* (11/11 shop2) rewrites [{source, run:{serviceId, region}}] → REST [{glob, run}] — 우리숍 검색 주소(/b/**·sitemap)만 · 관리 사이트(firebase.json)엔 없어 예전과 같음 */
   ...((h.rewrites || []).length ? { rewrites: h.rewrites.filter((x) => x && x.source && x.run && x.run.serviceId).map((x) => ({ glob: x.source, run: { serviceId: x.run.serviceId, region: x.run.region || 'asia-northeast3' } })) } : {}) });
 

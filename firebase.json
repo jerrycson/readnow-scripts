@@ -8,12 +8,18 @@
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "X-Content-Type-Options", "value": "nosniff" } ] },
-      { "source": "**/*.@(js|json|html|ps1)", "headers": [
+      { "source": "**/*.@(js|json|html|ps1|webmanifest)", "headers": [
+        { "key": "Cache-Control", "value": "no-cache" } ] },
+      { "regex": "^(/.*)?/$", "headers": [
         { "key": "Cache-Control", "value": "no-cache" } ] },
       { "source": "**/*.@(jpg|png|webp|svg|ico|woff2)", "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" } ] },
       { "source": "**/*.ps1", "headers": [
         { "key": "Content-Type", "value": "text/plain; charset=utf-8" } ] }
+    ],
+    "redirects": [
+      { "regex": "^/readnow-scripts/?$", "destination": "/", "type": 301 },
+      { "regex": "^/readnow-scripts/(.*)$", "destination": "/:1", "type": 301 }
     ]
   }
 }
