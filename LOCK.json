@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "anom2",
+ "what": "anom2 다시 올리기 목적 엔진 판(웹앱·클라우드)",
+ "since": "2026-11-13T05:57:45Z",
+ "beat": "2026-11-13T05:57:45Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rv3 웹앱 1.78.573 재고 맞추기 네이버·우리숍 진열 점검 d8eb5721",
   "at": "2026-11-13T05:57:34Z"
  },
- "host": null
+ "host": "vm-anom2"
 }
