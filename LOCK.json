@@ -1,13 +1,13 @@
 {
- "holder": "rel14",
- "what": "rel14: 1.78.620 push 검사 중",
- "since": "2026-11-13T21:24:06Z",
- "beat": "2026-11-13T21:25:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "spland2",
-  "done": "spland2: tSPARE2_1113 기대값 맞춤 d46503d8(시험만 · 판 번호 없음 · land1+spare2 합친 판은 train1이 1.89.324로 이미 냄)",
-  "at": "2026-11-13T21:23:29Z"
+  "who": "rel14",
+  "done": "웹앱 1.78.620 검색 칸 이어 하기(srch1 ②③④) · 99057047",
+  "at": "2026-11-13T21:29:43Z"
  },
- "host": "vm-rel14"
+ "host": null
 }
