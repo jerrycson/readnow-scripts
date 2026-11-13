@@ -1,2 +1,2 @@
-doc=prd_jobs/pcBeat
-# 940131253
+doc=app_settings/voice_lex,app_settings/seller_aud,app_settings/oop_study
+# 93836610
