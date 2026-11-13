@@ -78,7 +78,7 @@ ok(P.hours.ok === false && P.problems.some((p) => /가게E/.test(p)) && P.proble
 
 console.log('⑤ 웹앱 화면');
 ok(/function openBenchRep\(\)/.test(APP) && /\['benchRep', '🎯 벤치마킹 회차 보고', \(d\) => d\.benchRep, 'openBenchRep'\]/.test(APP), '화면 열기 · 되살리기 목록');
-ok(/research: \[\['🔬 연구 모음', \['found', 'benchRep',/.test(APP), '🔬 연구 탭 묶음에 🎯 회차 보고');
+ok(/research: \[\['🔬 연구 모음', \[[^\]]*'benchRep',/.test(APP), '🔬 연구 탭 묶음에 🎯 회차 보고');
 ok(/data-navgo="benchRep"/.test(APP), '🎯 집중 벤치마킹 카드에 🎯 회차 보고 단추');
 { const m = APP.match(/const brN = [\s\S]*?\nfunction brCss\(\)/); let html = ''; try { const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); const num = (n) => Number(n).toLocaleString('ko-KR'); const f = new Function('esc', 'num', m[0].replace(/\nfunction brCss\(\)$/, '') + '\nreturn brHtml;'); html = f(esc, num)({ day, at: '2026-11-13T00:00:00Z', runs: 5, chunks: 3, ...P }); } catch (e) { html = 'ERR ' + e.message; }
   ok((html.match(/class="card br-s"/g) || []).length === 17 && /19\. 문제/.test(html) && /17\. 우리와 겹침/.test(html) && /📦/.test(html), '보고 그리기 — 19줄(묶은 칸 포함 16칸 + 🕵 수집 품질)', html.slice(0, 300)); }
