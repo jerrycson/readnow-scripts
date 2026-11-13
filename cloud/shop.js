@@ -51,7 +51,7 @@ function pubItem(id, l, b) {
 }
 /* ══ (11/11 shelf1) 📚 서가 책장 — 판매중 책 전부를 가볍게(칸 이름 cols · 줄마다 배열 · 그림 주소 앞부분은 pre 번호로 줄임) · 4,000권씩 나눠 받음
  *  판매지수(sp)는 숫자를 내보내지 않고 순위(sr · 1이 가장 많이 팔림)만 — 공개 요약 칸 밖의 시장 지표를 새지 않게 · 주문 중 'o' · 다른 판매처에서 팔린 책은 뺌 */
-const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv', 'pv', 'rv']; /* (shelf8) rv = 손님 별점 [평균, 수](공개 리뷰 0이면 없음) */ /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
+const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv', 'pv', 'rv', 'q']; /* (shop2 11/13) q = 수량(2 넘을 때만 · 서가 '여러 권 모두 진열/수량 표시') */ /* (shelf8) rv = 손님 별점 [평균, 수](공개 리뷰 0이면 없음) */ /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
 const SHELF_PRE = [IMG_BASE, 'https://image.aladin.co.kr/product/'];
 /* (shelf6) 서가 창구 제한 — IP당 1분 120번(손님 한 명이 서가를 열 때 2번: 첫 묶음 + 나머지 한꺼번에 · 같은 IP 손님 60명이 1분 안에 열어도 됨) · 나머지 창구는 그대로 240번 */
 const SHELF_RL = [120, 60e3];
@@ -62,7 +62,7 @@ const preOf = (u) => { if (!u) return null; for (let i = 0; i < SHELF_PRE.length
 function shelfRows(all, held, sold, sp, lk, cvf, rvf) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
   const L = (all || []).filter((x) => x && !X.has(x.id)).slice().sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')) || String(b.id).localeCompare(String(a.id))); /* 등록순(오래된 것 먼저) */ /* (shelf4) 새 책 먼저 — 손님 화면이 첫 묶음(4,000권)만 받고 바로 첫 책장을 그림(나머지는 뒤에서) */
   const R = L.map((x) => [x.id, SP.has(x.id) ? +SP.get(x.id) || 0 : -1]).filter((r) => r[1] >= 0).sort((a, b) => b[1] - a[1]); const rank = new Map(R.map((r, i) => [r[0], i + 1]));
-  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null, cvf ? cvf(x.im) : null, x.pv ? 1 : null, (rvf && rvf(x)) || null]); } /* (shelf8) pv 샘플 있음 */
+  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null, cvf ? cvf(x.im) : null, x.pv ? 1 : null, (rvf && rvf(x)) || null, x.q > 1 ? Math.min(999, Math.floor(x.q)) : null]); } /* (shelf8) pv 샘플 있음 */
 /* (shelf2) 📚 책등 모양 영구 저장 — shop_spines/b00~b31 문서(상품 번호 해시로 32칸 · {m:{상품:모양}}) · 손님 화면이 정해 보내면 '먼저 정한 것'이 이김
  *  모양 글 = '세대.출처.디자인.색.무늬.글꼴.모양.장식.방향'(shop/shelf-core.js encode) · 세대(lookGen)가 지금 설정과 다른 것은 안 씀(지우지 않음 — 관리 화면 '다시 정하기') */
 const SPINE_RE = /^(\d{1,4})\.[scrt]\.\d{1,2}\.\d{1,3}\.\d{1,2}\.\d{1,2}\.\d{1,3}\.\d\.[vh](?:\.\d{1,3})?$/; /* (shelf7) 끝 '.곁색' · 모양 세 자리 */
