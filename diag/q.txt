@@ -1,2 +1,3 @@
-col2=20261113&pend=1
-# 163037434
+doc=app_settings/aladin_login
+doc=app_settings/cloud_login
+# 679931039
