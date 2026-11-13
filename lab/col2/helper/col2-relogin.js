@@ -10,7 +10,11 @@
  * 근거: 없음, 설정(col2.json relogin)으로 바꿈 */
 'use strict';
 const fs = require('fs'), path = require('path');
-const DEF = { perHour: 3, perDay: 10, gapMin: 5, failStop: 2 };
+const DEF = { perHour: 3, perDay: 30, gapMin: 5, failStop: 2, shortMin: 20, backMaxMin: 120 };
+/* (11/13 y24sess1 · 정범님 22:53 카드 n1113y24sess 「끊는 곳 찾기 + 한도도 올려」) perDay 10 → 30 · 근거(진단 11/13 HOME): 예스24 세션이 다시 로그인 뒤 58~64분에 풀린 때가 9번 가운데 6번(하루 24번쯤 필요)인데 하루 10번에 막혀 11:06까지 멈췄음
+ *  shortMin = 다시 로그인한 세션이 이 분 안에 풀리면 '금방 끊김'(서로 끊기 의심) · backMaxMin = 그때 다음 다시 로그인까지 기다림의 최대
+ *  금방 끊김·「이미 로그인된」 끊김이 연달아 n번이면 다음 다시 로그인을 gapMin × 2^n분(최대 backMaxMin) 뒤로 미룸 — 5 → 10 → 20 → 40 → 80 → 120분(다른 곳 세션과 서로 끊기 되풀이 막기) · 오래 산 세션이 한 번 풀리면 셈을 처음부터
+ *  근거: 없음, 설정(⚙ 설정 › 🧪 번외 수집기 › 📏 한도·속도)으로 바꿈 */
 const hm = (t) => new Date(+t + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ').replace('-', '/'); /* 한국 시각 'MM/DD HH:MM' */
 /* 사람 손이 필요한 화면 — 보안 문자·자동 입력 방지·2단계·인증 번호·추가 인증 */
 const JS_HUMAN = `(()=>{const t=(document.body&&document.body.innerText||'').slice(0,20000);const q=(s)=>!!document.querySelector(s);
@@ -103,12 +107,21 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const P = (pf) => (S[pf] = S[pf] || { tries: [], fails: 0, stop: null, last: null, auto: true, n: 0 });
   const isLogger = () => { try { return !!o.isLogger(); } catch (e) { return true; } };
   const autoOn = (pf) => P(pf).auto !== false;
+  /* (11/13 y24sess1) 세션 수명 자취 — 로그인이 풀릴 때마다(사람 손 로그인 중 아님) 몇 분 살았는지·「이미 로그인된」 끊김인지(값 없음 · 6시간만)
+   *  life = 번외가 스스로 다시 로그인해 '됨'이 된 때부터 풀린 때까지(사람이 로그인한 세션이면 null) */
+  const lifeAdd = (pf, why) => { const p = P(pf), t = now(); const L = p.last; const life = L && L.ok && L.at <= t ? t - L.at : null; const kick = /이미 로그인된|AlreadyLogin/i.test(String(why || ''));
+    p.lives = (Array.isArray(p.lives) ? p.lives : []).filter((x) => x && t - x.at < 6 * 3600e3).concat([{ at: t, life, kick }]).slice(-20); return p.lives[p.lives.length - 1]; };
+  /* 끊긴 뒤 기다림 → null | { n(연달아 금방 끊긴 수), min(기다릴 분), until } — 금방 끊김 = 「이미 로그인된」 끊김 또는 shortMin분 안에 풀림 · 오래 산 세션이 나오면 셈이 끊김 */
+  function back(pf) { const p = P(pf), c = C(); const Ls = Array.isArray(p.lives) ? p.lives : []; if (!Ls.length) return null; const sm = (c.shortMin == null ? 20 : +c.shortMin) * 60e3; let n = 0;
+    for (let i = Ls.length - 1; i >= 0; i--) { const x = Ls[i]; if (x.kick || (x.life != null && x.life < sm)) n++; else break; }
+    const g = c.gapMin == null ? 5 : +c.gapMin; if (!n || !(g > 0)) return null; /* 앞 시도 뒤 간격을 0으로 둔 때(시험)는 늘리기도 끔 */ const mx = Math.max(g, c.backMaxMin == null ? 120 : +c.backMaxMin); const min = Math.min(mx, g * Math.pow(2, n)); const last = Ls[Ls.length - 1].at; return { n, min, until: last + min * 60e3 }; }
   /* 지금 해도 되나 → null(됨) | 까닭 */
   function why(pf, ctx) { const p = P(pf), c = C(), t = now(); p.tries = p.tries.filter((x) => t - x < 86400e3);
     if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf) && !ctx.naver) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
     if (p.stop && p.stop.until && t >= p.stop.until && !p.stop.bad && !p.stop.human && !p.stop.blocked) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 멈춘 지 정한 시간이 지나 스스로 다시 로그인을 다시 해 봄`); } catch (e) {} } /* (11/13 home2) '연속 실패'·'됨 뒤 금방 풀림' 멈춤은 정한 시간 뒤 저절로 풂(사람 손 없이 · 하루 몫은 그대로 계정 보호) */
     if (p.stop) return `멈춤 — ${p.stop.why}${p.stop.until ? ` (${hm(p.stop.until)}에 저절로 다시 해 봄)` : ' (⚙ › 🔐에서 [다시 해 보기])'}`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
     if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; if (t - last < c.gapMin * 60e3) return `앞 시도 뒤 ${c.gapMin}분 기다림`;
+    { const bw = back(pf); if (bw && t < bw.until) return `끊긴 뒤 ${bw.n}번 연달아 금방 끊김 — ${bw.min}분 기다림(${hm(bw.until)}에 다시 · 다른 곳 세션과 서로 끊기 되풀이 막기)`; }
     if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `24시간에 ${c.perDay}번까지 — ${hm(p.tries[0] + 86400e3)}부터 다시`; /* (11/13 home2) '내일'이 아니라 셈은 지난 24시간 — 가장 오래된 시도가 빠지는 때 */ return null; }
   /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
   async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;
@@ -150,14 +163,14 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   /* (11/12 login1) 세션이 다시 살아나면(사람이 평범한 창·옆 창으로 했든 번외가 했든) '연속 n번 실패' 멈춤을 조용히 풂 — 그래야 다음에 풀릴 때 번외가 스스로 다시 로그인함 · 값 틀림(bad) 멈춤만 그대로(사람 손이 필요하던 멈춤은 사람이 해서 살아난 것) */
   const okSeen = (pf) => { const p = P(pf); if (p.stop && !p.stop.bad) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 로그인이 다시 살아나 '스스로 다시 로그인' 멈춤을 풂(다음에 풀리면 번외가 스스로)`); } catch (e) {} } else if (p.fails) { p.fails = 0; save(); } };
   /* (11/13 home2) 다시 로그인이 '됨'이었는데 dropMin분(기본 5) 안에 다시 로그인 화면 = 실제로는 안 된 것 — 자취에 남기고, 2시간에 2번이면 2시간 멈춤(헛된 되풀이로 하루 몫을 다 쓰지 않게 · 저절로 풀림) */
-  const dropAfterOk = (pf, why) => { const p = P(pf), c = C(), t = now(); const L = p.last; const dm = c.dropMin == null ? (TEST ? 0 : 5) : +c.dropMin; /* 시험은 일부러 세션을 곧바로 지우는 장면이 많아 꺼 둠(t_home2가 켜고 봄) */ if (!dm || !L || !L.ok || t - L.at > dm * 60e3) return false;
+  const dropAfterOk = (pf, why) => { try { lifeAdd(pf, why); save(); } catch (e) {} /* (11/13 y24sess1) 끊길 때마다 수명 자취(기다림 늘리기 셈) */ const p = P(pf), c = C(), t = now(); const L = p.last; const dm = c.dropMin == null ? (TEST ? 0 : 5) : +c.dropMin; /* 시험은 일부러 세션을 곧바로 지우는 장면이 많아 꺼 둠(t_home2가 켜고 봄) */ if (!dm || !L || !L.ok || t - L.at > dm * 60e3) return false;
     p.fake = (Array.isArray(p.fake) ? p.fake : []).filter((x) => t - x < 2 * 3600e3).concat([t]); p.hist = (Array.isArray(p.hist) ? p.hist : []).concat([{ at: t, ok: false, how: 'drop', why: `'됨' ${Math.round((t - L.at) / 1000)}초 뒤 다시 로그인 화면 — ${String(why || '').slice(0, 80)}` }]).slice(-12);
     const nm = (cred.PF[pf] || {}).name || pf; if (p.fake.length >= 2 && !p.stop) { p.stop = { at: t, why: `다시 로그인이 '됨' 뒤 몇 분 안에 또 풀림 ${p.fake.length}번(2시간 안) — 같은 계정이 다른 곳(휴대폰·다른 크롬)에서 판매관리를 쓰고 있을 수 있음`, until: t + 2 * 3600e3 }; note(`⛔ ${nm} — 다시 로그인이 '됨' 뒤 몇 분 안에 또 풀림 ${p.fake.length}번 · 2시간 쉬고 저절로 다시 해 봄(헛된 되풀이 막기 · 다른 곳에서 판매관리를 쓰는 중이면 그쪽을 닫으면 됨)`, { l: 'warn' }); }
     else note(`🔐 ${nm} — 다시 로그인이 '됨'이었는데 ${Math.round((t - L.at) / 1000)}초 뒤 다시 로그인 화면(${String(why || '').slice(0, 60)})`, { l: 'warn' }); save(); return true; };
   const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
   const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
-  const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); const td = p.tries.filter((x) => now() - x < 86400e3); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: td.length, n: p.n, hist: Array.isArray(p.hist) ? p.hist.slice(-10) : [], next: td.length >= C().perDay ? td[0] + 86400e3 : null }; } return out; };
+  const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); const td = p.tries.filter((x) => now() - x < 86400e3); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: td.length, n: p.n, hist: Array.isArray(p.hist) ? p.hist.slice(-10) : [], next: td.length >= C().perDay ? td[0] + 86400e3 : null, perDay: C().perDay, back: back(k), lives: Array.isArray(p.lives) ? p.lives.slice(-8).map((x) => ({ at: x.at, m: x.life == null ? null : Math.round(x.life / 60e3), kick: !!x.kick })) : [] }; } return out; };
   const hasCred = (pf) => { try { return !!cred.has(pf); } catch (e) { return false; } };
-  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob, hasCred, okSeen, dropAfterOk };
+  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob, hasCred, okSeen, dropAfterOk, back };
 }
 module.exports = { makeRelogin, doLogin, dlgOk, ACT_SRC, JS_ACT, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT, JS_WHERE, isBlock, codeOf, blockWhy };

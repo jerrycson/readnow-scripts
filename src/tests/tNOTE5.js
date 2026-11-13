@@ -44,7 +44,7 @@ function fakeC() { const D = {}; const L = {};
   if (!ART) console.log('… ③ 아티팩트 화면 시험은 RN_JBNOTE로(건너뜀)');
   else {
     const F2 = fakeC(); const KEY = 'k'.repeat(48); await F2.C('app_secrets').doc('notes_mcp').set({ key: KEY }); const N2 = makeNotes({ C: F2.C, log: () => {}, ver: 'T' });
-    await N2.write([{ op: 'set', id: 'c1', data: { kind: 'card', cat: '웹앱', sub: '노트', imp: 2, title: '인용할 카드', body: '첫째 문장은 인용할 글입니다.\n\n둘째 문단.', src: 'lead', readAt: 'x', state: 'open' } }], 'lead');
+    await N2.write([{ op: 'set', id: 'c1', data: { kind: 'card', cat: '웹앱', sub: '노트', imp: 2, title: '인용할 카드', body: '첫째 문장은 인용할 글입니다.\n\n둘째 문단.', src: 'lead', readAt: 'x', state: 'open' } }, { op: 'merge', id: '_meta', data: { uiSlotSz: 'm' } }], 'lead'); /* (note5 둘째) 단추 '보통(두 줄)' 꼴로 수 글자까지 봄 · 작게(기본)는 tNOTE5B */
     const G = (id) => F2.D.jb_notes.get(id) || {}; const memos = (slot) => [...F2.D.jb_notes.values()].filter((d) => d.kind === 'memo' && !d.batchId && d.state !== 'trashed' && (d.slot || 1) === slot);
     const ctxp = await b.newContext({ viewport: { width: 390, height: 800 }, hasTouch: false });
     const a = await ctxp.newPage(); a.on('pageerror', (e) => errs.push(e.message)); await a.route(/^https?:\/\/(?!art\.test)/, (r) => r.fulfill({ status: 404, body: '' }));
@@ -57,7 +57,7 @@ function fakeC() { const D = {}; const L = {};
     await a.goto('https://art.test/'); await a.waitForTimeout(1800);
     const slotTxt = () => a.evaluate(() => [...document.querySelectorAll('.jbn-slot')].map((x) => (x.getAttribute('aria-pressed') === 'true' ? '*' : '') + x.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
     ok((await a.$$('.jbn-dock .jbn-slot')).length === 3, '③ 통합 입력칸 위 💾 저장1·저장2·저장3 — ' + (await slotTxt()));
-    ok(/^\*💾 저장1/.test(await slotTxt()), '③ 처음엔 저장1이 골라짐(표시)');
+    ok(/^\*(💾 )?저장1/.test(await slotTxt()), '③ 처음엔 저장1이 골라짐(표시)');
     // 저장1: 쓰던 글이 곧바로 서버에
     await a.click('#jbn-feed-ta'); await a.keyboard.type('저장1 쓰던 글'); await a.waitForTimeout(1200);
     ok(G('slot_1').draft === '저장1 쓰던 글', '③ 입력할 때마다 서버(노트 저장소)에 곧바로 저장 — 저장1 draft');
@@ -109,16 +109,19 @@ function fakeC() { const D = {}; const L = {};
     ok(mine().length === 2 && mine().every((d) => d.state === 'open' && d.by === 'jb'), '③ 내 메모 쓰기([📝 적기] · Ctrl+Enter) → 서버 kind jbmemo');
     ok((await a.evaluate(() => (document.querySelector('.jbn-tabs [data-tab="mine"] .n') || {}).textContent)) === '2', '③ 📝 내 메모 탭 수 2');
     const jid = mine().find((d) => d.text === '나만 볼 메모 하나'); const jidk = [...F2.D.jb_notes.entries()].find(([, v]) => v === jid)[0];
+    await a.click(`[data-mine="${jidk}"] [data-act="mtoggle"]`); await a.waitForTimeout(200); /* (note5 둘째) 내 메모는 처음 접혀 있음 */
     await a.click(`[data-mine="${jidk}"] [data-act="medit"]`); await a.fill('#jbn-med', '나만 볼 메모 — 고침'); await a.click(`[data-mine="${jidk}"] [data-act="msave"]`); await a.waitForTimeout(800);
     ok(G(jidk).text === '나만 볼 메모 — 고침' && !!G(jidk).editedAt, '③ 내 메모 고치기');
     await a.fill('#jbn-q', '기억할'); await a.waitForTimeout(500);
-    ok((await a.evaluate(() => [...document.querySelectorAll('.jbn-mi .tx')].map((x) => x.textContent).join('|'))) === '두 번째 기억할 것', '③ 위 찾기 칸으로 내 메모 찾기');
+    ok((await a.evaluate(() => [...document.querySelectorAll('.jbn-mi .mt')].map((x) => x.textContent.replace(/^[▸▾]\s*/, '')).join('|'))) === '두 번째 기억할 것', '③ 위 찾기 칸으로 내 메모 찾기');
     await a.fill('#jbn-q', ''); await a.waitForTimeout(500);
+    if (!(await a.$(`[data-mine="${jidk}"] [data-act="mtrash"]`))) { await a.click(`[data-mine="${jidk}"] [data-act="mtoggle"]`); await a.waitForTimeout(200); }
     await a.click(`[data-mine="${jidk}"] [data-act="mtrash"]`); await a.waitForTimeout(800);
     ok(G(jidk).state === 'trashed' && (await a.evaluate(() => document.querySelectorAll('.jbn-mine > .jbn-mi').length)) === 1, '③ 🗑 휴지통으로(지우지 않음) · 목록에서 빠짐');
-    await a.evaluate(() => { const d = document.querySelector('.jbn-mine details'); if (d) d.open = true; });
+    await a.click('[data-mview="trash"]'); await a.waitForTimeout(200); /* (note5 둘째) 휴지통은 보기 칩 */
+    if (!(await a.$(`[data-mine="${jidk}"] [data-act="mrestore"]`))) { await a.click(`[data-mine="${jidk}"] [data-act="mtoggle"]`); await a.waitForTimeout(200); }
     await a.click(`[data-mine="${jidk}"] [data-act="mrestore"]`); await a.waitForTimeout(800);
-    ok(G(jidk).state === 'open', '③ 휴지통에서 ↩ 되살리기');
+    ok(G(jidk).state === 'open', '③ 휴지통에서 ↩ 되살리기'); await a.click('[data-mview="all"]'); await a.waitForTimeout(200);
     ok(![...F2.D.jb_notes.values()].some((d) => d.kind === 'batch' && /기억할|나만 볼/.test(d.text || '')) && !(await N2.diag({})).recent.some((r) => /기억할|나만 볼/.test(r.title || '')), '③ 내 메모는 보낸 묶음·리드 진단에 안 나옴');
     const wide = await a.evaluate(() => document.documentElement.scrollWidth); ok(wide <= 390, '③ 휴대폰 폭(390) 가로 넘침 없음 — ' + wide);
     if (process.env.RN_SHOT) { await a.screenshot({ path: process.env.RN_SHOT + '/n5_mine.png' }); await a.click('.jbn-tabs [data-tab="review"]'); await a.waitForTimeout(400); await a.screenshot({ path: process.env.RN_SHOT + '/n5_slots.png' }); }
