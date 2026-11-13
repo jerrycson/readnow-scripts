@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ship1: ip1+rv4+const3+view1 판",
+ "since": "2026-11-13T06:47:12Z",
+ "beat": "2026-11-13T06:47:12Z",
  "ask": null,
  "last": {
   "who": "ship1",
   "done": "lead 이름으로 다시 잡음(push 검사)",
   "at": "2026-11-13T06:47:10Z"
  },
- "host": null
+ "host": "vm-ship1"
 }
