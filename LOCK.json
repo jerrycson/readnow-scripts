@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "bfin 판 1.89.310 올리는 중",
- "since": "2026-11-13T04:28:28Z",
- "beat": "2026-11-13T04:31:56Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "bovf2 e5fd4fd7 웹앱 1.78.563 · 수집기 1.89.309 · autosched 0.18.30 여분 이중 차감 고침",
-  "at": "2026-11-13T04:28:20Z"
+  "done": "bfin a0bec497 수집기 1.89.310 대량 사라짐 실제 간격 판단(머리 그대로)",
+  "at": "2026-11-13T04:32:22Z"
  },
- "host": "wk-bfin"
+ "host": null
 }
