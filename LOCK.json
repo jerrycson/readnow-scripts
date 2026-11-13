@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "benchfix 벤치마킹 고침·회차 보고 판 내기",
+ "since": "2026-11-13T01:51:14Z",
+ "beat": "2026-11-13T01:51:14Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "orderchk 판 0e6ad33b 웹앱 1.78.549 — 💰 매입가 나눔 기본 똑같이 나눔으로 되돌림",
   "at": "2026-11-13T01:50:36Z"
  },
- "host": null
+ "host": "vm-benchfix"
 }
