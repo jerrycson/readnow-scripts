@@ -1,2 +1,2 @@
-doc=app_settings/col2_solo
-# 2569627311
+@kpin kpin/20261113-053414-31619.json
+# 304227422
