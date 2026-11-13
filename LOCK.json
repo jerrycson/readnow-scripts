@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "mjui1 웹앱 판 — 등록 설정 세 탭(MJ님 요청)",
- "since": "2026-11-13T04:45:56Z",
- "beat": "2026-11-13T04:45:56Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "y24re 둘째 ed089d52 웹앱 1.78.564 · 수집기 1.89.311",
-  "at": "2026-11-13T04:45:37Z"
+  "done": "mjui1 ac7a12ac 웹앱 1.78.565 — 등록 설정 세 탭(MJ님 요청)",
+  "at": "2026-11-13T04:47:28Z"
  },
- "host": "vm-mjui1"
+ "host": null
 }
