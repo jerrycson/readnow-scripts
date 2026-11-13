@@ -31,7 +31,7 @@
     { k: 'pcWidth', group: '휴대폰', label: 'PC 화면으로 볼 때 화면 폭(px)', type: 'number', def: 1280, min: 960, max: 1600, help: '손가락으로 확대·축소해 봄' },
     { k: 'tabbar', group: '휴대폰', label: '휴대폰 아래 탭 막대(홈·분류·서가·찜·내 정보)', type: 'check', def: true },
     { k: 'multiOn', group: '담기·주문', label: '수량이 2권 넘는 책은 손님이 여러 권 담기(재고 수량까지)', type: 'check', def: true, help: '정범님 11/13 20:47 · 끄면 예전처럼 한 권씩 · 클라우드 주문 검사도 이 값을 따름' },
-    { k: 'multiMax', group: '담기·주문', label: '같은 책 한 번에 최대 권 수', type: 'number', def: 10, min: 1, max: 50 },
+    { k: 'multiMax', group: '담기·주문', label: '같은 책 한 번에 최대 권 수(0 = 재고까지 · 제한 없음)', type: 'number', def: 0, min: 0, max: 999, help: '정범님 11/13 22:53 — 기본은 재고까지' },
     { k: 'shipNote', group: '책 한 권 화면', label: '배송 안내 한 줄', type: 'text', def: '입금이 확인되면 1~3일(영업일) 안에 보냅니다', max: 80 },
     { k: 'gradeTable', group: '책 한 권 화면', label: '등급 기준표(최상·상·중·하 풀이) 보이기', type: 'check', def: true },
     { k: 'shareOn', group: '책 한 권 화면', label: '공유 단추(휴대폰 공유 창 · 안 되면 주소 복사)', type: 'check', def: true },
