@@ -1935,7 +1935,7 @@ const ICON = {
   const kst = (iso) => { const t = Date.parse(iso || ''); if (!Number.isFinite(t)) return ''; const d = new Date(t + 9 * 36e5); return `${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
   const nowIso = () => new Date().toISOString();
   const rid = (p) => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const CAT_ORDER = ['참고LOST', '사업 결정', '출고·주문', '우리숍', '벤치마킹·엔진', '연구', '수집기·PC', '웹앱', '클라우드', '운영·장치', '보고·점검', '노트'];
+  const CAT_ORDER = ['완수 관제탑', '사업 결정', '출고·주문', '우리숍', '벤치마킹·엔진', '연구', '수집기·PC', '웹앱', '클라우드', '운영·장치', '보고·점검', '노트'];
   const TABS = [['review', '검토'], ['fav', '⭐ 즐겨찾기'], ['new', '🆕 새로 온 것'], ['held', '⏸ 보류'], ['done', '✅ 완료'], ['archived', '🗄 보관함'], ['trashed', '🗑 휴지통']];
 
   /* ── 문서 → 카드 꼴 (예전 노트: kind 없음 · folder·archived·trashed) ── */
@@ -1955,7 +1955,7 @@ const ICON = {
   }
   const impOf = (c) => (c.imp >= 1 && c.imp <= 3 ? c.imp : 2); /* ⭐(pinned)는 차례만 바꾸지 않음 — 위 ⭐ 묶음으로 따로 보임 */
   const whenOf = (c) => c.srcAt || c.createdAt || c.updatedAt || '';
-  function catOf(c) { return (c.cat || c.folder || '노트').trim() || '노트'; }
+  function catOf(c) { const x = (c.cat || c.folder || '노트').trim() || '노트'; return x === '참고LOST' ? '완수 관제탑' : x; }   /* (11/13 tower1) 옛 이름 참고LOST 카드도 새 이름 칸에 모음 */
   function tree(cards) {
     const T = new Map();
     for (const c of cards) { const a = catOf(c), b = (c.sub || '').trim() || '(묶음 없음)', l = (c.leaf || '').trim(); if (!T.has(a)) T.set(a, new Map()); const B = T.get(a); if (!B.has(b)) B.set(b, new Map()); const Lm = B.get(b); if (!Lm.has(l)) Lm.set(l, []); Lm.get(l).push(c); }
