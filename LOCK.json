@@ -1,13 +1,13 @@
 {
- "holder": "shipwarn1",
- "what": "출고 검토 경고 이유 요약",
- "since": "2026-11-13T15:06:37Z",
- "beat": "2026-11-13T15:06:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shopsrv2",
-  "done": "클라우드 0.35.242 숍 전용 서버 /status · 356d52ac",
-  "at": "2026-11-13T15:06:31Z"
+  "who": "shipwarn1",
+  "done": "웹앱 1.78.606 출고 검토 접힌 줄 이유 두세 마디 · 0d46f0e5",
+  "at": "2026-11-13T15:23:12Z"
  },
- "host": "vm-shipwarn1"
+ "host": null
 }
