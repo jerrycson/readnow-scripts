@@ -1,4 +1,2 @@
-col2=2026-11-13
-doc=app_settings/col2_solo
-pend=1
-# 2438532136
+extidx=1&doc=app_settings/bkinfo
+# 3077821040
