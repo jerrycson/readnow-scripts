@@ -1,2 +1,2 @@
-cmds=pxExp&n=40
-# 486011120
+doc=app_settings/cons_study
+# 39948102
