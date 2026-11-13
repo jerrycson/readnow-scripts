@@ -10,7 +10,7 @@ const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), pa
 const T = fs.readFileSync(APP, 'utf8');
 console.log('① 코드 꼴');
 ok(/function regFbX\(it, cfg\)/.test(T) && /function regFb\(it, cfg\) \{ return regFbX\(it, cfg\)\.fb; \}/.test(T), 'regFbX = 값 + 까닭 · regFb는 값만');
-ok(/const REG_FB_SOLD = \/품절\|절판\/;/.test(T), '③은 새상품 품절·절판일 때만');
+ok(/const REG_FB_SOLD = \/\(\?<!일시\)품절\|절판\/;/.test(T), '③은 새상품 품절·절판일 때만(1.78.521부터 일시품절 뺌 — 정범님 11/12 규칙)');
 ok(/out\.set\(it\.id, \{ x, price, fb: fbk, fbNo, base,/.test(T), '등록 줄(regRows 셈)에 까닭 fbNo');
 ok(/data-rgfbno=/.test(T) && /💬 판매가 비워 둠/.test(T), '카드에 💬 판매가 비워 둠');
 ok(/noP\+\+; continue; \}/.test(T), '모두 결정 대기로 — 판매가 빈 상품은 남김');
@@ -33,7 +33,7 @@ ok(/id: 'card-fbno'/.test(T), '📖 등록 백과 항목');
       const cfgC = { ...cfg, fb: { ...cfg.fb, c: false } }; const x3 = regFbX(C.all, cfgC); out.cOff = { kind: x3.fb ? x3.fb.kind : null, no: x3.no };
       return out; }, { PG, SR0, SR1 });
     ok(R.all.kind === 'c' && R.all.price === 24000 && !R.all.no, '세 조건 모두(시장 없음 확인 · 검색 시세 매물 없음 · 절판) → 정가 × 2 = 24,000원', R.all);
-    ok(R.sold.kind === 'c' && R.tmp.kind === 'c', '품절·일시품절도 ③', [R.sold, R.tmp]);
+    ok(R.sold.kind === 'c' && !R.tmp.kind && /일시품절」\(품절·절판 아님\)/.test(R.tmp.no || ''), '품절은 ③ · 일시품절은 비움+까닭(1.78.521 정밀 점검 · 곧 다시 들어오는 책)', [R.sold, R.tmp]);
     ok(!R.onsale.kind && /새상품 판매 중이라 정가 × 2 안 씀/.test(R.onsale.no || ''), '새상품 판매 중 → 비움 · 까닭', R.onsale);
     ok(!R.unknown.kind && /새상품 판매 상태를 모름/.test(R.unknown.no || ''), '새상품 상태 모름 → 비움', R.unknown);
     ok(!R.nosrch.kind && /검색 시세 확인 전/.test(R.nosrch.no || ''), '검색 시세 안 읽음 → 비움 · 「검색 시세 확인 전」', R.nosrch);
