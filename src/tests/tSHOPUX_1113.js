@@ -41,7 +41,7 @@ if (process.env.RN_PORT && fs.existsSync(path.join(process.cwd(), 'harness.js'))
       o.pv = sh.querySelector('#bql_pv').href; window.__FSW = []; const sv = sh.querySelector('#bql_save'); sv.click(); await Wt(200); o.once = (window.__FS.app_settings.shop || {}).brandLogo; sh.querySelector('#bql_save').click(); await Wt(700);
       const d = window.__FS.app_settings.shop || {}; o.saved = { logo: d.brandLogo, look: d.look, open: d.open }; return o; }).catch((e) => { bad++; console.log('  ❌ 관리 화면 시험 멈춤', e.message); return null; });
     if (!r) return; const pv = new URL(r.pv); const pq = new URLSearchParams(pv.hash.split('?')[1] || '');
-    ok(r.card && r.logos === 11 && r.checked === 'q02' && r.theme === 'forest' && r.groups >= 7 && /booksqueen\.com\/brand\/q01\.svg$/.test(r.imgs[1] || ''), `🎨 우리숍 꾸밈 카드: 로고 고르기 ${r.logos}칸(글자 로고 + 시안 10 · 그림으로) · 저장된 q02·숲 색 그대로 · 칸 묶음 ${r.groups}개`, r);
+    ok(r.card && r.logos === 11 && r.checked === 'q02' && r.theme === 'forest' && r.groups >= 7 && /booksqueen\.com\/brand\/q01\.svg$/.test(r.imgs[0] || ''), `🎨 우리숍 꾸밈 카드: 로고 고르기 ${r.logos}칸(글자 로고 + 시안 10 · 그림으로) · 저장된 q02·숲 색 그대로 · 칸 묶음 ${r.groups}개`, r);
     ok(pq.get('logo') === 'q07' && BQL.previewCfg(pq.get('look')).theme === 'wine' && BQL.previewCfg(pq.get('look')).heroTitle === '시험 제목', '고치는 대로 「👀 미리 보기」 주소가 따라감(저장 안 함 · 손님 화면 #/?look=…&logo=q07)', r.pv);
     ok(r.once === 'q02' && r.saved.logo === 'q07' && r.saved.look.theme === 'wine' && r.saved.look.heroTitle === '시험 제목' && Object.keys(r.saved.look).length === 2 && r.saved.open === 0 && !dlg.length, '저장은 두 번 눌러야 · brandLogo + look(기본과 다른 칸만) · 다른 우리숍 설정(문 열기)은 그대로 · 브라우저 창 0', r.saved);
     await p.evaluate(() => document.querySelector('#bq_look').scrollIntoView());
