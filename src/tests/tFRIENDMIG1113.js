@@ -34,7 +34,7 @@ console.log('② 안드로이드 앱');
 
 console.log('③ 화면 로그인 옮기기');
 const BOOT = rd('friend/readnow-friend-boot.js');
-ok(/readnow-friend-boot\.js\?v=0\.15\.20-m1/.test(rd('friend/index.html')), '화면이 새 boot를 받음(?v 바꿈)');
+ok(/readnow-friend-boot\.js\?v=0\.15\.20-(m1|l\d+)/.test(rd('friend/index.html')), '화면이 새 boot를 받음(?v 바꿈 · friendlink1 뒤엔 -l1)');
 ok(/const FR_SHELL_NEW = '0\.2\.3';/.test(BOOT) && /frOpenUrl\(FR_DL\)/.test(BOOT) && /const FR_DL = 'https:\/\/readnow\.kr\/dl\/friend\/';/.test(BOOT) && !/releases\/tag\/friend-v/.test(BOOT), '새 판 띠: 0.2.3 · 받는 곳 readnow.kr/dl/friend/');
 ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(BOOT), '브라우저 팝업 없음');
 /* 가짜 창: 무엇이든 받아 주는 DOM · 주소마다 따로인 저장소 */

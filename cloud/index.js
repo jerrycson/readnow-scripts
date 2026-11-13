@@ -2276,6 +2276,36 @@ async function friendToken(req, b) { const ip = pxIp(req); const f = FRP_FAIL.ge
   const em = String(P.email || '').toLowerCase(); if (!ALLOW.includes(em) && !(await allowDyn()).has(em)) throw Object.assign(new Error('허용되지 않은 계정: ' + em), { code: 403 });
   let token; try { token = await getAuth().createCustomToken(P.uid, { rnFriend: true, rnDev: P.dev }); } catch (e) { log('책방 친구 열쇠 만들기 실패', e.message); throw Object.assign(new Error('클라우드가 로그인 열쇠를 만들 권한이 없음(서비스 계정 토큰 생성자 · IAM) — ' + String(e.message || '').slice(0, 120)), { code: 500 }); }
   log('책방 친구 연결', P.dev, em); return { ok: true, token, dev: P.dev, email: em }; }
+/* ── (friendlink1 11/14 · 정범님 '연결이 매우 불편 · 마지막 잇기를 누르면 먹통이고 코드도 안 나옴') 📺 기기 쪽에서 시작하는 잇기 — 넷플릭스 TV 코드·구글 기기 연결과 같은 차례
+ *  ① 프로그램(로그인 없음)이 /friend-link-start → 숨은 표 dc(32자 · 프로그램만 앎) + 화면에 보일 8자리 코드 · 10분
+ *  ② 사람이 로그인된 웹앱에서 그 코드를 승인(/friend-link-ok · 프로그램의 '🌐 웹앱에서 승인' 단추가 readnow.kr/app/#frlink=코드 를 열거나 휴대폰으로 QR) → 그 계정·고른 기기 이름을 적음
+ *  ③ 프로그램이 2초마다 /friend-link-poll(dc) → 승인되면 한 번만 같은 계정 로그인 열쇠(/friend-token과 같은 열쇠)
+ *  · 표·코드 원문은 저장하지 않음(해시만) · 쓴 표는 지우지 않고 used·usedAt만 덧붙임 · 시작은 IP마다 10분에 30번까지 · 틀린 표·코드가 잦은 IP는 10분 막음(FRP_FAIL)
+ *  · 다른 인터넷(시작한 IP ≠ 승인한 IP)이면 한 번에 승인하지 않고 far를 돌려 웹앱이 '내 앞 화면에 이 코드가 보일 때만' 한 번 더 누르게 함(남이 만든 코드를 눌러 계정을 내주는 일 막기) */
+const FRL_HITS = new Map();
+async function friendLinkStart(req, b) { const ip = pxIp(req); const now = Date.now(); const h = (FRL_HITS.get(ip) || []).filter((t) => now - t < 10 * 60e3); if (h.length >= 30) throw Object.assign(new Error('연결 시작이 너무 잦음 — 10분 뒤 다시'), { code: 429 }); h.push(now); FRL_HITS.set(ip, h); if (FRL_HITS.size > 5000) FRL_HITS.clear();
+  const cr = require('crypto'); const dc = cr.randomBytes(24).toString('base64url'); let code = ''; const rb = cr.randomBytes(8); for (let i = 0; i < 8; i++) code += FRP_ABC[rb[i] % FRP_ABC.length];
+  const kind = ['tauri', 'android', 'web'].includes(b.kind) ? b.kind : 'tauri'; const exp = new Date(now + FRP_TTL).toISOString();
+  await C('friend_link').doc(frpH('fl', dc)).set({ st: 'wait', kind, codeH: frpH('flc', code), ipH: frpH('ip', ip).slice(0, 16), ua: String(req.headers['user-agent'] || '').slice(0, 160), exp, at: nowIso(), used: false, uploadedAt: FV.serverTimestamp() });
+  return { ok: true, dc, code, exp, kind, ttl: FRP_TTL }; }
+async function friendLinkOk(req, u, b) { const code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 8) throw Object.assign(new Error('코드 8자리가 아님'), { code: 400 });
+  const dev = frpDev(b.dev); if (!dev) throw Object.assign(new Error('기기 이름이 없음'), { code: 400 });
+  const qs = await C('friend_link').where('codeH', '==', frpH('flc', code)).limit(1).get(); if (qs.empty) throw Object.assign(new Error('코드가 맞지 않음(또는 10분이 지났음) — 책방 친구 화면의 새 코드를 보세요'), { code: 404 });
+  const ref = qs.docs[0].ref; const ipH = frpH('ip', pxIp(req)).slice(0, 16);
+  return db.runTransaction(async (tx) => { const d = await tx.get(ref); const v = d.data() || {}; if (Date.parse(v.exp) < Date.now()) throw Object.assign(new Error('코드 시간(10분)이 지났음 — 책방 친구 화면에 새 코드가 나와요'), { code: 410 });
+    if (v.used || v.st === 'ok') throw Object.assign(new Error('이미 승인한 코드 — 책방 친구 화면이 곧 연결돼요'), { code: 410 });
+    const far = v.ipH && v.ipH !== ipH; if (far && !b.far) return { ok: false, far: true, kind: v.kind || null, at: v.at || null };
+    tx.set(ref, { st: 'ok', uid: u.uid, email: String(u.email || '').toLowerCase(), dev, okAt: nowIso(), okIpH: ipH, far: !!far }, { merge: true }); return { ok: true, dev, kind: v.kind || null, far: !!far }; }); }
+async function friendLinkPoll(req, b) { const ip = pxIp(req); const f = FRP_FAIL.get(ip); if (f && f.n >= 20 && Date.now() - f.at < 10 * 60e3) throw Object.assign(new Error('잘못된 연결 시도가 너무 많음 — 10분 뒤 다시'), { code: 429 });
+  const dc = typeof b.dc === 'string' && /^[\w-]{20,64}$/.test(b.dc) ? b.dc : null; if (!dc) { const g = FRP_FAIL.get(ip); FRP_FAIL.set(ip, { n: (g && Date.now() - g.at < 10 * 60e3 ? g.n : 0) + 1, at: Date.now() }); throw Object.assign(new Error('연결 표가 없음'), { code: 400 }); }
+  const ref = C('friend_link').doc(frpH('fl', dc));
+  const P = await db.runTransaction(async (tx) => { const d = await tx.get(ref); if (!d.exists) { const g = FRP_FAIL.get(ip); FRP_FAIL.set(ip, { n: (g && Date.now() - g.at < 10 * 60e3 ? g.n : 0) + 1, at: Date.now() }); throw Object.assign(new Error('연결 표가 맞지 않음 — 새 코드로 다시'), { code: 404 }); }
+    const v = d.data(); if (v.used) throw Object.assign(new Error('이미 쓴 연결 표 — 새 코드로 다시'), { code: 410 }); if (v.st !== 'ok') { if (Date.parse(v.exp) < Date.now()) throw Object.assign(new Error('코드 시간(10분)이 지났음'), { code: 410 }); return null; }
+    tx.set(ref, { used: true, usedAt: nowIso(), usedIp: frpH('ip', ip).slice(0, 16) }, { merge: true }); return v; });
+  if (!P) return { ok: true, wait: true };
+  const em = String(P.email || '').toLowerCase(); if (!ALLOW.includes(em) && !(await allowDyn()).has(em)) throw Object.assign(new Error('허용되지 않은 계정: ' + em), { code: 403 });
+  let token; try { token = await getAuth().createCustomToken(P.uid, { rnFriend: true, rnDev: P.dev }); } catch (e) { log('책방 친구 열쇠 만들기 실패', e.message); throw Object.assign(new Error('클라우드가 로그인 열쇠를 만들 권한이 없음(서비스 계정 토큰 생성자 · IAM) — ' + String(e.message || '').slice(0, 120)), { code: 500 }); }
+  log('책방 친구 연결(기기 쪽 코드)', P.dev, em, P.far ? '다른 인터넷에서 승인' : ''); return { ok: true, token, dev: P.dev, email: em }; }
 
 /* ── HTTP ── */
 /* (0.34.4) 정범님 10/23 'ninjamj81이 권한 문제로 업무를 못 볼 때가 많음' — 원인: Firestore 보안 규칙(staff)엔 있는데 클라우드 허용 계정(ALLOW_EMAILS)엔 jerrycson만 있어 그 계정의 클라우드 요청(조회·등록·수정·미리보기 등)이 403
@@ -5559,6 +5589,8 @@ const server = http.createServer(async (req, res) => {
     const reqOff = async () => !(await cjobs()).req; const OFFMSG = { ok: false, off: true, err: '클라우드 설정(☁ 클라우드가 하는 일)에서 \'웹앱이 부르는 일\'을 꺼 둠' };
     if (path === '/friend-pair') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await friendPair(u, b)); } /* 🖥 책방 친구 프로그램 연결 표 */
     if (path === '/friend-say') { if (req.method !== 'POST') return send(405, { ok: false }); const b = await bodyOf(req); return send(200, await friendSay(req, b)); } /* (10/29 ②) 바깥 알림 창구 */
+    if (path === '/friend-link-start' || path === '/friend-link-poll') { if (req.method !== 'POST') return send(405, { ok: false }); const b = await bodyOf(req); return send(200, await (path === '/friend-link-start' ? friendLinkStart(req, b) : friendLinkPoll(req, b))); } /* (friendlink1 11/14) 📺 기기 쪽 코드 — 로그인 없음 */
+    if (path === '/friend-link-ok') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await friendLinkOk(req, u, b)); } /* (friendlink1 11/14) 📺 웹앱이 기기 쪽 코드를 승인(로그인 · 허용 계정) */
     if (path === '/friend-token') { if (req.method !== 'POST') return send(405, { ok: false }); const b = await bodyOf(req); return send(200, await friendToken(req, b)); } /* 🖥 표 → 같은 계정 로그인 열쇠(로그인 없음 · 1회용) */
     if (path === '/strat-run') { await authUser(req); if (!(await cjobs()).strat) return send(200, { ok: false, err: '☁ 설정에서 ⚡ 전략 실행을 꺼 둠' }); const r = await stratTick(true); return send(200, { ok: !(r && r.err), ...(r || { busy: '이미 판단하는 중' }) }); } /* (0.34.0) 웹앱 '지금 판단' */
     if (path === '/shop-promo') { await authUser(req); const b = await bodyOf(req).catch(() => ({})); return send(200, { ok: true, ...(await SHOP.promoPreview(b)) }); } /* (11/11 shopc1) 🏷 우리숍 할인·배지 미리 보기(쓰기 없음) — 관리자 로그인만 */
