@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rv1b: 넷째 판 올리기(ext 0.6.23)",
+ "since": "2026-11-13T08:02:44Z",
+ "beat": "2026-11-13T08:02:44Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rv1b 넷째 웹앱 1.78.588 · 수집기 1.89.323 · ext 0.6.23 · 클라우드 0.35.226 (0d2a634a)",
   "at": "2026-11-13T08:02:22Z"
  },
- "host": null
+ "host": "wk-rv1b"
 }
