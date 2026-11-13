@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "anom2 다시 올리기 목적 엔진 판(웹앱·클라우드)",
- "since": "2026-11-13T06:01:46Z",
- "beat": "2026-11-13T06:01:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "anom2",
-  "done": "lead 이름표로 바꿔 잡음(올리기 검사가 lead로 봄)",
-  "at": "2026-11-13T06:01:44Z"
+  "who": "lead",
+  "done": "anom2 웹앱 1.78.574 · 클라우드 0.35.214 다시 올리기 목적 엔진 54e4f777",
+  "at": "2026-11-13T06:02:25Z"
  },
- "host": "vm-anom2"
+ "host": null
 }
