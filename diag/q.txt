@@ -1,2 +1,4 @@
-extidx=1&doc=app_settings/bkinfo
-# 3077821040
+perf=150
+col2=2026-11-13
+doc=app_settings/col2_solo
+# 234393592
