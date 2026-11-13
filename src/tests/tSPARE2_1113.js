@@ -99,6 +99,10 @@ console.log('⑦ 수집기 글자 떼어 돌림 · 기록·신호');
   ok(T('bench') === 'main', '벤치마킹 한 바퀴 줄: 하루 주요 몫을 다 쓰기 전엔 하루 몫'); B.ovOn = true; ok(T('bench') === 'sm', '하루 주요 몫을 다 쓴 뒤 넘친 바이트 = 여분');
   pc.act = 'p1'; ok(T('benchDetail') === 'main', '휴대폰 1(고정 여분 없음) + 쌓인 남은 양 2GB → 꼬리표 없이(쌓인 양으로 셈 · net.boxUse)');
   pc.phones[0].carryLeft = 0; ok(T('benchDetail') === 'main', '여분 없는 휴대폰이면 하루 몫');
+  { const a0 = C.indexOf('const SP2K = '); const a1 = C.indexOf('const budLeft = (k)', a0); const src = C.slice(a0, C.indexOf('\n', C.indexOf('const sp2Bytes = ', a0)) + 1); let store = { d: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), rc: { sellerRe: 1000 }, pu: {}, tc: 1000, la: {} }; /* 1.89.315 저장 꼴(tb0 없음) */
+    const f = new Function('GM_getValue', 'GM_setValue', 'tierOfKey', 'spT', 'BUD', 'setTimeout', src + '; return { sp2Bytes, sp2Add, set: (c) => { SP2CUR = c; } };')((k, d) => store || d, (k, v) => { store = JSON.parse(JSON.stringify(v)); }, () => 'gen', (t) => t, null, () => 0);
+    const H0 = { today: { key: store.d, tether: 9.6 * G } }; const y0 = f.sp2Bytes(H0); ok(!y0.use.sellerRe && store.tb0 === 9.6 * G, '하루 중간에 세기 시작: 그때까지 바이트(9.6GB)는 줄 쓴 양에 넣지 않음(1.89.315 부풂 고침)', y0.use);
+    f.set({ r: 'sellerRe', ph: 'p2', fx: true, t: 'gen' }); f.sp2Add(3000); f.set(null); f.sp2Add(1000); const y1 = f.sp2Bytes({ today: { key: store.d, tether: 9.6 * G + 40 * 1048576 } }); ok(Math.abs(y1.use.sellerRe - 30 * 1048576) < 1048576, '그 뒤 바이트 40MB를 글자 비율(3:1)로 → 판매자 다시 읽기 30MB', Math.round(y1.use.sellerRe / 1048576)); }
   const j0 = C.indexOf('const budLeft = (k) => { const n = budLeft0(k);'); const j1 = C.indexOf('const budLeft0 = ', j0); ok(j0 > 0 && j1 > j0, 'budLeft 찾음');
   const bl = new Function('BUD', 'budLeft0', 'isBenchKey', C.slice(j0, j1) + '; return budLeft;'); const isB = (k) => /^bench/.test(k);
   pc.act = 'p2'; const B2 = { alloc: A, pool: pc, benchOwe: false }; const L = bl(B2, () => 0, isB);
