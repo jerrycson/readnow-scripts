@@ -10,7 +10,7 @@ const fs = require('fs'); const path = require('path'); const os = require('os')
 let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
 const ROOT = path.resolve(__dirname, '..', '..'); const BD = path.join(ROOT, 'shop/brand');
 const B = require(path.join(BD, 'brand-core.js')); const J = JSON.parse(fs.readFileSync(path.join(BD, 'logos.json'), 'utf8')); const JN = JSON.parse(fs.readFileSync(path.join(BD, 'journal.json'), 'utf8'));
-const clean = (s) => /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="[\d. ]+"/.test(s) && !/<text|<script|@font-face|font-family|href=|url\(|on\w+=/i.test(s) && /<title>/.test(s) && s.length < 40000;
+const clean = (s) => /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="[\d. ]+"/.test(s) && !/<text|<script|@font-face|font-family|href=|url\((?!#[a-z0-9]+\))|on\w+=/i.test(s) && /<title>/.test(s) && s.length < 40000;
 
 console.log('① 파일');
 ok(B.IDS.length === 10 && new Set(B.IDS).size === 10, '시안 10개 · 번호 겹침 없음');
@@ -20,7 +20,7 @@ for (const x of J.logos) { const fl = x.versions.flatMap((V) => ['light', 'dark'
   const legacy = ['', '-dark', '-icon'].every((a) => fs.existsSync(path.join(BD, x.id + a + '.svg')) && fs.readFileSync(path.join(BD, x.id + a + '.svg'), 'utf8') === fs.readFileSync(path.join(BD, x.id + '/v1' + a + '.svg'), 'utf8'));
   ok(ex && cl && sq && legacy, `${x.id} ${x.name}: 판 ${x.versions.map((V) => V.v).join('·')} 파일 모두 · 윤곽선만 · 아이콘 정사각 · 옛 경로 ${x.id}.svg = v1 그대로`); }
 { const two = J.logos.filter((x) => x.versions.length > 1).map((x) => x.id).sort().join(' '); ok(two === 'q01 q02 q03 q04 q06 q10', '더 다듬은 시안 6개(q01·q02·q03·q04·q06·q10)만 v2 · 나머지 4개는 v1 그대로');
-  ok(J.logos.filter((x) => x.versions.length > 1).every((x) => x.cur === 'v2' && x.versions[1].changes.length >= 2 && fs.readFileSync(path.join(BD, x.versions[0].files.light), 'utf8') !== fs.readFileSync(path.join(BD, x.versions[1].files.light), 'utf8')), 'v2 = 지금 판 · 바꾼 점 2줄 이상 · v1과 실제로 다른 그림'); }
+  ok(J.logos.filter((x) => x.versions.length > 1).every((x) => x.versions.length === 12 && x.versions.map((V) => V.v).join() === 'v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12' && x.versions.slice(2).every((V) => V.name && V.changes.length >= 2) && new Set(x.versions.map((V) => fs.readFileSync(path.join(BD, V.files.light), 'utf8'))).size === 12) && J.logos.filter((x) => x.versions.length > 1).every((x) => x.cur === 'v2' && x.versions[1].changes.length >= 2 && fs.readFileSync(path.join(BD, x.versions[0].files.light), 'utf8') !== fs.readFileSync(path.join(BD, x.versions[1].files.light), 'utf8')), '고친 6개: 판 v1~v12(파격 시안 v3~v12 = 이름·의도 · 열두 그림 모두 다름) · 지금 판은 v2 그대로 · v2 바꾼 점 2줄 이상'); }
 console.log('② 목록·일지·페이지');
 ok(JSON.stringify(J.logos.map((x) => [x.id, x.name, x.cur, Object.fromEntries(x.versions.map((V) => [V.v, V.ratio]))])) === JSON.stringify(B.LIST), 'logos.json = brand-core.js 목록(번호·이름·지금 판·판별 비율)');
 ok(J.default === '' && J.logos.every((x) => x.idea && x.idea.length > 10 && x.versions[0].v === 'v1'), '기본 = 빈 값(지금 글자 로고) · 시안마다 의도 · 판은 v1부터');
@@ -37,7 +37,7 @@ ok(B.src('q03', 'dark') === 'brand/q03/v2-dark.svg' && B.src('q03@v1', 'icon', '
   ok(/src="brand\/q01\/v2-dark\.svg"/.test(f) && /height="34"/.test(f) && /width="101"/.test(f) && /alt="북스퀸"/.test(f), 'headerHtml 가로형: 어두운 바탕 그림 · 높이 34 · 너비는 비율');
   ok(/q02\/v1-icon\.svg/.test(i) && /width="40" height="40"/.test(i) && /class="sr">북스퀸/.test(i) && /q10\/v2-icon\.svg/.test(it) && /height="24"/.test(it) && /logo-t">북스퀸/.test(it) && !/헌책방/.test(it) && /헌책방/.test(B.headerHtml('q10', { tag: true }, false)), 'headerHtml 아이콘만(읽는 이름 숨김 글)·아이콘+글자(휴대폰 높이) · 헌책방 글은 PC만');
   ok(B.headerHtml('', {}, false) === '' && B.headerHtml('"><script>', {}, false) === '' && /q04\/v2-dark/.test(B.headerImg('q04', 30)), '빈 값·이상한 값 = 그림 없음(지금 글자 로고) · 옛 이름 headerImg 그대로'); }
-{ const o = B.options(); ok(o[0][0] === '' && o.length === 1 + 10 + 16 && o.some((x) => x[0] === 'q02@v1') && !o.some((x) => x[0] === 'q05@v2'), 'options: 지금 글자 로고 + 시안 10 + 판 고정 16'); }
+{ const o = B.options(); ok(o[0][0] === '' && o.length === 1 + 10 + 76 && o.some((x) => x[0] === 'q02@v1') && !o.some((x) => x[0] === 'q05@v2'), 'options: 지금 글자 로고 + 시안 10 + 판 고정 76'); }
 ok(B.favicon('q06', {}) === 'brand/q06/v2-icon.svg' && B.favicon('q06', { fav: false }) === '', 'favicon: 켜면 그 판 아이콘 · 끄면 없음');
 console.log('④ 빌드');
 { const out = fs.mkdtempSync(path.join(os.tmpdir(), 'tbrand_')); require(path.join(ROOT, 'hosting/build-shop.js')).build(ROOT, out);
@@ -57,7 +57,7 @@ console.log('⑥ 웹앱 로고 카드');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); const kTime = (s) => String(s).slice(5, 16);
   const win = { BQB: B }; const F = new Function('S', 'esc', 'kTime', 'window', 'db', 'toast', 'renderMain', 'y24Arm', 'errKo', 'document', 'openShopAdm', A.slice(i0, i1) + '\nreturn { pjLogoHtml, bqBrandLib };');
   const P = F(S, esc, kTime, win, null, () => {}, () => {}, () => true, (e) => e.message, {}, () => {});
-  const h = P.pjLogoHtml(); ok(/href="\.\.\/shop\/brand\/project\.html"/.test(h) && /\?only=changed/.test(h) && /시안 10개 · 판 16개/.test(h) && /data-pjlook/.test(h) && /value="q03@v1" selected/.test(h) && /value="q03">지금 판을 따라감\(v2/.test(h) && /q03\/v1\.svg/.test(h) && /height="40"/.test(h) && /<button class="btn sm" id="pjl_save" disabled>/.test(h), '카드: 프로젝트 페이지 · 🎨 로고 고르기 길 · 판 고르기(q03 v1 고정 골라짐) · 흰 머리띠면 밝은 바탕 그림 · 꾸밈 로고 높이 40 · 바꾸기 전 저장 꺼짐');
+  const h = P.pjLogoHtml(); ok(/href="\.\.\/shop\/brand\/project\.html"/.test(h) && /\?only=changed/.test(h) && /시안 10개 · 판 76개/.test(h) && /data-pjlook/.test(h) && /value="q03@v1" selected/.test(h) && /value="q03">지금 판을 따라감\(v2/.test(h) && /q03\/v1\.svg/.test(h) && /height="40"/.test(h) && /<button class="btn sm" id="pjl_save" disabled>/.test(h), '카드: 프로젝트 페이지 · 🎨 로고 고르기 길 · 판 고르기(q03 v1 고정 골라짐) · 흰 머리띠면 밝은 바탕 그림 · 꾸밈 로고 높이 40 · 바꾸기 전 저장 꺼짐');
   S._bqbEd = { logo: 'q10', ui: B.uiOf({ mode: 'iconText' }) }; const h2 = P.pjLogoHtml(); ok(/value="q10" selected/.test(h2) && /q10\/v2-icon\.svg/.test(h2) && /logo-t">북스퀸/.test(h2) && /아직 저장 전/.test(h2) && /id="pjl_save">저장/.test(h2), '카드: 바꾼 값 미리 보기(아이콘+글자) · 저장 전 표시 · 저장 단추 켜짐');
   S._bqbEd = null; S._bqbCfg = { brandLogo: '', brandUi: {}, look: { headStyle: 'brand' } }; const h3 = P.pjLogoHtml(); ok(/♛<\/span>북스퀸/.test(h3) && /판은 로고를 고른 뒤에/.test(h3) && !/pjl-hdr lt/.test(h3), '카드: 빈 값 = 지금 글자 로고 · 판 칸 대신 안내 · 색 머리띠 미리 보기'); }
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
