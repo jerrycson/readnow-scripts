@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "긴급(urgord) 0.35.205 delivchk 고침",
+ "since": "2026-11-13T03:30:39Z",
+ "beat": "2026-11-13T03:30:39Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "led4 둘째 판 · 웹앱 1.78.556 · 수집기 1.89.305",
   "at": "2026-11-13T03:30:18Z"
  },
- "host": null
+ "host": "vm"
 }
