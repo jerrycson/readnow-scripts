@@ -1,3 +1,2 @@
-col2=2026-11-13
-pend=1
-# 1796326587
+logs=1&pc=HOME&from=202611120450&to=202611120530&doc=rn_status/LOGGER,rn_status/HOME,rn_status/JS-MAIN,app_settings/ship_quiet,app_settings/board_mirror,app_settings/omni_recheck,app_settings/seller_hyp&slearn=1&regprice=150
+# 2513311458
