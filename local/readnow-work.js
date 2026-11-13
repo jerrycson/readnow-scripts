@@ -20,7 +20,7 @@
  * 창 다루기는 PowerShell + user32(EnumWindows·SetWindowPos·창 모양 WS_EX_TOOLWINDOW) — 사람 크롬의 다른 창은 건드리지 않음(제목 표시가 있는 창만)
  * 크롬 플래그·정책·바로가기는 바꾸지 않음 */
 'use strict';
-const VERSION = '0.1.3'; // (0.1.3) 창 크기 함수 R이 PowerShell 별칭(Invoke-History)에 가려 창 찾기가 실패하던 것 — 이름을 Get-RnRect로 · (0.1.2) 🚚 출고 중엔 작업 창 다루기·되살리기 미룸 // (0.1.1) 정범님 11/09 죽은 수집기 탭 되살리기(/work/lead 신호 · 13분 끊기면 사람 크롬에 새 탭 · 1시간 2번 · work.json revive:false로 끔)
+const VERSION = '0.1.4'; // (0.1.4 · 11/13 col2mig 정범님 '크롬 수집기가 새 탭을 열어 포커스를 빼앗음 → 번외 이전') /work/open — 보이지 않는 작업 창 탭이 사람에게 보여야 하는 웹앱 화면(🔔 출고 알림)을 사람 크롬에 엶(웹앱 주소만) // (0.1.3) 창 크기 함수 R이 PowerShell 별칭(Invoke-History)에 가려 창 찾기가 실패하던 것 — 이름을 Get-RnRect로 · (0.1.2) 🚚 출고 중엔 작업 창 다루기·되살리기 미룸 // (0.1.1) 정범님 11/09 죽은 수집기 탭 되살리기(/work/lead 신호 · 13분 끊기면 사람 크롬에 새 탭 · 1시간 2번 · work.json revive:false로 끔)
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), dns = require('dns');
 const HOME = process.env.RN_WORK_HOME || path.join(__dirname, 'work'); try { fs.mkdirSync(HOME, { recursive: true }); } catch (e) {}
 const CFG_F = path.join(HOME, 'work.json'); const PS_F = path.join(HOME, 'work-win.ps1');
@@ -219,6 +219,9 @@ function api(req, res, u, h) { const readBody = h.readBody; const org = req.head
   if (p === 'cfg') return body((o) => { setCfg(o); J(200, status()); });
   if (p === 'beat') return body((o) => { shipSet(o.ship); ST.beat = { role: o.role || null, page: String(o.page || '').slice(0, 60), ver: String(o.ver || '').slice(0, 20), paused: !!o.paused, now: o.now && typeof o.now === 'object' ? o.now : null, lines: Array.isArray(o.lines) ? o.lines.slice(-15) : [], tab: o.tab || null }; ST.beatAt = now(); if (o.pc && !CFG.pc) { CFG.pc = String(o.pc).slice(0, 40); saveCfg(); } J(200, { ok: true, on: !!CFG.on, shown: ST.shown }); });
   if (p === 'lead') return body((o) => { ST.lead = { at: now(), page: String(o.page || '').slice(0, 60), paused: !!o.paused, ver: String(o.ver || '').slice(0, 20) }; shipSet(o.ship); if (o.pc && !CFG.pc) { CFG.pc = String(o.pc).slice(0, 40); saveCfg(); } J(200, { ok: true }); }); /* (11/09 oom1) 🩺 수집기 탭 살아 있음 */
+  /* (0.1.4 col2mig) 사람에게 보여야 하는 웹앱 화면 — 작업 창(화면 밖) 안에 열면 안 보이므로 사람 크롬에 새 탭으로(크롬이 띄움 · 웹앱 주소만 · 알라딘·다른 주소 거절) */
+  if (p === 'open') return body((o) => { const u0 = String(o.url || ''); if (!/^https:\/\/(jerrycson\.github\.io\/readnow-scripts\/app\/|readnow\.kr\/app\/)[\w\-./?=&%#]{0,300}$/.test(u0)) return J(400, { ok: false, err: '웹앱 주소만 엶' });
+    const ok = RV_DEPS.open(u0); log(`사람 크롬에 웹앱 화면을 엶 — ${String(o.why || '').slice(0, 60)} (${ok ? '됨' : '못 엶'})`); J(ok ? 200 : 500, ok ? { ok: true, msg: '사람 크롬에 엶' } : { ok: false, err: '크롬을 못 찾음' }); });
   if (p === 'show') return act(show); if (p === 'hide') return act(hide); if (p === 'reopen') return act(reopen); if (p === 'status-win' || p === 'status') return act(statusWin);
   if (p === 'win') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(폭 400·높이 300 이상 · 작업 창 기준)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); log('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
   if (p === 'hrect') return body((o) => { const r = rectOk(o, 260, 200); if (r) { const c = CFG.hwin || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG.hwin = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); });

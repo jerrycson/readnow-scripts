@@ -7627,7 +7627,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    * 웹앱 '오늘 출고 ② 발송 요청'을 새 탭 맨 앞으로 열고 데스크톱 알림. 한 번만(GM rn-shipopen = last.at — 이 PC의 여러 알라딘 탭이 겹쳐도 하나만) · 1시간 넘게 지난 알림은 열지 않음 */
   auth.onAuthStateChanged((u) => { if (!u || window.__rnShipOpenUn) return; window.__rnShipOpenUn = C('app_settings').doc('ship_notify').onSnapshot((d) => { try {
     const L = d.exists && d.data().last; if (!L || !L.at || !(L.pcOpen || []).includes(PC_NAME)) return; if (Date.now() - Date.parse(L.at) > 3600e3) return; if (GM_getValue('rn-shipopen', '') === L.at) return; GM_setValue('rn-shipopen', L.at);
-    GM_openInTab('https://jerrycson.github.io/readnow-scripts/app/?go=deliv', { active: true, insert: true, setParent: true }); try { GM_notification({ title: L.title || '📦 오늘 출고', text: L.body || '', timeout: 0 }); } catch (e) {} log(`🔔 출고 알림 — 웹앱 발송 요청 탭을 앞으로 엶 (${L.n || 0}건)`); } catch (e) {} }, () => {}); });
+    const SURL = 'https://jerrycson.github.io/readnow-scripts/app/?go=deliv'; (async () => { /* (11/13 col2mig) 🔀 번외 이전(보이지 않는 작업 창) 탭이면 그 창 안에 열면 안 보임 → 이 PC 도우미가 사람 크롬에 엶(/work/open) · 안 되면 예전처럼 */ const W0 = window.__rnWork; let ok = false; if (W0 && W0.isWork && W0.isWork()) { try { const r = await W0.call('/work/open', { url: SURL, why: '🔔 출고 알림' }, 10000); ok = !!(r && r.ok); } catch (e) {} } if (!ok) GM_openInTab(SURL, { active: true, insert: true, setParent: true }); })(); try { GM_notification({ title: L.title || '📦 오늘 출고', text: L.body || '', timeout: 0 }); } catch (e) {} log(`🔔 출고 알림 — 웹앱 발송 요청 탭을 앞으로 엶 (${L.n || 0}건)`); } catch (e) {} }, () => {}); });
   let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
   const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false)); // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
@@ -9057,14 +9057,33 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const WW = () => C('crm_system').doc('work_win'); let WW_DOC = null, wwBusy = false, wwStSig = '', wwStAt = 0, wwT = null;
   const WW_PILOT = ['HOME', 'JS-MAIN']; /* 정범님 11/05 Q2 — 시범 PC 둘 · 웹앱에서 cfg.pilot으로 바꿀 수 있음 */
   const wwUp = (x) => String(x == null ? '' : x).trim().toUpperCase();
-  function wwMine() { const c = (WW_DOC && WW_DOC.cfg) || {}; const pilot = Array.isArray(c.pilot) ? c.pilot : WW_PILOT; const m = (c.pcs || {})[PC_NAME] || {};
-    const okPc = !!PC_NAME && !PUBONLY && !globalThis.__rnPubChrome && wwUp(PC_NAME) !== 'LOGGER' && pilot.some((x) => wwUp(x) === wwUp(PC_NAME));
+  /* (11/13 col2mig · 정범님 09:5x '모든 PC에서 크롬 수집기가 랜덤하게 새 탭을 열어 포커스를 빼앗음 — JS·MJ 번외 수집기를 완성해 이전') 🔀 PC별 번외 이전 스위치
+   *  문서 app_settings/col2_handoff.pcs.<PC> = { mode: 'auto' | 'on' | 'off', at, by } — 웹앱 ⚙ 설정 › 🔀 번외로 넘기기 › 🖥 PC별 번외 이전(두 번 누름 · 관리자 기기)
+   *  · 이전 = 이 PC의 크롬 수집기가 사람이 쓰는 창을 비우고, 이 PC 도우미(127.0.0.1:8898 readnow-work.js)가 연 '보이지 않는 작업 창'(화면 밖·작업 표시줄 밖)에서만 일함
+   *    → 새 판 바꿈(안전한 새로고침)·로그인·송장·바깥 읽기 탭이 모두 그 창 안에 열림(사람 창 포커스를 빼앗지 않음) · 번외(127.0.0.1:8797)는 그 창을 지휘(손발)하고 넘긴 일(col2_handoff.jobs)을 맡음
+   *  · auto(JS-MAIN·MJ-MAIN 기본) = 이 PC 번외가 5분 넘게 잇달아 답할 때(다리 /al/feed 성공 — rn-c2feedAt) 저절로 이전 · on = 바로 이전 · off = 예전 그대로(사람 탭이 수집)
+   *  · 한 번 이전하면 번외가 잠깐 죽어도 그대로(창 안의 수집기는 운영 수집기 그대로라 일은 멈추지 않음 · 창이 3분 넘게 신호가 없으면 예전 길대로 사람 탭이 이어받음) · off로 되돌리면 도우미가 창을 닫고 사람 탭이 다시 맡음
+   *  · 🚚 출고 보호 중(이 PC 출고·MJ-MAIN 출고)에는 이전·되돌림을 시작하지 않음(약속 0-1 — 끝난 뒤 다음 확인 때) · 로거는 늘 뺌(약속 0) · 작업 창 설정(cfg.pcs.<PC>.on)을 사람이 끈 PC(on:false)는 auto가 켜지 않음 */
+  const C2MIG_DEF = { 'JS-MAIN': 'auto', 'MJ-MAIN': 'auto' }; const C2MIG = { d: null, at: 0 };
+  async function c2MigLoad() { if (Date.now() - C2MIG.at < 5 * 60e3) return; C2MIG.at = Date.now(); try { C2MIG.d = (await C('app_settings').doc('col2_handoff').get()).data() || {}; } catch (e) {} }
+  function c2MigDecide(o) { /* 순수 — 시험 tCOL2MIG가 글자 그대로 떼어 봄 */ const mode = ['auto', 'on', 'off'].includes(o.mode) ? o.mode : o.def || 'off'; const was = !!(o.prev && o.prev.on); const live = !!o.feedAt && o.now - o.feedAt < 3 * 60e3;
+    const since = live ? (o.prev && o.prev.liveSince && o.now - o.prev.liveSince < 24 * 3600e3 && o.prev.live ? o.prev.liveSince : o.now) : 0;
+    let on = was; if (o.logger || mode === 'off' || o.wwOff) on = false; else if (mode === 'on') on = true; else if (!was && live && o.now - since >= 5 * 60e3) on = true;
+    const held = on !== was && !!o.ship; if (held) on = was; /* 🚚 출고 중엔 바꾸지 않음 */
+    return { mode, on, live, liveSince: since, why: held ? '🚚 출고 중 — 끝나면 바꿈' : o.logger ? '로거 — 늘 뺌' : mode === 'off' ? '이전 끔' : o.wwOff ? '작업 창 설정에서 이 PC를 끔' : on ? (mode === 'on' ? '이전 켬(바로)' : '번외 정상 — 저절로 이전') : live ? `번외 답함 ${Math.round((o.now - since) / 60e3)}분 — 5분 넘으면 이전` : '번외가 아직 답하지 않음(이 PC 번외 꺼짐·안 깔림)' }; } /* ⟦c2MigDecide 끝⟧ */
+  function c2Mig(m) { const pc = wwUp(PC_NAME); const P = ((C2MIG.d && C2MIG.d.pcs) || {})[PC_NAME] || ((C2MIG.d && C2MIG.d.pcs) || {})[pc] || {}; let prev = null; try { prev = GM_getValue('rn-c2mig', null); } catch (e) {}
+    let ship = false; try { const h = window.__rnSgShip && window.__rnSgShip(); ship = !!(h && h.on); } catch (e) {}
+    const r = c2MigDecide({ mode: P.mode, def: C2MIG_DEF[pc], prev, feedAt: (() => { try { return +GM_getValue('rn-c2feedAt', 0) || 0; } catch (e) { return 0; } })(), now: Date.now(), ship, logger: pc === 'LOGGER' || !!PUBONLY || !!globalThis.__rnPubChrome, wwOff: m && m.on === false });
+    try { if (!prev || !!prev.on !== r.on || !!prev.live !== r.live || prev.mode !== r.mode || (prev.liveSince || 0) !== r.liveSince) { GM_setValue('rn-c2mig', { on: r.on, live: r.live, liveSince: r.liveSince, mode: r.mode, why: r.why, at: Date.now() }); if (!!(prev && prev.on) !== r.on) log(r.on ? `🔀 번외 이전 — 이 PC 크롬 수집기를 보이지 않는 작업 창으로 옮김(${r.why}) · 사람 창에는 수집 탭이 새로 열리지 않음` : `↩ 번외 이전 끔 — 예전처럼 사람이 연 알라딘 탭이 수집을 맡음(${r.why})`, r.on ? 0 : 1); } } catch (e) {}
+    return r; }
+  function wwMine() { const c = (WW_DOC && WW_DOC.cfg) || {}; const pilot = Array.isArray(c.pilot) ? c.pilot : WW_PILOT; const m = (c.pcs || {})[PC_NAME] || {}; const mig = c2Mig(m);
+    const okPc = !!PC_NAME && !PUBONLY && !globalThis.__rnPubChrome && wwUp(PC_NAME) !== 'LOGGER' && (mig.on || pilot.some((x) => wwUp(x) === wwUp(PC_NAME)));
     const own = (() => { try { const o = GM_getValue('rn-c2own', null); return !!(o && o.on && Date.now() - (+o.at || 0) < 30 * 60e3); } catch (e) { return false; } })(); /* (11/10) 🏠 번외가 이 PC 알라딘 자리를 이어받는 동안 샵매니저 작업 창을 켜지(다시 열지) 않음 */
-    return { okPc, on: okPc && m.on === true && !own, own, ext: m.ext !== false, place: m.place === 'edge' ? 'edge' : 'off', win: m.win || null, hwin: m.hwin || null, url: m.url || null, profile: m.profile || null, aliveMin: +m.aliveMin || null }; }
+    return { okPc, on: okPc && (m.on === true || mig.on) && !own, own, mig, ext: m.ext !== false, place: m.place === 'edge' ? 'edge' : 'off', win: m.win || null, hwin: m.hwin || null, url: m.url || null, profile: m.profile || null, aliveMin: +m.aliveMin || null }; }
   function wwGm(M) { try { const o = GM_getValue('rn-work-cfg', null) || {}; if (!!o.on === M.on && o.ext === M.ext && (o.aliveMin || null) === M.aliveMin) return; GM_setValue('rn-work-cfg', { on: M.on, ext: M.ext, aliveMin: M.aliveMin, at: Date.now(), pc: PC_NAME });
       if (!!o.on !== M.on) log(M.on ? '🪟 작업 창 모드 켬(웹앱 관리도구) — 이 PC의 수집은 도우미가 연 작업 창 탭이 맡고, 사람이 연 알라딘 탭은 화면 기능만' : '🪟 작업 창 모드 끔 — 예전처럼 사람이 연 알라딘 탭이 수집을 맡음'); } catch (e) {} }
   const wwBoss = () => { const W = window.__rnWork; if (!W) return false; if (W.isWork()) return true; return ctlLead() && !W.alive(window.__rnTab); };
-  async function wwApply() { if (wwBusy || !PC_NAME || !auth.currentUser || PUBONLY) return; const M = wwMine(); wwGm(M); const W = window.__rnWork; if (!W || !wwBoss()) return; wwBusy = true;
+  async function wwApply() { if (wwBusy || !PC_NAME || !auth.currentUser || PUBONLY) return; await c2MigLoad(); const M = wwMine(); wwGm(M); const W = window.__rnWork; if (!W || !wwBoss()) return; wwBusy = true;
     try { const st = await W.call('/work/cfg', { pc: PC_NAME, on: M.on, ext: M.ext, place: M.place, win: M.win, hwin: M.hwin, url: M.url, profile: M.profile, ver: VER });
       let ack = null; const c = ((WW_DOC && WW_DOC.cmds) || {})[PC_NAME];
       if (c && c.id && GM_getValue('rnu-ww-seen', null) !== c.id) { GM_setValue('rnu-ww-seen', c.id); const age = Date.now() - Date.parse(c.at || 0); const NM = { show: '🪟 작업 창 보이기', hide: '🙈 작업 창 숨기기', status: '📊 수집 상태 창', reopen: '↻ 작업 창 다시 열기' };
@@ -9073,7 +9092,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         else { const r = await W.call('/work/' + c.cmd, { by: String(c.by || '').slice(0, 80), why: '웹앱 관리도구' }); ack = r && r.ok ? { ok: true, msg: r.msg || '했음' } : { ok: false, msg: (r && r.err) || '도우미 응답 없음' }; }
         ack = { id: c.id, cmd: c.cmd, ...ack, at: nowIso() }; log(`🪟 웹앱 명령 '${NM[c.cmd] || c.cmd}': ${ack.ok ? '✓ ' : '✗ '}${ack.msg}`, ack.ok ? 0 : 1); }
       const lead = (() => { try { const v = window.__rnLead && window.__rnLead(); return v ? (v.page === 'rnWork' ? 'work' : 'human') : null; } catch (e) { return null; } })();
-      const S1 = { atMs: Date.now(), at: nowIso(), ver: VER, on: M.on, ext: M.ext, okPc: M.okPc, lead, helper: st && st.ok ? st.ver || '?' : null, err: st && !st.ok ? String(st.err || '').slice(0, 200) : null,
+      const S1 = { atMs: Date.now(), at: nowIso(), ver: VER, on: M.on, ext: M.ext, okPc: M.okPc, lead, mig: M.mig ? { mode: M.mig.mode, on: M.mig.on, live: M.mig.live, why: M.mig.why } : null, helper: st && st.ok ? st.ver || '?' : null, err: st && !st.ok ? String(st.err || '').slice(0, 200) : null,
         ...(st && st.ok ? { open: !!st.open, shown: !!st.shown, rect: st.rect || null, win: st.win || null, hwin: st.hwin || null, hwinOpen: !!st.hwinOpen, beatAt: st.beatAt || null, opens: +st.opens || 0, msg: String(st.msg || '').slice(0, 200), render: st.render || null } : {}) };
       const sig = JSON.stringify({ ...S1, atMs: 0, at: 0, beatAt: 0, render: 0 });
       if ((M.okPc || (st && st.ok) || ack) && (ack || sig !== wwStSig || Date.now() - wwStAt > 10 * 60000)) { wwStSig = sig; wwStAt = Date.now(); await WW().set({ state: { [PC_NAME]: S1 }, ...(ack ? { acks: { [PC_NAME]: ack } } : {}) }, { merge: true }).catch(() => {}); }
@@ -10762,7 +10781,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     busy = true; try { const pc = pcOf(); if (!pc) return; const who = pc + '~col2'; let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
       const r = await gx('/al/feed', { by: pc, seat: { ok: SEAT.ok && !(hold && hold.on), why: hold && hold.on ? '🚚 출고 중 — 자리를 쓰지 않음' : SEAT.why }, hold, opLostAt: +gv('rnu-login-lost', 0) || 0, cfg: { off: SEAT.off }, hands: hBody() });
       if (!r || !r.ok) { miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; try { GM_setValue('rn-c2w-ok', { on: false, hold: !!(hold && hold.on), at: Date.now() }); } catch (e) {} await seatStep(false, who); return; }
-      miss = 0; const a = r.al || {}; hTake(r.hands, pc, hold).catch(() => {}); /* (11/12 hands1) 🖐 손발 길 — 기다리지 않음(읽기는 따로 끝나면 /al/hands로) */
+      miss = 0; try { GM_setValue('rn-c2feedAt', Date.now()); } catch (e) {} /* (11/13 col2mig) 번외가 답함 — 🔀 PC별 번외 이전 auto가 봄(c2MigDecide) */ const a = r.al || {}; hTake(r.hands, pc, hold).catch(() => {}); /* (11/12 hands1) 🖐 손발 길 — 기다리지 않음(읽기는 따로 끝나면 /al/hands로) */
       { /* 🏠 이어받기 — 운영 자리 놓음 → 번외 자리 받음(이 차례) · 끄면 운영이 곧바로 되찾음 */ const gov = window.__rnLoginGov; const own = !!a.own && !a.logger; const was = gv('rn-c2own', null);
         if (own) { GM_setValue('rn-c2own', { on: true, at: Date.now(), pc }); if (!(was && was.on)) L('info', '🏠 번외 ⚙에서 이 PC 알라딘 자리를 번외가 이어받기로 함 — 운영 자리를 먼저 놓음'); if (gov && gov.ownDrop) await gov.ownDrop('번외 이어받기'); }
         else if (was && was.on) { GM_setValue('rn-c2own', { on: false, at: Date.now(), pc }); if (gov && gov.ownEnd) gov.ownEnd('번외 ⚙에서 이어받기 끔'); }
