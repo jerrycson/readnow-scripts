@@ -1,2 +1,4 @@
-logs=1&pc=LOGGER&from=202611121700&to=202611130000
-# 201024553
+col2=2026-11-13
+doc=app_settings/col2_solo
+perf=80
+# 127556626
