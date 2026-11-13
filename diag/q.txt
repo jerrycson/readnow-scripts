@@ -1,3 +1,2 @@
-benchrep=2026-11-13
-run=1
-# 2404511723
+recentUp=bk_info&mins=240&mem=1&clog=600&cq=%EC%B1%85%20%EC%A0%95%EB%B3%B4&n=60
+# 1966819176
