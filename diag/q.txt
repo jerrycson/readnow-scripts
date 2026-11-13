@@ -1,2 +1,6 @@
-exth=168&run=1
-# 2314517077
+shplog=alps_f8151cc2a43a&n=300
+shplog=alps_2084ea73248a&n=300
+shplog=alps_8077d5240f59&n=300
+logs=1&pc=MJ-MAIN&from=202611101100&to=202611101700
+shpauto=60
+# 534217585
