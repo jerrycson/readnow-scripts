@@ -1,4 +1,2 @@
-doc=app_settings/col2_solo
-doc=app_settings/col2_solo_seen
-doc=col2_ctl/HOME
-# 863226669
+logs=1&pc=LOGGER&from=202611130040
+# 177112899
