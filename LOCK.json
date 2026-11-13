@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "orderchk 매입가 나눔 기본 되돌림 판",
- "since": "2026-11-13T01:48:01Z",
- "beat": "2026-11-13T01:48:01Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: col2mig PC별 번외 이전 판",
-  "at": "2026-11-13T01:50:23Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "home2: 웹앱 1.78.548 · 클라우드 0.35.196 · 번외 0.1.49 · 288d1ef3",
-  "at": "2026-11-13T01:47:27Z"
+  "done": "orderchk 판 0e6ad33b 웹앱 1.78.549 — 💰 매입가 나눔 기본 똑같이 나눔으로 되돌림",
+  "at": "2026-11-13T01:50:36Z"
  },
- "host": "vm-orderchk"
+ "host": null
 }
