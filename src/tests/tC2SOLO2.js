@@ -14,7 +14,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     if (u.pathname === '/col2/status') return J({ ok: true, want: true, running: true, on: true, ver: '0.1.28', dayN: 3, dayCap: 1600, msg: '' });
     return J({ ok: true }); });
   const iso = (m) => new Date(Date.now() - m * 60e3).toISOString();
-  await p.evaluate(async ({ a, b, c, old }) => { await db.collection('app_settings').doc('main').set({ cloudUrl: 'https://cloud.example.test' }, { merge: true }); localStorage.setItem('rn-device', 'HOME'); localStorage.setItem('rn-c2seen', '1'); S.devOk = true; S.app = S.app || {}; S.app.cloudUrl = 'https://cloud.example.test'; S.app.adminDevices = [];
+  await p.evaluate(async ({ a, b, c, old }) => { await db.collection('app_settings').doc('main').set({ cloudUrl: 'https://cloud.example.test' }, { merge: true }); localStorage.setItem('rn-device', 'HOME'); localStorage.setItem('rn-c2seen', '1'); S.devOk = true; S._c2soNoAuto = 1; /* (11/13 home2) 손으로 등록하는 순서를 보는 시험 — 저절로 등록은 tC2SOLO3 */ S.app = S.app || {}; S.app.cloudUrl = 'https://cloud.example.test'; S.app.adminDevices = [];
     await db.collection('col2_ctl').doc('HOME').set({ at: a, st: { ver: '0.1.28', running: true } });
     await db.collection('col2_ctl').doc('JS-MAIN').set({ at: b, st: { ver: '0.1.22', running: true } });
     await db.collection('col2_ctl').doc('LOGGER').set({ at: c, st: { ver: '0.1.28', running: true } });

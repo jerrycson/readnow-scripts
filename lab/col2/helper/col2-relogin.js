@@ -11,6 +11,7 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const DEF = { perHour: 3, perDay: 10, gapMin: 5, failStop: 2 };
+const hm = (t) => new Date(+t + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ').replace('-', '/'); /* 한국 시각 'MM/DD HH:MM' */
 /* 사람 손이 필요한 화면 — 보안 문자·자동 입력 방지·2단계·인증 번호·추가 인증 */
 const JS_HUMAN = `(()=>{const t=(document.body&&document.body.innerText||'').slice(0,20000);const q=(s)=>!!document.querySelector(s);
 if(q('iframe[src*="recaptcha"],iframe[src*="hcaptcha"],.g-recaptcha,[name*="captcha" i],[id*="captcha" i],img[src*="captcha" i],[name*="otp" i],[id*="otp" i]'))return'보안 문자·인증 번호 칸';
@@ -93,6 +94,9 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const save = () => { try { fs.writeFileSync(F + '.t', JSON.stringify(S)); fs.renameSync(F + '.t', F); } catch (e) {} };
   /* (11/11 정범님 '예스24 아이디·비번이 안 먹힘') 예전 판은 양식이 없는 로그인 화면에서 [로그인]을 실제로 누르지 못해 '연속 2번 실패 — 로그인 뒤에도 로그인 화면'으로 멈췄음
    *  → 고친 판이 처음 켜질 때 그 멈춤만 한 번 풂(사이트가 틀렸다고 한 '잠가 둔 값이 틀림'·보안 문자 멈춤은 그대로) · 다시 2번 실패하면 또 멈춤 */
+  /* (11/13 home2) 예전 판은 예스24 다시 로그인 뒤 확인을 화면이 다 열리기 전 한 번만 봐 '됨'으로 잘못 끝내고, 몇 초 뒤 풀려 5분마다 또 했음 → 하루 10번을 헛되이 다 씀(HOME 11/12~13)
+   *  → 확인을 고친 판이 처음 켜질 때 한 번만 예스24 오늘 셈·'연속 실패' 멈춤을 풂(값 틀림·보안 문자·사이트가 막은 멈춤은 그대로 · 한 시간 3번·5분 간격·하루 10번 규칙은 그대로) */
+  { const MK = F + '.fix1113'; if (!fs.existsSync(MK)) { const y = S.y24; if (y && ((y.tries || []).length || (y.stop && !y.stop.bad && !y.stop.human && !y.stop.blocked))) { const n = (y.tries || []).length; y.tries = []; y.fails = 0; y.fake = []; if (y.stop && !y.stop.bad && !y.stop.human && !y.stop.blocked) y.stop = null; try { note(`🔐 예스24 판매관리 — 예전 판이 '로그인 됨'을 잘못 알아 헛되이 쓴 오늘 다시 로그인 셈 ${n}번을 고친 판에서 한 번 풂(이제 화면이 다 열린 뒤 8초 동안 확인)`); } catch (e) {} save(); } try { fs.writeFileSync(MK, String(Date.now())); } catch (e) {} } }
   /* (11/12 login1) 예전 판이 「이미 로그인된」 화면·조종 크롬 네이버 길 실패로 건 '연속 2번 실패' 멈춤을 고친 판에서 한 번 풂(이어받기·평범한 창 네이버 길로 바뀜) */
   { const MK = F + '.fix1112'; if (!fs.existsSync(MK)) { for (const k of Object.keys(S)) { const st = S[k] && S[k].stop; if (st && !st.human && !st.bad && /로그인 뒤에도 로그인 화면|네이버로 로그인 뒤에도|이미 로그인된/.test(st.why || '')) { S[k].stop = null; S[k].fails = 0; S[k].tries = []; try { note(`🔐 ${k === 'y24' ? '예스24 판매관리' : k === 'al' ? '알라딘 샵매니저' : k} — 예전 판 멈춤(「이미 로그인된」·네이버 길)을 고친 판에서 한 번 풂`); } catch (e) {} } } save(); try { fs.writeFileSync(MK, String(Date.now())); } catch (e) {} } }
   { const MK = F + '.fix1111'; if (!fs.existsSync(MK)) { for (const k of Object.keys(S)) { const st = S[k] && S[k].stop; if (st && !st.human && !st.bad && /로그인 뒤에도 로그인 화면/.test(st.why || '')) { S[k].stop = null; S[k].fails = 0; S[k].tries = []; try { note(`🔐 ${k === 'y24' ? '예스24 판매관리' : k === 'al' ? '알라딘 샵매니저' : k} — 예전 판의 '[로그인]을 누르지 못한' 멈춤을 고친 판에서 한 번 풂(다시 2번 실패하면 또 멈춤)`); } catch (e) {} } } save(); try { fs.writeFileSync(MK, String(Date.now())); } catch (e) {} } }
@@ -102,9 +106,10 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   /* 지금 해도 되나 → null(됨) | 까닭 */
   function why(pf, ctx) { const p = P(pf), c = C(), t = now(); p.tries = p.tries.filter((x) => t - x < 86400e3);
     if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf) && !ctx.naver) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
-    if (p.stop) return `멈춤 — ${p.stop.why} (⚙ › 🔐에서 [다시 해 보기])`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
+    if (p.stop && p.stop.until && t >= p.stop.until && !p.stop.bad && !p.stop.human && !p.stop.blocked) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 멈춘 지 정한 시간이 지나 스스로 다시 로그인을 다시 해 봄`); } catch (e) {} } /* (11/13 home2) '연속 실패'·'됨 뒤 금방 풀림' 멈춤은 정한 시간 뒤 저절로 풂(사람 손 없이 · 하루 몫은 그대로 계정 보호) */
+    if (p.stop) return `멈춤 — ${p.stop.why}${p.stop.until ? ` (${hm(p.stop.until)}에 저절로 다시 해 봄)` : ' (⚙ › 🔐에서 [다시 해 보기])'}`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
     if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; if (t - last < c.gapMin * 60e3) return `앞 시도 뒤 ${c.gapMin}분 기다림`;
-    if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `하루 ${c.perDay}번까지 — 내일`; return null; }
+    if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `24시간에 ${c.perDay}번까지 — ${hm(p.tries[0] + 86400e3)}부터 다시`; /* (11/13 home2) '내일'이 아니라 셈은 지난 24시간 — 가장 오래된 시도가 빠지는 때 */ return null; }
   /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
   async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;
     note(`🔐 ${nm} 세션이 풀려 ${cred.has(pf) ? '저장된 계정으로' : '「네이버로 로그인」으로(저장된 계정 없음 — 값을 넣지 않는 길만)'} 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
@@ -112,6 +117,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; }
     res = res || { ok: false, why: '모름' }; if (!res.ok && ctx.lastMsg) { const m = String(ctx.lastMsg() || '').slice(0, 120); if (m) res.why += ` · ${nm} 알림: '${m}'`; }
     p.last = { at: now(), ok: res.ok, why: res.ok ? null : res.why };
+    p.hist = (Array.isArray(p.hist) ? p.hist : []).concat([{ at: now(), ok: !!res.ok, how: res.how ? String(res.how).slice(0, 12) : null, why: res.ok ? null : String(res.why || '').slice(0, 140) }]).slice(-12); /* (11/13 home2) 자취 — 값 없음 */
     const was = cred.chkOf ? cred.chkOf(pf) : 'ok';
     if (res.ok) { p.fails = 0; if (res.how !== 'naver' && was !== 'ok' && cred.mark) { cred.mark(pf, 'ok'); note(`🔐 ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞음(이번 다시 로그인으로 확인됨)`, { l: 'ok' }); } note(`🔐 ${nm} 스스로 다시 로그인 됨${res.how === 'naver' ? '(네이버로 로그인 — 아이디·비밀번호 안 씀)' : ''} — 하던 일을 이어 감`, { l: 'ok' }); }
     else if (res.blocked) { p.fails++; p.stop = { at: now(), why: res.why, blocked: true };
@@ -119,7 +125,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     else if (res.bad && was === 'pending') { p.fails++; if (cred.mark) cred.mark(pf, 'bad'); p.stop = { at: now(), why: '잠가 저장할 때 확인하지 못했던 아이디·비밀번호가 맞지 않음 — ⚙ › 🔐에서 다시 넣어 주세요', bad: true };
       note(`⛔ ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞지 않음(이번 다시 로그인에서 드러남) · 스스로 다시 로그인을 멈춤(계정 잠김 막기) · 옆 창 ⚙ › 🔐에서 바른 값을 다시 넣어 주세요`, { l: 'err' }); }
     else { p.fails++; if (res.human) { p.stop = { at: now(), why: res.why, human: true }; note(`⛔ ${nm} 스스로 다시 로그인 멈춤 — ${res.why} · 옆 창 [🔐 ${nm} 로그인]으로 직접 한 번 해 주세요`, { l: 'err' }); }
-      else if (p.fails >= c.failStop) { p.stop = { at: now(), why: `연속 ${p.fails}번 실패 — ${res.why}` }; note(`⛔ ${nm} 스스로 다시 로그인 연속 ${p.fails}번 실패 — 멈추고 알림(계정 잠김을 막으려고) · 까닭: ${res.why} · 옆 창에서 직접 로그인하거나 ⚙ › 🔐에서 계정을 고친 뒤 [다시 해 보기]`, { l: 'err' }); }
+      else if (p.fails >= c.failStop) { p.stop = { at: now(), why: `연속 ${p.fails}번 실패 — ${res.why}`, until: now() + (c.retryMin == null ? 120 : +c.retryMin) * 60e3 }; /* (11/13 home2) 2시간 뒤 저절로 다시(하루 몫·한 시간 3번은 그대로) */ note(`⛔ ${nm} 스스로 다시 로그인 연속 ${p.fails}번 실패 — 멈추고 알림(계정 잠김을 막으려고) · 까닭: ${res.why} · 옆 창에서 직접 로그인하거나 ⚙ › 🔐에서 계정을 고친 뒤 [다시 해 보기]`, { l: 'err' }); }
       else note(`🔐 ${nm} 스스로 다시 로그인 실패 — ${res.why} · ${c.gapMin}분 뒤 한 번 더`, { l: 'warn' }); }
     save(); return res; }
   /* (정범님 11/10 '아이디/비번을 넣는 곳은 저장을 누르면 먼저 맞는지 확인 → 맞으면 저장 · 틀리면 다시 넣어 주세요와 까닭') 저장 전 확인 로그인 — 지금 넣은 값으로 한 번(값은 이 안에서만 · 기록 안 함)
@@ -143,10 +149,15 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const jobView = (pf) => { const jb = P(pf).job; if (!jb) return null; return { on: !!jb.on, at0: jb.at0, phase: jb.phase, atP: jb.atP, max: jb.max, end: jb.end || null, res: jb.res || null }; };
   /* (11/12 login1) 세션이 다시 살아나면(사람이 평범한 창·옆 창으로 했든 번외가 했든) '연속 n번 실패' 멈춤을 조용히 풂 — 그래야 다음에 풀릴 때 번외가 스스로 다시 로그인함 · 값 틀림(bad) 멈춤만 그대로(사람 손이 필요하던 멈춤은 사람이 해서 살아난 것) */
   const okSeen = (pf) => { const p = P(pf); if (p.stop && !p.stop.bad) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 로그인이 다시 살아나 '스스로 다시 로그인' 멈춤을 풂(다음에 풀리면 번외가 스스로)`); } catch (e) {} } else if (p.fails) { p.fails = 0; save(); } };
+  /* (11/13 home2) 다시 로그인이 '됨'이었는데 dropMin분(기본 5) 안에 다시 로그인 화면 = 실제로는 안 된 것 — 자취에 남기고, 2시간에 2번이면 2시간 멈춤(헛된 되풀이로 하루 몫을 다 쓰지 않게 · 저절로 풀림) */
+  const dropAfterOk = (pf, why) => { const p = P(pf), c = C(), t = now(); const L = p.last; const dm = c.dropMin == null ? (TEST ? 0 : 5) : +c.dropMin; /* 시험은 일부러 세션을 곧바로 지우는 장면이 많아 꺼 둠(t_home2가 켜고 봄) */ if (!dm || !L || !L.ok || t - L.at > dm * 60e3) return false;
+    p.fake = (Array.isArray(p.fake) ? p.fake : []).filter((x) => t - x < 2 * 3600e3).concat([t]); p.hist = (Array.isArray(p.hist) ? p.hist : []).concat([{ at: t, ok: false, how: 'drop', why: `'됨' ${Math.round((t - L.at) / 1000)}초 뒤 다시 로그인 화면 — ${String(why || '').slice(0, 80)}` }]).slice(-12);
+    const nm = (cred.PF[pf] || {}).name || pf; if (p.fake.length >= 2 && !p.stop) { p.stop = { at: t, why: `다시 로그인이 '됨' 뒤 몇 분 안에 또 풀림 ${p.fake.length}번(2시간 안) — 같은 계정이 다른 곳(휴대폰·다른 크롬)에서 판매관리를 쓰고 있을 수 있음`, until: t + 2 * 3600e3 }; note(`⛔ ${nm} — 다시 로그인이 '됨' 뒤 몇 분 안에 또 풀림 ${p.fake.length}번 · 2시간 쉬고 저절로 다시 해 봄(헛된 되풀이 막기 · 다른 곳에서 판매관리를 쓰는 중이면 그쪽을 닫으면 됨)`, { l: 'warn' }); }
+    else note(`🔐 ${nm} — 다시 로그인이 '됨'이었는데 ${Math.round((t - L.at) / 1000)}초 뒤 다시 로그인 화면(${String(why || '').slice(0, 60)})`, { l: 'warn' }); save(); return true; };
   const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
   const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
-  const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
+  const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); const td = p.tries.filter((x) => now() - x < 86400e3); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: td.length, n: p.n, hist: Array.isArray(p.hist) ? p.hist.slice(-10) : [], next: td.length >= C().perDay ? td[0] + 86400e3 : null }; } return out; };
   const hasCred = (pf) => { try { return !!cred.has(pf); } catch (e) { return false; } };
-  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob, hasCred, okSeen };
+  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob, hasCred, okSeen, dropAfterOk };
 }
 module.exports = { makeRelogin, doLogin, dlgOk, ACT_SRC, JS_ACT, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT, JS_WHERE, isBlock, codeOf, blockWhy };
