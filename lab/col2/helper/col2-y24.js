@@ -372,7 +372,10 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   REG = require('./col2-y24reg.js').makeY24Reg({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, learn, ordShift, rawList, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login, re: () => reState() });
   REG.cur = () => !!REG.R.cur;
   /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지·판매재개) — helper/col2-y24w.js(웹앱 🛠 처리할 일에서 맡김 → 이 숨은 크롬이 등록상품 관리 화면에서 사람처럼 고치고 다시 읽어 확인) */
-  W = require('./col2-y24w.js').makeY24W({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login });
+  /* (y24re 0.1.55) 사람과 같은 진짜 입력(DevTools Input — trusted) — 예스24 쓰기의 수량 칸 더블 클릭·글자·Enter에만 씀 */
+  const inp = { dbl: async (x, y) => { const b = Y.br; for (const [t, n] of [['mouseMoved', 0], ['mousePressed', 1], ['mouseReleased', 1], ['mousePressed', 2], ['mouseReleased', 2]]) { await b.cdp.send('Input.dispatchMouseEvent', { type: t, x, y, button: t === 'mouseMoved' ? 'none' : 'left', clickCount: n }, b.sid); await sleep(40); } },
+    text: async (t) => { const b = Y.br; await b.cdp.send('Input.insertText', { text: String(t) }, b.sid); }, key: async () => keyPress(Y.br.sid) };
+  W = require('./col2-y24w.js').makeY24W({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, kick, pcName, isLogger, enabled, holdOn, inp, login: () => Y.login });
   return { start, kick, feed, sum, login, reOnce, verify, close, runNow, reg: REG, w: W, learn: { set: learnSet, state: () => LN.state(), LN }, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct, mainSum, opsNum, goodsSum } };
 }
 module.exports = { makeY24, ppStop, holderOf, isHolder, HOLD_DEF, ALREADY_RE, ordShift, hdrFresh, pickMenus, cutAct, SAFE, DANGER, SECRET, OPS_PAGES, mainSum, opsNum, goodsSum };
