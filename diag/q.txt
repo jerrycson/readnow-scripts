@@ -1,2 +1,4 @@
-run=1&slearn=bg&mem=1
-# 1711132122
+col2=2026-11-13
+doc=app_settings/col2_solo
+perf=80
+# 127556626
