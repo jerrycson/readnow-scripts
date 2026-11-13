@@ -111,8 +111,8 @@
     mine(); setTimeout(function () { var t = ov.querySelector('#bqtTx'); if (t) t.focus(); }, 30); }
   /* 개인정보 처리방침 — 방문·이용 기록 칸을 더함(보존 기간은 설정 그대로) */
   function privSoon() { var n = 0; var t = setInterval(function () { n++; var a = D.querySelector('#main article.doc'); if (a || n > 40) { clearInterval(t); if (a) privAdd(a); } }, 100); }
-  function privAdd(a) { if (a.querySelector('#bqtPriv')) return; var c = BQT.cfg || {}; var tr = c.trk || {}; var keep = +tr.keep || 365;
-    a.querySelectorAll('h3').forEach(function (h) { if (/^6\./.test(h.textContent) && h.nextElementSibling) h.nextElementSibling.textContent = '이 화면은 장바구니·찜·최근 본 책·「내 주문」·「내 문의」 조회 주소, 로그인 열쇠(로그인했을 때), 그리고 방문 셈에 쓰는 무작위 기기 번호만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.'; });
+  function privAdd(a) { if (a.querySelector('#bqtPriv') || /방문·이용 기록/.test(a.textContent || '')) return; /* 손님 화면(shop.js) 방침에 이미 8번이 들어 있으면 두 번 넣지 않음 */ var c = BQT.cfg || {}; var tr = c.trk || {}; var keep = +tr.keep || 365;
+    a.querySelectorAll('h3').forEach(function (h) { if (/^6\./.test(h.textContent) && h.nextElementSibling && !/무작위 기기 번호/.test(h.nextElementSibling.textContent)) h.nextElementSibling.textContent = '이 화면은 장바구니·찜·최근 본 책·「내 주문」·「내 문의」 조회 주소, 로그인 열쇠(로그인했을 때), 그리고 방문 셈에 쓰는 무작위 기기 번호만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.'; });
     var d = D.createElement('div'); d.id = 'bqtPriv'; d.innerHTML = '<h3>8. 방문·이용 기록</h3><p>가게를 더 편하게 고치려고 어떤 화면을 몇 번 보았는지, 어떤 낱말로 찾았는지, 어디에서 들어왔는지(주소의 도메인만), 기기 종류·화면 폭을 셉니다. IP 주소·이름·연락처는 이 셈에 쓰지 않고 저장하지 않으며, 셈은 날짜별 합계로만 남습니다.</p>'
       + '<p>' + (tr.ua === 0 ? '로그인한 회원의 활동 기록은 남기지 않습니다.' : '회원으로 로그인했을 때는 본 상품·찾기·장바구니·주문 활동을 회원 번호와 함께 남겨 주문·문의 응대와 추천·화면 개선에 씁니다. 보관 기간은 <b>' + keep + '일</b>이며 지나면 운영 화면에서 보이지 않게 하고 파기합니다. 브라우저의 「추적 안 함」을 켰거나 💬 문의 창에서 「이 기기 방문 기록 끄기」를 고르시면 남기지 않습니다.') + '</p>'
       + '<p>💬 문의에 적으신 글·연락처는 답을 드리는 데만 쓰고, 소비자 불만·분쟁 처리 기록으로 3년 보관한 뒤 파기합니다.</p>';
