@@ -1,3 +1,2 @@
-doc=app_settings/aladin_login
-doc=app_settings/cloud_login
-# 679931039
+logs=1&pc=MJ-MAIN&from=202611130900
+# 1784913039
