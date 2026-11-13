@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "y24re 셋째 — 번외 0.1.53",
- "since": "2026-11-13T04:52:40Z",
- "beat": "2026-11-13T04:52:40Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "mjui1 ac7a12ac 웹앱 1.78.565 — 등록 설정 세 탭(MJ님 요청)",
-  "at": "2026-11-13T04:47:28Z"
+  "done": "y24re 셋째 웹앱 1.78.566 · 번외 0.1.53",
+  "at": "2026-11-13T04:54:43Z"
  },
- "host": "vm-y24re"
+ "host": null
 }
