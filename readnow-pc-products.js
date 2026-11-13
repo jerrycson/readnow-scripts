@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.300의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.301의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.300' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.300', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.301' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.301', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3115,7 +3115,7 @@
         else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; }
           if (!r && !/다른 상품/.test(String(why || ''))) { /* (isbnq 11/13 MJ '9791188915002가 조회 대기에 그대로') 알라딘이 ISBN 대신 자기 상품 코드(K…)로 올린 책은 등록 검색(ISBN)·상품 화면(ISBN=) 둘 다 비고 공개 검색에만 나옴 — 클라우드 0.9.3·사진 가격 조회와 같이 번호로 공개 검색해 앞 3개 중 번호가 맞는 상품 */
             const TGT = { 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[br] || 'Book'; for (const tgt of [...new Set([TGT, 'All'])]) { try { const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${tgt}&SearchWord=${encodeURIComponent(isbn)}`); for (const c of P.parseSearchResults(sr.doc).filter((x) => !x.used).slice(0, 3)) { try { r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(c.itemId)}`, isbn); break; } catch (e) {} } } catch (e) {} if (r) break; }
-            if (r && r.isbnKey && String(r.isbnKey).toUpperCase() !== String(isbn).toUpperCase()) { try { const L2 = await scm(String(r.isbnKey), 'ISBN'); const h = L2.find((x) => String(x.itemId) === String(r.itemId)) || (L2.length === 1 ? L2[0] : null); if (h && h.code) r.scmCode = h.code; } catch (e) {} } /* 등록할 때 쓸 등록 코드(알라딘 상품 코드)도 */ }
+            if (r) r.scmMiss = true; /* 등록 검색 0줄 → 웹앱이 대량 대신 개별(상품 번호)로 */ if (r && r.isbnKey && String(r.isbnKey).toUpperCase() !== String(isbn).toUpperCase()) { try { const L2 = await scm(String(r.isbnKey), 'ISBN'); const h = L2.find((x) => String(x.itemId) === String(r.itemId)) || (L2.length === 1 ? L2[0] : null); if (h && h.code) r.scmCode = h.code; } catch (e) {} } /* 등록할 때 쓸 등록 코드(알라딘 상품 코드)도 */ }
           if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지·공개 검색 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
       catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }
     for (const q of qs) { try { cands[q] = P.scmSmart ? await (async () => { const R = await P.scmSmart(q, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); })() : await scm(q, 'NAME'); /* (1.89.5) 상품명·지은이 낱말 일부 섞어도(products-core 0.17.0 scmSmart) */ } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
