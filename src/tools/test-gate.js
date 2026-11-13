@@ -38,6 +38,7 @@ function changelogCheck() {
   if (av && av !== av0) need.add(av);
   const cut = new Date(Date.now() + 9 * 3600e3 - 7 * 864e5).toISOString().slice(0, 10);
   for (const [v, d] of Object.entries(UD)) if (d >= cut && /^1\.78\./.test(v)) need.add(v);
+  { const ua = t.indexOf('const UPDATE_LOG = ['); if (ua >= 0) for (const m of t.slice(ua, t.indexOf('\n];', ua)).matchAll(/\{ d: '(\d{4}-\d\d-\d\d)', app: '웹앱', v: '(\d+\.\d+\.\d+)'/g)) if (m[1] >= cut) need.add(m[2]); } // (11/13) 화면 기록에만 있고 날짜표·CHANGELOG에 없던 1.78.573 같은 판도
   for (const v of need) if (!CL[v]) miss.push(v + (v in CL ? '(빈 칸)' : '(줄 없음)'));
   if (av && av !== av0 && !UD[av]) no(`UPDATE_DATES에 이번 웹앱 판 ${av} 날짜가 없음 — ❓ 업데이트 기록·따라잡기 표가 이 판을 못 셈 (bump.py가 넣음)`);
   if (miss.length) no(`❓ 업데이트 기록(CHANGELOG)이 빈 웹앱 판 ${miss.length}개: ${miss.sort().join(', ')} — 판마다 바뀐 점 한 줄(화면 기록 UPDATE_LOG·커밋 제목에서)을 같은 판에 넣을 것 · 판 번호만 오른 판도 '판 번호만 — 무엇과 함께 낸 판'으로`);
@@ -116,8 +117,11 @@ function judge(t, out, code, ms) {
 async function runAll(B, list, tmo, par) {
   const port = await freePort(); const srv = cp.spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: B.S, stdio: 'ignore' });
   try { for (let i = 0; i < 40; i++) { const okc = await new Promise((r) => { const s = net.connect(port, '127.0.0.1', () => { s.end(); r(true); }); s.on('error', () => r(false)); }); if (okc) break; await new Promise((r) => setTimeout(r, 150)); }
-    const res = {}; let i = 0; const work = async () => { while (i < list.length) { const t = list[i++]; if (!fs.existsSync(path.join(B.P, t + '.js'))) { res[t] = { t, ok: false, items: [], why: '시험 파일 없음', ms: 0 }; continue; } let r = await runOne(B.P, t, port, tmo); if (!r.ok) { const r2 = await runOne(B.P, t, port, tmo); if (r2.ok) { r2.flaky = r; r = r2; } else r.second = r2; } res[t] = r; } };
-    await Promise.all(Array.from({ length: par }, work)); return res;
+    const res = {}; let i = 0; const work = async () => { while (i < list.length) { const t = list[i++]; if (!fs.existsSync(path.join(B.P, t + '.js'))) { res[t] = { t, ok: false, items: [], why: '시험 파일 없음', ms: 0 }; continue; } res[t] = await runOne(B.P, t, port, tmo); } };
+    await Promise.all(Array.from({ length: par }, work));
+    /* 실패한 것은 다른 시험이 모두 끝난 뒤 혼자 한 번 더 — 함께 돌 때 부하로 시간 항목(예: 0.4초 안 겹누름)이 밀린 거짓 실패를 막지 않게 (11/13 tLED1111 · 부하 6.8에서 실패 · 혼자 3/3 통과) */
+    for (const t of list) { const r = res[t]; if (r.ok || r.why === '시험 파일 없음') continue; const r2 = await runOne(B.P, t, port, tmo); if (r2.ok) { r2.flaky = r; res[t] = r2; } else r.second = r2; }
+    return res;
   } finally { try { srv.kill('SIGKILL'); } catch (e) {} }
 }
 function knownCheck(K) { // 장부 꼴: { "items": [ { "test", "items"?: [항목 글 일부], "why", "owner", "until": "YYYY-MM-DD", "since" } ] }
