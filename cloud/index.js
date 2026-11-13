@@ -32,7 +32,7 @@ const { getFirestore, FieldValue, FieldPath, Timestamp } = require('firebase-adm
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.236'; // (0.35.236 shopux1) 🛍 우리숍 같은 책 여러 권 담기 — 주문 qty(재고·설정 multiOn/multiMax까지 · 같은 책 n권 = 주문 줄 n개 · 잡아 두기 한 번) · 견적도 권마다 · 한 권 주문은 그대로
+const VER = '0.35.238'; // (0.35.237 shopadm1) 📊 우리숍 백오피스 — 방문 셈 /shop/t(하루 문서 1분마다 · IP 없음)·💬 문의 /shop/ask·👀 손님 화면 미리 보기 /shop/pv(읽기만)·관리자 /shop-anl(대시보드·손님·시간줄·메모·상품 전환·문의·미리 보기 표) · 공개 설정 bnr·trk // (0.35.236 shopux1) 🛍 우리숍 같은 책 여러 권 담기 — 주문 qty(재고·설정 multiOn/multiMax까지 · 같은 책 n권 = 주문 줄 n개 · 잡아 두기 한 번) · 견적도 권마다 · 한 권 주문은 그대로
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -5563,6 +5563,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/strat-run') { await authUser(req); if (!(await cjobs()).strat) return send(200, { ok: false, err: '☁ 설정에서 ⚡ 전략 실행을 꺼 둠' }); const r = await stratTick(true); return send(200, { ok: !(r && r.err), ...(r || { busy: '이미 판단하는 중' }) }); } /* (0.34.0) 웹앱 '지금 판단' */
     if (path === '/shop-promo') { await authUser(req); const b = await bodyOf(req).catch(() => ({})); return send(200, { ok: true, ...(await SHOP.promoPreview(b)) }); } /* (11/11 shopc1) 🏷 우리숍 할인·배지 미리 보기(쓰기 없음) — 관리자 로그인만 */
     if (path === '/shop-admin') { const who = await authUser(req); const b = await bodyOf(req).catch(() => ({})); return send(200, { ok: true, ...(await SHOP.acctAdmin(b, who)) }); } /* (11/12 shop9) 👤 우리숍 시험 손님 계정·⭐ 리뷰 숨김 — 관리자 로그인만 · 지우기 없음 */
+    if (path === '/shop-anl') { const who = await authUser(req); const b = await bodyOf(req).catch(() => ({})); return send(200, { ok: true, ...(await SHOP.anlAdmin(b, who)) }); } /* (11/13 shopadm1) 📊 우리숍 백오피스(방문 셈·손님 활동·상품 전환·문의·미리 보기 표) — 관리자 로그인만 · 지우기 없음 */
     if (path === '/shop-check') { await authUser(req); const b = await bodyOf(req).catch(() => ({})); return send(200, { ok: true, ...(await SHOP.check(!!(b && b.force))) }); } /* (11/11 shop3) 🔍 우리숍 문 열기 전 점검 — 공개 주소(도메인·인증서·넘김·사진)를 클라우드가 열어 봄 · 관리자 로그인만 */
     if (path === '/kick') { await authUser(req); if (!(await cjobs()).cmds) return send(200, { ok: true, skipped: '맡긴 일 처리를 꺼 둠(☁ 설정)' }); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; tickAt = Date.now(); try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
     if (path === '/regaux') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); const out = await serial(() => regAux(b)); return send(200, out); } // (0.9.5) 📥 개별·미등록 등록: 분류·저자·출판사 찾기 (알라딘 팝업 대신)
