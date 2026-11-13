@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cloudmem 클라우드 메모리 넘침 고침 판",
+ "since": "2026-11-13T00:48:51Z",
+ "beat": "2026-11-13T00:48:51Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "helperui 판 43733cac 웹앱 1.78.544·수집기 1.89.296·도우미 1.8.26",
   "at": "2026-11-13T00:48:05Z"
  },
- "host": null
+ "host": "vm-cloudmem"
 }
