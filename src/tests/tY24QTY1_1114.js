@@ -43,4 +43,9 @@ ok(/async function openDet\(h, no\) \{ const rd0 = await routeDet\(h, no\);/.tes
 ok(/if \(D\.route\) \{ const a2 = await look\(r\);/.test(W), '저장 뒤 확인도 목록에서 같은 길로 다시 엶');
 ok(/if\(ck\.disabled\)\{const d0=dateSt\(P\);if\(!ck\.checked&&d0\.cy!=='Y'\)return\{ok:true,auto:true\}/.test(W) && /a0\.cy !== 'Y'/.test(W), "판매중지 창: 꺼진 채 잠긴 체크는 받아들임 · 켜진 채 잠김·창 자료 changeDateYn 'Y'는 멈춤");
 ok(/const JS_PRICE = /.test(W), '판매가 쪽(JS_PRICE)은 그대로');
+console.log('④ 수집기 한 번짜리(웹앱이 밤에 안 열려 있어도)');
+{ const C = rd('src/readnow-collector.src.js'); const b = (C.match(/    const RE14B_WHY = [\s\S]*?\n    function re14bPick\([\s\S]*?return out; \}\n/) || [''])[0];
+  ok(!!b, '수집기에 고르기 덩어리 있음'); const G = b ? new Function(b.replace(/^\s+/, '') + '; return re14bPick;')() : null;
+  ok(G && G([...D, old], []).map((d) => d.id).sort().join(',') === 'a,b,c', '수집기 고르기 = 웹앱 고르기(같은 세 꼴)', G && G([...D, old], []).map((d) => d.id));
+  ok(/await wRe1114b\(fs, pc\);/.test(C) && /RE14B_NEED = '0\.1\.59'/.test(C) && /GM_setValue\('rn-y24re1114b'/.test(C) && /c\.re1114b \|\| !re14bPick\(/.test(C) && /y24RePatch\(\{ \.\.\.c, reN: Math\.min\(\+c\.reN \|\| 0, Y24_RE_MAX - 1\) \}, RES, pc, Date\.now\(\), 0\)/.test(C), '맡은 PC 수집기 다리 안에서 · 그 PC 번외 0.1.59 뒤 · 이 PC 한 번 · 문서마다 re1114b 한 번(거래 안에서 다시 확인)'); }
 console.log(bad ? `❌ tY24QTY1_1114 실패 ${bad}` : '✓ tY24QTY1_1114 모두 통과'); process.exit(bad ? 1 : 0);
