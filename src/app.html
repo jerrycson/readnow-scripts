@@ -1375,6 +1375,7 @@ body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:f
 .pmk-src{margin:0 4px;vertical-align:middle}.pmk-src button{font-size:11px;padding:1px 8px}.pmk-why{font-size:10.5px}.pmk-y24g{margin:2px 0 4px;display:flex;flex-wrap:wrap;gap:4px}.pmk-y24o{font-size:12px;margin:2px 0}.pmk-y24t td,.pmk-y24t th{font-size:11.5px;padding:2px 5px}.pmk-y24me{background:#eaf2ff}
 /* (11/10 ux2) 🧩 화면 고침 — ① 알림 자리 ② 빠른 작업 ④ 머리 칸 점 ⑤ 검색 범위 칩 ⑥ 처리할 주문 줄 ⑧ 설정 묶음 */
 #ux2dock{position:fixed;left:10px;bottom:66px;z-index:9990;display:flex;flex-direction:column;gap:6px;width:min(330px,calc(100vw - 20px));pointer-events:none}#ux2dock.empty{display:none}
+@media (max-width:520px){body.jbn-on #ux2dock{display:none!important}} /* (note5 둘째 · 정범님 11/13 20:47) 휴대폰에서 📓 노트를 연 동안 아래 작은 알림 모음(내려받기·진행 띠)이 노트 아래 입력칸·[목록 보기]를 덮어 눌리지 않던 것 — 노트를 닫으면 다시 보임 */
 #ux2dock>*{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:auto!important;max-width:100%!important;pointer-events:auto}#ux2dock>#dlp{pointer-events:none}#ux2dock>#dlp>*{pointer-events:auto}
 #ux2dock>.ux2dk-hide{display:none!important}#ux2dock .ux2dk-sum{align-self:flex-start;border:0;border-radius:14px;padding:5px 11px;background:rgba(30,43,40,.9);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}#ux2dock .ux2dk-sum[hidden]{display:none}
 
@@ -2324,8 +2325,8 @@ function openNotes() {
   const sh = $('#sheet'); if (!(S.detail && S.detail.jbn)) { history.pushState({ jbn: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden'; } S.detail = { jbn: 1 };
   sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">📓 정범 노트</div><a class="btn ghost sm" href="${JBN_ART}" target="_blank" rel="noopener" title="claude.ai의 같은 노트(아티팩트) — 문장 메모를 리드 채팅으로 바로 보낼 수 있음">claude.ai에서 열기 ↗</a><button class="btn ghost sm" id="jbn_link" title="아티팩트가 이 노트를 함께 쓰게 하는 연결 주소(처음 한 번)">🔗 아티팩트와 잇기</button></div><div id="jbn_linkbox"></div><div id="jbn_root" style="padding:0 12px 80px"></div>`;
   $('#back').onclick = () => history.back();
-  const st = jbnStore(); const ui = JBN.mount($('#jbn_root'), st, { link: JBN_ART, scroller: () => sh, padTop: () => { const h = sh.querySelector('.sh'); return h ? h.offsetHeight : 0; } });
-  S.detailUnsubs.push(() => { try { st.un(); } catch (e) {} try { ui.destroy(); } catch (e) {} });
+  const st = jbnStore(); const ui = JBN.mount($('#jbn_root'), st, { link: JBN_ART, scroller: () => sh, padTop: () => { const h = sh.querySelector('.sh'); return h ? h.offsetHeight : 0; } }); document.body.classList.add('jbn-on');
+  S.detailUnsubs.push(() => { try { st.un(); } catch (e) {} try { ui.destroy(); } catch (e) {} document.body.classList.remove('jbn-on'); });
   $('#jbn_link').onclick = () => jbnLinkBox(); }
 async function jbnLinkBox() { const el = $('#jbn_linkbox'); if (!el) return; const u = pptCloudUrl();
   if (!u) { el.innerHTML = '<div class="card">⚠ 클라우드 주소가 없습니다 — ⚙ 설정 › ☁ 클라우드 수집에서 먼저 넣어 주세요.</div>'; return; }
