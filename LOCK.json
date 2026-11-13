@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "train1",
+ "what": "land1+spare2 19금·💓 y24hb 판(웹앱·수집기)",
+ "since": "2026-11-13T09:46:06Z",
+ "beat": "2026-11-13T09:46:06Z",
  "ask": null,
  "last": {
   "who": "priv2",
   "done": "클라우드 0.35.229 · 도우미 1.8.29 올림 77a168b8",
   "at": "2026-11-13T09:45:14Z"
  },
- "host": null
+ "host": "vm-train1"
 }
