@@ -118,8 +118,10 @@ jobs:
           FA=""; DRY=""; TEST=""
           case "$CB" in fail) FA=check; DRY=1; TEST=fail;; broken) DRY=1; TEST=broken; printf '%s\n' '/* 일부러 깨뜨린 시험 파일(cbuild 시험 · 올리지 않음) */' 'const x = ;' > /tmp/cb/cloud/zz-cbtest-broken.js;; dry) DRY=1; TEST=dry;; esac
           SUB="_SHA=$GITHUB_SHA,_VIA=submit,_RN_FAIL_AT=$FA,_RN_DRY=$DRY,_RN_TEST=$TEST"
-          go() { gcloud builds submit /tmp/cb --region "$REGION" --project "$PROJECT" --config /tmp/cb/cloud/cloudbuild.yaml --substitutions="$SUB" --async --format='value(id)' "$@" 2>/tmp/sub.err; }
-          B=$(go) || B=$(go --service-account="projects/$PROJECT/serviceAccounts/63884079760-compute@developer.gserviceaccount.com") || { tail -n 20 /tmp/sub.err; grep -iE 'error|denied|permission' /tmp/sub.err | tail -n 4 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
+          # 소스 올릴 곳: 'gcloud run deploy --source'가 이미 쓰는 run-sources 통(gh-deployer가 씀) — 기본 _cloudbuild 통은 이 계정이 못 엶(11/13 첫 시험)
+          ST="gs://run-sources-$PROJECT-$REGION/cbuild"
+          go() { gcloud builds submit /tmp/cb --region "$REGION" --project "$PROJECT" --config /tmp/cb/cloud/cloudbuild.yaml --substitutions="$SUB" --async --format='value(id)' "$@" 2>>/tmp/sub.err; }
+          B=$(go --gcs-source-staging-dir="$ST") || B=$(go --gcs-source-staging-dir="$ST" --service-account="projects/$PROJECT/serviceAccounts/63884079760-compute@developer.gserviceaccount.com") || B=$(go) || { tail -n 20 /tmp/sub.err; grep -iE 'error|denied|permission' /tmp/sub.err | tail -n 4 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
           echo "### ☁ Cloud Build $B 맡김 ($CB · 커밋 ${GITHUB_SHA:0:7}) — 결과는 진단 cbuild=1" >> "$GITHUB_STEP_SUMMARY"; echo "::notice::Cloud Build $B 맡김($CB)"
   side:
     name: 진단 · 숫자 요약 · 수집기 새 판 알림
