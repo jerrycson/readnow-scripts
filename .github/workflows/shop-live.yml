@@ -3,7 +3,7 @@
 #  · live: 진짜 브라우저(휴대폰·PC)로 첫 화면→목록→분야→책→장바구니→주문서→주문 뒤 · /b/ · sitemap — 🧪 주문은 시험 모드(클라우드에 주문 0)
 #    사진·report.json·report.md → 결과물 'shop-live' · 작업 요약에 표
 #  · test: tSHOP1111 순수 셈·클라우드 창구·손님 화면(휴대폰) — 웹앱 화면 부분은 건너뜀(fbstub 없음)
-#  · 30분마다(main에 들어온 뒤): dns만 · 손으로(Run workflow)·작업 가지 push: 셋 다
+#  · 6시간마다(main에 들어온 뒤 · priv1 11/13 — 예전 30분): dns만 · 손으로(Run workflow)·작업 가지 push: 셋 다
 name: 우리숍 실제 점검
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
     branches: ['work/shop*']
     paths: ['.github/workflows/shop-live.yml', 'hosting/shop-live.js', 'shop/**', 'src/tests/tSHOP1111.js', 'cloud/shop.js']
   schedule:
-    - cron: '7,37 * * * *'
+    - cron: '7 */6 * * *'  # (priv1 11/13) 30분마다 → 6시간마다 — 저장소를 비공개로 바꾸면 Actions가 분 요금(무료 한 달 2,000분)이라 줄임(dns만 · 1분)
 permissions: { contents: read, id-token: write }
 env:
   WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts

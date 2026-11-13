@@ -1,0 +1,11 @@
+{
+  "name": "리드나우 2 (시범)",
+  "short_name": "리드나우2",
+  "start_url": "../index.html?p=home",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#F3F5F4",
+  "theme_color": "#2F5D50",
+  "lang": "ko",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

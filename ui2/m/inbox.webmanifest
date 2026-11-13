@@ -1,0 +1,18 @@
+{
+ "name": "리드나우 2 · 할 일",
+ "short_name": "할 일",
+ "start_url": "../index.html?p=inbox",
+ "scope": "../",
+ "display": "standalone",
+ "background_color": "#F3F5F4",
+ "theme_color": "#B0322A",
+ "lang": "ko",
+ "icons": [
+  {
+   "src": "inbox.svg",
+   "sizes": "any",
+   "type": "image/svg+xml",
+   "purpose": "any"
+  }
+ ]
+}

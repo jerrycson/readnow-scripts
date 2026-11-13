@@ -41,6 +41,27 @@ window.RN2_MOVE_SYNC = function (db) {
     }).catch(function (e) { window.RN2_MOVE_LAST = { at: Date.now(), err: String((e && (e.code || e.message)) || e) }; });
   } catch (e) {}
 };</script>
+<script>/* (priv1 11/13) 🚚 옛 주소(jerrycson.github.io) → 새 주소(readnow.kr/app/) 짐 넘기기 — 저장소 비공개·GitHub Pages 끄기 준비
+ * 기기 저장(localStorage)은 주소(출처)마다 따로라 새 주소에서 열면 이 기기 이름·설정·열쇠가 비어 보임 → 옛 주소 화면 맨 위 띠 '🚚 이 기기 설정 가지고 새 주소로' 한 번
+ * 옛 주소가 새 주소 탭을 열고(?rnmove=1) → 새 탭이 '준비됨'을 보내면 옛 탭이 rn로 시작하는 칸만 보냄(postMessage · 두 출처를 정확히 확인) → 새 탭은 처음 여는 기기면 모두, 이미 쓰던 기기면 비어 있는 칸만 채우고 다시 엶
+ * 저절로 옮기지 않음(사람이 누를 때만 · 출고 중 PC를 건드리지 않음) · 브라우저 팝업 없음 · 값은 이 기기 안에서만 오감(서버·GitHub에 안 감) */
+(function () { var OLD = 'https://jerrycson.github.io', NEW = 'https://readnow.kr';
+  try { var o = location.origin;
+    if (o === NEW && /[?&]rnmove=1/.test(location.search) && window.opener) { var fresh = !localStorage.getItem('rn-lastver');
+      window.addEventListener('message', function (e) { if (e.origin !== OLD || !e.data || e.data.t !== 'rn-move') return; var n = 0, it = e.data.items || {};
+        for (var k in it) { if (!/^rn/.test(k) || typeof it[k] !== 'string') continue; if (fresh || localStorage.getItem(k) == null) { try { localStorage.setItem(k, it[k]); n++; } catch (x) {} } }
+        try { localStorage.setItem('rn-moved-from', JSON.stringify({ at: new Date().toISOString(), n: n, fresh: fresh })); } catch (x) {} try { e.source.postMessage({ t: 'rn-move-done', n: n }, OLD); } catch (x) {}
+        setTimeout(function () { location.replace(location.pathname + location.hash); }, 600); });
+      window.opener.postMessage({ t: 'rn-move-ready' }, OLD); return; }
+    if (o !== OLD) return;
+    var go = function () { var w = window.open(NEW + '/app/?rnmove=1', '_blank'); if (!w) { bar.querySelector('small').textContent = '새 탭이 막혔습니다 — 주소창 오른쪽 팝업 허용 뒤 다시 누르세요'; return; } bar.querySelector('small').textContent = '새 탭에 옮기는 중…'; };
+    window.addEventListener('message', function (e) { if (e.origin !== NEW || !e.data) return;
+      if (e.data.t === 'rn-move-ready') { var it = {}; for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^rn/.test(k)) it[k] = localStorage.getItem(k); } e.source.postMessage({ t: 'rn-move', items: it }, NEW); }
+      if (e.data.t === 'rn-move-done') { try { localStorage.setItem('rn-moved-to', new Date().toISOString()); } catch (x) {} bar.querySelector('small').textContent = '✅ ' + e.data.n + '칸 옮김 — 이제 새 탭(readnow.kr/app/)을 쓰고, 북마크도 새 주소로 바꾸세요. 이 탭은 닫아도 됩니다.'; } });
+    var bar = document.createElement('div'); bar.id = 'rn-move-bar'; bar.style.cssText = 'position:sticky;top:0;z-index:99999;background:#FFF3D6;border-bottom:2px solid #E0A800;padding:8px 12px;font:14px/1.5 system-ui;color:#5A4300';
+    bar.innerHTML = '<b>🚚 웹앱 주소가 <u>readnow.kr/app/</u> 로 옮겨 갑니다</b> (이 옛 주소는 곧 닫힘) <button type="button" style="margin-left:8px;padding:4px 10px;border-radius:8px;border:1px solid #B8860B;background:#fff;cursor:pointer">이 기기 설정 가지고 새 주소로</button> <small>' + (localStorage.getItem('rn-moved-to') ? '이미 한 번 옮겼습니다 — 새 주소를 쓰세요' : '한 번만 누르면 이 기기 이름·설정을 그대로 가져갑니다(새 주소에서 구글 로그인은 한 번 다시)') + '</small>';
+    bar.querySelector('button').onclick = go; var put = function () { if (document.body && !document.getElementById('rn-move-bar')) document.body.prepend(bar); }; if (document.body) put(); else document.addEventListener('DOMContentLoaded', put);
+  } catch (x) {} })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2F5D50">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1319,6 +1340,7 @@ body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:f
 #ux2dock>.ux2dk-hide{display:none!important}#ux2dock .ux2dk-sum{align-self:flex-start;border:0;border-radius:14px;padding:5px 11px;background:rgba(30,43,40,.9);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}#ux2dock .ux2dk-sum[hidden]{display:none}
 
 html.ux2-hf header.top .sync,html.ux2-hf header.top .colbar,html.ux2-hf header.top .jobs{display:none!important}
+.tbwrap{position:relative;display:inline-flex}.tbmore{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:120;flex-direction:column;align-items:stretch;gap:4px;padding:8px;background:var(--cloth);border:1px solid rgba(255,255,255,.25);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.18);min-width:170px}.tbmore.on{display:flex}.tbmore .me{text-align:left;justify-content:flex-start}header.top #tbmore.on :is(#hmgr,#hauto,#hman,#hpend){display:inline-flex!important}html.ux2-hon .ux2hmore{display:none!important} /* (note2 11/13) 머리 줄 ☰ 더 보기 — 휴대폰 ⋯ 대신 */
 .ux2hmore{display:none}@media (max-width:760px){html.ux2-hon .ux2hmore{display:inline-block}html.ux2-hon:not(.ux2-hm) header.top :is(#hmgr,#hauto,#hman,#hpend:not(:has(.badge))){display:none!important}}
 .ux2hdot{display:inline-grid;place-items:center;vertical-align:middle;min-width:14px;height:14px;margin-left:8px;padding:0 3px;border:2px solid rgba(255,255,255,.75);border-radius:8px;background:#5FD08F;color:#123;font-size:9px;line-height:1;cursor:pointer}.ux2hdot.amber{background:#E8B062}.ux2hdot.red{background:#E2574C;animation:pl 1s infinite alternate}.ux2hdot.open{background:transparent;color:#fff}.ux2hdot.open.red{background:#E2574C}.ux2hdot.open.amber{background:#E8B062;color:#123}
 html.ux2-qa .search{display:flex;gap:6px;align-items:center}html.ux2-qa .search input{flex:1 1 220px;width:auto;min-width:0}.ux2qa{display:flex;gap:5px;flex:none}.ux2qa button{border:0;border-radius:10px;padding:9px 11px;background:#fff;color:#1F4F45;font-weight:800;font-size:13.5px;white-space:nowrap;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15)}.ux2qa button b{margin-left:4px;padding:0 6px;border-radius:9px;background:#E2574C;color:#fff;font-size:11.5px}.ux2qa button b:empty{display:none}.ux2qa button:active{transform:scale(.96)}
@@ -1379,7 +1401,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.556';</script>
-<script src="readnow-webapp.js?v=1.78.556"></script>
+<script>const APP_VER = '1.78.559';</script>
+<script src="readnow-webapp.js?v=1.78.559"></script>
 </body>
 </html>
