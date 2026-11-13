@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "spare2 셋째 판 — 배정표 줄 쓴 양 부풂 고침",
+ "since": "2026-11-13T06:47:56Z",
+ "beat": "2026-11-13T06:47:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "ship1 웹앱 1.78.581·수집기 1.89.318·클라우드 0.35.221 (248fd7b1)",
   "at": "2026-11-13T06:47:49Z"
  },
- "host": null
+ "host": "wk-spare2"
 }
