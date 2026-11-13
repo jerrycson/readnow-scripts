@@ -45,7 +45,7 @@ for (const [nm, F] of [['웹앱', mk(blkA)], ['수집기', mk(blkC.replace(/^ {4
   ok(F.y24RePatch(doc(), busy, 'HOME', T0, 0).retryAt === new Date(T0).toISOString(), `${nm}: gap 0이면 바로(한 번짜리 되돌림)`); }
 
 console.log('② 한 번짜리 — 걸린 두 건');
-{ const m = A.match(/const Y24_RE1113_END = [^\n]*\nfunction y24Re1113Pick[\s\S]*?\n    if \(y24ReOf\(d, res\)\) out\.push\(\{ d, res \}\); \} return out; \}\n/); ok(!!m, 'y24Re1113Pick 있음');
+{ const m = A.match(/const Y24_RE1113_END = [^\n]*\nfunction y24Re1113Pick[\s\S]*?\n    if \(y24ReOf\([^\n]*?out\.push\(\{ d, res \}\); \} return out; \}[^\n]*\n/); ok(!!m, 'y24Re1113Pick 있음');
   const P = new Function(blkA + (m ? m[0] : '') + '; return { y24Re1113Pick, Y24_RE1113_END };')();
   ok(P.Y24_RE1113_END === Date.parse('2026-11-16T00:00:00+09:00'), '11/16 0시 뒤엔 돌지 않음(한 번짜리)');
   const busyRes = { state: 'fail', pre: true, msg: '처음 한 건을 확인하는 중 — 그 결과를 본 뒤 이어 맡김(첫 실행은 1건 확인 뒤)' };
