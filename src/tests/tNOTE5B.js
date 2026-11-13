@@ -57,7 +57,7 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
     ok(G('slot_1').draft === '펼친 칸에 쓰는 글', '② 쓰던 글은 서버 저장1 칸에 저장됨');
     // ④⑤ 내 메모
     await a.tap('.jbn-tabs [data-tab="mine"]'); await a.waitForTimeout(400);
-    ok((await a.$$('.jbn-mi[data-open="0"]')).length === 2 && !(await a.$('.jbn-mi .tx')), '⑤ 내 메모 카드는 처음에 접혀 있음(제목 줄만)');
+    ok((await a.$$('.jbn-mi[data-fold="0"]')).length === 2 && !(await a.$('.jbn-mi .tx')), '⑤ 내 메모 카드는 처음에 접혀 있음(제목 줄만)');
     await a.tap('[data-mine="j1"] [data-act="mtoggle"]'); await a.waitForTimeout(300);
     ok(await a.evaluate(() => /둘째 줄 본문/.test((document.querySelector('[data-mine="j1"] .tx') || {}).textContent || '')), '⑤ 제목 줄을 누르면 펼침');
     // ④ 새 메모 칸에 손(포커스)이 남은 채 [✏ 고치기] — 휴대폰 사파리처럼 단추가 포커스를 가져가지 않는 경우를 흉내
@@ -87,7 +87,7 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
     // ⑥ 설정
     await a.tap('[data-act="cfg"]'); await a.waitForTimeout(300);
     await a.tap('[data-cfg="uiMineOpen"][data-v="1"]'); await a.waitForTimeout(900);
-    ok(G('_meta').uiMineOpen === true && (await a.$$('.jbn-mi[data-open="1"]')).length === 2, '⑥ 설정 「내 메모 처음 모양 = 펼침」 → 저장 · 바로 모두 펼침');
+    ok(G('_meta').uiMineOpen === true && (await a.$$('.jbn-mi[data-fold="1"]')).length === 2, '⑥ 설정 「내 메모 처음 모양 = 펼침」 → 저장 · 바로 모두 펼침');
     await a.tap('[data-cfg="uiDockH"][data-v="70"]'); await a.waitForTimeout(700);
     await a.tap('[data-cfg="uiSlotSz"][data-v="m"]'); await a.waitForTimeout(900);
     ok(G('_meta').uiDockH === 70 && G('_meta').uiSlotSz === 'm', '⑥ 설정 「펼침 높이 70%」·「단추 보통」 저장');
