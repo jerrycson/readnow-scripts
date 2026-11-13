@@ -36,7 +36,25 @@ function norm(b) {
   r.tail = (Array.isArray(b.tail) ? b.tail : []).slice(-60).map(mask);
   return { r };
 }
-function makeCbuild({ C, log }) {
+function makeCbuild({ C, log, gToken }) {
+  /* (cbuild 둘째) 구글에서 바로 읽기 — 빌드 끝 보고가 못 온 때(시작도 못 함·시간 넘김·보고 단계 실패)를 위해, 이 클라우드의 실행 계정으로
+   *  Cloud Build 목록(서울)과 그 빌드의 Cloud Logging 줄을 직접 읽음(읽기만) · cbuild=api(최근 8개) · cbuild=log&id=<빌드 번호>(로그 마지막 줄) */
+  const PJ = 'readnow-3a385', RG = 'asia-northeast3';
+  async function gj(url, opt) { const r = await fetch(url, { ...(opt || {}), headers: { Authorization: 'Bearer ' + (await gToken()), 'Content-Type': 'application/json' } }); const t = await r.text(); if (!r.ok) return { err: 'HTTP ' + r.status + ' ' + mask(t).slice(0, 300) }; try { return JSON.parse(t); } catch (e) { return { err: 'JSON 아님' }; } }
+  async function apiList(n) {
+    const j = await gj(`https://cloudbuild.googleapis.com/v1/projects/${PJ}/locations/${RG}/builds?pageSize=${Math.max(1, Math.min(20, +n || 8))}`); if (j.err) return j;
+    return (j.builds || []).map((b) => ({ id: b.id, st: b.status, create: b.createTime, start: b.startTime || null, finish: b.finishTime || null, tags: b.tags || [], sa: String(b.serviceAccount || '').split('/').pop(), trig: b.buildTriggerId || null,
+      sub: Object.fromEntries(Object.entries(b.substitutions || {}).filter(([k]) => /^(_VIA|_RN_TEST|_RN_DRY|_RN_FAIL_AT|COMMIT_SHA|_SHA)$/.test(k)).map(([k, v]) => [k, String(v).slice(0, 12)])),
+      fail: b.failureInfo ? mask(b.failureInfo.type + ' ' + (b.failureInfo.detail || '')).slice(0, 300) : null, msg: b.statusDetail ? mask(b.statusDetail).slice(0, 300) : null,
+      steps: (b.steps || []).map((x) => ({ id: x.id, st: x.status, sec: x.timing && x.timing.startTime && x.timing.endTime ? Math.round((Date.parse(x.timing.endTime) - Date.parse(x.timing.startTime)) / 1000) : null })) }));
+  }
+  async function apiLog(id, n) {
+    if (!/^[0-9a-f-]{20,64}$/.test(String(id || ''))) return { err: '빌드 번호(id) 모양' };
+    const j = await gj('https://logging.googleapis.com/v2/entries:list', { method: 'POST', body: JSON.stringify({ resourceNames: ['projects/' + PJ], filter: `resource.type="build" AND resource.labels.build_id="${id}"`, orderBy: 'timestamp desc', pageSize: Math.max(10, Math.min(300, +n || 120)) }) });
+    if (j.err) return j;
+    const L = (j.entries || []).map((e) => { const t = e.textPayload || (e.jsonPayload && (e.jsonPayload.message || JSON.stringify(e.jsonPayload))) || ''; return mask((e.labels && e.labels.build_step ? '[' + e.labels.build_step + '] ' : '') + t); }).reverse();
+    return { id, n: L.length, more: !!j.nextPageToken, rows: L };
+  }
   async function put(b, who) {
     const x = norm(b); if (x.bad) return { ok: false, err: x.bad };
     const r = x.r; const now = new Date().toISOString();
@@ -57,6 +75,8 @@ function makeCbuild({ C, log }) {
   /* 진단 cbuild=1(최근 요약 + 마지막 빌드 전체) · cbuild=<빌드 번호>(그 빌드 전체) */
   async function diag(q) {
     const v = String(q.cbuild || '1'); const out = {};
+    if (v === 'api') { try { out.api = await apiList(q.n); } catch (e) { out.api = { err: e.message }; } return out; }
+    if (v === 'log') { try { out.log = await apiLog(q.id, q.n); } catch (e) { out.log = { err: e.message }; } return out; }
     const d = (await C('app_settings').doc('cloudbuild_last').get()).data() || {};
     const now = Date.now();
     out.list = (d.list || []).map((x) => ({ ...x, noEnd: !x.endAt && x.startAt && now - Date.parse(x.startAt) > 40 * 6e4 ? true : undefined }));

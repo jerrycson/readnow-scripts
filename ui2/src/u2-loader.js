@@ -9,6 +9,10 @@
   const U2 = (window.U2 = window.U2 || {});
   const L = (U2.legacy = { ready: false, shellDone: false, lastTab: null, tabMounted: 0, cards: new Set(), errs: [], appVer: null });
   const SKIP = [/webmanifest/]; /* 빼는 틀 안 스크립트: 휴대폰 설치 파일 고르기(새 웹앱은 자기 설치 파일) */
+  /* (0.4.15 rv4 · 지금 웹앱 1.78.559 priv1 따라 들임) 옛 주소(jerrycson.github.io)에서 열린 리드나우 2 안에서는 지금 웹앱의 '🚚 웹앱 주소가 readnow.kr/app/로' 노란 띠를 빼고
+   *  리드나우 2 자기 띠(u2-move.js M.addrBar — 새 주소 readnow.kr/ui2/로 · 같은 짐 넘기기 약속)를 씀 — 지금 웹앱 띠를 누르면 리드나우 2가 아닌 지금 웹앱 새 주소로 가 버림
+   *  새 주소(readnow.kr)에서는 그대로 돌림(그 틀 안 '짐 받기' 쪽이 리드나우 2 새 주소에서도 짐을 받음) */
+  const skipT = (t) => SKIP.some((re) => re.test(t)) || (/rn-move-bar/.test(t) && /rn-move-ready/.test(t) && location.origin === 'https://jerrycson.github.io');
   const loadScript = (src, text) => new Promise((res, rej) => {
     const s = document.createElement('script');
     if (text != null) { s.textContent = text; document.body.appendChild(s); return res(); }
@@ -33,7 +37,7 @@
     try {
       for (const s of scripts) {
         const src = s.getAttribute('src');
-        if (!src) { const t = s.textContent || ''; if (SKIP.some((re) => re.test(t))) continue; await loadScript(null, t); continue; }
+        if (!src) { const t = s.textContent || ''; if (skipT(t)) continue; await loadScript(null, t); continue; }
         const url = new URL(src, base).href; const isBody = /readnow-webapp\.js/.test(src);
         if (isBody) {
           if (!(U2.guard && U2.guard.install())) throw new Error('쓰기 막이를 걸 수 없음(Firebase 모양이 다름) — 안전하게 본문을 불러오지 않음');

@@ -210,6 +210,7 @@
     const pg = U2.cur && U2.effective(U2.cur); U2.$('#u2-mine').hidden = !(pg && pg._mine);
     if (U2.find) U2.find.bindBar(bar); /* ⚡ 빠른 작업 · 🔎 어디서나 찾기(u2-find.js · 0.4.5) */
     if (U2.pilotBar) U2.pilotBar(); /* 맨 위 시범 띠 + ✅ 체크리스트 열기(u2-check.js) */
+    if (U2.move && U2.move.addrBar) U2.move.addrBar(); /* (0.4.15) 옛 주소면 맨 위 🚚 새 주소(readnow.kr/ui2/)로 띠(u2-move.js) */
   };
   U2.banner = (id, html, tone) => { let b = document.getElementById(id); if (!html) { if (b) b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = id; b.className = 'u2-banner ' + (tone || ''); U2.$('#u2-banners').appendChild(b); } b.innerHTML = html; return b; };
 

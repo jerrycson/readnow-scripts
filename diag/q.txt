@@ -1,2 +1,2 @@
-@kpin kpin/20261113-061437-17767.json
-# 2167027699
+run=1&egress=1&doc=app_settings/cloud_jobs
+# 45515199

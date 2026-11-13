@@ -38,6 +38,11 @@
     /* (0.4.13 · 지금 웹앱 1.78.512·1.78.504 따라 들임) 🔁 사후 확인 · 🔍 실사 목록 — 지금 웹앱 셈(rcBad · ledAuditNow) 그대로 */
     ['사후확인.어긋남', '🔁 사후 확인 — 재고 자동 처리 뒤 다시 확인했더니 어긋난 일(확인함 전 · 지금 웹앱 rcBad)', () => (typeof rcBad === 'function' ? rcBad().length : null)],
     ['실사.수', '🔍 실사 목록 — 주문 없이 알라딘 수량이 SKU보다 많은 실물(지금 웹앱 ledAuditNow · 상품 기록을 받은 뒤)', () => { const s = S0(); if (!s || !s.prodLoaded || typeof ledAuditNow !== 'function') return null; return ledAuditNow().length; }],
+    /* (0.4.15 · 지금 웹앱 1.78.499·501·562~567 따라 들임) 📥 맡긴 일 줄(공용 · 예스24·네이버) — 지금 웹앱 맡긴 일 줄 셈 그대로(U2.omni.pend) */
+    ['맡긴일.기다림', '📥 맡긴 일 줄 — 판매처에 아직 못 보내 공용 줄에서 기다리는 쓰기(예스24 줄 수 + 네이버 맡김 수 · 맡은 PC가 받기 기다림 포함)', () => { const P = U2.omni && U2.omni.pend(); return P ? P.wait : null; }],
+    ['맡긴일.예스24', '📥 맡긴 일 줄 중 🟦 예스24(기다림 + 맡은 PC가 받기 기다림 · 줄 수)', () => { const P = U2.omni && U2.omni.pend(); return P ? P.yes24.hold + P.yes24.new : null; }],
+    ['맡긴일.네이버', '📥 맡긴 일 줄 중 🟩 네이버(기다림 + 로거가 받기 기다림 · 맡김 수)', () => { const P = U2.omni && U2.omni.pend(); return P ? P.naver.hold + P.naver.new : null; }],
+    ['맡긴일.만료', '📥 맡긴 일 줄 ⏸ 만료 — 시한이 지나 사람 확인이 필요한 맡김', () => { const P = U2.omni && U2.omni.pend(); return P ? P.exp : null; }],
     ['계약.깨짐', '지금 불러온 판에서 깨진 계약 수', () => (U2.adapters && U2.adapters.bad ? U2.adapters.bad.length : null)],
   ];
   const D = (U2.data = { ALIAS: AL, alias: new Map(AL.map((a) => [a[0], a])) });

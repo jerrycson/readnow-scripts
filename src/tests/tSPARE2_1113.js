@@ -99,6 +99,10 @@ console.log('⑦ 수집기 글자 떼어 돌림 · 기록·신호');
   ok(T('bench') === 'main', '벤치마킹 한 바퀴 줄: 하루 주요 몫을 다 쓰기 전엔 하루 몫'); B.ovOn = true; ok(T('bench') === 'sm', '하루 주요 몫을 다 쓴 뒤 넘친 바이트 = 여분');
   pc.act = 'p1'; ok(T('benchDetail') === 'main', '휴대폰 1(고정 여분 없음) + 쌓인 남은 양 2GB → 꼬리표 없이(쌓인 양으로 셈 · net.boxUse)');
   pc.phones[0].carryLeft = 0; ok(T('benchDetail') === 'main', '여분 없는 휴대폰이면 하루 몫');
+  { const a0 = C.indexOf('const SP2K = '); const a1 = C.indexOf('const budLeft = (k)', a0); const src = C.slice(a0, C.indexOf('\n', C.indexOf('const sp2Bytes = ', a0)) + 1); let store = { d: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), rc: { sellerRe: 1000 }, pu: {}, tc: 1000, la: {} }; /* 1.89.315 저장 꼴(tb0 없음) */
+    const f = new Function('GM_getValue', 'GM_setValue', 'tierOfKey', 'spT', 'BUD', 'setTimeout', src + '; return { sp2Bytes, sp2Add, set: (c) => { SP2CUR = c; } };')((k, d) => store || d, (k, v) => { store = JSON.parse(JSON.stringify(v)); }, () => 'gen', (t) => t, null, () => 0);
+    const H0 = { today: { key: store.d, tether: 9.6 * G } }; const y0 = f.sp2Bytes(H0); ok(!y0.use.sellerRe && store.tb0 === 9.6 * G, '하루 중간에 세기 시작: 그때까지 바이트(9.6GB)는 줄 쓴 양에 넣지 않음(1.89.315 부풂 고침)', y0.use);
+    f.set({ r: 'sellerRe', ph: 'p2', fx: true, t: 'gen' }); f.sp2Add(3000); f.set(null); f.sp2Add(1000); const y1 = f.sp2Bytes({ today: { key: store.d, tether: 9.6 * G + 40 * 1048576 } }); ok(Math.abs(y1.use.sellerRe - 30 * 1048576) < 1048576, '그 뒤 바이트 40MB를 글자 비율(3:1)로 → 판매자 다시 읽기 30MB', Math.round(y1.use.sellerRe / 1048576)); }
   const j0 = C.indexOf('const budLeft = (k) => { const n = budLeft0(k);'); const j1 = C.indexOf('const budLeft0 = ', j0); ok(j0 > 0 && j1 > j0, 'budLeft 찾음');
   const bl = new Function('BUD', 'budLeft0', 'isBenchKey', C.slice(j0, j1) + '; return budLeft;'); const isB = (k) => /^bench/.test(k);
   pc.act = 'p2'; const B2 = { alloc: A, pool: pc, benchOwe: false }; const L = bl(B2, () => 0, isB);
@@ -110,6 +114,7 @@ console.log('⑦ 수집기 글자 떼어 돌림 · 기록·신호');
   ok(/if \(sp && !sp\.later && !\(b\.alloc && b\.alloc\.on\)\) \{/.test(C), '배정표가 켜지면 예전 여분 칸(일반 일 모두에 여분을 엶)은 쓰지 않음 — 아무 데나 쓰지 않음');
   ok(/const open = PCx\.nLeft <= 1 \|\| \(PCx\.nLeft <= 3 && kd\.getUTCHours\(\) >= 18\);/.test(C) && /act\[r\.id\] = r\.ov \? !!b\.benchMust :/.test(C), '달 끝 모두 엶 · 넘침 줄은 한 바퀴 중에만 일함');
   ok(/pc\.ovCap = ovR \? \(ovR\.on \? ovR\.left : 0\) : null; const caps = AS\.poolCaps\(pc, \{ must: !!b\.benchMust, keep: \+poolTick\._keep \|\| 0 \}\);/.test(C), '도우미 문에 넘침 줄 남은 양(ovCap)');
+  ok(/BUD\.left\.gen > 0 \|\| allocLeft\(\)\)\);/.test(C) && /const allocLeft = \(\) => \{ try \{ const A = BUD && BUD\.alloc; return !!\(A && A\.on && !BUD\.benchOwe && A\.rows\.some\(\(r\) => !r\.ov && r\.on && r\.jobs\.some\(\(j\) => budLeft\(j\) > 0\)\)\);/.test(C), '하루 몫을 다 써도 배정표 줄에 여분이 남으면 테더링 남음(쉴 때 일이 여분 일을 고름 — 첫 판에서 빠졌던 것)');
   ok(/BUD\.alloc\.rows\.filter\(\(r\) => !r\.ov && r\.left > 0 && r\.jobs\.some/.test(C), '쉴 때 일 차례 = 배정표 차례(여분 남은 줄의 상품 페이지 정보·이어 읽기)');
   ok(/🎁 여분 씀 시작 — \$\{b\.spareOn\.l\}\(배정표/.test(C) && /🎁 여분 씀 끝 — 오늘 쓴 여분 \$\{spG\(BX\.usedT\)\}GB · 여분 통 남은/.test(C) && /X\.st = new Date\(\)\.toISOString\(\); else X\.en = /.test(C), '기록: 🎁 여분 씀 시작/끝(무슨 일 · 여분 통 남은 · 오늘 쓴) · 시작/끝 시각 저장');
   ok(/o\.bxT = Math\.round\(BX\.total\); o\.bxL = Math\.round\(BX\.left\); o\.bxU = Math\.round\(BX\.usedT\);/.test(C) && /o\['r' \+ L \+ 'n'\] = String\(r\.l\)\.slice\(0, 24\)/.test(C) && /o\.bxSt = hm\(X\.st\); o\.bxEn = hm\(X\.en\); o\.bxNow =/.test(C), '도우미 알림(/bud): 여분 통 총량·남은·오늘 쓴·배정표 줄·시작/끝·지금 일');

@@ -36,8 +36,22 @@
     /* (0.4.13 · 지금 웹앱 1.78.512 🔁 사후 확인 · 1.78.504 🔍 실사 목록 따라 들임) 지금 웹앱 셈 그대로 — 없는 판이면 null(줄을 숨김) */
     out.rc = T0(() => (typeof rcBad === 'function' ? rcBad() : null), null);
     out.aud = out.loaded ? T0(() => (typeof ledAuditNow === 'function' ? ledAuditNow() : null), null) : null;
+    out.pend = O.pend(); /* (0.4.15) 📥 맡긴 일 줄(공용) — 예스24·네이버 */
     return out;
   };
+  /* (0.4.15 rv4 · 지금 웹앱 1.78.499·501 📥 맡긴 일의 규칙 + 1.78.562~567 🟦 예스24 쓰기 되돌림·기다림 따라 들임) 📥 맡긴 일 줄(Firebase 공용 줄) 숫자 — 판매처별
+   *  지금 웹앱 셈(ledY24PendCard·ledNvPendCard와 같은 셈: 예스24 = 맡김 안 줄 수 · 네이버 = 맡김 수 · st hold 기다림 / new 맡은 PC가 받기 기다림 / expired ⏸ 만료 — 사람 확인)
+   *  읽기만: 지금 웹앱 y24PLoad·nvPLoad(읽기 질의 · 그 함수가 20초 안엔 다시 읽지 않음) — 상황판이 보일 때 60초에 한 번만 부름 · 바뀌면 다시 그림 · 없는 판이면 null(칩 숨김) */
+  const PEND_MS = 60e3; let pendAt = 0;
+  O.pendCnt = (L, rows) => { const c = { hold: 0, new: 0, expired: 0 }; for (const d of L || []) { if (!d || !(d.st in c)) continue; c[d.st] += rows ? (((d.job || {}).rows || []).length || 0) : 1; } return c; };
+  O.pend = () => T0(() => {
+    const y = typeof S !== 'undefined' && S.y24p && typeof y24PLoad === 'function' ? S.y24p : null; const v = typeof S !== 'undefined' && S.nvp && typeof nvPLoad === 'function' ? S.nvp : null;
+    if (!y && !v) return null;
+    if (Date.now() - pendAt > PEND_MS && !document.hidden) { pendAt = Date.now(); const sg = () => JSON.stringify([O.pendCnt(y && y.L, 1), O.pendCnt(v && v.L, 0)]); const s0 = sg();
+      Promise.all([y ? y24PLoad() : null, v ? nvPLoad() : null]).then(() => { if (sg() !== s0 && U2.data) U2.data.bump(); }).catch(() => {}); }
+    const Y = O.pendCnt(y && y.L, 1), N = O.pendCnt(v && v.L, 0);
+    return { yes24: Y, naver: N, wait: Y.hold + Y.new + N.hold + N.new, exp: Y.expired + N.expired };
+  }, null);
   const LEFT = ['confirm', 'deliv', 'printed', 'sending'];
   O.line = (X, c) => {
     const chs = (X.V && X.V.chs) || []; const cf = chs.find((z) => z.k === c.k) || {}; const sm = (X.V && X.V.sum && X.V.sum[c.k]) || null;
@@ -77,7 +91,7 @@
       /* (0.4.13) 아래 한 줄 — 🔁 사후 확인 어긋남(재고 자동 처리 뒤 다시 읽었더니 판매처가 실물과 다름) · 🔍 실사 목록 · 판매처별 숫자 · 누르면 지금 웹앱 🧾 통합 장부 그 보기 */
       const nRc = X.rc ? X.rc.length : null, nAud = X.aud ? X.aud.length : null;
       const byCh = rows.filter((r) => r.after).map((r) => `${esc(r.ic)}${n0(r.after)}`).join(' ');
-      const foot = X.ok && (nRc != null || nAud != null) ? `<div class="u2-row u2-cbf">${nRc != null ? `<button type="button" class="u2-chip ${nRc ? 'u2-hot' : ''}" data-cb="rc" title="재고 자동 처리(자동 내림·밀린 일·재고 맞추기·처리할 일 맡기기) 뒤 다음 날·3·7·30일에 판매처를 다시 읽었더니 수량·판매상태가 실물과 다른 것(확인함 전) — 이중 판매·묻힌 책 막기 · 🧾 통합 장부 › 🔁 사후 확인">🔁 사후 확인 어긋남 <b>${n0(nRc)}</b>${byCh ? ` <small>${byCh}</small>` : ''}</button>` : ''}${nAud != null ? `<button type="button" class="u2-chip ${nAud ? 'u2-hot' : ''}" data-cb="aud" title="주문 없이 알라딘 개별 상품 수량이 우리 SKU 수보다 많은 실물 — 실사로만 알 수 있어 엔진이 알라딘을 내리지 않음 · 🧾 통합 장부 › 🔍 실사 목록">🔍 실사 필요 <b>${n0(nAud)}</b></button>` : ''}</div>` : '';
+      const foot = X.ok && (nRc != null || nAud != null || X.pend) ? `<div class="u2-row u2-cbf">${nRc != null ? `<button type="button" class="u2-chip ${nRc ? 'u2-hot' : ''}" data-cb="rc" title="재고 자동 처리(자동 내림·밀린 일·재고 맞추기·처리할 일 맡기기) 뒤 다음 날·3·7·30일에 판매처를 다시 읽었더니 수량·판매상태가 실물과 다른 것(확인함 전) — 이중 판매·묻힌 책 막기 · 🧾 통합 장부 › 🔁 사후 확인">🔁 사후 확인 어긋남 <b>${n0(nRc)}</b>${byCh ? ` <small>${byCh}</small>` : ''}</button>` : ''}${nAud != null ? `<button type="button" class="u2-chip ${nAud ? 'u2-hot' : ''}" data-cb="aud" title="주문 없이 알라딘 개별 상품 수량이 우리 SKU 수보다 많은 실물 — 실사로만 알 수 있어 엔진이 알라딘을 내리지 않음 · 🧾 통합 장부 › 🔍 실사 목록">🔍 실사 필요 <b>${n0(nAud)}</b></button>` : ''}${X.pend ? `<button type="button" class="u2-chip ${X.pend.exp ? 'u2-hot' : ''}" data-cb="pend" title="📥 맡긴 일 줄(공용) — 판매처에 바로 보내지 못해 Firebase 공용 줄에 남은 쓰기(재고 내림·판매중지·수량·판매재개·가격 등) · 창을 닫아도 남고 다른 기기에서도 보임 · 보내기 직전 다시 셈 · ⏸ 만료는 사람 확인 필요 · 🧾 통합 장부 › 🛠 처리할 일 맨 위 줄">📥 맡긴 일 줄 <b>${n0(X.pend.wait)}</b>${X.pend.wait ? ` <small>${[['🟦', X.pend.yes24], ['🟩', X.pend.naver]].filter(([, c]) => c.hold + c.new).map(([ic, c]) => ic + n0(c.hold + c.new)).join(' ')}</small>` : ''}${X.pend.exp ? ` · <b>⏸ 만료 ${n0(X.pend.exp)}</b>` : ''}</button>` : ''}</div>` : '';
       const note = !X.ok ? '지금 웹앱을 불러오지 못해 숫자를 볼 수 없음 — 판매처 칸은 지금 웹앱이 서면 채워짐' : !X.loaded ? '상품 기록을 받는 중 — 판매중·어긋남 숫자는 받은 뒤 채워짐(칸을 누르면 그 화면이 열리고 받기 시작)' : X.err ? '⚠ ' + X.err : '';
       b.innerHTML = `<div class="u2-cb"><div class="u2-cbh"><b>🛒 판매처 상황판</b> <span class="u2-sub">처리할 것</span> <span class="u2-sbn ${tot ? 'u2-t-red' : 'u2-t-cloth'}">${X.ok ? n0(tot) : '—'}</span><button type="button" class="u2-btn u2-cbled" data-cb="all" ${X.ok ? '' : 'disabled'} title="모든 판매처 실물 한 권 = 한 줄">🧾 통합 장부 ›</button></div>
         <div class="u2-cbt" role="table" aria-label="판매처 상황판">${rows.map((r) => `<div class="u2-cbr ${r.on || r.has ? '' : 'u2-cboff'}" role="row" data-ch="${r.c.k}">
@@ -89,7 +103,7 @@
           ${all ? cell('ord30', r.ord30, '30일 주문', false, r.name + ' 최근 30일 주문 수' + (r.amt ? ' · ' + won(r.amt) : '')) : ''}</div>`).join('')}</div>
         ${foot}${note ? `<div class="u2-sub u2-cbnote">${esc(note)}</div>` : ''}</div>`;
       b.querySelectorAll('[data-cb]').forEach((x) => (x.onclick = () => { if (ctx.edit) return; const r = x.closest('[data-ch]'); const ck = r ? r.dataset.ch : ''; const k = x.dataset.cb;
-        if (k === 'rc' || k === 'aud') return O.ledger(k);
+        if (k === 'rc' || k === 'aud') return O.ledger(k); if (k === 'pend') return O.ledger('todo');
         if (k === 'all') return O.go('all'); if (k === 'ship') return O.go('ship', ck); if (k === 'ord' || k === 'ord30') return O.go('ord', ck); if (k === 'todo') return O.go('todo'); return O.go('ch', ck); }));
       return { dyn: true };
     } });

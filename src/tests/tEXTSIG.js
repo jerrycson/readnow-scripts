@@ -80,7 +80,7 @@ const ebayJson = (total, fb, items) => JSON.stringify({ total, itemSummaries: it
   ok(X.sameSig('joongmo', null, 'x') === '' && X.sameSig('joongmo', { sig: 'y' }, 'x') === '', '받아 둔 값 없음·옛 값(d) 없음 → 바뀜/새로');
 
   console.log('▶ ④ 수집기 extSave(진짜 코드) + 가짜 Firestore');
-  const a0 = csrc.indexOf('  const extBytes = '); const a1 = csrc.indexOf("return prev ? 'changed' : 'new'; }", a0); ok(a0 > 0 && a1 > a0, '수집기에서 extSave 덩어리를 찾음'); const CODE = csrc.slice(a0, a1 + "return prev ? 'changed' : 'new'; }".length);
+  const a0 = csrc.indexOf('  const extBytes = '); const a1 = csrc.indexOf("? 'fmt' : 'changed') : 'new'; }", a0); ok(a0 > 0 && a1 > a0, '수집기에서 extSave 덩어리를 찾음'); const CODE = csrc.slice(a0, a1 + "? 'fmt' : 'changed') : 'new'; }".length);
   const DB = {}; const DEL = { __del: 1 }; const setPath = (o, p, v) => { const ks = p.split('.'); let x = o; for (let i = 0; i < ks.length - 1; i++) x = x[ks[i]] = x[ks[i]] || {}; if (v === DEL) delete x[ks[ks.length - 1]]; else x[ks[ks.length - 1]] = v; };
   const C = (col) => ({ doc: (id) => ({ get: async () => { const v = (DB[col] || {})[id]; return { exists: !!v, data: () => clone(v) }; }, set: async (v) => { DB[col] = DB[col] || {}; DB[col][id] = { ...(DB[col][id] || {}), ...clone(v) }; }, update: async (u) => { const v = DB[col][id]; for (const [k, val] of Object.entries(u)) setPath(v, k, val === DEL ? DEL : clone(val)); } }) });
   let tick = 0; const env = { C, nowIso: () => `2026-11-06T0${++tick % 10}:00:00.000Z`, PC_NAME: 'LOGGER', TS: () => 'ts', W: () => ({}), firebase: { firestore: { FieldValue: { delete: () => DEL } } }, EXT: () => X, log: () => {}, extKst: () => '2026-11-06' };
