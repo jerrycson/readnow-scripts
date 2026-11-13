@@ -1,2 +1,2 @@
-doc=prd_system/autoSched
-# 278442632
+doc=app_settings/col2_handoff&recentUp=ext_basic&mins=25&logs=1&pc=HOME&from=202611131450
+# 418516666
