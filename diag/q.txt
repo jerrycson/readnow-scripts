@@ -1,2 +1,4 @@
-doc=app_settings/cons_study
-# 650416066
+shplog=1&n=15
+logs=1&pc=MJ-MAIN&from=202611131516
+doc=app_settings/platforms
+# 250853760
