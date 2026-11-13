@@ -124,3 +124,21 @@ label.f.good input { border-color: #2f7d4f; }
 .bki { border: 1px solid var(--line, #e3e3e3); border-radius: 10px; margin: 6px 0; background: var(--card, #fff); } .bki > summary { cursor: pointer; padding: 10px 12px; font-weight: 600; list-style: none; } .bki > summary::-webkit-details-marker { display: none; } .bki > summary::after { content: '＋'; float: right; opacity: .5; } .bki[open] > summary::after { content: '－'; }
 .bkt { padding: 0 14px 12px; font-size: 14.5px; line-height: 1.7; white-space: normal; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; }
 .bkpv { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 12px; scroll-snap-type: x mandatory; } .bkpv img { height: 260px; width: auto; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.18); scroll-snap-align: start; }
+/* (shop2 · 정범님 11/13) 🗂 종류·분류 고르기 — 위 길(전체 › 국내도서 › 소설/시/희곡) + 아래 칸 칩(휴대폰은 한 줄 가로 밀기 · 넓은 화면은 여러 줄) */
+.cnav { margin: 10px 0 8px; } .cnav:empty { display: none; }
+.cn-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 14.5px; line-height: 1.4; margin-bottom: 8px; }
+.cn-crumb a { color: var(--navy); text-decoration: none; padding: 6px 2px; } .cn-crumb a:hover { text-decoration: underline; } .cn-crumb i { font-style: normal; color: var(--mut); } .cn-crumb b { font-size: 16px; } .cn-crumb small { color: var(--mut); }
+.cn-kids { display: flex; gap: 6px; flex-wrap: wrap; } .cn-kids .chip { min-height: 40px; }
+.cn-end { font-size: 13px; color: var(--mut); }
+.chips.kinds .chip { min-height: 42px; font-weight: 700; }
+@media (max-width: 640px) {
+  .cn-kids { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 4px; -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); }
+  .cn-kids::-webkit-scrollbar { display: none; } .cn-kids .chip { flex: 0 0 auto; white-space: nowrap; } .cn-kids::after { content: ""; flex: 0 0 24px; }
+  .chips.kinds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 4px; } .chips.kinds::-webkit-scrollbar { display: none; } .chips.kinds .chip { flex: 0 0 auto; white-space: nowrap; }
+}
+/* (shop2) 휴대폰 목록 거르기 — 등급·정렬·할인·값 범위를 한 줄로 모아 옆으로 밀기(세 줄 → 한 줄 · 무신사·쿠팡 목록 거름 줄처럼) */
+@media (max-width: 640px) {
+  .flw { display: flex; gap: 6px; align-items: center; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; margin: 4px -16px 8px; padding: 2px 16px 4px; }
+  .flw::-webkit-scrollbar { display: none; } .flw .fl { display: contents; } .flw .chips { flex-wrap: nowrap; display: contents; } .flw .chip { flex: 0 0 auto; white-space: nowrap; min-height: 40px; }
+  .flw select { flex: 0 0 auto; height: 40px; max-width: 170px; } .flw::after { content: ""; flex: 0 0 16px; }
+}

@@ -30,17 +30,39 @@ console.log('① 순수 셈');
     '새 설정 칸 11개가 설정 틀에 있음(관리 웹앱 📚 서가 책장 설정이 그대로 그림) · 휴대폰 책 누름 기본 = 아래 창(지금 동작)');
   for (const f of ['shop/shelf.js', 'shop/shelf-core.js']) { const x = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(x), f + ': 브라우저 창 없음'); }
   const s = fs.readFileSync(path.join(ROOT, 'shop/shop.js'), 'utf8'); ok(/shelf-core\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.js\?v=0\.2\.(8|9)/.test(s) && /shelf\.css\?v=0\.2\.(8|9)/.test(s), '우리숍: 서가 0.2.8 판 맞춤'); }
+console.log('①-2 종류·분류(정범님 11/13 19:42)');
+{ const K = (p, sku) => { const r = SH.kindPath({ categories: [{ path: p }] }, sku); return r.k + (r.rest.length ? ':' + r.rest.join('/') : ''); };
+  const C = [['온라인 중고샵>중고국내도서>소설/시/희곡>세계의 소설>중동/튀르키예소설', '국내도서:소설/시/희곡/세계의 소설/중동/튀르키예소설'], ['외국도서>ELT/어학/사전>워크북', '외국도서:ELT/어학/사전/워크북'], ['온라인 중고샵>중고외국도서>어린이>놀이책', '외국도서:어린이/놀이책'],
+    ['DVD/블루레이>블루레이>드라마/코미디', '블루레이:드라마/코미디'], ['DVD/블루레이>애니메이션', 'DVD:애니메이션'], ['국내도서>잡지>여성/패션', '잡지:여성/패션'], ['외국도서>일본 도서>일본잡지>코믹/게임', '잡지:외국 잡지/일본 도서/코믹/게임'], ['음반>가요>발라드', '음반:가요/발라드'], ['음반>LP>가요', 'LP:가요'], ['소설/시/희곡>한국소설', '국내도서:소설/시/희곡/한국소설']];
+  const got = C.map(([p]) => K(p)); ok(C.every(([, w], i) => got[i] === w) && K('', 'KHKDVD001') === 'DVD' && K('', 'KHKCPD01') === '음반' && K('', 'A01') === '그 밖', `알라딘 경로 → 종류·분류: ${got.slice(0, 7).join(' · ')} … · 경로 없으면 관리 코드(DVD·음반)`);
+  ok(SH.KINDS.join() === '국내도서,외국도서,잡지,음반,LP,DVD,블루레이,그 밖', '종류 8가지: ' + SH.KINDS.join(' · '));
+  const it = [{ id: 'a', cp: '국내도서>소설/시/희곡>한국소설', p: 1000, t: '가', at: '2026-10-01' }, { id: 'b', cp: '국내도서>소설/시/희곡>외국소설', p: 1000, t: '나', at: '2026-10-01' }, { id: 'c', cp: '외국도서>ELT/어학/사전>워크북', p: 1000, t: '다', at: '2026-10-01' }, { id: 'd', cp: '블루레이>드라마/코미디', p: 1000, t: '라', at: '2026-10-01' }, { id: 'e', cp: '잡지>여성/패션', p: 1000, t: '마', at: '2026-10-01' }];
+  const T = SH.catTree(it); const M = new Map(T.tree);
+  ok(T.kinds.map((k) => k.join(' ')).join() === '국내도서 2,외국도서 1,잡지 1,블루레이 1' && M.get('국내도서>소설/시/희곡') === 2 && M.get('국내도서>소설/시/희곡>한국소설') === 1 && !M.has('음반'), `분류 나무(상품 있는 칸만): ${T.tree.length}칸 · 종류 ${T.kinds.map((k) => k.join(' ')).join(' · ')}`);
+  const L1 = SH.listItems(it, { cp: '국내도서>소설/시/희곡' }), L2 = SH.listItems(it, { cp: '국내도서>소설/시/희곡>한국소설' }), L3 = SH.listItems(it, { cp: '블루레이' }), L4 = SH.listItems(it, { cp: '국내도서>소설' });
+  ok(L1.total === 2 && L2.total === 1 && L3.total === 1 && L4.total === 0, `목록 거르기(cp): 소설/시/희곡 ${L1.total} · 한국소설 ${L2.total} · 블루레이 ${L3.total} · 이름 앞부분만 같은 칸은 안 섞임(${L4.total})`);
+  const pi = SH.pubItem('Z1', { status: '판매중', active: true, qty: 1, price: 3000, title: '시험 블루레이', sku: 'A01' }, { categories: [{ path: ['DVD/블루레이', '블루레이', '드라마/코미디'] }] });
+  const pk = SH.pubItem('Z2', { status: '판매중', active: true, qty: 1, price: 3000, title: '시험 책', sku: 'A01' }, { categories: [{ path: '온라인 중고샵>중고국내도서>소설/시/희곡>한국소설' }] });
+  ok(pi.cp === '블루레이>드라마/코미디' && pi.c === '블루레이' && pk.c === '소설/시/희곡' && pk.c2 === '한국소설' && SH.SHELF_COLS.includes('cp'), `공개 요약: 블루레이 c=${pi.c} · 중고국내도서 경로도 c=${pk.c}·c2=${pk.c2}(전엔 '중고국내도서') · 서가 자료 cp 칸`);
+  const c0 = BQS.cfgOf({}); const xs = [...BQS.demoItems(200, 2), ...['외국도서>ELT/어학/사전>워크북', '블루레이>드라마/코미디', 'DVD>애니메이션', '잡지>여성/패션', '음반>가요', 'LP>재즈', '국내도서>소설/시/희곡>세계의 소설>중동/튀르키예소설'].map((cp, i) => ({ id: 'k' + i, t: '종류 ' + i, p: 3000, cp, at: '2026-10-01' }))];
+  const Pc = BQS.plan(xs, c0, 'cat'); const nm = Pc.cases.flatMap((cs) => cs.groups.map((g) => g.name)); const J = BQS.jumps(Pc, c0).map((j) => j.name);
+  const deep = BQS.catOf({ cp: '국내도서>소설/시/희곡>세계의 소설>중동/튀르키예소설' }, true), sh = BQS.catOf({ cp: '국내도서>소설/시/희곡>세계의 소설>중동/튀르키예소설' });
+  ok(['외국도서', '블루레이', 'DVD', '잡지', '음반(CD)', 'LP'].every((k) => nm.includes(k) && J.includes(k)) && deep.b === '소설·시' && deep.s === '세계의 소설 › 중동/튀르키예소설' && sh.s === '세계의 소설' && BQS.catOf({ cp: '블루레이>드라마/코미디' }).s === '드라마/코미디',
+    `서가: 종류 책장(외국도서·잡지·음반(CD)·LP·DVD·블루레이)과 링크 · 표찰 깊이 설정 — 둘째 단계 「${sh.s}」 / 가장 작은 분류까지 「${deep.s}」`); }
 if (!process.env.RN_SHELF_UI) { console.log(bad ? `❌ tSHOP2_1113 ${bad}개 실패` : '✓ tSHOP2_1113 순수 셈 통과 (화면 시험은 RN_SHELF_UI=1)'); process.exit(bad ? 1 : 0); }
 
 console.log('② 화면');
 const SHOT = process.env.RN_SHOT || path.join(os.tmpdir(), 'shop2'); fs.mkdirSync(SHOT, { recursive: true }); const { chromium } = require('playwright');
 const CATS = ['소설/시/희곡', '인문학', '어린이', '경제경영', '역사', '에세이', '예술/대중문화', '과학']; const SUB = { '소설/시/희곡': ['한국소설', '외국소설'], 에세이: ['한국에세이'] };
-const items = BQS.demoItems(900, 6).map((x, i) => ({ ...x, id: 'F' + i, c: CATS[i % 8], c2: SUB[CATS[i % 8]] ? SUB[CATS[i % 8]][i % 2 % SUB[CATS[i % 8]].length] : null, q: i % 40 === 2 ? 3 : 1, im: null, bk: null }));
+const items = BQS.demoItems(900, 6).map((x, i) => ({ ...x, id: 'F' + i, c: CATS[i % 8], c2: SUB[CATS[i % 8]] ? SUB[CATS[i % 8]][i % 2 % SUB[CATS[i % 8]].length] : null, q: i % 40 === 2 ? 3 : 1, im: null, bk: null, cp: i % 10 === 7 ? '외국도서>ELT/어학/사전>워크북' : i % 10 === 8 ? '블루레이>드라마/코미디' : i % 30 === 9 ? '잡지>여성/패션' : null }));
+const PUB = items.map((x) => ({ ...x, cp: x.cp || '국내도서>' + x.c + (x.c2 ? '>' + x.c2 : '') })); const KN = SH.catTree(PUB).kinds;
 const rows = items.map((x) => SH.SHELF_COLS.map((k) => (k === 'st' ? 's' : x[k] == null ? null : x[k])));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 const srv = http.createServer((req, res) => { const u = new URL(req.url, 'http://x'); const J = (o, s) => { res.writeHead(s || 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
-  if (u.pathname === '/shop/cfg') return J({ ok: true, open: 1, name: '북스퀸', n: rows.length, cats: [], pay: { how: 'wait' }, biz: {}, shelf: { cap: 120, sort0: 'cat', fontsOn: false, coverColor: false, edgeSpine: false } });
+  if (u.pathname === '/shop/cfg') return J({ ok: true, open: 1, name: '북스퀸', n: rows.length, cats: [], pay: { how: 'wait' }, biz: {}, kinds: KN, cats: [['소설/시/희곡', 90], ['인문학', 80]], shelf: { cap: 120, sort0: 'cat', fontsOn: false, coverColor: false, edgeSpine: false } });
   if (u.pathname === '/shop/shelf') return J({ ok: true, n: rows.length, k: 0, kn: 1, cols: SH.SHELF_COLS, pre: SH.SHELF_PRE, rows });
+  if (u.pathname === '/shop/cats') { const T = SH.catTree(PUB); return J({ ok: true, n: PUB.length, ...T }); }
+  if (u.pathname === '/shop/list') return J({ ok: true, ...SH.listItems(PUB, Object.fromEntries(u.searchParams)) });
   if (u.pathname === '/shop/item') { const x = items.find((y) => y.id === u.searchParams.get('id')); return x ? J({ ok: true, item: { ...x, st: 's', info: {}, pvs: [] }, same: [], rel: [] }) : J({ ok: false }, 404); }
   if (u.pathname.startsWith('/shop/')) return J({ ok: true });
   const f = path.join(ROOT, 'shop', u.pathname.replace(/^\/s\//, '').replace(/\.\./g, '') || 'index.html'); if (!u.pathname.startsWith('/s/') || !fs.existsSync(f)) { res.writeHead(404); return res.end('{}'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(res); });
@@ -61,7 +83,7 @@ try {
     await p.selectOption('.bqs-sort', 'title'); await p.waitForTimeout(600); const Tt = await p.evaluate(() => [...document.querySelectorAll('.bqs-jump .jl')].map((b) => b.firstChild.textContent.trim()));
     await p.selectOption('.bqs-sort', 'reg'); await p.waitForTimeout(500); const Rg = await p.evaluate(() => document.querySelector('.bqs-jump').hidden);
     await p.selectOption('.bqs-sort', 'cat'); await p.waitForTimeout(600); const Ct = await p.evaluate(() => [...document.querySelectorAll('.bqs-jump .jl')].map((b) => b.firstChild.textContent.trim())); await p.screenshot({ path: path.join(SHOT, 'pc1280_cat.png') });
-    ok(Tt[0] === 'ㄱ' && Tt.length >= 6 && Rg && Ct[0] === '소설·시' && Ct.length === 8, `상품명 링크 ${Tt.join(' ')} · 등록순은 줄 숨김 · 주제 링크 ${Ct.join(' · ')}`);
+    ok(Tt[0] === 'ㄱ' && Tt.length >= 6 && Rg && Ct[0] === '소설·시' && Ct.length >= 10 && ['외국도서', '블루레이', '잡지'].every((k) => Ct.includes(k)), `상품명 링크 ${Tt.join(' ')} · 등록순은 줄 숨김 · 주제 링크 ${Ct.join(' · ')}`);
     ok(!errs.length, 'PC 오류 0 ' + errs.slice(0, 2).join(' | ')); await ctx.close(); }
   { const { ctx, p, errs } = await open({ viewport: { width: 1280, height: 860 } }, '#/shelf?s=price' + cfgQ({ jumpOn: false }));
     ok(await p.evaluate(() => document.querySelector('.bqs-jump').hidden), '설정 「링크 줄 보이기」를 끄면 줄 없음'); await ctx.close(); }
@@ -78,6 +100,15 @@ try {
     await p.evaluate(() => window.scrollBy(0, 900)); await p.waitForTimeout(400); const on2 = await p.evaluate(() => (document.querySelector('.bqs-jump .jl[aria-current]') || { dataset: {} }).dataset.jk || ''); await p.screenshot({ path: path.join(SHOT, 'm390_scrolled.png') });
     ok(!!on2, `내려가면 지금 구역 링크에 불(${on2})`);
     ok(!errs.length, '휴대폰 오류 0 ' + errs.slice(0, 2).join(' | ')); await ctx.close(); }
+  { const ctx = await br.newContext(M); const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message)); await p.addInitScript((u) => { window.BQ_API = u; }, base);
+    await p.goto(base + '/s/index.html#/'); await p.waitForSelector('.chips.kinds .chip', { timeout: 15000 }); await p.waitForTimeout(300); const H0 = await p.evaluate(() => [...document.querySelectorAll('.chips.kinds .chip')].map((a) => a.textContent.trim())); await p.screenshot({ path: path.join(SHOT, 'm390_home_kinds.png') });
+    ok(H0.length >= 4 && H0.some((t) => /외국도서/.test(t)) && H0.some((t) => /블루레이/.test(t)) && H0.some((t) => /잡지/.test(t)), `첫 화면 「종류」: ${H0.join(' · ')}`);
+    await p.goto(base + '/s/index.html#/list'); await p.waitForSelector('.cn-kids .chip', { timeout: 15000 }); await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOT, 'm390_list_root.png') });
+    await p.click('.cn-kids .chip >> text=국내도서'); await p.waitForSelector('.cn-crumb b', { timeout: 8000 }); await p.waitForTimeout(500); const L1 = await p.evaluate(() => ({ cr: document.querySelector('.cn-crumb').textContent.replace(/\s+/g, ' ').trim(), kids: [...document.querySelectorAll('.cn-kids .chip')].map((a) => a.textContent.trim()), n: (document.querySelector('#lh') || {}).textContent || '', sw: document.documentElement.scrollWidth }));
+    await p.click('.cn-kids .chip >> text=소설/시/희곡'); await p.waitForTimeout(700); await p.click('.cn-kids .chip >> nth=0'); await p.waitForTimeout(800);
+    const L2 = await p.evaluate(() => ({ cr: document.querySelector('.cn-crumb').textContent.replace(/\s+/g, ' ').trim(), end: !!document.querySelector('.cn-end'), h: location.hash, n: (document.querySelector('#lh') || {}).textContent || '', cards: document.querySelectorAll('#lg .grid > *').length })); await p.screenshot({ path: path.join(SHOT, 'm390_list_leaf.png') });
+    ok(/전체\s*›\s*📚 국내도서/.test(L1.cr) && L1.kids.length >= 5 && L1.sw <= 390 && /전체\s*›\s*📚 국내도서\s*›\s*소설\/시\/희곡\s*›\s*\S/.test(L2.cr) && L2.end && /cp=/.test(L2.h) && L2.cards > 0, `휴대폰 책 찾기: 「${L1.cr}」 아래 칸 ${L1.kids.length}개(가로 넘침 없음) → 「${L2.cr}」 가장 작은 분류 · 책 ${L2.cards}권 · ${L2.n.trim()}`);
+    ok(!errs.length, '책 찾기 오류 0 ' + errs.slice(0, 2).join(' | ')); await ctx.close(); }
   for (const [mode, want] of [['sheet', 'sheet'], ['open', 'ob'], ['lift', 'lift']]) { const { ctx, p, errs } = await open(M, '#/shelf?s=reg' + cfgQ({ mobPop: mode }));
     const id = await p.evaluate(() => [...document.querySelectorAll('.bqs-case.cur .sp')].find((b) => b.getBoundingClientRect().top > 200 && b.getBoundingClientRect().width > 10).dataset.id); const sel = `.bqs-case.cur .sp[data-id="${id}"]`;
     await p.tap(sel); for (let w = 0; w < 40; w++) { await p.waitForTimeout(100); if ((await p.evaluate(() => document.querySelector('.bqs').dataset.obPhase || '')) === 'open' || w > 14 && (await p.evaluate(() => !document.querySelector('.bqs-ob')))) break; } const R1 = await p.evaluate(() => ({ sheet: !document.querySelector('.bqs-sheet').hidden, ob: !!document.querySelector('.bqs-ob'), ph: document.querySelector('.bqs').dataset.obPhase || '', lift: !!document.querySelector('.sp.lift'), cap: (document.querySelector('.bqs-lcap') || {}).textContent || '' }));
