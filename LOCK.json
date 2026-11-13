@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "긴급: col2mig 기본 끔",
- "since": "2026-11-13T02:29:32Z",
- "beat": "2026-11-13T02:29:32Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: home2 번외 0.1.50 예스24 화면 안 확인 상자",
-  "at": "2026-11-13T02:32:23Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "spine2+bkfast 클라우드 0.35.201 · e980dfd4",
-  "at": "2026-11-13T02:28:15Z"
+  "done": "긴급 col2mig 기본 끔 1.78.553·1.89.302 b6745a3f",
+  "at": "2026-11-13T02:36:50Z"
  },
- "host": "vm-col2mig"
+ "host": null
 }
