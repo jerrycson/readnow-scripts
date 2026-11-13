@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shoplogo1",
+ "what": "북스퀸 로고 v2 · 웹앱 프로젝트 카드 · 클라우드 로고 칸",
+ "since": "2026-11-13T11:58:16Z",
+ "beat": "2026-11-13T11:58:16Z",
  "ask": null,
  "last": {
   "who": "train1",
   "done": "시험 tR 기대값 (21e3b036)",
   "at": "2026-11-13T11:46:58Z"
  },
- "host": null
+ "host": "vm-shoplogo1"
 }
