@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "isbnq 2: 대량 못 받는 상품 개별 자동 판 내기",
- "since": "2026-11-13T02:21:31Z",
- "beat": "2026-11-13T02:21:31Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: bkfast+spine2 클라우드 판",
-  "at": "2026-11-13T02:25:18Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "bkfast 클라우드 0.35.200 책 정보 0.1.7 · 87ac0791",
-  "at": "2026-11-13T02:21:16Z"
+  "done": "isbnq 2 판: 웹앱 1.78.552 · 수집기 1.89.301 (대량 못 받는 상품 개별 자동) · 712de714",
+  "at": "2026-11-13T02:26:34Z"
  },
- "host": "vm-isbnq"
+ "host": null
 }
