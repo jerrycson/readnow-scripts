@@ -1,2 +1,2 @@
-sizes=prd_bump,prd_bump_snap,prd_relinks&n=2000
-# 2095119009
+doc=app_settings/col2_solo
+# 1108410686
