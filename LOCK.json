@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "fix1113 판 내기(손발 넘김·켜기 기록·예스24 실패 표시)",
+ "since": "2026-11-13T00:08:18Z",
+ "beat": "2026-11-13T00:08:18Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "auditfix 판 076c7d3c 웹앱 1.78.541·수집기 1.89.293·클라우드 0.35.191·공용 0.18.25·도우미 1.8.24·번외 0.1.47",
   "at": "2026-11-12T23:57:04Z"
  },
- "host": null
+ "host": "vm-fix1113"
 }
