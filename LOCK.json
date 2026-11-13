@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "bkfast+spine2 클라우드 판",
- "since": "2026-11-13T02:27:21Z",
- "beat": "2026-11-13T02:27:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "isbnq 2 판: 웹앱 1.78.552 · 수집기 1.89.301 (대량 못 받는 상품 개별 자동) · 712de714",
-  "at": "2026-11-13T02:26:34Z"
+  "done": "spine2+bkfast 클라우드 0.35.201",
+  "at": "2026-11-13T02:27:58Z"
  },
- "host": "vm-bkfast"
+ "host": null
 }
