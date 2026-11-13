@@ -1,2 +1,2 @@
-doc=shp_runs/_guard,app_settings/ship_auto&shelfjobs=1&spineprobe=40
-# 2313717606
+logs=1&pc=LOGGER&from=202611130940
+# 1342713914
