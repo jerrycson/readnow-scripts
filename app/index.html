@@ -1011,6 +1011,26 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 /* (1.43.0) 📥 상품 등록 개편 — 설정 세 칸을 한 줄 알약으로(누르면 그 칸만 넓게) · 넣고 조회 칸 강조 · 후보 고르기 카드 격자 */
 .rgsetrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 12px 0}.rgsetrow>.card{margin:0!important;flex:1 1 240px;min-width:0;border-radius:14px}
 .rgsetrow>.card:not([open])>summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rgsetrow>.card[open]{flex-basis:100%}
+/* (mjui1 11/13 MJ님 요청) 📥 등록 › 설정 세 칸(📝 상품 설명 일괄 적용 · ⚙ 가격·등록 조건 · 💾 저장한 등록 설정)을 한 줄 탭으로 고정 — 누른 탭은 연두색으로 바뀌고 바로 아래 같은 색 판이 펼쳐짐(한 번에 하나 · 이 기기에 마지막 펼친 것 기억) · 겉모양만(안의 저장·적용 동작 그대로) */
+.rgsetrow.rgtabs{--rgt-bg:#E6F2D6;--rgt-line:#9DC27A;--rgt-ink:#2E5A1C;--rgt-gap:8px;--rgt-h:50px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--rgt-gap);position:relative;align-items:start}
+html .rgsetrow.rgtabs.rgtabs>details.card{grid-row:1;margin:0!important;padding:0!important;border:0;background:none;box-shadow:none;min-width:0;position:static}
+html .rgsetrow.rgtabs.rgtabs>details.regbulk{grid-column:1}html .rgsetrow.rgtabs.rgtabs>details.regcfg{grid-column:2}html .rgsetrow.rgtabs.rgtabs>details.rgps{grid-column:3}
+html .rgsetrow.rgtabs.rgtabs{gap:var(--rgt-gap)!important;flex-wrap:nowrap}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary{display:block;list-style:none;box-sizing:border-box;margin:0!important;height:var(--rgt-h);padding:6px 28px 6px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:12px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary::-webkit-details-marker{display:none}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary>b:first-child{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary .hint{font-size:11.5px}html .rgsetrow.rgtabs.rgtabs>details.card>summary .rglive-tg{font-size:11px;padding:0 6px;vertical-align:1px}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--sub);transition:transform .15s}
+html .rgsetrow.rgtabs.rgtabs>details.card:not([open])>summary:hover{border-color:var(--rgt-line);background:color-mix(in srgb,var(--rgt-bg) 45%,var(--paper))}
+html .rgsetrow.rgtabs.rgtabs>details.card>summary:focus-visible{outline:2px solid var(--rgt-line);outline-offset:2px}
+html .rgsetrow.rgtabs.rgtabs>details.card[open]{grid-row:2;grid-column:1/-1;background:var(--rgt-bg);border:1.5px solid var(--rgt-line);border-radius:18px;padding:12px 16px 14px!important;box-shadow:0 1px 3px rgba(46,90,28,.10)}
+html .rgsetrow.rgtabs.rgtabs>details.card[open]>summary{position:absolute;top:0;width:calc((100% - 2 * var(--rgt-gap)) / 3);background:var(--rgt-bg);border-color:var(--rgt-line);color:var(--rgt-ink);box-shadow:0 1px 3px rgba(46,90,28,.12)}
+html .rgsetrow.rgtabs.rgtabs>details.regbulk[open]>summary{left:0}html .rgsetrow.rgtabs.rgtabs>details.regcfg[open]>summary{left:calc((100% - 2 * var(--rgt-gap)) / 3 + var(--rgt-gap))}html .rgsetrow.rgtabs.rgtabs>details.rgps[open]>summary{left:calc((100% - 2 * var(--rgt-gap)) / 3 * 2 + var(--rgt-gap) * 2)}
+html .rgsetrow.rgtabs.rgtabs>details.card[open]>summary::after{transform:translateY(-50%) rotate(180deg);color:var(--rgt-ink)}
+html .rgsetrow.rgtabs.rgtabs>details.card[open]>summary>b:first-child{color:var(--rgt-ink)}
+html .rgsetrow.rgtabs.rgtabs>details.card:not([open])>summary .vztg{display:none}
+:root[data-theme="dark"] .rgsetrow.rgtabs{--rgt-bg:#1F3320;--rgt-line:#557F45;--rgt-ink:#D2EBC2}:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open]{color:#E3EEDD}:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open] .hint,:root[data-theme="dark"] .rgsetrow.rgtabs.rgtabs>details.card[open] label{color:#B9CDB0}
+@media (max-width:560px){.rgsetrow.rgtabs{--rgt-gap:5px;--rgt-h:46px}html .rgsetrow.rgtabs.rgtabs>details.card>summary{padding:5px 18px 5px 7px;font-size:11px}html .rgsetrow.rgtabs.rgtabs>details.card>summary>b:first-child{font-size:12px}html .rgsetrow.rgtabs.rgtabs>details.card>summary .hint{font-size:10.5px}html .rgsetrow.rgtabs.rgtabs>details.card>summary::after{right:5px;font-size:11px}html .rgsetrow.rgtabs.rgtabs>details.card[open]{padding:10px 10px 12px!important;border-radius:14px}}
 .rgsearch{border:2px solid var(--cloth);border-radius:16px;box-shadow:0 6px 18px -12px rgba(47,93,80,.5)}.rgsearch-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:0 0 8px}.rgsearch-h b{font-size:15px}
 .rgsearch #rg_in{border-radius:12px;border:2px solid var(--line)!important}.rgsearch #rg_in:focus{border-color:var(--cloth)!important;outline:0;box-shadow:0 0 0 4px var(--soft)}
 .rgcandc{display:block!important}.rgcandc>*{width:auto;max-width:none}.rgcandc .rgtop{margin-bottom:4px;display:flex;gap:10px;align-items:flex-start}.rgcandc .rgtopm{flex:1;min-width:0}.rgcandc .rgwarn{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:8px}.rgcand-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:10px 0 6px}
@@ -1401,7 +1421,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.564';</script>
-<script src="readnow-webapp.js?v=1.78.564"></script>
+<script>const APP_VER = '1.78.565';</script>
+<script src="readnow-webapp.js?v=1.78.565"></script>
 </body>
 </html>
