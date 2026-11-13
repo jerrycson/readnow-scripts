@@ -1,13 +1,13 @@
 {
- "holder": "friendkey1",
- "what": "책방 친구 서명 열쇠 세팅",
- "since": "2026-11-13T15:23:17Z",
- "beat": "2026-11-13T15:23:17Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shipwarn1",
-  "done": "웹앱 1.78.606 출고 검토 접힌 줄 이유 두세 마디 · 0d46f0e5",
-  "at": "2026-11-13T15:23:12Z"
+  "who": "friendkey1",
+  "done": "책방 친구 서명 열쇠 세팅 · bc14f482",
+  "at": "2026-11-13T15:24:10Z"
  },
- "host": "vm-friendkey1"
+ "host": null
 }
