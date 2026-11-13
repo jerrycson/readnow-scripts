@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "led4 판: 판매자 다시 읽기 40MB 먼저 떼기 · 늦음 거절 다시 줄에 · mkt1 lookupBook · 진단 가리개",
+ "since": "2026-11-13T02:47:18Z",
+ "beat": "2026-11-13T02:47:18Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.202(cloudmem 여섯째)",
   "at": "2026-11-13T02:47:13Z"
  },
- "host": null
+ "host": "vm-led4"
 }
