@@ -47,7 +47,7 @@ const V = require(path.join(ROOT, 'cloud', 'voice.js'));
   const big = V.makeAcc({ lex: V.lexOf(null), waMax: 50 }); for (let i = 0; i < 300; i++) big.c2({ sc: '9000001', kind: 'r', items: [{ d: '2026-10-01', r: 'bad', c: '낱말' + String.fromCharCode(44032 + i) + String.fromCharCode(44100 + i) + ' 먼지투성이' }] }); const bs = big.result([]); ok(bs.n === 300 && bs.pruned > 0, '낱말 표가 상한을 넘으면 1번 나온 낱말은 버림(셈은 그대로)', { n: bs.n, p: bs.pruned });
 
   const r3 = await VS.run(true, true, { budgetMs: -1 }); ok(r3.partial === true && data.app_settings.voice_study.partial === false, "시간 상한을 넘기면 거기까지 'partial' · 진단(dry)은 쓰지 않음", { p: r3.partial });
-  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);[\s\S]{0,5000}?\nconst BUSYX[^\n]*\nsetTimeout\(\(\) => VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 30분마다 확인 — 처음 전체는 나눠 이어 셈 · 다 센 뒤 20시간 막이)');
+  ok(/const VOICE = require\('\.\/voice\.js'\)\.makeVoiceStudy\(\{ C, FieldPath, log, W \}\);[\s\S]{0,5000}?\nconst BUSYX[^\n]*\nsetTimeout\(\(\) => (?:HVG\('voice', \(\) => )?VOICE\.run\(\)/.test(SRC) && /setInterval\(\(\) => (?:HVG\('voice', \(\) => )?VOICE\.run\(\)[^\n]*30 \* 60e3\)/.test(SRC), '클라우드가 스스로 돎(올라온 뒤 40분 · 30분마다 확인 · cloudmem 11/13부터 무거운 일 문 HVG 안 — 처음 전체는 나눠 이어 셈 · 다 센 뒤 20시간 막이)');
   ok(/if \(q\.voice\) \{ try \{ out\.voice = await VOICE\.run\(true, q\.voice !== 'save'/.test(SRC), '진단 voice=1(계산만) · voice=save(저장)');
 
   console.log('② 판매자 상품 수');
