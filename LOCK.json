@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "rv1b: 외부 정보 거짓 바뀜 고침(ext 0.6.21) 판",
- "since": "2026-11-13T06:28:13Z",
- "beat": "2026-11-13T06:29:45Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "view1 클라우드 0.35.218 진단 pxreg 둘째 (89b39faf)",
-  "at": "2026-11-13T06:28:10Z"
+  "done": "rv1b 둘째 웹앱 1.78.578 · 수집기 1.89.316 · ext 0.6.21 · 노선표 0.14.190 · 클라우드 0.35.219 (60ebd022)",
+  "at": "2026-11-13T06:35:20Z"
  },
- "host": "wk-rv1b"
+ "host": null
 }
