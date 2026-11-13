@@ -1,8 +1,8 @@
 {
  "holder": "spland2",
- "what": "spland2: tSPARE2_1113 기대값 정밀 점검에 맞춤(시험만 · 판 번호 없음)",
+ "what": "spland2: 시험만 올림 — tREGGL 흔들림 확인 중",
  "since": "2026-11-13T21:14:38Z",
- "beat": "2026-11-13T21:14:38Z",
+ "beat": "2026-11-13T21:19:06Z",
  "ask": null,
  "last": {
   "who": "kpsum",
