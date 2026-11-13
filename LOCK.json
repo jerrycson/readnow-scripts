@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "mjsolo: 출고 PC(MJ-MAIN) 번외 홀로 연결 저절로 등록 판",
- "since": "2026-11-13T05:28:11Z",
- "beat": "2026-11-13T05:31:27Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "mjui2 웹앱 1.78.568 — ⚙ 가격·등록 조건 2열 표 (7c911f39)",
-  "at": "2026-11-13T05:28:05Z"
+  "done": "mjsolo 웹앱 1.78.569 — 출고 PC(MJ-MAIN) 번외 홀로 연결 저절로 등록 (92e5940a)",
+  "at": "2026-11-13T05:32:11Z"
  },
- "host": "wk-mjsolo"
+ "host": null
 }
