@@ -64,7 +64,7 @@ console.log('③ 보내기(y24WSend)');
     const mkC = (docs, helper) => { const D = {}; for (const [id, v] of Object.entries(docs)) D[id] = JSON.parse(JSON.stringify(v)); const logs = []; const reqs = [];
       const ref = (id) => ({ id, get: async () => ({ exists: !!D[id], data: () => D[id] }), set: async (v, o2) => { D[id] = o2 && o2.merge ? { ...(D[id] || {}), ...v } : v; } });
       const coll = () => ({ doc: (id) => ref(id), where: (f, op, val) => ({ limit: () => ({ get: async () => ({ docs: Object.keys(D).filter((id) => D[id] && D[id][f] === val).map((id) => ({ id, ref: ref(id), data: () => D[id] })) }) }) }) });
-      const firebase = { firestore: () => ({ collection: coll, runTransaction: async (fn) => fn({ get: async (r) => r.get(), set: (r, v, o2) => { D[r.id] = o2 && o2.merge ? { ...(D[r.id] || {}), ...v } : v; } }) }) };
+      const firebase = { firestore: () => ({ collection: coll, runTransaction: async (fn) => fn({ get: async (r) => r.get(), set: (r, v, o2) => { D[r.id] = o2 && o2.merge ? { ...(D[r.id] || {}), ...v } : v; } }) }) }; firebase.firestore.FieldValue = { arrayUnion: (...x) => ({ __au: x }) }; /* (led4 11/13) 늦음 되돌림이 trail에 arrayUnion을 씀 */
       const GM = (q) => { const p = q.url.replace('http://127.0.0.1:8797', ''); const b = q.data ? JSON.parse(q.data) : null; reqs.push([q.method, p, b]); const r = helper(q.method, p, b); setTimeout(() => (r == null ? q.onerror() : q.onload({ status: r._st || 200, responseText: JSON.stringify(r) })), 0); };
       const f = new Function('firebase', 'GM_xmlhttpRequest', 'window', 'C2Y', blk + '\nreturn { wRelay, wSafe };')(firebase, GM, { __rnLog: (a, b, m) => logs.push(m) }, 'http://127.0.0.1:8797'); return { ...f, D, reqs, logs }; };
     const y = { on: true, mine: true, logger: false };
@@ -75,7 +75,8 @@ console.log('③ 보내기(y24WSend)');
     const puts = C.reqs.filter((r) => r[1] === '/y24/w/put');
     ok(puts.length === 1 && puts[0][2].id === 'y24w-9' && puts[0][2].rows[0].self === 'S1' && /원격/.test(puts[0][2].by), '새 맡김을 이 PC 번외 /y24/w/put으로 한 번(원격 표시)', puts);
     ok(C.D.c1.st === 'run' && C.D.c1.tookBy === 'HOME', '받은 문서 = run · 받은 PC', C.D.c1);
-    ok(C.D.old.st === 'done' && C.D.old.res.state === 'fail' && /45분/.test(C.D.old.res.msg), '45분 묵은 맡김은 넘기지 않고 늦음으로 끝', C.D.old);
+    ok(C.D.old.st === 'hold' && C.D.old.lateN === 1 && /45분/.test(C.D.old.holdWhy) && /맡긴 일 줄로 되돌림 1\/3/.test(C.D.old.holdWhy) && !C.puts, '(led4 11/13) 45분 묵은 맡김은 넘기지 않고 같은 문서를 맡긴 일 줄(hold)로 되돌림 — 보내기 직전 다시 셈 · 1/3', C.D.old);
+    { const C3 = mkC({ old: { ...job, at: iso(45), lateN: 3, job: { id: 'y24w-old', rows: job.job.rows } } }, () => ({ ok: true })); await C3.wRelay('HOME', y); ok(C3.D.old.st === 'done' && C3.D.old.res.state === 'fail' && /45분/.test(C3.D.old.res.msg) && /사람 확인/.test(C3.D.old.res.msg) && !C3.reqs.some((r) => r[1] === '/y24/w/put'), '(led4) 되돌림 3번을 다 쓰면 예전처럼 늦음으로 끝(되풀이 0)', C3.D.old); }
     ok(C.D.other.st === 'new', '다른 PC 앞 맡김은 손대지 않음');
     await C.wRelay('HOME', y); ok(C.reqs.filter((r) => r[1] === '/y24/w/put').length === 1, '15초 안 다시 부르면 아무것도 안 함(같은 맡김 두 번 0)');
     /* 결과 */ const t0 = Date.now; Date.now = () => t0() + 20e3; state = { ok: true, res: { 'y24w-9': { state: 'done', msg: '판매중지 — 확인', rows: { 'k|1': { state: 'done', msg: '판매중지 — 등록상품 목록에서 확인(판매중 → 판매중지)', before: { st: '02' }, after: { st: '08' } } } } }, wait: [], cur: null };
