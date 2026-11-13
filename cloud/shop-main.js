@@ -1,7 +1,7 @@
 /* 🛍 우리숍 전용 서버 — Cloud Run 서비스 readnow-shop (11/12 shopsrv · 정범님 11/12 밤 결정 '우리숍 전용 서버를 바로 둠')
  *  까닭: 수집·배우기·예약 일을 하는 readnow-cloud(1대)가 메모리로 죽으면 숍도 같이 멎었음(11/12 08시대) → 같은 이미지에서 숍 창구만 따로 띄움
  *  이 파일은 index.js(수집·크롬·배우기·예약)를 전혀 읽지 않음 — 숍 창구(cloud/shop.js)와 Firestore만 · 알라딘 계정·비밀 없음 · 뒷일(표지 셈·책등 묻기)은 끔(bg:false · 원래 서비스가 맡음)
- *  받는 주소: /shop/* · /b/<상품> · /sitemap*.xml (booksqueen.com Hosting이 넘김 · 손님 화면 POST도 이 서비스 주소로) · /healthz(상태 · 손님 정보 없음)
+ *  받는 주소: /shop/* · /b/<상품> · /sitemap*.xml (booksqueen.com Hosting이 넘김 · 손님 화면 POST도 이 서비스 주소로) · /status(상태 · 손님 정보 없음 · /healthz도 같지만 run.app 주소에선 Cloud Run 예약 길이라 구글이 404 — 바깥 확인은 /status로)
  *  배포: .github/workflows/deploy-cloud.yml '우리숍 전용 서버' 일(readnow-cloud와 같은 이미지 · 명령만 node shop-main.js)
  *  되돌리기: hosting/shop.json의 serviceId를 readnow-cloud로 · 원래 서비스도 숍 주소를 그대로 받음 */
 'use strict';

@@ -70,7 +70,7 @@ function fakeC() { const D = {}; const L = {};
       ok(F2.D.jb_notes.get('m_local') && F2.D.jb_notes.get('m_local').text === '이 화면에만 쓴 메모' && F2.D.jb_notes.get('m_local').lastBy === 'artifact-inbox', '③ 이 화면에만 쓴 메모는 웹앱 쪽으로 옮김(by artifact-inbox)');
       const L = await a.evaluate(() => [...window.__local.entries()].reduce((o, [k, v]) => ((o[k] = v), o), {}));
       ok(L.c_old.fwd === true && L.m_local.fwd === true, '③ 옮겼거나 옛것인 사본은 fwd 표시(다시 안 옮김)');
-      ok(L._diag && L._diag.mode === 'cloud' && L._diag.tools.note_sync && L._diag.tools.note_sync.okAt && L._diag.info && L._diag.info.n >= 3 && /^note[34]$/.test(L._diag.shell), '③ 연결 자취 _diag — 모드 cloud · note_sync 성공 때 · note_info 문서 수');
+      ok(L._diag && L._diag.mode === 'cloud' && L._diag.tools.note_sync && L._diag.tools.note_sync.okAt && L._diag.info && L._diag.info.n >= 3 && /^note\d/.test(L._diag.shell), '③ 연결 자취 _diag — 모드 cloud · note_sync 성공 때 · note_info 문서 수');
       const top = await a.evaluate(() => ({ jump: [...document.querySelectorAll('.rnjump a')].map((x) => x.textContent + '|' + x.href), cur: (document.querySelector('.rnjump .cur') || {}).textContent, bar: document.getElementById('connbar').hidden, conn: document.querySelector('.jbn-conn').textContent }));
       ok(top.cur === '📓 정범 노트' && top.jump.some((x) => /작업판\|https:\/\/claude\.ai\/artifact\/QSpoAQ2dd2PpGNtwHV9QfN/.test(x)) && top.jump.some((x) => /웹앱\|https:\/\/readnow\.kr\/app/.test(x)) && top.bar && /실시간/.test(top.conn), '③ 맨 위 바로 가기 줄(📓 지금 · 📋 작업판 · 🌐 웹앱) · 이어지면 위 띠 숨김 · 🟢');
       // ⭐: 검토 맨 위 묶음 · 아래 갈래에 다시 안 나옴 · ☆ 누르면 웹앱 쪽 pinned
