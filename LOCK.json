@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "col2mig PC별 번외 이전 판",
+ "since": "2026-11-13T02:07:00Z",
+ "beat": "2026-11-13T02:07:00Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.198(cloudmem 넷째) · 4ac20b91",
   "at": "2026-11-13T02:06:04Z"
  },
- "host": null
+ "host": "vm-col2mig"
 }
