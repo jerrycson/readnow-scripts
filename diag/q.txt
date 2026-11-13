@@ -1,3 +1,4 @@
-doc=app_settings/write_watch
-logs=1&pc=LOGGER&from=202611140010
-# 1523025183
+recentUp=ext_pool&mins=240
+logs=1&pc=JS-MAIN&from=202611140010
+perf=400
+# 2012428692
