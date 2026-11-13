@@ -1,2 +1,2 @@
-doc=app_settings/col2_solo
-# 1108410686
+heads=1
+# 114211168
