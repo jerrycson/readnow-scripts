@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cloudmem 넷째 크롬 정리 판",
+ "since": "2026-11-13T01:58:08Z",
+ "beat": "2026-11-13T01:58:08Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "benchfix 판 bbc821ac 웹앱 1.78.550 · 수집기 1.89.299 · 클라우드 0.35.197 — 벤치마킹 끝 닿음 판정·대량 사라짐·상품 정보 몫·🎯 회차 보고",
   "at": "2026-11-13T01:58:03Z"
  },
- "host": null
+ "host": "vm-cloudmem"
 }
