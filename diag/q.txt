@@ -1,2 +1,2 @@
-@kpin kpin/20261113-013109-21430.json
-# 1025323453
+logs=1&pc=MJ-MAIN&from=202611121510&to=202611121545&regitems=20&recentUp=pur_entries&mins=240
+# 804418196
