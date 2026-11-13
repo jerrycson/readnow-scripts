@@ -104,7 +104,7 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
     await a.setViewportSize({ width: 400, height: 800 }); await a.waitForTimeout(150);
     await pickText(); await a.waitForTimeout(350); await a.click('.jbn-selbtn'); await a.waitForTimeout(120);
     const ph = await a.evaluate(() => { const b = document.querySelector('.jbn-bub').getBoundingClientRect(); const d = document.getElementById('jbn-dock').getBoundingClientRect(); return { b: [b.left, b.right, b.top], d: [d.left, d.right], sw: document.documentElement.scrollWidth, w: innerWidth }; });
-    ok(ph.b[0] >= 0 && ph.b[1] <= 400 && ph.b[2] < 80 && ph.d[1] <= 401 && ph.sw <= ph.w, '②-2 휴대폰 폭: 버블은 화면 위(자판에 안 가림) · 입력칸·버블이 옆으로 넘치지 않음');
+    ok(ph.b[0] >= 0 && ph.b[1] <= 400 && ph.b[2] < 80 && ph.d[1] <= 401 && ph.sw <= ph.w, '②-2 휴대폰 폭: 버블은 화면 위(자판에 안 가림) · 입력칸·버블이 옆으로 넘치지 않음 ' + JSON.stringify(ph));
     if (process.env.RN_SHOT) await a.screenshot({ path: process.env.RN_SHOT + '/n4_core_phone.png' });
     await a.press('#jbn-bub-ta', 'Escape');
     await a.close(); }
