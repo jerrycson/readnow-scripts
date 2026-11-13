@@ -1,2 +1,2 @@
-doc=prd_system/autoSched,prd_jobs/qna,app_settings/qna_notify
-# 4029303
+pxreg=7&n=14
+# 980418349
