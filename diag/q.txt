@@ -1,2 +1,8 @@
-doc=app_settings/col2_handoff&recentUp=ext_basic&mins=25&logs=1&pc=HOME&from=202611131450
-# 1425214439
+doc=app_settings/main,app_settings/pxDaily
+logs=1&pc=HOME&from=202611060000&to=202611092359
+logs=1&pc=HOME&from=202611100000&to=202611139999
+logs=1&pc=JS-MAIN&from=202611060000&to=202611092359
+logs=1&pc=JS-MAIN&from=202611100000&to=202611139999
+logs=1&pc=MJ-MAIN&from=202611060000&to=202611092359
+logs=1&pc=MJ-MAIN&from=202611100000&to=202611139999
+# 2622423925
