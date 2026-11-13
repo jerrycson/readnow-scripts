@@ -1,13 +1,13 @@
 {
- "holder": "cbuild",
- "what": "클라우드 cbuild 둘째",
- "since": "2026-11-13T06:38:48Z",
- "beat": "2026-11-13T06:38:48Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "y24re 여섯째 웹앱 1.78.579",
-  "at": "2026-11-13T06:38:46Z"
+  "who": "cbuild",
+  "done": "클라우드 0.35.220 cbuild 둘째 (72c7175d)",
+  "at": "2026-11-13T06:38:53Z"
  },
- "host": "vm-cbuild"
+ "host": null
 }
