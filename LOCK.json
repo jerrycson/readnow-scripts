@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "cloudmem 클라우드 메모리 넘침 고침 판",
- "since": "2026-11-13T00:48:51Z",
- "beat": "2026-11-13T00:48:51Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: isbnq: ISBN 조회 공개 검색 대안 판 내기",
-  "at": "2026-11-13T00:51:31Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "helperui 판 43733cac 웹앱 1.78.544·수집기 1.89.296·도우미 1.8.26",
-  "at": "2026-11-13T00:48:05Z"
+  "done": "클라우드 0.35.192(cloudmem) 메모리 넘침 고침 판 · 0dfe572e",
+  "at": "2026-11-13T00:56:00Z"
  },
- "host": "vm-cloudmem"
+ "host": null
 }
