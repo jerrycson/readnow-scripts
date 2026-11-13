@@ -1,2 +1,4 @@
-heads=1&run=1&doc=prd_jobs/pcBeat
-# 647321969
+doc=prd_jobs/pcBeat
+delivchk=1
+shplog=1
+# 1588421899
