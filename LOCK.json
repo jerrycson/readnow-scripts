@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "isbnq: ISBN 조회 공개 검색 대안 판 내기",
+ "since": "2026-11-13T00:56:36Z",
+ "beat": "2026-11-13T00:56:36Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.192(cloudmem) 메모리 넘침 고침 판 · 0dfe572e",
   "at": "2026-11-13T00:56:00Z"
  },
- "host": null
+ "host": "vm-isbnq"
 }
