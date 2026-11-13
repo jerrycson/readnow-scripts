@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.330의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.331의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.330' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.330', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.331' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.331', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -948,9 +948,9 @@
      *  · 까닭: 「hot banana fudge」 195142826 수량 1 맡김이 줄 열쇠(PNKd3734EX ↔ al:aladin_U345587565)만 바뀌어 다시 셈에서 두 번 닫혔고, 밤엔 새 웹앱을 연 기기가 없음(출고 PC는 새 판을 미룸) → 예스24를 맡은 PC의 이 수집기가 30분마다
      *  · 장부를 모르는 수집기는 '장부에 할 일이 남았나'를 보지 않고 줄로만 돌림 — 보내기는 예전처럼 열린 웹앱이 보내기 직전 다시 세어 함(이미 맞으면 다시 닫힘 · 문서마다 한 번 reNos) · 손님 정보 없음 */
     const Y24_NOS_MS = 30 * 60e3; /* 근거: 없음 — 번외 도우미가 새 판을 받는 주기(30분)와 같게 · 닫힌 문서 질의 하루 48번 */ const Y24_NOS_WIN = 72 * 3600e3; /* 근거: y24Re1114와 같은 72시간 */ const Y24_NOS_RE = /보내기 직전에 다시 셈/;
-    function y24NosPick(docs, act, nowMs) { const t0 = (nowMs == null ? Date.now() : +nowMs) - Y24_NOS_WIN; const tOf = (d) => Math.max(Date.parse(d.doneAt || '') || 0, Date.parse(d.at || '') || 0, Date.parse(d.holdAt || '') || 0); const newest = {};
+    function y24NosPick(docs, act, nowMs, mark) { const t0 = (nowMs == null ? Date.now() : +nowMs) - Y24_NOS_WIN; const tOf = (d) => Math.max(Date.parse(d.doneAt || '') || 0, Date.parse(d.at || '') || 0, Date.parse(d.holdAt || '') || 0); const newest = {};
       for (const d of [...(docs || []), ...(act || [])]) for (const r of ((d && d.job) || {}).rows || []) if (r && r.no) { const k = String(r.no); const t = tOf(d); if (!newest[k] || t > newest[k].t) newest[k] = { t, id: d.id }; }
-      const out = []; for (const d of docs || []) { if (!d || d.st !== 'done' || d.reNos || d.ok === true || (d.k && d.k !== 'w') || (Date.parse(d.doneAt || '') || 0) < t0) continue; const res = d.res || {}; if (res.state !== 'already' || !Y24_NOS_RE.test(String(res.msg || ''))) continue;
+      const out = []; for (const d of docs || []) { if (!d || d.st !== 'done' || d[mark || 'reNos'] || d.ok === true || (d.k && d.k !== 'w') || (Date.parse(d.doneAt || '') || 0) < t0) continue; const res = d.res || {}; if (res.state !== 'already' || !Y24_NOS_RE.test(String(res.msg || ''))) continue;
         const R = ((d.job || {}).rows) || []; if (!R.length || R.some((r) => !r || !r.rid || !r.rk || !r.no || !['qty', 'stop'].includes(r.kind) || ['price', 'recon', 'bqup'].includes(r.src) || (newest[String(r.no)] || {}).id !== d.id)) continue; out.push(d); } return out; }
     function y24NosPatch(c, by, nowMs) { const iso = new Date(+nowMs || Date.now()).toISOString(); const why = "보내기 직전 다시 셈이 '할 일 없음'으로 닫았는데(예스24엔 아무것도 안 보냄) 장부에 같은 할 일이 남음 — 맡긴 일 줄로 한 번 더 · 보내기 직전 다시 셈(줄 열쇠가 바뀌었으면 지금 열쇠로)";
       return { st: 'hold', holdAt: iso, holdWhy: why.slice(0, 200), retryAt: iso, reNos: iso, lastRes: c.res || null, res: null, ok: null, msg: '🔁 할 일 없음으로 닫혔던 맡김 — 한 번 더 맡긴 일 줄로', tookBy: null, tookAt: null, prog: null, _t: { at: iso, m: "🔁 '할 일 없음'으로 닫혔던 맡김(아무것도 안 보냄) — 장부에 같은 할 일이 남아 맡긴 일 줄로 한 번 더", by: String(by || '').slice(0, 40) } }; }
