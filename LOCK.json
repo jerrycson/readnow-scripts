@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "긴급(urgord) 0.35.204 다시 올리기",
+ "since": "2026-11-13T03:06:28Z",
+ "beat": "2026-11-13T03:06:28Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.204(urgord 긴급 발송요청 보호·delivchk)",
   "at": "2026-11-13T03:06:20Z"
  },
- "host": null
+ "host": "vm"
 }
