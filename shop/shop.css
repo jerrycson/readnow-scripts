@@ -327,7 +327,7 @@ legend .edit { font-size: var(--fs-sm); font-weight: 500; margin-left: 8px; colo
 @media (min-width: 640px) {
   .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .rail, .grid.rail { grid-auto-columns: calc((100% - var(--sp-3) * 3) / 4.3); }
-  .chips.kinds { grid-template-columns: repeat(8, 1fr); }
+  .chips.kinds { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
   .trust { grid-template-columns: repeat(3, 1fr); }
   .catl { grid-template-columns: repeat(3, minmax(0, 1fr)); } .catl a:nth-last-child(-n+3) { border-bottom: 0; }
   .hero { padding: var(--sp-7) var(--sp-7); } .hero h1 { font-size: var(--fs-3xl); }
