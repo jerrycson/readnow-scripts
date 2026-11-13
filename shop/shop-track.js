@@ -1,12 +1,11 @@
-/* 📊 북스퀸 손님 화면 — 가벼운 방문 셈 · 📢 배너 · 💬 문의 · 👀 관리자 '손님 화면으로 보기'(읽기만) (11/13 shopadm1 · v0.1.1)
+/* 📊 북스퀸 손님 화면 — 가벼운 방문 셈 · 📢 배너 · 💬 문의 · 👀 관리자 '손님 화면으로 보기'(읽기만) (11/13 shopadm1 · v0.1.2)
  *  index.html에서 다른 스크립트보다 먼저 실림(미리 보기 때 기기 저장소·창구 부름을 먼저 바꿔 둬야 해서) · 외부 라이브러리 없음 · 실패해도 손님 화면은 그대로
- *  보내는 것: 화면 이름·본 상품 번호·찾은 낱말·분류·담기/찜 바뀜·주문 마침 · 들어온 곳(주소의 도메인만 · utm 칸) · 화면 폭
- *  보내지 않는 것: 이름·전화·주소·메일·IP(클라우드가 저장 안 함) · 이 기기 무작위 번호(bq-vid)는 '오늘 첫 방문' 셈에만 쓰고 클라우드에 남지 않음
- *  로그인한 손님은 활동 시간줄이 손님 번호로 남음(개인정보 처리방침 8번) · 💬 문의 창의 '이 기기 방문 기록 끄기' · 브라우저 추적 안 함(GPC·DNT)이면 시간줄 없음
+ *  보내는 것: 화면 이름·본 상품 번호·찾은 낱말·분류·담기/찜 바뀜·주문 마침 · 들어온 곳(주소의 도메인)·utm 칸 · 화면 폭 · 이 기기 무작위 번호(bq-vid) · 로그인했으면 그 열쇠
+ *  클라우드가 더 남기는 것: IP 주소·브라우저 정보 — 회원은 손님 번호, 비회원은 기기 번호로 활동 시간줄(F39 · 개인정보 처리방침 8번 · 별도 고지 전까지 보관)
  *  👀 미리 보기: 주소에 ?bqpv=<표>(관리 웹앱이 30분 표를 받아 붙임) 또는 ?bqpv=out(로그아웃 손님) — 기기 저장소를 이 탭 기억으로 바꾸고 쓰는 창구(주문·글·찜 저장)는 모두 막음 · 셈 0 */
 (function () {
   'use strict';
-  var W = window, D = document, VER = '0.1.1';
+  var W = window, D = document, VER = '0.1.2';
   var API_SHOP = 'https://readnow-shop-63884079760.asia-northeast3.run.app';
   var SAME = !W.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '');
   var API = String(W.BQ_API || API_SHOP).replace(/\/+$/, '');
@@ -44,7 +43,7 @@
   var SSg = function (k) { try { return W.sessionStorage.getItem(k); } catch (e) { return null; } }, SSs = function (k, v) { try { W.sessionStorage.setItem(k, v); } catch (e) {} };
   var hex = function (n) { var a = new Uint8Array(n); try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); } return Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); };
   var kday = function () { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); };
-  var off = function () { return !!PV || LSg('bq-notrack') === '1' || /bot|crawl|spider|headless/i.test(navigator.userAgent || '') || (BQT.cfg && BQT.cfg.trk && BQT.cfg.trk.on === 0); };
+  var off = function () { return !!PV || /bot|crawl|spider|headless/i.test(navigator.userAgent || ''); };
   var S = { nv: 0, ns: 0, ref: '', utm: null, sent: 0 };
   function sess() { var now = Date.now(); var sid = SSg('bq-sid'), at = +SSg('bq-sat') || 0; if (!sid || now - at > 30 * 60e3) { sid = hex(6); SSs('bq-sid', sid); SSs('bq-sf', ''); S.ns = 1;
       var r = ''; try { r = D.referrer ? new URL(D.referrer).hostname.replace(/^www\./, '') : ''; } catch (e) {} S.ref = r;
@@ -53,7 +52,7 @@
   function ev(k, a, x) { if (off()) return; BQT.q.push([k, a == null ? '' : String(a), x == null ? '' : String(x), Date.now()]); if (BQT.q.length >= 20) send(); }
   function step(k) { var f = SSg('bq-sf') || ''; if (f.indexOf(k) >= 0) return; SSs('bq-sf', f + k); ev('f', k); }
   function send(beacon) { if (off()) { BQT.q = []; return; } var ss = sess(); if (!BQT.q.length && !S.ns) return; var tk = LSg('bq-tok') || '';
-    var body = JSON.stringify({ v: 1, vid: ss.vid, sid: ss.sid, nv: S.nv, ns: S.ns, ref: S.ns ? S.ref : '', utm: S.ns ? S.utm : null, sw: W.innerWidth || 0, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '', no: LSg('bq-notrack') === '1' ? 1 : 0, E: BQT.q.splice(0, 60) });
+    var body = JSON.stringify({ v: 1, vid: ss.vid, sid: ss.sid, nv: S.nv, ns: S.ns, ref: S.ns ? S.ref : '', utm: S.ns ? S.utm : null, sw: W.innerWidth || 0, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '', E: BQT.q.splice(0, 60) });
     S.nv = 0; S.ns = 0; S.sent++; var url = getBase() + '/shop/t';
     try { if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return; } catch (e) {}
     try { fetch(url, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, mode: 'cors', credentials: 'omit' }).catch(function () {}); } catch (e) {} }
@@ -96,12 +95,11 @@
       + '<label for="bqtNo">주문 번호(있으면)</label><input id="bqtNo" maxlength="30" placeholder="BQ20261113-ABCDE">'
       + '<label for="bqtCt">답 받을 연락처(선택 — 메일 또는 휴대폰)</label><input id="bqtCt" maxlength="80" autocomplete="email">'
       + '<input id="bqtHp" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">'
-      + '<small>답은 이 화면 아래 「내 문의」에도 나옵니다 · 적은 연락처는 답을 드리는 데만 쓰고 3년(소비자 분쟁 처리 기록 · 전자상거래법) 보관한 뒤 파기합니다</small>'
+      + '<small>답은 이 화면 아래 「내 문의」에도 나옵니다 · 적은 연락처는 답을 드리는 데 씁니다(개인정보 처리방침 8번)</small>'
       + '<div class="bqt-row"><button type="button" class="g" id="bqtX">닫기</button><button type="button" id="bqtGo">보내기</button></div><div id="bqtMsg" role="status"></div>'
-      + '<div class="my" id="bqtMy"></div><div class="my"><label style="font-weight:400"><input type="checkbox" id="bqtOff" style="width:auto;min-height:0"' + (LSg('bq-notrack') === '1' ? ' checked' : '') + '> 이 기기 방문 기록 끄기 <small>(본 화면·찾은 낱말을 셈에 넣지 않음)</small></label></div></div>';
+      + '<div class="my" id="bqtMy"></div></div>';
     D.body.appendChild(ov); var close = function () { ov.remove(); D.removeEventListener('keydown', k); }; var k = function (e) { if (e.key === 'Escape') close(); }; D.addEventListener('keydown', k);
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); }); ov.querySelector('#bqtX').onclick = close; if (bk) ov.querySelector('#bqtK').value = 'book';
-    ov.querySelector('#bqtOff').onchange = function (e) { LSs('bq-notrack', e.target.checked ? '1' : '0'); ov.querySelector('#bqtMsg').textContent = e.target.checked ? '✓ 이 기기 방문 기록을 껐습니다' : '✓ 이 기기 방문 기록을 다시 켰습니다'; };
     var go = ov.querySelector('#bqtGo'); go.onclick = function () { var tx = ov.querySelector('#bqtTx').value.trim(); var msg = ov.querySelector('#bqtMsg'); if (tx.length < 5) { msg.textContent = '⚠ 문의 글을 5자 넘게 적어 주세요'; return; } if (PV) { msg.textContent = '👀 미리 보기라 보내지 않습니다'; return; } go.disabled = true; msg.textContent = '보내는 중…';
       var tk = LSg('bq-tok') || ''; fetch(getBase() + '/shop/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx: tx, kind: ov.querySelector('#bqtK').value, ct: ov.querySelector('#bqtCt').value.trim(), no: ov.querySelector('#bqtNo').value.trim(), id: bk ? bk.id : '', t: bk ? bk.t : '', hp: ov.querySelector('#bqtHp').value, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '' }) })
         .then(function (r) { return r.json(); }).then(function (j) { if (!j || !j.ok) throw new Error((j && j.err) || '보내지 못했습니다'); var L = myAsks(); L.unshift({ aid: j.aid, t: j.t, at: new Date().toISOString(), tx: tx.slice(0, 60) }); LSs('bq-asks', JSON.stringify(L.slice(0, 30))); msg.textContent = '✓ 문의를 받았습니다(번호 ' + j.aid + ') — 답이 오면 아래 「내 문의」에 나옵니다'; ov.querySelector('#bqtTx').value = ''; go.disabled = false; mine(); })
@@ -111,11 +109,10 @@
     mine(); setTimeout(function () { var t = ov.querySelector('#bqtTx'); if (t) t.focus(); }, 30); }
   /* 개인정보 처리방침 — 방문·이용 기록 칸을 더함(보존 기간은 설정 그대로) */
   function privSoon() { var n = 0; var t = setInterval(function () { n++; var a = D.querySelector('#main article.doc'); if (a || n > 40) { clearInterval(t); if (a) privAdd(a); } }, 100); }
-  function privAdd(a) { if (a.querySelector('#bqtPriv') || /방문·이용 기록/.test(a.textContent || '')) return; /* 손님 화면(shop.js) 방침에 이미 8번이 들어 있으면 두 번 넣지 않음 */ var c = BQT.cfg || {}; var tr = c.trk || {}; var keep = +tr.keep || 365;
-    a.querySelectorAll('h3').forEach(function (h) { if (/^6\./.test(h.textContent) && h.nextElementSibling && !/무작위 기기 번호/.test(h.nextElementSibling.textContent)) h.nextElementSibling.textContent = '이 화면은 장바구니·찜·최근 본 책·「내 주문」·「내 문의」 조회 주소, 로그인 열쇠(로그인했을 때), 그리고 방문 셈에 쓰는 무작위 기기 번호만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.'; });
-    var d = D.createElement('div'); d.id = 'bqtPriv'; d.innerHTML = '<h3>8. 방문·이용 기록</h3><p>가게를 더 편하게 고치려고 어떤 화면을 몇 번 보았는지, 어떤 낱말로 찾았는지, 어디에서 들어왔는지(주소의 도메인만), 기기 종류·화면 폭을 셉니다. IP 주소·이름·연락처는 이 셈에 쓰지 않고 저장하지 않으며, 셈은 날짜별 합계로만 남습니다.</p>'
-      + '<p>' + (tr.ua === 0 ? '로그인한 회원의 활동 기록은 남기지 않습니다.' : '회원으로 로그인했을 때는 본 상품·찾기·장바구니·주문 활동을 회원 번호와 함께 남겨 주문·문의 응대와 추천·화면 개선에 씁니다. 보관 기간은 <b>' + keep + '일</b>이며 지나면 운영 화면에서 보이지 않게 하고 파기합니다. 브라우저의 「추적 안 함」을 켰거나 💬 문의 창에서 「이 기기 방문 기록 끄기」를 고르시면 남기지 않습니다.') + '</p>'
-      + '<p>💬 문의에 적으신 글·연락처는 답을 드리는 데만 쓰고, 소비자 불만·분쟁 처리 기록으로 3년 보관한 뒤 파기합니다.</p>';
+  function privAdd(a) { if (a.querySelector('#bqtPriv') || /방문·이용 기록/.test(a.textContent || '')) return; /* 손님 화면(shop.js) 방침에 이미 8번이 들어 있으면 두 번 넣지 않음 */
+    a.querySelectorAll('h3').forEach(function (h) { if (/^6\./.test(h.textContent) && h.nextElementSibling && !/무작위 기기 번호/.test(h.nextElementSibling.textContent)) h.nextElementSibling.textContent = '이 화면은 장바구니·찜·최근 본 책·「내 주문」·「내 문의」 조회 주소, 로그인 열쇠(로그인했을 때), 그리고 방문 기록에 쓰는 무작위 기기 번호를 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.'; });
+    var d = D.createElement('div'); d.id = 'bqtPriv'; d.innerHTML = '<h3>8. 방문·이용 기록</h3><p><b>모으는 것</b>: IP 주소, 기기·브라우저 정보(기기 종류·운영체제·브라우저·화면 폭), 무작위 기기 번호, 들어온 곳(앞 사이트 주소의 도메인·광고 표시), 본 화면·상품, 찾은 낱말·분류, 장바구니·찜에 담고 뺀 것, 주문서를 연 것·주문을 마친 것과 그 시각. 회원으로 로그인했을 때는 회원 번호와 함께, 로그인하지 않았을 때는 기기 번호와 함께 남깁니다. 💬 문의에 적으신 글·연락처와 그때의 IP 주소·브라우저 정보도 남깁니다.</p>'
+      + '<p><b>쓰는 곳</b>: 주문·문의 응대, 부정 이용 막기, 가게·화면 고치기, 상품 추천.</p><p><b>보관 기간</b>: 별도 고지 전까지 보관합니다.</p>';
     var ref = null; a.querySelectorAll('h3').forEach(function (h) { if (/^7\./.test(h.textContent)) ref = h; }); if (ref) a.insertBefore(d, ref); else a.appendChild(d); }
   BQT.privAdd = privAdd;
 

@@ -116,6 +116,30 @@ function frNag() { const ht = frHostType(); if (FR.nagOff || (ht !== 'tauri' && 
   document.body.appendChild(b); const place = () => { if (!b.isConnected) return; const q = ic.getBoundingClientRect(); b.style.left = Math.max(4, Math.round(q.right - b.offsetWidth)) + 'px'; b.style.top = Math.max(4, Math.round(q.top - b.offsetHeight - 44)) + 'px'; }; place(); setInterval(place, 2000); FR.rk = ''; }
 setInterval(frNag, 60e3);
 Object.assign(window.RNF_HOOKS, { mvOk: () => !!frHost() && FR.win !== 'set', mvGet: () => FR.pos.slice(), mvStart: frMvStart, mvMove: frMvMove, mvEnd: frMvEnd, quit: frQuit });
+/* (friendlink1 11/14) 📷 작은 QR 만들기 — 바이트 방식 · 오류 고침 M · 1~6판(글자 106자까지) · SVG 글 · 바깥 라이브러리 없음 */
+function frQr(text) { const D = Array.from(unescape(encodeURIComponent(String(text)))).map((c) => c.charCodeAt(0));
+  const T = [[16, 10, 1], [28, 16, 1], [44, 26, 1], [32, 18, 2], [43, 24, 2], [27, 16, 4]]; /* 판마다 [블록당 자료 수, 블록당 고침 수, 블록 수] (M) */
+  let v = 0; while (v < 6 && T[v][0] * T[v][2] < D.length + 2) v++; if (v >= 6) return ''; const [dn, en, bn] = T[v]; v++; const N = 17 + 4 * v, cap = dn * bn;
+  const bits = []; const put = (x, n) => { for (let i = n - 1; i >= 0; i--) bits.push((x >>> i) & 1); }; put(4, 4); put(D.length, 8); D.forEach((b) => put(b, 8)); put(0, Math.min(4, cap * 8 - bits.length)); while (bits.length % 8) bits.push(0);
+  const dat = []; for (let i = 0; i < bits.length; i += 8) dat.push(parseInt(bits.slice(i, i + 8).join(''), 2)); for (let p = 0xEC; dat.length < cap; p ^= 0xEC ^ 0x11) dat.push(p);
+  const mul = (x, y) => { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; };
+  const div = []; for (let i = 0; i < en; i++) div.push(0); div[en - 1] = 1; for (let i = 0, r = 1; i < en; i++, r = mul(r, 2)) for (let j = 0; j < en; j++) { div[j] = mul(div[j], r); if (j + 1 < en) div[j] ^= div[j + 1]; }
+  const B = [], E = []; for (let b = 0; b < bn; b++) { const blk = dat.slice(b * dn, (b + 1) * dn); const rem = div.map(() => 0); for (const x of blk) { const f = x ^ rem.shift(); rem.push(0); div.forEach((c, i) => { rem[i] ^= mul(c, f); }); } B.push(blk); E.push(rem); }
+  const all = []; for (let i = 0; i < dn; i++) B.forEach((b) => all.push(b[i])); for (let i = 0; i < en; i++) E.forEach((e) => all.push(e[i]));
+  const M = [], F = []; for (let y = 0; y < N; y++) { M.push(new Array(N).fill(0)); F.push(new Array(N).fill(0)); } const fn = (x, y, d) => { M[y][x] = d ? 1 : 0; F[y][x] = 1; };
+  for (let i = 0; i < N; i++) { fn(6, i, i % 2 === 0); fn(i, 6, i % 2 === 0); }
+  for (const [cx, cy] of [[3, 3], [N - 4, 3], [3, N - 4]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= N || y >= N) continue; const d = Math.max(Math.abs(dx), Math.abs(dy)); fn(x, y, d !== 2 && d !== 4); }
+  if (v > 1) { const a = 4 * v + 10; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) fn(a + dx, a + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); } /* 1~6판은 맞춤 무늬가 하나(오른쪽 아래) */
+  const fmt = (mask) => { const d = (0 << 3) | mask; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537); return ((d << 10) | r) ^ 0x5412; };
+  const drawFmt = (mask) => { const f = fmt(mask), g = (i) => ((f >>> i) & 1) === 1; for (let i = 0; i <= 5; i++) fn(8, i, g(i)); fn(8, 7, g(6)); fn(8, 8, g(7)); fn(7, 8, g(8)); for (let i = 9; i < 15; i++) fn(14 - i, 8, g(i)); for (let i = 0; i < 8; i++) fn(N - 1 - i, 8, g(i)); for (let i = 8; i < 15; i++) fn(8, N - 15 + i, g(i)); fn(8, N - 8, true); };
+  drawFmt(0); let k = 0; for (let r = N - 1; r >= 1; r -= 2) { if (r === 6) r = 5; for (let vt = 0; vt < N; vt++) for (let j = 0; j < 2; j++) { const x = r - j, up = ((r + 1) & 2) === 0, y = up ? N - 1 - vt : vt; if (!F[y][x] && k < all.length * 8) { M[y][x] = (all[k >>> 3] >>> (7 - (k & 7))) & 1; k++; } } }
+  const MK = [(x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0, (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => ((x * y) % 2) + ((x * y) % 3) === 0, (x, y) => (((x * y) % 2) + ((x * y) % 3)) % 2 === 0, (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0];
+  const flip = (m) => { for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (!F[y][x] && MK[m](x, y)) M[y][x] ^= 1; };
+  const score = () => { let p = 0, dark = 0; for (let y = 0; y < N; y++) for (let ax = 0; ax < 2; ax++) { let run = 1; for (let i = 1; i <= N; i++) { const a = i < N ? (ax ? M[i][y] : M[y][i]) : -1, b = ax ? M[i - 1][y] : M[y][i - 1]; if (a === b) run++; else { if (run >= 5) p += run - 2; run = 1; } } }
+    for (let y = 0; y < N - 1; y++) for (let x = 0; x < N - 1; x++) { const c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; } for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) dark += M[y][x]; return p + Math.floor(Math.abs(dark * 20 - N * N * 10) / (N * N)) * 10; };
+  let best = 0, bs = Infinity; for (let m = 0; m < 8; m++) { flip(m); drawFmt(m); const sc = score(); if (sc < bs) { bs = sc; best = m; } flip(m); } flip(best); drawFmt(best);
+  let path = ''; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (M[y][x]) path += `M${x + 4} ${y + 4}h1v1h-1z`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N + 8} ${N + 8}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${path}" fill="#000"/></svg>`; }
 /* ── 로그인 ── */
 function frPairArgs() { const h = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const t = h.get('pair'); const code = String(h.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); const k = String(h.get('k') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return t ? { t, c: h.get('c'), d: h.get('d'), k: k.length === 8 ? k : '' } : code.length === 8 ? { code, c: h.get('c') } : null; } /* #pair=표(링크 · k=같은 표의 코드 8자리 — 카드 칸에 채워 둠) · #code=8자리(안드로이드 앱 칸에서 친 코드) */
 const frCleanUrl = () => { const q = new URLSearchParams(location.search); q.delete('pl'); q.delete('mig'); const s = q.toString(); return location.pathname + (s ? '?' + s : ''); }; /* (P5) 프로그램이 연결 링크로 다시 열 때 붙인 pl(새로 읽기 표시)은 지움 */
@@ -147,12 +171,42 @@ function frAuth(u) { if (frOnOld() && FR_Q.get('mig') === '1') return void frMig
   const P = frPairArgs();
   if (P) { try { history.replaceState(null, '', frCleanUrl()); } catch (e) {} if (!FR.xch) { FR.xch = 1; frExchange(P); } return; } /* 연결 표가 왔으면 먼저(이미 로그인돼 있어도 — 다른 기기 이름일 수 있음) */
   if (FR.xch === 2) return; if (!u) { S.user = null; if (!frOnOld() && frHostType() !== 'web' && FR.win !== 'set' && !frLS(FR_MIG_KEY) && FR_Q.get('mig') !== 'back') { frCard('busy', ''); frMigGo().then((went) => { if (!went && !S.user) frCard('pair'); }); return; } return frCard('pair'); } if (!FR.booted) { FR.booted = 1; frBoot(u); } }
+/* (friendlink1 11/14) 클라우드 부르기 — 12초 한도(예전엔 한도가 없어 '연결하는 중…'에서 멈출 수 있었음) · 실패는 까닭 글로 */
+async function frPostJ(url, body, ms) { const ac = typeof AbortController === 'function' ? new AbortController() : null; const tm = setTimeout(() => { try { ac && ac.abort(); } catch (e) {} }, ms || 12e3);
+  try { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), ...(ac ? { signal: ac.signal } : {}) }); const j = await r.json().catch(() => ({})); return { r, j }; }
+  catch (e) { throw new Error(e && e.name === 'AbortError' ? `시간 초과(${Math.round((ms || 12e3) / 1000)}초) — 클라우드가 답하지 않음` : '클라우드에 닿지 못함(인터넷 확인) — ' + ((e && e.message) || e)); } finally { clearTimeout(tm); } }
 async function frExchange(arg) { const c = frCloud(arg.c); FR.code = arg.k || arg.code || ''; frCard('busy', FR.code); FR.xch = 2;
-  try { const r = await fetch(c + '/friend-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(arg.t ? { t: arg.t } : { code: arg.code }) }); const j = await r.json().catch(() => ({}));
+  try { const { r, j } = await frPostJ(c + '/friend-token', arg.t ? { t: arg.t } : { code: arg.code });
     if (!r.ok || !j.ok || !j.token || !j.dev) throw new Error(j.err || '클라우드 응답 ' + r.status);
-    await firebase.auth().signInWithCustomToken(j.token); frLS('rn-device', String(j.dev)); frLS('rn-friend-cloud', c); frLS('rn-fr-paired', JSON.stringify({ at: new Date().toISOString(), dev: j.dev, email: j.email || null, host: frHostType() })); frLS('rn-fr-show', '1');
-    frPost('paired', { dev: j.dev, email: j.email || null }); frCard('ok', j.dev); setTimeout(() => { try { location.replace(frCleanUrl()); } catch (e) { location.reload(); } }, 600); /* 깨끗한 주소로 다시 열면 저장된 로그인으로 바로 */ }
+    await frSignIn(j, c); }
   catch (e) { FR.xch = 0; frCard('err', (e && e.message) || String(e)); } }
+async function frSignIn(j, c) { frLinkStop(); await firebase.auth().signInWithCustomToken(j.token); frLS('rn-device', String(j.dev)); frLS('rn-friend-cloud', c); frLS('rn-fr-paired', JSON.stringify({ at: new Date().toISOString(), dev: j.dev, email: j.email || null, host: frHostType() })); frLS('rn-fr-show', '1');
+    frPost('paired', { dev: j.dev, email: j.email || null }); frCard('ok', j.dev); setTimeout(() => { try { location.replace(frCleanUrl()); } catch (e) { location.reload(); } }, 600); /* 깨끗한 주소로 다시 열면 저장된 로그인으로 바로 */ }
+/* ══ (friendlink1 11/14 · 정범님 '연결이 매우 불편 · 잘 안 돼서 늘 애먹음') 📺 기기 쪽 코드 — 넷플릭스 TV 코드·구글 기기 연결과 같은 차례
+ *  연결 카드가 뜨면 이 화면이 스스로 클라우드에서 8자리 코드를 받아 크게 보임 + QR → 사람은 '🌐 웹앱에서 승인'(이 PC·휴대폰 기본 브라우저의 로그인된 웹앱이 승인 창으로 열림) 한 번 → '✓ 잇기' 한 번
+ *  또는 다른 기기(휴대폰 카메라)로 QR을 찍어 그 기기 웹앱에서 승인 · 또는 웹앱 ⚙ 🐾 카드의 '📺 코드로 잇기' 칸에 코드 → 이 화면이 2초마다 물어 승인되면 저절로 로그인
+ *  코드는 10분마다 저절로 새로(1시간까지 · 그 뒤 '↻ 새 코드') · 예전 길(웹앱 단추 → 링크/웹앱 코드 넣기)도 그대로 */
+const FR_LK_POLL = 2000, FR_LK_MAX = 6; /* 2초마다 묻기 · 새 코드는 6번(1시간)까지 저절로 */
+function frLinkStop() { clearTimeout(FR.lkTm); FR.lkTm = 0; FR.lkOn = 0; }
+function frLinkUrl(L) { return RNF_APP() + '#frlink=' + L.code + '&k=' + (frHostType() === 'android' ? 'android' : 'tauri'); }
+async function frLinkStart(again) { if (FR.lkBusy || FR.win === 'set') return; if (again) FR.lkN = 0; if ((FR.lkN || 0) >= FR_LK_MAX) { FR.lk = null; FR.lkErr = '코드를 여러 번 새로 받았어요 — 「↻ 새 코드」를 누르면 다시 시작해요'; return frLinkDraw(); }
+  FR.lkBusy = 1; FR.lkErr = ''; const c = frCloud(null); try { const { r, j } = await frPostJ(c + '/friend-link-start', { kind: frHostType() === 'android' ? 'android' : frHostType() === 'web' ? 'web' : 'tauri' });
+    if (!r.ok || !j.ok || !j.dc || !j.code) throw new Error(j.err || '클라우드 응답 ' + r.status); FR.lkN = (FR.lkN || 0) + 1; FR.lk = { dc: j.dc, code: j.code, exp: Date.parse(j.exp) || Date.now() + 10 * 60e3, c }; FR.lkOn = 1; frLinkPoll(); }
+  catch (e) { FR.lk = null; FR.lkErr = (e && e.message) || String(e); } finally { FR.lkBusy = 0; frLinkDraw(); } }
+async function frLinkPoll() { clearTimeout(FR.lkTm); const L = FR.lk; if (!L || !FR.lkOn || (S.user && FR.card !== 'nodev') || !['pair', 'nodev'].includes(FR.card)) return frLinkStop();
+  if (Date.now() > L.exp) return frLinkStart(); /* 10분 지남 → 새 코드 */
+  try { const { r, j } = await frPostJ(L.c + '/friend-link-poll', { dc: L.dc }, 10e3); if (FR.lk !== L) return;
+    if (r.ok && j.ok && j.token && j.dev) { FR.xch = 2; frCard('busy', L.code); try { await frSignIn(j, L.c); } catch (e) { FR.xch = 0; frCard('err', (e && e.message) || String(e)); } return; }
+    if (r.status === 410 || r.status === 404) return frLinkStart(); if (!r.ok) { FR.lkErr = j.err || '클라우드 응답 ' + r.status; frLinkDraw(); } else if (FR.lkErr) { FR.lkErr = ''; frLinkDraw(); } }
+  catch (e) { FR.lkErr = (e && e.message) || String(e); frLinkDraw(); } /* 잠깐 끊김 — 까닭을 보이고 계속 물음 */
+  FR.lkTm = setTimeout(frLinkPoll, FR_LK_POLL); }
+function frLinkHtml() { const L = FR.lk && Date.now() < FR.lk.exp ? FR.lk : null;
+  if (!L) return `<div class="fr-lk">${FR.lkErr ? `<p class="bad"><small>⚠ 코드를 못 받음 — ${esc(FR.lkErr.slice(0, 160))}</small></p><p><button type="button" data-frlkre="1">↻ 새 코드</button></p>` : '<p><small>📺 연결 코드를 받는 중…</small></p>'}</div>`;
+  const qr = frQr(frLinkUrl(L)); const mm = Math.max(0, Math.ceil((L.exp - Date.now()) / 60e3));
+  return `<div class="fr-lk"><div style="display:flex;gap:10px;align-items:center"><div style="flex:1;min-width:0"><small>이 화면의 연결 코드</small><div style="font:700 26px/1.15 monospace;letter-spacing:3px;color:#2F5D50">${esc(L.code.slice(0, 4))}-${esc(L.code.slice(4))}</div><small>${mm}분 안 · 지나면 저절로 새 코드</small></div>${qr ? `<div title="휴대폰 카메라로 찍으면 그 휴대폰 웹앱에서 승인" style="width:92px;height:92px;flex:none">${qr.replace('<svg ', '<svg width="92" height="92" ')}</div>` : ''}</div>
+    <p style="margin-top:6px"><button type="button" data-frlkweb="1" title="기본 브라우저의 리드나우 웹앱이 승인 창으로 열려요 — '✓ 이 기기로 잇기'만 누르면 끝">🌐 웹앱에서 승인하기</button></p>
+    <p><small>웹앱(로그인된 크롬)이 열리면 <b>✓ 이 기기로 잇기</b>만 누르세요 — 이 화면이 저절로 로그인해요. 또는 휴대폰 카메라로 QR · 웹앱 ⚙ 설정 › 🐾 책방 친구 › <b>📺 코드로 잇기</b>에 위 코드.</small>${FR.lkErr ? `<br><small class="bad">⚠ ${esc(FR.lkErr.slice(0, 120))} — 계속 다시 물어요</small>` : ''}</p></div>`; }
+function frLinkDraw() { const b = document.querySelector('#fr_card .fr-lkbox'); if (b) { b.innerHTML = frLinkHtml(); FR.rk = ''; setTimeout(frTick, 30); } }
 function frBoot(u) { S.user = u; const dev = deviceName().trim(); if (!dev) return frCard('nodev'); S.devOk = true; /* 연결 때 받은 기기 이름 = 크롬 웹앱이 확인한 그 이름 */ frCard(null);
   try { db.collection('app_settings').doc('main').onSnapshot((d) => { const x = d.exists ? d.data() : {}; S.app = { ...x, adminDevices: x.adminDevices || [] }; }, () => {}); } catch (e) {} /* 관리자 기기·클라우드 주소만 씀 */
   try { mscBoot(); } catch (e) { console.warn('책방 친구 시작', e); }
@@ -211,18 +265,19 @@ window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg
   return false; };
 function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kind && c && FR.card === kind && FR.cardArg === arg) return; FR.card = kind; FR.cardArg = arg; if (!kind) { if (c) c.remove(); FR.rk = ''; return; }
   if (!c) { c = document.createElement('div'); c.id = 'fr_card'; c.className = 'fr-card'; document.body.appendChild(c);
-    c.addEventListener('click', (e) => { if (e.target.closest('[data-frgo]')) frCodeGo(); else if (e.target.closest('[data-frx]')) { FR.cardNo = FR.card; frCard(null); } else if (e.target.closest('[data-frweb]')) frOpenUrl(RNF_APP()); else if (e.target.closest('[data-frfold]')) frCardFold(true); else if (e.target.closest('[data-frunfold]') && !(c._dragAt && performance.now() - c._dragAt < 400)) frCardFold(false); });
+    c.addEventListener('click', (e) => { if (e.target.closest('[data-frgo]')) frCodeGo(); else if (e.target.closest('[data-frx]')) { FR.cardNo = FR.card; frCard(null); } else if (e.target.closest('[data-frweb]')) frOpenUrl(RNF_APP()); else if (e.target.closest('[data-frlkweb]')) { if (FR.lk) frOpenUrl(frLinkUrl(FR.lk)); } else if (e.target.closest('[data-frlkre]')) { frLinkStop(); FR.lk = null; FR.xch = 0; frCard('pair'); frLinkStart(true); } else if (e.target.closest('[data-frfold]')) frCardFold(true); else if (e.target.closest('[data-frunfold]') && !(c._dragAt && performance.now() - c._dragAt < 400)) frCardFold(false); });
     c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'fr_code') frCodeGo(); }); frCardDragBind(c); }
   const codeRow = '<div class="row"><input id="fr_code" maxlength="9" placeholder="ABCD-EFGH" autocomplete="off" spellcheck="false" aria-label="연결 코드 8자리"><button type="button" data-frgo="1" title="이 코드로 연결 — 같은 계정·같은 기기 이름으로 로그인">연결</button></div>';
-  const how0 = `<small>① 이 ${IS_MOBILE_DEV ? '휴대폰' : 'PC'}의 크롬에서 리드나우 웹앱을 엶 → ② ⚙ 설정 › <b>🐾 책방 친구</b> 카드의 <b>🖥 이 기기에 책방 친구 프로그램 연결</b> → ③ 저절로 이 프로그램이 열리며 연결돼요. 안 열리면 웹앱에 나온 <b>연결 코드 8자리</b>를 아래에 넣어요(10분 안 · 한 번만).</small>`;
-  const how = frNarrow() ? `<details class="fr-how"><summary>자세히 — 연결하는 법</summary>${how0}</details>` : `<p>${how0}</p>`; /* (10/29 급한 일) 휴대폰 폭이면 안내 글은 접어 둠 — 카드가 화면 40%를 넘지 않게 */
+  const how0 = `<small>웹앱 쪽에서 시작하려면: 웹앱 ⚙ 설정 › <b>🐾 책방 친구</b> › <b>🖥 이 기기에 책방 친구 프로그램 연결</b> → 이 화면이 저절로 열리며 연결돼요. 안 열리면 웹앱에 나온 <b>연결 코드 8자리</b>를 아래에 넣어요(10분 안 · 한 번만).</small>`;
+  const how = `<details class="fr-how"><summary>웹앱에서 받은 코드가 있으면</summary>${how0}${codeRow}</details>`; /* (friendlink1 11/14) 이제 이 화면의 코드(위)가 먼저 — 예전 길은 접어 둠 */
+  const lkBox = '<div class="fr-lkbox">' + frLinkHtml() + '</div>';
   c.classList.toggle('err', kind === 'err');
   const pill = kind === 'busy' ? '🔐 연결하는 중…' : kind === 'ok' ? '✓ 연결됨' : kind === 'err' ? '⚠ 연결 실패 — 펼치기' : kind === 'pair' || kind === 'nodev' ? '🐾 연결하기' : '🐾 책방 친구';
-  const body = kind === 'pair' ? `<h4>${IS_MOBILE_DEV ? '아직 연결 전이에요 — 아래 칸에 코드를 넣거나 웹앱 단추를 누르세요' : '🐾 책방 친구 — 연결이 필요해요'}</h4>${how}${codeRow}<p><button type="button" class="ghost" data-frweb="1" title="기본 브라우저(크롬)로 리드나우 웹앱 열기">🌐 웹앱 열기</button></p>`
+  const body = kind === 'pair' ? `<h4>🐾 책방 친구 — 연결이 필요해요</h4>${lkBox}${how}`
     : kind === 'busy' ? `<h4>🔐 연결하는 중…</h4>${arg ? `<p>연결 코드 <b style="font:700 18px/1.2 monospace;letter-spacing:2px">${esc(String(arg).slice(0, 4))}-${esc(String(arg).slice(4, 8))}</b></p>` : ''}<p><small>클라우드에서 같은 계정의 로그인 열쇠를 받고 있어요(몇 초).</small></p>`
     : kind === 'ok' ? `<h4>✓ 연결됨 — 기기 ${esc(arg || '')}</h4><p><small>캐릭터를 불러와요. 다음부터는 켜기만 하면 저절로 로그인돼요.</small></p>`
-    : kind === 'err' ? `<h4 class="bad">⚠ 연결 실패</h4><p class="bad">${esc(String(arg || '').slice(0, 220))}</p><p><small>${/지났|사용한|맞지 않음|코드/.test(String(arg)) ? '웹앱에서 연결 단추를 다시 눌러 새 코드를 받아 주세요.' : /권한|열쇠|IAM/i.test(String(arg)) ? '클라우드 권한 준비가 필요해요 — 웹앱 설명서 › 🖥 책방 친구 프로그램 › 처음 한 번(클라우드) 참고.' : '인터넷 연결을 확인하고 다시 해 보세요.'}</small></p>${codeRow}`
-    : kind === 'nodev' ? `<h4>🐾 이 프로그램에 기기 이름이 없어요</h4><p><small>웹앱에서 연결 단추를 다시 눌러 주세요(그 크롬의 기기 이름을 함께 받아요).</small></p>${how}${codeRow}`
+    : kind === 'err' ? `<h4 class="bad">⚠ 연결 실패</h4><p class="bad">${esc(String(arg || '').slice(0, 220))}</p><p><button type="button" data-frlkre="1" title="이 화면의 새 연결 코드 받기">↻ 다시 시도(새 코드)</button></p><p><small>${/지났|사용한|맞지 않음|코드/.test(String(arg)) ? '웹앱에서 연결 단추를 다시 눌러 새 코드를 받아 주세요.' : /권한|열쇠|IAM/i.test(String(arg)) ? '클라우드 권한 준비가 필요해요 — 웹앱 설명서 › 🖥 책방 친구 프로그램 › 처음 한 번(클라우드) 참고.' : '인터넷 연결을 확인하고 다시 해 보세요.'}</small></p>${codeRow}`
+    : kind === 'nodev' ? `<h4>🐾 이 프로그램에 기기 이름이 없어요</h4><p><small>아래 코드를 웹앱에서 승인하면 기기 이름도 함께 받아요.</small></p>${lkBox}${how}`
     : kind === 'scope' ? `<h4>🐾 이 기기(${esc(arg || '')})는 켜는 범위 밖이에요</h4><p><small>관리자 기기의 🐾 ⚙ 책방 친구 설정 › ② 관리자 설정 › <b>켜는 범위</b>에 이 기기 이름을 넣으면 바로 캐릭터가 나와요.</small></p>`
     : kind === 'nochar' ? `<h4>🐾 아직 캐릭터를 고르지 않았어요</h4><p><small>오른쪽 아래 <b>🐾</b>를 눌러 내 이름·캐릭터를 고르면 나와요.</small></p>` : '';
   /* (10/29 급한 일 · 정범님 23:31 휴대폰) 머리줄 = 잡고 끌어 옮김 · ▾ 접기(작은 알약만) · 닫을 수 있는 카드는 ✕ — 자리·접힘은 이 기기에 기억 */
@@ -230,7 +285,8 @@ function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kin
   c.classList.toggle('fold', frLS(FR_CARD_FOLD) === '1'); frCardPlace(c);
   if (kind === 'pair' && FR.link === false) (c.querySelector('.fr-bd') || c).insertAdjacentHTML('beforeend', '<p class="bad"><small>⚠ 이 PC에 연결 주소(readnow-friend://)가 등록되지 않았어요 — 웹앱 단추로는 안 열릴 수 있으니 웹앱에 나온 코드 8자리를 위 칸에 넣어 주세요.</small></p>');
   const ci = document.getElementById('fr_code'); if (ci && FR.code && (kind === 'err' || kind === 'nodev')) ci.value = FR.code.slice(0, 4) + '-' + FR.code.slice(4, 8); /* (P5) 웹앱 단추로 받은 코드는 칸에 채워 둠 — Enter만 누르면 다시 */
-  FR.rk = ''; if ((kind === 'pair' || kind === 'err' || kind === 'nodev') && !c.classList.contains('fold') && !frNarrow()) setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); /* 휴대폰은 저절로 커서를 넣지 않음(자판이 바로 올라와 화면을 덮지 않게) */ setTimeout(frTick, 30); frTickArm(); }
+  if ((kind === 'pair' || (kind === 'nodev' && S.user)) && (!S.user || kind === 'nodev') && !FR.lkOn && !FR.lkBusy) { if (FR.lk && Date.now() < FR.lk.exp) { FR.lkOn = 1; frLinkPoll(); } else frLinkStart(); } else if (kind !== 'pair' && kind !== 'nodev' && kind !== 'busy') frLinkStop(); /* (friendlink1) 연결 카드가 보이는 동안만 코드를 받고 물음 */
+  FR.rk = ''; if (kind === 'err' && !c.classList.contains('fold') && !frNarrow()) setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); /* 휴대폰은 저절로 커서를 넣지 않음(자판이 바로 올라와 화면을 덮지 않게) */ setTimeout(frTick, 30); frTickArm(); }
 /* ── 연결 카드 옮기기·접기(10/29 급한 일) — 자리는 오른쪽·아래 끝에서 떨어진 거리(px)로 기억(화면 크기가 바뀌어도 그 모서리 기준) ── */
 const FR_CARD_POS = 'rn-fr-card-pos', FR_CARD_FOLD = 'rn-fr-card-fold';
 function frNarrow() { return Math.min(innerWidth || 9999, (screen && screen.width) || 9999) <= 480; }
