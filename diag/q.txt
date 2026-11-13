@@ -1,2 +1,2 @@
-logs=1&pc=MJ-MAIN&from=202611131000
-# 2447029745
+slearn=bg&mem=1
+# 302196481
