@@ -1,4 +1,2 @@
-recentUp=ext_pool&mins=240
-logs=1&pc=JS-MAIN&from=202611140010
-perf=400
-# 2012428692
+doc=app_settings/bi_x
+# 2279123938
