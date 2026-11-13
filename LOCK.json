@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "qna1 — ❓ 문의 실시간·🔄 문의 다시 읽기 판",
- "since": "2026-11-13T06:38:58Z",
- "beat": "2026-11-13T06:38:58Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "cbuild",
-  "done": "클라우드 0.35.220 cbuild 둘째 (72c7175d)",
-  "at": "2026-11-13T06:38:53Z"
+  "who": "lead",
+  "done": "qna1 웹앱 1.78.580·수집기 1.89.317·클라우드 0.35.220 (253df822)",
+  "at": "2026-11-13T06:41:33Z"
  },
- "host": "vm-qna1"
+ "host": null
 }
