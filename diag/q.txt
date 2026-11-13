@@ -1,2 +1,2 @@
-doc=crm_system/work_win
-# 39414979
+slearn=bg&mem=1
+# 816928642
