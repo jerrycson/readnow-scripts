@@ -1,13 +1,13 @@
 {
- "holder": "train1",
- "what": "pxgrow 새 상품 덧붙임 낮 30분(웹앱·클라우드)",
- "since": "2026-11-13T10:07:32Z",
- "beat": "2026-11-13T10:07:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "train1",
-  "done": "웹앱 1.78.595 rv2b (eadd7212)",
-  "at": "2026-11-13T10:06:54Z"
+  "done": "웹앱 1.78.596 · 클라우드 0.35.230 pxgrow (081a272c)",
+  "at": "2026-11-13T10:14:35Z"
  },
- "host": "vm-train1"
+ "host": null
 }
