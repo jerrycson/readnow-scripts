@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "const1: CLAUDE.md 헌장 첫 줄(문서만)",
+ "since": "2026-11-13T03:31:42Z",
+ "beat": "2026-11-13T03:31:42Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.205(urgord delivchk 고침)",
   "at": "2026-11-13T03:31:04Z"
  },
- "host": null
+ "host": "vm-const1"
 }
