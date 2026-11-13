@@ -1,4 +1,2 @@
-shplog=1&n=15
-logs=1&pc=MJ-MAIN&from=202611131516
-doc=app_settings/platforms
-# 250853760
+doc=app_settings/cons_study,app_settings/research_pulse,app_settings/relist_learn,app_settings/voice_study,app_settings/front_bump_eval
+# 3168710659
