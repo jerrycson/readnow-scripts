@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "rv2b",
+ "what": "rv2b 시험 문지기·CHANGELOG 7판 판 내기",
+ "since": "2026-11-13T07:27:31Z",
+ "beat": "2026-11-13T07:27:31Z",
  "ask": {
   "who": "lead",
   "why": "판 내기 기다림: rv1b: 넷째 판 올리기(ext 0.6.23)",
@@ -13,5 +13,5 @@
   "done": "클라우드 0.35.225 cbuild 셋째 · 보고 단계 python·한 번에 준비·열쇠 되돌림 (9c866a3c)",
   "at": "2026-11-13T07:27:27Z"
  },
- "host": null
+ "host": "vm-rv2b"
 }
