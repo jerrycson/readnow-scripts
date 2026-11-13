@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "bkfast 책 정보 0.1.9 클라우드 판",
+ "since": "2026-11-13T04:02:58Z",
+ "beat": "2026-11-13T04:02:58Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "anom1 둘째 판 웹앱 1.78.561 · 클라우드 0.35.210",
   "at": "2026-11-13T04:02:55Z"
  },
- "host": null
+ "host": "vm-bkfast"
 }
