@@ -1,2 +1,2 @@
-doc=prd_system/autoSched,prd_jobs/qna,app_settings/qna_notify,app_settings/night_ops,prd_jobs/autoSched,prd_jobs/cs_2026-11-07,prd_jobs/cs_2026-11-08,prd_jobs/cs_2026-11-09,prd_jobs/cs_2026-11-10,prd_jobs/cs_2026-11-11,prd_jobs/cs_2026-11-12,prd_jobs/cs_2026-11-13
-# 153315403
+pxreg=7&n=14
+# 172521325
