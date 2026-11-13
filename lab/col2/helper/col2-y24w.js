@@ -131,11 +131,18 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   function dialog(p) { const m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 160); R.dlg.push(m); if (p.type === 'alert') return true; if (R.phase === 'qty') return /저장|수정/.test(m) && !BAD_DLG.test(m); if (R.phase === 'state') return /변경|판매\s*중|상태/.test(m) && !BAD_DLG.test(m); return false; }
   /* 화면을 열고 검색 → 우리 줄 찾기 (읽기만) — { login } | { err } | { hit, same, n } */
   async function look(r) { await o.nav(o.BASE + PG + '?t=' + now(), 30); if (o.isLoginSt(await o.ev(o.JS_STATE))) return { login: true }; await sleep(1500 * SC);
-    let t0 = 0, f = null; for (let tr = 0; tr < 2; tr++) { if (tr) await sleep(2500 * SC); /* (0.1.38 y24chk · 11/12 진단) 첫 [조회]가 0줄이면 한 번 더(읽기만) — 17:46·19:47 「hot banana fudge」 첫 맡김이 'ISBN으로 조회 0줄'로 끝났는데 1~2분 뒤 같은 조회는 그 줄을 찾음(화면이 스스로 부른 첫 목록 응답을 우리 [조회] 응답으로 본 것으로 보임) */
-    t0 = now(); const s = await o.ev(r.self ? JS_SEARCH(r.self, 5) : /^\d{10,13}$/.test(String(r.isbn || '')) ? JS_SEARCH(r.isbn, 3) : JS_SEARCH(String(r.q || '').slice(0, 40), 0)); if (s && s.login) return { login: true }; if (!s || !s.ok) return { err: (s && s.why) || '검색 칸을 못 채움', shape: true };
+    /* (11/13 fix1113 · 아침 점검 'hot banana fudge 195142826 — ISBN 조회 0줄') ISBN으로 두 번 다 0줄이면 제목(상품명)으로 한 번 더 조회해 상품번호(GOODS_NO)가 꼭 맞는 줄을 찾음(읽기만)
+     *  · 예스24 검색어 고르기에는 '상품번호'가 없음(상품명·저자/역자·제조업체명·ISBN·홍보문구·자체상품코드 — reports/yes24_raw DOC_product_productlist 11/08) → 제목으로 좁힌 뒤 표에서 상품번호로 고름
+     *  · 까닭 후보: 예스24 상품에 붙은 ISBN이 장부 ISBN과 다름(같은 책 다른 판·ISBN-10 등) — 제목으로 찾으면 줄의 ISBN은 보지 않고 상품번호만 맞춤 */
+    const isbnOk = /^\d{10,13}$/.test(String(r.isbn || '')); const tq = String(r.q || r.title || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    const ser = r.self ? [[r.self, 5], [r.self, 5]] : isbnOk ? [[r.isbn, 3], [r.isbn, 3], ...(tq.length >= 2 ? [[tq, 0]] : [])] : [[tq, 0], [tq, 0]];
+    let t0 = 0, f = null, how = ''; for (let tr = 0; tr < ser.length; tr++) { if (tr) await sleep(2500 * SC); /* (0.1.38 y24chk · 11/12 진단) 첫 [조회]가 0줄이면 한 번 더(읽기만) — 17:46·19:47 「hot banana fudge」 첫 맡김이 'ISBN으로 조회 0줄'로 끝났는데 1~2분 뒤 같은 조회는 그 줄을 찾음(화면이 스스로 부른 첫 목록 응답을 우리 [조회] 응답으로 본 것으로 보임) */
+    t0 = now(); const s = await o.ev(JS_SEARCH(ser[tr][0], ser[tr][1])); if (s && s.login) return { login: true }; if (!s || !s.ok) return { err: (s && s.why) || '검색 칸을 못 채움', shape: true };
     for (let k = 0; k < 60 && !(o.Y.plAt > t0); k++) await sleep(250); await sleep(900 * SC);
     f = null; for (let k = 0; k < 40; k++) { f = await o.ev(JS_FIND(r.no, r.self)); if (f && !f.busy) break; await sleep(300); }
+    if (f && f.ok && !f.busy && ser[tr][1] === 0 && isbnOk) how = `ISBN ${r.isbn}으로 0줄 → 제목 '${tq}'으로 ${f.n}줄`;
     if (!(f && f.ok && !f.busy && f.n === 0)) break; }
+    if (f && how) f.how = how;
     if (!f || f.busy) return { err: '등록상품 목록이 다 그려지지 않음' }; if (!f.ok) return { err: f.why, shape: !!f.nogv }; if (!(o.Y.plAt > t0)) return { err: '[조회] 뒤 등록상품 목록 응답을 못 봄' };
     if (f.n > 0 && !(R.rec.grid && now() - (+R.rec.grid.at || 0) < 6 * 3600e3)) { try { const g = await o.ev(JS_GRID); if (g && g.ok) { R.rec.grid = { at: now(), n: g.n, keys: g.keys, cols: g.cols, opt: g.opt }; saveRec(); } } catch (e) {} } return f; }
   const vOf = (h) => (h ? { qty: h.qty, st: h.st, stNm: h.stNm, price: h.price == null ? null : +h.price } : null);
@@ -154,7 +161,7 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   async function rowRun(j, r) { const x = await rowMain(j, r); if (r.fill && !r.self && !r._has && (x.state === 'done' || x.state === 'already')) { let f; try { f = await fillSelf(j, r); } catch (e) { R.phase = ''; f = { state: 'skip', msg: '자체코드 채우기 오류 — ' + String(e.message || e).slice(0, 100) }; } x.fill = f; x.msg = `${x.msg || ''} · ${f.msg}`; } return x; }
   async function rowMain(j, r) { const what = r.kind === 'qty' ? `수량 ${r.to}권` : r.kind === 'price' ? `판매가 ${r.to}원` : KINDS[r.kind]; j.step = `${r.no} 찾는 중`;
     const a = await look(r); if (a.login) return { state: 'login' }; if (a.err) return { state: 'fail', pre: true, msg: `${a.err} — 아무것도 누르지 않음`, todo: a.shape ? '예스24 등록상품 관리 화면 모양이 바뀌었을 수 있음 — 손으로 고친 뒤 「✓ 예스24에서 고쳤음」 · 리드나우 방에 알려 주세요' : '잠시 뒤 다시 맡기기 · 안 되면 손으로' };
-    if (!a.hit.length) return { state: 'fail', pre: true, gone: true, msg: r.self ? `예스24 등록상품 목록에서 상품번호 ${r.no}·자체코드 ${r.self} 줄을 못 찾음(같은 자체코드 ${a.same}줄) — 아무것도 누르지 않음` : `예스24 등록상품 목록에서 상품번호 ${r.no} 줄을 못 찾음(${r.isbn ? 'ISBN ' + r.isbn : '제목'}으로 조회 ${a.n}줄) — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 그 상품이 지워졌거나 자체코드가 다른지 보고 손으로' };
+    if (!a.hit.length) return { state: 'fail', pre: true, gone: true, msg: r.self ? `예스24 등록상품 목록에서 상품번호 ${r.no}·자체코드 ${r.self} 줄을 못 찾음(같은 자체코드 ${a.same}줄) — 아무것도 누르지 않음` : `예스24 등록상품 목록에서 상품번호 ${r.no} 줄을 못 찾음(${a.how || (r.isbn ? 'ISBN ' + r.isbn : '제목') + '으로 조회 ' + a.n + '줄'}) — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 그 상품이 지워졌거나 자체코드가 다른지 보고 손으로' };
     if (a.hit.length > 1) return { state: 'fail', pre: true, msg: `같은 상품번호·자체코드 줄이 ${a.hit.length}개 — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 손으로' };
     const h = a.hit[0]; const before = vOf(h);
     if (!r.self) { const hs = sp(h.self); if (hs.length && !(r.fill && hs.includes(r.fill))) return { state: 'fail', pre: true, msg: `예스24 ${r.no}의 자체코드가 이미 ${h.self} — 장부가 이은 실물(${r.fill || '?'})과 달라 아무것도 누르지 않음`, before, todo: '🔗 연결 표에서 이 예스24 상품의 짝을 확인한 뒤 손으로' }; r._has = hs.length > 0; }

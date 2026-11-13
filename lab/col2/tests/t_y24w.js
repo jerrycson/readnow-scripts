@@ -21,7 +21,8 @@ function fakeY24() { const S = { prods: [
     { GOODS_NO: '300000006', EAN: '9788900000106', ENTR_GOODS_CD: '', ORD_REMAIN_CNT: 2, SALE_STATE_GB: '02' }, /* (11/11 led2b) 자체코드 없는 예스24 상품 — 같은 ISBN 다른 판매자 줄 없음 */
     { GOODS_NO: '300000007', EAN: '9788900000107', ENTR_GOODS_CD: '', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
     { GOODS_NO: '300000008', EAN: '9788900000106', ENTR_GOODS_CD: '', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
-    { GOODS_NO: '300000009', EAN: '9788900000109', ENTR_GOODS_CD: 'A01SKU9', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02', SHOP_SALE_PRICE: 10000 } /* (판 내기 합침) 판매가 바꾸기(y24ops1) 시험 줄 — led2b가 006을 자체코드 없는 줄로 바꿔서 따로 */].map((p, i) => ({ SHOP_SALE_PRICE: 5000 + i * 1000, ...p })), log: [], ignoreSave: false, priceLock: false, roSelf: false };
+    { GOODS_NO: '300000009', EAN: '9788900000109', ENTR_GOODS_CD: 'A01SKU9', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02', SHOP_SALE_PRICE: 10000 },
+    { GOODS_NO: '300000010', EAN: '9788900000999', ENTR_GOODS_CD: '', ORD_REMAIN_CNT: 3, SALE_STATE_GB: '02', SHOP_SALE_PRICE: 7000 } /* (11/13 fix1113) 예스24 상품의 ISBN이 장부 ISBN(…110)과 다름 — ISBN 조회 0줄 → 제목으로 찾음 */ /* (판 내기 합침) 판매가 바꾸기(y24ops1) 시험 줄 — led2b가 006을 자체코드 없는 줄로 바꿔서 따로 */].map((p, i) => ({ SHOP_SALE_PRICE: 5000 + i * 1000, ...p })), log: [], ignoreSave: false, priceLock: false, roSelf: false };
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title><script>function api(p,o,cb){var x=new XMLHttpRequest();x.open('POST',p);x.setRequestHeader('Content-Type','application/json');x.onload=function(){cb&&cb(x.responseText)};x.send(JSON.stringify(o))}</script></head><body>${b}</body></html>`;
   const plist = () => page('등록상품', `<div id="app"><section>
 <select id="kw"><option value="">선택하세요</option><option value="0">상품명</option><option value="3">ISBN</option><option value="5">자체상품코드</option></select> <input type="text" id="kwv">
@@ -142,6 +143,8 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
     ok(x && x.state === 'fail' && /이미 A01SKU2/.test(x.msg) && nCall('/api/Product/SaveProduct') === sv2 && nCall('/api/Product/ChangeState') === cs2 && P('300000002').ENTR_GOODS_CD === 'A01SKU2', '그 예스24 상품 자체코드가 이미 다른 값이면 짝이 다를 수 있어 아무것도 안 누름', x && x.msg);
     Y.S.roSelf = true; const j11 = job([{ ...row('300000007', '', 'stop'), fill: 'PNK0000007', isbn: '9788900000107' }]); await H.api('POST', '/y24/w/put', j11); x = await resOf(j11.id); const r11 = x && x.rows && x.rows['led|300000007'];
     ok(x && x.state === 'done' && P('300000007').SALE_STATE_GB === '08' && P('300000007').ENTR_GOODS_CD === '' && r11 && r11.fill && r11.fill.state === 'skip' && /잠겨/.test(x.msg) && !(await ws()).stop, '자체코드 칸을 표에서 고칠 수 없으면 판매중지는 그대로 done · 채우기는 건너뛰고 까닭만(멈추지 않음)', x && x.msg); Y.S.roSelf = false;
+    { const j12 = job([{ ...row('300000010', '', 'qty', 1), fill: 'PNK0000010', isbn: '9788900000110' }]); await H.api('POST', '/y24/w/put', j12); x = await resOf(j12.id); const r12 = x && x.rows && x.rows['led|300000010'];
+      ok(x && x.state === 'done' && P('300000010').ORD_REMAIN_CNT === 1 && r12 && r12.before.qty === 3 && Y.S.log.some((l) => l.p === '/api/Product/ProductList' && /"SEARCH_GB":"0"/.test(l.body) && /시험 책 300000010/.test(l.body)), '(11/13 fix1113) ISBN 조회가 두 번 0줄이면 제목(상품명)으로 한 번 더 → 상품번호가 꼭 맞는 줄만 고침(수량 3 → 1)', x && x.msg); }
     console.log('⑦ (11/11 y24ops1) 판매가 바꾸기');
     { const c = W.checkJob; ok(/10원 단위/.test(c(job([row('300000009', 'A01SKU9', 'price', 5005)]), { ok1: 1, rk: {} })) && /100원/.test(c(job([row('300000009', 'A01SKU9', 'price', 50)]), { ok1: 1, rk: {} })) && c(job([row('300000009', 'A01SKU9', 'price', 9000)]), { ok1: 1, rk: {} }) === '', '판매가 검사: 100원~100만 원 · 10원 단위');
       ok(W.isDone({ kind: 'price', to: 9000 }, { price: 9000 }) && !W.isDone({ kind: 'price', to: 9000 }, { price: 8000 }) && !W.isDone({ kind: 'price', to: 9000 }, { price: null }), '판매가 이미 됨 셈'); }
@@ -153,7 +156,7 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
     ok(x && x.state === 'fail' && x.rows['led|300000009'].pre && /고칠 수 없/.test(x.msg) && x.todo && P('300000009').SHOP_SALE_PRICE === 11000 && nCall('/api/Product/SaveProduct') === psv1 + 1, '표의 판매가 칸이 고칠 수 없는 칸이면 아무것도 안 누르고 까닭·할 일', x && x.msg);
     const pj12 = job([row('300000003', 'A01SKU3', 'stop', null, { tag: 'p' })]); await H.api('POST', '/y24/w/put', pj12); await resOf(pj12.id); const pj13 = job([row('300000003', 'A01SKU3', 'price', 7500)]); await H.api('POST', '/y24/w/put', pj13); x = await resOf(pj13.id);
     ok(x && x.state === 'fail' && /판매중이 아닌/.test(x.msg) && P('300000003').SHOP_SALE_PRICE === 7000, '판매중지 상품의 판매가는 안 바꿈', x && x.msg);
-    ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 9, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
+    ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 10, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
     const st = (await H.api('GET', '/status')).j.y24; ok(st.w && st.w.ok1 && st.w.stop == null, '상태(/status y24.w)에 쓰기 줄 요약');
   } finally { try { await H.stop(); } catch (e) {} killDir(D); }
   Y.srv.close(); L.done('t_y24w');

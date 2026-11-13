@@ -10436,6 +10436,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const wCut = (x) => { if (!x || typeof x !== 'object') return null; const sm = (v) => (v && typeof v === 'object' && JSON.stringify(v).length <= 400 ? v : null); const c = (v, n) => (v == null ? null : String(v).slice(0, n || 200)); const one = (y) => (y && typeof y === 'object' ? { state: c(y.state, 20), msg: c(y.msg), todo: c(y.todo), pre: !!y.pre, before: sm(y.before), after: sm(y.after) } : null); /* 전·후 값은 작은 숫자 묶음만(400자 넘으면 버림) */
       const rows = {}; for (const [k, y] of Object.entries(x.rows || {}).slice(0, 30)) rows[String(k).slice(0, 200)] = one(y); return { ...one(x), stop: !!x.stop, rows }; };
     const wSafe = (x) => { try { return wCut(x); } catch (e) { return { state: x && x.state ? String(x.state).slice(0, 20) : 'fail', msg: x && x.msg ? String(x.msg).slice(0, 200) : '', rows: {} }; } };
+    /* (11/13 fix1113 · 아침 점검 '예스24 맡김 실패가 done으로만 보임') 맡김 문서 맨 위에 ok·msg — 문서의 st 'done'은 '처리가 끝났다'일 뿐이라, 진단·맡긴 일 줄에서 성공/실패를 바로 보이게(줄마다 결과는 res 그대로) */
+    function wFinTop(rs) { const R = rs && rs.rows && typeof rs.rows === 'object' ? Object.values(rs.rows) : []; const L = R.length ? R : [rs || {}]; const okOf = (x) => x && (x.state === 'done' || x.state === 'already'); const all = L.every(okOf); const bad = L.find((x) => !okOf(x)) || {};
+      return { ok: !!all, msg: all ? `✅ 확인됨 ${L.length}건` : `${bad.state === 'unsure' ? '❓ 확실하지 않음' : '⚠ 못 함'} — ${String(bad.msg || (rs && rs.msg) || '').slice(0, 160)}` }; }
     const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < (Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
     const wRelay1 = async (pc) => { const fs = firebase.firestore(); const iso = () => new Date().toISOString();
       /* ① 새 맡김 받기 */
@@ -10450,14 +10453,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           if (!r) fin = { state: 'fail', pre: true, msg: `${pc} 번외 도우미(127.0.0.1:8797)에 닿지 못함 — 아무것도 안 누름`, todo: `${pc}에서 번외가 켜져 있는지 확인 뒤 다시 맡기기` };
           else if (r._st === 404) fin = { state: 'fail', pre: true, msg: `${pc} 번외가 옛 판(예스24 쓰기 없음)`, todo: `${pc} 번외 새 판을 받은 뒤 다시` };
           else if (!r.ok) fin = { state: 'fail', pre: true, stop: !!r.stop, msg: String(r.err || '번외가 맡김을 거절').slice(0, 200), todo: r.stop ? '예스24 판매관리에서 멈춘 까닭을 확인한 뒤 🛠 처리할 일 「▶ 예스24 쓰기 이어 가기」' : null }; }
-        try { await fs.collection(W_CMD).doc(d.id).set(fin ? { st: 'done', doneAt: iso(), res: fin } : { st: 'run', runAt: iso(), prog: { step: '', wait: true, why: null } }, { merge: true }); } catch (e) {}
+        try { await fs.collection(W_CMD).doc(d.id).set(fin ? { st: 'done', doneAt: iso(), res: fin, ...wFinTop(fin) } : { st: 'run', runAt: iso(), prog: { step: '', wait: true, why: null } }, { merge: true }); } catch (e) {}
         try { window.__rnLog && window.__rnLog('예스24', fin ? 'warn' : 'info', fin ? `🟦 원격 예스24 쓰기 맡김(${String(v.by || '').slice(0, 20)}) 넘기지 못함 — ${fin.msg}` : `🟦 원격 예스24 쓰기 맡김 ${((v.job || {}).rows || []).length}건(${String(v.by || '').slice(0, 20)})을 이 PC 번외에 넘김`); } catch (e) {} }
       /* ② 넘긴 맡김의 결과·진행 되돌려 적기 */
       let qr = null; try { qr = await fs.collection(W_CMD).where('st', '==', 'run').limit(30).get(); } catch (e) { return; } const mine = qr.docs.filter((d) => String((d.data() || {}).tookBy || '') === pc); if (mine.length) wSeen = Date.now(); if (!mine.length) return;
       const st = await gxs('GET', '/y24/w/state'); if (!st || !st.ok) return; const res = st.res || {}; const wait = new Set((st.wait || []).map((w) => w.id)); const acks = [];
       for (const d of mine) { const v = d.data() || {}; const jid = String((v.job || {}).id || d.id); const x = res[jid];
-        try { if (x) { await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: wSafe(x), prog: null }, { merge: true }); acks.push(jid); delete wSig[d.id]; continue; }
-          const inCur = st.cur && st.cur.id === jid; if (!inCur && !wait.has(jid)) { if (Date.now() - (Date.parse(v.runAt || v.tookAt || '') || 0) > 10 * 60e3) await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: { state: 'fail', msg: `${pc} 번외에서 이 맡김이 사라짐(번외가 다시 켜졌을 수 있음)`, todo: '예스24 판매관리에서 바뀌었는지 보고 다시 맡기거나 손으로' } }, { merge: true }); continue; }
+        try { if (x) { const rs = wSafe(x); await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: rs, prog: null, ...wFinTop(rs) }, { merge: true }); acks.push(jid); delete wSig[d.id]; continue; }
+          const inCur = st.cur && st.cur.id === jid; if (!inCur && !wait.has(jid)) { if (Date.now() - (Date.parse(v.runAt || v.tookAt || '') || 0) > 10 * 60e3) { const rs = { state: 'fail', msg: `${pc} 번외에서 이 맡김이 사라짐(번외가 다시 켜졌을 수 있음)`, todo: '예스24 판매관리에서 바뀌었는지 보고 다시 맡기거나 손으로' }; await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: rs, ...wFinTop(rs) }, { merge: true }); } continue; }
           const prog = { step: inCur ? String(st.cur.step || '').slice(0, 60) : '', wait: !inCur, why: st.why ? String(st.why).slice(0, 160) : null }; const sg = JSON.stringify(prog); if (wSig[d.id] === sg) continue; wSig[d.id] = sg; await fs.collection(W_CMD).doc(d.id).set({ prog, progAt: iso() }, { merge: true }); } catch (e) {} }
       if (acks.length) await gxs('POST', '/y24/w/ack', { ids: acks }); };
     G.__rnC2yWRelay = wRelay; G.__rnC2yWCut = wSafe;
@@ -10466,9 +10469,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
      *  · 웹앱이 다시 오면 웹앱이 씀(이 다리는 비킴) · 결과(하루 요약·견줌)는 여전히 웹앱 또는 홀로 연결이 올림 */
     let stAt = 0; const stPut = async (pc, y) => { if (!pc || Date.now() - stAt < 5 * 60e3) return; stAt = Date.now(); const st = await gx('GET', '/status'); if (!st || !st.ok || st.kind === 'logger') return; const rl = st.relay || {}; const pull = +rl.pullAt || 0; if (pull && Date.now() - pull < 3 * 60e3) return; if (st.solo && st.solo.live) return;
       const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
-      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, webAt: pull ? new Date(pull).toISOString() : null, y24: y && typeof y === 'object' && !y.logger ? { ...hbOf(y), at: now } : null, at: now } }, { mergeFields: ['at', 'by', 'via', 'st'] }); } catch (e) {} };
+      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, load: st.load && typeof st.load === 'object' ? { pct: Number.isFinite(+st.load.pct) && st.load.pct != null ? +st.load.pct : null, hot: !!st.load.hot, ps: Number.isFinite(+st.load.ps) && st.load.ps != null ? +st.load.ps : null } : null, webAt: pull ? new Date(pull).toISOString() : null, y24: y && typeof y === 'object' && !y.logger ? { ...hbOf(y), at: now } : null, al: alOf(st.al), at: now } }, { mergeFields: ['at', 'by', 'via', 'st'] }); } catch (e) {} };
     /* (11/12 fix3 · verify3 17:29 'HOME 예스24 로그인 다시 need') 예전엔 merge라 웹앱이 마지막으로 쓴 st.y24(00:12 0.1.25 '로그인 필요')·st.al·st.have가 그대로 남아, 다리가 💓보다 늦게 쓴 순간마다 웹앱이 옛 'need'를 보였음
      *  → st를 통째로 바꿈(mergeFields — 다른 칸 on·y24hb·solo는 그대로) · st.y24 = 번외가 지금 보낸 예스24 상태(💓와 같은 꼴) */
+    /* (11/13 fix1113 · 아침 점검 'HOME 상태에 al(손발) 칸이 없음') 웹앱이 없을 때 다리가 쓰는 st에도 🟧 알라딘 한 줄 — 번외 /status의 al(AL.sum)에서 웹앱 PC 줄(alLine)과 같은 꼴의 번호·상태·글만(손님 정보·계정 없음)
+     *  예전엔 이 칸이 없어 'HOME 손발이 맡겼는지·받았는지·로그인 ✓인지'를 진단에서 아무도 못 봤음 */
+    const alOf = (a) => { if (!a || typeof a !== 'object') return null; const c = (v, n) => (v == null ? null : String(v).slice(0, n || 160)); const N = (v) => (Number.isFinite(+v) && v != null ? +v : null); const h = a.hands && typeof a.hands === 'object' ? a.hands : null; const d = a.day && typeof a.day === 'object' ? a.day : {};
+      const day = { n: N(d.n), same: N(d.same), diff: N(d.diff), wait: N(d.wait) }; const last = h && h.last && typeof h.last === 'object' ? { at: N(h.last.at), k: c(h.last.k, 12), ok: !!h.last.ok, why: c(h.last.why, 120) } : null;
+      if (h && h.on) return { on: !!a.want, logger: !!a.logger, login: h.login === true ? 'ok' : h.login === false ? 'need' : 'unknown', active: !!h.active, seat: !!h.linked, msg: c(a.msg), day, cmpWait: N(a.cmpWait), hands: { linked: !!h.linked, login: h.login === true ? true : h.login === false ? false : null, n: N(h.n), ok: N(h.ok), fail: N(h.fail), q: N(h.q), out: N(h.out), at: N(h.at), ver: c(h.ver, 20), last, win: h.win ? { n: N(h.win.n), on: !!h.win.on } : null, todo: c(h.todo, 160) } };
+      return { on: !!a.on, want: !!a.want, logger: !!a.logger, login: c(a.login, 20), active: !!a.active, seat: !!a.seat, msg: c(a.msg), day, cmpWait: N(a.cmpWait) }; };
     G.__rnC2yStPut = stPut;
     const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
       busy = true; let jobs = [];
@@ -10696,12 +10705,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const hBody = () => { const s0 = hGov(); const W0 = window.__rnWork; const fresh = HSx.login != null && Date.now() - HSx.loginAt < 30 * 60e3;
     const login = fresh ? HSx.login : s0 && s0.in === true ? true : s0 && s0.in === false && !s0.seat ? false : null; /* 자리 기다림·이어받기(seat)는 '풀림'으로 보지 않음 — 사람을 부르지 않게 */
     return { v: 1, login, why: String((!fresh && s0 && s0.in === false && s0.why) || HSx.why || '').slice(0, 120), work: !!(W0 && W0.isWork && W0.isWork()), page: location.pathname.split('/').pop().slice(0, 40), ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '', title: String(document.title || '').startsWith(HT.trim()), done: HSx.done.splice(0, 5) }; };
+  /* (11/13 fix1113 · 아침 점검 'HOME 기록 05~08시에 🖐 0번') 맡긴 읽기를 해도 이 탭 기록에 한 줄도 안 남아, 손발이 도는지 기록으로 알 길이 없었음
+   *  → 처음 한 번 · 그 뒤 30분마다 요약 한 줄(받은 수·성공·실패·마지막 종류) · 실패는 까닭이 바뀌거나 10분이 지나면 한 줄(번호·상태만 · 손님 정보 없음) */
+  const HN = { n: 0, ok: 0, bad: 0, at: 0, badAt: 0, badWhy: '', last: '' };
+  const hNote = (j, res) => { try { HN.n++; if (res && res.ok) HN.ok++; else HN.bad++; HN.last = String(j.k || '');
+    if (!(res && res.ok)) { const w = String((res && res.why) || '못 읽음').slice(0, 100); if (w !== HN.badWhy || Date.now() - HN.badAt > 10 * 60e3) { HN.badWhy = w; HN.badAt = Date.now(); L('warn', `🖐 번외가 맡긴 샵매니저 읽기(${HN.last}) 못 함 — ${w}`); } }
+    if (!HN.at || Date.now() - HN.at > 30 * 60e3) { HN.at = Date.now(); L('info', `🖐 번외가 맡긴 샵매니저 읽기 — 이 탭이 ${HN.n}건 받아 ✓${HN.ok}·✗${HN.bad}(마지막 ${HN.last}) · 결과는 번외가 운영 칸과 견줌`); } } catch (e) {} };
   async function hTake(h, pc, hold) { const was = HSx.on; HSx.on = !!(h && h.on) && !isLogger(); if (was !== HSx.on) L('info', HSx.on ? '🖐 번외 ⚙ 「알라딘은 평소 크롬을 손발로」 — 이 탭이 번외가 맡긴 샵매니저 읽기를 대신 함(번외 크롬은 로그인하지 않음)' : '🖐 손발 길 끔 — 번외 맡김을 받지 않음'); hTitle();
     if (!HSx.on) return; if (h.front && h.front !== HSx.front) { HSx.front = h.front; try { const W0 = window.__rnWork; if (W0 && W0.isWork && W0.isWork() && window.__rnWorkShow) window.__rnWorkShow('번외 손발 — 알라딘 로그인 확인'); else window.focus(); } catch (e) {} /* 🪟 작업 창이면 운영 도우미가 그 창을 앞으로 */ L('warn', '🖐 번외가 사람 손이 필요하다고 함 — 이 탭을 앞으로 띄움(알라딘 로그인을 확인해 주세요)'); }
     const jobs = Array.isArray(h.jobs) ? h.jobs.slice(0, 1) : []; if (!jobs.length || HSx.busy) return; if (hold && hold.on) { for (const j of jobs) HSx.done.push({ id: String(j.id), res: { ok: false, why: '🚚 출고 중 — 읽지 않음', kind: 'error' } }); return; }
     HSx.busy = true; try { for (const j of jobs) { let res; try { res = await hRun(j); } catch (e) { res = { ok: false, why: '읽기 오류: ' + String(e.message || e).slice(0, 100), kind: 'error' }; }
         if (res.ok) { HSx.login = true; HSx.loginAt = Date.now(); HSx.why = ''; } else if (res.login) { HSx.login = false; HSx.loginAt = Date.now(); HSx.why = res.why; }
-        const one = { id: String(j.id).slice(0, 40), res }; const r2 = await gx('/al/hands', { by: pc, done: [one] }); if (!(r2 && r2.ok)) HSx.done.push(one); } } finally { HSx.busy = false; } }
+        hNote(j, res); const one = { id: String(j.id).slice(0, 40), res }; const r2 = await gx('/al/hands', { by: pc, done: [one] }); if (!(r2 && r2.ok)) HSx.done.push(one); } } finally { HSx.busy = false; } }
   /* 🪑 자리 받기·지키기·내려놓기(한 트랜잭션) — want 거짓이면 내려놓기만 */
   /* (11/10 정범님 'HOME을 번외 전용으로') 🏠 own = 번외 ⚙ '이 PC 알라딘 자리를 번외가 이어받음' — 운영 자리를 먼저 놓은 뒤(로그인 모듈 ownDrop) 번외 자리를 보통 PC 차례(우선순위 1)로 받고 그림자 양보를 하지 않음 */
   async function seatTx(want, who, own) { const db = fsx(), RULE = G.__rnLoginRule; const PRI = own && RULE ? RULE.PRI.pc : -1; if (!db || !RULE) return { ok: false, why: '계정 상태 문서를 못 읽음(Firebase 로그인 전)', until: Date.now() + 60e3 };
@@ -10738,6 +10753,34 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           if (sent) L('info', `🚚 출고 끝 — 출고 중 쌓아 둔 그림자 쓰기 ${sent}건을 번외에 한꺼번에 넘김`); } } const want = !!a.on && !a.logger && !a.pp && !(hold && hold.on);
       if (await seatStep(want, who, SEAT.ownNow)) nextAt = Date.now() + 1500; /* 자리가 바뀌면 곧바로 알림 */
     } catch (e) {} finally { busy = false; } };
+  /* (11/13 fix1113 · 아침 점검 'HOME 손발 05시 뒤 alDay 0') 원인: 번외가 손발로 읽은 결과를 운영 칸과 견주려면 운영 문서(prd_listings·shp_state·crm_interactions)를 받아야 하고
+   *  견준 결과(col2_al 등)는 '이 PC 웹앱' 또는 '🔌 홀로 연결'이 Firestore에 써 줌 — HOME은 웹앱 탭이 닫혀 있고(webAt 없음) 홀로 연결도 안 살아 있어(상태를 다리가 대신 씀)
+   *  견줌은 10분 기다린 뒤 '운영 문서 못 받음'이 되고 결과는 번외 안에만 쌓여 아무 데도 안 올라갔음(alDay 0) · 홀로 연결도 손님 정보가 든 그 세 칸은 넘기지 않음(웹앱만)
+   *  → 로거 다리(rnC2lg)처럼 사무실 PC도: 이 PC 웹앱이 3분 넘게 번외에 안 왔으면 이 탭(운영 수집기 · Firebase 로그인됨)이 1분마다
+   *     ① 번외가 부탁한 알라딘 그림자 세 칸만 문서 이름 규칙 안에서 읽어 웹앱 c2alTrim과 같은 칸만(번호·상태·값 — 구매자·수령인·주소·전화·문의 글 없음) 넘김(/relay/answer · 번외가 받는 순간 trimProd로 다시 거름)
+   *     ② 번외 결과 중 col2_ 칸만 씀(넘김 op·웹앱만 쓰는 web 줄은 안 씀 · 홀로 연결이 살아 있으면 번외가 애초에 안 줌) → /relay/ack
+   *  로거는 이 길이 아님(rnC2lg · 약속 0) · 출고 보호 중엔 쉼(약속 0-1) · 머리 그대로(@connect 127.0.0.1·GM_xmlhttpRequest) */
+  const C2AL_ID = { prd_listings: /^aladin_[\w-]{1,40}$/, shp_state: /^(confirm|current)$/, crm_interactions: /^aladin_qna_\d{1,15}$/ };
+  const c2alTrim = (c, v) => { if (!v || typeof v !== 'object') return null; const pick = (ks) => { const o = {}; for (const k of ks) if (v[k] !== undefined) o[k] = v[k]; return o; };
+    if (c === 'prd_listings') return pick(['usedCode', 'listingId', 'status', 'price', 'sku', 'grade', 'qty', 'qtyList', 'active', 'lastSeenAt', 'seenBy_scm']);
+    if (c === 'shp_state') return { at: v.at || null, tabCounts: v.tabCounts && typeof v.tabCounts === 'object' ? { ...v.tabCounts } : null, orders: Array.isArray(v.orders) ? v.orders.map((o) => ({ orderNo: String((o && o.orderNo) || ''), items: Array.isArray(o && o.items) ? o.items.map((i) => ({ listingId: i && i.listingId != null ? String(i.listingId) : null })) : [], deliveryNo: (o && o.deliveryNo) || null })) : null };
+    if (c === 'crm_interactions') return pick(['questionId', 'answerStatus']); return null; };
+  const gxg = (p) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'GET', url: B + p, headers: { 'X-RN-Col2': '1' }, timeout: 15000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const RLx = { busy: false, next: 0, miss: 0, n: 0, said: 0, at: 0, w: 0, err: '' };
+  const c2rlTick = async () => { if (RLx.busy || Date.now() < RLx.next) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || isLogger()) return; const db = fsx(); if (!db) return; const pc = pcOf(); if (!pc) return;
+    let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {} if (hold && hold.on) { RLx.next = Date.now() + 60e3; return; }
+    RLx.busy = true; let next = 60e3; try {
+      const pd = await gxg('/relay/pending?by=' + encodeURIComponent('수집기 ' + pc)); if (!pd || !pd.ok) { if (++RLx.miss >= 3) next = 5 * 60e3; return; } RLx.miss = 0;
+      if (pd.kind === 'logger') { next = 30 * 60e3; return; } if (pd.webAt && Date.now() - pd.webAt < 3 * 60e3) return; /* 이 PC 웹앱이 넘기는 중 — 비킴 */
+      const docs = []; for (const w of (Array.isArray(pd.want) ? pd.want : []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!C2AL_ID[c] || !C2AL_ID[c].test(id)) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? c2alTrim(c, d.data()) : null }); } catch (e) { RLx.err = e.code || e.message; } }
+      if (docs.length) { await gx('/relay/answer', { docs }); RLx.w += docs.length; }
+      const keys = [], errs = {}; for (const o of (Array.isArray(pd.out) ? pd.out : []).slice(0, 25)) { if (!o || !o.k) continue; if (o.op || o.web) continue; /* 넘김 운영 칸·웹앱만 쓰는 줄은 웹앱이 */ if (!/^col2_[\w-]+$/.test(String(o.c || '')) || !/^[\w.-]{1,150}$/.test(String(o.id || ''))) { errs[o.k] = '수집기 다리는 col2_ 칸만 씀'; continue; }
+        try { await db.collection(o.c).doc(o.id).set(o.v || {}, o.merge ? { merge: true } : undefined); keys.push(o.k); } catch (e) { errs[o.k] = e.code || e.message; } }
+      if (keys.length || Object.keys(errs).length) await gx('/relay/ack', { keys, errs }); RLx.n += keys.length; RLx.at = Date.now();
+      if ((keys.length || docs.length) && (!RLx.said || Date.now() - RLx.said > 3 * 3600e3)) { RLx.said = Date.now(); L('info', `🛰 이 PC 웹앱이 닫혀 있어 운영 수집기 탭이 번외 결과 ${keys.length}건을 col2_ 칸에 대신 씀 · 견줄 알라딘 운영 칸 ${docs.length}개 넘김(번호·상태·값만 · 웹앱이 열리면 비킴)`); }
+      if (docs.length || (pd.out || []).length >= 25) next = 10e3; else if ((pd.want || []).some((w) => w && C2AL_ID[w.c])) next = 15e3;
+    } catch (e) { RLx.err = String((e && e.message) || e).slice(0, 80); } finally { RLx.busy = false; RLx.next = Date.now() + next; } };
+  G.__rnC2rlTick = c2rlTick; G.__rnC2rl = () => ({ ...RLx }); setTimeout(() => c2rlTick().catch(() => {}), 35000); setInterval(() => c2rlTick().catch(() => {}), 5000);
   /* (11/10 번외 0.1.9) ⏳ 운영이 긴 일을 하는 동안 번외 그림자 일이 쉬게 — 1분마다 이 PC 지금 하는 일(__rnWorkNow: 자동·맡긴 일 · 사진 · 고객 수집)을 보고
    *  하는 중이면 POST /busy {sec: 180, why: 일 이름} (번외가 30분까지만 받음) · 끝나면 {sec: 0} 한 번 · 로그인·계정 정보 없음이라 로거 크롬도 알림 · 번외가 없으면 10분에 한 번만 */
   let bzOn = false, bzMiss = 0, bzNext = 0;
