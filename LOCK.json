@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "helperui: 판 내기 push",
- "since": "2026-11-13T00:29:55Z",
- "beat": "2026-11-13T00:47:21Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: cloudmem 클라우드 메모리 넘침 고침 판",
-  "at": "2026-11-13T00:47:48Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "capfix 판 76e640da 웹앱 1.78.543·수집기 1.89.295·도우미 1.8.25",
-  "at": "2026-11-13T00:25:55Z"
+  "done": "helperui 판 43733cac 웹앱 1.78.544·수집기 1.89.296·도우미 1.8.26",
+  "at": "2026-11-13T00:48:05Z"
  },
- "host": "vm-helperui"
+ "host": null
 }
