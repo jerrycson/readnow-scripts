@@ -1,17 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: spare2 넷째 판 — 🎁 여분 소진 막힘 고침(상품 페이지 정보)",
-  "at": "2026-11-13T07:39:55Z"
- },
+ "holder": "lead",
+ "what": "rv1b: 넷째 판 올리기(ext 0.6.23)",
+ "since": "2026-11-13T07:48:35Z",
+ "beat": "2026-11-13T07:48:35Z",
+ "ask": null,
  "last": {
   "who": "url1",
   "done": "웹앱 1.78.587 새 주소 휴대폰 앱 설치(manifest 상대 경로·web.app→readnow.kr) (06b16daf)",
   "at": "2026-11-13T07:48:33Z"
  },
- "host": null
+ "host": "wk-rv1b"
 }
