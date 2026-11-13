@@ -1,2 +1,2 @@
-pend=1&n=30&shpauto=15&bkinfo=1&doc=app_settings/shop,app_settings/bkinfo
-# 1091615944
+slearn=bg
+# 286774694
