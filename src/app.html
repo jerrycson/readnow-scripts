@@ -24146,13 +24146,13 @@ try { FEAT.push({ t: '🔎 맨 위 검색 칸 — 무엇을 쳤는지 저절로 
  *  ③ 검색 칸에서 ↑↓ = 떠 있는 목록(🕘 최근 검색 · 🧭 기능·화면)에서 고르기 · Enter = 고른 것 실행 · 고른 것이 없으면 예전처럼 Enter = 검색 확정
  *  ④ 목록 끝에서 ↓ 또는 목록이 없을 때 ↓ = 아래 검색 결과 첫 줄로 · 결과 줄에서 ↑↓ = 위아래 줄 · Enter = 열기 · 첫 줄에서 ↑ = 검색 칸으로
  *  (Alt+↑↓ 카드 넘기기·등록 화면 칸 고르기는 그대로 — 꾸밈 키가 없을 때·검색 칸과 #main 검색 결과 줄에서만) */
-const SRKB = { i: -1 };
+const SRKB = { i: -1, ri: -1, rt: 0 };
 const SRKB_ROW = ':scope .list > .item, :scope .list > [data-pid], :scope .list > [data-cid], :scope .list > [data-sid], :scope .list > [data-oid]';
 function srkbPop() { const r = document.getElementById('qrecent'); if (r && r.classList.contains('on')) { const L = [...r.querySelectorAll('[data-qh]')]; if (L.length) return { k: 'recent', L }; }
   const f = document.getElementById('qfeat'); if (f && f.classList.contains('on')) { const L = [...f.querySelectorAll('[data-qf]')]; if (L.length) return { k: 'feat', L }; } return null; }
 function srkbMark(P) { if (!P) return; P.L.forEach((x, j) => x.classList.toggle('srkbon', j === SRKB.i)); const x = P.L[SRKB.i]; if (x) { try { x.scrollIntoView({ block: 'nearest' }); } catch (e) {} } }
 function srkbRows() { const m = document.getElementById('main'); if (!m) return []; let L = []; try { L = [...m.querySelectorAll(SRKB_ROW)]; } catch (e) { return []; } return L.filter((el) => el.offsetParent && !el.closest('.srchband')); }
-function srkbFocus(el) { if (!el) return false; if (el.tabIndex < 0 && !/^(BUTTON|A)$/.test(el.tagName)) el.tabIndex = -1; try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} return document.activeElement === el; }
+function srkbFocus(el) { if (!el) return false; if (el.tabIndex < 0 && !/^(BUTTON|A)$/.test(el.tagName)) el.tabIndex = -1; try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} SRKB.ri = srkbRows().indexOf(el); SRKB.rt = Date.now(); return document.activeElement === el; }
 function srkbCss() { if (document.getElementById('srkb-css')) return; const st = document.createElement('style'); st.id = 'srkb-css';
   st.textContent = `#qrecent .qc.srkbon,#qfeat .qf-i.srkbon{outline:2px solid #2F6FDB;outline-offset:1px;background:#EAF1FF}#main .list > .srkbrow:focus{outline:2px solid #2F6FDB;outline-offset:-2px}@media (prefers-color-scheme:dark){#qrecent .qc.srkbon,#qfeat .qf-i.srkbon{background:#1E2A44}}`; document.head.appendChild(st); }
 document.addEventListener('input', (e) => { if (e.target && e.target.id === 'q') SRKB.i = -1; }, true);
@@ -24171,6 +24171,9 @@ document.addEventListener('keydown', (e) => { const t = e.target; if (!t || e.al
   if (e.key === 'ArrowUp' && i === 0) { const qi = document.getElementById('q'); if (qi) { qi.focus(); try { const n = qi.value.length; qi.setSelectionRange(n, n); } catch (er) {} } return; }
   const nx = R[Math.max(0, Math.min(R.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]; nx.classList.add('srkbrow'); srkbFocus(nx); }, true);
 document.addEventListener('focusout', (e) => { const t = e.target; if (t && t.classList && t.classList.contains('srkbrow')) setTimeout(() => { if (document.activeElement !== t) t.classList.remove('srkbrow'); }, 0); }, true);
+document.addEventListener('focusin', (e) => { const t = e.target; if (!(t && t.classList && t.classList.contains('srkbrow'))) SRKB.ri = -1; }, true); /* 사람이 다른 곳으로 옮기면 놓음 */
+/* 결과 줄에 있는 동안 화면이 다시 그려지면(자료가 들어옴·검색 다시) 같은 자리 줄로 초점을 이어 줌 — 예전엔 초점이 화면 밖(body)으로 빠져 ↑↓가 멈춤 */
+{ const f2 = renderMainNow; renderMainNow = function () { const r = f2.apply(this, arguments); try { if (SRKB.ri >= 0 && Date.now() - SRKB.rt < 120000 && (!document.activeElement || document.activeElement === document.body)) { const R = srkbRows(); const el = R[Math.min(SRKB.ri, R.length - 1)]; if (el) { el.classList.add('srkbrow'); srkbFocus(el); } else SRKB.ri = -1; } } catch (e) {} return r; }; }
 try { FEAT.push({ t: '⌨ 검색 칸 키보드 — ↑↓로 최근 검색·기능 고르기 · ↓로 결과 줄 · Enter 열기', w: '맨 위 가운데 검색 칸에서 ↑↓ · 결과 줄에서 ↑↓ · 첫 줄에서 ↑ = 검색 칸', k: '검색 키보드 화살표 위 아래 최근 검색 고르기 결과 줄 이동 Enter 열기', go: { sel: '#q' } }); } catch (e) {}
 /* 띠 아래 '원래 화면'에도 그 탭 첫 화면 순서(✎ 첫 화면 편집)·🧭 묶음 줄이 그대로 — 그리는 동안만 검색어 없는 셈 */
 { const a0 = applyTabOrder; applyTabOrder = function (m, tab) { if (S._srchBase && !S._srchIn && tab === S._srchBase) { const q = S.q; S.q = ''; try { return a0.apply(this, arguments); } finally { S.q = q; } } return a0.apply(this, arguments); }; }
