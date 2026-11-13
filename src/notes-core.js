@@ -2,7 +2,7 @@
  *  원본: src/notes-core.js · 웹앱엔 app.html 안 같은 표시 사이 · 아티팩트엔 readnow-chats tools/note-ui/build.py가 넣음
  *  JBN.mount(root, store, opt) — store = { docs(): Map(id → 문서), write(ops) → Promise, onChange(fn), status() → {mode, label, tip, ok}, send(text, memoIds) → Promise<{status, via, err}>, linkTo? }
  *  구조: 대분류(cat) › 중분류(sub) › 소분류(leaf) — 같은 칸 안에서는 중요도(imp 3→1) 높은 것부터 · 카드 겉 [✅ 완료] [🗄 보관] [🗑 휴지통] · 지우지 않음(휴지통에서 되살림)
- *  탭: 검토 · 🆕 새로 온 것(아직 안 읽은 리드 카드 — 검토 중인 묶음과 섞지 않음 · 펼치는 순간 읽음 = 검토로 옮김 · 접을 때 이 목록에서 빠짐) · ⏸ 보류(정범님 '보류해줘' — note4 11/13) · ✅ 완료 · 🗄 보관함 · 🗑 휴지통 · 맨 아래 🧾 통합 노트(메모가 함께 쌓임 · 직접 쓰기 · 💬 리드에게 보내기) */
+ *  탭: 검토 · 🆕 새로 온 것(아직 안 읽은 리드 카드 — 검토 중인 묶음과 섞지 않음 · 펼치는 순간 읽음 = 검토로 옮김 · 접을 때 이 목록에서 빠짐) · ⏸ 보류(정범님 '보류해줘' — note4 11/13) · ✅ 완료 · 🗄 보관함 · 🗑 휴지통 · 📝 내 메모(정범님 혼자 · 리드에게 안 감 — note5) · 맨 아래 🧾 통합 노트(메모가 함께 쌓임 · 직접 쓰기 · 💬 리드에게 보내기 · 💾 저장1·2·3 칸마다 따로 쌓고 서버에 보존 — note5) */
 (function (G) {
   'use strict';
   if (G.JBN) return;
@@ -12,7 +12,12 @@
   const nowIso = () => new Date().toISOString();
   const rid = (p) => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const CAT_ORDER = ['참고LOST', '사업 결정', '출고·주문', '우리숍', '벤치마킹·엔진', '연구', '수집기·PC', '웹앱', '클라우드', '운영·장치', '보고·점검', '노트'];
-  const TABS = [['review', '검토'], ['fav', '⭐ 즐겨찾기'], ['new', '🆕 새로 온 것'], ['held', '⏸ 보류'], ['done', '✅ 완료'], ['archived', '🗄 보관함'], ['trashed', '🗑 휴지통']];
+  const TABS = [['review', '검토'], ['fav', '⭐ 즐겨찾기'], ['mine', '📝 내 메모'], ['new', '🆕 새로 온 것'], ['held', '⏸ 보류'], ['done', '✅ 완료'], ['archived', '🗄 보관함'], ['trashed', '🗑 휴지통']]; /* 📝 내 메모(note5)는 휴대폰 첫 화면에 보이게 앞쪽 */
+  /* (note5 · 정범님 11/13 18:01) 💾 저장1·2·3 — 통합 노트를 칸 셋에 나눠 쌓고, 보내기 전까지 서버(jb_notes)에 영구 보존
+   *  메모 문서 slot(1~3 · 예전 메모는 1) · 칸마다 입력 중인 글 = 문서 slot_<n> { kind:'slot', slot, draft } (입력할 때마다 곧바로 저장) · 고른 칸 = _meta.slotCur
+   *  📝 내 메모 = kind 'jbmemo' — 정범님 혼자 쓰는 노트(queueOf·compose·리드 받은 편지에 잡히지 않음 · Claude에게 가지 않음) */
+  const SLOTS = [1, 2, 3];
+  const slotOf = (m) => (m && m.slot >= 1 && m.slot <= 3 ? m.slot : 1);
 
   /* ── 문서 → 카드 꼴 (예전 노트: kind 없음 · folder·archived·trashed) ── */
   function kindOf(d) { return d.kind || (d.text != null && d.cardId !== undefined ? 'memo' : 'card'); }
@@ -23,11 +28,11 @@
   const isFav = (d) => !!(d && d.pinned) && stateOf(d) !== 'trashed';
   function tabOf(d) { const st = stateOf(d); if (st === 'open') return isNew(d) ? 'new' : 'review'; return st; }
   function model(docs) {
-    const cards = [], memos = [], batches = []; let meta = null;
-    for (const [id, d0] of docs) { if (!d0 || id.startsWith('_')) { if (id === '_meta') meta = d0; continue; } const d = { id, ...d0 }; const k = kindOf(d); if (k === 'card') cards.push(d); else if (k === 'memo') memos.push(d); else if (k === 'batch') batches.push(d); }
+    const cards = [], memos = [], batches = [], mine = [], slots = new Map(); let meta = null;
+    for (const [id, d0] of docs) { if (!d0 || id.startsWith('_')) { if (id === '_meta') meta = d0; continue; } const d = { id, ...d0 }; const k = kindOf(d); if (k === 'card') cards.push(d); else if (k === 'memo') memos.push(d); else if (k === 'batch') batches.push(d); else if (k === 'jbmemo') mine.push(d); else if (k === 'slot' && d.slot >= 1 && d.slot <= 3) slots.set(d.slot, d); }
     const byCard = new Map(); for (const m of memos) { if (m.state === 'trashed') continue; if (m.cardId) { if (!byCard.has(m.cardId)) byCard.set(m.cardId, []); byCard.get(m.cardId).push(m); } }
     for (const L of byCard.values()) L.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
-    return { cards, memos, batches, byCard, meta };
+    return { cards, memos, batches, byCard, meta, mine, slots };
   }
   const impOf = (c) => (c.imp >= 1 && c.imp <= 3 ? c.imp : 2); /* ⭐(pinned)는 차례만 바꾸지 않음 — 위 ⭐ 묶음으로 따로 보임 */
   const whenOf = (c) => c.srcAt || c.createdAt || c.updatedAt || '';
@@ -90,7 +95,7 @@
     return L.join('\n');
   }
   const qOrd = (m) => (typeof m.ord === 'number' ? m.ord : Date.parse(m.at || '') || 0);
-  const queueOf = (M) => M.memos.filter((m) => !m.batchId && m.state !== 'trashed').sort((a, b) => qOrd(a) - qOrd(b) || String(a.at || '').localeCompare(String(b.at || '')));
+  const queueOf = (M, slot) => M.memos.filter((m) => !m.batchId && m.state !== 'trashed' && (slot == null || slotOf(m) === slot)).sort((a, b) => qOrd(a) - qOrd(b) || String(a.at || '').localeCompare(String(b.at || '')));
 
   /* ── 모양 (색은 --jbn-* 토큰 · 없으면 밝은 기본값) ── */
   const STYLE = `.jbn{--a:var(--jbn-accent,#0d6b66);--ai:var(--jbn-accent-ink,#fff);--as:var(--jbn-accent-soft,#d3e9e6);--bg:var(--jbn-bg,#eef2f1);--sf:var(--jbn-surface,#fbfcfc);--s2:var(--jbn-surface-2,#e4eae9);--ln:var(--jbn-line,#cfd9d8);--tx:var(--jbn-text,#132120);--mu:var(--jbn-muted,#536664);--fa:var(--jbn-faint,#7d8f8d);--memo:var(--jbn-memo,#fff4c2);--memo-ln:var(--jbn-memo-line,#e0b400);--memo-tx:var(--jbn-memo-ink,#3d2f00);--new:var(--jbn-new,#2f6fb5);--dn:var(--jbn-danger,#b3261e);--ok:var(--jbn-ok,#3d8a4a);color:var(--tx);font-size:15px;line-height:1.6;max-width:900px;margin-inline:auto}
@@ -123,14 +128,16 @@
 .jbn-sent{margin-top:10px;border:1px solid var(--ln);border-radius:8px;padding:6px 10px;background:var(--sf)}.jbn-sent>summary{cursor:pointer;font-size:13px;color:var(--mu)}.jbn-sent pre{white-space:pre-wrap;font-size:12.5px;background:var(--s2);border-radius:6px;padding:8px;overflow-wrap:anywhere}
 .jbn-jump{position:fixed;z-index:50;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));border:1px solid var(--memo-ln);background:var(--memo);color:var(--memo-tx);border-radius:999px;padding:7px 14px;font-weight:700;font-size:13.5px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
 .jbn-empty{color:var(--mu);font-size:14px;padding:24px 4px;text-align:center}.jbn-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:70;background:var(--tx);color:var(--bg);border-radius:9px;padding:8px 14px;font-size:13.5px;max-width:calc(100vw - 32px)}
+.jbn-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.jbn-slot{border:1px solid var(--ln);background:var(--s2);border-radius:9px;padding:4px 6px;min-height:40px;display:grid;line-height:1.25;text-align:center;font-size:13.5px;font-weight:600}.jbn-slot .sn{font-size:11px;font-weight:500;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jbn-slot[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:var(--ai)}.jbn-slot[aria-pressed="true"] .sn{color:var(--ai);opacity:.9}.jbn-dock .sv{font-size:11.5px;color:var(--fa)}
+.jbn-mine{display:grid;gap:8px}.jbn-mw{display:grid;gap:6px;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px}.jbn-mw textarea,.jbn-mi textarea{width:100%;min-height:72px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:8px;padding:8px 10px;font:inherit;resize:vertical}.jbn-mi{background:var(--sf);border:1px solid var(--ln);border-left:4px solid var(--a);border-radius:4px 10px 10px 4px;padding:8px 12px}.jbn-mi .tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}.jbn-mi .ft{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--fa);margin-top:6px}.jbn-mi .ft .jbn-sp{flex:1}
 @media (max-width:520px){.jbn-dock .dr{flex-wrap:wrap}.jbn-dock textarea{flex-basis:100%}.jbn-acts .jbn-b{padding:4px 8px}.jbn-cat>summary{font-size:15.5px}}`;
 
   function mount(root, store, opt) {
     opt = opt || {};
     if (!document.getElementById('jbn-css')) { const st = document.createElement('style'); st.id = 'jbn-css'; st.textContent = STYLE; document.head.appendChild(st); }
-    const U = { seen: new Set(), tab: 'review', q: '', open: new Set(), comp: null, draft: '', feedDraft: '', busy: false, pend: false, toastT: 0 };
-    try { const p = JSON.parse(localStorage.getItem('jbn-ui') || '{}'); if (TABS.some((t) => t[0] === p.tab)) U.tab = p.tab; } catch (e) {}
-    const saveUi = () => { try { localStorage.setItem('jbn-ui', JSON.stringify({ tab: U.tab })); } catch (e) {} };
+    const U = { seen: new Set(), tab: 'review', q: '', open: new Set(), comp: null, draft: '', feedDraft: '', busy: false, pend: false, toastT: 0, slot: 1, slotSeen: undefined, dDirty: false, dT: 0, sv: '', mineDraft: '', medit: null };
+    try { const p = JSON.parse(localStorage.getItem('jbn-ui') || '{}'); if (TABS.some((t) => t[0] === p.tab)) U.tab = p.tab; if (SLOTS.includes(p.slot)) U.slot = p.slot; } catch (e) {}
+    const saveUi = () => { try { localStorage.setItem('jbn-ui', JSON.stringify({ tab: U.tab, slot: U.slot })); } catch (e) {} }; /* 기기 편의(고른 탭)만 — 칸 내용은 서버 */
     root.classList.add('jbn');
     const selBtn = document.createElement('button'); selBtn.className = 'jbn-selbtn'; selBtn.type = 'button'; selBtn.hidden = true; selBtn.textContent = '💬 메모 달기'; document.body.appendChild(selBtn);
     const jump = document.createElement('button'); jump.className = 'jbn-jump'; jump.type = 'button'; jump.hidden = true; document.body.appendChild(jump);
@@ -169,26 +176,53 @@
       return `<div class="jbn-memo" data-memo="${esc(m.id)}">${ref}${m.quote ? `<span class="qt">“${esc(String(m.quote).slice(0, 400))}”</span>` : ''}<span class="who">정범</span><span class="tx">${esc(m.text)}</span><div class="ft"><span>${kst(m.at)}</span>${m.batchId ? '<span>💬 보냄</span>' : '<span>아직 안 보냄</span>'}${!m.batchId && inFeed ? `<button data-act="qup" data-mid="${esc(m.id)}" title="위로">↑ 위로</button><button data-act="qdown" data-mid="${esc(m.id)}" title="아래로">↓ 아래로</button><button data-act="qedit" data-mid="${esc(m.id)}">✏ 고치기</button>` : ''}${!m.batchId ? `<button data-act="memotrash" data-mid="${esc(m.id)}">빼기</button>` : ''}</div></div>`;
     }
     /* (note4 · 정범님 11/13 15:06) 화면 아래 붙은 통합 입력칸 — 쌓인 메모·인용 수 · 바로 쓰기(Enter 적기 · Shift+Enter 줄바꿈) · 모두 보내기 · 목록으로 */
+    function slotsHtml(M) {
+      return `<div class="jbn-slots" role="group" aria-label="저장 칸">${SLOTS.map((n) => { const q = queueOf(M, n); const nq = q.filter((m) => m.quote).length; const dr = (n === U.slot ? U.feedDraft : String((M.slots.get(n) || {}).draft || '')).trim();
+        const sn = q.length || dr ? `메모 ${q.length}${nq ? ` · 인용 ${nq}` : ''}${dr ? ' · ✎' : ''}` : '비어 있음';
+        return `<button type="button" class="jbn-slot" data-slot="${n}" aria-pressed="${n === U.slot}" title="💾 저장${n} — ${q.length ? `보내기 전 메모 ${q.length}건(인용 ${nq}건)` : '쌓인 메모 없음'}${dr ? ' · 쓰던 글 있음' : ''} · 보내기 전까지 서버에 보존"><span>💾 저장${n}</span><span class="sn" data-slotn="${n}">${sn}</span></button>`; }).join('')}</div>`;
+    }
     function dockHtml(M) {
-      const un = queueOf(M); const nq = un.filter((m) => m.quote).length;
-      return `<div class="jbn-dock" id="jbn-dock" role="region" aria-label="통합 입력칸"><div class="dh"><b>🧾 통합 노트</b><span class="dn" data-dockn="${un.length}">${un.length ? `쌓인 메모 ${un.length}건${nq ? ` · 인용 ${nq}건` : ''}` : '쌓인 메모 없음'}</span><span class="jbn-sp"></span>${un.length ? '<button class="jbn-b" data-act="tofeed">목록 보기 ↓</button>' : ''}</div>
-        <div class="dr"><label for="jbn-feed-ta" style="position:absolute;left:-9999px">통합 노트에 쓰기</label><textarea id="jbn-feed-ta" data-feedta="1" rows="1" placeholder="리드에게 남길 말 — Enter 적기 · Shift+Enter 줄바꿈">${esc(U.feedDraft)}</textarea><button class="jbn-b" data-act="feedmemo">✍ 적기</button><button class="jbn-b pri" data-act="send" ${un.length && !U.busy ? '' : 'disabled'}>📨 모두 보내기${un.length ? ` (${un.length})` : ''}</button></div></div>`;
+      const un = queueOf(M, U.slot); const nq = un.filter((m) => m.quote).length; const can = (un.length || U.feedDraft.trim()) && !U.busy;
+      return `<div class="jbn-dock" id="jbn-dock" role="region" aria-label="통합 입력칸">${slotsHtml(M)}<div class="dh"><b>🧾 저장${U.slot}</b><span class="dn" data-dockn="${un.length}">${un.length ? `쌓인 메모 ${un.length}건${nq ? ` · 인용 ${nq}건` : ''}` : '쌓인 메모 없음'}</span><span class="sv" data-sv="1">${esc(U.sv)}</span><span class="jbn-sp"></span>${un.length ? '<button class="jbn-b" data-act="tofeed">목록 보기 ↓</button>' : ''}</div>
+        <div class="dr"><label for="jbn-feed-ta" style="position:absolute;left:-9999px">통합 노트에 쓰기</label><textarea id="jbn-feed-ta" data-feedta="1" rows="1" placeholder="리드에게 남길 말 — Enter 적기 · Shift+Enter 줄바꿈">${esc(U.feedDraft)}</textarea><button class="jbn-b" data-act="feedmemo">✍ 적기</button><button class="jbn-b pri" data-act="send" ${can ? '' : 'disabled'} title="💾 저장${U.slot}에 쌓인 것만 보내고 이 칸을 비웁니다(다른 칸은 그대로)">📨 저장${U.slot} 보내기${un.length ? ` (${un.length})` : ''}</button></div></div>`;
     }
     function feedHtml(M) {
       const cardsById = new Map(M.cards.map((c) => [c.id, c]));
-      const un = queueOf(M);
+      const un = queueOf(M, U.slot);
       const bs = M.batches.slice().sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
       const st = (b) => (b.status === 'picked' ? '✅ 리드가 받음' : b.status === 'sent' ? '💬 리드 채팅으로 보냄' : b.status === 'failed' ? '⚠ 못 보냄' : '⏳ 리드 확인 기다림(10분 안)');
-      return `<section class="jbn-feed" id="jbn-feed" aria-label="통합 노트"><h3>🧾 통합 노트 — 보낼 대기</h3><div class="sub">카드 글을 드래그로 고르면 [💬 메모 달기] → 그 자리 작은 버블에 메모를 쓰고 Enter — 고른 글(인용)과 메모가 여기 차례로 쌓입니다(읽던 자리 그대로). 순서 바꾸기·고치기·빼기를 한 뒤 화면 아래 통합 입력칸의 [📨 모두 보내기]로 한 메시지로 리드에게 갑니다. 아래 입력칸에 바로 써도 됩니다.</div>
+      return `<section class="jbn-feed" id="jbn-feed" aria-label="통합 노트"><h3>🧾 통합 노트 — 💾 저장${U.slot} 보낼 대기</h3><div class="sub">카드 글을 드래그로 고르면 [💬 메모 달기] → 그 자리 작은 버블에 메모를 쓰고 Enter — 고른 글(인용)과 메모가 여기 차례로 쌓입니다(읽던 자리 그대로). 순서 바꾸기·고치기·빼기를 한 뒤 화면 아래 통합 입력칸의 [📨 저장${U.slot} 보내기]로 한 메시지로 리드에게 갑니다. 아래 입력칸에 바로 써도 됩니다. 입력칸 위 💾 저장1·2·3은 따로 쌓는 칸 셋 — 쓰는 대로 서버에 바로 저장되고, 보내기 전까지 남습니다(다른 칸은 보내도 그대로).</div>
         ${un.length ? un.map((m) => memoHtml(m, true, cardsById)).join('') : '<div class="jbn-empty" style="padding:10px 4px">아직 보낼 메모가 없습니다.</div>'}
-        ${bs.map((b) => `<details class="jbn-sent" data-batch="${esc(b.id)}"><summary>보냄 ${kst(b.at)} · ${(b.memoIds || []).length}건 · ${st(b)}${b.err ? ' · ' + esc(String(b.err).slice(0, 80)) : ''}</summary><pre>${esc(b.text || '')}</pre></details>`).join('')}</section>`;
+        ${bs.map((b) => `<details class="jbn-sent" data-batch="${esc(b.id)}"><summary>보냄 ${kst(b.at)}${b.slot ? ` · 💾 저장${b.slot}` : ''} · ${(b.memoIds || []).length}건 · ${st(b)}${b.err ? ' · ' + esc(String(b.err).slice(0, 80)) : ''}</summary><pre>${esc(b.text || '')}</pre></details>`).join('')}</section>`;
     }
+    function mineHtml(M, q) {
+      const ord = (d) => String(d.editedAt || d.at || d.createdAt || '');
+      const L = M.mine.filter((d) => d.state !== 'trashed' && (!q || String(d.text || '').toLowerCase().includes(q))).sort((x, y) => ord(y).localeCompare(ord(x)));
+      const T = M.mine.filter((d) => d.state === 'trashed').sort((x, y) => String(y.stateAt || '').localeCompare(String(x.stateAt || '')));
+      const item = (d, tr) => (U.medit === d.id && !tr ? `<div class="jbn-mi" data-mine="${esc(d.id)}"><label for="jbn-med" style="position:absolute;left:-9999px">내 메모 고치기</label><textarea id="jbn-med">${esc(d.text)}</textarea><div class="ft"><button class="jbn-b pri" data-act="msave" data-mid="${esc(d.id)}">저장</button><button class="jbn-b" data-act="mcancel">그만두기</button></div></div>`
+        : `<div class="jbn-mi" data-mine="${esc(d.id)}"><div class="tx">${esc(d.text)}</div><div class="ft"><span>${kst(d.at || d.createdAt)}${d.editedAt ? ' · 고침 ' + kst(d.editedAt) : ''}</span><span class="jbn-sp"></span>${tr ? `<button class="jbn-b pri" data-act="mrestore" data-mid="${esc(d.id)}">↩ 되살리기</button>` : `<button class="jbn-b" data-act="medit" data-mid="${esc(d.id)}">✏ 고치기</button><button class="jbn-b dn" data-act="mtrash" data-mid="${esc(d.id)}">🗑 휴지통</button>`}</div></div>`);
+      return `<section class="jbn-mine" aria-label="내 메모"><div class="jbn-banner">📝 정범님만 보는 메모입니다 — Claude(리드)에게 보내지 않고 받은 편지에도 잡히지 않습니다. 웹앱 📓과 아티팩트 어디서 열어도 같습니다. 위 찾기 칸으로 찾습니다.</div>
+        <div class="jbn-mw"><label for="jbn-mine-ta" style="position:absolute;left:-9999px">새 내 메모</label><textarea id="jbn-mine-ta" data-mineta="1" placeholder="나만 볼 메모 — [📝 적기] 또는 Ctrl+Enter">${esc(U.mineDraft)}</textarea><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="jbn-b pri" data-act="mineadd">📝 적기</button><span style="font-size:12px;color:var(--fa)">새 것이 맨 위 · 고치기·휴지통(지우지 않음)</span></div></div>
+        ${L.length ? L.map((d) => item(d)).join('') : `<div class="jbn-empty">${q ? `'${esc(U.q)}'에 맞는 내 메모가 없습니다.` : '아직 내 메모가 없습니다. 위 칸에 적어 보세요.'}</div>`}
+        ${T.length ? `<details class="jbn-sent"><summary>🗑 내 메모 휴지통 ${T.length} — 지워지지 않고 되살릴 수 있습니다</summary>${T.map((d) => item(d, true)).join('')}</details>` : ''}</section>`;
+    }
+    const setSv = (t) => { U.sv = t; const el = root.querySelector('[data-sv]'); if (el) el.textContent = t; };
+    /* (note5) 쓰는 대로 그 칸 문서 slot_<n>에 곧바로 저장(0.4초 모아서 · 칸을 바꾸거나 칸을 떠나거나 창을 닫을 때는 바로) — 다시 그리지 않음(쓰던 글자판 그대로) */
+    function saveDraft(now) { clearTimeout(U.dT); const go = () => { const n = U.slot, v = U.feedDraft;
+        Promise.resolve().then(() => store.write([{ op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: v, at: nowIso() } }])).then(() => { if (U.slot === n && U.feedDraft === v) U.dDirty = false; if (U.slot === n) setSv('💾 저장됨 ' + kst(nowIso()).slice(6)); const sn = root.querySelector(`[data-slotn="${n}"]`); if (sn && v.trim() && !/✎/.test(sn.textContent)) sn.textContent = (/비어/.test(sn.textContent) ? '메모 0' : sn.textContent) + ' · ✎'; })
+          .catch((e) => { if (U.slot === n) setSv('⚠ 저장 못 함 — 이어 쓰면 다시 저장 · ' + String((e && (e.message || e.code)) || '').slice(0, 40)); }); };
+      if (now) go(); else U.dT = setTimeout(go, 400); }
+    function switchSlot(n) { if (!SLOTS.includes(n)) return; const ta = root.querySelector('#jbn-feed-ta'); if (ta && n !== U.slot) U.feedDraft = ta.value; if (n === U.slot) { if (ta) ta.focus(); return; }
+      if (U.dDirty) saveDraft(true); U.slot = n; U.slotSeen = n; U.dDirty = false; U.sv = ''; U.feedDraft = String((model(view()).slots.get(n) || {}).draft || ''); saveUi();
+      W([{ op: 'merge', id: '_meta', data: { slotCur: n } }]); toast(`💾 저장${n}로 바꿨습니다 — 여기에 쌓입니다`); }
     function render() {
       if (U.dead) return;
-      if (root.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && document.activeElement.value) { U.pend = true; return; }
-      U.pend = false; const M = model(view()); const st = store.status ? store.status() : { label: '', ok: true };
+      const ae = document.activeElement; if (root.contains(ae) && ((ae.tagName === 'TEXTAREA' && (ae.value || ae.dataset.feedta || ae.dataset.mineta)) || (ae.tagName === 'INPUT' && ae.value && ae.id !== 'jbn-q'))) { U.pend = true; return; } /* 찾기 칸은 입력 처리에서 다시 그린 뒤 글자 자리까지 되돌림(예전엔 여기서 막혀 찾기가 먹지 않았음) */ /* (note5) 통합 입력칸·내 메모 칸은 비어도 손이 있으면 다시 그리지 않음(쓰던 자리·글자판 그대로) */
+      U.pend = false; const M = model(view());
+      const ms = M.meta && M.meta.slotCur; if (SLOTS.includes(ms) && ms !== U.slotSeen) { U.slotSeen = ms; if (ms !== U.slot && !U.dDirty) { U.slot = ms; saveUi(); } } /* 다른 기기에서 고른 칸도 같게 */
+      if (!U.dDirty) U.feedDraft = String((M.slots.get(U.slot) || {}).draft || ''); const st = store.status ? store.status() : { label: '', ok: true };
       const q = U.q.trim().toLowerCase(); const hit = (c) => !q || (c.title + '\n' + (c.body || '') + '\n' + catOf(c) + ' ' + (c.sub || '') + ' ' + (c.leaf || '') + '\n' + (M.byCard.get(c.id) || []).map((m) => m.text).join('\n')).toLowerCase().includes(q);
-      const cnt = {}; TABS.forEach(([k]) => { cnt[k] = 0; }); M.cards.forEach((c) => { cnt[tabOf(c)]++; if (isFav(c)) cnt.fav++; });
+      const cnt = {}; TABS.forEach(([k]) => { cnt[k] = 0; }); M.cards.forEach((c) => { cnt[tabOf(c)]++; if (isFav(c)) cnt.fav++; }); cnt.mine = M.mine.filter((d) => d.state !== 'trashed').length;
       const inTab = (c) => (U.tab === 'fav' ? isFav(c) : tabOf(c) === U.tab || (U.tab === 'new' && U.seen.has(c.id) && stateOf(c) === 'open')); /* 새로 온 것에서 펼쳐 읽은 카드는 탭을 바꿀 때까지 그 자리에 */
       let list = M.cards.filter((c) => inTab(c) && hit(c)); let favTop = [];
       if (U.tab === 'review') { favTop = M.cards.filter((c) => isFav(c) && stateOf(c) === 'open' && hit(c)).sort((x, y) => impOf(y) - impOf(x) || String(whenOf(y)).localeCompare(String(whenOf(x)))); list = list.filter((c) => !isFav(c)); } /* ⭐ 즐겨찾기는 검토 맨 위 한 묶음(아래 갈래에 다시 안 나옴) */
@@ -200,11 +234,11 @@
         ${U.tab === 'review' && cnt.new ? `<div class="jbn-banner">🆕 검토하시는 동안 새로 온 카드 ${cnt.new}개는 따로 모아 두었습니다. <button class="jbn-b" data-tab="new">새로 온 것 보기</button></div>` : ''}
         ${U.tab === 'new' && cnt.new ? `<div class="jbn-banner">리드가 새로 쌓은 카드입니다. 펼쳐 읽는 순간 검토로 옮겨지고, 읽던 카드는 접을 때 이 목록에서 빠집니다. <button class="jbn-b" data-act="readall">👁 모두 읽음</button></div>` : ''}
         ${favTop.length ? `<details class="jbn-cat fav" open><summary>⭐ 즐겨찾기<span class="c">${favTop.length}</span></summary>${favTop.map((c) => cardHtml(c, M, U.tab, true)).join('')}</details>` : ''}
-        ${T.length || favTop.length ? T.map((a) => `<details class="jbn-cat" open><summary>${esc(a.name)}<span class="c">${a.n}</span></summary>${a.subs.map((b) => `<details class="jbn-sub" open><summary>${esc(b.name)} <span style="font-weight:400;color:var(--fa);font-size:12px">${b.n}</span></summary>${b.leaves.map((l) => `${l.name ? `<div class="jbn-leaf">› ${esc(l.name)}</div>` : ''}${l.cards.map((c) => cardHtml(c, M, U.tab)).join('')}`).join('')}</details>`).join('')}</details>`).join('') : `<div class="jbn-empty">${q ? `'${esc(U.q)}'에 맞는 카드가 없습니다.` : { review: '검토할 카드가 없습니다. 리드가 응답할 때마다 카드가 쌓입니다.', new: '새로 온 카드가 없습니다.', held: '⏸ 보류한 카드가 없습니다. 카드의 [⏸ 보류]를 누르거나 리드에게 \'보류해줘\'라고 하시면 여기에 모입니다(웹앱 📓과 같음).', fav: '⭐ 즐겨찾기한 카드가 없습니다. 카드 오른쪽 ☆를 누르면 여기에 모입니다(웹앱 📓과 같음).', done: '완료한 카드가 없습니다.', archived: '보관한 카드가 없습니다.', trashed: '휴지통이 비었습니다. 휴지통 카드는 지워지지 않고 되살릴 수 있습니다.' }[U.tab]}</div>`}
-        ${feedHtml(M)}${dockHtml(M)}`;
+        ${U.tab === 'mine' ? mineHtml(M, q) : T.length || favTop.length ? T.map((a) => `<details class="jbn-cat" open><summary>${esc(a.name)}<span class="c">${a.n}</span></summary>${a.subs.map((b) => `<details class="jbn-sub" open><summary>${esc(b.name)} <span style="font-weight:400;color:var(--fa);font-size:12px">${b.n}</span></summary>${b.leaves.map((l) => `${l.name ? `<div class="jbn-leaf">› ${esc(l.name)}</div>` : ''}${l.cards.map((c) => cardHtml(c, M, U.tab)).join('')}`).join('')}</details>`).join('')}</details>`).join('') : `<div class="jbn-empty">${q ? `'${esc(U.q)}'에 맞는 카드가 없습니다.` : { review: '검토할 카드가 없습니다. 리드가 응답할 때마다 카드가 쌓입니다.', new: '새로 온 카드가 없습니다.', held: '⏸ 보류한 카드가 없습니다. 카드의 [⏸ 보류]를 누르거나 리드에게 \'보류해줘\'라고 하시면 여기에 모입니다(웹앱 📓과 같음).', fav: '⭐ 즐겨찾기한 카드가 없습니다. 카드 오른쪽 ☆를 누르면 여기에 모입니다(웹앱 📓과 같음).', done: '완료한 카드가 없습니다.', archived: '보관한 카드가 없습니다.', trashed: '휴지통이 비었습니다. 휴지통 카드는 지워지지 않고 되살릴 수 있습니다.' }[U.tab]}</div>`}
+        ${U.tab === 'mine' ? '' : feedHtml(M) + dockHtml(M)}`;
       // 고른 문장 칠하기
       root.querySelectorAll('[data-body]').forEach((el) => { const L = (M.byCard.get(el.dataset.body) || []).filter((m) => m.quote); for (const m of L) hiQuote(el, String(m.quote)); });
-      const un = queueOf(M).length; jump.hidden = true; /* (note4) 오른쪽 아래 떠 있던 단추 대신 아래 붙은 통합 입력칸이 수를 보임 */
+      const un = queueOf(M, U.slot).length; jump.hidden = true; /* (note4) 오른쪽 아래 떠 있던 단추 대신 아래 붙은 통합 입력칸이 수를 보임 */
       const sc = opt.scroller ? opt.scroller() : document.scrollingElement || document.documentElement; sc.scrollTop = y;
       if (opt.onRender) opt.onRender({ unread: cnt.new, unsent: un });
     }
@@ -214,12 +248,15 @@
     }
     let rT = 0; const renderSoon = () => { clearTimeout(rT); rT = setTimeout(render, 60); };
     store.onChange(renderSoon);
+    root.addEventListener('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta && U.dDirty) saveDraft(true); });
+    const flush = () => { if (U.dDirty) saveDraft(true); }; window.addEventListener('pagehide', flush); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
     root.addEventListener('focusout', () => setTimeout(() => { if (U.pend && !(root.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) render(); }, 30));
-    root.addEventListener('keydown', (e) => { const t = e.target; if (t && t.dataset && t.dataset.feedta && e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); const bt = root.querySelector('[data-act="feedmemo"]'); if (bt) bt.click(); } });
-    root.addEventListener('input', (e) => { const t = e.target; if (t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); U.qT = setTimeout(() => { const p = t.selectionStart; render(); const q2 = root.querySelector('#jbn-q'); if (q2) { q2.focus(); try { q2.setSelectionRange(p, p); } catch (e2) {} } }, 200); } else if (t.dataset.ta) { U.comp = U.comp && U.comp.cardId === t.dataset.ta ? U.comp : { cardId: t.dataset.ta, quote: null }; U.draft = t.value; } else if (t.dataset.feedta) U.feedDraft = t.value; });
+    root.addEventListener('keydown', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mineta && e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) { e.preventDefault(); const bt = root.querySelector('[data-act="mineadd"]'); if (bt) bt.click(); return; } if (t && t.dataset && t.dataset.feedta && e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); const bt = root.querySelector('[data-act="feedmemo"]'); if (bt) bt.click(); } });
+    root.addEventListener('input', (e) => { const t = e.target; if (t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); U.qT = setTimeout(() => { const p = t.selectionStart; render(); const q2 = root.querySelector('#jbn-q'); if (q2) { q2.focus(); try { q2.setSelectionRange(p, p); } catch (e2) {} } }, 200); } else if (t.dataset.ta) { U.comp = U.comp && U.comp.cardId === t.dataset.ta ? U.comp : { cardId: t.dataset.ta, quote: null }; U.draft = t.value; } else if (t.dataset.feedta) { U.feedDraft = t.value; U.dDirty = true; setSv('✎ 저장 중…'); saveDraft(false); const sb = root.querySelector('[data-act="send"]'); const dn = root.querySelector('[data-dockn]'); if (sb && !U.busy) sb.disabled = !(+((dn && dn.dataset.dockn) || 0) || t.value.trim()); } else if (t.dataset.mineta) U.mineDraft = t.value; });
     const docOf = (id) => view().get(id);
     root.addEventListener('click', async (e) => {
       const tb = e.target.closest('[data-tab]'); if (tb && root.contains(tb)) { U.seen.clear(); U.tab = tb.dataset.tab; saveUi(); render(); return; }
+      const sb = e.target.closest('[data-slot]'); if (sb && root.contains(sb)) { switchSlot(+sb.dataset.slot); return; }
       const gt = e.target.closest('[data-goto]'); if (gt) { const id = gt.dataset.goto; const d = docOf(id); if (d) { U.tab = tabOf({ id, ...d }); U.open.add(id); render(); const el = root.querySelector(`[data-card="${CSS.escape(id)}"]`); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
       const b = e.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
       const cardEl = b.closest('[data-card]'); const id = cardEl && cardEl.dataset.card; const at = nowIso(); const a = b.dataset.act;
@@ -236,20 +273,31 @@
       if (a === 'unquote') { if (U.comp) U.comp.quote = null; render(); return; }
       if (a === 'memo') { const ta = root.querySelector(`[data-ta="${CSS.escape(id)}"]`); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('메모 글을 적어 주세요'); if (ta) ta.focus(); return; } const d = docOf(id) || {}; const quote = U.comp && U.comp.cardId === id ? U.comp.quote : null; const mid = rid('m');
         if (ta) ta.value = ''; U.draft = ''; U.comp = null; if (ta) ta.blur();
-        const ops = [{ op: 'set', id: mid, data: { kind: 'memo', cardId: id, cardTitle: String(d.title || '').slice(0, 300), quote: quote || null, text: txt, by: 'jb', at, state: 'open' } }]; if (d && isNew({ id, ...d })) ops.push({ op: 'merge', id, data: { readAt: at } });
+        const ops = [{ op: 'set', id: mid, data: { kind: 'memo', cardId: id, cardTitle: String(d.title || '').slice(0, 300), quote: quote || null, text: txt, by: 'jb', at, state: 'open', slot: U.slot } }]; if (d && isNew({ id, ...d })) ops.push({ op: 'merge', id, data: { readAt: at } });
         return W(ops, '💬 메모를 달았습니다 — 통합 노트(보낼 대기)에 쌓였습니다'); }
-      if (a === 'feedmemo') { const ta = root.querySelector('#jbn-feed-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); return; } if (ta) { ta.value = ''; ta.blur(); } U.feedDraft = ''; return W([{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: txt, by: 'jb', at, state: 'open' } }], '통합 노트에 적었습니다'); }
+      if (a === 'feedmemo') { const ta = root.querySelector('#jbn-feed-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); return; } if (ta) { ta.value = ''; ta.blur(); } U.feedDraft = ''; clearTimeout(U.dT); U.dDirty = false; const n = U.slot;
+        return W([{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: txt, by: 'jb', at, state: 'open', slot: n } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at } }], `💾 저장${n}에 쌓았습니다`); }
+      if (a === 'mineadd') { const ta = root.querySelector('#jbn-mine-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); if (ta) ta.focus(); return; } if (ta) { ta.value = ''; ta.blur(); } U.mineDraft = '';
+        return W([{ op: 'set', id: rid('j'), data: { kind: 'jbmemo', text: txt, by: 'jb', at, state: 'open' } }], '📝 내 메모에 적었습니다 — Claude에게는 가지 않습니다'); }
+      if (a === 'medit') { U.medit = b.dataset.mid; render(); const t = root.querySelector('#jbn-med'); if (t) t.focus(); return; }
+      if (a === 'mcancel') { U.medit = null; const t = root.querySelector('#jbn-med'); if (t) { t.value = ''; t.blur(); } render(); return; }
+      if (a === 'msave') { const t = root.querySelector('#jbn-med'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 버리려면 [🗑 휴지통]'); return; } U.medit = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, data: { text: v, editedAt: at } }], '📝 고쳤습니다'); }
+      if (a === 'mtrash') return W([{ op: 'merge', id: b.dataset.mid, data: { state: 'trashed', stateAt: at } }], '🗑 내 메모를 휴지통으로 — 아래 휴지통에서 되살릴 수 있습니다');
+      if (a === 'mrestore') return W([{ op: 'merge', id: b.dataset.mid, data: { state: 'open', stateAt: at } }], '↩ 내 메모를 되살렸습니다');
       if (a === 'qup' || a === 'qdown') { const Q = queueOf(model(view())); const k = Q.findIndex((m) => m.id === b.dataset.mid); const j = a === 'qup' ? k - 1 : k + 1; if (k < 0 || j < 0 || j >= Q.length) return; const ord = Q.map((m, x) => x * 10); [ord[k], ord[j]] = [ord[j], ord[k]]; return W(Q.map((m, x) => ({ op: 'merge', id: m.id, data: { ord: ord[x] } }))); }
       if (a === 'qedit') { U.edit = b.dataset.mid; render(); const t = root.querySelector('#jbn-ed'); if (t) t.focus(); return; }
       if (a === 'qcancel') { U.edit = null; const t = root.querySelector('#jbn-ed'); if (t) { t.value = ''; t.blur(); } render(); return; }
       if (a === 'qsave') { const t = root.querySelector('#jbn-ed'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 빼려면 [빼기]'); return; } U.edit = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, data: { text: v, editedAt: at } }], '고쳤습니다'); }
       if (a === 'memotrash') { const mid = b.dataset.mid; return W([{ op: 'merge', id: mid, data: { state: 'trashed' } }], '메모를 휴지통으로 — 지우지는 않았습니다'); }
-      if (a === 'send') { if (U.busy) return; const M = model(view()); const un = queueOf(M); if (!un.length) return;
+      if (a === 'send') { if (U.busy) return; const n = U.slot; clearTimeout(U.dT); const fta = root.querySelector('#jbn-feed-ta'); const dr = ((fta && fta.value) || U.feedDraft || '').trim();
+        if (dr) { const mid = rid('m'); if (fta) fta.value = ''; U.feedDraft = ''; U.dDirty = false; /* 아직 [적기] 안 한 글도 잃지 않게 그 칸 메모로 먼저 */
+          await W([{ op: 'set', id: mid, data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: dr, by: 'jb', at, state: 'open', slot: n } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at } }]); if (!view().get(mid)) return; }
+        const M = model(view()); const un = queueOf(M, n); if (!un.length) return;
         U.busy = true; b.disabled = true; b.textContent = '보내는 중…'; const bid = rid('b'); const text = compose(un, new Map(M.cards.map((c) => [c.id, c])), opt.link) + ` · 묶음 ${bid}`;
         let r; try { r = await store.send(text, un.map((m) => m.id)); } catch (e2) { r = { status: 'queued', via: 'outbox', err: String((e2 && (e2.code || e2.message)) || e2).slice(0, 200) }; }
         r = r || { status: 'queued', via: 'outbox' };
-        const ops = [{ op: 'set', id: bid, data: { kind: 'batch', memoIds: un.map((m) => m.id), text, at, via: r.via || 'outbox', status: r.status || 'queued', err: r.err || null } }].concat(un.map((m) => ({ op: 'merge', id: m.id, data: { batchId: bid } })));
-        U.busy = false; for (let i = 0; i < ops.length; i += 50) await W(ops.slice(i, i + 50)); toast(r.status === 'sent' ? '📨 리드 채팅으로 보냈습니다' : '⏳ 리드가 10분 안에 받아 갑니다(바로 보내기 연결이 안 됨)'); return; }
+        const ops = [{ op: 'set', id: bid, data: { kind: 'batch', slot: n, memoIds: un.map((m) => m.id), text, at, via: r.via || 'outbox', status: r.status || 'queued', err: r.err || null } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at, sentAt: at } }].concat(un.map((m) => ({ op: 'merge', id: m.id, data: { batchId: bid } })));
+        U.busy = false; for (let i = 0; i < ops.length; i += 50) await W(ops.slice(i, i + 50)); toast((r.status === 'sent' ? '📨 리드 채팅으로 보냈습니다' : '⏳ 리드가 10분 안에 받아 갑니다(바로 보내기 연결이 안 됨)') + ` · 💾 저장${n}은 비었습니다`); return; }
     });
     // 문장 고르기 → 메모
     const selCheck = () => { const s = window.getSelection && window.getSelection(); const t = s && !s.isCollapsed ? String(s).trim() : ''; const n = s && s.anchorNode; const bd = n && (n.nodeType === 1 ? n : n.parentElement); const body = bd && bd.closest && bd.closest('[data-body]'); if (!t || !body || !root.contains(body) || t.length > 2000) { selBtn.hidden = true; return; } const r = s.getRangeAt(0).getBoundingClientRect(); selBtn.hidden = false; selBtn.style.left = Math.max(8, Math.min(window.innerWidth - 180, r.left)) + 'px'; selBtn.style.top = Math.max(8, Math.min(window.innerHeight - 50, r.bottom + 8)) + 'px'; selBtn._q = t; selBtn._card = body.dataset.body; selBtn._r = { left: r.left, top: r.top, bottom: r.bottom }; };
@@ -267,7 +315,7 @@
       try { bta.focus({ preventScroll: true }); } catch (e) { bta.focus(); } }
     async function bubSave() { const b0 = U.bub; const txt = bta.value.trim(); if (!b0) return; if (!txt) { toast('메모 글을 적어 주세요'); bta.focus({ preventScroll: true }); return; }
       const d = docOf(b0.cardId) || {}; const at = nowIso(); bubClose(); try { const s0 = window.getSelection(); if (s0) s0.removeAllRanges(); } catch (e) {}
-      const ops = [{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: b0.cardId, cardTitle: String(d.title || '').slice(0, 300), quote: b0.quote, text: txt, by: 'jb', at, state: 'open' } }]; if (isNew({ id: b0.cardId, ...d })) ops.push({ op: 'merge', id: b0.cardId, data: { readAt: at } });
+      const ops = [{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: b0.cardId, cardTitle: String(d.title || '').slice(0, 300), quote: b0.quote, text: txt, by: 'jb', at, state: 'open', slot: U.slot } }]; if (isNew({ id: b0.cardId, ...d })) ops.push({ op: 'merge', id: b0.cardId, data: { readAt: at } });
       await W(ops, '💬 인용과 메모를 아래 통합 노트에 쌓았습니다'); }
     bta.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); bubClose(); return; } if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); bubSave(); } });
     bub.addEventListener('click', (e) => { const t = e.target.closest('[data-bub]'); if (!t) return; if (t.dataset.bub === 'x') bubClose(); else bubSave(); });
@@ -277,6 +325,6 @@
     render();
     return { render, destroy() { document.removeEventListener('selectionchange', onSel); clearTimeout(rT); U.dead = true; selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
-  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, STYLE, version: '2' };
+  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '3' };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ⟦jbn core 끝⟧ */
