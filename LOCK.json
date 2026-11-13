@@ -1,17 +1,13 @@
 {
- "holder": "lead",
- "what": "priv1 판 내기 — 비공개 전 옮기기(진단 열쇠 길·주소 readnow.kr·짐 넘기기)",
- "since": "2026-11-13T03:41:24Z",
- "beat": "2026-11-13T03:41:24Z",
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: bkfast 책 정보 0.1.9 클라우드 판",
-  "at": "2026-11-13T03:41:47Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "lead",
-  "done": "note2 36271ace 웹앱 1.78.558 · 클라우드 0.35.207 📓 정범 노트",
-  "at": "2026-11-13T03:40:30Z"
+  "done": "priv1 판 f3d608d2 — 웹앱 1.78.559 · 클라우드 0.35.208 (비공개 전 옮기기)",
+  "at": "2026-11-13T03:50:33Z"
  },
- "host": "vm-priv1"
+ "host": null
 }
