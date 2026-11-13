@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.326의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.327의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.326' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.326', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.327' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.327', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -927,8 +927,26 @@
     /* (11/13 fix1113 · 아침 점검 '예스24 맡김 실패가 done으로만 보임') 맡김 문서 맨 위에 ok·msg — 문서의 st 'done'은 '처리가 끝났다'일 뿐이라, 진단·맡긴 일 줄에서 성공/실패를 바로 보이게(줄마다 결과는 res 그대로) */
     function wFinTop(rs) { const R = rs && rs.rows && typeof rs.rows === 'object' ? Object.values(rs.rows) : []; const L = R.length ? R : [rs || {}]; const okOf = (x) => x && (x.state === 'done' || x.state === 'already'); const all = L.every(okOf); const bad = L.find((x) => !okOf(x)) || {};
       return { ok: !!all, msg: all ? `✅ 확인됨 ${L.length}건` : `${bad.state === 'unsure' ? '❓ 확실하지 않음' : '⚠ 못 함'} — ${String(bad.msg || (rs && rs.msg) || '').slice(0, 160)}` }; }
+    /* (y24qty1 11/14) 걸린 예스24 수량·판매중지 맡김을 한 번 더 — 웹앱 ◆y24qty1 y24Re1114b와 같은 고르기(그 줄의 가장 새 문서 · 끝난 실패 · 까닭 셋 · 판매가 뺌 · 문서마다 re1114b 한 번)
+     *  · 까닭: 밤엔 1.78.612 웹앱을 연 기기가 없어(출고 PC는 새 판을 미룸) 웹앱 한 번짜리가 돌지 못함 → 예스24를 맡은 PC의 이 수집기가 그 PC 번외가 0.1.59를 받은 뒤 한 번 · 보내기는 예전처럼 열린 웹앱이 보내기 직전 다시 세어 함
+     *  · 이 PC에서 한 번(GM rn-y24re1114b) · 나흘 뒤엔 돌지 않음 · 손님 정보 없음 */
+    const RE14B_WHY = /'상세수정' 칸 자리를 못 셈|'기간변경' 체크가 잠겨 있어 끌 수 없음|처음 한 건을 확인하는 중/, RE14B_END = Date.parse('2026-11-18T00:00:00+09:00'), RE14B_NEED = '0.1.59'; let re14bAt = 0;
+    function re14bPick(docs, act) { const newest = {}; for (const d of [...(docs || []), ...(act || [])]) for (const r of ((d.job || {}).rows || [])) if (r && r.rid) { const t = Date.parse(d.at || '') || 0; if (!newest[r.rid] || t > newest[r.rid].t) newest[r.rid] = { t, id: d.id }; }
+      const out = []; for (const d of docs || []) { if (d.st !== 'done' || d.re1114b || d.ok === true) continue; const R = ((d.job || {}).rows || []); if (!R.length || R.some((r) => !r || !newest[r.rid] || newest[r.rid].id !== d.id || !['qty', 'stop'].includes(r.kind) || r.src === 'price')) continue;
+        const res = d.res || {}; const L = res.rows && Object.keys(res.rows).length ? Object.values(res.rows) : [res]; if (L.every((x) => ['done', 'already'].includes(String((x && (x.state || x.st)) || '')))) continue;
+        if (!RE14B_WHY.test(JSON.stringify(res) + String(d.msg || '') + String(d.holdWhy || ''))) continue; out.push(d); } return out; }
+    async function wRe1114b(fs, pc) { if (Date.now() > RE14B_END || Date.now() - re14bAt < 5 * 60e3) return; re14bAt = Date.now(); try { if (GM_getValue('rn-y24re1114b', '')) return; } catch (e) { return; }
+      let hv = ''; try { const hd = await fs.collection('col2_ctl').doc(pc).get(); hv = String((((hd.exists && hd.data()) || {}).st || {}).ver || ''); } catch (e) { return; } const vn = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (vn(hv) < vn(RE14B_NEED)) return;
+      const iso = new Date().toISOString(); const RES = { state: 'fail', pre: true, same: true, msg: '저장되지 않음 — 번외 0.1.59 새 길로 한 번 더' }; let n = 0;
+      try { const qs = await fs.collection(W_CMD).where('doneAt', '>=', new Date(Date.now() - 72 * 3600e3).toISOString()).limit(200).get(); const docs = qs.docs.map((x) => ({ ...(x.data() || {}), id: x.id })).filter((v) => !v.k || v.k === 'w');
+        let act = []; try { const qa = await fs.collection(W_CMD).where('st', 'in', ['hold', 'new', 'run']).limit(100).get(); act = qa.docs.map((x) => ({ ...(x.data() || {}), id: x.id })); } catch (e) { return; }
+        for (const d of re14bPick(docs, act)) { const ref = fs.collection(W_CMD).doc(d.id);
+          try { await fs.runTransaction(async (tx) => { const c = (await tx.get(ref)).data() || {}; if (c.st !== 'done' || c.re1114b || !re14bPick([{ ...c, id: d.id }], []).length) return; const P = y24RePatch({ ...c, reN: Math.min(+c.reN || 0, Y24_RE_MAX - 1) }, RES, pc, Date.now(), 0); if (!P) return; const { _t, ...P0 } = P;
+              tx.set(ref, { ...P0, reN: Math.min(+P0.reN || 0, Y24_RE_MAX - 1), re1114b: iso, trail: firebase.firestore.FieldValue.arrayUnion({ ..._t, m: '🔁 번외 0.1.59 새 길([상세수정] 길 이동 · 판매중지 창이 스스로 끈 기간 체크)로 한 번(수집기) — ' + _t.m }) }, { merge: true }); n++; }); } catch (e) {} }
+        try { GM_setValue('rn-y24re1114b', iso + ' ' + n); } catch (e) {} try { window.__rnLog && window.__rnLog('예스24', n ? 'info' : 'detail', `🔁 예스24 — 걸려 있던 수량·판매중지 맡김 ${n}건을 번외 0.1.59 새 길로 한 번 더 맡긴 일 줄로(열린 웹앱이 보내기 직전 다시 셈)`); } catch (e) {} } catch (e) {} }
     const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < (Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
     const wRelay1 = async (pc) => { const fs = firebase.firestore(); const iso = () => new Date().toISOString();
+      await wRe1114b(fs, pc); /* (y24qty1) 한 번짜리 — 걸린 맡김을 줄로 */
       /* ① 새 맡김 받기 */
       let qn = null; try { qn = await fs.collection(W_CMD).where('st', '==', 'new').limit(10).get(); } catch (e) { return; } if (qn.docs.length) wSeen = Date.now();
       for (const d of qn.docs.sort((a, b) => String((a.data() || {}).at).localeCompare(String((b.data() || {}).at)))) { const v = d.data() || {}; if (v.holder && String(v.holder).trim().toUpperCase() !== pc.trim().toUpperCase()) continue;
