@@ -1,13 +1,13 @@
 {
- "holder": "shop2",
- "what": "우리숍 종류·분류 세분화 판",
- "since": "2026-11-13T11:00:18Z",
- "beat": "2026-11-13T11:14:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "train1",
-  "done": "웹앱 1.78.597 · 클라우드 0.35.231 redraw2 첫째 (300bdba2)",
-  "at": "2026-11-13T10:59:41Z"
+  "who": "shop2",
+  "done": "클라우드 0.35.232·0.35.233 · 우리숍 서가 0.2.8·0.2.9 · 손님 화면 0.1.15 (f7fabfa3·b32b544f)",
+  "at": "2026-11-13T11:28:25Z"
  },
- "host": "vm-shop2"
+ "host": null
 }
