@@ -3,7 +3,11 @@
  "what": "y24re 여섯째",
  "since": "2026-11-13T06:36:21Z",
  "beat": "2026-11-13T06:36:21Z",
- "ask": null,
+ "ask": {
+  "who": "lead",
+  "why": "판 내기 기다림: rv1b: eBay 꼴만 바뀜(ext 0.6.22) 판",
+  "at": "2026-11-13T06:37:01Z"
+ },
  "last": {
   "who": "cbuild",
   "done": "클라우드 0.35.219 cbuild 둘째 (60ebd022)",
