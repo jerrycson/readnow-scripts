@@ -219,5 +219,12 @@
   /* 최근 본 책도 계정에(로그인했을 때 · 10초 모아서) */
   let sT = 0; function seenSync() { if (!tok()) return; clearTimeout(sT); sT = setTimeout(() => A({ op: 'seen', L: X().LS.get('bq-seen', []) }).catch(() => {}), 10000); }
   window.BQA = { tok, me: () => ME, item, home, wishSync, seenSync, navMe, stars, kOf, shareCard, cardCanvas, routes: { login: (R) => loginPage(R.q), me: (R) => mePage(R.q), u: (R) => userPage(R.arg), l: (R) => listPage(R.arg) } };
-  if (tok()) setTimeout(() => me().then(() => alertDot()), 50);
+  /* (11/14 shopview2 · 작업판 v11 정범님 「손님 화면을 내가 직접 볼 수 있게」) 👀 관리 웹앱 「손님 화면으로 보기」 — 주소의 ?bqas=<1회 열쇠>로 🧪 시험 계정에 바로 들어감(결제만 막힘)
+   *  열쇠는 주소에서 바로 지움(방문 기록·공유에 안 남게) · 한 번 쓰면 끝(5분) · 진짜 손님 계정으로는 클라우드가 들어가지 않음 */
+  const asQ = /[?&]bqas=(u_[0-9a-f]{16}\.[0-9a-f]{32})/.exec(location.search || '');
+  if (asQ) { try { const q2 = String(location.search).replace(/^\?/, '').split('&').filter((kv) => kv && !/^bq(as|pc)=/.test(kv)).join('&'); history.replaceState(history.state, '', location.pathname + (q2 ? '?' + q2 : '') + location.hash); } catch (e) {}
+    const asGo = async () => { if (!X()) { setTimeout(asGo, 30); return; } try { const r = await X().api('/shop/a', { method: 'POST', body: JSON.stringify({ op: 'asIn', c: asQ[1] }) }); setTok(r.tok); ME = r.me; meAt = Date.now(); navMe(); X().LS.set('bq-was-test', 1); try { document.dispatchEvent(new CustomEvent('bq-me')); } catch (e) {}
+      X().toast(`👀 ${r.me.nick} 시험 계정으로 들어왔습니다 — 손님 화면 그대로 · 결제만 막힘`); if (/^#\/(me|login|my|cart|order)/.test(location.hash || '')) { try { window.dispatchEvent(new HashChangeEvent('hashchange')); } catch (e) {} } }
+    catch (e) { X().toast(errTxt(e) || '들어가지 못했습니다 — 관리 웹앱에서 다시 눌러 주세요'); if (tok()) me(); } }; setTimeout(asGo, 0); } /* 손님 화면 본체(shop.js · BQX)가 뜬 뒤 */
+  else if (tok()) setTimeout(() => me().then(() => alertDot()), 50);
 })();
