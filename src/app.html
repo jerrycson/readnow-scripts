@@ -1926,13 +1926,15 @@ const ICON = {
   const nowIso = () => new Date().toISOString();
   const rid = (p) => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const CAT_ORDER = ['참고LOST', '사업 결정', '출고·주문', '우리숍', '벤치마킹·엔진', '연구', '수집기·PC', '웹앱', '클라우드', '운영·장치', '보고·점검', '노트'];
-  const TABS = [['review', '검토'], ['new', '🆕 새로 온 것'], ['done', '✅ 완료'], ['archived', '🗄 보관함'], ['trashed', '🗑 휴지통']];
+  const TABS = [['review', '검토'], ['fav', '⭐ 즐겨찾기'], ['new', '🆕 새로 온 것'], ['done', '✅ 완료'], ['archived', '🗄 보관함'], ['trashed', '🗑 휴지통']];
 
   /* ── 문서 → 카드 꼴 (예전 노트: kind 없음 · folder·archived·trashed) ── */
   function kindOf(d) { return d.kind || (d.text != null && d.cardId !== undefined ? 'memo' : 'card'); }
   function stateOf(d) { if (STATE_OK.includes(d.state)) return d.state; return d.trashed ? 'trashed' : d.archived ? 'archived' : 'open'; }
   const STATE_OK = ['open', 'done', 'archived', 'trashed'];
   function isNew(d) { return kindOf(d) === 'card' && d.kind === 'card' && stateOf(d) === 'open' && !d.readAt && d.src !== 'jb'; }
+  /* ⭐ 즐겨찾기(note3 · 정범님 11/13 14:03) = 문서 칸 pinned(예전 노트 1판의 📌 고정과 같은 칸 — 클라우드·웹앱·아티팩트 모두 이미 받음) · 휴지통 카드는 빼고 */
+  const isFav = (d) => !!(d && d.pinned) && stateOf(d) !== 'trashed';
   function tabOf(d) { const st = stateOf(d); if (st === 'open') return isNew(d) ? 'new' : 'review'; return st; }
   function model(docs) {
     const cards = [], memos = [], batches = []; let meta = null;
@@ -1941,7 +1943,7 @@ const ICON = {
     for (const L of byCard.values()) L.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
     return { cards, memos, batches, byCard, meta };
   }
-  const impOf = (c) => (c.imp >= 1 && c.imp <= 3 ? c.imp : c.pinned ? 3 : 2);
+  const impOf = (c) => (c.imp >= 1 && c.imp <= 3 ? c.imp : 2); /* ⭐(pinned)는 차례만 바꾸지 않음 — 위 ⭐ 묶음으로 따로 보임 */
   const whenOf = (c) => c.srcAt || c.createdAt || c.updatedAt || '';
   function catOf(c) { return (c.cat || c.folder || '노트').trim() || '노트'; }
   function tree(cards) {
@@ -2011,7 +2013,7 @@ const ICON = {
 .jbn-sub{margin-block:8px 4px;margin-left:4px}.jbn-sub>summary{list-style:none;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--mu);padding-block:4px;border-bottom:1px solid var(--ln)}.jbn-sub>summary::-webkit-details-marker{display:none}
 .jbn-leaf{font-size:12.5px;color:var(--fa);margin-block:6px 2px;margin-left:6px;letter-spacing:.02em}
 .jbn-card{background:var(--sf);border:1px solid var(--ln);border-radius:10px;margin-block:8px;padding:10px 12px}.jbn-card[data-new="1"]{border-color:var(--new);box-shadow:inset 3px 0 0 var(--new)}
-.jbn-ch{display:flex;gap:8px;align-items:flex-start}.jbn-imp{flex:none;font-size:10px;letter-spacing:1px;color:var(--a);padding-top:5px;white-space:nowrap}.jbn-imp i{opacity:.25;font-style:normal}
+.jbn-ch{display:flex;gap:8px;align-items:flex-start}.jbn-star{flex:none;border:0;background:none;padding:0 2px;font-size:19px;line-height:1.2;min-width:32px;min-height:32px;color:var(--fa)}.jbn-star[aria-pressed="true"]{color:#e0a800}.jbn-star:hover{color:#e0a800}.jbn-cat.fav>summary{border-bottom-color:#e0a800}.jbn-imp{flex:none;font-size:10px;letter-spacing:1px;color:var(--a);padding-top:5px;white-space:nowrap}.jbn-imp i{opacity:.25;font-style:normal}
 .jbn-tt{flex:1;min-width:0;border:0;background:none;text-align:left;padding:0;font-weight:700;font-size:15px;line-height:1.4;overflow-wrap:anywhere}.jbn-tt:hover{color:var(--a)}
 .jbn-meta{font-size:12px;color:var(--fa);display:flex;gap:4px 10px;flex-wrap:wrap;margin-top:2px}.jbn-meta .mc{color:var(--memo-tx);background:var(--memo);border-radius:4px;padding:0 5px}.jbn-meta .nw{color:#fff;background:var(--new);border-radius:4px;padding:0 5px}
 .jbn-snip{font-size:13.5px;color:var(--mu);margin-top:4px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -2041,11 +2043,11 @@ const ICON = {
     const toast = (m) => { let t = U.toastEl; if (!t) { t = U.toastEl = document.createElement('div'); t.className = 'jbn-toast jbn'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(U.toastT); U.toastT = setTimeout(() => { t.hidden = true; }, 2600); };
     const W = (ops, ok) => store.write(ops).then(() => { if (ok) toast(ok); }).catch((e) => toast('저장 못 함 — ' + (e && (e.message || e.code) || '연결 확인')));
 
-    function cardHtml(c, M, tab) {
+    function cardHtml(c, M, tab, showPath) {
       const open = U.open.has(c.id); const ms = M.byCard.get(c.id) || []; const nw = isNew(c); const imp = impOf(c);
       const st = stateOf(c); const acts = st === 'open' ? `<button class="jbn-b" data-act="done">✅ 완료</button><button class="jbn-b" data-act="archive">🗄 보관</button><button class="jbn-b dn" data-act="trash">🗑 휴지통</button>${nw ? '<button class="jbn-b" data-act="read">👁 읽음</button>' : ''}`
         : st === 'trashed' ? '<button class="jbn-b pri" data-act="restore">↩ 되살리기</button>' : `<button class="jbn-b" data-act="restore">↩ 검토로</button>${st === 'done' ? '<button class="jbn-b" data-act="archive">🗄 보관</button>' : ''}<button class="jbn-b dn" data-act="trash">🗑 휴지통</button>`;
-      const meta = [c.src ? esc(c.src === 'lead' ? '리드' : c.src === 'jb' ? '정범' : c.src) : '', kst(whenOf(c)), c.ref ? esc(c.ref) : '', ms.length ? `<span class="mc">메모 ${ms.length}</span>` : '', nw ? '<span class="nw">새로 옴</span>' : ''].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
+      const meta = [showPath ? esc(catOf(c) + (c.sub ? ' › ' + c.sub : '')) : '', c.src ? esc(c.src === 'lead' ? '리드' : c.src === 'jb' ? '정범' : c.src) : '', kst(whenOf(c)), c.ref ? esc(c.ref) : '', ms.length ? `<span class="mc">메모 ${ms.length}</span>` : '', nw ? '<span class="nw">새로 옴</span>' : ''].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
       let body = '';
       if (open) { const comp = U.comp && U.comp.cardId === c.id;
         body = `<div class="jbn-body" data-body="${esc(c.id)}">${md(c.body) || '<p style="opacity:.6">(본문 없음)</p>'}</div>
@@ -2053,7 +2055,7 @@ const ICON = {
         <div class="jbn-compose" data-comp="${esc(c.id)}">${comp && U.comp.quote ? `<div class="qt">고른 글: “${esc(U.comp.quote.slice(0, 300))}” <button class="jbn-b" data-act="unquote" style="min-height:24px;padding:0 6px">고른 글 빼기</button></div>` : ''}
           <label class="sr-only" for="jbn-ta-${esc(c.id)}" style="position:absolute;left:-9999px">이 카드에 메모</label><textarea id="jbn-ta-${esc(c.id)}" data-ta="${esc(c.id)}" placeholder="${comp && U.comp.quote ? '고른 글에 대한 메모' : '이 카드 전체에 대한 메모 — 본문에서 글을 고르면 그 문장에 대한 메모'}">${comp ? esc(U.draft) : ''}</textarea>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="jbn-b pri" data-act="memo">💬 메모 달기</button><span style="font-size:12px;color:var(--fa);align-self:center">메모는 아래 🧾 통합 노트에도 함께 쌓입니다</span></div></div>`; }
-      return `<article class="jbn-card" data-card="${esc(c.id)}" data-new="${nw ? 1 : 0}"><div class="jbn-ch"><span class="jbn-imp" title="중요도 ${imp}/3">${'●'.repeat(imp)}<i>${'●'.repeat(3 - imp)}</i></span><div style="flex:1;min-width:0"><button class="jbn-tt" data-act="toggle" aria-expanded="${open}">${esc(c.title || '제목 없음')}</button><div class="jbn-meta">${meta}</div>${open ? '' : `<div class="jbn-snip">${esc(plain(c.body).slice(0, 220))}</div>`}</div></div><div class="jbn-acts">${acts}</div>${body}</article>`;
+      return `<article class="jbn-card" data-card="${esc(c.id)}" data-new="${nw ? 1 : 0}"><div class="jbn-ch"><span class="jbn-imp" title="중요도 ${imp}/3">${'●'.repeat(imp)}<i>${'●'.repeat(3 - imp)}</i></span><div style="flex:1;min-width:0"><button class="jbn-tt" data-act="toggle" aria-expanded="${open}">${esc(c.title || '제목 없음')}</button><div class="jbn-meta">${meta}</div>${open ? '' : `<div class="jbn-snip">${esc(plain(c.body).slice(0, 220))}</div>`}</div><button class="jbn-star" type="button" data-act="fav" aria-pressed="${c.pinned ? 'true' : 'false'}" title="${c.pinned ? '즐겨찾기에서 빼기' : '⭐ 즐겨찾기에 넣기'}" aria-label="${c.pinned ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}">${c.pinned ? '★' : '☆'}</button></div><div class="jbn-acts">${acts}</div>${body}</article>`;
     }
     function memoHtml(m, inFeed, cardsById) {
       const c = inFeed && m.cardId ? cardsById.get(m.cardId) : null;
@@ -2077,15 +2079,19 @@ const ICON = {
       if (root.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && document.activeElement.value) { U.pend = true; return; }
       U.pend = false; const M = model(store.docs()); const st = store.status ? store.status() : { label: '', ok: true };
       const q = U.q.trim().toLowerCase(); const hit = (c) => !q || (c.title + '\n' + (c.body || '') + '\n' + catOf(c) + ' ' + (c.sub || '') + ' ' + (c.leaf || '') + '\n' + (M.byCard.get(c.id) || []).map((m) => m.text).join('\n')).toLowerCase().includes(q);
-      const cnt = {}; TABS.forEach(([k]) => { cnt[k] = 0; }); M.cards.forEach((c) => { cnt[tabOf(c)]++; });
-      const list = M.cards.filter((c) => (tabOf(c) === U.tab || (U.tab === 'new' && U.seen.has(c.id) && stateOf(c) === 'open')) && hit(c)); /* 새로 온 것에서 펼쳐 읽은 카드는 탭을 바꿀 때까지 그 자리에 */ const T = tree(list);
+      const cnt = {}; TABS.forEach(([k]) => { cnt[k] = 0; }); M.cards.forEach((c) => { cnt[tabOf(c)]++; if (isFav(c)) cnt.fav++; });
+      const inTab = (c) => (U.tab === 'fav' ? isFav(c) : tabOf(c) === U.tab || (U.tab === 'new' && U.seen.has(c.id) && stateOf(c) === 'open')); /* 새로 온 것에서 펼쳐 읽은 카드는 탭을 바꿀 때까지 그 자리에 */
+      let list = M.cards.filter((c) => inTab(c) && hit(c)); let favTop = [];
+      if (U.tab === 'review') { favTop = M.cards.filter((c) => isFav(c) && stateOf(c) === 'open' && hit(c)).sort((x, y) => impOf(y) - impOf(x) || String(whenOf(y)).localeCompare(String(whenOf(x)))); list = list.filter((c) => !isFav(c)); } /* ⭐ 즐겨찾기는 검토 맨 위 한 묶음(아래 갈래에 다시 안 나옴) */
+      const T = tree(list);
       const y = (opt.scroller ? opt.scroller() : document.scrollingElement || document.documentElement).scrollTop;
       root.innerHTML = `<div class="jbn-top"><h2>📓 정범 노트</h2><span class="jbn-conn" data-ok="${st.ok ? 1 : 0}" title="${esc(st.tip || '')}">${esc(st.label || '')}</span><span class="jbn-sp"></span>${opt.topExtra || ''}</div>
         <label for="jbn-q" style="position:absolute;left:-9999px">찾기</label><input id="jbn-q" class="jbn-q" type="search" placeholder="제목·본문·메모 찾기" value="${esc(U.q)}" autocomplete="off">
         <div class="jbn-tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${U.tab === k}">${l}<span class="n">${cnt[k] || ''}</span></button>`).join('')}</div>
         ${U.tab === 'review' && cnt.new ? `<div class="jbn-banner">🆕 검토하시는 동안 새로 온 카드 ${cnt.new}개는 따로 모아 두었습니다. <button class="jbn-b" data-tab="new">새로 온 것 보기</button></div>` : ''}
         ${U.tab === 'new' && cnt.new ? `<div class="jbn-banner">리드가 새로 쌓은 카드입니다. 펼치면 읽음이 되고 검토로 옮겨 갑니다. <button class="jbn-b" data-act="readall">👁 모두 읽음</button></div>` : ''}
-        ${T.length ? T.map((a) => `<details class="jbn-cat" open><summary>${esc(a.name)}<span class="c">${a.n}</span></summary>${a.subs.map((b) => `<details class="jbn-sub" open><summary>${esc(b.name)} <span style="font-weight:400;color:var(--fa);font-size:12px">${b.n}</span></summary>${b.leaves.map((l) => `${l.name ? `<div class="jbn-leaf">› ${esc(l.name)}</div>` : ''}${l.cards.map((c) => cardHtml(c, M, U.tab)).join('')}`).join('')}</details>`).join('')}</details>`).join('') : `<div class="jbn-empty">${q ? `'${esc(U.q)}'에 맞는 카드가 없습니다.` : { review: '검토할 카드가 없습니다. 리드가 응답할 때마다 카드가 쌓입니다.', new: '새로 온 카드가 없습니다.', done: '완료한 카드가 없습니다.', archived: '보관한 카드가 없습니다.', trashed: '휴지통이 비었습니다. 휴지통 카드는 지워지지 않고 되살릴 수 있습니다.' }[U.tab]}</div>`}
+        ${favTop.length ? `<details class="jbn-cat fav" open><summary>⭐ 즐겨찾기<span class="c">${favTop.length}</span></summary>${favTop.map((c) => cardHtml(c, M, U.tab, true)).join('')}</details>` : ''}
+        ${T.length || favTop.length ? T.map((a) => `<details class="jbn-cat" open><summary>${esc(a.name)}<span class="c">${a.n}</span></summary>${a.subs.map((b) => `<details class="jbn-sub" open><summary>${esc(b.name)} <span style="font-weight:400;color:var(--fa);font-size:12px">${b.n}</span></summary>${b.leaves.map((l) => `${l.name ? `<div class="jbn-leaf">› ${esc(l.name)}</div>` : ''}${l.cards.map((c) => cardHtml(c, M, U.tab)).join('')}`).join('')}</details>`).join('')}</details>`).join('') : `<div class="jbn-empty">${q ? `'${esc(U.q)}'에 맞는 카드가 없습니다.` : { review: '검토할 카드가 없습니다. 리드가 응답할 때마다 카드가 쌓입니다.', new: '새로 온 카드가 없습니다.', fav: '⭐ 즐겨찾기한 카드가 없습니다. 카드 오른쪽 ☆를 누르면 여기에 모입니다(웹앱 📓과 같음).', done: '완료한 카드가 없습니다.', archived: '보관한 카드가 없습니다.', trashed: '휴지통이 비었습니다. 휴지통 카드는 지워지지 않고 되살릴 수 있습니다.' }[U.tab]}</div>`}
         ${feedHtml(M)}`;
       // 고른 문장 칠하기
       root.querySelectorAll('[data-body]').forEach((el) => { const L = (M.byCard.get(el.dataset.body) || []).filter((m) => m.quote); for (const m of L) hiQuote(el, String(m.quote)); });
@@ -2108,6 +2114,7 @@ const ICON = {
       const b = e.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
       const cardEl = b.closest('[data-card]'); const id = cardEl && cardEl.dataset.card; const at = nowIso(); const a = b.dataset.act;
       if (a === 'toggle') { if (U.open.has(id)) U.open.delete(id); else { U.open.add(id); const d = docOf(id); if (d && isNew({ id, ...d })) U.seen.add(id); if (d && isNew({ id, ...d })) W([{ op: 'merge', id, data: { readAt: at } }]); } render(); return; }
+      if (a === 'fav') { const on = !(docOf(id) || {}).pinned; return W([{ op: 'merge', id, data: { pinned: on } }], on ? '⭐ 즐겨찾기에 넣었습니다' : '즐겨찾기에서 뺐습니다'); }
       if (a === 'done') return W([{ op: 'merge', id, data: { state: 'done', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '✅ 완료로 옮겼습니다');
       if (a === 'archive') return W([{ op: 'merge', id, data: { state: 'archived', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '🗄 보관함으로 옮겼습니다');
       if (a === 'trash') return W([{ op: 'merge', id, data: { state: 'trashed', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '🗑 휴지통으로 옮겼습니다 — 휴지통에서 되살릴 수 있습니다');
@@ -2141,7 +2148,7 @@ const ICON = {
     render();
     return { render, destroy() { document.removeEventListener('selectionchange', onSel); clearTimeout(rT); U.dead = true; selBtn.remove(); jump.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
-  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, STYLE, version: '1' };
+  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, STYLE, version: '2' };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ⟦jbn core 끝⟧ */
 /* (note2 11/13 · 정범님 11:54) 📓 정범 노트 — 웹앱 화면(머리 줄 📓) · 같은 노트를 아티팩트 '정범 노트'·리드와 함께 씀
