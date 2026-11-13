@@ -1,17 +1,17 @@
 {
- "holder": "cbuild",
- "what": "cbuild 셋째 · 보고 단계 python·한 번에 준비·열쇠 되돌림",
- "since": "2026-11-13T07:27:20Z",
- "beat": "2026-11-13T07:27:20Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": {
   "who": "lead",
   "why": "판 내기 기다림: rv1b: 넷째 판 올리기(ext 0.6.23)",
   "at": "2026-11-13T07:20:18Z"
  },
  "last": {
-  "who": "invpc1",
-  "done": "invpc1 수집기 1.89.322 (100e6ad3) — 출고 쓰기 일은 출고 PC만",
-  "at": "2026-11-13T07:26:44Z"
+  "who": "cbuild",
+  "done": "클라우드 0.35.225 cbuild 셋째 · 보고 단계 python·한 번에 준비·열쇠 되돌림 (9c866a3c)",
+  "at": "2026-11-13T07:27:27Z"
  },
- "host": "vm-cbuild"
+ "host": null
 }
