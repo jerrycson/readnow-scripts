@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "anom1 둘째 판 — 이상 판단 대조군 고침(클라우드)",
+ "since": "2026-11-13T04:04:25Z",
+ "beat": "2026-11-13T04:04:25Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "bkfast 클라우드 0.35.210 책 정보 0.1.9 · 3a7c72ed",
   "at": "2026-11-13T04:03:45Z"
  },
- "host": null
+ "host": "vm-anom1"
 }
