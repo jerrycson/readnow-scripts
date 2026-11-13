@@ -29,7 +29,7 @@ r = D({ def: 'auto', prev: { on: false, live: true, liveSince: T0 }, feedAt: T0 
 r = D({ mode: 'weird', def: undefined, prev: null, feedAt: T0, now: T0 }); ok(r.mode === 'off' && !r.on, '모르는 값·기본 없는 PC(HOME 등) = 끔', r);
 
 console.log('② 수집기 본문');
-ok(/const C2MIG_DEF = \{ 'JS-MAIN': 'auto', 'MJ-MAIN': 'auto' \}/.test(SRC), '기본: JS-MAIN·MJ-MAIN 자동');
+ok(/const C2MIG_DEF = \{\};/.test(SRC), '기본: 모든 PC 끔(11/13 긴급)');
 ok(/okPc = [^;]*\(mig\.on \|\| pilot\.some/.test(SRC), '이전 PC는 시범 목록(HOME·JS-MAIN) 밖이어도(MJ-MAIN) 작업 창 모드');
 ok(/on: okPc && \(m\.on === true \|\| mig\.on\) && !own/.test(SRC), '작업 창 켬 = 웹앱 작업 창 설정 또는 이전 · 🏠 이어받기 중엔 아님');
 ok(/await c2MigLoad\(\); const M = wwMine\(\)/.test(SRC), '1분마다 app_settings/col2_handoff(5분 기억)');
@@ -53,7 +53,7 @@ const call = (p0, body, hdr) => new Promise((res) => { const req = { method: 'PO
   dep.open = was; W.stop && W.stop();
 
   console.log('④ 웹앱');
-  ok(/const C2MIG_DEF = \{ 'JS-MAIN': 'auto', 'MJ-MAIN': 'auto' \}/.test(APP), '웹앱 기본이 수집기와 같음');
+  ok(/const C2MIG_DEF = \{\};/.test(APP), '웹앱 기본도 끔');
   ok(/const bunH = c2MigHtml\(H, adm\) \+ c2HoBunHtml\(H, C, adm\)/.test(APP), '⚙ 🔀 번외로 넘기기 맨 위에 🖥 PC별 번외 이전');
   ok(/twiceArm\(b, `\$\{pc\} 번외 이전/.test(APP) && /if \(!isAdminDevice\(\)\) return toast\('관리자 기기에서만 바꿀 수 있습니다', 1\);\s*const \[pc, mode\]/.test(APP), '두 번 누름 · 관리자 기기만');
   ok(/tx\.set\(ref, \{ pcs: \{ \[pc\]: \{ mode, at, by \} \}, log \}, \{ merge: true \}\)/.test(APP), 'col2_handoff.pcs.<PC> 한 칸만 + 기록 40줄');

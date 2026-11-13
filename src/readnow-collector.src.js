@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.301
+// @version      1.89.302
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -9064,7 +9064,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  · auto(JS-MAIN·MJ-MAIN 기본) = 이 PC 번외가 5분 넘게 잇달아 답할 때(다리 /al/feed 성공 — rn-c2feedAt) 저절로 이전 · on = 바로 이전 · off = 예전 그대로(사람 탭이 수집)
    *  · 한 번 이전하면 번외가 잠깐 죽어도 그대로(창 안의 수집기는 운영 수집기 그대로라 일은 멈추지 않음 · 창이 3분 넘게 신호가 없으면 예전 길대로 사람 탭이 이어받음) · off로 되돌리면 도우미가 창을 닫고 사람 탭이 다시 맡음
    *  · 🚚 출고 보호 중(이 PC 출고·MJ-MAIN 출고)에는 이전·되돌림을 시작하지 않음(약속 0-1 — 끝난 뒤 다음 확인 때) · 로거는 늘 뺌(약속 0) · 작업 창 설정(cfg.pcs.<PC>.on)을 사람이 끈 PC(on:false)는 auto가 켜지 않음 */
-  const C2MIG_DEF = { 'JS-MAIN': 'auto', 'MJ-MAIN': 'auto' }; const C2MIG = { d: null, at: 0 };
+  const C2MIG_DEF = {}; /* (11/13 11:3x 긴급 · 정범님 '주문이 모두 날아갔다' 의심) 기본은 모든 PC 끔 — 웹앱 ⚙ 🔀에서 PC마다 켤 때만 */ const C2MIG = { d: null, at: 0 };
   async function c2MigLoad() { if (Date.now() - C2MIG.at < 5 * 60e3) return; C2MIG.at = Date.now(); try { C2MIG.d = (await C('app_settings').doc('col2_handoff').get()).data() || {}; } catch (e) {} }
   function c2MigDecide(o) { /* 순수 — 시험 tCOL2MIG가 글자 그대로 떼어 봄 */ const mode = ['auto', 'on', 'off'].includes(o.mode) ? o.mode : o.def || 'off'; const was = !!(o.prev && o.prev.on); const live = !!o.feedAt && o.now - o.feedAt < 3 * 60e3;
     const since = live ? (o.prev && o.prev.liveSince && o.now - o.prev.liveSince < 24 * 3600e3 && o.prev.live ? o.prev.liveSince : o.now) : 0;
