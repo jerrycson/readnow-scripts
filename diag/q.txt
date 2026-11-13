@@ -1,2 +1,2 @@
-notes=1&n=10
-# 26915868
+doc=app_settings/research_pulse
+# 189908796
