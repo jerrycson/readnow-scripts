@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "cloudmem 둘째 클라우드 판",
+ "since": "2026-11-13T01:32:52Z",
+ "beat": "2026-11-13T01:32:52Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "intel1 판 b9581fcc 웹앱 1.78.547·클라우드 0.35.193 — 🕵 정보 수집 방법 연구",
   "at": "2026-11-13T01:24:56Z"
  },
- "host": null
+ "host": "vm-cloudmem"
 }
