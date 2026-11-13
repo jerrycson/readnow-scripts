@@ -151,6 +151,7 @@
     { k: 'regDir', group: '정렬', label: '등록순 방향', type: 'select', def: 'new', opts: { new: '새로 들어온 책 먼저', old: '먼저 들어온 책 먼저' } },
     { k: 'catOrder', group: '정렬', label: '분야 차례(손님이 들어오자마자 보는 책장)', type: 'select', def: 'shop', opts: { shop: '서점 일반 차례(소설·에세이·인문… 종교는 뒤)', sales: '많이 팔리는 분야 먼저', n: '책이 많은 분야 먼저', name: '분야 이름 가나다' } },
     { k: 'catFirst', group: '정렬', label: '맨 앞에 둘 분야(쉼표 · 예: 소설·시,에세이)', type: 'text', def: '', max: 200, help: '여기 적은 큰 분야가 차례보다 먼저' },
+    { k: 'catDepth', group: '정렬', label: '주제 분류 표찰(작은 분야)의 깊이', type: 'select', def: 'c2', opts: { c2: '알라딘 둘째 단계까지(한국소설·외국소설 …)', deep: '알라딘 가장 작은 분류까지(세계의 소설 › 중동/튀르키예소설 …)' }, help: '외국도서·잡지·음반·LP·DVD·블루레이는 따로 책장(정범님 11/13)' },
     { k: 'bands', group: '정렬', label: '가격대 경계(원 · 쉼표 · 최대 12개)', type: 'text', def: '1000,2000,3000,4000,5000,10000,20000,30000,40000,50000', help: '정범님 11/13 기본: 1천원대·2천원대·3천원대·4천원대 · 5천원대(5,000~9,999) · 1만원대·2만원대·3만원대·4만원대 · 5만원 이상' },
     { k: 'bandStyle', group: '정렬', label: '가격대 이름', type: 'select', def: 'dae', opts: { dae: '「1천원대」처럼(마지막은 「5만원 이상」)', range: '「1천원~2천원」처럼 범위로' } },
     { k: 'titleGroup', group: '정렬', label: '상품명 정렬의 글자 묶음', type: 'select', def: 'cho', opts: { cho: '한글 첫소리 ㄱ·ㄴ·ㄷ…(ㄲ은 ㄱ에) · 영문 한 묶음(A–Z) · 숫자 · 기호', az: '한글 첫소리 ㄱ·ㄴ·ㄷ… · 영문은 글자마다(A·B·C…) · 숫자 · 기호', wide: '크게 다섯 묶음(ㄱ~ㄷ·ㄹ~ㅂ·ㅅ~ㅇ·ㅈ~ㅊ·ㅋ~ㅎ) · 영문 · 숫자·기호' } },
@@ -263,7 +264,10 @@
   const BIG = [['novel', '소설·시', /소설|시\/|희곡|^시$|^(한국|외국|세계|영미|일본|고전)?문학$/], ['essay', '에세이', /에세이/], ['human', '인문', /인문|철학|심리/], ['history', '역사', /역사|(?<!대중)문화/] /* (shop2) 알라딘 '예술/대중문화'가 역사로 가던 것 */, ['society', '사회·정치', /사회|정치|법/],
     ['econ', '경제경영', /경제|경영/], ['self', '자기계발', /자기계발/], ['science', '과학', /과학|공학|의학/], ['art', '예술', /예술|대중문화|음악|미술|사진|건축/], ['kids', '어린이', /어린이|초등/], ['baby', '유아', /유아/],
     ['teen', '청소년', /청소년/], ['comic', '만화', /만화|라이트\s?노벨/], ['family', '가정·육아', /가정|육아|부모|임신/], ['cook', '요리·살림', /요리|살림/], ['travel', '여행', /여행/], ['health', '건강·취미', /건강|취미|레저|스포츠/],
-    ['lang', '외국어', /외국어|영어|일본어|중국어/], ['it', '컴퓨터·IT', /컴퓨터|모바일|IT/], ['exam', '수험서·참고서', /수험|자격|참고서|교재|대학교재|전집|교육/], ['religion', '종교', /종교|역학|기독교|불교|천주교|가톨릭/], ['etc', '여러 분야', /$^/]];
+    ['lang', '외국어', /외국어|영어|일본어|중국어/], ['it', '컴퓨터·IT', /컴퓨터|모바일|IT/], ['exam', '수험서·참고서', /수험|자격|참고서|교재|대학교재|전집|교육/], ['religion', '종교', /종교|역학|기독교|불교|천주교|가톨릭/],
+    /* (shop2 · 정범님 11/13 19:42) 상품 종류 책장 — 클라우드 cp 첫 칸(종류)으로 정함(외국도서·음반·LP·DVD·블루레이) · 국내 잡지는 분류 '잡지'로도 */
+    ['foreign', '외국도서', /$^/], ['magazine', '잡지', /^잡지$/], ['music', '음반(CD)', /$^/], ['lp', 'LP', /$^/], ['dvd', 'DVD', /$^/], ['bluray', '블루레이', /$^/], ['etc', '여러 분야', /$^/]];
+  const KIND_BIG = { 외국도서: 'foreign', 잡지: 'magazine', 음반: 'music', LP: 'lp', DVD: 'dvd', 블루레이: 'bluray' };
   const BIGK = Object.fromEntries(BIG.map((b, i) => [b[0], i]));
   /* 분류가 없는 책 — 제목·지은이 낱말로 큰 분야 짐작(맞는 것이 없으면 '여러 분야') · 차례가 중요(앞이 먼저) */
   const GUESS = [['religion', /성경|성서|기도|교회|하나님|하느님|예수|그리스도|복음|설교|신앙|묵상|큐티|찬송|목사|불교|불경|부처|사찰|스님|명상|선禪|천주교|가톨릭|성당|교리/], ['exam', /기출|문제집|모의고사|수능|공무원|자격증|검정고시|EBS|해커스|시나공|에듀윌|참고서|교과서|개념원리|쎈|평가문제/i],
@@ -278,8 +282,13 @@
   /* 작은 분야(표찰) 이름 다듬기 — '기독교(개신교)' → '기독교' · 너무 길면 12자 */
   const smallName = (x) => { const t = String(x || '').replace(/\([^)]*\)?/g, '').replace(/\s+/g, ' ').trim(); return t.length > 12 ? t.slice(0, 12) : t; };
   /* 책 → { k: 큰 분야 열쇠, b: 큰 이름, s: 작은 이름(없으면 ''), g: 짐작했나 } — c2 = 셋째 칸(클라우드) · 없으면 c 경로에서 */
-  function catOf(x) { const c = String((x && x.c) || ''); let i = bigOfCat(c); let g = false; const seg = c.split(/\s*[>,]\s*/).map((v) => v.trim()).filter((v) => v && !/^(국내도서|외국도서|중고도서)$/.test(v));
-    let sm = x && x.c2 ? smallName(x.c2) : seg.length > 1 ? smallName(seg[1]) : '';
+  /* (shop2) cp('종류>분류>…>가장 작은 분류')가 있으면 그것으로 — 국내도서는 둘째 칸이 큰 분야 · 다른 종류는 종류가 큰 분야(책장)이고 그 아래가 표찰 · deep = 표찰을 가장 작은 분류까지(설정 catDepth) */
+  function catOf(x, deep) { const P = x && x.cp ? String(x.cp).split('>').map((v) => v.trim()).filter(Boolean) : null;
+    if (P && P.length) { const kb = KIND_BIG[P[0]]; if (kb) { const i = BIGK[kb]; let sm = deep ? P.slice(1).join(' › ') : P[1] || ''; sm = deep ? sm.slice(0, 40) : smallName(sm); return { k: kb, b: BIG[i][1], s: sm, g: false }; }
+      if (P[0] === '국내도서' && P.length > 1) return catOf0({ ...x, c: P[1], c2: deep ? P.slice(2).join(' › ') : P[2] || null }, deep); }
+    return catOf0(x, deep); }
+  function catOf0(x, deep) { const c = String((x && x.c) || ''); let i = bigOfCat(c); let g = false; const seg = c.split(/\s*[>,]\s*/).map((v) => v.trim()).filter((v) => v && !/^(국내도서|외국도서|중고도서)$/.test(v));
+    let sm = x && x.c2 ? (deep ? String(x.c2).slice(0, 40) : smallName(x.c2)) : seg.length > 1 ? smallName(seg[1]) : '';
     if (i < 0) { const t = ' ' + String((x && x.t) || '') + ' ' + String((x && x.a) || '') + ' '; const G = GUESS.find((q) => q[1].test(t)); i = G ? BIGK[G[0]] : BIGK.etc; g = true; if (!G) sm = ''; else if (!sm && seg.length === 1) sm = ''; }
     if (sm && sm === BIG[i][1]) sm = ''; return { k: BIG[i][0], b: BIG[i][1], s: sm, g }; }
   /* ── 고르기: 설정의 거름(쓸 디자인·무늬·모양·글꼴·색 묶음) 안에서 · 추천 목록이 있으면 4번 중 3번은 그 안에서 */
@@ -403,7 +412,7 @@
     const picks = String(c.picks || '').split(/[\s,]+/).map((x) => x.trim()).filter(Boolean); const P = new Map(picks.map((id, i) => [id, i]));
     if (key === 'rec') for (const x of L) x._rs = P.has(x.id) ? 1e6 - P.get(x.id) : recScore(x, now);
     let groups;
-    if (key === 'cat') { const M = new Map(); for (const x of L) { const k = catOf(x); x._k = k; if (!M.has(k.k)) M.set(k.k, { key: k.k, name: k.b, xs: [] }); M.get(k.k).xs.push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
+    if (key === 'cat') { const M = new Map(); for (const x of L) { const k = catOf(x, c.catDepth === 'deep'); x._k = k; if (!M.has(k.k)) M.set(k.k, { key: k.k, name: k.b, xs: [] }); M.get(k.k).xs.push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
       const first = String(c.catFirst || '').split(/[,，]/).map((v) => v.trim()).filter(Boolean); const fi = (g) => { const i = first.findIndex((v) => v === g.name || v === g.key); return i < 0 ? 99 : i; };
       const salesOf = (g) => g.xs.reduce((a, x) => a + (x.sr ? 1 / Math.log2(1 + x.sr) : 0), 0);
       groups = [...M.values()]; for (const g of groups) { const SM = new Map(); for (const x of g.xs) { const k = x._k.s || ''; if (!SM.has(k)) SM.set(k, []); SM.get(k).push(x); }
@@ -447,7 +456,7 @@
   /* (shelf4) 클라우드가 앞표지를 미리 셈한 칸 cv = 'rrggbb' 또는 'rrggbb.갈래' (예 '8a2b1c.my') · 'x' = 셈했는데 쓸 만한 색 없음 */
   const cvOf = (v) => { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/.exec(String(v || '')); return m ? { cc: '#' + m[1], fg: GENRES[m[2]] ? m[2] : null, cv: 1 } : v === 'x' ? { cv: 1 } : {}; };
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, q: ix.q != null ? Math.max(1, +r[ix.q] || 1) : 1, /* (shop2) 수량 */ rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, pv: ix.pv != null ? +r[ix.pv] || 0 : 0, q: ix.q != null ? Math.max(1, +r[ix.q] || 1) : 1, /* (shop2) 수량 */ cp: ix.cp != null ? r[ix.cp] || null : null, /* (shop2) 종류>분류 경로 */ rv: ix.rv != null && Array.isArray(r[ix.rv]) && r[ix.rv][1] > 0 ? r[ix.rv] : null, /* (shelf8) 손님 별점 [평균, 수] */ ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); } /* (shelf8) pv = 앞 몇 쪽 샘플이 있음(1) */
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
@@ -478,5 +487,5 @@
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.3', qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontSrc, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, dimOf, fmtGuess, zClass, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.4', qtyOut, jumps, jumpKeys, titleKey, titleOrder, bandRange, UQ, pickCls, pickShape, FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });
