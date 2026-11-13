@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24qty2",
+ "what": "예스24 닫힘 표시 숨김 고침 둘째 판",
+ "since": "2026-11-13T19:57:17Z",
+ "beat": "2026-11-13T19:57:17Z",
  "ask": null,
  "last": {
   "who": "y24qty2",
   "done": "웹앱 1.78.618 · 수집기 1.89.330 (33843ac7)",
   "at": "2026-11-13T19:40:43Z"
  },
- "host": null
+ "host": "vm"
 }
