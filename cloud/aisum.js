@@ -6,7 +6,7 @@
  *  배우기: Claude·사람 글에서 '어떤 낱말을 키워드로 고르나'(낱말마다 고른 몫 · 베이즈 수축) · 문서 빈도 · 눈가림 견줌 결과로 첫 줄 틀마다 이긴 몫(베타 · 톰슨 표집) → ai_sum_model
  *  지키는 것: 값·판매 상태·돈을 바꾸지 않음 · 출판사 글을 길게 옮기지 않음(같은 글 25자 넘게 이어지면 채점에서 떨어뜨림 — 저작권) · 손님 정보 없음 · 유료 AI 없음(유료 길은 정범님 허락 카드로만 — 설정 llm 칸은 기본 꺼짐) */
 'use strict';
-const AS_V = '1.0.0';
+const AS_V = '1.0.1'; // (1.0.1) 모형을 글 한 칸(JSON)으로 저장 — 지도 칸 색인 한도로 첫 회차 쓰기가 막혔던 것
 const AS_DEF = {
   on: true, hourKST: 3, // 하루 한 번 03시 넘어(밤 시간 · 다른 셈과 안 겹침)
   qMax: 4000, engDaily: 400, // 차례 길이 · 하루 엔진 그림자 글 수
@@ -34,8 +34,8 @@ function rng(seed) { let s = seed >>> 0 || 1; return () => { s = (Math.imul(s, 1
 const r3 = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1000) / 1000);
 
 /* ── 낱말 뽑기(형태소 분석기 없이 · 업종 낱말 없음) ── */
-const JOSA = ['에서부터', '으로부터', '이라는', '에서는', '으로는', '에게서', '까지는', '에서도', '으로도', '이란', '처럼', '에서', '에게', '한테', '으로', '이라', '라는', '까지', '부터', '보다', '이나', '이며', '이고', '에는', '에도', '와의', '과의', '만의', '들의', '들이', '들을', '들은', '들과', '들도', '들', '의', '을', '를', '이', '가', '은', '는', '에', '와', '과', '도', '만', '로', '란'];
-const VERBY = /(하다|한다|했다|하는|하며|하고|하게|하여|해서|했던|하던|되는|되어|된다|됐다|되고|있는|있다|있고|없는|없다|위한|대한|통한|같은|않는|않고|않은|이다|였다|이었|니다|어요|아요|는데|면서|도록|듯이|적인|스럽게|스러운|로운|롭게|해야|하면|라고|이라고|다고|냐고|던|며|고서|지만|거나|든지|ㄴ다|겠다|간다|온다|준다|낸다|본다|한|된|할|될|운|은지|는지|을까|ㄹ까|까지도|어진|아진|겨진|워진|해진|혀진|려진|잊힌|담긴|숨긴|놓인|쌓인)$/;
+const JOSA = ['에서부터', '마다', '조차', '마저', '이야말로', '으로부터', '이라는', '에서는', '으로는', '에게서', '까지는', '에서도', '으로도', '이란', '처럼', '에서', '에게', '한테', '으로', '이라', '라는', '까지', '부터', '보다', '이나', '이며', '이고', '에는', '에도', '와의', '과의', '만의', '들의', '들이', '들을', '들은', '들과', '들도', '들', '의', '을', '를', '이', '가', '은', '는', '에', '와', '과', '도', '만', '로', '란'];
+const VERBY = /(하다|한다|했다|하는|하며|하고|하게|하여|해서|했던|하던|되는|되어|된다|됐다|되고|있는|있다|있고|없는|없다|위한|대한|통한|같은|않는|않고|않은|이다|였다|이었|니다|어요|아요|는데|면서|도록|듯이|적인|스럽게|스러운|로운|롭게|해야|하면|라고|이라고|다고|냐고|던|며|고서|지만|거나|든지|ㄴ다|겠다|간다|온다|준다|낸다|본다|한|된|할|될|운|은지|는지|을까|ㄹ까|까지도|어진|아진|겨진|워진|해진|혀진|려진|잊힌|담긴|숨긴|놓인|쌓인|는다|았다|었다|겠다|린다|진다|난다|친다|든다|운다|낸다|켰다|렸다|졌다|웠다|았던|었던)$/;
 const STOP = new Set(('이것 그것 저것 우리 그리고 하지만 그러나 또한 이런 그런 저런 모든 가장 바로 다시 함께 통해 위해 대해 무엇 어떻게 왜 언제 누구 어디 여기 거기 이번 지난 다음 처음 마지막 하나 둘 셋 정말 매우 아주 너무 많은 많이 조금 이제 오늘 지금 모두 자신 스스로 자기 사람 사람들 우리들 이야기 내용 부분 경우 때문 정도 이상 이하 수록 책 이책 이 그 저 것 수 등 때 중 더 및 각 권 편 장 부 년 월 일 쪽 판 전 후 안 밖 위 아래 속 곳 점 번 개 명 분 씨 님 저자 작가 지은이 옮긴이 역자 출판사 출간 출판 발간 소개 번역 원서 독자 세상 세계 시대 오늘날 과정 방법 문제 의미 생각 마음 시간 순간 하루 모습 가지 만큼 대로 뿐 듯 채 줄 바 데 터 측 간 중심 바탕 대한민국 한국 국내 해외 최고 최초 최근 새로운 다른 같은 여러 수많은 각각 서로 결국 마침내 비로소 특히 다양한 위대한 놀라운 아름다운 유일한 진정한 전체 일부 대부분 출간된 펴낸 펴냈다 출간했다 쓴 썼다 담은 담았다 담긴 보여준다 들려준다 말한다 전한다 이끈다 시작 끝 장편 단편 소설 에세이 산문 시집 신간 개정판 특별판 한정판 양장 페이지 권의 1권 2권 3권').split(/\s+/));
 function stem(w0) { let w = String(w0 || '').replace(/^[^가-힣A-Za-z0-9]+|[^가-힣A-Za-z0-9]+$/g, ''); if (!w) return ''; if (!HANGUL.test(w)) return /^[A-Za-z][A-Za-z0-9]{2,}$/.test(w) ? w : '';
   for (const j of JOSA) if (w.length - j.length >= 2 && w.endsWith(j)) { w = w.slice(0, -j.length); break; }
@@ -134,6 +134,9 @@ function learn(prev, samples, judges, dfDocs) { const M = { v: '', N: 0, df: {},
   const out = { v: 'm' + h32(JSON.stringify([N, Object.keys(P).length, (samples || []).length, (judges || []).length])).toString(36), N, df: Object.fromEntries(Object.entries(df).sort((a, b) => b[1] - a[1]).slice(0, 20000)), pick: keep(P, 8000), tpl, nS: (samples || []).length, nJ: (judges || []).length };
   return out; }
 
+/* 모형 저장 꼴 — 낱말 수만 개를 Firestore 지도 칸으로 두면 칸마다 색인이 붙어 '색인 항목이 너무 많음'(문서당 한도)으로 쓰기가 막힘(0.35.256 첫 회차) → 글 한 칸(JSON)으로 · 문서 1MB 안(df 12,000 · pick 6,000) */
+function modelIn(M) { const top = (o, n) => Object.fromEntries(Object.entries(o || {}).sort((a, b) => (Array.isArray(b[1]) ? b[1][1] : b[1]) - (Array.isArray(a[1]) ? a[1][1] : a[1])).slice(0, n)); return { v: M.v, N: M.N, nS: M.nS || 0, nJ: M.nJ || 0, dfJ: JSON.stringify(top(M.df, 12000)), pickJ: JSON.stringify(top(M.pick, 6000)), tplJ: JSON.stringify(M.tpl || {}) }; }
+function modelOut(d) { if (!d) return {}; const P = (x, z) => { try { return x ? JSON.parse(x) : z; } catch (e) { return z; } }; return { v: d.v || '', N: +d.N || 0, nS: +d.nS || 0, nJ: +d.nJ || 0, df: d.df || P(d.dfJ, {}), pick: d.pick || P(d.pickJ, {}), tpl: d.tpl || P(d.tplJ, { t1: {}, t2: {} }) }; }
 /* ── 클라우드 묶음 ── D = { C, FV, W, log, nowIso, db, bk: () => BKINFO.state, pulse, found } ── */
 function makeAiSum(D) {
   const ST = { q: null, qAt: 0, done: null, doneAt: 0, busy: false, model: null, modelAt: 0 };
@@ -141,7 +144,7 @@ function makeAiSum(D) {
   const kHour = () => new Date(Date.now() + 9 * 3600e3).getUTCHours();
   async function cfg() { let c = {}; try { const d = await D.C('app_settings').doc('aisum_cfg').get(); c = d.exists ? d.data() : {}; } catch (e) {} return { ...AS_DEF, ...c, llm: false, rule: { ...STAGE_RULE, ...(c.rule || {}) } }; } /* llm은 이 판에서 늘 꺼짐 */
   async function state() { try { const d = await D.C('app_settings').doc('aisum_state').get(); return d.exists ? d.data() : {}; } catch (e) { return {}; } }
-  async function model() { if (ST.model && Date.now() - ST.modelAt < 3600e3) return ST.model; try { const d = await D.C('app_settings').doc('aisum_model').get(); ST.model = d.exists ? d.data() : {}; } catch (e) { ST.model = {}; } ST.modelAt = Date.now(); return ST.model; }
+  async function model() { if (ST.model && Date.now() - ST.modelAt < 3600e3) return ST.model; try { const d = await D.C('app_settings').doc('aisum_model').get(); ST.model = d.exists ? modelOut(d.data()) : {}; } catch (e) { ST.model = {}; } ST.modelAt = Date.now(); return ST.model; }
   async function doneSet(force) { if (ST.done && !force && Date.now() - ST.doneAt < 10 * 60e3) return ST.done; const M = new Map(); const qs = await D.C('ai_sum').select('claude.at', 'human.at', 'engine.at', 'engine.mv').get(); qs.forEach((d) => { const v = d.data() || {}; M.set(d.id, { c: !!(v.claude && v.claude.at), h: !!(v.human && v.human.at), e: !!(v.engine && v.engine.at), mv: v.engine && v.engine.mv || null }); }); ST.done = M; ST.doneAt = Date.now(); return M; }
   /* 차례 — 판매 중 · 책 정보(책소개나 출판사 서평)가 있는 상품을 수요 지수(SP) 높은 순 · 하루 한 번 다시 셈 · app_settings/aisum_q에 앞 4,000권 */
   async function queue(force) { if (ST.q && !force && Date.now() - ST.qAt < 24 * 3600e3) return ST.q; const c = await cfg();
@@ -181,7 +184,7 @@ function makeAiSum(D) {
       /* ② 배우기 — 문서 빈도는 차례 앞 1,500권 재료로 · 고르는 몫은 Claude·사람 글로 · 틀 이긴 몫은 견줌으로 */ const dfIs = Q.slice(0, 1500).map((x) => x.isbn); const DF = await srcOf(dfIs.filter((k) => !S.has(k))); for (const [k, v] of S) DF.set(k, v);
       const J0 = []; try { (await D.C('ai_sum_judge').get()).forEach((d) => J0.push(d.data())); } catch (e) {}
       const samples = ref.map((d) => ({ src: S.get(d.id), kw: (d.human && d.human.kw && d.human.kw.length ? d.human.kw : (d.claude || {}).kw) || [] })).filter((x) => x.src);
-      const M = learn(await model(), samples, J0, [...DF.values()]); await D.C('app_settings').doc('aisum_model').set({ ...M, at: D.nowIso(), ...D.W() }); ST.model = M; ST.modelAt = Date.now();
+      const M = learn(await model(), samples, J0, [...DF.values()]); await D.C('app_settings').doc('aisum_model').set({ ...modelIn(M), at: D.nowIso(), ...D.W() }); ST.model = M; ST.modelAt = Date.now();
       /* ③ 엔진 그림자 글 — 견줄 짝(Claude·사람 글 있음)을 먼저, 남는 몫은 차례 앞(아직 아무도 안 씀) */ const targets = [...ref.map((d) => d.id), ...Q.map((x) => x.isbn).filter((k) => !(done.get(k) || {}).c && !(done.get(k) || {}).h)].filter((k, i, a) => a.indexOf(k) === i).slice(0, c.engDaily);
       const TS = await srcOf(targets.filter((k) => !S.has(k))); for (const [k, v] of S) TS.set(k, v); let wrote = 0, fail = 0; const rubs = [], kws = [], copies = [];
       for (const k of targets) { const src = TS.get(k); if (!src) continue; const g = engWrite(src, M); const d0 = docs.find((d) => d.id === k) || {}; if (!g.ok) { fail++; await D.C('ai_sum').doc(k).set({ isbn: k, engine: { ok: false, why: g.why, at: D.nowIso(), mv: M.v, v: AS_V } }, { merge: true }); continue; }
@@ -210,4 +213,4 @@ function makeAiSum(D) {
   let SC = { at: 0, v: { stage: 1, small: AS_DEF.small } }; async function stageCached() { if (Date.now() - SC.at < 10 * 60e3) return SC.v; try { const s = await state(); const c = await cfg(); SC = { at: Date.now(), v: { stage: (s.st && s.st.stage) || 1, small: c.small } }; } catch (e) {} return SC.v; }
   return { daily, diag, put, judge, pairs, nextBatch, queue, forShop, busy: () => ST.busy };
 }
-module.exports = { AS_V, AS_DEF, STAGE_RULE, hasBatchim, josa, stem, tokens, keywords, extFeat, extText, engWrite, rubric, kwAgree, pick, pubOf, textOf, checkIn, stageStep, learn, longestCommon, makeAiSum };
+module.exports = { AS_V, AS_DEF, STAGE_RULE, hasBatchim, josa, stem, tokens, keywords, extFeat, extText, engWrite, rubric, kwAgree, pick, pubOf, textOf, checkIn, stageStep, learn, longestCommon, modelIn, modelOut, makeAiSum };
