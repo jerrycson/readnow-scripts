@@ -1,17 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: 책방 친구 옛 캐릭터 내리기",
-  "at": "2026-11-14T05:14:34Z"
- },
+ "holder": "friend",
+ "what": "책방 친구 옛 캐릭터 내리기",
+ "since": "2026-11-14T05:17:37Z",
+ "beat": "2026-11-14T05:17:37Z",
+ "ask": null,
  "last": {
   "who": "pcdock3",
   "done": "PC 배치 0.1.3 · 수집기 1.89.334 (2807f9f4)",
   "at": "2026-11-14T05:16:58Z"
  },
- "host": null
+ "host": "vm"
 }
