@@ -1,13 +1,13 @@
 {
- "holder": "pcdock4",
- "what": "PC 배치 도우미 0.1.4 — 창 다시 열기",
- "since": "2026-11-14T05:47:46Z",
- "beat": "2026-11-14T05:47:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "note7",
-  "done": "웹앱 1.78.628 — 📓 노트 카드 [💬 메모 달기]가 고른 글 메모도 쌓음 (547eff0a)",
-  "at": "2026-11-14T05:42:33Z"
+  "who": "pcdock4",
+  "done": "PC 배치 도우미 0.1.4 main e17ddf2",
+  "at": "2026-11-14T05:49:40Z"
  },
- "host": "vm-pcdock4"
+ "host": null
 }
