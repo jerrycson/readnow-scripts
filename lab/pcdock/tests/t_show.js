@@ -103,6 +103,14 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       ok(pb.j && pb.j.ver === VER && VER !== '0.1.4' && /옛 판 0\.1\.4 서버.*넘겨받음\(quit\) — 끔/.test(logOf(D)) && !fakeActs(D).includes('stopold'), `0.1.4 → ${VER}: /api/quit로 PowerShell 없이 넘겨받음(정범님 손 없음)`, logOf(D).split('\n').filter((l) => /넘겨/.test(l)));
       ok(await until(() => chromeCalls(D).length >= 2 || /🪟 떠 있던 창을 앞으로 \(켬\)/.test(logOf(D)), 5000), '넘겨받은 새 판이 창을 띄움(옛 창이 떠 있으면 그 창을 앞으로)', logOf(D).split('\n').filter((l) => /🪟/.test(l))); stop(B); }
 
+    console.log('⑥-3 (0.1.6) 실제 0.1.5 서버(커밋 a78210e3 · 정범님 JS-MAIN에 지금 도는 판)가 살아 있을 때 지금 판을 켬');
+    { const OLD = mk(); for (const f of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files) { const r = cp.spawnSync('git', ['show', 'a78210e3:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.5 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
+      const D = mk(); const port = rport(); const A = await start(D, port, {}, path.join(OLD, 'readnow-pcdock.js')); kill.push(A);
+      ok((await req(port, 'GET', '/api/ping')).j.ver === '0.1.5', '0.1.5 서버가 켜짐');
+      const B = await start(D, port); kill.push(B); const pb = await req(port, 'GET', '/api/ping');
+      ok(pb.j && pb.j.ver === VER && VER !== '0.1.5' && /옛 판 0\.1\.5 서버.*넘겨받음\(quit\) — 끔/.test(logOf(D)) && !fakeActs(D).includes('stopold'), `0.1.5 → ${VER}: /api/quit로 PowerShell 없이 넘겨받음(정범님 손 없음)`, logOf(D));
+      ok(await until(() => chromeCalls(D).length >= 2 || /🪟 떠 있던 창을 앞으로 \(켬\)/.test(logOf(D)), 5000), '넘겨받은 새 판이 창을 띄움', logOf(D).split('\n').filter((l) => /🪟/.test(l))); }
+
     console.log('⑦ 켜는 길 고침(run.vbs → start.cmd)');
     { const L = mk(); const node = 'C:\\Users\\someone\\ReadNow\\node\\node.exe';
       const runCmd = `@echo off\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nif exist "app.new\\.ready" (\r\n  if exist app.old rmdir /s /q app.old\r\n  move app app.old >nul && move app.new app >nul\r\n  del app\\.ready >nul 2>&1\r\n)\r\n"${node}" app\\readnow-pcdock.js %* >> "%~dp0console.log" 2>&1\r\n`;

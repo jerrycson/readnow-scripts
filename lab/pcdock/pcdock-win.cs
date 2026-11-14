@@ -53,7 +53,7 @@ public static class RnDock {
   [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public INPUTU u; }
 
   public class Mon { public string Id; public bool Primary; public RECT B; public RECT Wa; public uint Dpi; }
-  public class Win { public long H; public uint Pid; public string Proc; public string Cls; public string Title; public RECT R; public bool Ic; public bool Zm; }
+  public class Win { public long H; public uint Pid; public string Proc; public string Cls; public string Title; public RECT R; public bool Ic; public bool Zm; public string Udd; } // (0.1.6) Udd = 크롬 프로필 폴더(--user-data-dir · 소문자 · 없으면 "" · 모르면 null) — PowerShell이 프로세스 명령 줄에서 채움
 
   static bool aware = false;
   // DPI 인식 — 다른 무엇보다 먼저(Forms를 불러오기 전에)
@@ -87,6 +87,53 @@ public static class RnDock {
       return true; }, IntPtr.Zero);
     return L; }
 
+  // (0.1.6) 숨은 맨 위 창 — 트레이로만 뜨는 프로그램(카카오톡 등)이 창을 숨긴 채 떠 있을 때 · 그 프로세스 이름 + 제목(정규식) · 주인 창 없음 · 도구 창 아님
+  public static List<Win> Hidden(string proc, string title) { var L = new List<Win>(); procNames.Clear(); System.Text.RegularExpressions.Regex re; try { re = new System.Text.RegularExpressions.Regex(title ?? "", System.Text.RegularExpressions.RegexOptions.IgnoreCase); } catch (Exception) { re = new System.Text.RegularExpressions.Regex("(?!)"); }
+    EnumWindows((h, l) => {
+      if (IsWindowVisible(h)) return true; if (GetWindowTextLength(h) == 0) return true; if (GetWindow(h, 4) != IntPtr.Zero) return true;
+      long ex = GetWL(h, -20).ToInt64(); if ((ex & 0x80L) != 0) return true;
+      uint pid; GetWindowThreadProcessId(h, out pid); string pn = ProcName(pid); if (!string.Equals(pn, proc ?? "", StringComparison.OrdinalIgnoreCase)) return true;
+      var t = new StringBuilder(512); GetWindowText(h, t, 512); if (!re.IsMatch(t.ToString())) return true;
+      var c = new StringBuilder(256); GetClassName(h, c, 256); RECT r; GetWindowRect(h, out r);
+      L.Add(new Win { H = h.ToInt64(), Pid = pid, Proc = pn, Cls = c.ToString(), Title = t.ToString(), R = r, Ic = IsIconic(h), Zm = IsZoomed(h) });
+      return true; }, IntPtr.Zero);
+    return L; }
+  // (0.1.6) 숨은 창을 보이게(SW_SHOW · 최소화면 되살림) — 보이면 true
+  public static bool Unhide(long hv) { IntPtr h = new IntPtr(hv); if (!IsWindow(h)) return false; ShowWindow(h, 5); if (IsIconic(h)) ShowWindow(h, 9); Thread.Sleep(200); return IsWindowVisible(h); }
+
+  // (0.1.6) 크롬 창 고르기 — 띄우기 바로 전에 있던 창(pre)·이미 다른 단계가 잡은 창(claimed)은 빼고, 프로세스 이름·창 종류·프로필(udd)이 맞는 것
+  //  udd: null 또는 "*" = 아무 프로필(PowerShell은 $null을 ""로 넘기므로 "*") · "" = 평소 크롬(--user-data-dir 없음) · 그 밖 = 그 폴더 · uddNot: 이 정규식에 맞는 프로필은 뺌(우리 도우미 크롬 — …\readnow\…)
+  //  hint(정규식 · 대소문자 무시): 제목이 맞는 창을 먼저 — 없으면 맨 위(가장 최근에 뜬) 창 · 고른 창이 없으면 0
+  //  (0.1.5까지는 크롬을 모두 띄운 뒤 '새로 뜬 아무 크롬 창'을 단계 차례대로 집어서, 윈도우 창 차례(맨 위 = 마지막에 뜬 창)대로 거꾸로 놓였음 — 정범님 11/14 15:36)
+  public static long PickNew(Win[] now, long[] pre, long[] claimed, string proc, string cls, string udd, string uddNot, string hint) {
+    var skip = new HashSet<long>(); if (pre != null) foreach (var x in pre) skip.Add(x); if (claimed != null) foreach (var x in claimed) skip.Add(x);
+    System.Text.RegularExpressions.Regex hr = null, nr = null; var O = System.Text.RegularExpressions.RegexOptions.IgnoreCase;
+    try { if (!string.IsNullOrEmpty(hint)) hr = new System.Text.RegularExpressions.Regex(hint, O); } catch (Exception) { hr = null; }   // 단서 글이 잘못돼도 멈추지 않음(단서 없이)
+    try { if (!string.IsNullOrEmpty(uddNot)) nr = new System.Text.RegularExpressions.Regex(uddNot, O); } catch (Exception) { nr = null; }
+    long first = 0;
+    foreach (var w in now) { if (w == null || skip.Contains(w.H)) continue;
+      if (!string.IsNullOrEmpty(proc) && !string.Equals(w.Proc, proc, StringComparison.OrdinalIgnoreCase)) continue;
+      if (!string.IsNullOrEmpty(cls) && w.Cls != cls) continue;
+      if (udd != null && udd != "*" && w.Udd != null && w.Udd != udd) continue;
+      if (nr != null && w.Udd != null && w.Udd.Length > 0 && nr.IsMatch(w.Udd)) continue;
+      if (hr != null && hr.IsMatch(w.Title ?? "")) return w.H;
+      if (first == 0) first = w.H; }
+    return hr != null ? -first : first; } // 제목 단서가 있는데 맞는 창이 없으면 음수(= 고를 창은 있지만 제목이 아직 안 맞음 · PowerShell이 몇 초 더 기다렸다가 그 창을 씀)
+
+  // (0.1.6 · 정범님 11/14 15:46 「③ 때 기존의 크롬·Claude 등 목록의 프로그램을 전부 닫을 수 있게 · 수집기만 열려 있으면 그것은 닫지 않게」)
+  //  먼저 닫기 판정 — null = 목록 밖 프로그램(손대지 않음 · 저장 안 한 글이 있을 수 있음) · "" = 닫음 · 그 밖 = 지키는 까닭
+  //  procs = 이번 배치에 놓을 프로그램의 프로세스 이름 · keepTitle = 수집기 창 제목(정규식 — 알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치)
+  public static string CloseWhy(Win w, string[] procs, string keepTitle) { if (w == null || string.IsNullOrEmpty(w.Proc)) return null;
+    bool mine = false; if (procs != null) foreach (var p in procs) if (!string.IsNullOrEmpty(p) && string.Equals(p, w.Proc, StringComparison.OrdinalIgnoreCase)) mine = true;
+    if (!mine) return null;
+    if (string.Equals(w.Proc, "explorer", StringComparison.OrdinalIgnoreCase) && w.Cls != "CabinetWClass") return "탐색기 셸(바탕 화면·작업 표시줄)";
+    System.Text.RegularExpressions.Regex kr = null; try { if (!string.IsNullOrEmpty(keepTitle)) kr = new System.Text.RegularExpressions.Regex(keepTitle, System.Text.RegularExpressions.RegexOptions.IgnoreCase); } catch (Exception) { kr = null; }
+    if (string.Equals(w.Proc, "chrome", StringComparison.OrdinalIgnoreCase)) {
+      if (w.Udd == null) return "크롬 프로필을 못 읽음(수집기 창일 수 있어 그대로)";
+      if (w.Udd.Length > 0) return "도우미·다른 프로필 크롬(수집기·번외·ALPS·PC 배치)"; }
+    if (kr != null && kr.IsMatch(w.Title ?? "")) return "수집기·도우미 창(제목)";
+    return ""; }
+
   // 칸에 놓기 — 돌려주는 값: 놓은 뒤 보이는 테두리 자리
   public static RECT Place(long hv, int x, int y, int w, int hh) { IntPtr h = new IntPtr(hv);
     if (IsIconic(h) || IsZoomed(h)) ShowWindow(h, 9);
@@ -107,6 +154,7 @@ public static class RnDock {
   // 닫아 달라고 부탁(WM_CLOSE) — 강제 종료 없음
   public static bool Close(long hv) { IntPtr h = new IntPtr(hv); if (!IsWindow(h)) return false; return PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); }
   public static bool Exists(long hv) { return IsWindow(new IntPtr(hv)); }
+  public static bool Visible(long hv) { return IsWindowVisible(new IntPtr(hv)); } // (0.1.6) 닫기 부탁 뒤 트레이로 숨는 프로그램(카카오톡·Claude)은 숨으면 닫힌 것으로 봄
 
   static INPUT Kb(ushort vk, ushort scan, uint flags) { INPUT i = new INPUT(); i.type = 1; i.u.ki.wVk = vk; i.u.ki.wScan = scan; i.u.ki.dwFlags = flags; return i; }
   static void Send(List<INPUT> L) { if (L.Count == 0) return; SendInput((uint)L.Count, L.ToArray(), Marshal.SizeOf(typeof(INPUT))); }

@@ -8206,10 +8206,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  꺼져 있으면 마지막에 본 것 그대로(seen 시각) · 옛 판(0.1.2 이하 · /api/diag 없음)은 판만 · 공개 전용 PC(로거)는 안 읽음 · 읽기만 */
   let DOCKST = null;
   function dockRead() { if (PUBONLY) return; const S = (v, n) => String(v == null ? '' : v).slice(0, n);
-    try { GM_xmlhttpRequest({ method: 'GET', url: 'http://127.0.0.1:8796/api/diag', anonymous: true, timeout: 5000,
+    try { GM_xmlhttpRequest({ method: 'GET', url: 'http://127.0.0.1:8796/api/diag' + (PC_NAME ? '?pc=' + encodeURIComponent(PC_NAME) : ''), anonymous: true, timeout: 5000, /* (pcdock5 11/14) ?pc= 이 PC 이름(PC 신호 칸 이름) → PC 배치 창 맨 위 이름표(0.1.6 · 예전엔 윈도우 컴퓨터 이름 DESKTOP-…) */
       onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {}
         if (j && j.app === 'readnow-pcdock') { DOCKST = { ver: S(j.ver, 12), mons: +j.mons || 0, monErr: S(j.monErr, 300), monErrAt: +j.monErrAt || 0, aware: S(j.aware, 12), build: +j.build || 0, upd: S(j.upd, 12),
-          last: j.last && typeof j.last === 'object' ? { at: +j.last.at || 0, by: S(j.last.by, 12), ok: !!j.last.ok, n: +j.last.n || 0, good: +j.last.good || 0, err: S(j.last.err, 200) } : null,
+          last: j.last && typeof j.last === 'object' ? { at: +j.last.at || 0, by: S(j.last.by, 12), ok: !!j.last.ok, n: +j.last.n || 0, good: +j.last.good || 0, err: S(j.last.err, 200), sec: +j.last.sec || 0,
+            /* (pcdock5 11/14 · PC 배치 0.1.6) 단계마다 결과(이름·됨·어떻게/실패 까닭·놓을 칸·잡은 창 제목 앞부분·초) · 먼저 닫은 창·지킨 창 · 건너뛴 것 — 리드가 진단으로 정범님 손 없이 확인 */
+            rows: (Array.isArray(j.last.rows) ? j.last.rows : []).slice(0, 20).map((x) => ({ n: S(x && x.n, 30), ok: !!(x && x.ok), how: S(x && x.how, 140), at: S(x && x.at, 24), t: S(x && x.t, 40), s: +(x && x.s) || 0, ...(x && x.miss ? { miss: 1 } : {}) })),
+            pre: j.last.pre && typeof j.last.pre === 'object' ? { closed: (Array.isArray(j.last.pre.closed) ? j.last.pre.closed : []).slice(0, 15).map((c) => ({ p: S(c && c.p, 20), t: S(c && c.t, 40), gone: !!(c && c.gone) })), kept: (Array.isArray(j.last.pre.kept) ? j.last.pre.kept : []).slice(0, 15).map((c) => ({ p: S(c && c.p, 20), t: S(c && c.t, 40), why: S(c && c.why, 60) })) } : null,
+            skip: (Array.isArray(j.last.skip) ? j.last.skip : []).slice(0, 10).map((k) => ({ n: S(k && k.n, 30), why: S(k && k.why, 100) })) } : null, pc: S(j.pc, 40), pcSrc: S(j.pcSrc, 12),
+          win: j.win && typeof j.win === 'object' ? { at: +j.win.at || 0, ok: j.win.ok == null ? null : !!j.win.ok, how: S(j.win.how, 160), open: !!j.win.open } : null, launch: S(j.launch, 60),
           errs: (Array.isArray(j.errs) ? j.errs : []).slice(0, 5).map((e) => ({ at: +(e && e.at) || 0, act: S(e && e.act, 16), err: S(e && e.err, 300) })), seen: nowIso() }; return; }
         if (j && j.ok === false) GM_xmlhttpRequest({ method: 'GET', url: 'http://127.0.0.1:8796/api/ping', anonymous: true, timeout: 5000, onload: (p) => { let q = null; try { q = JSON.parse(p.responseText); } catch (e) {} if (q && q.app === 'readnow-pcdock') DOCKST = { ver: S(q.ver, 12), old: true, seen: nowIso() }; } }); },
       onerror: () => {}, ontimeout: () => {} }); } catch (e) {} }

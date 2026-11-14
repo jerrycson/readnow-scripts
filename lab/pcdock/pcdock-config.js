@@ -4,7 +4,7 @@
  *  · 자료 자리 %LOCALAPPDATA%\ReadNow\pcdock (설정 JSON · 비밀값 없음) */
 'use strict';
 module.exports = {
-  PCDOCK_VER: '0.1.5',
+  PCDOCK_VER: '0.1.6',
   PORT: 8796,
   AVOID_PORTS: [8898, 8899, 8797],
   RAW: ['https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/lab/pcdock/', 'https://readnow.kr/lab/pcdock/'],

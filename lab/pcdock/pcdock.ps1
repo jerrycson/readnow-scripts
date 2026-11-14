@@ -78,8 +78,9 @@ switch ($Act) {
   'run' {
     $steps = @($In.steps); $wait = [Math]::Max(5, [int]$In.waitSec)
     # (0.1.5) 새 창 상한 = 단계 수 + 탭 수 + 1 · 전체 시간 상한(기다림 + 탭마다 8초 + 20초) — 넘으면 더 안 띄우고 까닭을 남김(창이 쌓이지 않게)
-    $tabTotal = 0; foreach ($sp in $steps) { $tabTotal = $tabTotal + (Arr $sp.tabs).Count }
-    $script:launchN = 0; $script:launchMax = $steps.Count + $tabTotal + 1; $script:hardEnd = [DateTime]::Now.AddSeconds($wait + 8 * $tabTotal + 20); $out.limit = @{ launches = $script:launchMax; sec = ($wait + 8 * $tabTotal + 20) }
+    $tabTotal = 0; $seqN = 0; foreach ($sp in $steps) { $tabTotal = $tabTotal + (Arr $sp.tabs).Count; if ($sp.match.seq) { $seqN = $seqN + 1 } }
+    # (0.1.6) 크롬 단계는 하나씩 띄우고 새 창을 기다림(단계마다 최대 15초) — 시간 상한에 그만큼 더함
+    $script:launchN = 0; $script:launchMax = $steps.Count + $tabTotal + 1; $hardSec = $wait + 8 * $tabTotal + 15 * $seqN + 20; $script:hardEnd = [DateTime]::Now.AddSeconds($hardSec); $out.limit = @{ launches = $script:launchMax; sec = $hardSec }
     # ③ '모두 닫고 설정대로' — 화면에서 미리 보여 준 창만 · WM_CLOSE(닫아 달라고 부탁만 · 저장 안 한 문서는 그 프로그램이 물음) · 강제 종료 없음
     $closed = New-Object System.Collections.ArrayList
     if (@($In.close).Count) {
@@ -103,11 +104,22 @@ switch ($Act) {
       if ($freshOnly -and $before.ContainsKey([int64]$w.H)) { return $false }
       if (@($m.procs).Count -and -not (@($m.procs) | Where-Object { $_ -and ($w.Proc -ieq $_) })) { return $false }
       if ($m.cls -and $w.Cls -ne $m.cls) { return $false }
+      if ($m.seq -and $null -ne $m.udd -and $null -ne $w.Udd) { if ($w.Udd -ne "$($m.udd)") { return $false }; if ("$($m.udd)") { return $true } } # (0.1.6) 크롬 프로필이 다르면 그 단계 창이 아님 · 도우미 프로필이 같으면 제목이 아직 안 바뀌었어도(불러오는 중) 그 창
       if ($m.folder) { $hp = $shellNow[[int64]$w.H]; if ($hp) { return [bool](@($hp) -contains "$($m.folder)".ToLower()) }; return ($w.Title -ieq "$($m.leaf)") } # (0.1.5) 폴더 단계는 경로가 같은 창만(못 읽으면 제목이 폴더 이름과 꼭 같을 때만)
       if ($m.title -and -not ($w.Title -match $m.title)) { return $false }
       return $true }
     $shellNow = @{}
-    function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false } }
+    function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false; pre = @(); hintMiss = $false; hidWhy = ''; sec = 0 } }
+    # (0.1.6) 크롬 프로필(--user-data-dir) — 창 주인(크롬 본 프로세스)의 명령 줄에서 · 평소 크롬은 '' · 못 읽으면 $null(그 창은 프로필로 거르지 않음)
+    $script:uddMap = @{}
+    function UddOf($cmdl) { if ($null -eq $cmdl) { return $null }; if ("$cmdl" -match '--user-data-dir=(?:"([^"]+)"|(\S+))') { $ud = $(if ($Matches[1]) { $Matches[1] } else { $Matches[2] }); return (Exp $ud).Trim('"').TrimEnd('\').ToLower() }; return '' }
+    function UddFill($wl) { $miss = @($wl | Where-Object { $_.Proc -ieq 'chrome' -and -not $script:uddMap.ContainsKey([int64]$_.Pid) })
+      if ($miss.Count) { try { foreach ($pr in @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction Stop)) { $script:uddMap[[int64]$pr.ProcessId] = (UddOf $pr.CommandLine) } } catch {}
+        foreach ($w in $miss) { if (-not $script:uddMap.ContainsKey([int64]$w.Pid)) { $script:uddMap[[int64]$w.Pid] = $null } } }
+      foreach ($w in $wl) { if ($w.Proc -ieq 'chrome' -and $script:uddMap.ContainsKey([int64]$w.Pid)) { $w.Udd = $script:uddMap[[int64]$w.Pid] } } }
+    # (0.1.6) 크롬 단계의 창 고르기(C# PickNew) — 띄우기 바로 전 창(preK)·다른 단계가 잡은 창은 빼고 · 프로필·제목 단서 · loose = 평소 크롬 프로필 조건을 늦춤(우리 도우미 크롬은 여전히 뺌)
+    function PickFor($sp, $wl, $preK, $loose) { $m = $sp.match; $ud = "$($m.udd)"; if ($null -eq $m.udd -or ($loose -and -not $ud)) { $ud = '*' }
+      return [int64][RnDock]::PickNew(@($wl), [int64[]]@($preK), [int64[]]@($claimed.Keys), 'chrome', "$($m.cls)", $ud, "$($m.uddNot)", "$($m.hint)") }
     function Launch($st) { $sp = $st.s
       if ($script:launchN -ge $script:launchMax) { $st.err = "새 창 상한($($script:launchMax)개)에 닿아 더 안 띄움"; return }
       if ([DateTime]::Now -gt $script:hardEnd) { $st.err = '실행 시간 상한을 넘어 더 안 띄움'; return }
@@ -131,19 +143,55 @@ switch ($Act) {
     function Put($st, $w, $how) { $r = $st.s.rect; $claimed[[int64]$w.H] = 1; $st.h = [int64]$w.H; $st.title = $w.Title
       try { $f = [RnDock]::Place([int64]$w.H, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h); $st.got = (Rc $f); $st.done = $true; $st.how = $how } catch { $st.err = "자리 옮기기 실패: $($_.Exception.Message)"; return }
       if ((Arr $st.s.tabs).Count -and -not $st.s.over -and -not $st.tabbed) { try { Tabs $st ([int64]$w.H) } catch { $st.overWhy = "탭 일 실패: $($_.Exception.Message)" } } }
+    # (0.1.6) 트레이에 숨어 떠 있는 창(카카오톡 등 · 0.1.5는 '보이는 창'만 찾아 못 찾음) — 그 프로세스의 숨은 창 중 제목이 꼭 맞는 것(창 종류 hcls 먼저 · 없으면 가장 큰 것)을 보이게 한 뒤 놓음
+    function Unhid($st) { $m = $st.s.match; if (-not "$($m.hidden)") { return $false }
+      $hs = @([RnDock]::Hidden("$(@($m.procs)[0])", "$($m.hidden)") | Where-Object { -not $claimed.ContainsKey([int64]$_.H) }); if (-not $hs.Count) { return $false }
+      $hw = @($hs | Where-Object { "$($m.hcls)" -and $_.Cls -eq "$($m.hcls)" }) | Select-Object -First 1
+      if (-not $hw) { $hw = @($hs | Sort-Object { ($_.R.R - $_.R.L) * ($_.R.B - $_.R.T) } -Descending) | Select-Object -First 1 }
+      if (-not [RnDock]::Unhide([int64]$hw.H)) { $st.hidWhy = '숨은 창을 보이게 하지 못함'; return $false }
+      Put $st $hw '트레이에 숨어 있던 창을 보이게 해 자리만'; return [bool]$st.done }
+    # (0.1.6) 크롬 단계 — 띄운 바로 뒤 새로 생긴 창을 이 단계가 집음(다음 크롬을 띄우기 전에 · 0.1.5는 다 띄운 뒤 아무 새 크롬 창을 차례로 집어 자리가 뒤바뀜)
+    #  제목 단서가 맞는 창을 먼저(4초까지 기다림 — 지나면 제목이 달라도 새 창) · 6초 지나면 평소 크롬 프로필 조건을 늦춤 · 단계마다 최대 15초
+    function SeqWait($st, $preK) { $t1 = [DateTime]::Now; $lim = [Math]::Min(15, $wait); $st.pre = $preK
+      while (([DateTime]::Now - $t1).TotalSeconds -lt $lim -and [DateTime]::Now -lt $script:hardEnd) { Start-Sleep -Milliseconds 300
+        $wl = @([RnDock]::Windows()); UddFill $wl; $el = ([DateTime]::Now - $t1).TotalSeconds
+        $hv = PickFor $st.s $wl $preK ($el -gt 6)
+        if ($hv -lt 0) { if ($el -gt 4) { $hv = -$hv; $st.hintMiss = $true } else { $hv = 0 } }
+        if ($hv -gt 0) { $hw = @($wl | Where-Object { [int64]$_.H -eq $hv }) | Select-Object -First 1; if ($hw) { $st.sec = [Math]::Round($el, 1); Put $st $hw "켬 → 새로 뜬 창을 자리로($($st.sec)초)"; return } } } }
     # (0.1.5) 폴더 단계 — 경로를 펼쳐 실행 인자·알아보기(경로) 둘 다에
+    # (0.1.6) 도우미 크롬 프로필 경로 펼침(%USERPROFILE% → 실제 · 소문자 · 끝 \ 뺌) — 창 주인 명령 줄의 --user-data-dir과 견줌
+    foreach ($sp in $steps) { if ($sp.match.seq -and "$($sp.match.udd)") { $sp.match.udd = (Exp "$($sp.match.udd)").Trim('"').TrimEnd('\').ToLower() } }
     foreach ($sp in $steps) { if ($sp.folder) { $fp = FolderPath $sp.folder; $fl = Split-Path $fp -Leaf; if (-not $fl) { $fl = $fp }; $sp.launch.args = @($fp); $sp.match | Add-Member -Force -NotePropertyName folder -NotePropertyValue $fp; $sp.match | Add-Member -Force -NotePropertyName leaf -NotePropertyValue $fl } }
+    # (0.1.6 · 정범님 11/14 15:46) 먼저 닫기 — 이번에 놓을 프로그램(크롬·Claude·카카오톡·폴더 창 등)의 창을 WM_CLOSE로 닫고(부탁만 · 강제 종료 없음) 새로 띄워 칸에 놓음
+    #  지킴(C# CloseWhy): 수집기·도우미 크롬(…\ReadNow\… 프로필 · 프로필을 못 읽은 창) · 제목이 수집기 창(알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치) · 탐색기 셸 · 목록 밖 프로그램은 손대지 않음
+    $pre1Closed = New-Object System.Collections.ArrayList; $pre1Kept = New-Object System.Collections.ArrayList
+    if ($In.closeFirst) { $cfProcs = [string[]]@(Arr $In.closeFirst.procs); $cfKeep = "$($In.closeFirst.keepTitle)"
+      try { $cw0 = @([RnDock]::Windows()); UddFill $cw0
+        foreach ($cw in $cw0) { $why0 = [RnDock]::CloseWhy($cw, $cfProcs, $cfKeep); if ($null -eq $why0) { continue }
+          $tt = "$($cw.Title)"; $row = @{ proc = "$($cw.Proc)"; title = $tt.Substring(0, [Math]::Min(60, $tt.Length)) }
+          if ($why0) { $row.why = $why0; [void]$pre1Kept.Add($row) } elseif ([RnDock]::Close([int64]$cw.H)) { $row.h = [int64]$cw.H; [void]$pre1Closed.Add($row) } }
+        $endF = [DateTime]::Now.AddSeconds(8); while ([DateTime]::Now -lt $endF -and @($pre1Closed | Where-Object { [RnDock]::Exists([int64]$_.h) -and [RnDock]::Visible([int64]$_.h) }).Count) { Start-Sleep -Milliseconds 400 }
+        foreach ($row in $pre1Closed) { $row.gone = -not ([RnDock]::Exists([int64]$row.h) -and [RnDock]::Visible([int64]$row.h)) }
+      } catch { $out.closeErr = "먼저 닫기 실패: $($_.Exception.Message)" }
+      if ($pre1Closed.Count) { Start-Sleep -Milliseconds 600 }
+      $before = @{}; foreach ($bw in [RnDock]::Windows()) { $before[[int64]$bw.H] = 1 } }
+    $out.pre = @{ closed = @($pre1Closed); kept = @($pre1Kept) }
     $shellNow = ShellMap
     # 프로그램마다 따로(try) — 하나가 실패해도 나머지는 계속
     foreach ($sp in $steps) { $st = NewSt $sp
-      try { if ($sp.reuse) { $hit = @([RnDock]::Windows() | Where-Object { Fits $_ $sp $false }) | Select-Object -First 1; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } }
-        if (-not $st.done -and -not $st.err -and $sp.launch) { Launch $st } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" }
+      try { if ($sp.reuse) { $wl = @([RnDock]::Windows()); if ($sp.match.seq) { UddFill $wl }; $hit = @($wl | Where-Object { Fits $_ $sp $false }) | Select-Object -First 1; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } elseif (Unhid $st) { $st.how = '트레이에 숨어 있던 창을 보이게 해 자리만' } }
+        if (-not $st.done -and -not $st.err -and $sp.launch) {
+          if ($sp.match.seq) { $preK = @([RnDock]::Windows() | ForEach-Object { [int64]$_.H }); Launch $st; if (-not $st.err) { SeqWait $st $preK } } # (0.1.6) 크롬은 하나씩
+          else { Launch $st } } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" }
       [void]$Res.Add($st); Start-Sleep -Milliseconds 400 }
     $end = [DateTime]::Now.AddSeconds($wait)
     while ((@($Res | Where-Object { -not $_.done -and -not $_.err }).Count) -and [DateTime]::Now -lt $end -and [DateTime]::Now -lt $script:hardEnd) {
-      Start-Sleep -Milliseconds 700; $wins = @([RnDock]::Windows()); $shellNow = ShellMap
+      Start-Sleep -Milliseconds 700; $wins = @([RnDock]::Windows()); $shellNow = ShellMap; UddFill $wins
       foreach ($st in @($Res | Where-Object { -not $_.done -and -not $_.err })) {
-        try { $hit = @($wins | Where-Object { Fits $_ $st.s $true }) | Select-Object -First 1
+        try { if ($st.s.match.seq) { $hv = PickFor $st.s $wins $(if ((Arr $st.pre).Count) { $st.pre } else { @($before.Keys) }) $true; if ($hv -lt 0) { $hv = -$hv; $st.hintMiss = $true }
+            if ($hv -gt 0) { $hw = @($wins | Where-Object { [int64]$_.H -eq $hv }) | Select-Object -First 1; if ($hw) { Put $st $hw '켬 → 늦게 뜬 창을 자리로' } }; continue } # (0.1.6) 크롬은 그 단계를 띄운 뒤 생긴 창만
+          if ($st.s.match.hidden -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $vis = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1; if (-not $vis -and (Unhid $st)) { continue } } # (0.1.6) 켰는데도 창이 숨은 채면 보이게
+          $hit = @($wins | Where-Object { Fits $_ $st.s $true }) | Select-Object -First 1
           if (-not $hit -and -not $st.s.match.fresh -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $hit = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1 }
           if ($hit) { Put $st $hit ($(if ($st.how) { "$($st.how) → 자리 옮김" } else { '자리 옮김' })) } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" } } }
     # 뜬 뒤 스스로 크기를 바꾸는 프로그램(크롬·오피스)이 있어 한 번 더
@@ -152,7 +200,9 @@ switch ($Act) {
       if ($_.done -and $_.tabN) { $howTxt = "$howTxt · 탭 $($_.tabN)개 더함" }
       if ($_.overN) { $howTxt = "$howTxt · 탭 $($_.overN)개는 탭 대신 같은 칸에 창을 겹쳐 놓음($($_.overWhy))" }
       if ($_.s.over -and $_.done) { $howTxt = "$howTxt (탭 대신 겹쳐 놓음)" }
-      @{ app = $_.s.app; inst = $_.s.inst; name = $_.s.name; ok = [bool]$_.done; how = $howTxt; title = $_.title; want = $_.s.rect; got = $_.got; helper = $_.s.helper; tabs = $_.tabN; over = $_.overN } })
+      if (-not $_.done -and $_.hidWhy) { $howTxt = "$howTxt · $($_.hidWhy)" }
+      if ($_.done -and $_.hintMiss) { $howTxt = "$howTxt (제목이 주소와 달라 새로 뜬 창으로 놓음)" }
+      @{ app = $_.s.app; inst = $_.s.inst; name = $_.s.name; ok = [bool]$_.done; how = $howTxt; title = $_.title; want = $_.s.rect; got = $_.got; helper = $_.s.helper; tabs = $_.tabN; over = $_.overN; sec = $_.sec; miss = [bool]$_.hintMiss } })
     Done $out }
   { $_ -eq 'cleanscan' -or $_ -eq 'cleanrun' } {
     $prot = @(@($In.protect) | ForEach-Object { (Exp $_).TrimEnd('\') } | Where-Object { $_ }); $mark = "$($In.mark)"

@@ -134,6 +134,7 @@ details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } det
       <span>② 윈도우 시작 뒤 <input id="oDelay" type="number" min="0" max="600" style="width:58px"> 초 기다렸다 실행</span>
       <span>③ 창이 뜨길 최대 <input id="oWait" type="number" min="5" max="180" style="width:58px"> 초 기다림</span>
       <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oReuse" type="checkbox" style="width:auto"> 이미 떠 있는 프로그램은 새로 안 띄우고 자리만(크롬 빼고)</label>
+      <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)" title="③ 때 배치에 놓은 프로그램(크롬·Claude·카카오톡·폴더 등)의 창을 먼저 닫고 새로 띄워 칸에 놓음 · 리드나우 수집기(알라딘 수집 탭·작업 창)·번외·ALPS·PC 배치 창과 목록 밖 프로그램은 닫지 않음"><input id="oClose1" type="checkbox" style="width:auto"> ③ 때 목록의 프로그램은 먼저 닫고 새로 띄움(수집기·번외 창은 안 닫음)</label>
     </div>
   </div>
 </div>
@@ -202,7 +203,7 @@ $('#askClose').onclick = async () => { const L = $('#askList'); L.innerHTML = '<
 $('#b4').onclick = () => openClean();
 
 /* ── ① 설정 ── */
-function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
+function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; $('#oClose1').checked = C.run.closeFirst !== false; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
 window.addEventListener('resize', () => { if ($('#set').classList.contains('on')) paintSet(); });
 const monKey = (m) => m.id; const gridFor = (m) => G.gridOf(m, (C.mons[m.id] || {}).grid || 'auto', C.base);
 function paintSet() { paintApps(); paintMap(); paintMonOpts(); }
@@ -308,7 +309,7 @@ $('#base').onchange = () => { const [aw, ah] = $('#base').value.split(':').map(N
 $('#reMon').onclick = async () => { const b = $('#reMon'); b.disabled = true; b.textContent = '🔄 읽는 중…'; const r = await api('/api/screens', {}); b.disabled = false; b.textContent = '🔄 모니터 다시 읽기';
   if (Array.isArray(r.mons)) S.mons = r.mons; S.monErr = r.ok ? '' : (r.err || '까닭 모름'); paintSet(); if (!r.ok) return toast('모니터를 못 읽음: ' + monWhy(), 6000); toast(`모니터 ${S.mons.length}대를 읽었습니다`); };
 $('#setCancel').onclick = $('#setBack').onclick = () => { C = null; show('home'); fit('home'); };
-$('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; };
+$('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; }; $('#oClose1').onchange = () => { C.run.closeFirst = $('#oClose1').checked; };
 $('#setOk').onclick = async () => { for (const m of S.mons) { const g = gridFor(m); C.mons[m.id] = { ...(C.mons[m.id] || {}), grid: (C.mons[m.id] || {}).grid || 'auto', cols: g.cols, rows: g.rows, w: m.b.w, h: m.b.h }; }
   const r = await api('/api/save', { cfg: C }); if (!r.ok) return toast('저장 못 함:\n' + (r.errs || [r.err]).slice(0, 5).join('\n'), 6000);
   S.cfg = r.cfg; C = null; show('home'); fit('home'); paintHome(); toast('저장했습니다' + (r.warns && r.warns.length ? '\n' + r.warns.join('\n') : '')); };
