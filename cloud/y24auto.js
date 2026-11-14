@@ -117,8 +117,13 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
       tx.set(ref(), { r, batches: FV.arrayUnion({ batch: jid, at, by, n: R.ok.length, auto: 1, lids: R.ok.map((x) => x.lid).slice(0, 60) }), auto: { lastJob: jid, lastAt: at, dev: 'cloud:' + pc } }, { merge: true }); });
     return res; }
   const byOf = (pc) => '🤖 자동 올림 · 클라우드(' + pc + ')';
+  /* (headless1 판 뒤) 🔎 클라우드가 왜 맡기지 않는지 진단에서 보이게 — 웹앱 y24AutoStSave와 같은 칸(app_settings/y24_reg.autoSt) · 이름 CLOUD_<PC> · 바뀌었거나 10분 지났을 때만 · 값·손님 정보 없음 */
+  const stSig = new Map();
+  function stSave(pc, why, st, plan) { try { const k = ('CLOUD_' + String(pc).toUpperCase()).replace(/[^A-Z0-9_-]/g, '_').slice(0, 36); const w = String(why || '').slice(0, 200); const sig = w + '|' + (st && st.login) + '|' + (st && st.en); const o2 = stSig.get(k);
+    if (o2 && o2.sig === sig && now() - o2.at < 10 * 60e3) return; stSig.set(k, { sig, at: now() });
+    ref().set({ autoSt: { [k]: { why: w, login: (st && st.login) || null, en: st && st.en != null ? !!st.en : null, hold: !!(st && st.hold), plan: plan || null, ver: 'cloud', at: iso() } } }, { merge: true }).catch(() => {}); } catch (e) {} }
   /* 한 차례 — pc = 서명이 확인된 그 PC · y = 번외가 보낸 { st, res, rej } → { ack, jobs, why } */
-  async function step(pc, y) { const out = { v: 1, at: now(), ack: [], jobs: [], why: '' }; const st = (y && y.st) || {}; const say = (w) => { out.why = w; M.why.set(pc, w); return out; };
+  async function step(pc, y) { const out = { v: 1, at: now(), ack: [], jobs: [], why: '' }; const st = (y && y.st) || {}; const say = (w) => { out.why = w; M.why.set(pc, w); stSave(pc, w, st, out.plan); return out; };
     if (/^LOGGER/i.test(pc) || st.ban) return say(st.ban || '로거 PC — 예스24 자동 올림 안 함(약속 0)'); if (/^MJ-MAIN/i.test(pc)) return say('MJ-MAIN(등록·출고 PC) — 예스24 자동 올림 안 함(출고 보호)');
     const m = await mods(); if (!M.mods) return say('클라우드가 공용 셈을 못 받음 — ' + (m.err || []).join(' · ').slice(0, 160));
     const plat = (await doc('app_settings', 'platforms')) || {}; const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
