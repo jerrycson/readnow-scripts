@@ -24,6 +24,7 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
     { id: '\\\\.\\DISPLAY3', primary: false, b: { x: -3840, y: -500, w: 3840, h: 2160 }, wa: { x: -3840, y: -500, w: 3840, h: 2100 }, dpi: 144 }];
   const MONS = SETS[process.env.FAKE_MONS] || MONS0;
   const SF = process.env.FAKE_STARTUP; const out = (o) => { process.stdout.write((SCR === 'bom' ? '\ufeff' : '준비 글\n') + JSON.stringify({ ok: true, act, aware: 'pmv2', ...o }) + '\n'); };
+  if (act === 'screens' && +process.env.FAKE_SLOW) { setTimeout(() => out({ mons: SCR === 'empty' ? [] : MONS, build: 22631 }), +process.env.FAKE_SLOW); return; } /* (0.1.4) 처음 dll 엮기·Defender 검사처럼 느린 모니터 읽기 */
   if (act === 'screens') return out({ mons: SCR === 'empty' ? [] : MONS, build: 22631 });
   if (act === 'windows') return out({ mons: MONS, wins: [
     { h: 101, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 — Chrome' }, { h: 102, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
@@ -35,6 +36,8 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
   if (act === 'startup') { if (on === 1 && SF) fs.writeFileSync(SF, '1'); if (on === 0 && SF) { try { fs.renameSync(SF, SF + '.off'); } catch (e) {} } return out({ on: !!(SF && fs.existsSync(SF)), path: 'C:\\…\\ReadNow-PC배치.lnk' }); }
   if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ok: true, gone: true, why: '' })),
     res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect }) });
+  /* (0.1.4) front — FAKE_WIN 파일이 있으면 '도우미 창이 떠 있음'(가짜 크롬이 만듦) */
+  if (act === 'front') return out({ found: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN)), moved: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN + '.off')), front: true });
   if (act === 'fit') return out({ got: { x: 0, y: 0, w: j.w, h: j.h } });
   if (act === 'cleanscan') return out({ targets: (j.targets || []).filter((t) => !t.kind).map((t, i) => ({ id: t.id, files: i === 0 ? 1234 : 10 * i, bytes: (i + 1) * 50 * 1048576, sample: ['C:\\Users\\u\\AppData\\Local\\Temp\\old' + i + '.tmp'] })),
     procs: [{ pid: 11, name: 'chrome', ws: 900 * 1048576, cpu: 12, path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', cmd: 'chrome.exe' },

@@ -21,7 +21,9 @@ function log(m) { const t = new Date(Date.now() + 9 * 3600e3).toISOString().slic
 /* (0.1.3) 🩺 진단 — 최근 실패 10개를 diag.json에 남기고 GET /api/diag로 줌(이 PC 수집기가 5분마다 읽어 PC 신호 pcBeat.pcs[PC].dock에 실음 → 진단 doc=prd_jobs/pcBeat) · 경로·PC 이름 말고 까닭 글만 */
 const DIAGF = path.join(HOME, 'diag.json'); let DIAG = { errs: [] }; try { DIAG = JSON.parse(fs.readFileSync(DIAGF, 'utf8')); if (!Array.isArray(DIAG.errs)) DIAG.errs = []; } catch (e) {}
 const scrubP = (t) => String(t || '').replace(/[A-Za-z]:\\Users\\[^\\\s'"]+/gi, '%USERPROFILE%').slice(0, 400);
-function noteErr(act, m) { DIAG.errs.unshift({ at: Date.now(), act: String(act || ''), err: scrubP(m) }); DIAG.errs = DIAG.errs.slice(0, 10); try { fs.writeFileSync(DIAGF, JSON.stringify(DIAG)); } catch (e) {} }
+/* (0.1.4) 짧게 떴다 끝나는 프로세스(아이콘을 다시 눌렀을 때)도 같은 파일에 남기므로 쓰기 전에 다시 읽어 합침(0.1.3은 서버가 들고 있던 것으로 덮어 짧은 프로세스의 실패가 사라졌음) */
+function readDiag() { try { const j = JSON.parse(fs.readFileSync(DIAGF, 'utf8')); if (j && Array.isArray(j.errs)) return j; } catch (e) {} return { errs: [] }; }
+function noteErr(act, m) { const D = readDiag(); D.errs.unshift({ at: Date.now(), act: String(act || ''), err: scrubP(m) }); D.errs = D.errs.slice(0, 10); DIAG = D; try { const t = DIAGF + '.' + process.pid; fs.writeFileSync(t, JSON.stringify(D)); fs.renameSync(t, DIAGF); } catch (e) {} }
 const vnum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0);
 
 /* ── PowerShell ─────────────────────────────────────────────── */
@@ -49,8 +51,10 @@ function saveCfg(cfg) { const old = path.join(HOME, 'old'); fs.mkdirSync(old, { 
 const ST = { mons: [], monsAt: 0, monErr: '', monErrAt: 0, build: 0, closeTok: null, found: {}, icons: {}, foundAt: 0, startup: null, busy: '', last: null, update: null, lastHit: Date.now(), scan: null, port: 0 };
 try { const j = JSON.parse(fs.readFileSync(path.join(HOME, 'found.json'), 'utf8')); ST.found = j.found || {}; ST.icons = j.icons || {}; ST.foundAt = j.at || 0; } catch (e) {}
 /* (0.1.3) 못 읽으면 까닭을 ST.monErr에 — 화면 배치도·처음 화면·진단에 그대로(0.1.2까지는 /api/state가 '모니터 0대'만 줘서 까닭이 숨었음) · 읽었던 모니터가 있으면 그대로 둠 */
+/* (0.1.4) 마지막으로 읽은 모니터를 mons.json에 기억 — 다음에 켤 때 모니터를 다시 읽기 전에 그 자리로 창부터 띄움(0.1.3은 모니터 읽기(최대 2분)가 끝나야 창을 띄웠음) */
+const MCF = path.join(HOME, 'mons.json'); let MCACHE = []; try { const j = JSON.parse(fs.readFileSync(MCF, 'utf8')); if (Array.isArray(j.mons)) MCACHE = j.mons; } catch (e) {}
 async function readMons() { const r = await ps('screens', null, null, 120000);
-  if (r.ok && Array.isArray(r.mons) && r.mons.length) { ST.mons = r.mons; ST.monsAt = Date.now(); ST.aware = r.aware; ST.monErr = ''; if (+r.build) ST.build = +r.build; }
+  if (r.ok && Array.isArray(r.mons) && r.mons.length) { ST.mons = r.mons; ST.monsAt = Date.now(); ST.aware = r.aware; ST.monErr = ''; if (+r.build) ST.build = +r.build; MCACHE = r.mons; try { fs.writeFileSync(MCF, JSON.stringify({ at: Date.now(), mons: r.mons })); } catch (e) {} }
   else { ST.monErr = r.ok ? '윈도우가 모니터를 0대로 알려 줌(원격 화면만 켜진 채 모니터가 꺼졌을 수 있음)' : String(r.err || '까닭 모름'); ST.monErrAt = Date.now(); if (r.ok) { log('✗ 모니터 0대'); noteErr('screens', ST.monErr); } }
   return r; }
 async function findAll(apps) { const r = await ps('find', { hints: A.findHints(apps || SET.defaults().apps), icons: (apps || []).filter((a) => a.exe).map((a) => a.exe) }, null, 90000);
@@ -109,31 +113,81 @@ async function checkUpdate() { if (process.env.RN_PCDOCK_NOUPDATE) return; try {
     fs.writeFileSync(path.join(nd, '.ready'), best.v); ST.update = { v: best.v }; log(`🔄 새 판 ${best.v} 받아 둠 — 다음에 켤 때 바뀜`); } catch (e) { log('🔄 새 판 확인 실패: ' + e.message); } }
 
 /* ── 크롬 앱 창 ─────────────────────────────────────────────── */
-async function openWindow() { if (process.env.RN_PCDOCK_NOWIN) return { ok: true, skip: true };
-  let ch = ST.found['chrome.exe']; if (!ch) { await findAll(SET.defaults().apps); ch = ST.found['chrome.exe']; } if (!ch) { log('✗ 크롬을 못 찾아 창을 못 엶'); return { ok: false, err: '크롬을 못 찾음' }; }
-  if (!ST.mons.length) await readMons(); const pm = ST.mons.find((m) => m.primary) || ST.mons[0]; const k = pm ? (pm.dpi || 96) / 96 : 1;
-  const x = pm ? Math.round((pm.wa.x + pm.wa.w) / k - CFG.WIN.w - 12) : 40, y = pm ? Math.round(pm.wa.y / k + 12) : 40; /* 주 모니터 오른쪽 위 · 늘 같은 자리 */
-  const prof = path.join(HOME, 'chrome');
-  const c = cp.spawn(ch, ['--user-data-dir=' + prof, '--app=http://127.0.0.1:' + ST.port + '/', '--window-size=' + CFG.WIN.w + ',' + CFG.WIN.h, '--window-position=' + x + ',' + y, '--no-first-run', '--no-default-browser-check', '--hide-crash-restore-bubble', '--disable-extensions', '--disable-background-networking', '--disable-sync', '--disable-features=Translate,MediaRouter'], { detached: true, stdio: 'ignore', windowsHide: false });
-  c.on('error', (e) => log('✗ 크롬 창: ' + e.message)); c.unref(); return { ok: true }; }
+/* (0.1.4 · 정범님 11/14 14:30 「✕로 닫고 다시 더블클릭하면 창이 안 뜸」)
+ *  · 창 열기는 언제나 '살아 있는 서버'가 맡음 — 아이콘을 다시 누르면 짧게 뜬 프로세스는 POST /api/show만 보내고 바로 끝남(0.1.3은 짧은 프로세스가 스스로 크롬을 띄웠고 실패해도 아무 데도 안 남았음)
+ *  · 창이 떠 있으면(화면이 최근에 서버를 불렀고 닫힘 알림이 없으면) 새로 띄우지 않고 그 창을 앞으로(화면 밖이면 주 모니터 오른쪽 위로) — PowerShell 'front'
+ *  · 띄운 뒤 20초 안에 그 창이 서버를 부르지 않으면(크롬 프로필이 막 닫히는 중이면 새 창 부탁이 사라짐) 한 번 더 띄움 · 그래도 안 되면 진단(diag.json · PC 신호 dock.errs)에 'window'로 남김
+ *  · 모니터를 아직 못 읽었으면 기억해 둔 자리(mons.json) · 없으면 왼쪽 위에 창부터 띄우고, 모니터를 읽은 뒤 오른쪽 위로 옮김 */
+const WINST = { at: 0, ok: null, how: '', by: '', n: 0, uiAt: 0, byeAt: 0 };
+const uiOpen = () => WINST.uiAt > WINST.byeAt && Date.now() - WINST.uiAt < 150e3; /* 화면은 60초마다 /api/ping을 부름 · 닫을 때 /api/bye */
+function setWin(by, ok, how) { WINST.at = Date.now(); WINST.by = String(by || ''); WINST.ok = ok; WINST.how = how; log((ok ? '🪟 ' : '✗ 창: ') + how + ' (' + by + ')'); if (!ok) noteErr('window', how); }
+function chromeExe() { if (process.env.RN_PCDOCK_CHROME) return process.env.RN_PCDOCK_CHROME;
+  const E = process.env; const L = [ST.found['chrome.exe'], E.ProgramFiles && path.join(E.ProgramFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'), E['ProgramFiles(x86)'] && path.join(E['ProgramFiles(x86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'), E.LOCALAPPDATA && path.join(E.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe')];
+  return L.find((p) => { try { return p && fs.statSync(p).isFile(); } catch (e) { return false; } }) || ''; }
+function winPos() { const M = ST.mons.length ? ST.mons : MCACHE; const pm = M.find((m) => m.primary) || M[0]; if (!pm || !pm.wa) return { x: 40, y: 40, guess: true }; const k = (pm.dpi || 96) / 96;
+  return { x: Math.round((pm.wa.x + pm.wa.w) / k - CFG.WIN.w - 12), y: Math.round(pm.wa.y / k + 12), guess: false }; } /* 주 모니터 오른쪽 위 · 늘 같은 자리 */
+async function spawnWin(port) { let ch = chromeExe(); if (!ch) { await findAll(SET.defaults().apps); ch = chromeExe(); } if (!ch) return { ok: false, err: '크롬(chrome.exe)을 못 찾아 창을 못 엶 — 크롬이 깔려 있는지 봐 주세요' };
+  const pos = winPos(); const prof = path.join(HOME, 'chrome');
+  const args = ['--user-data-dir=' + prof, '--app=http://127.0.0.1:' + (port || ST.port) + '/', '--window-size=' + CFG.WIN.w + ',' + CFG.WIN.h, '--window-position=' + pos.x + ',' + pos.y, '--no-first-run', '--no-default-browser-check', '--hide-crash-restore-bubble', '--disable-extensions', '--disable-background-networking', '--disable-sync', '--disable-features=Translate,MediaRouter'];
+  return new Promise((res) => { let c; try { c = cp.spawn(ch, args, { detached: true, stdio: 'ignore', windowsHide: false }); } catch (e) { return res({ ok: false, err: '크롬을 못 켬: ' + e.message }); }
+    const t = setTimeout(() => res({ ok: true, guess: pos.guess }), 3000); c.once('spawn', () => { clearTimeout(t); c.unref(); res({ ok: true, guess: pos.guess }); }); c.once('error', (e) => { clearTimeout(t); res({ ok: false, err: '크롬을 못 켬: ' + e.message }); }); }); }
+const waitUi = async (t0, ms) => { for (let k = 0; k < ms / 250; k++) { if (WINST.uiAt > t0) return true; await new Promise((z) => setTimeout(z, 250)); } return WINST.uiAt > t0; };
+async function frontWin() { const r = await ps('front', { title: TITLE, w: CFG.WIN.w, h: CFG.WIN.h }, null, 25000); return r && r.ok ? r : { ok: false, found: false, err: r && r.err }; }
+let showing = null;
+function showWindow(by, opts) { if (!showing) showing = showWindow1(by, opts || {}).finally(() => { showing = null; }); return showing; }
+async function showWindow1(by, opts) { WINST.n++; if (process.env.RN_PCDOCK_NOWIN && !process.env.RN_PCDOCK_CHROME) return { ok: true, skip: true };
+  if (opts.probe || uiOpen()) { const f = await frontWin(); if (f.found) { setWin(by, true, f.moved ? '떠 있던 창을 화면 안으로 옮겨 앞으로' : '떠 있던 창을 앞으로'); return { ok: true, how: 'front', moved: !!f.moved }; } }
+  const t0 = Date.now(); const s = await spawnWin(); if (!s.ok) { setWin(by, false, s.err); return s; }
+  const v = verifyWin(by, t0, s.guess); if (opts.wait) return await v; v.catch(() => {}); return { ok: true, how: 'open' }; }
+async function verifyWin(by, t0, guess) {
+  if (await waitUi(t0, 20000)) { setWin(by, true, '새 창을 띄움'); if (guess) setTimeout(async () => { if (!ST.mons.length) await readMons(); if (ST.mons.length) await ps('fit', { title: TITLE, w: CFG.WIN.w, h: CFG.WIN.h, corner: 'tr' }); }, 1500); return { ok: true, how: 'open' }; }
+  const f = await frontWin(); if (f.found) { setWin(by, true, '창은 떴는데 화면이 늦게 불림 — 앞으로 가져옴'); return { ok: true, how: 'front' }; }
+  const t1 = Date.now(); const s = await spawnWin(); if (s.ok && await waitUi(t1, 20000)) { setWin(by, true, '처음 부탁이 사라져 한 번 더 띄움'); return { ok: true, how: 'open2' }; }
+  const why = s.ok ? '크롬 창이 두 번 다 20초 안에 안 뜸(크롬: ' + scrubP(chromeExe()) + ')' + (f.err ? ' · 창 찾기: ' + f.err : '') : s.err; setWin(by, false, why); return { ok: false, err: why }; }
+
+/* (0.1.4) 🔧 켜는 길 고침 — 설치(0.1.0~0.1.3)가 만든 run.cmd는 node의 출력을 console.log에 이어 붙이게(>>) 했는데,
+ *  윈도우 cmd는 그렇게 연 파일을 다른 cmd가 쓰지 못하게 잡아 둠 → 서버가 살아 있는 동안 아이콘을 다시 누르면 두 번째 run.cmd가
+ *  console.log를 못 열어 node를 아예 켜지 못함(창 없음 · 기록 없음 · 정범님 11/14 14:30의 유력한 까닭).
+ *  → 이어 붙이기를 뺀 start.cmd를 새로 만들고 run.vbs(바탕 화면·시작 메뉴·윈도우 시작 아이콘이 부르는 것)가 그것을 부르게 바꿈
+ *  · 돌고 있는 run.cmd는 고치지 않음(cmd는 배치 파일을 읽어 가며 돌아서 도는 중에 바꾸면 엉뚱한 줄을 돎) · 지우지 않음 */
+const LAUNCH = { at: 0, how: '' };
+function healLauncher() { const dir = process.env.RN_PCDOCK_LAUNCH_DIR || (process.platform === 'win32' ? path.dirname(APP) : ''); if (!dir) return null;
+  const vbs = path.join(dir, 'run.vbs'), rc = path.join(dir, 'run.cmd'), sc = path.join(dir, 'start.cmd'); const RED = /[ \t]*>>?[ \t]*"[^"\r\n]*console\.log"[ \t]*2>&1/gi;
+  try { if (!fs.existsSync(vbs)) return (LAUNCH.how = 'run.vbs 없음');
+    const vb = fs.readFileSync(vbs); const u16 = vb[0] === 0xff && vb[1] === 0xfe; const vt = u16 ? vb.subarray(2).toString('utf16le') : vb.toString('utf8');
+    if (/\\start\.cmd"/i.test(vt)) return (LAUNCH.how = '이미 고침(start.cmd)');
+    if (!/\\run\.cmd"/i.test(vt) || !fs.existsSync(rc)) return (LAUNCH.how = 'run.vbs 꼴이 낯섦 — 안 건드림');
+    const ct = fs.readFileSync(rc, 'utf8'); if (!RED.test(ct)) return (LAUNCH.how = '고칠 것 없음');
+    const st = ct.replace(RED, ''); if (!/readnow-pcdock\.js/.test(st)) return (LAUNCH.how = 'run.cmd 꼴이 낯섦 — 안 건드림');
+    const t1 = sc + '.t'; fs.writeFileSync(t1, st, 'utf8'); fs.renameSync(t1, sc);
+    const nv = vt.replace(/\\run\.cmd"/gi, '\\start.cmd"'); const t2 = vbs + '.t'; fs.writeFileSync(t2, u16 ? Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(nv, 'utf16le')]) : Buffer.from(nv, 'utf8')); fs.renameSync(t2, vbs);
+    LAUNCH.at = Date.now(); log('🔧 켜는 길 고침 — run.vbs → start.cmd(console.log 이어 붙이기 뺌 · 서버가 살아 있어도 아이콘이 다시 켜짐) · run.cmd는 그대로 둠'); return (LAUNCH.how = '고침');
+  } catch (e) { noteErr('launch', '켜는 길 고치기 실패: ' + e.message); return (LAUNCH.how = '실패: ' + e.message); } }
 
 /* ── HTTP ───────────────────────────────────────────────────── */
 const FILES = { '/': ['ui.html', 'text/html; charset=utf-8'], '/grid.js': ['grid.js', 'text/javascript; charset=utf-8'], '/apps.js': ['apps.js', 'text/javascript; charset=utf-8'], '/settings.js': ['settings.js', 'text/javascript; charset=utf-8'] };
 function body(req, max) { return new Promise((res, rej) => { const L = []; let n = 0; req.on('data', (b) => { n += b.length; if (n > max) { rej(new Error('너무 큼')); req.destroy(); } else L.push(b); }); req.on('end', () => { try { res(JSON.parse(Buffer.concat(L).toString('utf8') || '{}')); } catch (e) { rej(new Error('JSON이 아님')); } }); req.on('error', rej); }); }
-const server = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://127.0.0.1'); if (u.pathname !== '/api/diag') ST.lastHit = Date.now(); /* (0.1.3) 수집기의 진단 읽기는 '창이 떠 있음'으로 안 셈(도우미가 스스로 꺼지게) */
+const server = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://127.0.0.1'); const cli = u.searchParams.get('cli') === '1' || req.headers['x-rn-dock-cli'] === '1';
+  if (u.pathname !== '/api/diag') ST.lastHit = Date.now(); /* (0.1.3) 수집기의 진단 읽기는 '창이 떠 있음'으로 안 셈(도우미가 스스로 꺼지게) */
+  if (u.pathname !== '/api/diag' && u.pathname !== '/api/bye' && !cli) WINST.uiAt = Date.now(); /* (0.1.4) 화면(창)이 부른 것만 '창이 떠 있음' — 아이콘이 띄운 짧은 프로세스(cli=1)·수집기는 빼고 */
   const J = (code, o) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
   if (req.method === 'GET' && FILES[u.pathname]) { const [f, t] = FILES[u.pathname]; res.writeHead(200, { 'content-type': t, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }); return res.end(fs.readFileSync(path.join(APP, f))); }
   if (u.pathname === '/api/ping') return J(200, { ok: true, app: 'readnow-pcdock', ver: VER, busy: ST.busy || '', upd: ST.update ? ST.update.v : '' });
   if (!u.pathname.startsWith('/api/')) return J(404, { ok: false });
+  /* (0.1.4) 창을 닫을 때 화면이 보내는 알림(sendBeacon은 머리글을 못 붙임) — '창이 닫힘'만 적고 아무것도 켜거나 지우지 않음 */
+  if (u.pathname === '/api/bye' && req.method === 'POST') { const o0 = req.headers.origin; if (o0 && o0 !== 'http://127.0.0.1:' + ST.port) return J(403, { ok: false }); WINST.byeAt = Date.now(); req.resume(); return J(200, { ok: true }); }
   /* 이 창(같은 출처)에서만 — 다른 웹 페이지가 이 PC 프로그램을 켜거나 지우게 하지 않음 */
   const org = req.headers.origin; if (req.method !== 'GET' && (req.headers['x-rn-dock'] !== '1' || (org && org !== 'http://127.0.0.1:' + ST.port))) return J(403, { ok: false, err: '이 창에서만' });
   { const hh = String(req.headers.host || ''); if (hh && !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(hh)) return J(403, { ok: false, err: '이 PC 주소로만' }); } /* (0.1.2 🔬 정밀 점검 11/12) GET /api/state도 Host 검사 — 다른 이름(DNS 되돌리기)으로 열면 PC 이름·경로가 새지 않게 */
   try {
     if (u.pathname === '/api/diag') return J(200, diagOut());
     if (u.pathname === '/api/state') { if (!ST.mons.length || u.searchParams.get('fresh')) await readMons(); if (ST.startup == null) await startupState(); const cfg = loadCfg();
-      return J(200, { ok: true, ver: CFG.PCDOCK_VER, title: TITLE, cfg, mons: ST.mons, monErr: ST.monErr, monErrAt: ST.monErrAt, aware: ST.aware, found: ST.found, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: os.hostname() }); }
+      return J(200, { ok: true, ver: VER, title: TITLE, cfg, mons: ST.mons, monErr: ST.monErr, monErrAt: ST.monErrAt, aware: ST.aware, found: ST.found, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: os.hostname() }); }
     if (req.method !== 'POST') return J(405, { ok: false });
     const o = await body(req, u.pathname === '/api/lnk' ? 256 * 1024 : 400 * 1024);
+    /* (0.1.4) 아이콘을 다시 눌렀을 때 짧은 프로세스가 부름 — 이 서버가 자기 크롬 경로·모니터로 창을 열거나(떠 있으면 앞으로) · /api/quit = 새 판이 넘겨받을 때 이 서버를 끔(일하는 중이면 안 끔) */
+    if (u.pathname === '/api/show') { const r = await showWindow(String(o.by || '아이콘').slice(0, 20)); return J(200, { ...r, ver: VER }); }
+    if (u.pathname === '/api/quit') { if (ST.busy) return J(200, { ok: false, err: '지금 ' + ST.busy + ' 중' }); log('🔄 새 판(' + String(o.ver || '?').slice(0, 12) + ')이 넘겨받아 꺼짐'); J(200, { ok: true }); setTimeout(() => process.exit(0), 150); return; }
     if (u.pathname === '/api/screens') { const r = await readMons(); const got = !!(r.ok && Array.isArray(r.mons) && r.mons.length); return J(200, { ok: got, err: got ? undefined : ST.monErr, mons: ST.mons, aware: ST.aware }); }
     if (u.pathname === '/api/restart') { if (!ST.update) return J(200, { ok: false, err: '받아 둔 새 판이 없음' }); if (ST.busy) return J(200, { ok: false, err: '지금 ' + ST.busy + ' 중 — 끝난 뒤에' }); const r = restartNew(); return J(200, r); }
     if (u.pathname === '/api/check') { const v = SET.validate(o.cfg, ST.mons); return J(200, { ok: v.ok, errs: v.errs, warns: v.warns }); }
@@ -153,28 +207,43 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
   } catch (e) { log('✗ ' + u.pathname + ' ' + e.message); return J(500, { ok: false, err: e.message }); } });
 
 function diagOut() { const L = ST.last; return { ok: true, app: 'readnow-pcdock', ver: VER, at: Date.now(), mons: ST.mons.length, monErr: ST.monErr ? scrubP(ST.monErr).slice(0, 300) : '', monErrAt: ST.monErrAt || 0, aware: ST.aware || '', build: ST.build || 0, busy: ST.busy || '', upd: ST.update ? ST.update.v : '',
-  last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '' } : null, errs: (DIAG.errs || []).slice(0, 5) }; }
+  last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '' } : null, errs: readDiag().errs.slice(0, 5),
+  win: { at: WINST.at, ok: WINST.ok, how: scrubP(WINST.how).slice(0, 160), by: WINST.by, n: WINST.n, open: uiOpen() }, launch: LAUNCH.how }; } /* (0.1.4) win = 마지막 창 열기 결과 · launch = 켜는 길(run.vbs) 고침 상태 */
 /* (0.1.3) 🔄 「새 판으로 바꾸기」 — run.vbs(→ run.cmd가 받아 둔 새 판으로 바꿔 끼움)를 새로 켜고, 새 판이 이 옛 서버를 넘겨받음(아래 main의 '옛 판이면 넘겨받기') */
 function restartNew() { const vbs = path.join(path.dirname(APP), 'run.vbs');
   try { const c = process.env.RN_PCDOCK_RESTART ? cp.spawn(process.execPath, [__filename], { detached: true, stdio: 'ignore', env: { ...process.env, RN_PCDOCK_VER_TEST: process.env.RN_PCDOCK_RESTART } }) : cp.spawn('wscript.exe', [vbs], { detached: true, stdio: 'ignore', windowsHide: true }); c.on('error', (e) => log('✗ 새 판으로 바꾸기: ' + e.message)); c.unref(); log(`🔄 새 판 ${ST.update.v}으로 바꾸기 — 새로 켬`); return { ok: true, v: ST.update.v }; } catch (e) { return { ok: false, err: '새로 켜지 못함: ' + e.message }; } }
-function pingJ(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { const j = JSON.parse(b); res(j.app === 'readnow-pcdock' ? j : null); } catch (e) { res(null); } }); }); r.on('error', () => res(null)); r.on('timeout', () => { r.destroy(); res(null); }); }); }
-function ping(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { res(JSON.parse(b).app === 'readnow-pcdock'); } catch (e) { res(false); } }); }); r.on('error', () => res(false)); r.on('timeout', () => { r.destroy(); res(false); }); }); }
+function pingJ(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping?cli=1', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { const j = JSON.parse(b); res(j.app === 'readnow-pcdock' ? j : null); } catch (e) { res(null); } }); }); r.on('error', () => res(null)); r.on('timeout', () => { r.destroy(); res(null); }); }); }
+function ping(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping?cli=1', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { res(JSON.parse(b).app === 'readnow-pcdock'); } catch (e) { res(false); } }); }); r.on('error', () => res(false)); r.on('timeout', () => { r.destroy(); res(false); }); }); }
+/* (0.1.4) 짧은 프로세스 → 살아 있는 서버에 POST(머리글 x-rn-dock · Origin 없음 · Host 127.0.0.1 — 서버 검사 그대로 통과) */
+function post(port, p, body, ms) { return new Promise((res) => { const data = Buffer.from(JSON.stringify(body || {}));
+  const r = http.request({ host: '127.0.0.1', port, path: p, method: 'POST', timeout: ms || 5000, headers: { 'content-type': 'application/json', 'x-rn-dock': '1', 'x-rn-dock-cli': '1', 'content-length': data.length } }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} res({ code: s.statusCode, j }); }); });
+  r.on('error', (e) => res({ code: 0, j: null, err: e.message })); r.on('timeout', () => { r.destroy(); res({ code: 0, j: null, err: '시간 넘김' }); }); r.end(data); }); }
 function listen(port) { return new Promise((res, rej) => { server.once('error', rej); server.listen(port, '127.0.0.1', () => { server.removeListener('error', rej); res(server.address().port); }); }); }
 
 async function main() { const argv = process.argv.slice(2); const auto = argv.includes('--autorun');
   if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep' }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패')); process.exit(0); }
-  /* 이미 켜져 있으면 창만 다시 */
-  const pf = path.join(HOME, 'port.txt'); let old = 0; try { old = +fs.readFileSync(pf, 'utf8'); } catch (e) {}
-  /* (0.1.3) 켜져 있는 것이 옛 판이고 일하는 중이 아니면 그 서버를 끄고 이 새 판이 넘겨받음(0.1.2까지는 옛 서버가 15분 동안 살아 있어 새 판을 받아도 바로 안 바뀌었음) */
+  healLauncher();
+  /* 이미 켜져 있으면 — (0.1.4) 그 서버에 창을 맡기고 바로 끝남 · 옛 판이면 끄고 넘겨받음 */
+  const pf = path.join(HOME, 'port.txt'); let old = 0; try { old = +fs.readFileSync(pf, 'utf8'); } catch (e) {} let took = 0;
   for (const p of [...new Set([old, WANT_PORT].filter(Boolean))]) { const pj = await pingJ(p); if (!pj) continue;
-    if (vnum(pj.ver) < vnum(VER) && !pj.busy) { const r = await ps('stopold', { self: process.pid }); let gone = false; for (let k = 0; k < 20 && !gone; k++) { await new Promise((z) => setTimeout(z, 300)); gone = !(await ping(p)); }
-      log(`🔄 옛 판 ${pj.ver} 서버(${p})를 넘겨받음 — ${gone ? '끔' : '안 꺼짐'}${r.ok ? '' : ' · ' + r.err}`); if (gone) continue; }
-    ST.port = p; await openWindow(); log('이미 켜져 있어 창만 엶(' + p + ')'); return process.exit(0); }
+    const older = vnum(pj.ver) < vnum(VER);
+    if (!older) { const r = await post(p, '/api/show', { by: '아이콘' }, 60000); if (r.j && r.j.ok) { log(`이미 켜져 있어(${pj.ver} · ${p}) 그 서버가 창을 맡음 — ${r.j.how || ''}`); return process.exit(0); }
+      log(`✗ 켜져 있는 서버(${pj.ver} · ${p})가 창을 못 엶 — ${(r.j && r.j.err) || r.err || r.code} → 여기서 띄움`); }
+    else if (!pj.busy) { /* (0.1.4) 0.1.4부터는 /api/quit로 바로 끔 · 그보다 옛 판(0.1.3 이하)은 PowerShell stopold(readnow-pcdock.js를 돌리는 다른 node만) */
+      const q = await post(p, '/api/quit', { ver: VER }, 5000); let gone = false; let how = 'quit';
+      if (q.j && q.j.ok) for (let k = 0; k < 15 && !gone; k++) { await new Promise((z) => setTimeout(z, 200)); gone = !(await ping(p)); }
+      let r = { ok: true }; if (!gone) { how = 'stopold'; r = await ps('stopold', { self: process.pid }, null, 90000); for (let k = 0; k < 20 && !gone; k++) { await new Promise((z) => setTimeout(z, 300)); gone = !(await ping(p)); } }
+      log(`🔄 옛 판 ${pj.ver} 서버(${p})를 넘겨받음(${how}) — ${gone ? '끔' : '안 꺼짐'}${r.ok ? '' : ' · ' + r.err}`); if (gone) { took = p; continue; } if (!r.ok) noteErr('stopold', r.err); }
+    /* 옛 판이 일하는 중이거나 못 끔 · 창 열기를 못 맡음 → 그 서버 주소로 여기서 바로 띄움(기억해 둔 크롬 경로·모니터 자리 — PowerShell을 기다리지 않음) */
+    ST.port = p; const s0 = await spawnWin(p); if (!s0.ok) setWin('아이콘', false, s0.err); else log(`🪟 켜져 있는 서버(${pj.ver} · ${p}) 주소로 창을 띄움`); return process.exit(0); }
   try { ST.port = CFG.AVOID_PORTS.includes(WANT_PORT) ? await listen(0) : await listen(WANT_PORT); } catch (e) { ST.port = await listen(0); }
-  fs.writeFileSync(pf, String(ST.port)); log(`켜짐 판 ${VER} · 127.0.0.1:${ST.port}`); console.log(`PCDOCK_PORT=${ST.port}`);
-  await openWindow();
+  fs.writeFileSync(pf, String(ST.port)); log(`켜짐 판 ${VER} · 127.0.0.1:${ST.port}${took ? ' · 옛 판을 넘겨받음' : ''}`); console.log(`PCDOCK_PORT=${ST.port}`);
+  /* 넘겨받았으면 옛 창이 떠 있을 수 있음 — 2.5초 안에 그 창이 이 서버를 부르면 새로 띄우지 않고 앞으로(옛 창은 같은 주소라 그대로 이어짐) */
+  if (took === ST.port) await waitUi(0, 2500);
+  showWindow('켬').catch((e) => setWin('켬', false, e.message));
   setTimeout(checkUpdate, +process.env.RN_PCDOCK_UPD_MS || 20000).unref();
   /* 창이 닫히고 한참 아무도 안 부르면 끔(메모리를 붙잡고 있지 않게) */
   setInterval(() => { if (!ST.busy && Date.now() - ST.lastHit > CFG.IDLE_EXIT_MIN * 60e3) { log('창이 닫혀 꺼짐'); process.exit(0); } }, 60e3).unref(); }
+process.on('uncaughtException', (e) => { log('✗ 멈춤: ' + (e && e.stack || e)); noteErr('crash', String(e && e.message || e)); process.exit(1); }); /* (0.1.4) start.cmd는 출력을 파일에 안 남기므로 여기서 */
 if (require.main === module) main().catch((e) => { log('✗ 시작 실패: ' + e.message); console.error(e); process.exit(1); });
-module.exports = { HOME, ST, runLayout, closePlan, cleanScan, cleanRun, layoutProcs };
+module.exports = { HOME, ST, runLayout, closePlan, cleanScan, cleanRun, layoutProcs, healLauncher, noteErr };

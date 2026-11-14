@@ -63,8 +63,9 @@ Ok "파일 $($files.Count)개 (검사 통과)"
 Say '켜는 아이콘 만들기'
 # (run.cmd는 chcp 65001로 UTF-8 · run.vbs는 UTF-16 — 사용자 폴더 이름이 한글이어도)
 # run.cmd — 받아 둔 새 판(app.new\.ready)이 있으면 바꿔 끼운 뒤 켬 · run.vbs — 검은 창 없이 run.cmd
+# (0.1.4) node 출력을 console.log에 이어 붙이지(>>) 않음 — cmd가 그 파일을 잡아 두어, 도우미가 살아 있는 동안 아이콘을 다시 누르면 두 번째 run.cmd가 node를 못 켰음(정범님 11/14 「✕ 뒤 다시 안 뜸」) · 기록은 도우미가 pcdock.log에 스스로
 $cmd = Join-Path $Home2 'run.cmd'
-[IO.File]::WriteAllText($cmd, "@echo off`r`nchcp 65001 >nul`r`ncd /d `"%~dp0`"`r`nif exist `"app.new\.ready`" (`r`n  if exist app.old rmdir /s /q app.old`r`n  move app app.old >nul && move app.new app >nul`r`n  del app\.ready >nul 2>&1`r`n)`r`n`"$node`" app\readnow-pcdock.js %* >> `"%~dp0console.log`" 2>&1`r`n")
+[IO.File]::WriteAllText($cmd, "@echo off`r`nchcp 65001 >nul`r`ncd /d `"%~dp0`"`r`nif exist `"app.new\.ready`" (`r`n  if exist app.old rmdir /s /q app.old`r`n  move app app.old >nul && move app.new app >nul`r`n  del app\.ready >nul 2>&1`r`n)`r`n`"$node`" app\readnow-pcdock.js %*`r`n")
 $vbs = Join-Path $Home2 'run.vbs'
 [IO.File]::WriteAllText($vbs, "Set sh = CreateObject(`"WScript.Shell`")`r`na = `"`"`r`nFor Each x In WScript.Arguments`r`n  a = a & `" `" & x`r`nNext`r`nsh.Run `"`"`"`" & `"$cmd`" & `"`"`"`" & a, 0, False`r`n", [Text.Encoding]::Unicode)  <# 사용자 이름이 한글이어도 경로가 깨지지 않게 UTF-16 #>
 $sh = New-Object -ComObject WScript.Shell

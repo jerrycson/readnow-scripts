@@ -64,8 +64,8 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} try { fs.rmSync(S.D, { re
     { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'pcdockm-')); const port = 20000 + Math.floor(Math.random() * 20000);
       const A = await start({ RN_PCDOCK_VER_TEST: '0.1.2' }, D, port); const pa = await req(port, 'GET', '/api/ping'); ok(pa.j && pa.j.ver === '0.1.2', '옛 판(0.1.2 흉내) 서버가 켜짐');
       const B = await start({ FAKE_OLD_PID: String(A.p.pid) }, D, port); const pb = await req(B.port, 'GET', '/api/ping');
-      ok(B.port === port && pb.j && pb.j.ver === require('../pcdock-config.js').PCDOCK_VER && /옛 판 0\.1\.2 서버.*넘겨받음 — 끔/.test(fs.readFileSync(path.join(D, 'pcdock.log'), 'utf8')), '새 판이 옛 서버를 끄고 같은 포트에서 켜짐', pb.j);
-      const st = fakeStop(D); ok(st && st.input.self === B.p.pid, '끌 때 자기 자신(pid)은 빼라고 넘김', st);
+      ok(B.port === port && pb.j && pb.j.ver === require('../pcdock-config.js').PCDOCK_VER && /옛 판 0\.1\.2 서버.*넘겨받음\(\w+\) — 끔/.test(fs.readFileSync(path.join(D, 'pcdock.log'), 'utf8')), '새 판이 옛 서버를 끄고 같은 포트에서 켜짐', pb.j);
+      const st = fakeStop(D); ok(!st && /넘겨받음\(quit\)/.test(fs.readFileSync(path.join(D, 'pcdock.log'), 'utf8')), '(0.1.4) 0.1.4 이상끼리는 PowerShell 없이 /api/quit로 끔(stopold 안 부름 · 0.1.3 넘겨받기는 t_show ⑥)', st);
       const rs = await req(port, 'POST', '/api/restart', {}); ok(rs.j && rs.j.ok === false && /새 판이 없음/.test(rs.j.err), '받아 둔 새 판이 없으면 바꾸기 단추는 아무것도 안 함', rs.j);
       const C = cp.spawnSync(process.execPath, [APPJS], { env: { ...B.env, RN_PCDOCK_PORT: String(port) }, timeout: 10000 }); ok(C.status === 0 && (await req(port, 'GET', '/api/ping')).j.ver === pb.j.ver, '같은 판이면 넘겨받지 않고 창만 엶');
       try { B.p.kill(); } catch (e) {} try { fs.rmSync(D, { recursive: true, force: true }); } catch (e) {} }
