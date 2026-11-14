@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shopmisc1",
+ "what": "우리숍 주제분류 우리화·세트·단위·디스크 보기·끌어내려 꽂기",
+ "since": "2026-11-14T10:36:26Z",
+ "beat": "2026-11-14T10:36:26Z",
  "ask": null,
  "last": {
   "who": "y24ops1",
   "done": "웹앱 1.78.641 · 번외 0.1.65 · 8c52aac2",
   "at": "2026-11-14T10:36:10Z"
  },
- "host": null
+ "host": "vm-shopmisc1"
 }
