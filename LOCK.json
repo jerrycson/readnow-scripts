@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "매일 정밀 점검 11/14 — 경영 화면 연 뒤 멈춤(memo 의존·되풀이 셈) 고침",
+ "since": "2026-11-14T13:13:59Z",
+ "beat": "2026-11-14T13:13:59Z",
  "ask": null,
  "last": {
   "who": "headless1",
   "done": "웹앱 1.78.653 · 클라우드 0.35.266 · fffed0fb",
   "at": "2026-11-14T12:40:41Z"
  },
- "host": null
+ "host": "vm"
 }
