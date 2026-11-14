@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24go2",
+ "what": "예스24 가격 규칙·첫 1건 엔진",
+ "since": "2026-11-14T08:48:26Z",
+ "beat": "2026-11-14T08:48:26Z",
  "ask": null,
  "last": {
   "who": "shipcheck1",
   "done": "웹앱 1.78.634 · 수집기 1.89.337 · 출고 공용 0.7.18 · bced9f3f",
   "at": "2026-11-14T08:48:24Z"
  },
- "host": null
+ "host": "vm-y24go2"
 }
