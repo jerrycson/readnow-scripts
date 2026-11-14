@@ -1,13 +1,13 @@
 {
- "holder": "shipfix1",
- "what": "ALPS 0.5.8 판 시험 중",
- "since": "2026-11-14T09:02:20Z",
- "beat": "2026-11-14T09:26:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "mgmt1",
-  "done": "웹앱 1.78.636 · 경영 돈 숫자 하나로·📊 한눈에 · 9946d5c6",
-  "at": "2026-11-14T09:02:08Z"
+  "who": "shipfix1",
+  "done": "웹앱 1.78.637 · ALPS 도우미 0.5.8(지역 보류) · d8160e45",
+  "at": "2026-11-14T09:32:24Z"
  },
- "host": "vm-shipfix1"
+ "host": null
 }
