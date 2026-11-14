@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "pcdock6",
+ "what": "PC 배치 0.1.7 판 내기(카카오톡 찾기·자기 창)",
+ "since": "2026-11-14T07:55:51Z",
+ "beat": "2026-11-14T07:55:51Z",
  "ask": null,
  "last": {
   "who": "wire1",
   "done": "웹앱 1.78.632 · 클라우드 0.35.251 배선 그림자 938904b7",
   "at": "2026-11-14T07:55:26Z"
  },
- "host": null
+ "host": "vm-pcdock6"
 }
