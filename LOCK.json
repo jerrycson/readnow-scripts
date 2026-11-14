@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "wire1",
+ "what": "배선 그림자 장부·읽은 횟수(연구→판단)",
+ "since": "2026-11-14T07:48:26Z",
+ "beat": "2026-11-14T07:48:26Z",
  "ask": null,
  "last": {
   "who": "engself1",
   "done": "클라우드 0.35.250 · d9f529f2",
   "at": "2026-11-14T07:47:33Z"
  },
- "host": null
+ "host": "vm-wire1"
 }
