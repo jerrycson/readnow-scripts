@@ -43,6 +43,9 @@ require('./harness.js')(async (p) => {
   // ⑦ 실적 달
   const r7 = await p.evaluate(() => [monPer('2026-11-14'), monPer('2026-11-20'), monPer('2026-01-05'), monPer('2026-12-25'), monPer('2026-11-14', 1)].map((x) => x.s + '~' + x.e + '|' + x.ym));
   ok(r7.join() === ['2026-10-20~2026-11-19|2026-11', '2026-11-20~2026-12-19|2026-12', '2025-12-20~2026-01-19|2026-01', '2026-12-20~2027-01-19|2027-01', '2026-09-20~2026-10-19|2026-10'].join(), '⑦ 실적 달 = 앞달 20일~그달 19일(정범님 11/07 기준)', r7);
+  // ⑨ 웹앱 다른 곳의 '매출'도 같은 값 (매입처별 줄 · 홈 월별 매출 · 매출 추이 · 부가세 대조는 알라딘 주문만)
+  const r9 = await p.evaluate(() => { const r = rangeOf('month', 0); const A = agg(r); const ym = r.start.slice(0, 7); const row = supSalesRow(r, A.amt); const ms = monthSales(ym).a; const tr = (() => { S.trend_t9 = 'month'; const h = trendSection('t9'); const m = h.match(/<b>[^<]*<\/b><b>([\d,]+)원/); return m ? +m[1].replace(/,/g, '') : null; })(); return { A: A.amt, warn: /합계 .*다름/.test(row), bbTag: /알라딘 매입/.test(row) || !A.bb, ms, tr }; });
+  ok(!r9.warn && r9.bbTag && r9.ms === r9.A && (r9.tr == null || r9.tr === r9.A), '⑨ 매입처별 줄 합계 맞음(알라딘 매입 칸) · 홈 월별 매출 = 매출 추이 = 이번 달 매출', r9);
   // ⑧ 관찰 도구 안내 · 화면 넘침
   const r8 = await p.evaluate(() => { const O = obsCompute(); if (!O) return { skip: true }; return { stock: O.stock != null, at: !!O.at, txt: (obsHtml().match(/분모 = 시장 지표가 있는[^<]*/) || [''])[0] }; });
   ok(r8.skip || (r8.stock && r8.at && r8.txt), '⑧ 🔭 관찰 도구 안내에 분모·재고 화면 판매중·셈 시각', r8);
