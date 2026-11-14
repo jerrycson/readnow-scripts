@@ -1,13 +1,13 @@
 {
- "holder": "headless1",
- "what": "push",
- "since": "2026-11-14T12:35:11Z",
- "beat": "2026-11-14T12:36:00Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "headless1",
-  "done": "클라우드 0.35.265 · 번외 0.1.67 · 57107a79",
-  "at": "2026-11-14T12:27:09Z"
+  "done": "웹앱 1.78.653 · 클라우드 0.35.266 · fffed0fb",
+  "at": "2026-11-14T12:40:41Z"
  },
- "host": "vm-headless1"
+ "host": null
 }
