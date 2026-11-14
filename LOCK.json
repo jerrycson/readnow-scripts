@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24re9",
+ "what": "예스24 195142826 수량 맡김 — 수집기가 알라딘 쪽 확인 뒤 바로 한 번(판 내기)",
+ "since": "2026-11-14T02:31:09Z",
+ "beat": "2026-11-14T02:31:09Z",
  "ask": null,
  "last": {
   "who": "col2seed",
   "done": "클라우드 0.35.249 · 3215b480 (col2seed — 차례표 환율 → HOME 줄)",
   "at": "2026-11-14T01:23:13Z"
  },
- "host": null
+ "host": "vm-y24re9"
 }
