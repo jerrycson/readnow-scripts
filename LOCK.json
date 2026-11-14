@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "note7",
+ "what": "📓 노트 문장 메모 쌓기 판 내기",
+ "since": "2026-11-14T05:33:30Z",
+ "beat": "2026-11-14T05:33:30Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "웹앱 1.78.627 · 책방 친구 0.16.0 — 옛 캐릭터 내림 · 보존 갈래 archive/friend-chars-2026-11-14 (c457183f)",
   "at": "2026-11-14T05:32:41Z"
  },
- "host": null
+ "host": "vm-note7"
 }
