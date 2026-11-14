@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "headless1",
+ "what": "예스24 자동 올림 웹앱 없이 판 내기",
+ "since": "2026-11-14T11:06:48Z",
+ "beat": "2026-11-14T11:06:48Z",
  "ask": null,
  "last": {
   "who": "y24ops1",
   "done": "웹앱 1.78.646 · c0918192",
   "at": "2026-11-14T11:06:41Z"
  },
- "host": null
+ "host": "vm-headless1"
 }
