@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "mjflick1",
+ "what": "웹앱 등록 미등록 칸 깜박임·카드 너비 판",
+ "since": "2026-11-14T06:58:04Z",
+ "beat": "2026-11-14T06:58:04Z",
  "ask": null,
  "last": {
   "who": "shipfix1",
   "done": "판 안 냄 — 정범님 지시로 지역 보류 근본 방안까지 갖춘 뒤 한 번에(작업 자리 eb6accd6)",
   "at": "2026-11-14T06:49:43Z"
  },
- "host": null
+ "host": "vm-mjflick1"
 }
