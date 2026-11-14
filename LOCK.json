@@ -1,13 +1,13 @@
 {
- "holder": "aisum1",
- "what": "✍ 요약·추천글 엔진 N14 판 내기(클라우드·웹앱·우리숍)",
- "since": "2026-11-14T10:13:03Z",
- "beat": "2026-11-14T10:17:05Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "plat1",
-  "done": "웹앱 1.78.638 a65b61e6 🧩 판매처 칸",
-  "at": "2026-11-14T10:12:57Z"
+  "who": "aisum1",
+  "done": "웹앱 1.78.639 · 클라우드 0.35.256 · 우리숍 0.2.10 · 7f020476 ✍ 요약·추천글 N14",
+  "at": "2026-11-14T10:20:52Z"
  },
- "host": "vm-aisum1"
+ "host": null
 }
