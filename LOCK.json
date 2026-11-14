@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "edition1",
+ "what": "클라우드·웹앱 판본 추적 엔진 첫 판",
+ "since": "2026-11-14T10:44:34Z",
+ "beat": "2026-11-14T10:44:34Z",
  "ask": null,
  "last": {
   "who": "shopmisc1",
   "done": "웹앱 1.78.642 · 수집기 1.89.339 · 클라우드 0.35.257 · 우리숍 0.2.11 · 090e98a8",
   "at": "2026-11-14T10:44:30Z"
  },
- "host": null
+ "host": "vm-edition1"
 }
