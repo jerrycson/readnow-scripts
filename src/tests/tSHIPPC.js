@@ -69,7 +69,8 @@ const cut = (a, b) => { const i = s.indexOf(a); const j = s.indexOf(b, i); if (i
     ok(store['shp_invoices/D'].status === 'queued' && !op.length, '③ 출고 PC 판단을 못 읽으면(함수 없음) 맡지 않음 — 안전 쪽'); }
 
   // ── ④ 맡긴 일(shp_cmds) · 머리 ──
-  ok(/const SHIP_PC_CMDS = new Set\(\['startDelivery'\]\);/.test(s), '④ 출고 PC만 맡는 맡긴 일 = 발송준비시작');
+  ok(/const SHIP_PC_CMDS = new Set\(\[\]\);/.test(s) && !/SHIP_PC_CMDS = new Set\(\[[^\]]*startDelivery/.test(s), '④ (정범님 11/15 03:51 sendprep2) 발송준비시작은 출고 PC만이 아님 — 출고 PC만 맡는 맡긴 일 없음(송장 입력만 출고 PC)');
+  { const cb = s.slice(s.indexOf('const pcCanBase = (type, x) =>'), s.indexOf('const pcCanBase = (type, x) =>') + 200); ok(/if \(PUBONLY\) return false;/.test(cb), '④ 로거(PUBONLY)는 맡긴 일을 받지 않음 — 발송준비시작도(헌장 제5조)'); }
   ok(/SHIP_PC_CMDS\.has\(x0\.type\)\) \{ const sp = shipPcOk\(\); if \(!sp\.ok\) \{ shipPcWait\(ref, sp,/.test(s), '④ 발송준비시작은 출고 PC가 아니면 맡기 전에 기다림 까닭만 적고 돌아감');
   ok(/claimDelay = \(x\) => \{ try \{ if \(x && SHIP_PC_CMDS\.has\(x\.type\) && window\.__rnShipPcOk && window\.__rnShipPcOk\(\)\.ok\) return 0;/.test(s), '④ 출고 PC는 누른 기기를 15초 기다리지 않고 바로(속도 그대로)');
   ok(/const SG_SHIP_CMDS = new Set\(\['startDelivery', 'read', 'cancelOrder', 'cashStop'\]\);/.test(s), '④ 출고 보호 무리(SG_SHIP_CMDS)는 그대로');

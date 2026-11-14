@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.340
+// @version      1.89.341
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6565,7 +6565,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* (1.77.5) PC끼리 누가 받나(정범님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
   /* (정범님 11/13 invpc1 · 헌장 제6조) 출고 PC만 맡는 맡긴 일 = 알라딘 출고 쓰기(발송준비시작) — 다른 PC는 대신 집지 않고 기다림 · 출고 PC는 누른 기기를 기다리지 않고 바로(속도 그대로)
    *  발송 요청 다시 읽기(read)는 읽기라 그대로 모든 PC · 주문 취소·현금 판매중지는 손님 취소·두 번 팔림 막기라 이번엔 그대로(보고서에 정범님 결정으로) */
-  const SHIP_PC_CMDS = new Set(['startDelivery']);
+  const SHIP_PC_CMDS = new Set([]); /* (정범님 11/15 03:51 sendprep2 · 바로잡음) 「출고 PC에서만 하는 것은 송장 인쇄·송장 입력뿐 — 나머지 출고 일은 모든 기기가 함께, 먼저 집는 기기가 처리」 → 발송준비시작은 로그인된 사무실 PC 누구나(로거는 pcCanBase가 늘 뺌) · 먼저 집는 PC가 맡음(대기 → 처리 중 트랜잭션 한 번) · 송장 입력(shipPcOk)은 그대로 출고 PC만 */
   const claimDelay = (x) => { try { if (x && SHIP_PC_CMDS.has(x.type) && window.__rnShipPcOk && window.__rnShipPcOk().ok) return 0; if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; if (x && x.dev) { /* (1.89.29) 정범님 10/22 '자기 기기가 자기 업무를 최우선' — 등록만이 아니라 웹앱이 맡긴 모든 일: 누른 기기 이름과 같은 PC가 살아 있으면 그 PC가 먼저(다른 PC는 15초 기다림) */ const B = ((BEATS || {}).pcs || {})[String(x.dev).trim().toUpperCase()] || ((BEATS || {}).pcs || {})[String(x.dev).trim()]; if (B && Date.now() - (+B.atMs || 0) < 3 * 60e3 && !B.paused) return 15000; } if (x && REG_PRIO_CMDS.has(x.type)) { if (REGPC()) return REG_BUSY ? 700 : 0; if (regPcOther()) return 2500; } /* (정범님 11/02) 📥 등록 일은 등록 PC가 먼저(바로) — 다른 PC는 등록 PC가 살아 있으면 2.5초 뒤(등록 PC가 묶음을 하는 중이면 그 PC는 트랜잭션에서 빠지므로 다른 PC가 받음 · 근거: 없음, 짧게 둠) */ /* (1.89.15) 정범님 10/21: 등록은 웹앱을 누른 PC의 수집기가 먼저(살아 있으면 다른 PC는 15초 기다림 — 그 PC가 안 받으면 그때 다른 PC) */ const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
