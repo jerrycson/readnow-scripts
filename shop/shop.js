@@ -111,7 +111,17 @@
     const R = document.documentElement; if (L.mode === 'auto') R.removeAttribute('data-theme'); else R.dataset.theme = L.mode;
     document.body.classList.toggle('hs-brand', L.headStyle === 'brand'); document.body.classList.toggle('no-au', !L.showAuthor); document.body.classList.toggle('tabs-on', !!L.tabbar); const tb = $('#tabbar'); if (tb) tb.hidden = !L.tabbar;
     const mt = $('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', L.headStyle === 'brand' ? window.BQL.colors(L).brand : '#ffffff');
-    viewApply(); logoSet(c, L); const t = window.BQL.topBarText(L, c); const tbar = $('#topBar'); if (tbar) { tbar.hidden = !t; tbar.textContent = t; } cbarDraw(); }
+    viewApply(); logoSet(c, L); fontNeed(L); const t = window.BQL.topBarText(L, c); const tbar = $('#topBar'); if (tbar) { tbar.hidden = !t; tbar.textContent = t; } cbarDraw(); }
+  /* ══ (shopfont1 · 정범님 11/14 14:36) 🔤 글꼴 받기 — 기기 기본이 아닌 글꼴만, 그 역할의 글이 화면에 처음 나타날 때 한 번(첫 화면에 리뷰·책소개가 없으면 안 받음)
+   *  Google Fonts css2(display=swap) — 받는 동안·못 받으면 기기 글꼴로 바로 보임(글자 안 보이는 때 0) · 한글은 화면에 쓰인 글자 조각만 받음(unicode-range) */
+  const FNT = { got: new Set(), mo: null, pc: 0 };
+  function fontNeed(L) { const B0 = window.BQL; if (!B0 || !B0.fontUrls) return; const U = B0.fontUrls(L).filter((u) => !FNT.got.has(u.url)); if (!U.length) { if (FNT.mo) { FNT.mo.disconnect(); FNT.mo = null; } return; }
+    const Q = B0.ROLE_Q; const want = (u) => u.roles.some((r) => r !== 'voice' || document.querySelector(Q.voice) || (L.fVoiceIn && document.querySelector(Q.voiceIn)));
+    let left = 0; for (const u of U) { if (!want(u)) { left++; continue; } FNT.got.add(u.url);
+      if (!FNT.pc && /fonts\.googleapis/.test(u.url)) { FNT.pc = 1; for (const h of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']) { const k = document.createElement('link'); k.rel = 'preconnect'; k.href = h; if (/gstatic/.test(h)) k.crossOrigin = ''; document.head.appendChild(k); } }
+      const k = document.createElement('link'); k.rel = 'stylesheet'; k.href = u.url; k.dataset.bqf = u.id; k.onerror = () => { k.remove(); }; /* 못 받으면 그대로 기기 글꼴 */ document.head.appendChild(k); }
+    if (!left) { if (FNT.mo) { FNT.mo.disconnect(); FNT.mo = null; } return; }
+    if (!FNT.mo && 'MutationObserver' in window) { let rf = 0; FNT.mo = new MutationObserver(() => { if (rf) return; rf = requestAnimationFrame(() => { rf = 0; const L1 = LOOK.c || lookOf(); if (L1) fontNeed(L1); }); }); FNT.mo.observe(document.body, { childList: true, subtree: true }); } }
   /* 둘러보기 줄 — 새 책·희귀본·추천·할인 · 종류 · 서가(교보·예스24 PC 머리 아래 메뉴 줄 · 휴대폰은 가로 밀기) */
   function cbarDraw() { const n = $('#cbar'); if (!n) return; const c = ST.cfg || {}; const K = (c.kinds || []).filter(([k]) => k !== '그 밖');
     const L = [['#/list?s=new', '새로 들어온 책', 'star'], ['#/list?bd=rare', '희귀본', 'gem'], ['#/list?bd=pick', '가게 추천', 'check'], ['#/list?sale=1&s=off', '할인', 'tag']];
@@ -218,7 +228,7 @@
   const BK_T = [['intro', '책소개'], ['toc', '목차'], ['inbook', '책 속으로'], ['pubrev', '출판사 서평'], ['auth', '저자 소개'], ['trans', '옮긴이 소개'], ['pubintro', '출판사 소개'], ['rec', '추천평']];
   function bkInfoH(I, x) { const b = (I && I.b) || {}; const t = (I && I.t) || {}; const nl = (v) => esc(v).replace(/\n/g, '<br>');
     const rows = [['주제 분류', b.cat], ['출간일', b.pubDate], ['저자', b.authors || x.a], ['옮긴이', b.translators], ['출판사', b.publisher || x.pb], ['쪽수', b.pages ? b.pages + '쪽' : x.pg ? x.pg + '쪽' : ''], ['크기', b.size], ['무게', b.weightG ? b.weightG + 'g' : ''], ['ISBN', x.isbn], ['ISBN10', b.isbn10]].filter((r) => r[1]);
-    const sec = BK_T.filter(([k]) => t[k]).map(([k, nm], i) => `<details class="bki"${k === 'intro' ? ' open' : ''}><summary>${esc(nm)}</summary><div class="bkt">${nl(t[k])}</div></details>`).join('');
+    const sec = BK_T.filter(([k]) => t[k]).map(([k, nm], i) => `<details class="bki${k === 'toc' ? ' toc' : ''}"${k === 'intro' ? ' open' : ''}><summary>${esc(nm)}</summary><div class="bkt">${nl(t[k])}</div></details>`).join('');
     const pv = I && I.pv && I.pv.length ? `<details class="bki"><summary>미리보기 <small>${I.pv.length}쪽</small></summary><div class="bkpv">${I.pv.map((u, i) => `<img src="${esc(u)}" alt="미리보기 ${i + 1}쪽" loading="lazy">`).join('')}</div></details>` : '';
     if (!rows.length && !sec && !pv) return ''; return `<section class="bkinfo"><h2>책 정보</h2>${rows.length ? `<table class="bkb">${rows.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>` : ''}${sec}${pv}</section>`; }
   /* ══ (shopux1) 📖 책 한 권 — 넓은 화면: 왼쪽 사진(붙어 있음 · 작은 사진 줄 · 좌우 단추) · 오른쪽 정보 / 휴대폰: 사진 밀기 → 정보 → 아래 고정 담기 막대
