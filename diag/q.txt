@@ -1,2 +1,2 @@
-col2=1&doc=app_settings/y24_reg
-# 3101015327
+edition=1&n=4
+# 84229430
