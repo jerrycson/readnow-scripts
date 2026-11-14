@@ -1,13 +1,13 @@
 {
- "holder": "y24re9",
- "what": "판 내기 push 중",
- "since": "2026-11-14T02:31:09Z",
- "beat": "2026-11-14T02:32:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "col2seed",
-  "done": "클라우드 0.35.249 · 3215b480 (col2seed — 차례표 환율 → HOME 줄)",
-  "at": "2026-11-14T01:23:13Z"
+  "who": "y24re9",
+  "done": "웹앱 1.78.624 · 수집기 1.89.333 · c8624679 (y24re9 — 예스24 수량 맡김 옛 웹앱이 또 닫으면 수집기가 알라딘 확인 뒤 바로 한 번)",
+  "at": "2026-11-14T02:36:30Z"
  },
- "host": "vm-y24re9"
+ "host": null
 }
