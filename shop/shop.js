@@ -226,6 +226,8 @@
 
   /* (bookinfo1 11/12) 📖 책 정보 — 기본 정보 표 + 책소개·목차·책 속으로·출판사 서평·저자/옮긴이/출판사 소개·추천평(접어 둠 · 책소개만 펼침) + 미리보기 쪽 */
   const BK_T = [['intro', '책소개'], ['toc', '목차'], ['inbook', '책 속으로'], ['pubrev', '출판사 서평'], ['auth', '저자 소개'], ['trans', '옮긴이 소개'], ['pubintro', '출판사 소개'], ['rec', '추천평']];
+  /* (aisum1 11/14 · 연구 N14) ✍ 이 책 한눈에 — 한 줄(궁금하게) · 빈 줄 · 키워드 10개 한 문장 · 빈 줄 · 판본 이야기(홍보할 값이 있을 때만) */
+  function aiSumH(A) { if (!A || !A.t1 || !A.t2) return ''; return `<section class="aisum" aria-label="이 책 한눈에"><h2>이 책 한눈에</h2><p class="ai1">${esc(A.t1)}</p><p class="ai2">${esc(A.t2)}</p>${A.t3 ? `<p class="ai3">${esc(A.t3)}</p>` : ''}${(A.kw || []).length ? `<div class="aikw">${A.kw.map((k) => `<span>#${esc(k)}</span>`).join('')}</div>` : ''}</section>`; }
   function bkInfoH(I, x) { const b = (I && I.b) || {}; const t = (I && I.t) || {}; const nl = (v) => esc(v).replace(/\n/g, '<br>');
     const rows = [['주제 분류', b.cat], ['출간일', b.pubDate], ['저자', b.authors || x.a], ['옮긴이', b.translators], ['출판사', b.publisher || x.pb], ['쪽수', b.pages ? b.pages + '쪽' : x.pg ? x.pg + '쪽' : ''], ['크기', b.size], ['무게', b.weightG ? b.weightG + 'g' : ''], ['ISBN', x.isbn], ['ISBN10', b.isbn10]].filter((r) => r[1]);
     const sec = BK_T.filter(([k]) => t[k]).map(([k, nm], i) => `<details class="bki${k === 'toc' ? ' toc' : ''}"${k === 'intro' ? ' open' : ''}><summary>${esc(nm)}</summary><div class="bkt">${nl(t[k])}</div></details>`).join('');
@@ -245,7 +247,7 @@
         ${(r.same || []).length ? `<div class="same"><b>같은 책 다른 매물 — 등급·값을 견줘 보세요</b>${r.same.map((y) => `<a href="#/b/${encodeURIComponent(y.id)}">${gTag(y.g)} ${won(y.p)}${y.st === 'o' ? ' <small>주문 중</small>' : ''}</a>`).join('')}</div>` : ''}
         <div class="buy">${x.st === 'o' ? '<button class="btn wide" disabled>다른 분이 주문한 책입니다</button>' : !shopOpen(c) ? '<button class="btn wide" disabled>문을 연 뒤에 주문할 수 있습니다</button>' : inCart ? (x.q > 1 && mulMax() > 1 && ((cart().find((y) => y.id === x.id) || {}).n || 1) < Math.min(x.q, mulMax()) ? `<a class="btn ghost" href="#/cart">장바구니 ${((cart().find((y) => y.id === x.id) || {}).n || 1)}권</a><button class="btn" id="add">한 권 더 담기</button>` : '<a class="btn wide ghost" href="#/cart">장바구니에 담겨 있음 — 보러 가기</a>') : '<button class="btn ghost" id="add">장바구니</button><button class="btn" id="now">바로 주문</button>'}<button type="button" class="btn ghost wishb${wOn ? ' on' : ''}" id="wsh" aria-pressed="${wOn}" aria-label="찜">${ic('heart')}</button></div>
         <div class="shipbox"><div>${ic('truck')}<span>${esc(Lk.shipNote || '입금이 확인되면 1~3일(영업일) 안에 보냅니다')}</span></div><div>${ic('receipt')}<span>받은 날부터 7일 안에 교환·환불(청약철회) — <a href="#/p/terms">구매 조건</a></span></div></div></div></div>
-        ${bkInfoH(r.info, x)}
+        ${aiSumH(r.ai)}${bkInfoH(r.info, x)}
         ${(r.rel || []).length ? `<section class="sec">${SEC_H('함께 보면 좋은 책')}<div class="grid rel">${r.rel.map((y) => cardH(y)).join('')}</div></section>` : ''}<section id="bqa" class="bqa" aria-label="손님 리뷰"></section>`; /* (shop9) ⭐ 리뷰·밑줄 */
       { const bu = $('.det .buy'); if (bu) bu.insertAdjacentHTML('afterend', '<div id="bqaAct" class="bqa-actbar"></div>'); } if (window.BQA) window.BQA.item({ ...x, st: x.st }, c);
       const gal = $('#gal'); const gTo = (i) => { if (!gal) return; i = Math.max(0, Math.min(pics.length - 1, i)); gal.scrollTo({ left: i * gal.clientWidth, behavior: 'smooth' }); };

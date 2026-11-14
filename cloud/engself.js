@@ -16,6 +16,7 @@ const ES_DEF = {
   hourMinOrders: 300, hourMargin: 0.02, ledgerMaxAgeH: 36, metaMaxAgeH: 13, ledgerDrop: 0.02, blankMax: 0.05,
   moneyUp: false, // ⚠ 돈 배선 3단계 이상 실제 올림 — 기본 꺼짐(이 판은 코드·시험까지 · 켜는 것은 정범님 결정)
   wireUpRuns: 7, wireDownRuns: 3, stage4Days: 14, readsZeroDays: 3,
+  watchLateH: 2, watchEveryMin: 30, watchMaxTries: 4, // 감시: 회차 시각(16시)+2시간에도 오늘 회차가 없으면 스스로 다시 · 30분마다 · 하루 4번까지
 };
 /* 가설 장부(readnow-chats research/CONSUMER/engine/hypotheses.json 11/14 판과 같은 시험 · 바꾸려면 app_settings/eng_self_cfg.hyp) */
 const ES_HYP = [
@@ -128,18 +129,18 @@ function esJudge(lines, hol, wx, cfg, hyps) { cfg = { ...ES_DEF, ...(cfg || {}) 
 const ES_RANK = { '재료 없음': 0, '불명': 0, '반대': 0, '지지': 1, '확신': 2 };
 function esStep(p, j, cfg, newData, day, dataDay) { cfg = { ...ES_DEF, ...(cfg || {}) }; p = p || null; const q = { st: p ? p.st : null, since: p ? p.since : day, run: p && p.run ? { ...p.run } : { v: null, k: 0 }, lastDay: p ? p.lastDay : null };
   if (newData || !p) { if (q.run.v === j.v) q.run.k++; else q.run = { v: j.v, k: 1 }; q.lastDay = dataDay; }
-  const n = j.n || 0; const kind = j.kind; const why = [];
+  const kind = j.kind; const n = kind === 'month_rank' ? Infinity : j.n || 0; /* 달 순위의 n은 해 수 — 날 수 기준(minNsup)을 대지 않음(확신은 m=두 해 넘게로 막음) */ const why = [];
   const need = (to) => { q.st = to; q.since = day; return to; }; let to = null;
-  if (!p || !p.st) { to = j.v === '지지' && n >= cfg.minNsup ? '지지' : j.v === '반대' && n >= cfg.minNsup ? '반대' : j.v === '재료 없음' ? '재료 없음' : '불명'; why.push('첫 판정 — ' + j.label + (n ? ` · 표본 ${n}` : '') + (j.v !== '재료 없음' && j.v !== '불명' && to === '불명' ? ` · 표본이 ${cfg.minNsup} 아래라 불명으로 둠` : '')); need(to); return { ...q, changed: { from: null, to, why: why.join(' · ') } }; }
+  if (!p || !p.st) { to = j.v === '지지' && n >= cfg.minNsup ? '지지' : j.v === '반대' && n >= cfg.minNsup ? '반대' : j.v === '재료 없음' ? '재료 없음' : '불명'; why.push('첫 판정 — ' + j.label + (j.n ? ` · 표본 ${j.n}` : '') + (j.v !== '재료 없음' && j.v !== '불명' && to === '불명' ? ` · 표본이 ${cfg.minNsup} 아래라 불명으로 둠` : '')); need(to); return { ...q, changed: { from: null, to, why: why.join(' · ') } }; }
   const cur = p.st;
   if (cur === '지지' || cur === '확신' || cur === '반대') { if (q.run.v !== (cur === '확신' ? '지지' : cur) && q.run.k >= cfg.downRuns) { to = cur === '확신' ? '지지' : q.run.v === '지지' && n >= cfg.minNsup ? '지지' : q.run.v; why.push(`새 자료 ${q.run.k}회 연속 '${q.run.v}'(${j.label}) — ${cfg.downRuns}회 넘어 내림`); } }
   if (!to && cur === '지지' && j.v === '지지') { const k = kind === 'hour' || kind === 'month_rank' || kind === 'dow' ? 'nconf_skip' : null; const nOk = k ? true : n >= cfg.minNconf;
-    if (q.run.k >= cfg.confRuns && nOk && j.m) { to = '확신'; why.push(`새 자료 ${q.run.k}회 연속 지지(기준 ${cfg.confRuns}) · 표본 ${n}${k ? '' : `(기준 ${cfg.minNconf})`}` + (j.e && j.e.lo != null ? ` · 95% 범위 ${pc(j.e.lo)}~${pc(j.e.hi)}` : '') + (j.mWhy ? ' · ' + j.mWhy : '')); } }
-  if (!to && (cur === '불명' || cur === '재료 없음')) { if ((j.v === '지지' || j.v === '반대') && n >= cfg.minNsup) { to = j.v; why.push(`${j.label} · 표본 ${n}(기준 ${cfg.minNsup})` + (j.e && j.e.lo != null ? ` · 95% 범위 ${pc(j.e.lo)}~${pc(j.e.hi)}` : '')); } else if (j.v !== cur && (j.v === '불명' || j.v === '재료 없음')) { to = j.v; why.push(j.label); } }
+    if (q.run.k >= cfg.confRuns && nOk && j.m) { to = '확신'; why.push(`새 자료 ${q.run.k}회 연속 지지(기준 ${cfg.confRuns}) · 표본 ${j.n}${k ? '' : `(기준 ${cfg.minNconf})`}` + (j.e && j.e.lo != null ? ` · 95% 범위 ${pc(j.e.lo)}~${pc(j.e.hi)}` : '') + (j.mWhy ? ' · ' + j.mWhy : '')); } }
+  if (!to && (cur === '불명' || cur === '재료 없음')) { if ((j.v === '지지' || j.v === '반대') && n >= cfg.minNsup) { to = j.v; why.push(`${j.label} · 표본 ${j.n}${kind === 'month_rank' ? '해' : `(기준 ${cfg.minNsup})`}` + (j.e && j.e.lo != null ? ` · 95% 범위 ${pc(j.e.lo)}~${pc(j.e.hi)}` : '')); } else if (j.v !== cur && (j.v === '불명' || j.v === '재료 없음')) { to = j.v; why.push(j.label); } }
   if (to && to !== cur) { need(to); return { ...q, changed: { from: cur, to, why: why.join(' · ') } }; }
   return { ...q, changed: null }; }
 /* 확신까지 남은 것(쉬운 말) */
-function esNext(s, j, cfg) { cfg = { ...ES_DEF, ...(cfg || {}) }; if (!s) return ''; if (s.st === '확신') return '확신 — 새 자료 ' + cfg.downRuns + '회 연속 어긋나면 지지로 내림'; if (s.st !== '지지') return s.st === '반대' ? '반대 — ' + cfg.downRuns + '회 연속 다른 판정이면 바뀜' : `지지가 되려면 범위가 0을 벗어나고 표본 ${cfg.minNsup} 넘게(지금 ${j && j.n != null ? j.n : '?'})`;
+function esNext(s, j, cfg) { cfg = { ...ES_DEF, ...(cfg || {}) }; if (!s) return ''; if (s.st === '확신') return '확신 — 새 자료 ' + cfg.downRuns + '회 연속 어긋나면 지지로 내림'; if (s.st !== '지지') return s.st === '반대' ? '반대 — ' + cfg.downRuns + '회 연속 다른 판정이면 바뀜' : (j && j.e && j.e.lo != null && j.n >= cfg.minNsup ? `95% 범위 ${pc(j.e.lo)}~${pc(j.e.hi)}가 0을 걸침 — 새 날이 쌓이면 다시 셈` : j && j.v === '재료 없음' ? '재료 없음 — ' + (j.label || '') : j && j.v === '지지' ? `판정은 지지 · 표본 ${j.n}이 기준 ${cfg.minNsup} 아래` : `지지가 되려면 범위가 0을 벗어나야 함(지금 ${j && j.label ? j.label : '?'})`);
   const a = []; const nn = j && (j.kind === 'set' || j.kind === 'weather'); a.push(`새 자료 연속 지지 ${Math.min(cfg.confRuns, s.run && s.run.v === '지지' ? s.run.k : 0)}/${cfg.confRuns}회`); if (nn) a.push(`표본 ${j.n}/${cfg.minNconf}`); if (j && j.m === false) a.push(j.mWhy || '여유 모자람'); return '확신까지: ' + a.join(' · '); }
 
 /* ── ⑤ 배선 단계 · defs = wires.json 줄 · W = 지난 상태 {id:{stage,since,up,down,log}} · ctx = {fresh:{문서:판정}, hyp:{H:상태}, score:{id:{n,v}|null}, gate(def,to)} ── */
@@ -173,6 +174,12 @@ function esSelf(prev, J, states, fromDay) { const sc = { n: (prev && prev.n) || 
     for (const d of J.sets[t.set] || []) { if (d <= fromDay || J.R[d] == null) continue; const a = J.R[d] - 1; sc.n++; const ok = a * t.expect > 0; if (ok) sc.hit++; sc.last.push({ d, id: h.id, a: r3(a), ok }); } }
   sc.rate = sc.n ? r3(sc.hit / sc.n) : null; sc.last = sc.last.slice(-30); return sc; }
 
+/* ── ⑧ 감시 — 오늘 회차가 빠졌나 · 마지막 회차가 36시간 넘었나 (웹앱·사람 없이 /tick이 30분마다 부름) ── */
+function esWatch(self, nowMs, cfg) { cfg = { ...ES_DEF, ...(cfg || {}) }; const today = kstDay(nowMs); const h = kstHour(nowMs); const lastMs = Date.parse((self && self.at) || ''); const gapH = Number.isFinite(lastMs) ? Math.round((nowMs - lastMs) / 3600e3 * 10) / 10 : null;
+  const off = cfg.on === false; const due = h >= cfg.hourKST + cfg.watchLateH; const missing = !off && due && (!self || self.day !== today); const stale = !off && (gapH == null || gapH > 36);
+  const red = !!(self && self.flag && self.flag.ok === false && self.day === today);
+  return { today, last: (self && self.day) || null, gapH, off, due, missing, stale, red, ok: !missing && !stale && !red }; }
+
 /* ── 회차(Firestore) · D = { C, FV, W, log, nowIso, mlLedger, hol, wxDays, ml(), found, notes, now } ── */
 const esClean = (x) => JSON.parse(JSON.stringify(x, (k, v) => (v === undefined || (typeof v === 'number' && !Number.isFinite(v)) ? null : v))); /* Firestore는 undefined·NaN을 못 담음(0.35.250 첫 회차가 saw.ledger.retried에서 멈췄음) */
 function makeEngSelf(D) { const now = D.now || (() => Date.now()); let busy = false, failAt = 0;
@@ -185,10 +192,13 @@ function makeEngSelf(D) { const now = D.now || (() => Date.now()); let busy = fa
     const alerts = []; const changes = [];
     /* ① 판매 장부 열어 보기(+ 멈췄으면 다시 받기) */
     let L = await ledger(); let insp = esInspect(L.meta, L.months, prev.ledger, nowMs, cfg);
-    if (insp.metaStale && D.mlLedger) { let r = null; try { r = await D.mlLedger(); } catch (e) { r = { err: String(e.message || e).slice(0, 160) }; } L = await ledger(); const i2 = esInspect(L.meta, L.months, prev.ledger, now(), cfg); i2.retried = r; insp = i2; if (i2.metaStale) alerts.push({ lv: '🚨', k: 'ledger_meta', t: `판매 장부 고침이 멈춤 — 다시 불러도 ${i2.metaAt || '없음'} 그대로`, why: r && r.err ? r.err : '' }); }
+    if (insp.metaStale && D.mlLedger) { let r = null; try { r = await D.mlLedger(); } catch (e) { r = { err: String(e.message || e).slice(0, 160) }; } L = await ledger(); const i2 = esInspect(L.meta, L.months, prev.ledger, now(), cfg); i2.retried = r; insp = i2; if (i2.metaStale) alerts.push({ lv: '🚨', now: true, k: 'ledger_meta', t: `판매 장부 고침이 멈춤 — 다시 불러도 ${i2.metaAt || '없음'} 그대로`, why: r && r.err ? r.err : '' }); }
     if (insp.st === '❌') alerts.push({ lv: '🚨', k: 'ledger', t: '판매 장부를 오늘 판정에 안 씀 — ' + insp.why.join(' · ') }); else if (insp.st === '⚠') alerts.push({ lv: '⚠', k: 'ledger_age', t: insp.why[0] });
     /* ② 연구 문서 신선도 */ const y = addD(today, -1); const paths = ES_DOCS.map((x) => x[0]).concat(ES_DOCS.filter((x) => x[2]).map((x) => `${x[2]}/${y}`)); const docs = {}; for (const p of paths) docs[p] = await get(p);
-    const fresh = esFresh(docs, today, nowMs, cfg); const frMap = Object.fromEntries(fresh.map((f) => [f.k, f.s])); for (const f of fresh) if (f.s === '❌') alerts.push({ lv: '⚠', k: 'fresh_' + f.id, t: `${f.id} ${f.k} ${f.w}` });
+    let fresh = esFresh(docs, today, nowMs, cfg); const redone = [];
+    /* 재료가 36시간 멈췄으면 스스로 다시 셈(가벼운 연구만 · D.redo) → 다시 읽어 판정 · 그래도 ❌면 🚨 */ for (const f of fresh.filter((x) => x.s === '❌' && D.redo && D.redo[x.k])) { let r = null; try { r = await D.redo[f.k](); } catch (e) { r = { err: String(e.message || e).slice(0, 120) }; } docs[f.k] = await get(f.k); redone.push({ k: f.k, id: f.id, r: r && r.err ? r.err : r && r.skip ? 'skip' : 'ok' }); }
+    if (redone.length) fresh = esFresh(docs, today, now(), cfg);
+    const frMap = Object.fromEntries(fresh.map((f) => [f.k, f.s])); for (const f of fresh) if (f.s === '❌') { const rd = redone.find((x) => x.k === f.k); alerts.push({ lv: rd ? '🚨' : '⚠', k: 'fresh_' + f.id, t: `${f.id} ${f.k} ${f.w}` + (rd ? ` — 스스로 다시 셈(${rd.r})해도 그대로` : ' — 다시 셈할 길이 엔진에 없음(깃발만)'), now: !!rd }); }
     /* ③④ 가설 다시 셈 → 상태 */ const hs0 = prev.hs || {}; const hs = {}; let J = { hyp: [] }; const lines = []; if (insp.use) for (const m of L.months) for (const r of m.rows) lines.push(r);
     const dataDay = insp.last ? insp.last.slice(0, 10) : null; const newData = insp.use && (!prev.dataDay || (dataDay && dataDay > prev.dataDay));
     if (insp.use) { let wx = {}; try { wx = D.wxDays ? (await D.wxDays()) || {} : {}; } catch (e) { wx = {}; } J = esJudge(lines, D.hol, wx, cfg, Array.isArray(cfg0.hyp) ? cfg0.hyp : ES_HYP); }
@@ -209,7 +219,7 @@ function makeEngSelf(D) { const now = D.now || (() => Date.now()); let busy = fa
     /* ⑦ 남기기 */ const cnt = { 확신: 0, 지지: 0, 반대: 0, 불명: 0, '재료 없음': 0 }; for (const s of Object.values(hs)) cnt[s.st] = (cnt[s.st] || 0) + 1; const tot = Object.values(hs).length; const decided = cnt.확신 + cnt.지지 + cnt.반대;
     const saw = { ledger: { st: insp.st, rows: insp.rows, last: insp.last, ageH: insp.ageH, blank: insp.blank, months: insp.months, newRows: insp.newRows, metaAt: insp.metaAt, why: insp.why, retried: !!insp.retried }, fresh: fresh.map((f) => `${f.s} ${f.id} ${f.w}`), n_days: J.n_days || 0, range: J.range || null, newData, breaks: (J.breaks || []).map((b) => `${b.from}~${b.to}`) };
     const rid = `${today}T${new Date(nowMs + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; const ms = now() - t0;
-    const doc = { v: ES_V, at: D.nowIso(), day: today, rid, by: o.by || 'engine', dataDay: newData ? dataDay : prev.dataDay || dataDay, ledger: insp.st === '❌' && prev.ledger ? prev.ledger : { rows: insp.rows, last: insp.last, per: insp.per }, saw, /* 거절한 장부(줄어듦·빈 칸)는 '어제 기준'으로 삼지 않음 — 이튿날에도 줄어든 것을 알아봄 */ hs, cnt, wires: Object.fromEntries(Object.entries(W1).map(([k, v]) => [k, { stage: v.stage, since: v.since, note: v.note || null }])), changes: changes.slice(0, 60), alerts, self, cfgUsed: { minNsup: cfg.minNsup, minNconf: cfg.minNconf, confRuns: cfg.confRuns, downRuns: cfg.downRuns, margin: cfg.margin, moneyUp: cfg.moneyUp === true }, ms };
+    const doc = { v: ES_V, at: D.nowIso(), day: today, rid, by: o.by || 'engine', dataDay: newData ? dataDay : prev.dataDay || dataDay, ledger: insp.st === '❌' && prev.ledger ? prev.ledger : { rows: insp.rows, last: insp.last, per: insp.per }, saw, /* 거절한 장부(줄어듦·빈 칸)는 '어제 기준'으로 삼지 않음 — 이튿날에도 줄어든 것을 알아봄 */ hs, cnt, wires: Object.fromEntries(Object.entries(W1).map(([k, v]) => [k, { stage: v.stage, since: v.since, note: v.note || null }])), changes: changes.slice(0, 60), alerts, redone, flag: { ok: !alerts.some((a) => a.lv === '🚨'), red: alerts.filter((a) => a.lv === '🚨').map((a) => a.k) }, self, cfgUsed: { minNsup: cfg.minNsup, minNconf: cfg.minNconf, confRuns: cfg.confRuns, downRuns: cfg.downRuns, margin: cfg.margin, moneyUp: cfg.moneyUp === true }, ms };
     const led = { v: ES_V, at: doc.at, day: today, by: doc.by, saw, verdicts: Object.fromEntries(J.hyp.map((j) => [j.id, { v: j.v, e: j.e && j.e.eff != null ? j.e.eff : null, lo: j.e && j.e.lo != null ? j.e.lo : null, hi: j.e && j.e.hi != null ? j.e.hi : null, n: j.n }])), states: hyMap, changes, kept: tot - changes.filter((c) => c.what === 'hyp').length, wires: Object.fromEntries(Object.entries(W1).map(([k, v]) => [k, v.stage])), wnotes, alerts, self: { n: self.n, hit: self.hit, rate: self.rate == null ? null : self.rate }, ms };
     const lref = D.C('eng_ledger').doc(rid); const ex = await lref.get().catch(() => null); const lref2 = ex && ex.exists ? D.C('eng_ledger').doc(rid + '_' + String(nowMs % 1e5)) : lref; /* 덧붙이기만 — 같은 이름이 있으면 새 이름 */
     await lref2.set({ ...esClean(led), ...D.W() });
@@ -221,12 +231,21 @@ function makeEngSelf(D) { const now = D.now || (() => Date.now()); let busy = fa
     /* 📚 발견 모음 — 확신이 되거나 확신에서 내려간 가설만(확인됨 · 뒤집힘) */
     if (D.found) for (const c of changes.filter((x) => x.what === 'hyp' && (x.to === '확신' || x.from === '확신'))) { try { await D.found({ d: today, area: '시장·매출', key: `es_${c.id.toLowerCase()}_${c.to === '확신' ? 'conf' : 'down'}`, t: `${c.claim} — ${c.to === '확신' ? '확신' : '확신에서 ' + c.to + '로 내려감'}(엔진 스스로)`, ev: c.why, use: '🧠 소비심리 가설 → 배선(W02·W03 등) 단계 후보', st: c.to === '확신' ? '확인됨' : '뒤집힘', src: 'app_settings/eng_self · eng_ledger/' + rid, tags: ['소비심리', '엔진 스스로'] }, 'engine:engself'); } catch (e) {} }
     /* 🚨 카드 — 장부 멈춤·줄어듦만(이틀째부터 · 하루 한 장) */
-    const prevA = new Set((prev.alerts || []).filter((a) => a.lv === '🚨').map((a) => a.k)); const card = alerts.filter((a) => a.lv === '🚨' && prevA.has(a.k));
-    if (card.length && D.notes) { try { await D.notes([{ op: 'merge', id: `es_alert_${today}`, data: { kind: 'card', cat: '연구', sub: '연구 엔진', leaf: '🤖 엔진 스스로', imp: 2, title: '🚨 연구 엔진 — 판매 장부가 이틀째 멈춤', body: card.map((a) => `- ${a.t}${a.why ? ' · ' + a.why : ''}`).join('\n') + '\n\n(엔진이 다시 받기를 해 봤으나 그대로 — 코드 확인은 리드 몫)', src: 'engine:engself', state: 'open' } }], 'engine:engself'); } catch (e) {} }
+    const prevA = new Set((prev.alerts || []).filter((a) => a.lv === '🚨').map((a) => a.k)); const card = alerts.filter((a) => a.lv === '🚨' && (a.now || prevA.has(a.k))); /* 다시 받기·다시 셈을 해 봤는데도 그대로면 그날 바로 · 장부 줄어듦은 이틀째 */
+    if (card.length && D.notes) { try { await D.notes([{ op: 'merge', id: `es_alert_${today}`, data: { kind: 'card', cat: '연구', sub: '연구 엔진', leaf: '🤖 엔진 스스로', imp: 2, title: '🚨 연구 엔진 — 재료가 멈춤(스스로 다시 해도 그대로)', body: card.map((a) => `- ${a.t}${a.why ? ' · ' + a.why : ''}`).join('\n') + '\n\n(엔진이 다시 받기·다시 셈을 해 봤으나 그대로 — 코드 확인은 리드 몫 · 진단 engself=1)', src: 'engine:engself', state: 'open' } }], 'engine:engself'); } catch (e) {} }
     D.log('🤖 연구 엔진 스스로', `가설 ${tot}(확신 ${cnt.확신}·지지 ${cnt.지지}) · 바뀜 ${changes.length} · 알림 ${alerts.length} · ${ms}ms`);
     return { rid, changes: changes.length, alerts: alerts.length, cnt, pulse: pulse ? pulse.n : 0, ms }; }
-  async function diag(q) { const out = { self: await get('app_settings/eng_self'), wires: await get('app_settings/eng_wire_stage'), cfg: await get('app_settings/eng_self_cfg') };
+  let watchAt = 0;
+  async function watch(o) { o = o || {}; const nowMs = now(); const cfg = { ...ES_DEF, ...((await get('app_settings/eng_self_cfg')) || {}) }; if (!o.force && nowMs - watchAt < cfg.watchEveryMin * 60e3) return null; watchAt = nowMs;
+    const self = await get('app_settings/eng_self'); const w0 = (await get('app_settings/eng_self_watch')) || {}; const w = esWatch(self, nowMs, cfg); const tries = w0.day === w.today ? w0.tries || 0 : 0; const out = { ...w, tries, tried: null, at: D.nowIso() };
+    if (w.missing && tries < cfg.watchMaxTries && !busy) { out.tries = tries + 1; try { const r = await run({ force: true, by: 'engine:watch' }); out.tried = r && r.rid ? 'ok ' + r.rid : JSON.stringify(r).slice(0, 120); } catch (e) { out.tried = '실패 ' + String(e.message || e).slice(0, 140); } const s2 = await get('app_settings/eng_self'); Object.assign(out, esWatch(s2, now(), cfg), { tries: out.tries, tried: out.tried }); }
+    out.why = [out.missing ? `오늘(${out.today}) 회차 없음 — 다시 ${out.tries}/${cfg.watchMaxTries}번(${out.tried || '아직'})` : null, out.stale ? `마지막 회차 ${out.last || '없음'} · ${out.gapH == null ? '?' : out.gapH}시간 전(36시간 넘음)` : null, out.red ? '오늘 회차에 🚨 알림(재료 멈춤)' : null].filter(Boolean);
+    await D.C('app_settings').doc('eng_self_watch').set({ ...esClean({ ...out, day: out.today }), ...D.W() });
+    const needCard = (out.missing && out.tries >= 2) || out.stale; /* 두 번 다시 해도 없거나 36시간 넘으면 카드(하루 한 장 · 같은 날은 고쳐 씀) */
+    if (needCard && D.notes && w0.cardDay !== out.today) { try { await D.notes([{ op: 'merge', id: `es_watch_${out.today}`, data: { kind: 'card', cat: '연구', sub: '연구 엔진', leaf: '🤖 엔진 스스로', imp: 2, title: '🚨 연구 엔진 회차가 멈춤 — 스스로 다시 돌려도 안 됨', body: out.why.map((x) => '- ' + x).join('\n') + '\n\n(클라우드 /tick 감시가 30분마다 다시 돌림 · 진단 engself=1의 watch · 코드 확인은 리드 몫)', src: 'engine:engself', state: 'open' } }], 'engine:engself'); await D.C('app_settings').doc('eng_self_watch').set({ cardDay: out.today }, { merge: true }); out.card = true; } catch (e) {} }
+    if (!out.ok) D.log('🤖 연구 엔진 감시', out.why.join(' · ')); return out; }
+  async function diag(q) { const out = { self: await get('app_settings/eng_self'), watch: await get('app_settings/eng_self_watch'), wires: await get('app_settings/eng_wire_stage'), cfg: await get('app_settings/eng_self_cfg') };
     try { const L = []; (await D.C('eng_ledger').orderBy('at', 'desc').limit(Math.min(30, +q.engDays || 7)).get()).forEach((d) => L.push({ id: d.id, ...d.data() })); out.ledger = L; } catch (e) { out.ledger = { err: e.message }; } return out; }
-  return { run, diag, _busy: () => busy };
+  return { run, watch, diag, _busy: () => busy };
 }
-module.exports = { ES_V, ES_DEF, ES_HYP, ES_DOCS, esInspect, esFresh, esDays, esRel, esBoot, esEffect, esBreaks, esSets, esJudge, esStep, esNext, esWireStep, esGate, esSelf, makeEngSelf, _t: { addD, dowOf, kstDay, rng } };
+module.exports = { ES_V, ES_DEF, ES_HYP, ES_DOCS, esInspect, esFresh, esDays, esRel, esBoot, esEffect, esBreaks, esSets, esJudge, esStep, esNext, esWireStep, esGate, esSelf, esWatch, makeEngSelf, _t: { addD, dowOf, kstDay, rng } };

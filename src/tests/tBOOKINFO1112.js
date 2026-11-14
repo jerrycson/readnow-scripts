@@ -126,7 +126,7 @@ console.log('⑧ 💾 저장 — 가짜 Firestore·가짜 인터넷으로 한 �
 
   console.log('⑨ 우리숍·웹앱이 같은 칸 이름을 씀');
   const shopJs = fs.readFileSync(path.join(REPO, 'shop/shop.js'), 'utf8'); const shopCl = fs.readFileSync(path.join(REPO, 'cloud/shop.js'), 'utf8'); const app = fs.readFileSync(path.join(REPO, 'src/app.html'), 'utf8');
-  ok(/bkInfoOf\(it\.isbn\)/.test(shopCl) && /info \}, 'public, max-age=30'/.test(shopCl), '우리숍 /shop/item 응답에 info');
+  ok(/bkInfoOf\(it\.isbn\)/.test(shopCl) && /info(, \.\.\.\(ai \? \{ ai \} : \{\}\))? \}, 'public, max-age=30'/.test(shopCl), '우리숍 /shop/item 응답에 info');
   for (const [k] of B.FIELDS) { ok(shopJs.includes(`['${k}',`) && app.includes(`['${k}',`), `칸 ${k}: 우리숍·웹앱 둘 다`); }
   /* 웹앱 카드 그리기 — 함수만 떼어 가짜 S로 */
   const a0 = app.indexOf('const BKI_T = '); const a1 = app.indexOf('async function openProduct(pid, opt) {'); const src = app.slice(a0, a1).replace(/document\.addEventListener\([\s\S]*?\}, true\);/, '');

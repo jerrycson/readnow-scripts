@@ -113,7 +113,9 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     p.lives = (Array.isArray(p.lives) ? p.lives : []).filter((x) => x && t - x.at < 6 * 3600e3).concat([{ at: t, life, kick }]).slice(-20); return p.lives[p.lives.length - 1]; };
   /* 끊긴 뒤 기다림 → null | { n(연달아 금방 끊긴 수), min(기다릴 분), until } — 금방 끊김 = 「이미 로그인된」 끊김 또는 shortMin분 안에 풀림 · 오래 산 세션이 나오면 셈이 끊김 */
   function back(pf) { const p = P(pf), c = C(); const Ls = Array.isArray(p.lives) ? p.lives : []; if (!Ls.length) return null; const sm = (c.shortMin == null ? 20 : +c.shortMin) * 60e3; let n = 0;
-    for (let i = Ls.length - 1; i >= 0; i--) { const x = Ls[i]; if (x.kick || (x.life != null && x.life < sm)) n++; else break; }
+    for (let i = Ls.length - 1; i >= 0; i--) { const x = Ls[i]; if (x.kick && x.life != null && x.life >= sm) { n++; break; } if (x.kick || (x.life != null && x.life < sm)) n++; else break; }
+    /* (11/14 y24first1 · 진단 11/14 18:02 HOME — 다시 로그인 14번 모두 '됨'인데 세션이 거의 60분마다 「이미 로그인된」 화면으로 끊김 → 그 끊김을 다 '금방 끊김'으로 이어 세어 10 → 20 → 40 → 80분 기다림 · 하루 절반 넘게 로그인 풀린 채)
+     *  오래 산 세션(shortMin분 넘게)이 「이미 로그인된」으로 끊긴 것은 한 번만 셈(10분 양보)하고 거기서 셈을 끊음 — 서로 끊기 되풀이(핑퐁)는 금방 끊김이 이어질 때만 늘림 · 다른 곳 로그인 이어받기(F02 · 저장된 계정으로 스스로)를 켠 뜻과 맞춤 */
     const g = c.gapMin == null ? 5 : +c.gapMin; if (!n || !(g > 0)) return null; /* 앞 시도 뒤 간격을 0으로 둔 때(시험)는 늘리기도 끔 */ const mx = Math.max(g, c.backMaxMin == null ? 120 : +c.backMaxMin); const min = Math.min(mx, g * Math.pow(2, n)); const last = Ls[Ls.length - 1].at; return { n, min, until: last + min * 60e3 }; }
   /* 지금 해도 되나 → null(됨) | 까닭 */
   function why(pf, ctx) { const p = P(pf), c = C(), t = now(); p.tries = p.tries.filter((x) => t - x < 86400e3);
