@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "pcdock5",
+ "what": "PC 배치 0.1.6 · 수집기 +1 (크롬 칸·카카오톡·먼저 닫기·이름표·진단)",
+ "since": "2026-11-14T07:07:21Z",
+ "beat": "2026-11-14T07:07:21Z",
  "ask": null,
  "last": {
   "who": "mjflick1",
   "done": "웹앱 1.78.630 · 8eb3dfee · 미등록 칸 깜박임·카드 너비",
   "at": "2026-11-14T07:06:43Z"
  },
- "host": null
+ "host": "vm-pcdock5"
 }
