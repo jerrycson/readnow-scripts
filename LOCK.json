@@ -1,13 +1,13 @@
 {
- "holder": "daily",
- "what": "1.78.654·1.89.340 커밋·push",
- "since": "2026-11-14T13:13:59Z",
- "beat": "2026-11-14T13:38:43Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "headless1",
-  "done": "웹앱 1.78.653 · 클라우드 0.35.266 · fffed0fb",
-  "at": "2026-11-14T12:40:41Z"
+  "who": "daily",
+  "done": "매일 정밀 점검 11/14 끝 — 웹앱 1.78.654 · 수집기 1.89.340 · 13b85880·54d109ea",
+  "at": "2026-11-14T13:51:23Z"
  },
- "host": "vm"
+ "host": null
 }
