@@ -1,13 +1,13 @@
 {
- "holder": "headless1",
- "what": "push",
- "since": "2026-11-14T12:22:07Z",
- "beat": "2026-11-14T12:22:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "aisum1",
-  "done": "클라우드 0.35.264 · 우리숍 0.2.13 · 8f279dda ✍ 모형 고침 · 임시 #/ai",
-  "at": "2026-11-14T12:21:54Z"
+  "who": "headless1",
+  "done": "클라우드 0.35.265 · 번외 0.1.67 · 57107a79",
+  "at": "2026-11-14T12:27:09Z"
  },
- "host": "vm-headless1"
+ "host": null
 }
