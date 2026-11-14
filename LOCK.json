@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shopfont1",
+ "what": "🔤 글꼴 역할 나누기 — 웹앱·우리숍 판",
+ "since": "2026-11-14T05:58:23Z",
+ "beat": "2026-11-14T05:58:23Z",
  "ask": null,
  "last": {
   "who": "pcdock4",
   "done": "PC 배치 도우미 0.1.4 main e17ddf2",
   "at": "2026-11-14T05:49:40Z"
  },
- "host": null
+ "host": "vm-shopfont1"
 }
