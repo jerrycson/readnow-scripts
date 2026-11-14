@@ -1,13 +1,13 @@
 {
- "holder": "plat1",
- "what": "🧩 판매처 칸 판",
- "since": "2026-11-14T09:47:46Z",
- "beat": "2026-11-14T09:47:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "engself1",
-  "done": "클라우드 0.35.255 · a0ba8092",
-  "at": "2026-11-14T09:47:31Z"
+  "who": "plat1",
+  "done": "웹앱 1.78.638 a65b61e6 🧩 판매처 칸",
+  "at": "2026-11-14T10:12:57Z"
  },
- "host": "vm-plat1"
+ "host": null
 }
