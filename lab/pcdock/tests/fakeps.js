@@ -30,6 +30,19 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
     { h: 101, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 — Chrome' }, { h: 102, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
     { h: 103, pid: 13, proc: 'explorer', cls: 'Progman', title: 'Program Manager' }, { h: 104, pid: 13, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드' },
     { h: 105, pid: 14, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장' }, { h: 106, pid: 15, proc: 'mstsc', cls: 'TscShellContainerClass', title: '원격 데스크톱 연결' }] });
+  /* (0.1.7) FAKE_FIND = 증거(ev) 꼴로 답함 — proc(카카오톡이 떠 있음) · lnk(바탕 화면 바로 가기만) · reg(설치 정보만) · start(스토어 앱만) · none(어디에도 없음) · 없으면 예전 꼴(found) */
+  if (act === 'find' && process.env.FAKE_FIND) { const M = process.env.FAKE_FIND; const KP = 'D:\\Apps\\Kakao\\KakaoTalk\\KakaoTalk.exe'; const CH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'; const ev = {};
+    for (const h of j.hints || []) { const c = []; const look = { proc: (h.exe || '').replace(/\.exe$/i, ''), lnk: 40, reg: 210, common: 0, start: 0 };
+      for (const q of h.paths || []) { look.common++; c.push({ s: 'common', p: q.replace('%LOCALAPPDATA%', 'C:\\Users\\u\\AppData\\Local').replace('%ProgramFiles(x86)%', 'C:\\Program Files (x86)').replace('%ProgramFiles%', 'C:\\Program Files'), ok: false, n: '' }); }
+      if ((h.start || []).length) look.start = 90;
+      if (h.key === 'chrome.exe') c.unshift({ s: 'reg', p: CH, ok: true, n: 'App Paths' });
+      if (h.key === 'KakaoTalk.exe') {
+        if (M === 'proc') c.unshift({ s: 'proc', p: KP, ok: true, n: '' }, { s: 'lnk', p: 'C:\\Old\\KakaoTalk.exe', ok: false, n: '카카오톡' });
+        if (M === 'lnk') c.push({ s: 'lnk', p: 'C:\\Old\\KakaoTalk.exe', ok: false, n: '카카오톡 (옛)' }, { s: 'lnk', p: 'C:\\Tools\\Updater.exe', ok: true, n: '카카오톡 업데이트' }, { s: 'lnk', p: KP, ok: true, n: '카카오톡' });
+        if (M === 'reg') c.push({ s: 'reg', p: 'D:\\Apps\\Kakao\\KakaoTalk\\uninstall.exe', ok: true, n: '카카오톡' }, { s: 'reg', p: KP, ok: true, n: '카카오톡' });
+        if (M === 'start') c.push({ s: 'start', p: 'shell:AppsFolder\\KakaoCorp.KakaoTalk_abcd!App', ok: true, n: '카카오톡' }); }
+      ev[h.key] = { c, look }; }
+    return out({ ev, icons: { [KP]: 'iVBORw0KGgo=' } }); }
   if (act === 'find') return out({ found: { 'chrome.exe': 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'KakaoTalk.exe': 'C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe', 'claude.exe': 'C:\\Users\\u\\AppData\\Local\\AnthropicClaude\\claude.exe' }, icons: {} });
   if (act === 'lnk') return out({ target: 'C:\\Program Files\\Notepad++\\notepad++.exe', args: '', icon: null });
   if (act === 'exe') return out({ list: j.name === 'notfound.exe' ? [] : ['C:\\Program Files\\Some\\' + j.name], icon: null });

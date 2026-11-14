@@ -1,5 +1,6 @@
 param([string]$Act = 'screens', [string]$DockHome = '', [int]$On = -1, [string]$CsFile = '')
 # pcdock.ps1 — 🖥 PC 배치 도우미의 윈도우 일(readnow-pcdock.js가 부름 · 넘길 값은 표준 입력 JSON · 결과는 맨 끝 한 줄 JSON)
+#  (0.1.7) find = 실행 파일 '증거'(떠 있는 프로세스·바로 가기·레지스트리·흔한 자리·시작 메뉴 앱)만 모음 — 고르기는 apps.js pickExe · fit rect = 그 자리로
 #  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · front(이 도우미 창을 앞으로 · 0.1.4) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
 #  ⚠ PowerShell 변수 이름은 대소문자를 가리지 않음 — $S와 $s는 같은 변수(0.1.0 '③ Claude만 되고 나머지 안 됨'의 까닭: foreach ($s …)가 결과 목록 $S를 덮어 $S += 가 PSObject 더하기로 터짐)
 #     → 대소문자만 다른 변수 이름을 쓰지 않음 · 목록은 ArrayList.Add로 쌓음(tests/t_static이 검사)
@@ -58,14 +59,66 @@ function FindExe($h) {
   foreach ($n in @($h.lnk)) { if ($n) { foreach ($f in (MenuLinks)) { if ($f.BaseName -like "$n*") { $t = LnkTarget $f.FullName; if ($t -and $t.target -and $t.target -like '*.exe' -and (Test-Path -LiteralPath $t.target)) { if (-not $h.exe -or ((Split-Path $t.target -Leaf) -ieq $h.exe)) { return $t.target } } } } } }
   return $null }
 
+# (0.1.7 · 정범님 11/14 16:29 「카카오톡은 열리지도 않아」 — 진단 skip '실행 파일을 못 찾음') 실행 파일 '증거' 모으기 — 고르기는 apps.js pickExe(차례: 떠 있는 프로세스 → 바로 가기 → 레지스트리 → 흔한 자리 → 시작 메뉴 앱)
+#  돌려줌 @{ c = [ @{ s 출처; p 경로; ok 파일 있음; n 이름 } ]; look = @{ proc 프로세스 이름; lnk 본 바로 가기 수; reg 본 레지스트리 칸 수; common 본 자리 수; start 본 앱 수 } }
+$script:lnkAll = $null
+function LnkAll { if ($null -eq $script:lnkAll) { $script:lnkAll = New-Object System.Collections.ArrayList
+    $dirs = @((Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs'), (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'), [Environment]::GetFolderPath('Desktop'), (Join-Path $env:PUBLIC 'Desktop'), (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'))
+    foreach ($ld in $dirs) { if ($ld -and (Test-Path -LiteralPath $ld)) { foreach ($lf in @(Get-ChildItem -LiteralPath $ld -Filter '*.lnk' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 800)) { $lt = LnkTarget $lf.FullName; if ($lt -and $lt.target) { [void]$script:lnkAll.Add(@{ n = $lf.BaseName; t = "$($lt.target)" }) } } } } }
+  return $script:lnkAll }
+$script:unAll = $null
+function UnAll { if ($null -eq $script:unAll) { $script:unAll = New-Object System.Collections.ArrayList
+    foreach ($ukey in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall')) {
+      try { foreach ($sub in @(Get-ChildItem -LiteralPath $ukey -ErrorAction Stop)) { $pp = Get-ItemProperty -LiteralPath $sub.PSPath -ErrorAction SilentlyContinue
+          if ($pp -and $pp.DisplayName) { [void]$script:unAll.Add(@{ n = "$($pp.DisplayName)"; icon = "$($pp.DisplayIcon)"; loc = "$($pp.InstallLocation)"; un = "$($pp.UninstallString)" }) } } } catch {} } }
+  return $script:unAll }
+$script:startAll = $null
+function StartAll { if ($null -eq $script:startAll) { $script:startAll = @(); try { $script:startAll = @(Get-StartApps -ErrorAction Stop | ForEach-Object { @{ n = "$($_.Name)"; id = "$($_.AppID)" } }) } catch {} }; return $script:startAll }
+# 시작 메뉴 앱 AppID의 알려진 폴더 번호 → 실제 폴더(데스크톱 앱은 AppID가 '{번호}\Kakao\KakaoTalk\KakaoTalk.exe' 꼴)
+$script:kf = @{ '{6D809377-6AF0-444B-8957-A3773F02200E}' = $env:ProgramW6432; '{7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E}' = ${env:ProgramFiles(x86)}; '{F38BF404-1D43-42F2-9305-67DE0B28FC23}' = $env:windir; '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}' = (Join-Path $env:windir 'System32') }
+function FindEv($h) { $cl = New-Object System.Collections.ArrayList; $seenP = @{}; $look = @{ proc = ''; lnk = 0; reg = 0; common = 0; start = 0 }
+  $exeN = "$($h.exe)" -replace "['""]", ''; $baseN = $(if ($exeN) { [IO.Path]::GetFileNameWithoutExtension($exeN) } else { '' })
+  function Add1($src, $pth, $nm) { $pth = "$pth".Trim().Trim('"'); if (-not $pth) { return }; $kk = "$src|$($pth.ToLower())"; if ($seenP.ContainsKey($kk)) { return }; $seenP[$kk] = 1
+    $okF = $false; if ($pth -like 'shell:*') { $okF = $true } else { try { $okF = [bool](Test-Path -LiteralPath $pth -PathType Leaf) } catch {} }
+    [void]$cl.Add(@{ s = $src; p = $pth; ok = $okF; n = "$nm" }) }
+  # ① 지금 떠 있는 프로세스(같은 사용자 · 관리자 권한 프로세스는 경로가 안 보일 수 있어 CIM도)
+  if ($baseN) { $look.proc = $baseN
+    try { foreach ($pr in @(Get-Process -Name $baseN -ErrorAction SilentlyContinue)) { $pp0 = $null; try { $pp0 = $pr.Path } catch {}; if ($pp0) { Add1 'proc' $pp0 '' } } } catch {}
+    try { foreach ($wp in @(Get-CimInstance Win32_Process -Filter "Name='$exeN'" -ErrorAction Stop)) { if ($wp.ExecutablePath) { Add1 'proc' "$($wp.ExecutablePath)" '' } } } catch {} }
+  # ② 시작 메뉴·바탕 화면·작업 표시줄 바로 가기 — 이름이 맞거나 대상 파일 이름이 맞는 것
+  $lks = @(LnkAll); $look.lnk = $lks.Count
+  foreach ($lk in $lks) { $nmHit = $false; foreach ($ln in @($h.lnk)) { if ($ln -and $lk.n -like "$ln*") { $nmHit = $true } }
+    $leafHit = $exeN -and ((Split-Path $lk.t -Leaf) -ieq $exeN); if (($nmHit -and $lk.t -like '*.exe') -or $leafHit) { Add1 'lnk' (Exp $lk.t) $lk.n } }
+  # ③ 레지스트리 — App Paths(등록된 실행 파일) · 설치 정보(Uninstall: DisplayIcon · InstallLocation · UninstallString 폴더)
+  if ($exeN) { foreach ($root in @('HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths')) { $look.reg = $look.reg + 1
+      try { $ap = Get-ItemProperty -LiteralPath "$root\$exeN" -ErrorAction Stop; $v0 = $ap.'(default)'; if ($v0) { Add1 'reg' (Exp $v0) 'App Paths' }; if ($ap.Path) { Add1 'reg' (Join-Path (Exp "$($ap.Path)".Trim('"')) $exeN) 'App Paths' } } catch {} } }
+  $uns = @(UnAll); $look.reg = $look.reg + $uns.Count
+  foreach ($un in $uns) { $icn = ("$($un.icon)" -replace ',\s*-?\d+$', '').Trim().Trim('"'); $nmHit = $false; foreach ($u in @($h.uninst)) { if ($u -and $un.n -like "$u*") { $nmHit = $true } }
+    if (-not $nmHit -and -not ($exeN -and $icn -and ((Split-Path $icn -Leaf) -ieq $exeN))) { continue }
+    $unp = ''; if ("$($un.un)" -match '^\s*"([^"]+)"') { $unp = $Matches[1] } elseif ("$($un.un)" -match '^\s*(\S+\.exe)') { $unp = $Matches[1] }
+    if ($icn) { Add1 'reg' (Exp $icn) $un.n; if ($exeN) { Add1 'reg' (Join-Path (Split-Path (Exp $icn)) $exeN) $un.n } }
+    if ($exeN -and $un.loc) { Add1 'reg' (Join-Path (Exp "$($un.loc)".Trim().Trim('"')) $exeN) $un.n }
+    if ($exeN -and $unp) { Add1 'reg' (Join-Path (Split-Path (Exp $unp)) $exeN) $un.n } }
+  # ④ 흔한 자리 — 정해 둔 경로 · 글롭 · 드라이브마다 Program Files·Program Files (x86)·뿌리 아래
+  foreach ($p0 in @($h.paths)) { if ($p0) { $look.common = $look.common + 1; Add1 'common' (Exp $p0) '' } }
+  foreach ($g0 in @($h.glob)) { if ($g0) { $look.common = $look.common + 1; foreach ($gh in @(Get-ChildItem -Path (Exp $g0) -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 3)) { Add1 'common' $gh.FullName '' } } }
+  if (@($h.drv).Count) { $roots = @(); try { $roots = @(Get-PSDrive -PSProvider FileSystem -ErrorAction Stop | Where-Object { $_.Root -match '^[A-Za-z]:\\$' } | ForEach-Object { $_.Root }) } catch {}
+    foreach ($d0 in @($h.drv)) { if (-not $d0) { continue }; foreach ($rt in $roots) { foreach ($mid in @('Program Files', 'Program Files (x86)', '')) { $look.common = $look.common + 1; $cand = $(if ($mid) { Join-Path (Join-Path $rt $mid) $d0 } else { Join-Path $rt $d0 }); if (Test-Path -LiteralPath $cand -PathType Leaf) { Add1 'common' $cand '' } } } } }
+  # ⑤ 시작 메뉴 앱(Get-StartApps) — 데스크톱 앱이면 실제 경로로 · 스토어 앱이면 shell:AppsFolder\<AppID>
+  if (@($h.start).Count) { $sas = @(StartAll); $look.start = $sas.Count
+    foreach ($sa in $sas) { $nmHit = $false; foreach ($sn in @($h.start)) { if ($sn -and $sa.n -like "$sn*") { $nmHit = $true } }; if (-not $nmHit) { continue }
+      $aid = "$($sa.id)"; $real = $aid; foreach ($kfk in $script:kf.Keys) { if ($aid.StartsWith($kfk, [StringComparison]::OrdinalIgnoreCase) -and $script:kf[$kfk]) { $real = $script:kf[$kfk] + $aid.Substring($kfk.Length) } }
+      if ($real -match '^[A-Za-z]:\\.*\.exe$') { Add1 'start' $real $sa.n } elseif ($aid -match '!') { Add1 'start' "shell:AppsFolder\$aid" $sa.n } } }
+  return @{ c = @($cl); look = $look } }
+
 try {
 switch ($Act) {
   'screens' { $out.mons = @(Mons); $out.build = (WinBuild); Done $out }
   'windows' { $out.wins = @([RnDock]::Windows() | Select-Object -First 300 | ForEach-Object { WinInfo $_ }); $out.mons = @(Mons); Done $out }
-  'find' { $f = @{}; $ic = @{}
-    foreach ($h in @($In.hints)) { $p = FindExe $h; if ($p) { $f[$h.key] = $p; $i = IconOf $p; if ($i) { $ic[$h.key] = $i } } }
+  'find' { $ev = @{}; $ic = @{} # (0.1.7) 단서마다 증거(ev) · 아이콘은 파일이 있는 후보 경로마다(앞 3개)
+    foreach ($h in @($In.hints)) { try { $e1 = FindEv $h; $ev["$($h.key)"] = $e1; $nI = 0; foreach ($cc in @($e1.c)) { if ($nI -ge 3) { break }; if ($cc.ok -and $cc.p -notlike 'shell:*' -and -not $ic.ContainsKey($cc.p)) { $i = IconOf $cc.p; if ($i) { $ic[$cc.p] = $i; $nI = $nI + 1 } } } } catch { $ev["$($h.key)"] = @{ c = @(); look = @{}; err = "$($_.Exception.Message)" } } }
     foreach ($p in @($In.icons)) { if ($p -and (Test-Path -LiteralPath $p)) { $i = IconOf $p; if ($i) { $ic[$p] = $i } } }
-    $out.found = $f; $out.icons = $ic; Done $out }
+    $out.ev = $ev; $out.icons = $ic; Done $out }
   'lnk' { $p = "$($In.path)"; if (-not (Test-Path -LiteralPath $p)) { Fail '바로가기 파일이 없음' }
     $t = LnkTarget $p; if (-not $t -or -not $t.target) { Fail '바로가기 대상을 못 읽음' }
     $out.target = $t.target; $out.args = $t.args; $out.icon = (IconOf $t.target); Done $out }
@@ -79,6 +132,8 @@ switch ($Act) {
     $steps = @($In.steps); $wait = [Math]::Max(5, [int]$In.waitSec)
     # (0.1.5) 새 창 상한 = 단계 수 + 탭 수 + 1 · 전체 시간 상한(기다림 + 탭마다 8초 + 20초) — 넘으면 더 안 띄우고 까닭을 남김(창이 쌓이지 않게)
     $tabTotal = 0; $seqN = 0; foreach ($sp in $steps) { $tabTotal = $tabTotal + (Arr $sp.tabs).Count; if ($sp.match.seq) { $seqN = $seqN + 1 } }
+    # (0.1.7) 늦게 뜨는 창(카카오톡 로그인 창·업데이트 — match.slow 초)이 있으면 그만큼 더 기다림
+    foreach ($sp in $steps) { if ([int]$sp.match.slow -gt $wait) { $wait = [int]$sp.match.slow } }
     # (0.1.6) 크롬 단계는 하나씩 띄우고 새 창을 기다림(단계마다 최대 15초) — 시간 상한에 그만큼 더함
     $script:launchN = 0; $script:launchMax = $steps.Count + $tabTotal + 1; $hardSec = $wait + 8 * $tabTotal + 15 * $seqN + 20; $script:hardEnd = [DateTime]::Now.AddSeconds($hardSec); $out.limit = @{ launches = $script:launchMax; sec = $hardSec }
     # ③ '모두 닫고 설정대로' — 화면에서 미리 보여 준 창만 · WM_CLOSE(닫아 달라고 부탁만 · 저장 안 한 문서는 그 프로그램이 물음) · 강제 종료 없음
@@ -182,7 +237,8 @@ switch ($Act) {
       try { if ($sp.reuse) { $wl = @([RnDock]::Windows()); if ($sp.match.seq) { UddFill $wl }; $hit = @($wl | Where-Object { Fits $_ $sp $false }) | Select-Object -First 1; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } elseif (Unhid $st) { $st.how = '트레이에 숨어 있던 창을 보이게 해 자리만' } }
         if (-not $st.done -and -not $st.err -and $sp.launch) {
           if ($sp.match.seq) { $preK = @([RnDock]::Windows() | ForEach-Object { [int64]$_.H }); Launch $st; if (-not $st.err) { SeqWait $st $preK } } # (0.1.6) 크롬은 하나씩
-          else { Launch $st } } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" }
+          else { Launch $st } }
+        if (-not $st.done -and -not $st.err -and $sp.self) { $st.done = $true; $st.how = '작은 창이 지금 안 떠 있음 — 다음에 열 때 이 칸에 엶' } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" } # (0.1.7) PC 배치 자기 창 — 새로 안 띄움
       [void]$Res.Add($st); Start-Sleep -Milliseconds 400 }
     $end = [DateTime]::Now.AddSeconds($wait)
     while ((@($Res | Where-Object { -not $_.done -and -not $_.err }).Count) -and [DateTime]::Now -lt $end -and [DateTime]::Now -lt $script:hardEnd) {
@@ -195,7 +251,7 @@ switch ($Act) {
           if (-not $hit -and -not $st.s.match.fresh -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $hit = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1 }
           if ($hit) { Put $st $hit ($(if ($st.how) { "$($st.how) → 자리 옮김" } else { '자리 옮김' })) } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" } } }
     # 뜬 뒤 스스로 크기를 바꾸는 프로그램(크롬·오피스)이 있어 한 번 더
-    if (@($Res | Where-Object { $_.done }).Count) { Start-Sleep -Milliseconds 1500; foreach ($st in @($Res | Where-Object { $_.done })) { try { $r = $st.s.rect; $st.got = (Rc ([RnDock]::Place([int64]$st.h, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h))) } catch {} } }
+    if (@($Res | Where-Object { $_.done }).Count) { Start-Sleep -Milliseconds 1500; foreach ($st in @($Res | Where-Object { $_.done -and $_.h })) { try { $r = $st.s.rect; $st.got = (Rc ([RnDock]::Place([int64]$st.h, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h))) } catch {} } }
     $out.res = @($Res | ForEach-Object { $howTxt = $(if ($_.done) { $_.how } elseif ($_.err) { $_.err } else { "창을 못 찾음($($wait)초)" })
       if ($_.done -and $_.tabN) { $howTxt = "$howTxt · 탭 $($_.tabN)개 더함" }
       if ($_.overN) { $howTxt = "$howTxt · 탭 $($_.overN)개는 탭 대신 같은 칸에 창을 겹쳐 놓음($($_.overWhy))" }
@@ -246,8 +302,9 @@ switch ($Act) {
       if (-not $m) { $m = @($monList | Where-Object { $_.primary }) | Select-Object -First 1; if (-not $m) { $m = $monList[0] }
         if ($m) { $k = $m.dpi / 96.0; $w = [Math]::Min([int]($In.w * $k), $m.wa.w); $h = [Math]::Min([int]($In.h * $k), $m.wa.h); [void][RnDock]::Place([int64]$hit.H, ($m.wa.x + $m.wa.w - $w), $m.wa.y, $w, $h); $out.moved = $true } } }
     $out.front = [RnDock]::Front([int64]$hit.H); Done $out }
-  'fit' { # 이 도우미 창(제목으로 찾음)을 그 창이 있는 모니터 가운데에 w×h(배율 적용 전 크기)로
+  'fit' { # 이 도우미 창(제목으로 찾음)을 그 창이 있는 모니터 가운데에 w×h(배율 적용 전 크기)로 · (0.1.7) rect가 오면 그 자리(①에서 「리드나우 PC 배치」를 놓은 칸 · 실제 화소)로
     $hit = @([RnDock]::Windows() | Where-Object { $_.Title -like "*$($In.title)*" -and $_.Proc -ieq 'chrome' }) | Select-Object -First 1; if (-not $hit) { Fail '창을 못 찾음' }
+    if ($In.rect) { $out.got = (Rc ([RnDock]::Place([int64]$hit.H, [int]$In.rect.x, [int]$In.rect.y, [int]$In.rect.w, [int]$In.rect.h))); $out.self = $true; Done $out }
     $cx = ($hit.R.L + $hit.R.R) / 2; $cy = ($hit.R.T + $hit.R.B) / 2; $monList = @(Mons); $m = @($monList | Where-Object { $cx -ge $_.b.x -and $cx -lt ($_.b.x + $_.b.w) -and $cy -ge $_.b.y -and $cy -lt ($_.b.y + $_.b.h) }) | Select-Object -First 1; if (-not $m) { $m = @($monList | Where-Object { $_.primary }) | Select-Object -First 1 }; if (-not $m) { $m = $monList[0] }
     $k = $m.dpi / 96.0; $w = [Math]::Min([int]($In.w * $k), $m.wa.w); $h = [Math]::Min([int]($In.h * $k), $m.wa.h)
     $x = $(if ($In.corner -eq 'tr') { $m.wa.x + $m.wa.w - $w } else { $m.wa.x + [int](($m.wa.w - $w) / 2) }); $y = $(if ($In.corner -eq 'tr') { $m.wa.y } else { $m.wa.y + [int](($m.wa.h - $h) / 2) })

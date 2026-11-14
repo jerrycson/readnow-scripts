@@ -35,14 +35,14 @@ ok(G.scaleOf({ dpi: 144 }) === 150 && G.scaleOf({ dpi: 96 }) === 100, '배율 % 
 
 console.log('③ 설정 검사(저장 전)');
 const mons = [M(1920, 1080, 0, 0, 96, 'D1'), M(2560, 1080, 1920, 0, 96, 'D2')];
-{ const v = SET.validate(SET.defaults(), mons); ok(v.ok && v.cfg.apps.length === 12 && v.cfg.apps.some((a) => a.kind === 'col2') && v.cfg.apps.some((a) => a.kind === 'alps') && v.cfg.mons.D1.cols === 4 && v.cfg.mons.D2.cols === 5, '기본 설정 — 프로그램 열두 가지(번외 수집기·ALPS 도우미 더함) · 모니터 칸 수 채움', v.errs); }
+{ const v = SET.validate(SET.defaults(), mons); ok(v.ok && v.cfg.apps.length === 13 && v.cfg.apps.some((a) => a.kind === 'self') && v.cfg.apps.some((a) => a.kind === 'col2') && v.cfg.apps.some((a) => a.kind === 'alps') && v.cfg.mons.D1.cols === 4 && v.cfg.mons.D2.cols === 5, '기본 설정 — 프로그램 열세 가지(번외 수집기·ALPS 도우미 · 0.1.7 리드나우 PC 배치 더함) · 모니터 칸 수 채움', v.errs); }
 { const c = SET.defaults(); c.apps[0].password = 'x'; const v = SET.validate(c, mons); ok(!v.ok && v.errs.some((e) => /비밀값/.test(e)), '비밀번호 같은 칸은 저장 거절'); }
 { const c = SET.defaults(); c.apps[0].urls = ['javascript:alert(1)']; ok(!SET.validate(c, mons).ok, 'http(s) 아닌 주소 거절'); }
 { const c = SET.defaults(); c.place = [{ app: 'chrome', mon: 'D1', c: 0, r: 0, w: 2, h: 2 }, { app: 'kakao', mon: 'D1', c: 1, r: 1, w: 1, h: 1 }]; const v = SET.validate(c, mons); ok(!v.ok && v.errs.some((e) => /한 칸에 둘/.test(e)), '겹쳐 놓기 거절(한 칸에 하나)'); }
 { const c = SET.defaults(); c.place = [{ app: 'kakao', mon: 'D1', c: 4, r: 0, w: 1, h: 1 }]; ok(!SET.validate(c, mons).ok, '칸 밖(4×3의 5번째 칸) 거절'); c.place = [{ app: 'kakao', mon: 'D2', c: 4, r: 0, w: 1, h: 1 }]; ok(SET.validate(c, mons).ok, '울트라와이드는 5번째 칸이 있음'); }
 { const c = SET.defaults(); c.place = [{ app: 'nope', mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]; ok(!SET.validate(c, mons).ok, '목록에 없는 프로그램을 놓으면 거절'); }
 { const c = SET.defaults(); c.apps.push({ id: 'x1', kind: 'exe', name: '나쁜 경로', exe: '..\\..\\a.exe' }); ok(!SET.validate(c, mons).ok, '경로 꼴 검사(드라이브로 시작 · .. 금지)'); }
-{ const c = SET.defaults(); c.mons = { OLD: { grid: '2x2', w: 1920, h: 1080 } }; c.place = [{ app: 'kakao', mon: 'OLD', c: 1, r: 1, w: 1, h: 1 }]; const v = SET.validate(c, mons); ok(v.ok && v.cfg.mons.OLD.cols === 2 && v.cfg.place.length === 1, '지금 연결 안 된 모니터의 자리도 그대로 둠(저장해 둔 크기로 칸 검사)', v.errs); }
+{ const c = SET.defaults(); c.mons = { OLD: { grid: '2x2', w: 1920, h: 1080 } }; c.place = [{ app: 'kakao', mon: 'OLD', c: 1, r: 1, w: 1, h: 1 }]; c.selfAdded = true; const v = SET.validate(c, mons); ok(v.ok && v.cfg.mons.OLD.cols === 2 && v.cfg.place.length === 1, '지금 연결 안 된 모니터의 자리도 그대로 둠(저장해 둔 크기로 칸 검사)', v.errs); }
 { const c = SET.defaults(); c.auto = { on: true, delaySec: 0 }; ok(SET.validate(c, mons).cfg.auto.delaySec === 0, '기다림 0초도 됨'); c.auto = { delaySec: 'x' }; ok(SET.validate(c, mons).cfg.auto.delaySec === 20, '이상한 값이면 20초'); }
 { ok(!SET.validate(null).ok && !SET.validate([]).ok, '빈 값·배열 거절'); const big = SET.defaults(); big.apps[0].urls = Array.from({ length: 30 }, () => 'https://x.kr/' + 'a'.repeat(590)); big.apps = Array.from({ length: 20 }, (_, i) => ({ ...big.apps[0], id: 'c' + i })); ok(!SET.validate(big, mons).ok, '200KB 넘으면 거절'); }
 
@@ -65,7 +65,7 @@ console.log('④-2 배치마다 자기 설정(인스턴스) · 탭 순서 · 예
     { id: 'p2', app: 'chrome', name: 'B 크롬', o: { urls: ['https://b.kr/'] }, mon: 'D1', c: 1, r: 0, w: 1, h: 1 },
     { id: 'p3', app: 'folder', name: '스크린샷', o: { paths: ['D:\\Shots'] }, mon: 'D1', c: 2, r: 0, w: 1, h: 1 },
     { id: 'p4', app: 'folder', name: '다운로드', o: { paths: ['C:\\Users\\u\\Downloads', 'D:\\ReadNow\\출고', 'D:\\ReadNow\\사진'] }, mon: 'D1', c: 3, r: 0, w: 1, h: 1 }];
-  const v = SET.validate(c, mons); ok(v.ok && !v.migrated && v.cfg.place.length === 4 && v.cfg.place[0].o.urls.length === 3 && v.cfg.place[1].o.urls[0] === 'https://b.kr/', '같은 틀(크롬·폴더)로 놓은 배치 둘이 서로 다른 설정을 가짐', v.errs);
+  c.selfAdded = true; const v = SET.validate(c, mons); ok(v.ok && !v.migrated && v.cfg.place.length === 4 && v.cfg.place[0].o.urls.length === 3 && v.cfg.place[1].o.urls[0] === 'https://b.kr/', '같은 틀(크롬·폴더)로 놓은 배치 둘이 서로 다른 설정을 가짐', v.errs);
   const P = A.buildPlan(v.cfg, mons, { 'chrome.exe': 'C:\\chrome.exe' }, G); const ch = P.steps.filter((s) => s.app === 'chrome');
   ok(ch.length === 2 && ch[0].inst === 'p1' && ch[0].name === 'A 크롬' && ch[0].launch.args.join(' ') === '--new-window https://a.kr/1 https://a.kr/2 https://a.kr/3' && ch[1].launch.args.join(' ') === '--new-window https://b.kr/', '크롬 — 배치마다 자기 주소 · 한 창에 탭이 그 순서로(--new-window 주소1 주소2 주소3)', ch.map((x) => x.launch.args));
   const fo = P.steps.filter((s) => s.app === 'folder'); ok(fo.length === 2 && fo[0].launch.args[0] === 'D:\\Shots' && !fo[0].tabs && fo[1].launch.args[0] === 'C:\\Users\\u\\Downloads' && fo[1].tabs.map((t) => t.leaf).join() === '출고,사진' && fo[1].tabs[0].path === 'D:\\ReadNow\\출고', '폴더 — 배치마다 자기 폴더 · 첫 폴더로 창을 열고 나머지는 차례대로 탭(출고 → 사진)', fo.map((x) => [x.launch.args, x.tabs]));
@@ -76,7 +76,7 @@ console.log('④-2 배치마다 자기 설정(인스턴스) · 탭 순서 · 예
 { /* 0.1.0 설정(v:1) — 배치에 자기 설정 없음 · 폴더는 path 하나 · 번외·ALPS 틀 없음 */
   const old = { v: 1, base: G.BASE, mons: { D1: { grid: 'auto', w: 1920, h: 1080 } }, apps: SET.defaults().apps.filter((a) => a.kind !== 'col2' && a.kind !== 'alps').map((a) => a.kind === 'folder' ? { id: a.id, kind: 'folder', name: a.name, icon: a.icon, path: 'D:\\ReadNow' } : a),
     place: [{ app: 'chrome', mon: 'D1', c: 0, r: 0, w: 1, h: 1 }, { app: 'chrome', mon: 'D1', c: 1, r: 0, w: 1, h: 1 }, { app: 'folder', mon: 'D1', c: 2, r: 0, w: 1, h: 1 }], auto: { on: true, delaySec: 20 }, run: { waitSec: 40, reuse: true }, clean: { keep: [] } };
-  const v = SET.validate(old, mons); ok(v.ok && v.migrated && v.cfg.v === 2 && v.cfg.place.map((p) => p.id).join() === 'p1,p2,p3', '예전 설정 → 배치마다 이름표(p1·p2·p3)를 붙여 옮김', v.errs);
+  const v = SET.validate(old, mons); ok(v.ok && v.migrated && v.cfg.v === 2 && v.cfg.place.filter((p) => p.app !== 'self').map((p) => p.id).join() === 'p1,p2,p3', '예전 설정 → 배치마다 이름표(p1·p2·p3)를 붙여 옮김', v.errs);
   ok(v.cfg.place[0].o.urls[0] === 'https://readnow.kr/app/' && v.cfg.place[0].o.urls !== v.cfg.place[1].o.urls && v.cfg.place[2].o.paths[0] === 'D:\\ReadNow' && v.cfg.apps.find((a) => a.kind === 'folder').paths[0] === 'D:\\ReadNow', '틀의 값을 배치마다 따로 복사 · 폴더 path → paths');
   ok(v.cfg.apps.some((a) => a.kind === 'col2') && v.cfg.apps.some((a) => a.kind === 'alps') && v.cfg.auto.on === true, '옮길 때 새 틀(번외·ALPS)을 더하고 나머지 설정은 그대로');
   ok(!SET.validate(v.cfg, mons).migrated, '옮긴 뒤 다시 읽으면 또 옮기지 않음'); }

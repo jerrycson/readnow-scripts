@@ -6,7 +6,8 @@
  *     apps:[{ id, kind, name, icon, … 종류별 칸 }],             ← 목록의 '틀'(놓을 때 처음 값)
  *     place:[{ id, app, name, o:{ 종류별 칸 }, mon, c, r, w, h }],  ← 배치(인스턴스) — 배치마다 자기 설정 o · 칸 자리(왼쪽 위 c·r · 너비 w · 높이 h) · 한 칸에 하나
  *   0.1.0의 v:1(배치에 자기 설정이 없음)은 읽을 때 틀의 값을 배치마다 복사해 v:2로 옮김(migrated) — 예전 파일은 old\에 남김(지우지 않음)
- *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeFirst },  clean:{ keep:[프로세스 이름] } } */
+ *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeFirst },  clean:{ keep:[프로세스 이름] },
+ *     selfAdded:true } ← (0.1.7) PC 배치 작은 창을 목록·칸에 한 번 넣었음(사람이 빼면 다시 안 넣음) */
 (function (root, factory) { const M = factory(root); if (typeof module === 'object' && module.exports) module.exports = M; else root.PDSet = M; })(typeof self !== 'undefined' ? self : this, function (root) {
   'use strict';
   const G = typeof module === 'object' && module.exports ? require('./grid.js') : root.PDGrid;
@@ -67,9 +68,16 @@
       const mo = cfg.mons[p.mon]; if (!mo) { errs.push(`놓은 자리의 모니터(${p.mon})를 모름`); continue; }
       if (![p.c, p.r, p.w, p.h].every(Number.isFinite) || !G.inGrid(p, mo)) { errs.push(`${p.name || p.app}: 칸이 모니터 밖(${mo.cols}×${mo.rows})`); continue; }
       cfg.place.push(p); }
+    /* (0.1.7 · 정범님 11/14 16:29) 🖥 PC 배치 작은 창 자신 — 창이 하나라 배치도 하나만 · 처음 한 번 목록에 더하고 비어 있는 작은 칸에 놓음(selfAdded — 사람이 뺀 뒤엔 다시 안 넣음 · 모니터를 모르면 다음에) */
+    { const sIds = new Set(cfg.apps.filter((a) => a.kind === 'self').map((a) => a.id)); let seen = false;
+      cfg.place = cfg.place.filter((p) => { if (!sIds.has(p.app)) return true; if (seen) { warns.push('PC 배치 작은 창은 한 곳에만 놓을 수 있어 두 번째 자리는 뺐습니다'); return false; } seen = true; return true; });
+      if (input.selfAdded) cfg.selfAdded = true;
+      else if (mons && mons.length) { let tpl = cfg.apps.find((a) => a.kind === 'self'); if (!tpl) { tpl = A.defaultApps().find((a) => a.kind === 'self'); if (ids.has(tpl.id)) tpl = { ...tpl, id: tpl.id + '1' }; ids.add(tpl.id); cfg.apps.push(tpl); }
+        if (!cfg.place.some((p) => p.app === tpl.id)) { const sp = A.selfSpot(cfg, mons, G); if (sp) { let i = 1; while (pids.has('p' + i)) i++; pids.add('p' + i); cfg.place.push({ id: 'p' + i, app: tpl.id, name: '', o: {}, ...sp }); cfg.selfNew = true; } }
+        cfg.selfAdded = true; } }
     for (const [i, j] of G.overlaps(cfg.place)) errs.push(`한 칸에 둘(${cfg.place[i].name || cfg.place[i].app} · ${cfg.place[j].name || cfg.place[j].app}) — 한 칸에 하나만`);
     if (v1 && Array.isArray(input.apps) && input.apps.some((a) => a && a.kind === 'folder' && a.path)) migrated = true;
     cfg.migrated = migrated || (v1 && !!input.v);
-    const mg = cfg.migrated; delete cfg.migrated; return { ok: !errs.length, errs, warns, cfg, migrated: !!mg }; }
+    const mg = cfg.migrated; delete cfg.migrated; const sn = !!cfg.selfNew; delete cfg.selfNew; return { ok: !errs.length, errs, warns, cfg, migrated: !!mg, selfNew: sn }; }
   return { defaults, validate, MAX_BYTES, SECRET, KIND_FIELDS };
 });

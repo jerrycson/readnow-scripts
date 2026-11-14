@@ -17,7 +17,7 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     console.log('① 켜기 · 상태');
     let r = await P('GET', '/api/ping'); ok(r.j && r.j.app === 'readnow-pcdock', '127.0.0.1에서 대답(/api/ping)');
     r = await P('GET', '/'); ok(r.code === 200 && /리드나우 PC 배치/.test(r.b) && /①/.test(r.b) && /④/.test(r.b), '화면(ui.html)을 줌');
-    r = await P('GET', '/api/state'); const st = r.j; ok(st && st.ok && st.mons.length === 3 && st.cfg.apps.length === 12 && st.startup === false && st.catalog.length === 12 && st.build === 22631, '상태 — 모니터 3대 · 기본 프로그램 12(번외·ALPS 더함) · 시작 자동 꺼짐 · 윈도우 빌드', st && { m: st.mons.length, err: st.err });
+    r = await P('GET', '/api/state'); const st = r.j; ok(st && st.ok && st.mons.length === 3 && st.cfg.apps.length === 13 && st.startup === false && st.catalog.length === 13 && st.build === 22631, '상태 — 모니터 3대 · 기본 프로그램 13(번외·ALPS · 0.1.7 PC 배치 더함) · 시작 자동 꺼짐 · 윈도우 빌드', st && { m: st.mons.length, err: st.err });
     ok(fs.readFileSync(path.join(S.D, 'pcdock-run.ps1'), 'utf8').startsWith('\ufeff') && /\r\n/.test(fs.readFileSync(path.join(S.D, 'pcdock-run.ps1'), 'utf8')), '윈도우 PowerShell 5.1이 한국어를 읽게 BOM·CRLF를 붙인 사본을 씀');
 
     console.log('② 다른 웹 페이지 막기');
@@ -26,11 +26,11 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
 
     console.log('③ 설정 저장');
     const cfg = JSON.parse(JSON.stringify(st.cfg)); cfg.place = [{ app: 'kakao', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 1, h: 1 }, { app: 'chrome', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 2, h: 1 }];
-    r = await P('POST', '/api/save', { cfg }); ok(r.code === 400 && r.j.errs.some((e) => /한 칸에 둘/.test(e)) && !fs.existsSync(path.join(S.D, 'settings.json')), '겹치면 저장 안 함(파일도 안 생김)', r.j);
+    r = await P('POST', '/api/save', { cfg }); ok(r.code === 400 && r.j.errs.some((e) => /한 칸에 둘/.test(e)) && !(() => { try { return JSON.parse(fs.readFileSync(path.join(S.D, 'settings.json'), 'utf8')).place.some((p) => p.app === 'kakao'); } catch (e) { return false; } })(), '겹치면 저장 안 함(파일에 겹친 배치가 안 들어감 · 0.1.7부터 처음 설정은 켤 때 저장)', r.j);
     cfg.place = [{ app: 'kakao', mon: '\\\\.\\DISPLAY2', c: 4, r: 2, w: 1, h: 1 }, { app: 'chrome', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 2, h: 3 }, { app: 'claude', mon: '\\\\.\\DISPLAY3', c: 0, r: 0, w: 2, h: 2 }];
     cfg.apps.find((a) => a.id === 'chrome').urls = ['https://readnow.kr/app/', 'https://readnow.kr/manual/']; cfg.apps.find((a) => a.id === 'claude').room = '0b9f3a10-1111-2222-3333-444455556666';
     r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok, '저장됨', r.j); const saved = JSON.parse(fs.readFileSync(path.join(S.D, 'settings.json'), 'utf8')); ok(saved.place.length === 3 && saved.mons['\\\\.\\DISPLAY2'].cols === 5 && !/password|token/i.test(JSON.stringify(saved)), 'settings.json — 놓은 자리 3 · 울트라와이드 5칸 · 비밀값 없음');
-    r = await P('POST', '/api/save', { cfg }); ok(fs.readdirSync(path.join(S.D, 'old')).length === 1, '다시 저장하면 예전 설정을 old\\에 남김(지우지 않음)');
+    r = await P('POST', '/api/save', { cfg }); ok(fs.readdirSync(path.join(S.D, 'old')).length === 2, '(0.1.7 처음 설정 파일 + 첫 저장) 다시 저장하면 예전 설정을 old\\에 남김(지우지 않음)');
 
     console.log('④ 설정대로 실행·배치');
     r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(run && Array.isArray(run.input.close) && !run.input.close.length && r.j.mode === 'keep', '고르지 않으면 남겨 둔 채(닫을 창 없음)');
@@ -82,7 +82,7 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
       r = await P('GET', '/api/state'); const nf = JSON.parse(fs.readFileSync(path.join(S.D, 'settings.json'), 'utf8')); const olds = fs.readdirSync(path.join(S.D, 'old'));
       ok(nf.v === 2 && nf.place.every((p) => p.id && p.o) && nf.place[1].o.paths[0] === 'D:\\ReadNow' && r.j.cfg.apps.some((a) => a.kind === 'col2'), '읽을 때 배치마다 자기 설정으로 옮겨 저장', nf.place);
       ok(olds.length === before + 1 && olds.some((f) => /^settings-v1-/.test(f)) && JSON.parse(fs.readFileSync(path.join(S.D, 'old', olds.find((f) => /^settings-v1-/.test(f))), 'utf8')).v === 1, '예전 파일은 old\\settings-v1-…json에 그대로 남김(지우지 않음)'); }
-    r = await P('POST', '/api/run', {}); ok(r.j && r.j.ok && r.j.res.length === 2 && r.j.res.every((x) => x.inst), '옮긴 설정으로 실행·배치(배치 이름표가 결과에)', r.j);
+    r = await P('POST', '/api/run', {}); ok(r.j && r.j.ok && r.j.res.filter((x) => x.app !== 'self').length === 2 && r.j.res.every((x) => x.inst), '옮긴 설정으로 실행·배치(배치 이름표가 결과에)', r.j);
 
     console.log('⑧ 두 번째로 켜면 창만');
     const t0 = Date.now(); const p2 = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'readnow-pcdock.js')], { env: S.env, timeout: 10000 }); ok(p2.status === 0 && Date.now() - t0 < 8000 && /이미 켜져 있어/.test(fs.readFileSync(path.join(S.D, 'pcdock.log'), 'utf8')), '이미 켜져 있으면 새 서버를 안 띄우고 끝남');

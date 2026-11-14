@@ -20,6 +20,7 @@
     alps: { url: 'http://127.0.0.1:8898/alps', prof: '%USERPROFILE%\\ReadNow\\print\\chrome-alpswin', title: '^ALPS 도우미', extra: [] } };
   /* (0.1.6) ③ '목록의 프로그램은 먼저 닫고 새로' 때 닫지 않는 창 제목 — 리드나우 수집기(알라딘 수집 탭 · 🪟 리드나우 작업 창 · 🖐 리드나우 손발) · 번외 · ALPS · PC 배치 자신
    *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy) */
+  const SELF_TITLE = '리드나우 PC 배치'; /* (0.1.7) 이 작은 창 제목(ui.html <title> · readnow-pcdock.js TITLE과 같음) */
   const KEEP_TITLE = '^🪟 리드나우 작업 창|리드나우 손발|알라딘|aladin|번외 수집|📊 번외|ALPS|리드나우 PC 배치';
   /* kind별 뼈대 — 목록에 처음 놓이는 열두 가지 */
   const CATALOG = [
@@ -27,24 +28,39 @@
     { kind: 'folder', name: '윈도우 폴더', icon: '📁', def: { paths: ['D:\\ReadNow'] } },
     { kind: 'phone', name: '휴대폰과 연결', icon: '📱', find: { shell: 'shell:AppsFolder\\Microsoft.YourPhone_8wekyb3d8bbwe!App' } },
     { kind: 'crd', name: 'Chrome 원격 데스크톱', icon: '🖥', find: CHROME_FIND, def: { url: 'https://remotedesktop.google.com/access' } },
-    { kind: 'claude', name: 'Claude 앱', icon: '✳', find: { exe: 'claude.exe', paths: ['%LOCALAPPDATA%\\AnthropicClaude\\claude.exe', '%LOCALAPPDATA%\\Programs\\Claude\\Claude.exe'], lnk: ['Claude'] }, def: { mode: 'chat', room: '', artifact: '', how: 'app' } },
-    { kind: 'exe', id: 'kakao', name: '카카오톡', icon: '💬', find: { exe: 'KakaoTalk.exe', paths: ['%LOCALAPPDATA%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles(x86)%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%LOCALAPPDATA%\\Programs\\Kakao\\KakaoTalk\\KakaoTalk.exe'], uninst: ['KakaoTalk', '카카오톡'], lnk: ['카카오톡', 'KakaoTalk'] }, match: { title: '카카오톡|KakaoTalk', hidden: '^(카카오톡|KakaoTalk)$', hcls: 'EVA_Window_Dblclk' } }, /* (0.1.6) 트레이에 숨어 떠 있으면(창이 숨김 — 0.1.5는 '보이는 창'만 찾아 못 찾음) 그 창을 보이게 한 뒤 놓음 · hidden = 숨은 창 제목(꼭 같게) · hcls = 카카오톡 본 창 종류(먼저 고름) */
+    { kind: 'claude', name: 'Claude 앱', icon: '✳', find: { exe: 'claude.exe', paths: ['%LOCALAPPDATA%\\AnthropicClaude\\claude.exe', '%LOCALAPPDATA%\\Programs\\Claude\\Claude.exe'], lnk: ['Claude'], start: ['Claude'] }, def: { mode: 'chat', room: '', artifact: '', how: 'app' } },
+    { kind: 'exe', id: 'kakao', name: '카카오톡', icon: '💬', find: { exe: 'KakaoTalk.exe', paths: ['%LOCALAPPDATA%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles(x86)%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%LOCALAPPDATA%\\Programs\\Kakao\\KakaoTalk\\KakaoTalk.exe'], uninst: ['KakaoTalk', '카카오톡'], lnk: ['카카오톡', 'KakaoTalk'], start: ['카카오톡', 'KakaoTalk'], drv: ['Kakao\\KakaoTalk\\KakaoTalk.exe'] }, match: { title: '카카오톡|KakaoTalk', hidden: '^(카카오톡|KakaoTalk)$', hcls: 'EVA_Window_Dblclk', slow: 30 } }, /* (0.1.7 · 정범님 11/14 16:29 「카카오톡은 열리지도 않아」 — 진단 skip '실행 파일을 못 찾음') start = 시작 메뉴 앱 이름(Get-StartApps) · drv = 드라이브마다 Program Files·Program Files (x86)·뿌리 아래 이 자리 · slow = 로그인 창·업데이트로 늦게 뜨면 30초까지 기다림 */ /* (0.1.6) 트레이에 숨어 떠 있으면(창이 숨김 — 0.1.5는 '보이는 창'만 찾아 못 찾음) 그 창을 보이게 한 뒤 놓음 · hidden = 숨은 창 제목(꼭 같게) · hcls = 카카오톡 본 창 종류(먼저 고름) */
     { kind: 'exe', id: 'photoshop', name: '포토샵', icon: '🎨', find: { exe: 'Photoshop.exe', paths: [], glob: ['%ProgramFiles%\\Adobe\\Adobe Photoshop*\\Photoshop.exe'], lnk: ['Adobe Photoshop', 'Photoshop'] } },
     { kind: 'exe', id: 'illustrator', name: '일러스트레이터', icon: '✒', find: { exe: 'Illustrator.exe', paths: [], glob: ['%ProgramFiles%\\Adobe\\Adobe Illustrator*\\Support Files\\Contents\\Windows\\Illustrator.exe'], lnk: ['Adobe Illustrator', 'Illustrator'] } },
     { kind: 'exe', id: 'word', name: '워드', icon: '📝', find: { exe: 'WINWORD.EXE', paths: ['%ProgramFiles%\\Microsoft Office\\root\\Office16\\WINWORD.EXE', '%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\WINWORD.EXE'], lnk: ['Word'] } },
     { kind: 'exe', id: 'excel', name: '엑셀', icon: '📊', find: { exe: 'EXCEL.EXE', paths: ['%ProgramFiles%\\Microsoft Office\\root\\Office16\\EXCEL.EXE', '%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\EXCEL.EXE'], lnk: ['Excel'] } },
     { kind: 'col2', name: '번외 수집기', icon: '🧪', find: CHROME_FIND },
     { kind: 'alps', name: 'ALPS 도우미', icon: '🅰', find: CHROME_FIND },
+    { kind: 'self', name: '리드나우 PC 배치', icon: '🖥' }, /* (0.1.7 · 정범님 11/14 16:29 「목록에 리드나우 PC 배치도 추가해줘」) 이 작은 창 자신 — 떠 있으면 자리만(새로 안 띄움 · 먼저 닫기에서 빠짐) · 다음에 열 때도 그 칸에 엶 */
   ];
-  const KINDS = { chrome: '크롬', folder: '폴더', phone: '휴대폰과 연결', crd: '원격 데스크톱', claude: 'Claude', exe: '프로그램', web: '웹 주소 창', col2: '번외 수집기 창', alps: 'ALPS 도우미 창' };
+  const KINDS = { chrome: '크롬', folder: '폴더', phone: '휴대폰과 연결', crd: '원격 데스크톱', claude: 'Claude', exe: '프로그램', web: '웹 주소 창', col2: '번외 수집기 창', alps: 'ALPS 도우미 창', self: 'PC 배치 작은 창' };
   /* 배치(인스턴스)마다 따로 가지는 칸 — settings.js가 같은 목록으로 검사 */
-  const KIND_FIELDS = { chrome: ['urls', 'windows', 'profile'], folder: ['paths'], phone: [], crd: ['url', 'profile'], web: ['url', 'profile'], claude: ['mode', 'room', 'artifact', 'how', 'folder', 'profile'], exe: ['exe', 'file'], col2: [], alps: [] };
+  const KIND_FIELDS = { chrome: ['urls', 'windows', 'profile'], folder: ['paths'], phone: [], crd: ['url', 'profile'], web: ['url', 'profile'], claude: ['mode', 'room', 'artifact', 'how', 'folder', 'profile'], exe: ['exe', 'file'], col2: [], alps: [], self: [] };
   /* 처음 설정의 프로그램 목록(틀) */
   function defaultApps() { return CATALOG.map((c) => ({ id: c.id || c.kind, kind: c.kind, name: c.name, icon: c.icon, ...(c.def ? JSON.parse(JSON.stringify(c.def)) : {}), ...(c.kind === 'exe' ? { exe: '', file: '' } : {}) })); }
   const catOf = (a) => CATALOG.find((c) => (c.id || c.kind) === a.id) || CATALOG.find((c) => c.kind === a.kind && !c.id) || null;
   /* 찾을 단서(PowerShell 'find'에 넘김) — 사람이 고른 실행 파일(exe)이 있으면 그것이 먼저 */
-  function findHints(apps) { const out = []; const seen = new Set(); for (const a of apps) { const c = catOf(a); const f = c && c.find; if (a.kind === 'exe' && a.exe) continue; if (!f || !(f.exe || f.paths || f.lnk)) continue; const key = f.exe || a.id; if (seen.has(key)) continue; seen.add(key); out.push({ key, exe: f.exe || '', paths: f.paths || [], glob: f.glob || [], uninst: f.uninst || [], lnk: f.lnk || [] }); } return out; }
+  /* (0.1.7) 설정에 경로가 있어도 단서를 넘김(given — 그 경로가 없어졌거나 틀리면 Node가 찾기를 돌림) · 사람이 더한 프로그램(틀 없음)도 실행 파일 이름으로 같은 찾기(떠 있는 프로세스·바로 가기·레지스트리) */
+  function findHints(apps) { const out = []; const seen = new Set(); for (const a of apps) { const c = catOf(a); let f = c && c.find; const given = a.kind === 'exe' ? String(a.exe || '') : '';
+      if (!f && a.kind === 'exe' && given) { const lf = leafOf(given); if (!/\.exe$/i.test(lf)) continue; const b = lf.replace(/\.exe$/i, ''); f = { exe: lf, paths: [], lnk: [b], uninst: [b], start: [b] }; }
+      if (!f || !(f.exe || f.paths || f.lnk)) continue; const key = keyOf(a); if (seen.has(key)) continue; seen.add(key);
+      out.push({ key, exe: f.exe || '', paths: f.paths || [], glob: f.glob || [], uninst: f.uninst || [], lnk: f.lnk || [], start: f.start || [], drv: f.drv || [], ...(given ? { given } : {}) }); } return out; }
   const keyOf = (a) => { const c = catOf(a); return (c && c.find && c.find.exe) || a.id; };
+  /* (0.1.7 · 정범님 11/14 16:29) 실행 파일 고르기 — PowerShell 'find'가 모은 증거(ev.c: [{ s 출처, p 경로, ok 파일 있음, n 이름 }] · ev.look: 찾아본 수)에서 차례대로
+   *  ① 지금 떠 있는 프로세스 경로 ② 시작 메뉴·바탕 화면·작업 표시줄 바로 가기(.lnk 대상) ③ 레지스트리(App Paths · 설치 정보 Uninstall) ④ 흔한 자리(드라이브마다) ⑤ 시작 메뉴 앱(스토어 앱은 shell:AppsFolder)
+   *  돌려줌 { p 경로|'' , from 어디서 찾았나(사람 말) , tried 찾아본 자리 요약(못 찾았을 때 진단에 그대로) } */
+  const SRC = [['proc', '떠 있는 프로세스'], ['lnk', '바로 가기'], ['reg', '레지스트리'], ['common', '흔한 자리'], ['start', '시작 메뉴 앱']];
+  function pickExe(h, ev) { const C = (ev && Array.isArray(ev.c)) ? ev.c : []; const L = (ev && ev.look) || {}; const exe = String((h && h.exe) || '').toLowerCase();
+    const fit = (x) => x && x.ok && x.p && (x.s === 'start' ? true : !exe || leafOf(x.p).toLowerCase() === exe);
+    for (const [s, t] of SRC) { const x = C.find((y) => y.s === s && fit(y)); if (x) return { p: x.p, from: t + (x.n ? ` '${String(x.n).slice(0, 40)}'` : ''), tried: '' }; }
+    const tried = SRC.map(([s, t]) => { const bad = C.filter((y) => y.s === s && y.p && !fit(y)); const n = +L[s] || 0;
+      return `${t}: ` + (s === 'proc' ? (L.proc ? `'${L.proc}' 안 떠 있음` : '이름 모름') : `${n}곳 봄`) + (bad.length ? ` · 맞지 않음 ${bad.slice(0, 2).map((y) => y.p + (y.ok ? '' : '(파일 없음)')).join(', ')}` : ''); });
+    return { p: '', from: '', tried: tried.join(' / ') }; }
   /* 배치 하나의 실제 설정 = 틀 + 배치 자기 값(빈 값은 틀을 따름) · 이름은 배치 이름 */
   function instApp(tpl, p) { const o = (p && p.o) || {}; const a = { ...tpl };
     for (const f of KIND_FIELDS[tpl.kind] || []) { const v = o[f]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) continue; a[f] = Array.isArray(v) ? v.slice() : v; }
@@ -77,10 +93,10 @@
   /* 실행 계획 — PowerShell 'run'에 그대로 넘기는 차례표
    *  cfg: 설정 · mons: 지금 모니터 · found: { 찾기 열쇠: 실행 파일 경로 } · G: grid.js
    *  돌려줌 { steps:[{ key, app, inst, name, rect, launch:{ file, args[], expand } | { uri } | null, match:{ procs[], cls, title, fresh }, reuse, tabs? }], skipped:[{ app, why, todo }] } */
-  function buildPlan(cfg, mons, found, G) { const steps = [], skipped = []; found = found || {}; const base = G.baseOf(cfg.base);
+  function buildPlan(cfg, mons, found, G, exeOk) { const steps = [], skipped = []; found = found || {}; const base = G.baseOf(cfg.base); exeOk = exeOk || (() => true); /* (0.1.7) exeOk = 그 경로에 파일이 있나(Node만 · 화면은 늘 참) */
     const monById = {}; mons.forEach((m, i) => { monById[m.id] = m; monById['#' + i] = m; });
     const chrome = found['chrome.exe'] || '';
-    const skip = (name, why) => skipped.push({ app: name, why, todo: todoOf(why) });
+    const skip = (name, why, key) => skipped.push({ app: name, why, todo: todoOf(why), ...(key ? { key } : {}) });
     for (const p of cfg.place || []) { const tpl = (cfg.apps || []).find((x) => x.id === p.app); if (!tpl) { skip(p.name || p.app, '목록에 없는 프로그램'); continue; }
       const a = instApp(tpl, p);
       const m = monById[p.mon]; if (!m) { skip(a.name, '그 모니터가 지금 연결돼 있지 않음'); continue; }
@@ -108,12 +124,17 @@
         else if (!U.web.length && exe) steps.push({ ...base1, rect: rc, reuse, launch: { file: exe, args: [] }, match: { procs: ['claude'], cls: '', title: 'Claude', fresh: false } });
         if (U.web.length) { const R = G.splitRect(rc, (U.uri ? 1 : 0) + U.web.length).slice(U.uri ? 1 : 0); U.web.forEach((u, i) => { const s = chromeStep(R[i], [...prof(a), '--app=' + u], u); if (s) steps.push({ ...s, name: a.name + (i ? ' 아티팩트' : '') }); else skip(a.name, '크롬 실행 파일을 못 찾음(웹으로 열기)'); }); }
         continue; }
-      if (a.kind === 'exe') { const exe = a.exe || found[keyOf(a)] || ''; if (!exe) { skip(a.name, '실행 파일을 못 찾음'); continue; } const c = catOf(a);
-        steps.push({ ...base1, rect: rc, reuse, launch: { file: exe, args: a.file ? [a.file] : [] }, match: { procs: [procOf(exe)], cls: '', title: (c && c.match && c.match.title) || '', fresh: false, ...(c && c.match && c.match.hidden ? { hidden: c.match.hidden, hcls: c.match.hcls || '' } : {}) } }); continue; }
+      if (a.kind === 'exe') { const k = keyOf(a); const c = catOf(a); const gv = a.exe && exeOk(a.exe) ? a.exe : ''; const auto = found[k] && exeOk(found[k]) ? found[k] : ''; const exe = gv || auto;
+        /* (0.1.7) 설정 경로가 없거나 틀리면 스스로 찾은 경로로(사람이 넣은 값은 덮지 않음 · 진단 src에 남김) · shell:AppsFolder\… = 시작 메뉴 앱(스토어 앱)은 탐색기로 켬 */
+        if (!exe) { skip(a.name, '실행 파일을 못 찾음' + (a.exe ? `(설정 경로 ${a.exe} 에 파일이 없음)` : ''), k); continue; }
+        const src = gv ? 'given' : (a.exe ? 'auto-given-missing' : 'auto'); const pn = (c && c.find && c.find.exe) ? procOf(c.find.exe) : procOf(exe); const shellApp = /^shell:/i.test(exe);
+        steps.push({ ...base1, rect: rc, reuse, exeKey: k, src, launch: shellApp ? { file: 'explorer.exe', args: [exe] } : { file: exe, args: a.file ? [a.file] : [] }, match: { procs: [pn], cls: '', title: (c && c.match && c.match.title) || '', fresh: false, ...(c && c.match && c.match.hidden ? { hidden: c.match.hidden, hcls: c.match.hcls || '' } : {}), ...(c && c.match && c.match.slow ? { slow: c.match.slow } : {}) } }); continue; }
+      /* (0.1.7) PC 배치 작은 창 자신 — 떠 있으면 자리만(launch 없음 · 새로 안 띄움) · 크롬 앱 창 제목이 꼭 '리드나우 PC 배치' */
+      if (a.kind === 'self') { steps.push({ ...base1, rect: rc, reuse: true, self: true, launch: null, match: { procs: ['chrome'], cls: 'Chrome_WidgetWin_1', title: '^' + reEsc(SELF_TITLE) + '$', fresh: false } }); continue; }
       skip(a.name, '모르는 종류'); }
     return { steps: steps.filter(Boolean), skipped }; }
   /* (0.1.6) 먼저 닫을 프로그램 = 이번 단계들의 프로세스 이름(크롬·Claude·카카오톡·탐색기 폴더 창 등) · 번외·ALPS 도우미 창은 빼고(자리만) · 휴대폰과 연결은 이름 조건만이라 뺌 */
-  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper) continue; for (const p of (s.match && s.match.procs) || []) if (p) S.add(p); } return [...S]; }
+  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p) S.add(p); } return [...S]; }
   /* PowerShell이 돌려준 결과 한 줄 → 사람이 알아듣는 말 + 원문(접어 둠) */
   function friendly(r) { const how = String((r && r.how) || ''); const nm = (r && r.name) || '';
     if (r && r.ok) return { msg: how, raw: '' };
@@ -128,5 +149,13 @@
     if (/^지금 .* 중$/.test(s)) return { msg: s + ' → 끝난 뒤 다시', raw: '' };
     if (/아직 아무것도 놓지 않았습니다|놓을 수 있는 것이 없음|닫을 목록/.test(s)) return { msg: s, raw: '' };
     return { msg: '윈도우 일(PowerShell)이 중간에 멈춤 → 다시 ③ · 또 그러면 이 기록을 보내 주세요', raw: s }; }
-  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, closeProcs, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
+  /* (0.1.7) PC 배치 창의 처음 자리 — 지금 비어 있는 칸 중 가장 작은 곳(작은 창이 들어갈 만큼 · 같으면 주 모니터 · 위 · 오른쪽 먼저) · 없으면 null */
+  function selfSpot(cfg, mons, G) { let best = null; const base = G.baseOf(cfg.base);
+    const hitP = (a, b) => a.mon === b.mon && a.c < b.c + b.w && b.c < a.c + a.w && a.r < b.r + b.h && b.r < a.r + a.h;
+    for (const m of mons || []) { const mo = (cfg.mons && cfg.mons[m.id]) || {}; const g = G.gridOf(m, mo.grid, base); const k = (m.dpi || 96) / 96; const wa = m.wa || m.b; const cw = wa.w / g.cols / k, ch = wa.h / g.rows / k;
+      const w = Math.min(g.cols, Math.max(1, Math.ceil(300 / cw))), h = Math.min(g.rows, Math.max(1, Math.ceil(380 / ch)));
+      for (let r = 0; r + h <= g.rows; r++) { let got = null; for (let c = g.cols - w; c >= 0; c--) { const p = { mon: m.id, c, r, w, h }; if (!(cfg.place || []).some((q) => hitP(p, q))) { got = p; break; } }
+        if (got) { const area = cw * w * ch * h; const key = [area, m.primary ? 0 : 1, r]; if (!best || key[0] < best.key[0] - 1 || (Math.abs(key[0] - best.key[0]) <= 1 && (key[1] < best.key[1] || (key[1] === best.key[1] && key[2] < best.key[2])))) best = { p: got, key }; break; } } }
+    return best ? best.p : null; }
+  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
 });

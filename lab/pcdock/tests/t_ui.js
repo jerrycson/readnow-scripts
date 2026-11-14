@@ -8,6 +8,8 @@ let bad = 0, n = 0; const ok = (c, m, x) => { n++; if (c) console.log('  ✓ ' +
 const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'pcdock-shots-'));
 (async () => { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'pcdocku-')); const FAKE = path.join(__dirname, 'fakeps.js'); fs.chmodSync(FAKE, 0o755);
   const env = { ...process.env, RN_PCDOCK_HOME: D, RN_PCDOCK_PS: FAKE, RN_PCDOCK_NOWIN: '1', RN_PCDOCK_NOUPDATE: '1', RN_PCDOCK_PORT: String(20000 + Math.floor(Math.random() * 20000)), FAKE_LOG: path.join(D, 'fake.log'), FAKE_STARTUP: path.join(D, 'startup.lnk'), FAKE_RUN_FAIL: 'kakao' };
+  /* (0.1.7) 앞 흐름은 빈 배치도에서 — PC 배치 작은 창은 이미 넣은 것으로(selfAdded) · 자기 창 놓기는 맨 끝 ⑤에서 */
+  fs.writeFileSync(path.join(D, 'settings.json'), JSON.stringify({ ...require('../settings.js').defaults(), selfAdded: true }));
   const sp = cp.spawn(process.execPath, [path.join(__dirname, '..', 'readnow-pcdock.js')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
   const port = await new Promise((res) => { let b = ''; sp.stdout.on('data', (d) => { b += d; const m = /PCDOCK_PORT=(\d+)/.exec(b); if (m) res(+m[1]); }); });
   const br = await require(PW).chromium.launch(); const errs = [];
@@ -69,6 +71,16 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await pg.screenshot({ path: path.join(SHOTS, '4-clean.png'), fullPage: true });
     await pg.check('[data-pid="13"]'); await pg.click('#doClean'); ok(/한 번 더/.test(await pg.textContent('#doClean')) && !fs.readFileSync(path.join(D, 'fake.log'), 'utf8').includes('"cleanrun"'), '첫 번째 누름은 글만 바뀜(아직 안 지움)');
     await pg.click('#doClean'); await pg.waitForFunction(() => /끝/.test(document.querySelector('#scanout').textContent)); ok(/OneDrive/.test(await pg.textContent('#scanout')), '두 번째 누름에 정리 · 결과(지운 크기·끈 프로그램)');
+    console.log('⑤ (0.1.7) 목록의 「리드나우 PC 배치」(이 작은 창)도 칸에');
+    await pg.setViewportSize({ width: 1180, height: 760 }); await pg.click('#clBack').catch(() => {}); await pg.click('#b1'); await pg.waitForSelector('.app[data-app="self"]'); await pg.waitForTimeout(800);
+    ok(await pg.$('.app[data-app="self"]') && /리드나우 PC 배치/.test(await pg.textContent('#apps')), '목록에 「리드나우 PC 배치」 한 줄');
+    const nb = await pg.$$eval('.blk', (L) => L.length); await drag('.app[data-app="self"]', await C(D2, 2, 0)); ok(await pg.$$eval('.blk', (L) => L.length) === nb + 1 && /작은 창\(리드나우 PC 배치\)/.test(await pg.textContent('#detail')), '다른 프로그램처럼 끌어 놓음 · 설명 글');
+    await drag('.app[data-app="self"]', await C(D2, 3, 0)); ok(await pg.$$eval('.blk', (L) => L.length) === nb + 1 && /한 곳에만/.test(await pg.textContent('#toast')), '두 번째로 놓으면 안 놓이고 쪽지(창이 하나라 한 곳만)');
+    { const i = await pg.evaluate(() => C.place.findIndex((p) => p.app === 'self')); await drag(`.blk[data-i="${i}"]`, await C(D2, 3, 1)); ok((await pg.evaluate(() => C.place.find((p) => p.app === 'self'))).c === 3, '놓은 자기 창 덩이를 끌어 칸 바꿈'); }
+    const nFit = fs.readFileSync(path.join(D, 'fake.log'), 'utf8').split('\n').filter((l) => /"act":"fit"/.test(l)).length;
+    await pg.click('#setOk'); await pg.waitForSelector('#home.on'); await pg.waitForTimeout(400);
+    { const sv = JSON.parse(fs.readFileSync(path.join(D, 'settings.json'), 'utf8')); ok(sv.place.filter((p) => p.app === 'self').length === 1 && sv.place.find((p) => p.app === 'self').mon === D2, '저장 — 자기 창 자리 하나', sv.place); }
+    { const F = fs.readFileSync(path.join(D, 'fake.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.act === 'fit'); const f = F[F.length - 1]; ok(F.length > nFit && f.input.rect && f.input.rect.x === 1920 + 512 * 3 && f.input.rect.y === 360 && f.input.rect.w === 512, '처음 화면으로 돌아가면 놓은 칸(울트라와이드 4번째 칸 · 둘째 줄)으로 옮겨 달라고 함', f); }
     ok(!errs.length, '화면 오류·브라우저 팝업 없음', errs);
   } finally { await br.close(); sp.kill(); fs.rmSync(D, { recursive: true, force: true }); }
   console.log('스크린샷: ' + SHOTS);
