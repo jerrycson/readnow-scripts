@@ -1,2 +1,2 @@
-doc=app_settings/y24_reg
-# 1006826081
+col2=1&doc=app_settings/y24_reg
+# 3101015327
