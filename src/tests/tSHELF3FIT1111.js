@@ -33,8 +33,8 @@ console.log('① 순수 셈');
   const cols = SH.SHELF_COLS; const R = SH.shelfRows([{ id: 'a', t: '책', p: 7000, p0: 10000, bd: ['sale'], c: '에세이', c2: '한국에세이', at: '2026-09-01' }], new Set(), new Set(), new Map(), new Map());
   const U = BQS.unpack({ cols, pre: [], rows: R }); ok(cols.slice(cols.indexOf('c2'), cols.indexOf('c2') + 3).join() === 'c2,p0,bd' && U[0].p0 === 10000 && U[0].bd[0] === 'sale' && U[0].c2 === '한국에세이' && U[0].p === 7000, '서가 자료 열 c2·p0·bd(뒤에 덧붙임) → 손님 화면이 할인가·배지·작은 분야를 받음');
   const U0 = BQS.unpack({ cols: cols.slice(0, 17), pre: [], rows: R.map((r) => r.slice(0, 17)) }); ok(U0[0].p0 === 0 && U0[0].bd === null, '옛 클라우드(열 17개)도 그대로 읽음'); }
-{ const pub = SH.pubItem('x1', { status: '판매중', price: 5000, title: '시험' }, { categories: [{ path: ['국내도서', '종교/역학', '기독교(개신교)', '신앙생활'] }] }); ok(pub.c === '종교/역학' && pub.c2 === '기독교(개신교)', `클라우드: 분류 경로 배열 → c '${pub.c}' · c2 '${pub.c2}'(전엔 쉼표로 이어 통째로 들어감)`);
-  const pub2 = SH.pubItem('x2', { status: '판매중', price: 5000, title: '시험' }, { categories: [{ path: '국내도서>소설/시/희곡>한국소설' }] }); ok(pub2.c === '소설/시/희곡' && pub2.c2 === '한국소설', '클라우드: > 경로도 같게'); }
+{ const pub = SH.pubItem('x1', { status: '판매중', price: 5000, title: '시험' }, { categories: [{ path: ['국내도서', '종교/역학', '기독교(개신교)', '신앙생활'] }] }); ok(pub.c === '종교' /* (shopmisc1) 우리숍 이름 */ && pub.c2 === '기독교(개신교)', `클라우드: 분류 경로 배열 → c '${pub.c}' · c2 '${pub.c2}'(전엔 쉼표로 이어 통째로 들어감)`);
+  const pub2 = SH.pubItem('x2', { status: '판매중', price: 5000, title: '시험' }, { categories: [{ path: '국내도서>소설/시/희곡>한국소설' }] }); ok(pub2.c === '소설·시·희곡' && pub2.c2 === '한국소설', '클라우드: > 경로도 같게'); }
 
 /* (shelf4 · 정범님 11/12) 책등엔 이름만 · 글꼴 갈래 · 앞표지 셈(클라우드) · 청구기호 · 낮은 대비 글 상자 */
 { const A = [['지은이 가', '가'], ['글쓴이 갑, 옮긴이 을', '갑, 을'], ['홍길동 (지은이), 김철수 (옮긴이)', '홍길동, 김철수'], ['김가 지음 · 이나 옮김', '김가·이나'], ['지은이 나 외 2명', '나 외 2명'], ['A. Writer', 'A. Writer'], ['엮은이 둘', '둘']];

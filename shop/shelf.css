@@ -392,6 +392,8 @@ body.shelf-mob .foot, body.shelf-mob .gobar { display: none; }
 html.bqs-lock { overflow: hidden; }
 .sp.pulled .sk, .sp.pulled .hb, .sp.pulled .rb, .cvb.pulled .cvf { visibility: hidden; } /* 뽑은 자리는 비어 보임(실제 책장처럼 틈) */
 .sp.pulled { cursor: default; }
+/* (shelfperf1) 뽑은 자리는 마우스 올림 확대·들기·기울임·돌아온 표시를 모두 끔 — 세트 권 크기를 잴 때 확대된 크기로 재지 않게(그 권만 크게 쌓이던 것) · 닫을 때 돌아갈 자리도 같은 크기 */
+.sp.pulled .sk, .cvb.pulled .cvf { transform: none !important; transition: none !important; animation: none !important; }
 .sp.back .sk, .cvb.back .cvf { animation: bqsBack 1.3s ease-in-out 2; } /* 상세에서 돌아온 책 — 금빛으로 두 번 */
 @keyframes bqsBack { 0%, 100% { box-shadow: 0 0 0 0 rgba(241, 212, 136, 0); transform: translateY(0); } 40% { box-shadow: 0 0 0 calc(3px * var(--z)) #f1d488, 0 0 22px 6px rgba(241, 212, 136, .85); transform: translateY(calc(-6px * var(--z))); } }
 .bqs-ob { position: fixed; inset: 0; z-index: 70; display: none; font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; color: #2a2117; }
@@ -656,3 +658,10 @@ html.bqs-lock { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .bqs-sset .ss-v { will-change: auto; } }
 .bqs-sset .ss-stage > .ob-tag { z-index: 200; bottom: 2px; transform: translate(-50%, 0); }
 .bqs-sset .ss-v .vn { font-size: min(calc(var(--w) * .5), 26px); padding: 1px 3px; }
+/* (shopmisc1 · 정범님 11/14) ⬇ 꺼낸 책을 아래로 끌어내려 책장에 꽂기 — 끌 수 있는 무대 · 되돌리기 단추 */
+.bqs-ob .ob-stage, .bqs-ob .pv-stage, .bqs-ob .ss-stage { touch-action: pan-x; cursor: grab; } .bqs[data-ob-drag] .ob-stage, .bqs[data-ob-drag] .pv-stage, .bqs[data-ob-drag] .ss-stage { cursor: grabbing; }
+.bqs-ob .ob-hint::after { content: " · 아래로 끌어내려도 꽂힙니다"; }
+.bqs-undo { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px) + var(--bqs-tabh, 0px)); z-index: 90; transform: translate(-50%, 140%); opacity: 0; transition: transform .25s, opacity .25s; border: 0; border-radius: 99px; padding: 10px 16px; min-height: 44px; font: 600 14px/1.2 inherit; background: var(--c-text, #1d2b45); color: var(--c-surface, #fff); box-shadow: 0 8px 22px rgba(0,0,0,.35); cursor: pointer; }
+.bqs-undo.on { transform: translate(-50%, 0); opacity: 1; } .bqs-undo small { opacity: .7; margin-left: 4px; font-weight: 400; }
+@media (prefers-reduced-motion: reduce) { .bqs-undo { transition: none; } }
+.bqs-ob .ob-stage img, .bqs-ob .pv-stage img, .bqs-ob .ss-stage img { -webkit-user-drag: none; user-select: none; }

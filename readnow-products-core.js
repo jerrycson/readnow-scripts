@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.19.8'; // (0.19.8 adapt2) marketNoBook 평균·흩어짐을 reduce 대신 for 고리로(알라딘 화면 prototype.js의 reduce 바꿔치기로 NaN) // (0.19.7) 429·503 뒤 30분 동안 요청 간격 최소 2초(설정 floor429Min·floor429Ms · 정범님 11/05) · 로그인은 이 바닥과 상관없음 // (0.19.6) 미등록 상품 새책 같은 책 판단(newBookJudge·newBookPick) // (0.19.5) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf(판매자 사진만) // (10/27) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf (판 번호는 나중에) // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.9'; // (0.19.9 shopmisc1) 📏 상품 단위 unitOf·qtyTxt·qtyMix(책 권 · 세트 · 디스크 장 · 그 밖 개) // (0.19.8 adapt2) marketNoBook 평균·흩어짐을 reduce 대신 for 고리로(알라딘 화면 prototype.js의 reduce 바꿔치기로 NaN) // (0.19.7) 429·503 뒤 30분 동안 요청 간격 최소 2초(설정 floor429Min·floor429Ms · 정범님 11/05) · 로그인은 이 바닥과 상관없음 // (0.19.6) 미등록 상품 새책 같은 책 판단(newBookJudge·newBookPick) // (0.19.5) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf(판매자 사진만) // (10/27) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf (판 번호는 나중에) // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -724,6 +724,20 @@
     if (kinds.has('ean13')) return r('music', '책이 아닌 바코드(음반·DVD 대역), 영상 표시 없음 — 확인 필요');
     return r('book', 'ISBN 없음 — 세트·구판 등 책으로 추정');
   }
+  /* (0.19.9 shopmisc1 · 정범님 11/14 18:13 「책은 '권' · 다른 상품은 '개' 혹은 그 상품의 고유 단위」) 📏 상품 단위 — 한 곳
+   *  책·잡지 '권' · 책 세트(제목으로 알아본 강한 세트) '세트' · 디스크(CD·LP·DVD·블루레이) '장' · 테이프(VHS·카세트)·굿즈·그 밖 '개'
+   *  같은 표가 cloud/shop-cat.js(우리숍 서버)·shop/shop-core.js(손님 화면)에 있음 — 시험 tUNIT1114가 셋이 같은 답인지 봄
+   *  x = 상품 줄(title·mediaType·categories·ids) 또는 제목 글 · 모르면 '권'(예전과 같음) */
+  const UNIT = { book: '권', set: '세트', disc: '장', item: '개' };
+  const RE_TAPE = /^\s*(?:\[[^\]]*\]\s*)*\[(?:VHS|비디오|카세트|cassette|테이프)|\bVHS\b|비디오\s*테이프|카세트\s*테이프|\bcassette\b/i;
+  function unitKind(x) { if (x == null || x === '') return 'book'; if (typeof x === 'string') x = { title: x }; const t = String(x.title || x.titleRaw || x.t || '');
+    const mt = x.mediaType || mediaType(x).type;
+    if (mt === 'video' || mt === 'music') return RE_TAPE.test(t) ? 'item' : 'disc'; if (mt === 'other') return 'item';
+    const s = setInfo(t); return s.set && s.level === 'strong' ? 'set' : 'book'; }
+  const unitOf = (x) => UNIT[unitKind(x)];
+  const qtyTxt = (n, x) => `${(+n || 0).toLocaleString('ko-KR')}${unitOf(x)}`;
+  /* 여러 상품 합 — 단위가 하나면 'N권' · 섞이면 '3권 · 1장 · 1세트'(권 → 세트 → 장 → 개 차례) · L = [[상품, 수]] */
+  function qtyMix(L) { const m = { book: 0, set: 0, disc: 0, item: 0 }; for (const [x, n] of L || []) m[unitKind(x)] += +n || 0; const P = Object.keys(m).filter((k) => m[k]); if (!P.length) return '0권'; return P.map((k) => m[k].toLocaleString('ko-KR') + UNIT[k]).join(' · '); }
 
 
   // ========== 예스24 (2026-10-04 실제 화면 저장본으로 확인한 구조) ==========
@@ -879,7 +893,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA, UNIT, unitKind, unitOf, qtyTxt, qtyMix,
     parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, PP_V, photoKind, isProductPhoto, parseUsedItemProductPhotos, productPhotosOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;

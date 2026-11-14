@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.338의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.339의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.338' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.338', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.339' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.339', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3542,8 +3542,8 @@
       if (busy) { /* (1.89.189 정밀 점검) 같은 매물(수량 2권 이상) 두 권이 한 장바구니 묶음에 담기면 두 번째 '수량 −1'이 '앞서 맡긴 수정 진행 중'으로 반드시 실패해 1권이 판매중으로 남던 것(겹침 판매 위험) → 아직 PC·클라우드가 잡지 않은 우리(c2bAuto) 수량 명령이면 그 명령에 −1을 더함(웹앱 🏷 판매 처리 bhSell이 같은 매물을 qtyAdd −n 하나로 맡기는 것과 같은 꼴) · 남을 권수가 0이면 예전대로 실패(판매중지 여부는 사람이) */
         const d0 = asQty ? (qs.docs || []).find((d) => { const x = d.data() || {}; return x.type === 'prdEdit' && x.status === 'queued' && !x.claim && x.from === 'c2bAuto' && x.ch && typeof x.ch.qty === 'number' && x.qtyAdd < 0; }) : null; const x0 = d0 ? d0.data() : null; const nq = x0 ? x0.ch.qty - 1 : 0;
         if (!d0 || nq < 1) return { fail: '앞서 맡긴 판매상태·수량 수정이 진행 중 — 웹앱 카드의 「판매중지 다시」' };
-        await d0.ref.set({ ch: { qty: nq }, qtyAdd: (+x0.qtyAdd || -1) - 1, trail: FV.arrayUnion({ at: now, m: `같은 매물 한 권 더 담김 → 수량 −1 더(합쳐서 ${Math.abs((+x0.qtyAdd || -1) - 1)}권 · ${x0.ch.qty + 0}→${nq}권)`, pc: PC_NAME }), uploadedAt: TS() }, { merge: true });
-        return { rec: { ...base, prevReason: old ? old.reason || null : null, state: 'qty', cmd: d0.id, beforeQty: x0.ch.qty, afterQty: nq, unit, listingId: l.listingId || null, usedCode: l.usedCode || uc, note: `수량 ${x0.ch.qty}권 → ${nq}권 (앞서 맡긴 수량 명령에 합침 — 판매중지 아님)` } }; }
+        await d0.ref.set({ ch: { qty: nq }, qtyAdd: (+x0.qtyAdd || -1) - 1, trail: FV.arrayUnion({ at: now, m: `같은 매물 하나 더 담김 → 수량 −1 더(합쳐서 ${Math.abs((+x0.qtyAdd || -1) - 1)}${((globalThis.ReadnowProducts || window.ReadnowProducts || {}).unitOf || (() => '권'))(l)} · ${x0.ch.qty + 0}→${nq}${((globalThis.ReadnowProducts || window.ReadnowProducts || {}).unitOf || (() => '권'))(l)})`, pc: PC_NAME }), uploadedAt: TS() }, { merge: true });
+        return { rec: { ...base, prevReason: old ? old.reason || null : null, state: 'qty', cmd: d0.id, beforeQty: x0.ch.qty, afterQty: nq, unit, listingId: l.listingId || null, usedCode: l.usedCode || uc, note: `수량 ${x0.ch.qty}${((globalThis.ReadnowProducts || window.ReadnowProducts || {}).unitOf || (() => '권'))(l)} → ${nq}${((globalThis.ReadnowProducts || window.ReadnowProducts || {}).unitOf || (() => '권'))(l)} (앞서 맡긴 수량 명령에 합침 — 판매중지 아님)` } }; }
       const r = C('shp_cmds').doc(); const before = asQty ? { qty: q } : { state: l.status || null };
       await r.set({ type: 'prdEdit', status: 'queued', claim: null, listingKey: l.id, listingId: String(l.listingId || ''), usedCode: l.usedCode || uc, title: String(l.title || it.title || '').slice(0, 100), ch, before, f: { [fk]: { st: 'queued', at: now } }, createdAt: now, by: who, dev: PC_NAME, from: 'c2bAuto', ...(asQty ? { qtyAdd: -1, qtyWeb: q, regItem: null } : {}), ws: null, trail: [{ at: now, m: `PC 수집기가 맡김 · 🏷 알라딘 매입 팔기 장바구니 담김 → ${asQty ? '수량 −1' : '판매중지'}`, pc: PC_NAME }], uploadedAt: TS() }); cmd = r.id; }
     if (!asQty) { const h = { at: now, by: who, from: old ? old.reason || null : null, to: 'elsewhere', note: C2B_STOP_NOTE };

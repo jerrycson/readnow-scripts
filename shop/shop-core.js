@@ -9,9 +9,37 @@
   const offPct = (p, lp) => (lp > 0 && p > 0 && p < lp ? Math.round((1 - p / lp) * 100) : 0);
   /* 장바구니 = [{ id, t, g, p, im }] · 한 권 상품이라 같은 책은 한 번만 */
   /* (11/13 shopux1) 같은 책 여러 권 — mul = 같은 책 최대 권 수(설정 · 없으면 예전처럼 한 권) · 줄의 n = 권 수(2 넘을 때만 · q = 재고 수량) · max는 권 수 합 */
+  /* (shopmisc1 · 정범님 11/14) 📏 상품 단위 — 책·잡지 '권' · 세트 '세트' · CD·LP·DVD·블루레이 '장' · VHS·카세트·그 밖 '개'
+   *  cloud/shop-cat.js unitKind·readnow-products-core.js UNIT과 같은 표(시험 tUNIT1114) · x.cp 첫 칸(종류)과 제목으로 · 장바구니 줄은 담을 때 u를 적어 둠(없으면 '권' — 예전 줄) */
+  const UNIT = { book: '권', set: '세트', disc: '장', item: '개' };
+  const RE_TAPE = /^\s*(?:\[[^\]]*\]\s*)*\[(?:VHS|비디오|카세트|cassette|테이프)|\bVHS\b|비디오\s*테이프|카세트\s*테이프|\bcassette\b/i;
+  function unitKind(x) { if (!x) return 'book'; if (x.u) return Object.keys(UNIT).find((k) => UNIT[k] === x.u) || 'book'; const k = String(x.cp || x.cpk || '').split('>')[0]; const t = String(x.t || '');
+    if (k === '세트') return 'set'; if (k === '국내도서' || k === '외국도서' || k === '잡지') return 'book'; if (k === '음반' || k === 'LP' || k === 'DVD' || k === '블루레이') return RE_TAPE.test(t) ? 'item' : 'disc'; return k ? 'item' : 'book'; }
+  const unitOf = (x) => UNIT[unitKind(x)];
+  /* 여러 줄 합 — 한 단위면 'N권' · 섞이면 '3권 · 1장'(권 → 세트 → 장 → 개) */
+  const unitsTxt = (c) => { const m = { book: 0, set: 0, disc: 0, item: 0 }; for (const x of c || []) if (x) m[unitKind(x)] += x.n > 1 ? x.n : 1; const P = Object.keys(m).filter((k) => m[k]); return P.length ? P.map((k) => m[k].toLocaleString('ko-KR') + UNIT[k]).join(' · ') : '0권'; };
+  /* 종류 이름(분류 화면 'N권')의 단위 */
+  const kindUnit = (k) => unitOf({ cp: String(k || '') });
+  /* ══ (shopmisc1 · 정범님 11/14 18:13) 💿 CD·DVD·블루레이 보이기 — 「디스크만큼 앞뒤 표지가 중요 · 앞뒤 표지와 디스크를 함께 · LP와 확연히 다르게」
+   *  꼴: 뒤표지(왼쪽, 안쪽으로 비스듬히) | 앞표지(오른쪽, 맨 앞) — 펼친 소책자처럼 두 면을 함께 세움 · 그 사이 케이스 속에서 디스크가 위로 반쯤 솟아오름(라벨 = 앞표지 그림)
+   *  LP는 그대로(정사각 재킷 하나 + 판이 옆으로 미끄러져 나옴) — CD·영상은 '두 면 + 위로 솟는 디스크'라 한눈에 다름
+   *  케이스 결: CD 투명 주얼 케이스(가로가 조금 긺 142×125) · DVD 검은 킵 케이스(135×190) · 블루레이 파란 케이스 + 머리 띠(135×171)
+   *  누름: 앞표지·뒤표지·디스크 단추 = 그 면을 앞으로 크게(손님이 뒤표지 곡 목록·바코드를 읽을 수 있게) · 뒤표지 그림이 없으면 바탕 그림 + '뒤표지 사진 없음'(지어내지 않음)
+   *  참고(SHOPCAT_1114.md): Discogs 상품 사진 차례(앞·뒤·디스크·속지) · 타워레코드·HMV 재킷 사진 + 뒤 사진 · 아마존 표지 + '뒷면' 사진 · 예스24·알라딘 음반은 앞표지 하나가 대부분 */
+  const DKN = { cd: 'CD', dvd: 'DVD', bd: '블루레이' };
+  function discKind(x) { if (!x) return null; const k = String(x.cp || x.cpk || '').split('>')[0]; const t = String(x.t || ''); const tag = (/^\s*[\[(【]\s*(블루레이|blu-?ray|BD|4K|UHD|DVD|CD|LP|VHS|비디오)/i.exec(t) || [])[1] || '';
+    if (/^(VHS|비디오)$/i.test(tag) || (k === 'DVD' && /\bVHS\b|비디오\s*테이프/i.test(t))) return null; if (k === 'LP' || /^LP$/i.test(tag) || ((k === '음반' || /^CD$/i.test(tag)) && /\bLP\b|바이닐|vinyl/i.test(t))) return null;
+    if (k === '블루레이' || /^(블루레이|blu-?ray|BD|4K|UHD)$/i.test(tag)) return 'bd'; if (k === 'DVD' || /^DVD$/i.test(tag)) return 'dvd'; if (k === '음반' || /^CD$/i.test(tag)) return 'cd'; return null; }
+  function discH(x, o) { o = o || {}; const kd = o.kd || discKind(x); if (!kd || !DKN[kd]) return ''; const t = esc(x.t || ''); const who = esc([x.a, x.pb].filter(Boolean).join(' · '));
+    const fr = x.im ? `<img src="${esc(x.im)}" alt="앞표지" decoding="async"${o.lazy ? ' loading="lazy"' : ''}>` : `<div class="dk-art"><b>${t}</b><small>${esc(x.a || '')}</small></div>`;
+    const bk = x.bk ? `<img src="${esc(x.bk)}" alt="뒤표지" decoding="async"${o.lazy ? ' loading="lazy"' : ''}>` : `<div class="dk-art dk-bkd"><b>${t}</b><small>${who}</small><i class="dk-bc" aria-hidden="true"></i><em>뒤표지 사진 없음</em></div>`;
+    return `<figure class="dk dk-${kd}" data-dk="${kd}" data-on="front"><div class="dk-row"><div class="dk-p dk-back" role="img" aria-label="${t} 뒤표지${x.bk ? '' : '(사진 없음)'}">${bk}</div><div class="dk-disc" aria-hidden="true"><i class="dk-lbl"${x.im ? ` style="background-image:url('${esc(x.im)}')"` : ''}></i></div><div class="dk-p dk-front" role="img" aria-label="${t} 앞표지">${fr}</div></div>`
+      + `<figcaption class="dk-cap"><span class="dk-k">${DKN[kd]}</span><button type="button" class="dk-sw" data-dk-sw="front" aria-pressed="true">앞표지</button><button type="button" class="dk-sw" data-dk-sw="back" aria-pressed="false">뒤표지</button><button type="button" class="dk-sw" data-dk-sw="disc" aria-pressed="false">디스크</button></figcaption></figure>`; }
+  /* 단추 누름(손님 화면·서가 같은 처리 — 문서에 한 번) */
+  function discSw(e) { const b = e.target && e.target.closest && e.target.closest('[data-dk-sw]'); if (!b) return false; const f = b.closest('.dk'); if (!f) return false; e.preventDefault(); e.stopPropagation(); f.dataset.on = b.dataset.dkSw; f.querySelectorAll('[data-dk-sw]').forEach((q) => q.setAttribute('aria-pressed', String(q === b))); return true; }
   const units = (c) => (c || []).reduce((a, x) => a + (x && x.n > 1 ? x.n : 1), 0);
-  const cartAdd = (cart, it, max, mul) => { const c = (cart || []).filter((x) => x && x.id); const ex = c.find((x) => x.id === it.id); if (ex && mul > 1 && +it.q > 1) { const lim = Math.min(+it.q, mul); const n = ex.n > 1 ? ex.n : 1; if (n >= lim) return { cart: c, why: `이 책은 ${lim}권까지 담을 수 있습니다(재고 ${+it.q}권)` }; return { cart: c.map((x) => (x.id === it.id ? { ...x, n: n + 1, q: +it.q } : x)), why: null, n: n + 1 }; }
-    if (ex) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}) }], why: null }; }; /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
+  const cartAdd = (cart, it, max, mul) => { const c = (cart || []).filter((x) => x && x.id); const ex = c.find((x) => x.id === it.id); if (ex && mul > 1 && +it.q > 1) { const lim = Math.min(+it.q, mul); const n = ex.n > 1 ? ex.n : 1; if (n >= lim) { const u = unitOf(it); return { cart: c, why: `이 상품은 ${lim}${u}까지 담을 수 있습니다(재고 ${+it.q}${u})` }; } return { cart: c.map((x) => (x.id === it.id ? { ...x, n: n + 1, q: +it.q } : x)), why: null, n: n + 1 }; }
+    if (ex) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; const u = unitOf(it); return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}), ...(u !== '권' ? { u } : {}) }], why: null }; }; /* (shopmisc1) u = 단위(책이 아닐 때만) */ /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
   /* 같은 책 권 수 바꾸기(장바구니 −·+) — 1이면 n을 뺌(한 권 줄과 같은 꼴) */
   const cartSetN = (cart, id, n, lim) => (cart || []).map((x) => { if (!x || x.id !== id) return x; const k = Math.max(1, Math.min(Math.round(+n) || 1, lim || 9999, +x.q > 1 ? +x.q : 1)); const o = { ...x }; if (k > 1) o.n = k; else delete o.n; return o; });
@@ -59,5 +87,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { units, cartSetN, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { DKN, discKind, discH, discSw, UNIT, unitKind, unitOf, unitsTxt, kindUnit, units, cartSetN, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
