@@ -1,17 +1,17 @@
 {
- "holder": "pcdock3",
- "what": "PC 배치 0.1.3 · 수집기 1.89.334 push",
- "since": "2026-11-14T05:10:54Z",
- "beat": "2026-11-14T05:16:39Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": {
   "who": "friend",
   "why": "판 내기 기다림: 책방 친구 옛 캐릭터 내리기",
   "at": "2026-11-14T05:14:34Z"
  },
  "last": {
-  "who": "note6",
-  "done": "웹앱 1.78.626 📓 노트 조합·넘침 (d16e3ef6)",
-  "at": "2026-11-14T03:54:51Z"
+  "who": "pcdock3",
+  "done": "PC 배치 0.1.3 · 수집기 1.89.334 (2807f9f4)",
+  "at": "2026-11-14T05:16:58Z"
  },
- "host": "vm-pcdock3"
+ "host": null
 }
