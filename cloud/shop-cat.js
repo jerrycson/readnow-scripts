@@ -32,6 +32,7 @@
     [/^건강\/취미$/, '건강·취미'],
     [/^여행$/, '여행'],
     [/^만화$/, '만화'],
+    [/^만화\/라이트노벨$/, '만화'], /* (11/14 실제 우리숍 16,185쪽 훑음 — 2,104권) 알라딘 새 이름 · 예스24·교보 '만화' · 라이트노벨은 아래 칸 그대로 */
     [/^컴퓨터\/모바일$/, '컴퓨터·IT'], /* 교보 '컴퓨터/IT' · 예스24 'IT 모바일' */
     [/^외국어$/, '외국어'],
     [/^수험서\/자격증$/, '수험서·자격증'],
@@ -49,6 +50,8 @@
   /* 국내도서 나머지 칸(알라딘 1단계부터) → 우리 칸 · 모르는 1단계는 그대로(새 분류가 생겨도 빠지지 않게) */
   function mapDomestic(rest) { const R = (rest || []).slice(); if (!R.length) return R; const top = String(R[0] || '').trim();
     for (const [re, nm, sub] of DOM) if (re.test(top)) { const tail = R.slice(1); return sub ? [nm, sub, ...tail.filter((x, i) => !(i === 0 && x === sub))] : [nm, ...tail]; }
+    /* (11/14) 알라딘 기획 분류 '청소년_추천도서' 꼴 — 밑줄 앞 이름이 우리 이름이거나 바꿈표에 있으면 그 아래 칸(밑줄 뒤)으로 */
+    { const m = /^([^_]+)_(.+)$/.exec(top); if (m) { const base = m[1].trim(); const hit = OURS.includes(base) || DOM.some(([re]) => re.test(base)); if (hit) { const B = mapDomestic([base]); return [...B, m[2].replace(/_/g, ' ').trim(), ...R.slice(1)]; } } }
     return R; }
   /* ── 세트 — readnow-products-core.js setInfo의 '강한 신호'와 같음(약한 신호 '세트' 낱말만·전집 낱말만은 세트로 보지 않음) + 영문 세트 꼴(shelf-core setOf와 같은 꼴) */
   function setStrong(title) { const t0 = String(title || '').replace(/^\[중고[^\]]*\]\s*/, ''); const t = t0.split(/\s\/\s?|\/\s/)[0]; const L = t.length;
