@@ -9,6 +9,26 @@
   const THEMES = { classic: ['남색·금색(북스퀸 기본)', '#1d2b45', '#c9a24a'], forest: ['짙은 초록·놋쇠', '#1f3d2f', '#c7a457'], wine: ['포도주·금색', '#4a1d2b', '#d4af6a'], ink: ['먹색·주황', '#1c1c1e', '#e0782d'],
     ocean: ['깊은 바다·살구', '#0f3b4f', '#f0b65a'], plum: ['자주·금색', '#3b2245', '#d9b26a'], brick: ['벽돌·크림', '#7a2e1f', '#e8c48a'], slate: ['잿빛 남색·하늘', '#2b3442', '#7fb3d5'] };
   const ROWS = { kinds: '종류(국내도서·외국도서·잡지·음반…)', new: '새로 들어온 책', rare: '희귀본', pick: '가게 추천', sale: '할인 중인 책', cheap: '5천 원 아래 책', cats: '분야 바로 가기', seen: '최근 본 책', reviews: '새로 올라온 리뷰', trust: '믿고 사는 까닭(실물 사진·등급·한 권뿐)' };
+  /* ══ (shopfont1 · 정범님 11/14 14:36 「손님이 직접 쓰거나 우리가 쓰는 글·홍보글·소개글, 출판사 소개글, 사람이 말하는 입장인 글(리뷰·평가글)은 고운돋움 기본 · 모든 글꼴을 분류해 설정에서 바꾸게」)
+   *  🔤 글꼴 쓰임(역할) 다섯 — ① 사람 목소리 글 ② 본문·설명 ③ 제목·상호 ④ 숫자·값 ⑤ 단추·메뉴 (서가 책등 글꼴은 📚 서가 책장 설정 몫 · 그대로)
+   *   · 판: v1(11/14 새 판 — ①만 고운돋움) · v0(옛 판 — 모두 기기 기본 · 11/14 전 모양 그대로 · 약속 79)
+   *   · 받기: 기기 기본이 아닌 글꼴만, 그 역할의 글이 화면에 있을 때만(shop.js fontNeed) · Google Fonts css2 · display=swap(못 받아도 기기 글꼴로 바로 보임) · 필요한 굵기만
+   *   · 글꼴은 모두 무료(SIL OFL 1.1 — 고운돋움·IBM Plex Sans KR·Noto Sans/Serif KR·나눔명조·나눔손글씨 펜·개구·고운바탕 · Pretendard도 OFL) */
+  const PRET = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css';
+  /* id → [고르기 글, CSS 글꼴 이름, 있는 굵기, 갈래(sans·serif·hand), (따로 받는 주소)] */
+  const FONTS = { sys: ['기기 기본 글꼴(받지 않음 · 가장 가벼움)', '', [], 'sans'], gowun: ['고운돋움 Gowun Dodum', 'Gowun Dodum', [400], 'sans'], plex: ['IBM Plex Sans KR', 'IBM Plex Sans KR', [400, 500, 600, 700], 'sans'],
+    noto: ['본고딕 Noto Sans KR', 'Noto Sans KR', [400, 500, 700], 'sans'], pretendard: ['프리텐다드 Pretendard', 'Pretendard', [400, 600, 700], 'sans', PRET], notoserif: ['본명조 Noto Serif KR', 'Noto Serif KR', [400, 700], 'serif'],
+    nanummj: ['나눔명조 Nanum Myeongjo', 'Nanum Myeongjo', [400, 700], 'serif'], gowunbt: ['고운바탕 Gowun Batang', 'Gowun Batang', [400, 700], 'serif'], nanumpen: ['나눔손글씨 펜 Nanum Pen Script', 'Nanum Pen Script', [400], 'hand'], gaegu: ['개구 Gaegu', 'Gaegu', [400, 700], 'hand'] };
+  /* 역할 — [열쇠, 이름, 무엇에 쓰임, 쓰는 굵기] */
+  const ROLES = [['voice', '① 사람 목소리 글', '손님 리뷰·한 줄 평·밑줄 친 문장·가게 답글 · 우리 소개·홍보 글(첫 화면 큰 띠·배너) · 책소개·책 속으로·출판사 서평·저자/옮긴이/출판사 소개·추천평 · 손님 자기소개·북리스트 설명', [400, 700]],
+    ['body', '② 본문·설명', '화면 전체 바탕 글 · 안내·풀이·표 · 목차', [400, 700]], ['head', '③ 제목·상호', '화면·칸 제목 · 책 제목 · 글자 로고(북스퀸)', [700]],
+    ['num', '④ 숫자·값', '값·할인·합계·입금액(자릿수 맞춤은 그대로)', [400, 700]], ['ui', '⑤ 단추·메뉴', '단추·고르기 칸·둘러보기 줄·위 메뉴·아래 탭', [400, 600]]];
+  const SETS = { v1: { voice: 'gowun', body: 'sys', head: 'sys', num: 'sys', ui: 'sys' }, v0: { voice: 'sys', body: 'sys', head: 'sys', num: 'sys', ui: 'sys' } };
+  /* 역할마다 손님 화면 자리(선택자) — 하나뿐인 원본(손님 화면이 쓰는 CSS도 여기서 만듦) · .bqv = 화면 코드가 직접 붙이는 사람 목소리 표 */
+  const ROLE_Q = { voice: '.bqv, .hero h1, .hero > div > p, .bkinfo .bki:not(.toc) .bkt, .bqa-rv .s100, .bqa-rv .tx, .bqa-reply p, .bqa-q > p, .bqa-nr p, .bqa-bl p, .bqa-me .who h1 + .hint, .bqt-bn',
+    voiceIn: '#bqaQt, #bqaS1, #bqaBd, #nbd, #bqtTx, #p_bio', body: 'body', head: 'h1, h2, h3, .logo .lt', num: '.num, .price b, .pr b, .sum b, .bank .amt', ui: 'button, .btn, .chip, select, .nav a, .cbar a, #tabbar a' };
+  const FOPTS = { auto: '판 기본값', ...Object.fromEntries(Object.entries(FONTS).map(([k, v]) => [k, v[0]])) };
+  const FK = { voice: 'fVoice', body: 'fBody', head: 'fHead', num: 'fNum', ui: 'fUi' };
   const SCHEMA = [
     { k: 'headStyle', group: '머리띠·로고', label: '머리띠 모양', type: 'select', def: 'light', opts: { light: '흰 머리띠(교보·29CM·쿠팡처럼 · 로고는 밝은 바탕용)', brand: '색 머리띠(바탕색 · 로고는 어두운 바탕용)' } },
     { k: 'logoH', group: '머리띠·로고', label: '로고 높이(px · 넓은 화면)', type: 'number', def: 32, min: 22, max: 48, help: '휴대폰은 이 값의 85%' },
@@ -35,6 +55,9 @@
     { k: 'shipNote', group: '책 한 권 화면', label: '배송 안내 한 줄', type: 'text', def: '입금이 확인되면 1~3일(영업일) 안에 보냅니다', max: 80 },
     { k: 'gradeTable', group: '책 한 권 화면', label: '등급 기준표(최상·상·중·하 풀이) 보이기', type: 'check', def: true },
     { k: 'shareOn', group: '책 한 권 화면', label: '공유 단추(휴대폰 공유 창 · 안 되면 주소 복사)', type: 'check', def: true },
+    { k: 'fontSet', group: '글꼴', label: '글꼴 판', type: 'select', def: 'v1', opts: { v1: '새 판 v1(11/14) — ①만 고운돋움', v0: '옛 판 v0 — 11/14 전 그대로' }, help: 'v1 = ① 사람 목소리 글은 고운돋움 · 나머지는 기기 기본 / v0 = 모든 글을 기기 기본 글꼴로 · 아래 칸이 「판 기본값」이면 이 판을 따름(정범님 11/14 14:36)' },
+    ...ROLES.map(([r, nm, what]) => ({ k: FK[r], group: '글꼴', label: `${nm} — ${what}`, type: 'select', def: 'auto', opts: FOPTS })),
+    { k: 'fVoiceIn', group: '글꼴', label: '손님이 쓰는 칸(리뷰 쓰기·한 줄 평·밑줄 문장·문의·자기소개·북리스트 설명)에도 ① 사람 목소리 글꼴', type: 'check', def: true },
   ];
   const DEF = Object.fromEntries(SCHEMA.map((p) => [p.k, p.def]));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -67,12 +90,24 @@
   /* :root에 얹을 CSS 변수 글(손님 화면이 <style id="bqLook">로 넣음) */
   function cssText(c) { c = cfgOf(c); const K = colors(c); const R = RAD[c.corner] || RAD.soft;
     return `:root{--c-brand:${K.brand};--c-brand-ink:${K.brandInk};--c-accent:${K.accent};--c-accent-ink:${K.accentInk};--c-accent-text:${K.accentText};--c-brand-text:${K.brandText};--c-brand-soft:${K.brandSoft};--c-accent-soft:${K.accentSoft};--r-sm:${R[0]}px;--r-md:${R[1]}px;--r-lg:${R[2]}px;--logo-h:${c.logoH}px;--mob-cols:${c.mobCols}}`
-      + `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c-brand-text:${K.brandDark};--c-brand-soft:${mix(K.brand, '#14161b', 0.7)};--c-accent-soft:${mix(K.accent, '#14161b', 0.78)}}}:root[data-theme="dark"]{--c-brand-text:${K.brandDark};--c-brand-soft:${mix(K.brand, '#14161b', 0.7)};--c-accent-soft:${mix(K.accent, '#14161b', 0.78)}}`; }
+      + `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c-brand-text:${K.brandDark};--c-brand-soft:${mix(K.brand, '#14161b', 0.7)};--c-accent-soft:${mix(K.accent, '#14161b', 0.78)}}}:root[data-theme="dark"]{--c-brand-text:${K.brandDark};--c-brand-soft:${mix(K.brand, '#14161b', 0.7)};--c-accent-soft:${mix(K.accent, '#14161b', 0.78)}}` + fontCss(c); }
+  /* 🔤 고른 설정 → 역할마다 글꼴 id · CSS 글꼴 줄(받지 못하면 기기 글꼴) · 받을 주소(기기 기본이 아닌 것만 · 굵기는 그 글꼴이 쓰이는 역할 몫만) · CSS 규칙(기기 기본인 역할은 규칙 0 = 옛 모양 그대로) */
+  function fontOf(c) { c = c && c.fontSet ? c : cfgOf(c); const S0 = SETS[c.fontSet] || SETS.v1; const o = {}; for (const [r] of ROLES) { const v = c[FK[r]]; o[r] = v && v !== 'auto' && FONTS[v] ? v : S0[r]; } return o; }
+  const GEN = { sans: '', serif: '"Noto Serif KR", "Apple Myungjo", "AppleMyungjo", Batang, serif', hand: '' };
+  const stackOf = (id) => { const F = FONTS[id]; if (!F || !F[1]) return 'var(--font)'; const g = (GEN[F[3]] || '').split(', ').filter((x) => x && x !== `"${F[1]}"`).join(', '); return `"${F[1]}", ${g ? g + ', ' : ''}var(--font)`; };
+  function fontUrls(c) { const R = fontOf(c); const by = {}; for (const [r, , , w] of ROLES) { const id = R[r]; if (id === 'sys' || !FONTS[id]) continue; (by[id] = by[id] || { id, roles: [], w: new Set() }).roles.push(r); w.forEach((x) => by[id].w.add(x)); }
+    return Object.values(by).map((x) => { const F = FONTS[x.id]; if (F[4]) return { id: x.id, roles: x.roles, url: F[4] }; const W = [...new Set([...x.w].map((v) => F[2].reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) || (Math.abs(b - v) === Math.abs(a - v) && b > a) ? b : a))))].sort((a, b) => a - b); /* 없는 굵기는 가장 가까운 굵기로(같으면 굵은 쪽) */
+      return { id: x.id, roles: x.roles, url: 'https://fonts.googleapis.com/css2?family=' + F[1].replace(/ /g, '+') + (W.length === 1 && W[0] === 400 ? '' : ':wght@' + W.join(';')) + '&display=swap' }; }); }
+  const pre = (q) => q.split(',').map((x) => 'html ' + x.trim()).join(',');
+  function fontCss(c) { c = cfgOf(c); const R = fontOf(c); let v = ''; let css = ''; for (const [r] of ROLES) v += `--f-${r}:${stackOf(R[r])};`;
+    for (const r of ['body', 'ui', 'head', 'num', 'voice']) if (R[r] !== 'sys') css += `${pre(ROLE_Q[r])}{font-family:var(--f-${r})}`;
+    if (R.voice !== 'sys' && c.fVoiceIn) css += `${pre(ROLE_Q.voiceIn)}{font-family:var(--f-voice)}`;
+    return `:root{${v}}${css}`; }
   /* 머리띠 위 안내 한 줄 — 설정 글 · 비면 무료 배송 기준(가게 설정)으로 · '-'면 없음 */
   function topBarText(c, shop) { c = cfgOf(c); const t = String(c.topBar || '').trim(); if (t === '-') return ''; if (t) return t; const fo = shop && +shop.freeOver; return fo > 0 ? fo.toLocaleString('ko-KR') + '원 넘게 담으면 무료 배송' : ''; }
   /* 관리 화면 미리 보기 주소 꼬리(저장 없이 손님 화면에서 보기) — #/?look=<base64url JSON> */
   const previewArg = (c) => { const s = JSON.stringify(cfgDiff(c)); try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const previewCfg = (a) => { try { const b = String(a || '').replace(/-/g, '+').replace(/_/g, '/'); const s = typeof atob === 'function' ? decodeURIComponent(escape(atob(b))) : Buffer.from(b, 'base64').toString('utf8'); const o = JSON.parse(s); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
-  const API = { VER: '0.1.2', THEMES, ROWS, SCHEMA, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
+  const API = { VER: '0.1.3', THEMES, ROWS, SCHEMA, FONTS, ROLES, SETS, ROLE_Q, FK, fontOf, fontUrls, fontCss, stackOf, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
   if (typeof module === 'object' && module.exports) module.exports = API; else root.BQL = API;
 })(typeof window !== 'undefined' ? window : this);

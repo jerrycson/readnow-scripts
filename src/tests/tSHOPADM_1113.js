@@ -80,7 +80,7 @@ console.log('③ 웹앱 백오피스 화면 파일');
   ok(BO.custFilter(L, '', 'real', 'last').map((u) => u.uid).join() === 'a' && BO.custFilter(L, '', 'test', 'last').map((u) => u.uid).join() === 'b' && BO.custFilter(L, '단골', 'all', 'last').length === 1 && BO.custFilter(L, '', 'all', 'join')[0].uid === 'b' && BO.custFilter(L, '', 't:구매 전', 'last')[0].uid === 'b', '손님 거르기: 진짜·🧪 시험·태그 찾기·가입 차례·등급');
   const E = BO.evDays([{ t: '2026-11-13T03:00:00Z', k: 'v', a: 'F1' }, { t: '2026-11-13T02:59:00Z', k: 'v', a: 'F1' }, { t: '2026-11-12T01:00:00Z', k: 'ord', a: 'BQ1' }]); ok(E.length === 2 && E[0].L.length === 1 && E[0].L[0].n === 2 && E[0].L[0].hm === '12:00', '시간줄: 날짜 묶음(한국 시각) · 같은 상품 연달아 본 것 한 줄(×2)');
   ok(BO.TABS.length === 7 && /^\d+\.\d+\.\d+$/.test(BO.VERSION), '칸 7개 · 판 ' + BO.VERSION);
-  const ah = fs.readFileSync(path.join(ROOT, 'src/app.html'), 'utf8'); ok(/function openShopBo\(/.test(ah) && /id="bq_bo"/.test(ah) && /\['shopBo', '📊 우리숍 백오피스'/.test(ah) && /readnow-shopadm\.js\?v=0\.1\.1/.test(ah) && /📊 백오피스\(11\/13\)/.test(ah), '웹앱: 🛍 우리숍 주문 › 📊 백오피스 단추 · 화면 목록 · 🔍 기능 찾기 · 설명서'); }
+  const ah = fs.readFileSync(path.join(ROOT, 'src/app.html'), 'utf8'); ok(/function openShopBo\(/.test(ah) && /id="bq_bo"/.test(ah) && /\['shopBo', '📊 우리숍 백오피스'/.test(ah) && /readnow-shopadm\.js\?v=0\.1\.([1-9]|\d\d)\b/.test(ah) /* (shopfont1) 0.1.1 이후 */ && /📊 백오피스\(11\/13\)/.test(ah), '웹앱: 🛍 우리숍 주문 › 📊 백오피스 단추 · 화면 목록 · 🔍 기능 찾기 · 설명서'); }
 if (!process.env.RN_SHOPADM_UI) { console.log(bad ? `❌ tSHOPADM_1113 ${bad}개 실패` : '✓ tSHOPADM_1113 순수 셈·창구 통과 (화면 시험은 RN_SHOPADM_UI=1)'); process.exit(bad ? 1 : 0); }
 console.log('④ 화면');
 const SHOT = process.env.RN_SHOT || path.join(os.tmpdir(), 'shopadm1'); fs.mkdirSync(SHOT, { recursive: true }); const { chromium } = require('playwright');
