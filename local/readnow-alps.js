@@ -274,6 +274,11 @@ function boxesOf(rows) { const G = new Map(); const of = new Map(); for (const r
 const boxCount = (hits) => { const B = boxesOf(hits.map((h) => h.row)); return B.groups.length; };
 const orderCount = (rows) => new Set(rows.map((r) => r.ono || r.name)).size;
 const rcvCount = (rows) => new Set(rows.map((r) => r.rk || r.name)).size; /* 받는 사람(이름·전화·주소 — 웹앱이 rk로 보냄) — ALPS 합포장 기준 01과 같음 */
+/* (0.5.8 shipfix1) 세부 진행 줄을 처리 기록에 올릴 때 — 까닭에 가까운 줄만 · 받는 분 이름(이 일의 줄에 있는 이름)·전화 번호는 '손님'·'전화'로 가림 */
+const LOG_KEEP = /브라우저 창|미리보기|출력|인쇄|인쇄 프로그램|ALPS 안내|ALPS 알림|프린터|OZ|크롬|화면을 못 찾음|화면 스크립트 오류|세션|로그인|✗/;
+function logTailSafe(L, jobRows, n) { const names = [...new Set((jobRows || []).flatMap((r) => [r && r.name, r && r.acperNm]).map((x) => String(x || '').trim()).filter((x) => x.length >= 2))].sort((a, b) => b.length - a.length);
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); const re = names.length ? new RegExp(names.map(esc).join('|'), 'g') : null;
+  return (L || []).map((x) => String((x && x.d) || '')).filter((d) => LOG_KEEP.test(d)).slice(-(n || 12)).map((d) => { let t = re ? d.replace(re, '손님') : d; t = t.replace(/01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/g, '전화'); return t.slice(0, 300); }); }
 function histAdd(R) { try { const L = rdJ(F.hist, []); const sm = R.summary || {}; L.unshift({ id: R.id, at: R.at, end: kst(), file: R.fileName, status: R.status, error: R.error || null, resume: !!R.resume, rows: sm.rows || null, orders: sm.orders || null, boxes: sm.boxes || null, upload: sm.upload ? { ok: sm.upload.ok, bad: sm.upload.bad } : sm.uploadSkip || null, printed: sm.printed || 0, waybills: sm.waybills || 0, notFound: sm.notFound || 0, step: (R.steps.find((x) => x.st === 'err') || {}).l || null, secs: Math.round((Date.now() - (R.t0 || Date.now())) / 1000) }); wrJ(F.hist, L.slice(0, 300)); } catch (e) {} }
 const history = () => rdJ(F.hist, []);
 /* (0.3.9) 오늘 인쇄 기록 — 시각별 묶음(같은 at = 한 번 인쇄) · 사람이 '안 나왔음'으로 되돌리면 printed를 지우지 않고 unprinted로 옮기고 decide 'print'(다음 실행에 다시 인쇄) */
@@ -458,7 +463,7 @@ async function runJob(job) { DAY_PIN = (RUN && RUN.day) || ymdNow(); const c = {
     if (empty.length) throw new Error(`운송장번호가 빈 줄 ${empty.length}개 — ALPS 목록에서 확인해 주세요`); stepSet('verify', 'ok', 100, `이번 주문 ${P.hit.length}줄 모두 운송장번호 있음${P.miss.length ? ` · ALPS에서 못 찾은 줄 ${P.miss.length}` : ''}`);
     /* ⑥ 넘김 — 오늘 목록 전체(운송장 있는 줄) — 웹앱 matchInvoices가 이번 주문과 맞춤('ALPS에만 있음'은 따로 보임) */
     RUN.result = { aoa: toAoa(rows), at: kst() }; RUN.summary.waybills = RUN.result.aoa.length - 1; stepSet('send', 'ok', 100, `운송장 ${RUN.summary.waybills}줄 준비됨`); RUN.status = 'done'; if (RUN.jobId) jobDone(RUN.jobId); histAdd(RUN); log(`끝: 접수 ${(RUN.summary.upload || {}).ok ?? '건너뜀'} · 인쇄 ${RUN.summary.printed || 0} · 운송장 ${RUN.summary.waybills}`);
-  } catch (e) { RUN.status = 'error'; RUN.error = e.message; const s = RUN.steps.find((x) => x.st === 'run' || x.st === 'wait'); if (s) s.st = 'err'; log('✗ ' + e.message); histAdd(RUN); }
+  } catch (e) { RUN.status = 'error'; RUN.error = e.message; const s = RUN.steps.find((x) => x.st === 'run' || x.st === 'wait'); if (s) s.st = 'err'; log('✗ ' + e.message); try { const tail = logTailSafe(RUN.log, job.rows); if (tail.length) (RUN.summary.diag = RUN.summary.diag || []).push(...tail.map((x) => '세부: ' + x)); } catch (e2) {} histAdd(RUN); } /* (0.5.8) 멈춘 까닭에 가까운 세부 진행 줄(브라우저 창·미리보기·출력·프린터…) 12줄까지 — 받는 분 이름·전화는 가림 → 웹앱이 처리 기록(alps_hist diag)에 올림 */
   finally { RUN.need = null; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} await B.close(); BROWSER = null; DAY_PIN = null; } }
 
 /* ── (0.2.0) 서명 열쇠: Ed25519 · 개인 열쇠는 DPAPI로 잠가 key.dat에만 · 공개 열쇠는 웹앱이 Firestore(app_settings/alps_helpers)에 올림 ── */
@@ -533,4 +538,4 @@ function resume(o) { const L = rdJ(F.lastJob, null); if (!L) throw new Error('�
 function result(id) { return RUN && RUN.id === id && RUN.result ? RUN.result : null; }
 function reset() { if (RUN && !['done', 'error'].includes(RUN.status)) return false; RUN = null; return true; }
 
-module.exports = { VERSION, printerCheck, pageHtml, cfg, setCfg, saveCred, credInfo, start, resume, history, journalToday, unprint, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { prnJudge, dayPin: (d) => { DAY_PIN = d || null; }, ymdK, PGx: () => PG, jobsLoad, jobNew, jobOpen, jobDone, jobsDoneOnos, REM, cloudCall, boxCount, boxesOf, orderCount, jLoad, jSave, rowKey, alpsFlag, histAdd, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };
+module.exports = { VERSION, printerCheck, pageHtml, cfg, setCfg, saveCred, credInfo, start, resume, history, journalToday, unprint, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { prnJudge, logTailSafe, dayPin: (d) => { DAY_PIN = d || null; }, ymdK, PGx: () => PG, jobsLoad, jobNew, jobOpen, jobDone, jobsDoneOnos, REM, cloudCall, boxCount, boxesOf, orderCount, jLoad, jSave, rowKey, alpsFlag, histAdd, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };

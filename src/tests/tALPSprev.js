@@ -40,6 +40,8 @@ const diagOf = (R) => ((R.s.summary || {}).diag || []).join(' | ');
   R = await run('③ ALPS 알림만 — 창 없음', { popMode: 'alert', wait: 60 });
   ok(R.s.status === 'error' && /ALPS 알림이 출력을 막음: '시험: 출력할 수 없습니다/.test(R.s.error || ''), '오류 글에 알림 원문 ' + (R.s.error || '').slice(0, 120));
   ok(R.secs < 45, `알림 뒤 오래 안 기다림(60초 상한 중 ${Math.round(R.secs)}초에 멈춤)`); ok(R.st.prints.length === 0, '인쇄 0'); ok(/미리보기 못 엶\(alert\)/.test(diagOf(R)), '기록(diag)에 alert ' + diagOf(R).slice(0, 160));
+  ok(/세부: 브라우저 창\(alert\) — 확인: 시험: 출력할 수 없습니다/.test(diagOf(R)) && /세부: ✗ 출력 미리보기 창/.test(diagOf(R)), "기록(diag)에 세부 진행 줄(브라우저 창 줄 · 멈춘 줄)");
+  ok(!/손님[ABC]/.test(diagOf(R)) && /손님/.test(diagOf(R)) === /세부: [^|]*손님/.test(diagOf(R)), '세부 줄에 받는 분 이름 없음(가림)');
   ok(R.st.uploads.length === 1, '접수 1번');
   R = await run('③-이어서 — 보통으로 돌아온 ALPS에서 이어서 진행', {}, true);
   ok(R.s.status === 'done', '끝남 ' + (R.s.error || '')); ok(R.st.uploads.length === 1, '이어서 진행은 접수를 건너뜀(접수 그대로 1번)'); ok(R.st.prints.length === 1, '인쇄 1번');
