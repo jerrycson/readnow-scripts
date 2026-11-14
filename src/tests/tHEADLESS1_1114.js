@@ -69,6 +69,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   T += 61e3; y = await Y.step('HOME', gather()); ok(y.jobs.length === 1 && y.jobs[0].id === 'y24aLOST1' && y.jobs[0].again && /올리는 중/.test(y.why), '⑥ 장부엔 있는데 번외가 모르는 묶음 → 같은 이름으로 다시 넘김(새 묶음은 안 냄)', y);
   /* ⑤-2 번외가 거절 → 실패로 */
   y = await Y.step('HOME', { ...gather(), rej: [{ id: 'y24aLOST1', err: '엑셀 파일이 없거나 너무 큼', rows: ['aladin_A1'] }] }); ok(led().r.aladin_A1.st === 'autofail' && (y.rejAck || []).includes('y24aLOST1'), '⑤ 번외가 맡김을 거절하면 장부에 실패로(되풀이 거절은 빼고)', { e: led().r.aladin_A1, y });
+  await new Promise((r) => setTimeout(r, 50)); const as = (led().autoSt || {}).CLOUD_HOME; ok(as && as.ver === 'cloud' && as.why && as.login === 'ok', '⑧ 클라우드 까닭 한 줄을 진단 칸(autoSt.CLOUD_HOME)에 적음 — 값·손님 정보 없음', as);
   /* ⑦ 홀로 연결 창구 안 */
   const { makeSolo } = require(path.join(TOP, 'cloud/col2solo.js')); const crypto = require('crypto'); const kp = crypto.generateKeyPairSync('ed25519'); const pub = kp.publicKey.export({ type: 'spki', format: 'pem' });
   put('app_settings', 'col2_solo', { pcs: { HOME: { pub }, 'LOGGER-1': { pub, kind: 'logger' } } }); let called = 0; const SO = makeSolo({ db: F.db, C: F.C, FV: F.FV, log: () => {}, mods: async () => ({}), now: () => Date.now(), y24: { step: async (pc) => { called++; return { v: 1, why: 'ok ' + pc, ack: [], jobs: [] }; } } });

@@ -300,20 +300,32 @@
     /* ── 글꼴: 그 책장에 쓰인 글자만 받아 별칭(bqf-글꼴-책장)으로 */
     function fontsFor(cEl) { if (!C.fontsOn || !cEl || !root.fetch) return; const ck = st.sort + cEl.dataset.i; const by = new Map();
       cEl.querySelectorAll('.sp:not(.ok)').forEach((b) => { const x = byId.get(b.dataset.id); if (!x) return; const f = lookOf(x).f; by.set(f, (by.get(f) || '') + x.t + (x.a || '')); });
-      const jobs = [...by].map(([f, txt]) => () => { const al = `bqf-${f}-${ck}`; if (FONT_CSS.has(al)) { const s = FONT_CSS.get(al); FONT_CSS.delete(al); FONT_CSS.set(al, s); return Promise.resolve(); }
+      const jobs = [...by].map(([f, txt]) => () => { const al = `bqf-${f}-${ck}`; if (FONT_CSS.has(al)) { const s = FONT_CSS.get(al); FONT_CSS.delete(al); FONT_CSS.set(al, s); return Promise.resolve(); } if (FIN.has(al)) return Promise.resolve(); FIN.add(al); /* (shelfperf1) 받는 중·붙이기 기다리는 글꼴은 다시 받지 않음 */
         const src = B.fontSrc && B.fontSrc(f, txt, o.fontApi || root.BQ_API); /* (shelf7) 우리 클라우드 글꼴 — FontFace로 받아 429·실패면 2~8초 뒤 다시(3번까지) */
         if (src && root.FontFace && document.fonts && document.fonts.add) return fontGet(al, src, 0);
         const own = B.fontCss && B.fontCss(f, txt, al, o.fontApi || root.BQ_API); /* (shelf5) 우리 클라우드 글꼴은 CSS를 받지 않고 바로 만듦 */
-        return (own ? Promise.resolve(own) : fetch(B.fontUrl(f, txt)).then((r) => (r.ok ? r.text() : ''))).then((css) => { if (!css || st.dead) return; const s = document.createElement('style'); s.dataset.bqf = al; s.textContent = css.replace(/font-family:\s*'[^']+'/g, `font-family:'${al}'`); document.head.appendChild(s); fontKeep(al, s); }).catch(() => {}); });
+        return (own ? Promise.resolve(own) : fetch(B.fontUrl(f, txt)).then((r) => (r.ok ? r.text() : ''))).then((css) => { if (!css || st.dead) { FIN.delete(al); return; } const fs0 = cssFaces(css, al); if (fs0) return Promise.all(fs0.map((ff) => ff.load())).then(() => { if (!st.dead) fontPut(al, fs0); }); const s = document.createElement('style'); s.dataset.bqf = al; s.textContent = css.replace(/font-family:\s*'[^']+'/g, `font-family:'${al}'`); document.head.appendChild(s); fontKeep(al, s); FIN.delete(al); }).catch(() => { FIN.delete(al); }); });
       FQ.push(...jobs); fontPump(); }
     /* (shelf7 · rel9 휴대폰 확인: 첫 주소·둘째 주소가 함께 429 → 글꼴 6~10개 못 붙음) 글꼴 받기 줄 — 한 번에 2개(넓은 화면 3개)씩 차례로 · 다시 받기는 줄 자리를 잡지 않고 기다렸다가 끝에 다시 섬 */
     function fMax() { return root.matchMedia && root.matchMedia('(min-width: 900px)').matches ? 3 : 2; }
-    function fontPump() { while (!st.dead && fRun < fMax() && FQ.length) { const job = FQ.shift(); fRun++; Promise.resolve().then(job).catch(() => {}).then(() => { fRun--; fontPump(); }); } }
+    function fontPump() { while (!st.dead && fRun < fMax() && FQ.length) { const job = FQ.shift(); fRun++; Promise.resolve().then(job).catch(() => {}).then(() => { fRun--; fontPump(); }); } if (!FQ.length && !fRun && FP.q.length) fontFlush(); }
+    /* (shelfperf1 · 정범님 11/14 20:08 '많이 버벅거려') 글꼴은 받는 대로 하나씩 붙이지 않고 모아서 한 번에 붙임 — 글꼴 하나가 붙을 때마다 브라우저가 화면 전체(약 1만 칸)를 다시 배치함
+     *  (실제 사이트 PC 1400 · 책장 하나 글꼴 약 60개 → 다시 배치 60번 · 한 번에 0.9~1초(헤드리스 크롬) — 스크롤·돌리기 중 끊김의 주인) → 처음 1.2초 · 그다음 4초마다 · 줄이 비면 바로 = 몇 번 */
+    const FP = { q: [], t: 0, n: 0 }; const FIN = new Set();
+    function fontPut(al, faces) { FP.q.push([al, faces]); if (!FP.t) FP.t = setTimeout(fontFlush, FP.n ? 4000 : 1200); }
+    function fontFlush() { clearTimeout(FP.t); FP.t = 0; if (st.dead || !FP.q.length) return; const L = FP.q.splice(0); FP.n++; sec.dataset.fontFlush = FP.n;
+      for (const [al, faces] of L) { FIN.delete(al); if (FONT_CSS.has(al)) continue; for (const ff of faces) { try { document.fonts.add(ff); } catch (e) {} } fontKeep(al, { remove: () => { for (const ff of faces) { try { document.fonts.delete(ff); } catch (e) {} } } }); FST.ok++; }
+      refit(true); }
+    /* 구글 글꼴 CSS(@font-face 여러 칸) → FontFace(아직 문서에 안 붙임) · 못 읽으면 null(예전처럼 <style>) */
+    function cssFaces(css, al) { if (!root.FontFace || !document.fonts || !document.fonts.add) return null; const out = [];
+      for (const m of String(css).matchAll(/@font-face\s*\{([^}]*)\}/g)) { const b = m[1]; const src = /src:\s*([^;]+);/.exec(b); if (!src) continue; const wt = /font-weight:\s*([^;]+);/.exec(b), ur = /unicode-range:\s*([^;]+);/.exec(b), sy = /font-style:\s*([^;]+);/.exec(b);
+        try { out.push(new FontFace(al, src[1].trim(), { weight: wt ? wt[1].trim() : '400', style: sy ? sy[1].trim() : 'normal', display: 'swap', ...(ur ? { unicodeRange: ur[1].trim() } : {}) })); } catch (e) { return null; } }
+      return out.length ? out : null; }
     function fontKeep(al, s) { FONT_CSS.set(al, s); while (FONT_CSS.size > 160) { const [k0, s0] = FONT_CSS.entries().next().value; s0.remove(); FONT_CSS.delete(k0); } }
     function fontGet(al, src, n) { if (st.dead || FONT_CSS.has(al)) return Promise.resolve(); const u = src.url + (n ? '&r=' + n : ''); /* 다시 받을 땐 주소 끝을 바꿔 막힌 답(캐시)을 안 씀 · 서버는 r을 안 봄 */
       return fetch(u, { mode: 'cors', credentials: 'omit' }).then((r) => { if (!r.ok) { const e = new Error('font ' + r.status); e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000; throw e; } return r.arrayBuffer(); })
-        .then((buf) => { if (st.dead) return; const ff = new FontFace(al, buf, { weight: String(src.wt || 400), style: 'normal', display: 'swap' }); return ff.load().then(() => { if (st.dead) return; document.fonts.add(ff); fontKeep(al, { remove: () => { try { document.fonts.delete(ff); } catch (e) {} } }); FST.ok++; refit(true); }); })
-        .catch((e) => { if (st.dead) return; FST.fail++; if (n >= 3 || (e && e.status === 404)) { FST.gave++; return; } FST.retry++; const w = Math.min(8000, Math.max(e && e.wait ? e.wait : 0, 2000 * Math.pow(2, n))) + Math.round(Math.random() * 600); /* 2초 → 4초 → 8초 */
+        .then((buf) => { if (st.dead) return; const ff = new FontFace(al, buf, { weight: String(src.wt || 400), style: 'normal', display: 'swap' }); return ff.load().then(() => { if (!st.dead) fontPut(al, [ff]); }); })
+        .catch((e) => { if (st.dead) return; FST.fail++; if (n >= 3 || (e && e.status === 404)) { FST.gave++; FIN.delete(al); return; } FST.retry++; const w = Math.min(8000, Math.max(e && e.wait ? e.wait : 0, 2000 * Math.pow(2, n))) + Math.round(Math.random() * 600); /* 2초 → 4초 → 8초 */
           setTimeout(() => { if (st.dead) return; FQ.push(() => fontGet(al, src, n + 1)); fontPump(); }, w); }); }
     const fontsDrop = (c) => { if (!c || !c.dataset) return; const ck = '-' + st.sort + c.dataset.i; for (const [al, s0] of [...FONT_CSS]) if (al.endsWith(ck)) { s0.remove(); FONT_CSS.delete(al); } };
 
@@ -509,6 +521,7 @@
       sec.appendChild(el); OB.el = el; OB.g = null; obInfo(x, null); itemOf(x.id).then((m) => obInfo(x, m || {})); lockScroll(true); el.classList.add('on'); sec.dataset.set = lay + ':' + S.n; sec.dataset.obPhase = 'pull';
       el.querySelector('.ob-x').focus({ preventScroll: true }); const stage = el.querySelector('.ss-stage'); const sr = stage.getBoundingClientRect(); const W = sr.width || Math.min(vw - 32, 980);
       const grp = OB.from === 'sp' ? b.closest('.bqs-set') : null; const srcs = grp ? [...grp.querySelectorAll('.sp.sv')] : []; const cr = OB.from === 'cv' ? (b.querySelector('.cvf') || b).getBoundingClientRect() : null; const ck = st.sort + ((b.closest('.bqs-case') || { dataset: { i: 0 } }).dataset.i);
+      /* (shelfperf1 · 정범님 11/14 20:08) 재기 전에 먼저 뽑음(pulled = 마우스 올림 확대·눌러 들기·기울임을 끔) — 누른 권은 마우스 아래라 확대(최대 1.7배)된 채로 재어져 그 권만 크게 쌓였음 */ if (OB.from === 'cv') b.classList.add('pulled'); for (const s of srcs) s.classList.add('pulled');
       const G = vs.map((V, i) => { const src = srcs[i] || null; let g, r0;
         if (src) { const sk = src.querySelector('.sk'); r0 = sk.getBoundingClientRect(); g = document.createElement('div'); g.className = src.className.replace(/\b(out|pulled|tilt[lr]|back|lift)\b/g, '') + ' ss-v'; for (const k in src.dataset) g.dataset[k] = src.dataset[k]; g.style.cssText = src.style.cssText; g.appendChild(sk.cloneNode(true)); }
         else { const tmp = document.createElement('div'); tmp.innerHTML = spineH(x, null, ck, V); const bt = tmp.firstElementChild; g = document.createElement('div'); g.className = bt.className + ' ss-v'; for (const k in bt.dataset) g.dataset[k] = bt.dataset[k]; g.style.cssText = bt.style.cssText; const sk = bt.querySelector('.sk'); if (sk) g.appendChild(sk);
