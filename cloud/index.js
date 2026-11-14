@@ -5287,7 +5287,8 @@ async function c2soloMods() { if (C2SOLO_M.v && Date.now() - C2SOLO_M.at < 30 * 
   try { o.X = await extMod(); } catch (e) {}
   /* (11/12 handoff3) 🎯 넘긴 숍 목록 끝까지 — 운영 본체 글자(benchFinish를 떼어 부름 · col2-handoff.js benchCode) · 노선표(BENCH.fields) */ o.BSRC = async () => { const r = await coreFetch('src/readnow-collector.src.js'); if (!r.ok) throw new Error('운영 본체를 못 받음 ' + r.status); return r.text(); }; o.REG = REGM;
   C2SOLO_M.v = o; C2SOLO_M.at = Date.now(); return o; }
-const C2SOLO = require('./col2solo.js').makeSolo({ db, C, FV, log, mods: c2soloMods });
+const Y24AUTO = require('./y24auto.js').makeY24Auto({ db, C, FV, log, coreFetch, extMod }); /* (headless1 11/14) 🤖 예스24 자동 올림 판단 — 웹앱 탭 없이(번외 홀로 연결이 부름) */
+const C2SOLO = require('./col2solo.js').makeSolo({ db, C, FV, log, mods: c2soloMods, y24: Y24AUTO });
 /* (11/13 rv5 · 리드 '모든 PC가 번외 하나로 · PC 하나씩·일 하나씩') 🔀 번외 넘김 차례표 — cloud/col2seed.js 줄마다 조건이 맞을 때 한 번만 넘김(사람 값 있으면 안 건드림 · 되돌리기는 웹앱 ⚙ 🔀 [↩ 되돌리기]) · 10분마다 */
 const C2SEED = require('./col2seed.js').makeSeed({ db, C, log }); let C2SEED_LAST = null;
 const c2SeedTick = () => C2SEED.tick().then((r) => { C2SEED_LAST = { at: new Date().toISOString(), r }; }).catch((e) => log('🔀 번외 넘김 차례표 실패', String(e && e.message || e)));
