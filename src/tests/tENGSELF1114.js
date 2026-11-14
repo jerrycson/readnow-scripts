@@ -54,6 +54,9 @@ let t = E.esStep(s, jU, cfg, true, 'x1', 'x1'); t = E.esStep(t, jU, cfg, true, '
 t = E.esStep(t, jU, cfg, true, 'x3', 'x3'); ok(t.st === '지지' && t.changed.from === '확신', '어긋남 3회 연속 → 확신에서 지지로 한 단계만 내림');
 for (let i = 4; i <= 6; i++) t = E.esStep(t, jU, cfg, true, 'x' + i, 'x' + i); ok(t.st === '불명', '다시 3회 → 지지에서 불명');
 const jO = { ...jS, v: '반대', label: '반대', e: { eff: -0.2, lo: -0.3, hi: -0.1 } }; let u = E.esStep(E.esStep(null, jU, cfg, true, 'a', 'a'), jO, cfg, true, 'b', 'b'); ok(u.st === '반대', '불명 → 반대(표본 넘음)');
+{ const m1 = E.esStep(null, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: { eff: 0.135, yrs: 1 }, m: false }, cfg, true, 'a', 'a'); ok(m1.st === '지지', '달 순위(표본 = 해 수 1)는 날 수 기준 없이 지지'); let m2 = m1; for (let i = 0; i < 9; i++) m2 = E.esStep(m2, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: { eff: 0.135, yrs: 1 }, m: false, mWhy: '달마다 1해뿐' }, cfg, true, 'b' + i, 'b' + i); ok(m2.st === '지지', '한 해뿐이면 확신 안 됨(두 해 넘게)');
+  const mF = E.esStep({ st: '불명', run: { v: '지지', k: 1 } }, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: {} }, cfg, true, 'c', 'c'); ok(mF.st === '지지' && mF.changed.from === '불명', '0.35.252 첫 회차에 불명으로 남은 H07은 다음 회차에 스스로 지지로 바로잡힘'); }
+ok(/0을 걸침/.test(E.esNext({ st: '불명' }, { n: 82, v: '불명', e: { lo: -0.05, hi: 0.06 } }, cfg)), '불명 설명 — 표본이 넉넉하면 범위가 0을 걸친다고(표본 탓으로 적지 않음)');
 ok(E.esStep(null, { id: 'H8', kind: 'hour', v: '지지', label: '지지', n: 900, e: { top: '21~23' }, m: false }, cfg, true, 'a', 'a').st === '지지', '시각 가설은 주문 수 표본으로');
 
 console.log('⑤ 배선 단계');
