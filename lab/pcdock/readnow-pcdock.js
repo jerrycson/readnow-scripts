@@ -14,9 +14,14 @@ const APP = __dirname;
 const HOME = process.env.RN_PCDOCK_HOME || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'ReadNow', 'pcdock') : path.join(os.homedir(), '.readnow-pcdock'));
 const WANT_PORT = +process.env.RN_PCDOCK_PORT || CFG.PORT;
 const TITLE = '리드나우 PC 배치';
+const VER = process.env.RN_PCDOCK_VER_TEST || CFG.PCDOCK_VER; /* 시험에서만 옛 판 흉내(RN_PCDOCK_VER_TEST) */
 fs.mkdirSync(HOME, { recursive: true });
 const LOG = path.join(HOME, 'pcdock.log');
 function log(m) { const t = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' '); try { const st = fs.statSync(LOG); if (st.size > 2 * 1048576) fs.renameSync(LOG, LOG + '.1'); } catch (e) {} try { fs.appendFileSync(LOG, `[${t}] ${m}\n`); } catch (e) {} }
+/* (0.1.3) 🩺 진단 — 최근 실패 10개를 diag.json에 남기고 GET /api/diag로 줌(이 PC 수집기가 5분마다 읽어 PC 신호 pcBeat.pcs[PC].dock에 실음 → 진단 doc=prd_jobs/pcBeat) · 경로·PC 이름 말고 까닭 글만 */
+const DIAGF = path.join(HOME, 'diag.json'); let DIAG = { errs: [] }; try { DIAG = JSON.parse(fs.readFileSync(DIAGF, 'utf8')); if (!Array.isArray(DIAG.errs)) DIAG.errs = []; } catch (e) {}
+const scrubP = (t) => String(t || '').replace(/[A-Za-z]:\\Users\\[^\\\s'"]+/gi, '%USERPROFILE%').slice(0, 400);
+function noteErr(act, m) { DIAG.errs.unshift({ at: Date.now(), act: String(act || ''), err: scrubP(m) }); DIAG.errs = DIAG.errs.slice(0, 10); try { fs.writeFileSync(DIAGF, JSON.stringify(DIAG)); } catch (e) {} }
 const vnum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0);
 
 /* ── PowerShell ─────────────────────────────────────────────── */
@@ -27,8 +32,10 @@ function ps(act, input, extra, timeoutMs) { return new Promise((res) => { psQ.pu
 function pump() { while (psBusy < 1 && psQ.length) { psBusy++; psQ.shift()(); } } /* 한 번에 하나만(CPU가 튀지 않게) */
 function ps1(act, input, extra, timeoutMs) { return new Promise((res) => { let f; try { f = psFile(); } catch (e) { return res({ ok: false, err: '윈도우 일 파일을 못 씀: ' + e.message }); }
   const exe = process.env.RN_PCDOCK_PS || 'powershell.exe'; const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', f, '-Act', act, '-DockHome', HOME, '-CsFile', path.join(APP, 'pcdock-win.cs'), ...(extra || [])];
-  PS_N.n++; let p; try { p = cp.execFile(exe, args, { windowsHide: true, timeout: timeoutMs || 60000, maxBuffer: 16 * 1048576 }, (e, out, err) => { const line = String(out || '').trim().split(/\r?\n/).reverse().find((l) => /^\{/.test(l.trim())); let j = null; try { j = JSON.parse(line); } catch (x) {}
-    if (!j) { const m = '윈도우 일 실패(' + act + '): ' + String(err || (e && e.message) || '응답 없음').slice(0, 300); log('✗ ' + m); return res({ ok: false, err: m }); } res(j); }); } catch (e) { return res({ ok: false, err: 'PowerShell을 못 켬' }); }
+  PS_N.n++; let p; try { p = cp.execFile(exe, args, { windowsHide: true, timeout: timeoutMs || 60000, maxBuffer: 16 * 1048576 }, (e, out, err) => { const line = String(out || '').replace(/\uFEFF/g, '').trim().split(/\r?\n/).reverse().find((l) => /^\{/.test(l.trim())); let j = null; try { j = JSON.parse(line.trim()); } catch (x) {} /* (0.1.3) 앞에 BOM이 붙어 와도 읽음 */
+    if (!j) { const m = '윈도우 일 실패(' + act + '): ' + String(err || (e && e.message) || '응답 없음').slice(0, 300); log('✗ ' + m); noteErr(act, m); return res({ ok: false, err: m }); }
+    if (j.ok === false) { const m = '윈도우 일 실패(' + act + '): ' + String(j.err || '까닭 없음').slice(0, 400); log('✗ ' + m); noteErr(act, m); } /* (0.1.3) PowerShell이 '실패'라고 답한 것도 기록(0.1.2까지는 기록에도 안 남아 까닭이 숨었음) */
+    res(j); }); } catch (e) { noteErr(act, 'PowerShell을 못 켬: ' + e.message); return res({ ok: false, err: 'PowerShell을 못 켬' }); }
   try { p.stdin.end(JSON.stringify(input || {}), 'utf8'); } catch (e) {} }); }
 
 /* ── 설정 ───────────────────────────────────────────────────── */
@@ -39,9 +46,13 @@ function loadCfg() { let j; try { j = JSON.parse(fs.readFileSync(SF, 'utf8')); }
   return v.cfg; }
 function saveCfg(cfg) { const old = path.join(HOME, 'old'); fs.mkdirSync(old, { recursive: true }); if (fs.existsSync(SF)) fs.copyFileSync(SF, path.join(old, 'settings-' + Date.now() + '.json')); /* 예전 설정은 지우지 않고 old\에 */
   const tmp = SF + '.t'; fs.writeFileSync(tmp, JSON.stringify(cfg, null, 1)); fs.renameSync(tmp, SF); }
-const ST = { mons: [], monsAt: 0, build: 0, closeTok: null, found: {}, icons: {}, foundAt: 0, startup: null, busy: '', last: null, update: null, lastHit: Date.now(), scan: null, port: 0 };
+const ST = { mons: [], monsAt: 0, monErr: '', monErrAt: 0, build: 0, closeTok: null, found: {}, icons: {}, foundAt: 0, startup: null, busy: '', last: null, update: null, lastHit: Date.now(), scan: null, port: 0 };
 try { const j = JSON.parse(fs.readFileSync(path.join(HOME, 'found.json'), 'utf8')); ST.found = j.found || {}; ST.icons = j.icons || {}; ST.foundAt = j.at || 0; } catch (e) {}
-async function readMons() { const r = await ps('screens'); if (r.ok && Array.isArray(r.mons) && r.mons.length) { ST.mons = r.mons; ST.monsAt = Date.now(); ST.aware = r.aware; if (+r.build) ST.build = +r.build; } return r; }
+/* (0.1.3) 못 읽으면 까닭을 ST.monErr에 — 화면 배치도·처음 화면·진단에 그대로(0.1.2까지는 /api/state가 '모니터 0대'만 줘서 까닭이 숨었음) · 읽었던 모니터가 있으면 그대로 둠 */
+async function readMons() { const r = await ps('screens', null, null, 120000);
+  if (r.ok && Array.isArray(r.mons) && r.mons.length) { ST.mons = r.mons; ST.monsAt = Date.now(); ST.aware = r.aware; ST.monErr = ''; if (+r.build) ST.build = +r.build; }
+  else { ST.monErr = r.ok ? '윈도우가 모니터를 0대로 알려 줌(원격 화면만 켜진 채 모니터가 꺼졌을 수 있음)' : String(r.err || '까닭 모름'); ST.monErrAt = Date.now(); if (r.ok) { log('✗ 모니터 0대'); noteErr('screens', ST.monErr); } }
+  return r; }
 async function findAll(apps) { const r = await ps('find', { hints: A.findHints(apps || SET.defaults().apps), icons: (apps || []).filter((a) => a.exe).map((a) => a.exe) }, null, 90000);
   if (r.ok) { ST.found = { ...ST.found, ...(r.found || {}) }; ST.icons = { ...ST.icons, ...(r.icons || {}) }; ST.foundAt = Date.now(); try { fs.writeFileSync(path.join(HOME, 'found.json'), JSON.stringify({ at: ST.foundAt, found: ST.found, icons: ST.icons })); } catch (e) {} } return r; }
 const STARTUP = () => ({ name: 'ReadNow-PC배치', vbs: path.join(path.dirname(APP), 'run.vbs'), args: '--autorun' });
@@ -92,7 +103,7 @@ async function cleanRun(o) { const s = ST.scan; if (!s || s.token !== o.token ||
 /* ── 새 판 받기(다음에 켤 때 바꿔 끼움) ─────────────────────── */
 async function checkUpdate() { if (process.env.RN_PCDOCK_NOUPDATE) return; try { let best = null;
     for (const b of CFG.RAW) { try { const t = await (await fetch(b + 'pcdock-config.js?t=' + Date.now(), { signal: AbortSignal.timeout(15000) })).text(); const v = (t.match(/PCDOCK_VER:\s*'([\d.]+)'/) || [])[1]; if (v && (!best || vnum(v) > vnum(best.v))) best = { v, b }; } catch (e) {} }
-    if (!best || vnum(best.v) <= vnum(CFG.PCDOCK_VER)) return; const nd = path.join(path.dirname(APP), 'app.new'); fs.rmSync(nd, { recursive: true, force: true }); fs.mkdirSync(nd, { recursive: true });
+    if (!best || vnum(best.v) <= vnum(VER)) return; const nd = path.join(path.dirname(APP), 'app.new'); fs.rmSync(nd, { recursive: true, force: true }); fs.mkdirSync(nd, { recursive: true });
     const man = await (await fetch(best.b + 'bundle.json?t=' + Date.now())).json(); const L = (man.files || []).filter((f) => /^[\w.-]+\.(js|html|ps1|cs|json)$/.test(f)); if (!L.includes('readnow-pcdock.js')) throw new Error('묶음 목록이 이상함');
     for (const f of L) { const b = Buffer.from(await (await fetch(best.b + f + '?t=' + Date.now())).arrayBuffer()); fs.writeFileSync(path.join(nd, f), b); if (/\.js$/.test(f) && cp.spawnSync(process.execPath, ['--check', path.join(nd, f)]).status !== 0) throw new Error(f + ' 검사 실패'); }
     fs.writeFileSync(path.join(nd, '.ready'), best.v); ST.update = { v: best.v }; log(`🔄 새 판 ${best.v} 받아 둠 — 다음에 켤 때 바뀜`); } catch (e) { log('🔄 새 판 확인 실패: ' + e.message); } }
@@ -109,20 +120,22 @@ async function openWindow() { if (process.env.RN_PCDOCK_NOWIN) return { ok: true
 /* ── HTTP ───────────────────────────────────────────────────── */
 const FILES = { '/': ['ui.html', 'text/html; charset=utf-8'], '/grid.js': ['grid.js', 'text/javascript; charset=utf-8'], '/apps.js': ['apps.js', 'text/javascript; charset=utf-8'], '/settings.js': ['settings.js', 'text/javascript; charset=utf-8'] };
 function body(req, max) { return new Promise((res, rej) => { const L = []; let n = 0; req.on('data', (b) => { n += b.length; if (n > max) { rej(new Error('너무 큼')); req.destroy(); } else L.push(b); }); req.on('end', () => { try { res(JSON.parse(Buffer.concat(L).toString('utf8') || '{}')); } catch (e) { rej(new Error('JSON이 아님')); } }); req.on('error', rej); }); }
-const server = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://127.0.0.1'); ST.lastHit = Date.now();
+const server = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://127.0.0.1'); if (u.pathname !== '/api/diag') ST.lastHit = Date.now(); /* (0.1.3) 수집기의 진단 읽기는 '창이 떠 있음'으로 안 셈(도우미가 스스로 꺼지게) */
   const J = (code, o) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
   if (req.method === 'GET' && FILES[u.pathname]) { const [f, t] = FILES[u.pathname]; res.writeHead(200, { 'content-type': t, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }); return res.end(fs.readFileSync(path.join(APP, f))); }
-  if (u.pathname === '/api/ping') return J(200, { ok: true, app: 'readnow-pcdock', ver: CFG.PCDOCK_VER });
+  if (u.pathname === '/api/ping') return J(200, { ok: true, app: 'readnow-pcdock', ver: VER, busy: ST.busy || '', upd: ST.update ? ST.update.v : '' });
   if (!u.pathname.startsWith('/api/')) return J(404, { ok: false });
   /* 이 창(같은 출처)에서만 — 다른 웹 페이지가 이 PC 프로그램을 켜거나 지우게 하지 않음 */
   const org = req.headers.origin; if (req.method !== 'GET' && (req.headers['x-rn-dock'] !== '1' || (org && org !== 'http://127.0.0.1:' + ST.port))) return J(403, { ok: false, err: '이 창에서만' });
   { const hh = String(req.headers.host || ''); if (hh && !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(hh)) return J(403, { ok: false, err: '이 PC 주소로만' }); } /* (0.1.2 🔬 정밀 점검 11/12) GET /api/state도 Host 검사 — 다른 이름(DNS 되돌리기)으로 열면 PC 이름·경로가 새지 않게 */
   try {
+    if (u.pathname === '/api/diag') return J(200, diagOut());
     if (u.pathname === '/api/state') { if (!ST.mons.length || u.searchParams.get('fresh')) await readMons(); if (ST.startup == null) await startupState(); const cfg = loadCfg();
-      return J(200, { ok: true, ver: CFG.PCDOCK_VER, title: TITLE, cfg, mons: ST.mons, aware: ST.aware, found: ST.found, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: os.hostname() }); }
+      return J(200, { ok: true, ver: CFG.PCDOCK_VER, title: TITLE, cfg, mons: ST.mons, monErr: ST.monErr, monErrAt: ST.monErrAt, aware: ST.aware, found: ST.found, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: os.hostname() }); }
     if (req.method !== 'POST') return J(405, { ok: false });
     const o = await body(req, u.pathname === '/api/lnk' ? 256 * 1024 : 400 * 1024);
-    if (u.pathname === '/api/screens') { const r = await readMons(); return J(200, { ok: r.ok, err: r.err, mons: ST.mons }); }
+    if (u.pathname === '/api/screens') { const r = await readMons(); const got = !!(r.ok && Array.isArray(r.mons) && r.mons.length); return J(200, { ok: got, err: got ? undefined : ST.monErr, mons: ST.mons, aware: ST.aware }); }
+    if (u.pathname === '/api/restart') { if (!ST.update) return J(200, { ok: false, err: '받아 둔 새 판이 없음' }); if (ST.busy) return J(200, { ok: false, err: '지금 ' + ST.busy + ' 중 — 끝난 뒤에' }); const r = restartNew(); return J(200, r); }
     if (u.pathname === '/api/check') { const v = SET.validate(o.cfg, ST.mons); return J(200, { ok: v.ok, errs: v.errs, warns: v.warns }); }
     if (u.pathname === '/api/save') { const v = SET.validate(o.cfg, ST.mons); if (!v.ok) return J(400, { ok: false, errs: v.errs, warns: v.warns }); const keepAuto = loadCfg().auto; v.cfg.auto = { ...v.cfg.auto, on: keepAuto.on }; saveCfg(v.cfg); log(`① 설정 저장 — 프로그램 ${v.cfg.apps.length} · 놓은 자리 ${v.cfg.place.length}`); return J(200, { ok: true, warns: v.warns, cfg: v.cfg }); }
     if (u.pathname === '/api/find') { const r = await findAll(loadCfg().apps); return J(200, { ok: r.ok, err: r.err, found: ST.found, icons: ST.icons }); }
@@ -139,6 +152,12 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
     return J(404, { ok: false });
   } catch (e) { log('✗ ' + u.pathname + ' ' + e.message); return J(500, { ok: false, err: e.message }); } });
 
+function diagOut() { const L = ST.last; return { ok: true, app: 'readnow-pcdock', ver: VER, at: Date.now(), mons: ST.mons.length, monErr: ST.monErr ? scrubP(ST.monErr).slice(0, 300) : '', monErrAt: ST.monErrAt || 0, aware: ST.aware || '', build: ST.build || 0, busy: ST.busy || '', upd: ST.update ? ST.update.v : '',
+  last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '' } : null, errs: (DIAG.errs || []).slice(0, 5) }; }
+/* (0.1.3) 🔄 「새 판으로 바꾸기」 — run.vbs(→ run.cmd가 받아 둔 새 판으로 바꿔 끼움)를 새로 켜고, 새 판이 이 옛 서버를 넘겨받음(아래 main의 '옛 판이면 넘겨받기') */
+function restartNew() { const vbs = path.join(path.dirname(APP), 'run.vbs');
+  try { const c = process.env.RN_PCDOCK_RESTART ? cp.spawn(process.execPath, [__filename], { detached: true, stdio: 'ignore', env: { ...process.env, RN_PCDOCK_VER_TEST: process.env.RN_PCDOCK_RESTART } }) : cp.spawn('wscript.exe', [vbs], { detached: true, stdio: 'ignore', windowsHide: true }); c.on('error', (e) => log('✗ 새 판으로 바꾸기: ' + e.message)); c.unref(); log(`🔄 새 판 ${ST.update.v}으로 바꾸기 — 새로 켬`); return { ok: true, v: ST.update.v }; } catch (e) { return { ok: false, err: '새로 켜지 못함: ' + e.message }; } }
+function pingJ(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { const j = JSON.parse(b); res(j.app === 'readnow-pcdock' ? j : null); } catch (e) { res(null); } }); }); r.on('error', () => res(null)); r.on('timeout', () => { r.destroy(); res(null); }); }); }
 function ping(port) { return new Promise((res) => { const r = http.get({ host: '127.0.0.1', port, path: '/api/ping', timeout: 1500 }, (s) => { let b = ''; s.on('data', (d) => (b += d)); s.on('end', () => { try { res(JSON.parse(b).app === 'readnow-pcdock'); } catch (e) { res(false); } }); }); r.on('error', () => res(false)); r.on('timeout', () => { r.destroy(); res(false); }); }); }
 function listen(port) { return new Promise((res, rej) => { server.once('error', rej); server.listen(port, '127.0.0.1', () => { server.removeListener('error', rej); res(server.address().port); }); }); }
 
@@ -146,9 +165,13 @@ async function main() { const argv = process.argv.slice(2); const auto = argv.in
   if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep' }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패')); process.exit(0); }
   /* 이미 켜져 있으면 창만 다시 */
   const pf = path.join(HOME, 'port.txt'); let old = 0; try { old = +fs.readFileSync(pf, 'utf8'); } catch (e) {}
-  for (const p of [...new Set([old, WANT_PORT].filter(Boolean))]) if (await ping(p)) { ST.port = p; await openWindow(); log('이미 켜져 있어 창만 엶(' + p + ')'); return process.exit(0); }
+  /* (0.1.3) 켜져 있는 것이 옛 판이고 일하는 중이 아니면 그 서버를 끄고 이 새 판이 넘겨받음(0.1.2까지는 옛 서버가 15분 동안 살아 있어 새 판을 받아도 바로 안 바뀌었음) */
+  for (const p of [...new Set([old, WANT_PORT].filter(Boolean))]) { const pj = await pingJ(p); if (!pj) continue;
+    if (vnum(pj.ver) < vnum(VER) && !pj.busy) { const r = await ps('stopold', { self: process.pid }); let gone = false; for (let k = 0; k < 20 && !gone; k++) { await new Promise((z) => setTimeout(z, 300)); gone = !(await ping(p)); }
+      log(`🔄 옛 판 ${pj.ver} 서버(${p})를 넘겨받음 — ${gone ? '끔' : '안 꺼짐'}${r.ok ? '' : ' · ' + r.err}`); if (gone) continue; }
+    ST.port = p; await openWindow(); log('이미 켜져 있어 창만 엶(' + p + ')'); return process.exit(0); }
   try { ST.port = CFG.AVOID_PORTS.includes(WANT_PORT) ? await listen(0) : await listen(WANT_PORT); } catch (e) { ST.port = await listen(0); }
-  fs.writeFileSync(pf, String(ST.port)); log(`켜짐 판 ${CFG.PCDOCK_VER} · 127.0.0.1:${ST.port}`); console.log(`PCDOCK_PORT=${ST.port}`);
+  fs.writeFileSync(pf, String(ST.port)); log(`켜짐 판 ${VER} · 127.0.0.1:${ST.port}`); console.log(`PCDOCK_PORT=${ST.port}`);
   await openWindow();
   setTimeout(checkUpdate, +process.env.RN_PCDOCK_UPD_MS || 20000).unref();
   /* 창이 닫히고 한참 아무도 안 부르면 끔(메모리를 붙잡고 있지 않게) */

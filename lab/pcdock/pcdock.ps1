@@ -1,6 +1,6 @@
 param([string]$Act = 'screens', [string]$DockHome = '', [int]$On = -1, [string]$CsFile = '')
 # pcdock.ps1 — 🖥 PC 배치 도우미의 윈도우 일(readnow-pcdock.js가 부름 · 넘길 값은 표준 입력 JSON · 결과는 맨 끝 한 줄 JSON)
-#  Act: screens(모니터) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
+#  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
 #  ⚠ PowerShell 변수 이름은 대소문자를 가리지 않음 — $S와 $s는 같은 변수(0.1.0 '③ Claude만 되고 나머지 안 됨'의 까닭: foreach ($s …)가 결과 목록 $S를 덮어 $S += 가 PSObject 더하기로 터짐)
 #     → 대소문자만 다른 변수 이름을 쓰지 않음 · 목록은 ArrayList.Add로 쌓음(tests/t_static이 검사)
 #  (윈도우 PowerShell 5.1은 BOM 없는 파일을 한국어로 못 읽어서 readnow-pcdock.js가 BOM·CRLF를 붙인 사본을 <DockHome>에 두고 그것을 부름)
@@ -24,7 +24,8 @@ try {
       try { Add-Type -TypeDefinition $cs -OutputAssembly $tmp -OutputType Library -ErrorAction Stop; if (-not (Test-Path -LiteralPath $dll)) { Move-Item -LiteralPath $tmp -Destination $dll -ErrorAction Stop } } catch {}
       if (-not ('RnDock' -as [type])) { try { Add-Type -LiteralPath $(if (Test-Path -LiteralPath $dll) { $dll } else { $tmp }) -ErrorAction Stop } catch {} }
       try { if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue } } catch {} }
-    if (-not ('RnDock' -as [type])) { Add-Type -TypeDefinition $cs } }
+    if (-not ('RnDock' -as [type])) { $Error.Clear(); try { Add-Type -TypeDefinition $cs -ErrorAction Stop } catch { $ce = @(@($Error) | Select-Object -First 4 | ForEach-Object { "$($_.Exception.Message)".Trim() } | Where-Object { $_ } | Select-Object -Unique) -join ' / '; if (-not $ce) { $ce = "$($_.Exception.Message)" }; throw "C# 글(pcdock-win.cs)을 엮지 못함 — $ce" } } }
+  # (0.1.3) 엮지 못하면 까닭(컴파일 오류 글)을 그대로 돌려줌 — 0.1.1~0.1.2는 이 실패를 화면이 '모니터 0대'로만 보여 까닭이 숨었음
   $out.aware = [RnDock]::Aware()
 } catch { Fail "준비 실패: $($_.Exception.Message)" }
 
@@ -163,6 +164,9 @@ switch ($Act) {
       foreach ($p in Get-Process) { $m0 += $p.WorkingSet64; if (-not $skip.ContainsKey($p.ProcessName.ToLower())) { try { if ([RnDock]::Trim([uint32]$p.Id)) { $tn++ } } catch {} } }
       Start-Sleep -Milliseconds 800; foreach ($p in Get-Process) { $m1 += $p.WorkingSet64 }; $out.mem = @{ before = $m0; after = $m1; n = $tn } }
     Done $out }
+  'stopold' { # (0.1.3) 새 판이 켜질 때 옛 판 서버(같은 readnow-pcdock.js를 돌리는 다른 node)만 끔 — 자기 자신은 빼고 · 다른 Node 도우미(인쇄·번외)는 명령 줄이 달라 안 건드림
+    $me = [int]$In.self; $n = 0; foreach ($w in @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { "$($_.CommandLine)" -like '*readnow-pcdock.js*' -and [int]$_.ProcessId -ne $me })) { try { Stop-Process -Id ([int]$w.ProcessId) -Force -ErrorAction Stop; $n++ } catch {} }
+    $out.stopped = $n; Done $out }
   'fit' { # 이 도우미 창(제목으로 찾음)을 그 창이 있는 모니터 가운데에 w×h(배율 적용 전 크기)로
     $hit = @([RnDock]::Windows() | Where-Object { $_.Title -like "*$($In.title)*" -and $_.Proc -ieq 'chrome' }) | Select-Object -First 1; if (-not $hit) { Fail '창을 못 찾음' }
     $cx = ($hit.R.L + $hit.R.R) / 2; $cy = ($hit.R.T + $hit.R.B) / 2; $monList = @(Mons); $m = @($monList | Where-Object { $cx -ge $_.b.x -and $cx -lt ($_.b.x + $_.b.w) -and $cy -ge $_.b.y -and $cy -lt ($_.b.y + $_.b.h) }) | Select-Object -First 1; if (-not $m) { $m = @($monList | Where-Object { $_.primary }) | Select-Object -First 1 }; if (-not $m) { $m = $monList[0] }

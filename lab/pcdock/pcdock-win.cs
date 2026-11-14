@@ -3,6 +3,7 @@
 // · 창 놓기: 최소화·최대화를 풀고 → 놓고 → 보이지 않는 테두리(윈도우 10·11의 그림자 테두리)만큼 바로잡아 칸에 딱 맞춤
 // · 메모리 비우기: EmptyWorkingSet(프로그램은 그대로 · 쓰던 메모리를 디스크 쪽으로 내려 둠 — 다시 쓰면 돌아옴)
 // · 닫기: WM_CLOSE를 보내 '닫아 달라고' 부탁만(저장 안 한 문서는 그 프로그램이 물음 · 강제 종료 없음)
+// · (0.1.3) 윈도우 PowerShell 5.1의 Add-Type은 C# 5 컴파일러 — tests/t_cs.js가 mcs -langversion:5로 엮어 봄(0.1.1~0.1.2는 한 줄 타입 오류로 아예 안 엮였음)
 // · 탐색기 탭(윈도우 11): 창을 앞으로 → Ctrl+T → Ctrl+L(주소창) → 경로 글자(유니코드 입력) → Enter · 단계마다 그 창이 맨 앞인지 보고 아니면 글자를 치지 않고 멈춤
 using System;
 using System.Text;
@@ -119,7 +120,7 @@ public static class RnDock {
   // 탐색기 창에 탭 하나(경로) 더하기 — 되면 "" · 안 되면 까닭
   public static string ExplorerTab(long hv, string path, string leaf, int ms) { IntPtr h = new IntPtr(hv);
     if (!IsWindow(h)) return "창이 없어짐";
-    if (!Front(h)) return "탐색기 창을 앞으로 못 가져옴";
+    if (!Front(hv)) return "탐색기 창을 앞으로 못 가져옴";   // (0.1.3) Front는 long을 받음 — 0.1.1~0.1.2는 여기서 IntPtr를 넘겨 C# 글 전체가 안 엮였음(모든 윈도우 일 실패 · 「모니터를 못 읽었습니다」)
     Combo(0x54, true); Thread.Sleep(900);                       // Ctrl+T 새 탭
     if (GetForegroundWindow() != h) return "새 탭 뒤 다른 창이 앞에 옴";
     Combo(0x4C, true); Thread.Sleep(350);                       // Ctrl+L 주소창

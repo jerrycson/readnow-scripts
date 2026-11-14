@@ -8,12 +8,23 @@ const a = process.argv.slice(2); const act = a[a.indexOf('-Act') + 1]; const on 
 let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on('end', () => {
   let j = {}; try { j = JSON.parse(input || '{}'); } catch (e) {}
   if (process.env.FAKE_LOG) fs.appendFileSync(process.env.FAKE_LOG, JSON.stringify({ act, on, input: j }) + '\n');
-  const MONS = [
+  /* (0.1.3) 모니터 셋 고르기 FAKE_MONS = one(1대 100%) · two125(2대 · 125%) · three150(기본 3대 · 150% 섞임) · mix(1대 100% + 1대 125% + 1대 150%)
+   *  FAKE_SCREENS = fail(C# 엮기 실패 흉내) · empty(0대) · bom(답 앞에 BOM) · crash(JSON 없이 끝남) */
+  const SETS = {
+    one: [{ id: '\\\\.\\DISPLAY1', primary: true, b: { x: 0, y: 0, w: 1920, h: 1080 }, wa: { x: 0, y: 0, w: 1920, h: 1032 }, dpi: 96 }],
+    two125: [{ id: '\\\\.\\DISPLAY1', primary: true, b: { x: 0, y: 0, w: 2560, h: 1440 }, wa: { x: 0, y: 0, w: 2560, h: 1380 }, dpi: 120 }, { id: '\\\\.\\DISPLAY2', primary: false, b: { x: 2560, y: 0, w: 1920, h: 1080 }, wa: { x: 2560, y: 0, w: 1920, h: 1032 }, dpi: 120 }],
+    mix: [{ id: '\\\\.\\DISPLAY1', primary: true, b: { x: 0, y: 0, w: 1920, h: 1080 }, wa: { x: 0, y: 0, w: 1920, h: 1040 }, dpi: 96 }, { id: '\\\\.\\DISPLAY2', primary: false, b: { x: 1920, y: 0, w: 2560, h: 1440 }, wa: { x: 1920, y: 0, w: 2560, h: 1392 }, dpi: 120 }, { id: '\\\\.\\DISPLAY3', primary: false, b: { x: 4480, y: 0, w: 3840, h: 2160 }, wa: { x: 4480, y: 0, w: 3840, h: 2100 }, dpi: 144 }] };
+  const SCR = process.env.FAKE_SCREENS || '';
+  if (process.env.FAKE_OLD_PID && act === 'stopold') { try { process.kill(+process.env.FAKE_OLD_PID); } catch (e) {} process.stdout.write(JSON.stringify({ ok: true, act, stopped: 1 }) + '\n'); return; }
+  if (SCR === 'fail') { process.stdout.write(JSON.stringify({ ok: false, act, err: "준비 실패: C# 글(pcdock-win.cs)을 엮지 못함 — c:\\Users\\someone\\AppData\\Local\\Temp\\x.cs(122) : 'RnDock.Front(long)'에 가장 잘 맞는 메서드에 잘못된 인수가 있습니다." }) + '\n'); return; }
+  if (SCR === 'crash') { process.stderr.write('PowerShell이 멈춤\n'); process.exitCode = 1; return; }
+  const MONS0 = [
     { id: '\\\\.\\DISPLAY1', primary: true, b: { x: 0, y: 0, w: 1920, h: 1080 }, wa: { x: 0, y: 0, w: 1920, h: 1040 }, dpi: 96 },
     { id: '\\\\.\\DISPLAY2', primary: false, b: { x: 1920, y: 0, w: 2560, h: 1080 }, wa: { x: 1920, y: 0, w: 2560, h: 1080 }, dpi: 96 },
     { id: '\\\\.\\DISPLAY3', primary: false, b: { x: -3840, y: -500, w: 3840, h: 2160 }, wa: { x: -3840, y: -500, w: 3840, h: 2100 }, dpi: 144 }];
-  const SF = process.env.FAKE_STARTUP; const out = (o) => { process.stdout.write('준비 글\n' + JSON.stringify({ ok: true, act, aware: 'pmv2', ...o }) + '\n'); };
-  if (act === 'screens') return out({ mons: MONS, build: 22631 });
+  const MONS = SETS[process.env.FAKE_MONS] || MONS0;
+  const SF = process.env.FAKE_STARTUP; const out = (o) => { process.stdout.write((SCR === 'bom' ? '\ufeff' : '준비 글\n') + JSON.stringify({ ok: true, act, aware: 'pmv2', ...o }) + '\n'); };
+  if (act === 'screens') return out({ mons: SCR === 'empty' ? [] : MONS, build: 22631 });
   if (act === 'windows') return out({ mons: MONS, wins: [
     { h: 101, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 — Chrome' }, { h: 102, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
     { h: 103, pid: 13, proc: 'explorer', cls: 'Progman', title: 'Program Manager' }, { h: 104, pid: 13, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드' },
