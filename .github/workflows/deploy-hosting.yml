@@ -6,7 +6,7 @@ name: 결과물 함께 내기 (Firebase Hosting)
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'yes24-terms/**', 'facts-docs/**', 'local/**', 'lab/col2/**', 'firebase.json', 'hosting/**', 'cloud/shop-promo.js', 'shop/brand/**', 'shop/shelf-core.js', 'cloud/setup-*.sh', 'ui2/**', 'src/readnow-collector.src.js', '.github/workflows/deploy-hosting.yml']
+    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'yes24-terms/**', 'facts-docs/**', 'local/**', 'lab/col2/**', 'lab/pcdock/**', 'firebase.json', 'hosting/**', 'cloud/shop-promo.js', 'shop/brand/**', 'shop/shelf-core.js', 'cloud/setup-*.sh', 'ui2/**', 'src/readnow-collector.src.js', '.github/workflows/deploy-hosting.yml']
   workflow_dispatch:
   workflow_run:  # (priv1 11/13) 🐾 책방 친구 새 판(friend-v…)이 만들어지면 readnow.kr/dl/friend/에도 바로(판 만들기는 GitHub 열쇠로 해서 release 사건이 다른 작업을 깨우지 못함)
     workflows: ['책방 친구 안드로이드 앱', '책방 친구 PC 프로그램 (Windows)']

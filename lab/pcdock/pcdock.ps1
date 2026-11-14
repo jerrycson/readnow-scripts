@@ -1,6 +1,6 @@
 param([string]$Act = 'screens', [string]$DockHome = '', [int]$On = -1, [string]$CsFile = '')
 # pcdock.ps1 — 🖥 PC 배치 도우미의 윈도우 일(readnow-pcdock.js가 부름 · 넘길 값은 표준 입력 JSON · 결과는 맨 끝 한 줄 JSON)
-#  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
+#  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · front(이 도우미 창을 앞으로 · 0.1.4) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
 #  ⚠ PowerShell 변수 이름은 대소문자를 가리지 않음 — $S와 $s는 같은 변수(0.1.0 '③ Claude만 되고 나머지 안 됨'의 까닭: foreach ($s …)가 결과 목록 $S를 덮어 $S += 가 PSObject 더하기로 터짐)
 #     → 대소문자만 다른 변수 이름을 쓰지 않음 · 목록은 ArrayList.Add로 쌓음(tests/t_static이 검사)
 #  (윈도우 PowerShell 5.1은 BOM 없는 파일을 한국어로 못 읽어서 readnow-pcdock.js가 BOM·CRLF를 붙인 사본을 <DockHome>에 두고 그것을 부름)
@@ -167,6 +167,14 @@ switch ($Act) {
   'stopold' { # (0.1.3) 새 판이 켜질 때 옛 판 서버(같은 readnow-pcdock.js를 돌리는 다른 node)만 끔 — 자기 자신은 빼고 · 다른 Node 도우미(인쇄·번외)는 명령 줄이 달라 안 건드림
     $me = [int]$In.self; $n = 0; foreach ($w in @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { "$($_.CommandLine)" -like '*readnow-pcdock.js*' -and [int]$_.ProcessId -ne $me })) { try { Stop-Process -Id ([int]$w.ProcessId) -Force -ErrorAction Stop; $n++ } catch {} }
     $out.stopped = $n; Done $out }
+  'front' { # (0.1.4) 이 도우미 창(제목이 꼭 같은 크롬 창)이 떠 있으면 앞으로 — 어느 모니터에도 안 걸쳐 있으면(화면 밖) 주 모니터 오른쪽 위로 옮긴 뒤 · 없으면 found=false(새로 띄움)
+    $hit = @([RnDock]::Windows() | Where-Object { $_.Proc -ieq 'chrome' -and $_.Title -eq "$($In.title)" }) | Select-Object -First 1
+    if (-not $hit) { $out.found = $false; Done $out }
+    $out.found = $true; $out.moved = $false; $monList = @(Mons)
+    if (-not $hit.Ic) { $cx = ($hit.R.L + $hit.R.R) / 2; $cy = ($hit.R.T + $hit.R.B) / 2; $m = @($monList | Where-Object { $cx -ge $_.b.x -and $cx -lt ($_.b.x + $_.b.w) -and $cy -ge $_.b.y -and $cy -lt ($_.b.y + $_.b.h) }) | Select-Object -First 1
+      if (-not $m) { $m = @($monList | Where-Object { $_.primary }) | Select-Object -First 1; if (-not $m) { $m = $monList[0] }
+        if ($m) { $k = $m.dpi / 96.0; $w = [Math]::Min([int]($In.w * $k), $m.wa.w); $h = [Math]::Min([int]($In.h * $k), $m.wa.h); [void][RnDock]::Place([int64]$hit.H, ($m.wa.x + $m.wa.w - $w), $m.wa.y, $w, $h); $out.moved = $true } } }
+    $out.front = [RnDock]::Front([int64]$hit.H); Done $out }
   'fit' { # 이 도우미 창(제목으로 찾음)을 그 창이 있는 모니터 가운데에 w×h(배율 적용 전 크기)로
     $hit = @([RnDock]::Windows() | Where-Object { $_.Title -like "*$($In.title)*" -and $_.Proc -ieq 'chrome' }) | Select-Object -First 1; if (-not $hit) { Fail '창을 못 찾음' }
     $cx = ($hit.R.L + $hit.R.R) / 2; $cy = ($hit.R.T + $hit.R.B) / 2; $monList = @(Mons); $m = @($monList | Where-Object { $cx -ge $_.b.x -and $cx -lt ($_.b.x + $_.b.w) -and $cy -ge $_.b.y -and $cy -lt ($_.b.y + $_.b.h) }) | Select-Object -First 1; if (-not $m) { $m = @($monList | Where-Object { $_.primary }) | Select-Object -First 1 }; if (-not $m) { $m = $monList[0] }

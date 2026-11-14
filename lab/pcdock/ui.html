@@ -339,7 +339,9 @@ function paintScan() { const r = SC; let tot = 0; let h = '<div class="list"><b>
 $('#clBack').onclick = () => { show('home'); fit('home'); };
 
 /* 창이 떠 있다고 도우미에게 알림(창을 닫고 오래 지나면 도우미가 스스로 꺼짐) */
-setInterval(async () => { try { const j = await (await fetch('/api/ping', { cache: 'no-store' })).json(); if (S && S.ok && j.upd) paintUpd(j.upd); } catch (e) {} }, 60000); /* 새 판을 받아 두면 단추가 저절로 보임 */
+setInterval(async () => { try { const j = await (await fetch('/api/ping', { cache: 'no-store' })).json(); if (S && S.ok && j.upd) paintUpd(j.upd); if (S && S.ok && j.ver && S.ver && j.ver !== S.ver) location.reload(); } catch (e) {} }, 60000); /* 새 판을 받아 두면 단추가 저절로 보임 · (0.1.4) 새 판 서버가 넘겨받았으면 화면도 새로 */
+/* (0.1.4) 창을 닫으면 도우미에게 알림 — 다음에 아이콘을 누르면 '떠 있는 창 찾기'를 건너뛰고 바로 새 창(머리글을 못 붙이는 sendBeacon · 서버는 '닫힘'만 적음) */
+addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/bye', ''); } catch (e) {} });
 $('#detail').innerHTML = HINT;
 load();
 </script>
