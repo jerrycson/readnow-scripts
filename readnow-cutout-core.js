@@ -265,6 +265,24 @@
     return pairs.reverse();
   }
 
+  /* ═══ 글자로 맞추기(견본 그림 없이 · 정범님 11/14 19:33) — 조각에서 읽은 글자(OCR · 어느 읽기 도구든) ↔ 우리 상품 이름·지은이·출판사
+   *  cands = [{ id, title, author, publisher }] (매입 묶음 목록이 있으면 그것 · 없으면 상품 전체) · 글자 두 개씩 묶음(바이그램) 겹침 + 들어 있음 덤
+   *  결과 [{ id, s(0~1), why }] 점수 순 · 책등 글자는 세로로 읽혀 띄어쓰기·순서가 흐트러지므로 낱자 순서에 덜 민감한 바이그램을 씀 ═══ */
+  const normTxt = (t) => String(t || '').toLowerCase().replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/[^0-9a-z가-힣]/g, '');
+  const grams = (t) => { const g = new Map(); for (let i = 0; i < t.length - 1; i++) { const k = t.slice(i, i + 2); g.set(k, (g.get(k) || 0) + 1); } if (t.length === 1) g.set(t, 1); return g; };
+  function dice(a, b) { if (!a.size || !b.size) return 0; let n = 0, na = 0, nb = 0; for (const v of a.values()) na += v; for (const v of b.values()) nb += v; for (const [k, v] of a) if (b.has(k)) n += Math.min(v, b.get(k)); return (2 * n) / (na + nb); }
+  /* 짧은 이름(상품 쪽)이 긴 글(읽은 쪽)에 얼마나 들어 있나 — 책등엔 이름+지은이+출판사가 한 줄로 섞임 */
+  function cover(name, text) { if (!name.size) return 0; let n = 0, tot = 0; for (const [k, v] of name) { tot += v; if (text.has(k)) n += Math.min(v, text.get(k)); } return n / tot; }
+  function textMatch(text, cands, opt) { const T = grams(normTxt(text)); if (!T.size) return []; const W = Object.assign({ title: 1, author: 0.35, publisher: 0.2 }, (opt && opt.w) || {}); const out = [];
+    for (const c of cands || []) { const ti = grams(normTxt(c.title)), au = grams(normTxt(c.author)), pu = grams(normTxt(c.publisher)); if (!ti.size) continue;
+      const st = Math.max(dice(ti, T), cover(ti, T) * (ti.size >= 3 ? 1 : 0.7)), sa = au.size ? cover(au, T) : 0, sp = pu.size ? cover(pu, T) : 0;
+      const s = clamp((W.title * st + W.author * sa + W.publisher * sp) / (W.title + (au.size ? W.author : 0) + (pu.size ? W.publisher : 0)) * (0.85 + 0.15 * st), 0, 1);
+      out.push({ id: c.id, s: round3(s), why: `이름 ${Math.round(st * 100)}%${au.size ? ` · 지은이 ${Math.round(sa * 100)}%` : ''}${pu.size ? ` · 출판사 ${Math.round(sp * 100)}%` : ''}` }); }
+    out.sort((p, q) => q.s - p.s); return out.slice(0, (opt && opt.top) || 5); }
+  /* 여러 조각 글자 ↔ 묶음 목록(사람이 매입한 책들) — 한 상품은 한 조각에만 · 확신 = 점수와 다음 후보와의 차 */
+  function textAssign(texts, cands) { const R = texts.map((t) => textMatch(t, cands, { top: cands.length })); const ids = cands.map((c) => c.id); const M = R.map((r) => ids.map((id) => { const x = r.find((y) => y.id === id); return x ? x.s : 0; }));
+    return matchSet(M.map((_, i) => i), ids.map((_, j) => j), (i, j) => M[i][j]).map((m, i) => (m && m.s > 0.2 ? { id: ids[m.j], s: m.s, conf: round3(clamp(m.s * 0.6 + m.margin * 1.5, 0, 0.99)), why: (R[i].find((y) => y.id === ids[m.j]) || {}).why || '' } : null)); }
+
   /* ═══ 확신 → 할 일 ═══ stage: 1 그림자(셈만) · 2 안내(한 번 눌러 확인 · 기본) · 3 작게 실제(문턱 넘는 것만 저절로) · 4 전부 */
   function decide(conf, cal, stage) { const A = (cal && cal.auto) || DEF.auto, K = (cal && cal.ask) || DEF.ask; if (conf >= A) return stage >= 3 ? 'auto' : 'ask'; if (conf >= K) return 'ask'; return 'pick'; }
 
@@ -288,5 +306,5 @@
     if (s === 2 && st.n >= 100 && st.acc >= C.target) return { stage: 3, why: `확인 ${st.n}건 · 맞힌 몫 ${Math.round(st.acc * 1000) / 10}% — 문턱 넘는 것만 저절로 적용 후보(켜기는 설정)` };
     return { stage: s, why: `그대로(확인 ${st.n}건 · 맞힌 몫 ${Math.round(st.acc * 1000) / 10}%)` }; }
 
-  return { VERSION, DEF, ncc, peaks, down, bgOf, segment, order, assign, pairFB, sig, simil, colorSim, matchSet, spines, alignOrder, decide, learn, stageNext, eanOk, isIsbn, inBox, _t: { comps, morph, fillHoles, maskOf, splitBox, colEdge, straight, seedRanges, clusters, betaLo } };
+  return { VERSION, DEF, ncc, peaks, textMatch, textAssign, normTxt, down, bgOf, segment, order, assign, pairFB, sig, simil, colorSim, matchSet, spines, alignOrder, decide, learn, stageNext, eanOk, isIsbn, inBox, _t: { comps, morph, fillHoles, maskOf, splitBox, colEdge, straight, seedRanges, clusters, betaLo } };
 });

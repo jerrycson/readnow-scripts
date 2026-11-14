@@ -73,6 +73,13 @@ console.log('⑩ 배우기·단계');
   ok(CUT.stageNext(1, { n: 40, acc: 0.9 }).stage === 2, '그림자 → 안내(확인 30건)'); ok(CUT.stageNext(2, { n: 150, acc: 0.99 }).stage === 3, '안내 → 작게 실제(100건·98%)'); ok(CUT.stageNext(3, { n: 50, acc: 0.9 }).stage === 2, '틀린 몫 5% 넘으면 내림'); ok(CUT.stageNext(2, { n: 0 }).stage === 2, '기록 없으면 그대로');
   ok(CUT.decide(0.99, null, 2) === 'ask' && CUT.decide(0.99, null, 3) === 'auto' && CUT.decide(0.3, null, 3) === 'pick', '단계 2는 저절로 안 함 · 3부터'); }
 
+console.log('⑩-2 글자로 맞추기(견본 그림 없이 · 읽은 글자 ↔ 상품 이름)');
+{ const C = [{ id: 'a', title: '소년이 온다', author: '한강', publisher: '창비' }, { id: 'b', title: '채식주의자', author: '한강', publisher: '창비' }, { id: 'c', title: '코스모스', author: '칼 세이건', publisher: '사이언스북스' }, { id: 'd', title: '사피엔스', author: '유발 하라리', publisher: '김영사' }, { id: 'e', title: '데미안', author: '헤르만 헤세', publisher: '민음사' }];
+  const r1 = CUT.textMatch('소년이온다 한강 장편소설 창비', C); ok(r1[0].id === 'a' && r1[0].s > r1[1].s + 0.2, '책등 글자 한 줄 → 소년이 온다', r1.slice(0, 2));
+  const r2 = CUT.textMatch('사피 엔스 유발하라리 김영 사', C); ok(r2[0].id === 'd', '띄어쓰기·끊김 있어도', r2[0]);
+  const r3 = CUT.textMatch('코스모쓰 칼세이건', C); ok(r3[0].id === 'c', '한 글자 잘못 읽어도(OCR 오류)', r3[0]);
+  const A = CUT.textAssign(['데미안 헤르만헤세 민음사', '채식주의자 한강', '알 수 없는 글자 ㅁㄴㅇ'], C); ok(A[0] && A[0].id === 'e' && A[1] && A[1].id === 'b' && !A[2], '여러 조각 ↔ 묶음 목록(못 읽은 조각은 비움)', A); }
+
 console.log('⑪ 큰 사진 시간(4000×3000 · 3×4)');
 { const t0 = Date.now(); const S = scene(3, 4, 60, 0.1, 4000); const tMake = Date.now() - t0; const t1 = Date.now(); const r = CUT.segment(S.img, { seeds: S.codes }); const ms = Date.now() - t1; console.log(`    가르기 ${ms}ms (그림 만들기 ${tMake}ms) · 물건 ${r.items.length}`); ok(ms < 4000, '4초 안', ms); }
 
