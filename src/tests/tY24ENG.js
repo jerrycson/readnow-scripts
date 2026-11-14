@@ -48,7 +48,7 @@ console.log('③ 판매가 — 우리뿐/허위만 +20% · 유효 동급 최저 
   ok(m.mode === 'match' && m.price === 7200 && m.ref.id === '3' && m.n.valid === 2, '유효 동급 최저(허위 3,000원은 뺌) → 7,200원 동가', m);
   const m2 = X.y24PriceOf({ ...L, ourShip: 2000 }, { page1: [{ id: '3', p: 7200, g: '상', sid: 'shopG', s: 2500, fk: fk('ok') }] }); ok(m2.price === 7700, '우리 배송비를 알면 배송비 포함 총액 동가(7,200+2,500−2,000)', m2);
   const b = P([{ id: '5', p: 7000, g: '최상', sid: 'shopG', fk: fk('ok') }, { id: '6', p: 7500, g: '상', sid: 'shopH', fk: fk('ok') }]); ok(b.mode === 'match' && b.ref.id === '5' && b.price === 6650 && b.price < 7000, '더 좋은 등급(최상 7,000)이 환산해서 더 쌈 → 7,000 × 0.95/1 = 6,650(단위 내림)', b);
-  const w = P([{ id: '7', p: 3000, g: '중', sid: 'shopG', fk: fk('ok') }]); ok(w.mode === 'worseOnly' && w.price === 9600 && w.worse.g === '중', '유효 매물이 모두 나쁜 등급 → 동급 경쟁 없음 +20%', w);
+  const w = P([{ id: '7', p: 3000, g: '중', sid: 'shopG', fk: fk('ok') }]); ok(w.mode === 'worseOnly' && w.price === 8000 && w.worse.g === '중', '(정범님 11/14 F45 ②) 유효 매물이 모두 나쁜 등급 → 동급 유효 최저를 못 셈 → 알라딘 값 그대로', w);
   const fl = P([{ id: '8', p: 2000, g: '상', sid: 'shopG', fk: fk('ok') }]); ok(fl.mode === 'stop' && fl.stop && fl.price == null && fl.sug === 2000 && fl.chk && fl.why.some((x) => /출고 자동 결정과 같은 조건/.test(x)), '(정범님 11/10 오후) 유효 동급 최저가 알라딘 값보다 25% 넘게 쌈 → 멈춤(price 없음 · 제안 값 sug) · 사람 확인', fl);
   const e25 = P([{ id: '8', p: 6000, g: '상', sid: 'shopG', fk: fk('ok') }]); const e26 = P([{ id: '8', p: 5950, g: '상', sid: 'shopG', fk: fk('ok') }]); ok(e25.mode === 'match' && e25.price === 6000 && e26.mode === 'stop', '경계 = 출고와 같음: 딱 25% 싼 6,000원은 통과 · 25% 넘게(5,950원) 싸면 멈춤', { e25: e25.mode, e26: e26.mode });
   const c40 = P([{ id: '8', p: 5950, g: '상', sid: 'shopG', fk: fk('ok') }], { cfg: { cheapPct: 40 } }); ok(c40.mode === 'match' && c40.price === 5950, '기준 %는 설정(cheapPct · 웹앱은 출고 자동 결정 설정값을 넘김)', c40.mode);
@@ -75,6 +75,6 @@ console.log('④ 웹앱 📤 새로 올리기 — 엔진 고리 · 하루 상한
   ok(/shipAutoCfgNow\(\)/.test(cut('/* ══ (정범님 11/10 · y24eng)', "const Y24TR = { good:")), '웹앱은 출고 자동 결정 설정(shipAutoCfgNow)의 cheapPct를 씀');
   const j3 = F.y24RegJudge(L, { ...X0, val: () => { throw new Error('x'); } }); ok(j3.ok && j3.row.price === 8000 && j3.row.val === null, '엔진이 깨져도 등록 줄은 그대로(알라딘 값)', j3.row);
   ok(/function y24EngVal\(l, o\)/.test(T) && /const y24EngRegVal = /.test(T) && /function y24EngLoad\(isbns\)/.test(T) && /val: typeof y24EngRegVal === 'function'/.test(T), '웹앱에 꺼내 쓰는 함수(y24EngVal·y24EngRegVal·y24EngLoad·y24EngRows·y24EngSum) · 📤 고리');
-  const blk = cut('/* ══ (정범님 11/10 · y24eng)', "const Y24TR = { good:"); ok(!/\b(alert|confirm|prompt)\s*\(/.test(blk) && !/\.set\(\{|\.update\(|\.add\(|\.delete\(\)/.test(blk.replace(/S\.y24e\.(m|tried|want)\.(set|delete|add)\(/g, '')), '꺼내 쓰는 곳은 읽기·셈만(쓰기 0 · 브라우저 창 0)'); }
+  const blk = cut('/* ══ (정범님 11/10 · y24eng)', "const Y24TR = { good:"); ok(!/\b(alert|confirm|prompt)\s*\(/.test(blk) && !/\.set\(\{|\.update\(|\.add\(|\.delete\(\)/.test(blk.replace(/S\.y24e\.(m|tried|want|nd)\.(set|delete|add)\(/g, '')), '꺼내 쓰는 곳은 읽기·셈만(쓰기 0 · 브라우저 창 0)'); }
 
 if (bad) { console.log(`✗ tY24ENG ${bad}개 실패`); process.exit(1); } else console.log('✓ tY24ENG 통과');
