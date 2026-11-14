@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.332의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.333의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.332' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.332', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.333' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.333', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -962,10 +962,36 @@
         for (const d of y24NosPick(docs, act)) { const ref = fs.collection(W_CMD).doc(d.id);
           try { await fs.runTransaction(async (tx) => { const c = (await tx.get(ref)).data() || {}; if (c.st !== 'done' || c.reNos || !y24NosPick([{ ...c, id: d.id }], []).length) return; const { _t, ...P0 } = y24NosPatch(c, pc, Date.now()); tx.set(ref, { ...P0, trail: firebase.firestore.FieldValue.arrayUnion({ ..._t, m: _t.m + '(수집기)' }) }, { merge: true }); n++; }); } catch (e) {} }
         try { window.__rnLog && window.__rnLog('예스24', n ? 'info' : 'detail', `🔁 예스24 — '할 일 없음'으로 닫힌 수량·판매중지 맡김 ${n}건을 한 번 더 맡긴 일 줄로(열린 웹앱이 보내기 직전 다시 셈 · 줄 열쇠가 바뀌었으면 지금 열쇠로)`); } catch (e) {} } catch (e) {} }
+    /* (y24re9 11/14 ◆y24nosd) 수집기가 한 번 더 줄로 돌린 맡김(reNos)을 옛 웹앱(1.78.619 앞 — '할 일 없음' 닫힘 표시로 그 기기 장부에서 할 일이 숨던 판)이 보내기 직전 다시 셈에서 또 '할 일 없음'으로 닫았으면
+     *  → 이 수집기가 알라딘 쪽 값을 스스로 확인한 뒤(그 ISBN의 판매중 알라딘 상품이 꼭 하나이고 수량이 맡긴 수량과 같음 = 장부 할 일 '예스24 > 알라딘 → 알라딘에 맞춤' 그대로) 새 맡김 문서로 맡은 PC(이 PC) 번외에 바로 한 번
+     *  · 겪은 것: 「hot banana fudge」 195142826 수량 1 — z2e를 이 수집기가 11/14 04:46:28 줄로 돌림 → 6초 뒤 출고 PC 옛 웹앱 1.78.587이 다시 닫음 · 아침에 새 웹앱(1.78.619+)을 오래 연 기기가 없음(이름 없는 PC 1.78.623이 09:14 한 번 몇 분) · 알라딘 판매중 1권 · 예스24 2권(omni_recheck 11/14 00:59Z)
+     *  · 수량 줄이기만(판매중지·판매가·재고 맞추기·다시 올리기 뺌 · 1권 이상) · 번외가 예스24 목록을 다시 읽어 이미 그 수량이면 아무것도 안 누름(isDone) · 판매중이 아니면 안 바꿈 · 문서마다 한 번(reNosD · 트랜잭션) · 그 상품 번호의 가장 새 문서만 · 손님 정보 없음 */
+    const NOSD_OLD = '1.78.619'; /* 근거: 1.78.619(y24qty2 둘째)부터 '아무것도 안 보냄' 닫힘 표시가 할 일을 숨기지 않음 — 그보다 옛 웹앱의 '할 일 없음'만 믿지 않음 */ let nosDAt = 0;
+    const nosDVn = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0);
+    function y24NosDPick(docs, act, hb, nowMs) { return y24NosPick(docs, act, nowMs, 'reNosD').filter((d) => { if (!d.reNos || d.reNosW) return false; const R = ((d.job || {}).rows) || [];
+        if (!R.every((r) => r.kind === 'qty' && Number.isInteger(+r.to) && +r.to >= 1 && /^\d{13}$/.test(String(r.isbn || '')))) return false;
+        const T = (Array.isArray(d.trail) ? d.trail : []).filter((t) => t && t.at).sort((a, b) => String(a.at).localeCompare(String(b.at))); const L = T[T.length - 1];
+        if (!L || L.m !== '다시 셈 — 할 일 없음으로 닫음' || !(Date.parse(L.at) >= Date.parse(d.reNos))) return false; const h = (hb || {})[String(L.by || '')]; return !!(h && h.ver && nosDVn(h.ver) < nosDVn(NOSD_OLD)); }); }
+    function y24NosDFit(rows, LS) { for (const r of rows) { const live = (LS[String(r.isbn)] || []).filter((x) => x && x.status === '판매중' && x.active !== false); if (live.length !== 1) return `ISBN ${r.isbn} 판매중 알라딘 상품 ${live.length}개(꼭 하나여야 함)`; const q = live[0].qty == null ? 1 : +live[0].qty; if (q !== +r.to) return `알라딘 쪽 ${q}권 ≠ 맡긴 수량 ${r.to}권`; } return ''; }
+    async function wReNosD(fs, pc) { if (Date.now() - nosDAt < Y24_NOS_MS) return; nosDAt = Date.now();
+      let hv = ''; try { const hd = await fs.collection('col2_ctl').doc(pc).get(); hv = String((((hd.exists && hd.data()) || {}).st || {}).ver || ''); } catch (e) { return; } if (nosDVn(hv) < nosDVn(NOS_NEED)) return;
+      try { const qs = await fs.collection(W_CMD).where('doneAt', '>=', new Date(Date.now() - Y24_NOS_WIN).toISOString()).limit(200).get(); const docs = qs.docs.map((x) => ({ ...(x.data() || {}), id: x.id })).filter((v) => !v.k || v.k === 'w');
+        if (!docs.some((d) => d.reNos && !d.reNosD)) return; /* 수집기가 돌린 문서가 없으면 더 읽지 않음 */
+        let act = []; try { const qa = await fs.collection(W_CMD).where('st', 'in', ['hold', 'expired', 'new', 'took', 'run', 'local']).limit(100).get(); act = qa.docs.map((x) => ({ ...(x.data() || {}), id: x.id })); } catch (e) { return; }
+        let hb = {}; try { const od = await fs.collection('app_settings').doc('omni_auto').get(); hb = ((od.exists && od.data()) || {}).hb || {}; } catch (e) { return; }
+        for (const d of y24NosDPick(docs, act, hb)) { const rows = ((d.job || {}).rows) || []; const LS = {};
+          try { for (const r of rows) { const ss = await fs.collection('prd_listings').where('isbn13', '==', String(r.isbn)).get(); LS[String(r.isbn)] = ss.docs.map((x) => { const v = x.data() || {}; return { status: v.status, active: v.active, qty: v.qty }; }); } } catch (e) { continue; }
+          const why = y24NosDFit(rows, LS); if (why) { try { window.__rnLog && window.__rnLog('예스24', 'detail', `🟦 예스24 — ${d.id} 바로 맡기지 않음: ${why}(장부 할 일과 다를 수 있음 · 사람 확인)`); } catch (e) {} continue; }
+          const iso = new Date().toISOString(); const jid = 'y24w-' + iso.replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const ref = fs.collection(W_CMD).doc(d.id); const nref = fs.collection(W_CMD).doc(jid); let got = false;
+          try { await fs.runTransaction(async (tx) => { got = false; const c = (await tx.get(ref)).data() || {}; if (c.st !== 'done' || c.reNosD || !y24NosDPick([{ ...c, id: d.id }], [], hb).length) return;
+              tx.set(ref, { reNosD: iso, trail: firebase.firestore.FieldValue.arrayUnion({ at: iso, m: `🔁 옛 웹앱이 다시 셈에서 또 '할 일 없음'으로 닫음 — 수집기가 알라딘 쪽 값을 확인하고 새 맡김 ${jid}로 맡은 PC(${pc})에 바로 한 번`, by: pc }) }, { merge: true });
+              tx.set(nref, { k: 'w', job: { id: jid, rows: (c.job || {}).rows || rows }, st: 'new', holder: pc, by: pc + '(수집기)', at: iso, from: d.id, reNosD: iso, msg: `🔁 ${d.id}의 같은 할 일 — 수집기가 알라딘 쪽 확인 뒤 바로 맡김`, trail: [{ at: iso, m: `🔁 '할 일 없음'으로 두 번 닫힌 ${d.id}의 같은 할 일(옛 웹앱 다시 셈) — 수집기가 알라딘 쪽 값(판매중 · 맡긴 수량과 같음)을 확인하고 바로 맡김(한 번)`, by: pc }] }); got = true; }); } catch (e) { got = false; }
+          if (got) { wSeen = Date.now(); try { window.__rnLog && window.__rnLog('예스24', 'info', `🔁 예스24 — 옛 웹앱이 또 닫은 수량 맡김 ${d.id}를 알라딘 쪽 확인 뒤 새 맡김 ${jid}로 이 PC 번외에 바로 한 번(${rows.map((r) => r.no + ' ' + r.to + '권').join(', ')})`); } catch (e) {} } } } catch (e) {} }
     const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < (Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
     const wRelay1 = async (pc) => { const fs = firebase.firestore(); const iso = () => new Date().toISOString();
       await wRe1114b(fs, pc); /* (y24qty1) 한 번짜리 — 걸린 맡김을 줄로 */
       await wReNos(fs, pc); /* (y24qty2 ◆y24nos) '할 일 없음'으로 닫힌 맡김 — 문서마다 한 번 더 줄로 */
+      await wReNosD(fs, pc); /* (y24re9 ◆y24nosd) 옛 웹앱이 또 닫은 수량 맡김 — 알라딘 쪽 확인 뒤 새 맡김으로 바로 한 번 */
       /* ① 새 맡김 받기 */
       let qn = null; try { qn = await fs.collection(W_CMD).where('st', '==', 'new').limit(10).get(); } catch (e) { return; } if (qn.docs.length) wSeen = Date.now();
       for (const d of qn.docs.sort((a, b) => String((a.data() || {}).at).localeCompare(String((b.data() || {}).at)))) { const v = d.data() || {}; if (v.holder && String(v.holder).trim().toUpperCase() !== pc.trim().toUpperCase()) continue;
