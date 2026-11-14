@@ -11,7 +11,7 @@
  *  지키는 것: 관찰·기록만 — 값·등록·돈을 바꾸지 않음(제33조 무손해) · 알라딘은 클라우드 공개 화면만(로거·사무실 PC에 일 없음 · 제5조) · 사람처럼 쉬엄쉬엄(화면 사이 2.5~6초 · 하루 상한 · 막히면 쉼)
  *          사람이 넣은 설정(app_settings/ed_cfg)은 읽기만 · 지우지 않음(묶음이 바뀌면 hist에 남김) · 손님 정보 없음 */
 'use strict';
-const ED_V = '0.1.1';
+const ED_V = '0.1.2';
 const ED_DEF = {
   on: true, tickMs: 95e3, dayCap: 600, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 600쪽 · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
   maxEds: 24, maxLinkHops: 14, searchTop: 6, accept: 0.72, maybe: 0.52, // 받아들임 문턱 0.72 · 후보 0.52(첫 값 — 매일 스스로 맞춤 edTune)
@@ -27,7 +27,7 @@ const nz = (x) => (x == null || x === '' ? null : x);
 const norm = (s) => String(s || '').toLowerCase().normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu, '');
 const LABEL_RE = /(최신\s*)?(전면\s*)?(개정\s*증보|개정\s*\d*\s*판|개정판|증보판|증보|신판|\d+\s*주년\s*(기념|특별)\s*(판|에디션)?|리커버(\s*에디션|\s*특별판)?|특별판|한정판|기념판|보급판|양장(본|판)?|반양장|합본(판)?|완역판|결정판|무삭제판|큰\s*글(자|씨)\s*(책|판)?|포켓\s*(판|북)|미니\s*북|제?\s*\d+\s*판|\d+(st|nd|rd|th)\s*ed(ition)?\.?|revised\s*edition|new\s*edition|ed\.\s*\d+)/i;
 function edLabel(title, sub) { const s = `${title || ''} ${sub || ''}`; const m = s.match(LABEL_RE); if (!m) return null; const t = m[0].replace(/\s+/g, ' ').trim(); const n = (t.match(/(\d+)\s*(판|st|nd|rd|th)/i) || [])[1]; return { t: t.slice(0, 24), n: n ? +n : /개정|revised|new/i.test(t) ? 2 : null }; }
-function edVol(title) { const s = String(title || ''); const m = s.match(/(\d+)\s*(권|부|편|집)\s*$/) || s.match(/\s(\d+)\s*$/) || s.match(/[\s(]([상중하])[)\s]*$/) || s.match(/\b(vol\.?|volume)\s*(\d+)/i); if (!m) return null; return String(m[2] && /\d/.test(m[2]) ? m[2] : m[1]); }
+function edVol(title) { const s = String(title || ''); const rg = s.match(/(\d+)\s*[~∼～\-–]\s*(\d+)\s*(권|부|편|집)?/); if (rg && +rg[2] > +rg[1]) return `${+rg[1]}-${+rg[2]}`; /* (0.1.2) '11~20 세트'와 '31~40 세트'는 다른 묶음(실제 11/14 마법천자문을 판본으로 잘못 넣음) */ const m = s.match(/(\d+)\s*(권|부|편|집)\s*$/) || s.match(/\s(\d+)\s*$/) || s.match(/[\s(]([상중하])[)\s]*$/) || s.match(/\b(vol\.?|volume)\s*(\d+)/i); if (!m) return null; return String(m[2] && /\d/.test(m[2]) ? m[2] : m[1]); }
 function edCore(title) { let s = String(title || ''); s = s.replace(/[[(（【〈<][^\])）】〉>]*[\])）】〉>]/g, (x) => (EDKW.test(x) || /세트|전\s*\d+\s*권|에디션|edition|특장|한정|굿즈|양장|무선|반양장|큰글|전자책|ebook|오디오북/i.test(x) ? ' ' : x));
   s = s.split(/\s[-–—:]\s|\s?[:：]\s?/)[0]; s = s.replace(LABEL_RE, ' ').replace(/(\d+)\s*(권|부|편|집)\s*$/, ' '); return norm(s) || norm(title); }
 function bigr(s) { const o = new Map(); for (let i = 0; i < s.length - 1; i++) { const g = s.slice(i, i + 2); o.set(g, (o.get(g) || 0) + 1); } return o; }
@@ -202,7 +202,7 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     try { const L = o.isbn ? [{ isbn: o.isbn, t: '', av: null }] : await targets(); R.targets = L.length; let guard = 0;
       while (Date.now() - T0 < c.tickMs && guard++ < 200 && L.length) { if (!o.isbn && ST.cur >= L.length) { ST.cur = 0; ST.tgAt = 0; break; } const t = o.isbn ? L[0] : L[ST.cur++];
         if (!o.isbn) { const b = await C('ed_book').doc(t.isbn).get().catch(() => null); const v = b && b.exists ? b.data() : null; if (v && v.nextAt && Date.parse(v.nextAt) > Date.now() && !(t.hot && v.at && t.hot > v.at.slice(0, 10).replace(/-/g, '').slice(2) + '00')) { R.skipped++; continue; } }
-        try { const r = await runBook(t, { budgetMs: Math.max(25e3, c.tickMs - (Date.now() - T0)) }); R.books.push({ isbn: t.isbn, eds: r.eds || 0, newer: r.newer || 0, older: r.older || 0, trans: r.trans || 0, pages: r.pages, links: r.links, cands: r.cands, err: r.err || null }); tune.pos.push(...(r.pos || [])); tune.neg.push(...(r.neg || [])); }
+        try { const r = await runBook(t, { budgetMs: Math.max(25e3, c.tickMs - (Date.now() - T0)) }); R.books.push({ isbn: t.isbn, nl: r.nl || 0, part: r.partial || null, eds: r.eds || 0, newer: r.newer || 0, older: r.older || 0, trans: r.trans || 0, pages: r.pages, links: r.links, cands: r.cands, err: r.err || null }); tune.pos.push(...(r.pos || [])); tune.neg.push(...(r.neg || [])); }
         catch (e) { R.errs.push(String(e.message || e).slice(0, 120)); if (e.pause || e.cap) break; }
         if (o.isbn) break; }
     } catch (e) { R.errs.push(String(e.message || e).slice(0, 160)); } finally { ST.busy = false; }
