@@ -83,8 +83,18 @@ console.log('⑩-2 글자로 맞추기(견본 그림 없이 · 읽은 글자 ↔
 console.log('⑪ 큰 사진 시간(4000×3000 · 3×4)');
 { const t0 = Date.now(); const S = scene(3, 4, 60, 0.1, 4000); const tMake = Date.now() - t0; const t1 = Date.now(); const r = CUT.segment(S.img, { seeds: S.codes }); const ms = Date.now() - t1; console.log(`    가르기 ${ms}ms (그림 만들기 ${tMake}ms) · 물건 ${r.items.length}`); ok(ms < 4000, '4초 안', ms); }
 
+console.log('⑪-2 구글 글자 읽기 한 달 몫(cloud/index.js CUTOCR — 가짜 Firestore·가짜 Vision)');
+{ const fs = require('fs'); const src = fs.readFileSync(path.join(REPO, 'cloud/index.js'), 'utf8'); const code = src.slice(src.indexOf('/* CUTOCR-START */'), src.indexOf('/* CUTOCR-END */'));
+  const store = {}; const ref = { get: async () => ({ exists: !!store.q, data: () => store.q }) }; let calls = 0;
+  const ctx = { C: () => ({ doc: () => ref }), db: { runTransaction: async (fn) => fn({ get: (r) => r.get(), set: (r, v, o) => { store.q = { ...(store.q || {}), ...v }; } }) }, nowIso: () => '2026-11-14T12:00:00Z', Buffer, require: () => ({ ImageAnnotatorClient: function () { this.documentTextDetection = async () => { calls++; return [{ fullTextAnnotation: { pages: [{ width: 100, height: 100, blocks: [{ paragraphs: [{ boundingBox: { vertices: [{ x: 10, y: 10 }, { x: 40, y: 10 }, { x: 40, y: 20 }, { x: 10, y: 20 }] }, words: [{ symbols: [{ text: '소' }, { text: '년' }] }] }] }] }] } }]; }; } }), visionClient: null };
+  const fn = new Function(...Object.keys(ctx), code + '; return { cutOcr, visionQuota, set vc(v) { visionClient = v; } };')(...Object.values(ctx));
+  global.__t = (async () => { const r1 = await fn.cutOcr('AAAA'); ok(r1.ok && r1.paras[0].text === '소년' && Math.abs(r1.paras[0].box.x - 0.1) < 1e-9 && r1.quota.n === 1 && r1.quota.cap === 900, '글자·자리(0~1) · 몫 1/900', r1);
+    await fn.visionQuota('spines'); ok(store.q.sp === 1 && store.q.n === 1, '사진 견적 책등(/spines)도 같은 몫에 셈(막지는 않음)', store.q);
+    store.q.n = 899; const r2 = await fn.cutOcr('AAAA'); ok(r2.ok === false && /무료 몫/.test(r2.err) && calls === 1, '899+1(책등)=900 → 거절 · 구글 안 부름', { r2, calls });
+    store.q.m = '2026-10'; const r3 = await fn.cutOcr('AAAA'); ok(r3.ok && store.q.n === 1 && store.q.m === '2026-11', '새 달이면 0부터', store.q); })(); }
+
 console.log('⑫ 클라우드 스스로 회차(cloud/cutself.js · 가짜 Firestore)');
-(async () => { const CS = require(path.join(REPO, 'cloud/cutself.js')); const store = {}; const deep = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b)) o[k] = v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) ? deep(o[k], v) : v; return o; };
+(async () => { await global.__t; const CS = require(path.join(REPO, 'cloud/cutself.js')); const store = {}; const deep = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b)) o[k] = v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) ? deep(o[k], v) : v; return o; };
   const C = (c) => ({ doc: (id) => ({ get: async () => ({ exists: !!(store[c] || {})[id], data: () => JSON.parse(JSON.stringify(store[c][id])) }), set: async (v, o) => { store[c] = store[c] || {}; store[c][id] = o && o.merge ? deep(store[c][id], v) : v; } }) });
   const recs = []; for (let i = 0; i < 120; i++) recs.push({ m: 'back', conf: 0.9 + (i % 10) / 100, ok: true }); for (let i = 0; i < 6; i++) recs.push({ m: 'back', conf: 0.6, ok: false });
   store.app_settings = { cut_engine: { stage: 2, recs, recent: [{ sid: 'cut_a', at: new Date().toISOString(), mode: 'back', n: 12 }], log: [{ at: 'x', t: '사람이 넣은 첫 줄' }], cfg: { mine: 1 } } };
