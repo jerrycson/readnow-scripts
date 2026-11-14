@@ -25,8 +25,13 @@ module.exports = {
    "status": "배선",
    "from": "R02 PROBABILITY:SALE_SOON (팔릴 확률 모형 챔피언 7일 확률)",
    "score": {
+    "expect": 0,
     "min_n": 30,
-    "k_days": 7
+    "k_days": 7,
+    "doc": "eng_wire/W01",
+    "n": "score.eff30.nT",
+    "v": "score.eff30.d",
+    "down": -0.05
    },
    "reads": [
     "cloud:W01"
@@ -40,8 +45,13 @@ module.exports = {
    "from": "N05 EFFECT_CI:TIMING_EFFECT (소비심리 「내일 주문 ±%」 신호 tmr)",
    "srcDoc": "app_settings/cons_study",
    "score": {
+    "expect": 0,
     "min_n": 30,
-    "k_days": 7
+    "k_days": 7,
+    "doc": "eng_wire/W02",
+    "n": "score.eff30.nT",
+    "v": "score.eff30.d",
+    "down": -0.05
    },
    "reads": [
     "web:W02",
@@ -125,8 +135,13 @@ module.exports = {
    "from": "N04 SCORE:PEER_TRUST (판매자 가치 무게 sellerW)",
    "srcDoc": "app_settings/peer_ev",
    "score": {
+    "expect": 0,
     "min_n": 30,
-    "k_days": 7
+    "k_days": 7,
+    "doc": "eng_wire/W08",
+    "n": "score.eff30.nT",
+    "v": "score.eff30.d",
+    "down": -0.05
    },
    "reads": [
     "cloud:W08"

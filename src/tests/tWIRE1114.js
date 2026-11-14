@@ -20,7 +20,7 @@ for (const [k, v] of Object.entries(decs)) store.set('prd_price_decisions/' + k,
 store.set('app_settings/ml_state', { lastDay: today }); store.set('app_settings/cons_study', { at: iso(now - 3600e3), sig: [{ k: 'tmr', e: -0.12 }] });
 store.set('app_settings/eng_wire_reads_' + today.slice(0, 7), { d: { [today]: { W00: 5, W02: 2 } } });
 const logs = []; const sales = new Map([['1001', [{ at: now - 1000, price: 2800 }]]]);
-const ctx = { Math, Date, JSON, Object, Array, Number, String, Set, Map, isFinite, console, Promise,
+const FV = { increment: (n) => n }; const ctx = { FV, Math, Date, JSON, Object, Array, Number, String, Set, Map, isFinite, console, Promise,
   C: (c) => colRef(c), W: () => ({ writer: 'cloud' }), nowIso: () => new Date().toISOString(), kday, shard: (arr, n) => { const o = []; for (let i = 0; i < arr.length; i += n) o.push(arr.slice(i, i + n)); return o; }, ENGX_MEM_N: 600, VER: 'test', log: (...x) => logs.push(x.join(' ')),
   mlMod: async () => ML, mlLoadDay: async () => rows, mlShadowLoad: async () => ({ at: iso(now - 2 * 3600e3), keys: pcK, pc: pcV, ph: pcV }), mlSales: async () => sales };
 vm.runInNewContext(code + ';this.wireEval = wireEval; this.wireQ = wireQ; this.wireTick = wireTick; this.WIRE_DEF = WIRE_DEF;', ctx);
@@ -45,9 +45,10 @@ const t = M1.L.filter((m) => m.arm === 'treat'), c = M1.L.filter((m) => m.arm ==
 ok(M1.L.some((m) => m.key === 'aladin_1001' && m.y && m.y.sold) || !M1.L.some((m) => m.key === 'aladin_1001'), '판매 붙이기(있으면)');
 const D1 = store.get('eng_wire/W01'); ok(D1 && D1.kind === 'wire' && D1.score && D1.score.arms && D1.stage === 1 && D1.reads[today] === 60 && Array.isArray(D1.log), 'eng_wire 문서(R17 eng_exp 칸 + 단계·읽음·기록)', D1 && Object.keys(D1));
 ok(store.get('eng_wire_hist/W01_' + today), '날마다 eng_wire_hist');
+ok(store.get('app_settings/eng_wire_reads_' + today.slice(0, 7)).d[today].W01 === 60, '클라우드 그림자 읽은 횟수도 읽음 장부에(엔진 회차가 봄)');
 ok(JSON.stringify([...store.entries()].filter(([k]) => k.startsWith('prd_price_decisions/'))) === before && !writes.some((w) => /^prd_|^eng_exp/.test(w)), '판정 기록·실험 장부는 안 고침(무손해)', writes.filter((w) => /^prd_|^eng_exp/.test(w)));
 const r2 = await ctx.wireTick(); ok(r2 === null, '하루 한 번(다시 부르면 셈 안 함)');
-store.get('eng_wire/W01').stage = 2; store.set('eng_wire/W01', { ...store.get('eng_wire/W01'), stage: 2 }); await ctx.wireTick(true); ok(store.get('eng_wire/W01').stage === 2 && store.get('eng_wire_m/W01_00').L.filter((m) => m.arm === 'treat').length === t.length, '엔진 회차가 고친 단계를 덮지 않음 · 같은 상품 두 번 안 넣음');
+store.set('app_settings/eng_wire_stage', { w: { W01: { stage: 2 } } }); await ctx.wireTick(true); ok(store.get('eng_wire/W01').stage === 2 && store.get('eng_wire_m/W01_00').L.filter((m) => m.arm === 'treat').length === t.length, '엔진 회차가 고친 단계를 덮지 않음 · 같은 상품 두 번 안 넣음');
 console.log('③ 웹앱');
 const app = fs.readFileSync(findUp('src/app.html'), 'utf8');
 ok(/function wireRd\(id\)/.test(app) && /function wireLine\(where\)/.test(app), 'wireRd·wireLine 있음');
