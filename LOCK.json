@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24first1",
+ "what": "예스24 첫 건·다시 로그인 판 내기",
+ "since": "2026-11-14T10:21:15Z",
+ "beat": "2026-11-14T10:21:15Z",
  "ask": null,
  "last": {
   "who": "aisum1",
   "done": "웹앱 1.78.639 · 클라우드 0.35.256 · 우리숍 0.2.10 · 7f020476 ✍ 요약·추천글 N14",
   "at": "2026-11-14T10:20:52Z"
  },
- "host": null
+ "host": "vm-y24first1"
 }
