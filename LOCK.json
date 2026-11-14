@@ -1,13 +1,13 @@
 {
- "holder": "shipmix1",
- "what": "출고 묶음 잠금 판 내기",
- "since": "2026-11-14T12:02:15Z",
- "beat": "2026-11-14T12:11:47Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shelfperf1",
-  "done": "우리숍 서가 0.2.15·숍 0.2.12 · 557cc889",
-  "at": "2026-11-14T12:02:04Z"
+  "who": "shipmix1",
+  "done": "웹앱 1.78.652 출고 묶음 잠금·모든 기기 같은 단추·까닭 가름·출고 끝 알림 · 12ca4054",
+  "at": "2026-11-14T12:15:54Z"
  },
- "host": "vm-shipmix1"
+ "host": null
 }
