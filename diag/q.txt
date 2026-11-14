@@ -1,2 +1,2 @@
-doc=app_settings/write_watch
-# 1720416170
+@health&hours=24
+# 3632173
