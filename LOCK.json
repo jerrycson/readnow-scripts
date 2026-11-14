@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "책방 친구 옛 캐릭터 내리기",
- "since": "2026-11-14T05:17:37Z",
- "beat": "2026-11-14T05:31:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "pcdock3",
-  "done": "PC 배치 0.1.3 · 수집기 1.89.334 (2807f9f4)",
-  "at": "2026-11-14T05:16:58Z"
+  "who": "friend",
+  "done": "웹앱 1.78.627 · 책방 친구 0.16.0 — 옛 캐릭터 내림 · 보존 갈래 archive/friend-chars-2026-11-14 (c457183f)",
+  "at": "2026-11-14T05:32:41Z"
  },
- "host": "vm"
+ "host": null
 }
