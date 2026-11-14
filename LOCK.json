@@ -1,13 +1,13 @@
 {
- "holder": "note6",
- "what": "📓 노트 조합·넘침 판",
- "since": "2026-11-14T03:43:52Z",
- "beat": "2026-11-14T03:52:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
-  "done": "",
-  "at": "2026-11-14T03:38:52Z"
+  "who": "note6",
+  "done": "웹앱 1.78.626 📓 노트 조합·넘침 (d16e3ef6)",
+  "at": "2026-11-14T03:54:51Z"
  },
- "host": "vm-note6"
+ "host": null
 }
