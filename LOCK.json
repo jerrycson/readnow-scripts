@@ -1,13 +1,13 @@
 {
- "holder": "note7",
- "what": "📓 노트 판 1.78.628 push",
- "since": "2026-11-14T05:33:30Z",
- "beat": "2026-11-14T05:42:18Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "friend",
-  "done": "웹앱 1.78.627 · 책방 친구 0.16.0 — 옛 캐릭터 내림 · 보존 갈래 archive/friend-chars-2026-11-14 (c457183f)",
-  "at": "2026-11-14T05:32:41Z"
+  "who": "note7",
+  "done": "웹앱 1.78.628 — 📓 노트 카드 [💬 메모 달기]가 고른 글 메모도 쌓음 (547eff0a)",
+  "at": "2026-11-14T05:42:33Z"
  },
- "host": "vm-note7"
+ "host": null
 }
