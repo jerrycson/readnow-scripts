@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "mjcode1",
+ "what": "웹앱 — 미등록 상품 관리 코드 붙박기 · 알라딘 바로 장바구니(MJ님 11/14)",
+ "since": "2026-11-14T11:19:01Z",
+ "beat": "2026-11-14T11:19:01Z",
  "ask": null,
  "last": {
   "who": "y24ops1",
   "done": "웹앱 1.78.647 · 9103d1c3",
   "at": "2026-11-14T11:18:54Z"
  },
- "host": null
+ "host": "vm-mjcode1"
 }
