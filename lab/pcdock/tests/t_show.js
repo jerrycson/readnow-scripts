@@ -95,6 +95,14 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       ok(B2r === null && await until(() => chromeCalls(D2).length === 1, 3000) && /0\.1\.3 · \d+\) 주소로 창을 띄움/.test(logOf(D2)), '0.1.3을 못 끄면(PowerShell 실패) 0.1.3 서버 주소로 여기서 창을 띄우고 끝남', logOf(D2).slice(-400));
       ok((await req(port2, 'GET', '/api/ping')).j.ver === '0.1.3', '그때 0.1.3 서버는 그대로'); }
 
+    console.log('⑥-2 실제 0.1.4 서버(커밋 d8760f1)가 살아 있을 때 지금 판을 켬');
+    { const OLD = mk(); for (const f of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files) { const r = cp.spawnSync('git', ['show', 'd8760f1:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.4 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
+      const D = mk(); const port = rport(); const A = await start(D, port, {}, path.join(OLD, 'readnow-pcdock.js')); kill.push(A);
+      ok((await req(port, 'GET', '/api/ping')).j.ver === '0.1.4', '0.1.4 서버가 켜짐');
+      const B = await start(D, port); kill.push(B); const pb = await req(port, 'GET', '/api/ping');
+      ok(pb.j && pb.j.ver === VER && VER !== '0.1.4' && /옛 판 0\.1\.4 서버.*넘겨받음\(quit\) — 끔/.test(logOf(D)) && !fakeActs(D).includes('stopold'), `0.1.4 → ${VER}: /api/quit로 PowerShell 없이 넘겨받음(정범님 손 없음)`, logOf(D).split('\n').filter((l) => /넘겨/.test(l)));
+      ok(await until(() => chromeCalls(D).length >= 2 || /🪟 떠 있던 창을 앞으로 \(켬\)/.test(logOf(D)), 5000), '넘겨받은 새 판이 창을 띄움(옛 창이 떠 있으면 그 창을 앞으로)', logOf(D).split('\n').filter((l) => /🪟/.test(l))); stop(B); }
+
     console.log('⑦ 켜는 길 고침(run.vbs → start.cmd)');
     { const L = mk(); const node = 'C:\\Users\\someone\\ReadNow\\node\\node.exe';
       const runCmd = `@echo off\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\nif exist "app.new\\.ready" (\r\n  if exist app.old rmdir /s /q app.old\r\n  move app app.old >nul && move app.new app >nul\r\n  del app\\.ready >nul 2>&1\r\n)\r\n"${node}" app\\readnow-pcdock.js %* >> "%~dp0console.log" 2>&1\r\n`;
@@ -115,6 +123,20 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       const S2 = await start(D, rport(), { RN_PCDOCK_LAUNCH_DIR: L }); kill.push(S2); const dg2 = await req(S2.port, 'GET', '/api/diag'); ok(dg2.j.launch === '이미 고침(start.cmd)' && fs.readFileSync(path.join(L, 'start.cmd'), 'utf8') === st, '다시 켜도 start.cmd를 다시 쓰지 않음', dg2.j.launch); stop(S2);
       const L2 = mk(); fs.writeFileSync(path.join(L2, 'run.cmd'), runCmd.replace(' >> "%~dp0console.log" 2>&1', ''), 'utf8'); fs.writeFileSync(path.join(L2, 'run.vbs'), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(vbs, 'utf16le')]));
       const S3 = await start(mk(), rport(), { RN_PCDOCK_LAUNCH_DIR: L2 }); kill.push(S3); const dg3 = await req(S3.port, 'GET', '/api/diag'); ok(dg3.j.launch === '고칠 것 없음' && !fs.existsSync(path.join(L2, 'start.cmd')), '0.1.4 설치 꼴이면 아무것도 안 바꿈', dg3.j.launch); stop(S3); }
+
+    console.log('⑨ (0.1.5) 실행·배치가 겹치지 않음');
+    { const D = mk(); const S = await start(D, rport(), { FAKE_SLOW_RUN: '2500' }); kill.push(S); const st = await req(S.port, 'GET', '/api/state');
+      const cfg = JSON.parse(JSON.stringify(st.j.cfg)); cfg.place = [{ app: 'kakao', mon: st.j.mons[0].id, c: 0, r: 0, w: 1, h: 1 }]; const sv = await req(S.port, 'POST', '/api/save', { cfg }); ok(sv.j && sv.j.ok, '설정 저장(카카오 하나)', sv.j);
+      const [a1, a2] = await Promise.all([req(S.port, 'POST', '/api/run', {}), (async () => { await sleep(300); return req(S.port, 'POST', '/api/run', {}); })()]);
+      ok(a1.j && a1.j.ok && a2.j && a2.j.ok === false && /실행·배치 중/.test(a2.j.err || ''), '③을 두 번 누르면 두 번째는 막힘(창이 두 벌 안 생김)', [a1.j && a1.j.ok, a2.j]);
+      ok(fakeActs(D).filter((x) => x === 'run').length === 1, 'PowerShell 실행·배치는 한 번만');
+      const sl = cp.spawn(process.execPath, ['-e', 'setTimeout(()=>{},20000)']); kill.push({ p: sl });
+      fs.writeFileSync(path.join(D, 'run.lock'), JSON.stringify({ pid: sl.pid, at: Date.now() }));
+      const a3 = await req(S.port, 'POST', '/api/run', {}); ok(a3.j && a3.j.ok === false && /다른 실행·배치가 아직 도는 중/.test(a3.j.err || ''), '윈도우 시작 자동 실행(다른 프로세스)이 도는 중이면 막힘(run.lock)', a3.j);
+      const d = await req(S.port, 'GET', '/api/diag'); ok((d.j.errs || [])[0] && d.j.errs[0].act === 'run', '막힌 것도 진단에 남음');
+      fs.writeFileSync(path.join(D, 'run.lock'), JSON.stringify({ pid: 999999, at: Date.now() }));
+      const a4 = await req(S.port, 'POST', '/api/run', {}); ok(a4.j && a4.j.ok && !fs.existsSync(path.join(D, 'run.lock')), '그 프로세스가 없으면 낡은 잠금으로 보고 돎 · 끝나면 잠금을 치움', a4.j);
+      try { sl.kill(); } catch (e) {} stop(S); }
 
     console.log('⑧ 지키기');
     { const D = mk(); const S = await start(D, rport()); kill.push(S);

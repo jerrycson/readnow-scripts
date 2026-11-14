@@ -52,6 +52,25 @@ console.log('②-2 PowerShell 5.1 함정(0.1.0 ③ \'op_Addition\' 오류의 까
   ok(/KakaoTalk\.exe'/.test(rd('apps.js')) && /%LOCALAPPDATA%\\\\Kakao\\\\KakaoTalk\\\\KakaoTalk\.exe/.test(rd('apps.js')) && /Uninstall/.test(ps), '카카오톡 찾기 — %LOCALAPPDATA%\\Kakao · Program Files (x86) · 설치 목록 · 시작 메뉴');
   const cs = rd('pcdock-win.cs'); ok(/public static bool Close\(/.test(cs) && /public static string ExplorerTab\(/.test(cs) && /GetForegroundWindow\(\) != h/.test(cs), 'C# — 닫기(WM_CLOSE) · 탐색기 탭(창이 맨 앞일 때만 글자를 침)'); }
 
+console.log('②-3 (0.1.5 · 정범님 11/14 14:48 「탐색기 창이 끝없이 열림 · 제목 모두 홈」) PowerShell 빈 칸·따옴표 함정');
+{ const strip = (t) => t.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n').replace(/#[^'"\n]*$/gm, '');
+  const old = require('child_process').spawnSync('git', ['show', '2807f9f4:lab/pcdock/pcdock.ps1'], { cwd: __dirname, encoding: 'utf8' }).stdout || '';
+  const BAD = /@\(\$st\.s\.tabs\)\.Count|foreach \(\$tb in @\(\$st\.s\.tabs\)\)/;
+  ok(BAD.test(old), '(시험이 잡는지) 0.1.3 원문에 @($st.s.tabs).Count — 탭 없는 단계도 @($null).Count = 1로 탭 더하기를 돌았음');
+  const ps = strip(rd('pcdock.ps1')); ok(!BAD.test(ps) && /function Arr\(\$v\)/.test(ps) && /\(Arr \$st\.s\.tabs\)\.Count -and -not \$st\.s\.over/.test(ps) && /foreach \(\$tb in \(Arr \$st\.s\.tabs\)\)/.test(ps), '0.1.5: 탭은 실제로 있는 것만(Arr) · 겹치기 창은 탭 더하기를 다시 안 돎');
+  const run = ps.slice(ps.indexOf("'run' {"), ps.indexOf("{ $_ -eq 'cleanscan'"));
+  ok(!/@\(\$\w+(\.\w+)+\)\.Count/.test(run.replace(/@\(\$In\.close\)\.Count|@\(\$m\.procs\)\.Count|@\(\$Res \| [^)]*\)\.Count|@\(\$closed \| [^)]*\)\.Count/g, '')), "'run' 안에 그 밖의 @($x.y).Count 없음(빈 칸이면 1)");
+  ok(/launchMax = \$steps\.Count \+ \$tabTotal \+ 1/.test(run) && /새 창 상한/.test(run) && /hardEnd/.test(run) && /실행 시간 상한/.test(run), '새 창 상한(단계 + 탭 + 1) · 실행 시간 상한 — 넘으면 안 띄우고 까닭');
+  ok(/Test-Path -LiteralPath \$fp -PathType Container/.test(run) && /폴더가 없음/.test(run) && /FolderPath \$sp\.folder/.test(run), "폴더: %변수% 펼침 · 없으면 '홈'을 여는 대신 건너뜀");
+  ok(/Shell\.Application/.test(ps) && /if \(\$m\.folder\)/.test(run), '폴더 단계는 그 경로를 보는 창만 집음(Shell.Application) — 남의 자리에 아무 탐색기나 안 집음');
+  ok(/-replace '\(\\\\\+\)\$', '\$1\$1'/.test(ps), "Q(): \\로 끝나는 경로는 끝 \\를 두 번(\\\"가 따옴표를 먹지 않게)");
+  /* Q()를 JS로 옮겨 윈도우 명령 줄 규칙(CommandLineToArgvW)으로 되읽기 — 경로가 그대로 돌아오는지 */
+  const Q = (a) => /[\s"]/.test(a) ? '"' + a.replace(/"/g, '\\"').replace(/(\\+)$/, '$1$1') + '"' : a;
+  const argv1 = (c) => { let o = '', i = 0, q = false; while (i < c.length) { let b = 0; while (c[i] === '\\') { b++; i++; } if (c[i] === '"') { o += '\\'.repeat(b >> 1); if (b & 1) { o += '"'; i++; } else { q = !q; i++; } } else { o += '\\'.repeat(b); if (i < c.length) o += c[i++]; } } return o; };
+  const cases = ['D:\\ReadNow', 'D:\\Read Now\\', 'C:\\Users\\u\\OneDrive\\바탕 화면\\', 'D:\\'];
+  ok(cases.every((c) => argv1(Q(c)) === c), 'Q() 결과를 윈도우가 되읽으면 경로 그대로(빈칸·끝 \\ 포함)', cases.map((c) => [Q(c), argv1(Q(c))]));
+  const Q0 = (a) => /[\s"]/.test(a) ? '"' + a.replace(/"/g, '\\"') + '"' : a; ok(argv1(Q0('D:\\Read Now\\')) !== 'D:\\Read Now\\', '(시험이 잡는지) 0.1.3 Q()는 「D:\\Read Now\\」를 깨뜨림'); }
+
 console.log('③ 운영과 안 겹침 · 안전');
 const code = man.filter((f) => /\.(js|html|ps1|cs)$/.test(f)).map((f) => [f, rd(f)]).concat([['install-pcdock.ps1', rd('install-pcdock.ps1')]]);
 const noC = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*#.*$/gm, '');

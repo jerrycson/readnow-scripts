@@ -34,6 +34,7 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
   if (act === 'lnk') return out({ target: 'C:\\Program Files\\Notepad++\\notepad++.exe', args: '', icon: null });
   if (act === 'exe') return out({ list: j.name === 'notfound.exe' ? [] : ['C:\\Program Files\\Some\\' + j.name], icon: null });
   if (act === 'startup') { if (on === 1 && SF) fs.writeFileSync(SF, '1'); if (on === 0 && SF) { try { fs.renameSync(SF, SF + '.off'); } catch (e) {} } return out({ on: !!(SF && fs.existsSync(SF)), path: 'C:\\…\\ReadNow-PC배치.lnk' }); }
+  if (act === 'run' && +process.env.FAKE_SLOW_RUN && !j._slowed) { j._slowed = 1; return setTimeout(() => { process.stdout.write(JSON.stringify({ ok: true, act, aware: 'pmv2', build: 22631, closed: [], res: (j.steps || []).map((s) => ({ app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' })) }) + '\n'); }, +process.env.FAKE_SLOW_RUN); } /* (0.1.5) 느린 실행(겹침 시험) */
   if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ok: true, gone: true, why: '' })),
     res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect }) });
   /* (0.1.4) front — FAKE_WIN 파일이 있으면 '도우미 창이 떠 있음'(가짜 크롬이 만듦) */

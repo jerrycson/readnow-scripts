@@ -33,7 +33,13 @@ function Rc($r) { @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } 
 function Mons { @([RnDock]::Monitors() | ForEach-Object { @{ id = $_.Id; primary = $_.Primary; b = (Rc $_.B); wa = (Rc $_.Wa); dpi = [int]$_.Dpi } }) }
 function WinInfo($w) { @{ h = $w.H; pid = [int]$w.Pid; proc = $w.Proc; cls = $w.Cls; title = $w.Title; r = (Rc $w.R); ic = $w.Ic; zm = $w.Zm } }
 function Exp($p) { [Environment]::ExpandEnvironmentVariables("$p") }
-function Q($a) { $s = "$a"; if ($s -match '[\s"]') { '"' + ($s -replace '"', '\"') + '"' } else { $s } }
+function Q($a) { $s = "$a"; if ($s -match '[\s"]') { '"' + (($s -replace '"', '\"') -replace '(\\+)$', '$1$1') + '"' } else { $s } } # (0.1.5) \로 끝나는 경로는 끝 \를 두 번 — 아니면 \"가 닫는 따옴표를 먹어 경로가 깨져 탐색기가 '홈'을 엶
+# (0.1.5) 목록 칸 — 비었거나 없는 칸은 빈 목록(PowerShell은 @($null).Count가 1이라, 0.1.3은 탭이 없는 모든 단계에서도 '탭 더하기'를 돌려 빈 경로로 Ctrl+T·탐색기 '홈' 창을 거듭 열었음)
+function Arr($v) { ,@(@($v) | Where-Object { $null -ne $_ -and "$_" -ne '' }) }
+# (0.1.5) 폴더 경로 — 환경 변수(%USERPROFILE%·%OneDrive% 등) 펼치고 끝 \ 정리(드라이브 뿌리 D:\는 그대로)
+function FolderPath($p) { $e = (Exp "$p").Trim().Trim('"'); if ($e -match '^[A-Za-z]:\\?$') { return $e.Substring(0, 2) + '\' }; return $e.TrimEnd('\') }
+# (0.1.5) 탐색기 창 → 지금 보는 폴더(Shell.Application) — 폴더 단계는 경로가 같은 창만 집음(제목 '홈'·'바탕 화면'처럼 이름이 달라도)
+function ShellMap { $mp = @{}; try { foreach ($sw in @((New-Object -ComObject Shell.Application).Windows())) { try { $sp0 = "$($sw.Document.Folder.Self.Path)"; $sh0 = [int64]$sw.HWND; if ($sp0) { if (-not $mp.ContainsKey($sh0)) { $mp[$sh0] = New-Object System.Collections.ArrayList }; [void]$mp[$sh0].Add($sp0.TrimEnd('\').ToLower()) } } catch {} } } catch {}; return $mp }
 function IconOf($p) { try { Add-Type -AssemblyName System.Drawing; $ic = [System.Drawing.Icon]::ExtractAssociatedIcon($p); if (-not $ic) { return $null }; $bm = $ic.ToBitmap(); $ms = New-Object IO.MemoryStream; $bm.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png); $b = [Convert]::ToBase64String($ms.ToArray()); $bm.Dispose(); $ic.Dispose(); return $b } catch { return $null } }
 $script:sh = $null; function Shell { if (-not $script:sh) { $script:sh = New-Object -ComObject WScript.Shell }; $script:sh }
 function LnkTarget($p) { try { $l = (Shell).CreateShortcut($p); return @{ target = $l.TargetPath; args = $l.Arguments; dir = $l.WorkingDirectory } } catch { return $null } }
@@ -71,6 +77,9 @@ switch ($Act) {
     $out.on = (Test-Path -LiteralPath $lnk); $out.path = $lnk; Done $out }
   'run' {
     $steps = @($In.steps); $wait = [Math]::Max(5, [int]$In.waitSec)
+    # (0.1.5) 새 창 상한 = 단계 수 + 탭 수 + 1 · 전체 시간 상한(기다림 + 탭마다 8초 + 20초) — 넘으면 더 안 띄우고 까닭을 남김(창이 쌓이지 않게)
+    $tabTotal = 0; foreach ($sp in $steps) { $tabTotal = $tabTotal + (Arr $sp.tabs).Count }
+    $script:launchN = 0; $script:launchMax = $steps.Count + $tabTotal + 1; $script:hardEnd = [DateTime]::Now.AddSeconds($wait + 8 * $tabTotal + 20); $out.limit = @{ launches = $script:launchMax; sec = ($wait + 8 * $tabTotal + 20) }
     # ③ '모두 닫고 설정대로' — 화면에서 미리 보여 준 창만 · WM_CLOSE(닫아 달라고 부탁만 · 저장 안 한 문서는 그 프로그램이 물음) · 강제 종료 없음
     $closed = New-Object System.Collections.ArrayList
     if (@($In.close).Count) {
@@ -94,33 +103,45 @@ switch ($Act) {
       if ($freshOnly -and $before.ContainsKey([int64]$w.H)) { return $false }
       if (@($m.procs).Count -and -not (@($m.procs) | Where-Object { $_ -and ($w.Proc -ieq $_) })) { return $false }
       if ($m.cls -and $w.Cls -ne $m.cls) { return $false }
+      if ($m.folder) { $hp = $shellNow[[int64]$w.H]; if ($hp) { return [bool](@($hp) -contains "$($m.folder)".ToLower()) }; return ($w.Title -ieq "$($m.leaf)") } # (0.1.5) 폴더 단계는 경로가 같은 창만(못 읽으면 제목이 폴더 이름과 꼭 같을 때만)
       if ($m.title -and -not ($w.Title -match $m.title)) { return $false }
       return $true }
+    $shellNow = @{}
     function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false } }
     function Launch($st) { $sp = $st.s
+      if ($script:launchN -ge $script:launchMax) { $st.err = "새 창 상한($($script:launchMax)개)에 닿아 더 안 띄움"; return }
+      if ([DateTime]::Now -gt $script:hardEnd) { $st.err = '실행 시간 상한을 넘어 더 안 띄움'; return }
+      if ($sp.match.folder) { $fp = "$($sp.match.folder)"; if (-not (Test-Path -LiteralPath $fp -PathType Container)) { $st.err = "폴더가 없음: $fp (건너뜀 — '홈'을 열지 않음)"; return } }
+      $script:launchN = $script:launchN + 1
       try { if ($sp.launch.uri) { Start-Process -FilePath "$($sp.launch.uri)" }
         else { $argList = @(@($sp.launch.args) | Where-Object { $null -ne $_ } | ForEach-Object { if ($sp.launch.expand) { Q (Exp $_) } else { Q $_ } }) -join ' '
           if ($argList) { Start-Process -FilePath "$($sp.launch.file)" -ArgumentList $argList } else { Start-Process -FilePath "$($sp.launch.file)" } }
         $st.how = '켬' } catch { $st.err = "켜기 실패: $($_.Exception.Message)" } }
     # 폴더 탭 — 첫 폴더 창에 Ctrl+T → 주소창(Ctrl+L) → 경로 → Enter(창이 앞에 있을 때만 · 아니면 글자를 치지 않고 멈춤) · 안 되면 같은 칸에 창을 겹쳐 놓음
     function Tabs($st, $hv) { $st.tabbed = $true
-      foreach ($tb in @($st.s.tabs)) { $why = '이 PC 윈도우에는 탐색기 탭이 없음(윈도우 11 22H2부터)'
-        if ($tabsOk) { try { $why = [RnDock]::ExplorerTab([int64]$hv, "$($tb.path)", "$($tb.leaf)", 5000) } catch { $why = "탭 열기 실패: $($_.Exception.Message)" } }
-        if ($why) { $leafRe = [regex]::Escape("$($tb.leaf)")
-          $ns = NewSt @{ app = $st.s.app; inst = $st.s.inst; name = "$($st.s.name) · $($tb.leaf)"; rect = $st.s.rect; reuse = $false; over = $true; launch = @{ file = 'explorer.exe'; args = @("$($tb.path)") }; match = @{ procs = @('explorer'); cls = 'CabinetWClass'; title = $leafRe; fresh = $true } }
+      foreach ($tb in (Arr $st.s.tabs)) { if (-not "$($tb.path)") { continue }; if ([DateTime]::Now -gt $script:hardEnd) { $st.overWhy = '실행 시간 상한을 넘어 남은 탭은 건너뜀'; break }
+        $tp = FolderPath $tb.path; if (-not (Test-Path -LiteralPath $tp -PathType Container)) { $st.overN = $st.overN + 1; $st.overWhy = "폴더가 없음: $tp (건너뜀)"; continue }
+        $tl = Split-Path $tp -Leaf; if (-not $tl) { $tl = $tp }
+        $why = '이 PC 윈도우에는 탐색기 탭이 없음(윈도우 11 22H2부터)'
+        if ($tabsOk) { try { $why = [RnDock]::ExplorerTab([int64]$hv, $tp, $tl, 5000) } catch { $why = "탭 열기 실패: $($_.Exception.Message)" } }
+        if ($why) { # 겹치기 창 — 그 경로 창만 집음 · 탭 없음(다시 탭 더하기를 돌지 않음)
+          $ns = NewSt @{ app = $st.s.app; inst = $st.s.inst; name = "$($st.s.name) · $tl"; rect = $st.s.rect; reuse = $false; over = $true; launch = @{ file = 'explorer.exe'; args = @($tp) }; match = @{ procs = @('explorer'); cls = 'CabinetWClass'; title = ''; fresh = $true; folder = $tp; leaf = $tl } }
           Launch $ns; [void]$Res.Add($ns); $st.overN = $st.overN + 1; $st.overWhy = $why }
         else { $st.tabN = $st.tabN + 1 } } }
     function Put($st, $w, $how) { $r = $st.s.rect; $claimed[[int64]$w.H] = 1; $st.h = [int64]$w.H; $st.title = $w.Title
       try { $f = [RnDock]::Place([int64]$w.H, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h); $st.got = (Rc $f); $st.done = $true; $st.how = $how } catch { $st.err = "자리 옮기기 실패: $($_.Exception.Message)"; return }
-      if (@($st.s.tabs).Count -and -not $st.tabbed) { try { Tabs $st ([int64]$w.H) } catch { $st.overWhy = "탭 일 실패: $($_.Exception.Message)" } } }
+      if ((Arr $st.s.tabs).Count -and -not $st.s.over -and -not $st.tabbed) { try { Tabs $st ([int64]$w.H) } catch { $st.overWhy = "탭 일 실패: $($_.Exception.Message)" } } }
+    # (0.1.5) 폴더 단계 — 경로를 펼쳐 실행 인자·알아보기(경로) 둘 다에
+    foreach ($sp in $steps) { if ($sp.folder) { $fp = FolderPath $sp.folder; $fl = Split-Path $fp -Leaf; if (-not $fl) { $fl = $fp }; $sp.launch.args = @($fp); $sp.match | Add-Member -Force -NotePropertyName folder -NotePropertyValue $fp; $sp.match | Add-Member -Force -NotePropertyName leaf -NotePropertyValue $fl } }
+    $shellNow = ShellMap
     # 프로그램마다 따로(try) — 하나가 실패해도 나머지는 계속
     foreach ($sp in $steps) { $st = NewSt $sp
       try { if ($sp.reuse) { $hit = @([RnDock]::Windows() | Where-Object { Fits $_ $sp $false }) | Select-Object -First 1; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } }
         if (-not $st.done -and -not $st.err -and $sp.launch) { Launch $st } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" }
       [void]$Res.Add($st); Start-Sleep -Milliseconds 400 }
     $end = [DateTime]::Now.AddSeconds($wait)
-    while ((@($Res | Where-Object { -not $_.done -and -not $_.err }).Count) -and [DateTime]::Now -lt $end) {
-      Start-Sleep -Milliseconds 700; $wins = @([RnDock]::Windows())
+    while ((@($Res | Where-Object { -not $_.done -and -not $_.err }).Count) -and [DateTime]::Now -lt $end -and [DateTime]::Now -lt $script:hardEnd) {
+      Start-Sleep -Milliseconds 700; $wins = @([RnDock]::Windows()); $shellNow = ShellMap
       foreach ($st in @($Res | Where-Object { -not $_.done -and -not $_.err })) {
         try { $hit = @($wins | Where-Object { Fits $_ $st.s $true }) | Select-Object -First 1
           if (-not $hit -and -not $st.s.match.fresh -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $hit = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1 }

@@ -68,16 +68,25 @@ function chromeProfiles() { try { const f = path.join(process.env.LOCALAPPDATA |
 /* opts: { mode:'keep'|'close', token } — 'close'는 /api/closeplan에서 미리 보여 준 목록(token)의 창만 닫음 · 윈도우 시작 자동 실행은 언제나 'keep'(묻지 않음) */
 async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' };
   let close = []; if (opts.mode === 'close') { const t = ST.closeTok; if (!t || t.token !== opts.token || Date.now() - t.at > 5 * 60e3) return { ok: false, err: '닫을 목록이 오래됐거나 없음 — ③을 다시 눌러 목록을 새로 보고 골라 주세요' }; close = t.list; ST.closeTok = null; }
+  /* (0.1.5) 실행이 겹치지 않게 — 이 서버 안(ST.busy)뿐 아니라 윈도우 시작 자동 실행(--autorun 프로세스)과도: run.lock(pid·시각) · 15분 넘었거나 그 프로세스가 없으면 낡은 것으로 봄 */
+  const lk = runLock(); if (!lk.ok) return { ok: false, err: lk.err };
   ST.busy = '실행·배치'; const t0 = Date.now();
   try { const m = await readMons(); if (!m.ok) return { ok: false, err: m.err }; const cfg = loadCfg();
     const need = A.findHints(cfg.apps).filter((h) => !ST.found[h.key]); if (need.length && Date.now() - ST.foundAt > 60e3) await findAll(cfg.apps);
     const plan = A.buildPlan(cfg, ST.mons, ST.found, G); if (!plan.steps.length) { const r = { ok: false, err: cfg.place.length ? '놓을 수 있는 것이 없음' : '아직 아무것도 놓지 않았습니다 — ① 설정에서 프로그램을 칸에 끌어 놓아 주세요', skipped: plan.skipped }; ST.last = { at: Date.now(), by, ...r }; return r; }
-    const r = await ps('run', { steps: plan.steps, waitSec: cfg.run.waitSec, close }, null, (cfg.run.waitSec + 40 + plan.steps.length * 3 + close.length) * 1000);
+    const nTabs = plan.steps.reduce((x, st) => x + ((st.tabs || []).length), 0); /* (0.1.5) 탭마다 최대 8초 — PowerShell 시간 상한과 맞춤(0.1.3은 탭 시간을 안 쳐서 중간에 끊겨 결과를 잃을 수 있었음) */
+    const r = await ps('run', { steps: plan.steps, waitSec: cfg.run.waitSec, close }, null, (cfg.run.waitSec + 60 + plan.steps.length * 3 + nTabs * 8 + close.length) * 1000);
     if (+r.build) ST.build = +r.build;
     const res = (r.res || []).map((x) => { const f = A.friendly(x); return { ...x, msg: f.msg, raw: f.raw }; }); const fe = A.friendlyErr(r.err);
     const out = { ok: !!r.ok, err: fe.msg || undefined, raw: fe.raw || undefined, res, skipped: plan.skipped, closed: r.closed || [], mode: close.length ? 'close' : 'keep', sec: Math.round((Date.now() - t0) / 1000) };
     log(`③ 실행·배치(${by}${close.length ? ' · 모두 닫고' : ''}) — ${res.filter((x) => x.ok).length}/${res.length} 놓음 · 건너뜀 ${plan.skipped.length}` + (close.length ? ` · 닫기 부탁 ${(r.closed || []).filter((c) => c.ok).length}/${close.length}` : '') + ` · ${out.sec}초` + (r.err ? ' · ' + r.err : '') + res.filter((x) => !x.ok).map((x) => ' · ✗ ' + x.name + ': ' + x.how).join(''));
-    ST.last = { at: Date.now(), by, ...out }; return out; } finally { ST.busy = ''; } }
+    ST.last = { at: Date.now(), by, ...out }; return out; } finally { ST.busy = ''; runUnlock(); } }
+const RLK = path.join(HOME, 'run.lock');
+function runLock() { for (let k = 0; k < 2; k++) { try { fs.writeFileSync(RLK, JSON.stringify({ pid: process.pid, at: Date.now() }), { flag: 'wx' }); return { ok: true }; } catch (e) { if (e.code !== 'EEXIST') return { ok: true };
+      let j = null; try { j = JSON.parse(fs.readFileSync(RLK, 'utf8')); } catch (x) {} let alive = false; try { if (j && j.pid && j.pid !== process.pid) { process.kill(j.pid, 0); alive = true; } } catch (x) { alive = x.code === 'EPERM'; }
+      if (j && alive && Date.now() - (+j.at || 0) < 15 * 60e3) { const m = '다른 실행·배치가 아직 도는 중(윈도우 시작 자동 실행일 수 있음) — 끝난 뒤 다시'; noteErr('run', m); return { ok: false, err: m }; }
+      try { fs.unlinkSync(RLK); } catch (x) {} } } return { ok: true }; }
+function runUnlock() { try { const j = JSON.parse(fs.readFileSync(RLK, 'utf8')); if (j.pid === process.pid) fs.unlinkSync(RLK); } catch (e) {} }
 /* ③ '모두 닫고' 미리보기 — 지금 떠 있는 창 중 닫을 것 · 지킬 것(까닭과 함께) */
 async function closePlan() { if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' }; const r = await ps('windows'); if (!r.ok) return { ok: false, err: r.err };
   const cfg = loadCfg(); const P = CP.plan(r.wins || [], cfg.clean.keep); const token = crypto.randomBytes(12).toString('hex');

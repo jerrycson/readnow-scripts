@@ -92,7 +92,8 @@
       if (a.kind === 'folder') { const P = (a.paths && a.paths.length ? a.paths : a.path ? [a.path] : []).filter(Boolean); if (!P.length) { skip(a.name, '폴더 경로가 없음'); continue; }
         const tabs = P.slice(1).map((x) => ({ path: x, leaf: leafOf(x) }));
         /* 탭이 여럿이면 언제나 새 창(이미 떠 있는 창에 탭을 거듭 더하지 않게) */
-        steps.push({ ...base1, rect: rc, reuse: tabs.length ? false : reuse, launch: { file: 'explorer.exe', args: [P[0]] }, match: { procs: ['explorer'], cls: 'CabinetWClass', title: '(^|\\\\)' + reEsc(leafOf(P[0])) + '$', fresh: !!tabs.length }, ...(tabs.length ? { tabs } : {}) }); continue; }
+        /* (0.1.5) folder = 펼치기 전 경로 — PowerShell이 %변수%를 펼치고 끝 \를 정리해 실행 인자로 · 없는 폴더는 '홈'을 여는 대신 건너뜀 · 창은 그 경로를 보는 탐색기 창만 집음(제목 조건 없이) */
+        steps.push({ ...base1, rect: rc, reuse: tabs.length ? false : reuse, folder: P[0], launch: { file: 'explorer.exe', args: [P[0]] }, match: { procs: ['explorer'], cls: 'CabinetWClass', title: '', fresh: !!tabs.length }, ...(tabs.length ? { tabs } : {}) }); continue; }
       if (a.kind === 'phone') { steps.push({ ...base1, rect: rc, reuse, launch: { file: 'explorer.exe', args: [catOf(a).find.shell] }, match: { procs: [], cls: '', title: '휴대폰과 연결|Phone Link', fresh: false } }); continue; }
       if (a.kind === 'claude') { const U = claudeUrls(a); const exe = found['claude.exe'] || '';
         if (U.uri) steps.push({ ...base1, rect: U.web.length ? G.splitRect(rc, 1 + U.web.length)[0] : rc, reuse, launch: { uri: U.uri }, match: { procs: ['claude'], cls: '', title: 'Claude', fresh: false } });
