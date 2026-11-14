@@ -142,7 +142,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const last = M.last.get(pc) || 0; if (now() - last < (y && y.fast ? 15e3 : 60e3)) return say(M.why.get(pc) || '다음 차례 기다림'); M.last.set(pc, now());
     const D = await data(); const W = wantLids(D, led); const X0 = regX(D, led, cfg, null);
     const L0 = D.list.filter(aladinLive).map((l) => ({ l, L: { id: l.id, title: l.title, isbn: y24Isbn(l.isbn13), grade: y24G(l.grade), price: +l.price || 0, qty: l.qty == null ? 1 : +l.qty, live: aladinLive(l), skus: isDupes(l) ? [] : skuSelf(m.R, D, l), dupes: isDupes(l), adult: !!l.adult, held: D.held.get(l.id) || null, unpub: null } })); /* 웹앱 y24RegL */
-    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.keys(led.r).length;
+    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.values(led.r).filter((e) => e && e.st !== 'retry').length; /* 「↩ 다시 올릴 수 있게」로 푼 줄은 세지 않음(웹앱과 같음) — 첫 시도가 실패해 풀면 첫 1건 고르기가 다시 열림 */
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });

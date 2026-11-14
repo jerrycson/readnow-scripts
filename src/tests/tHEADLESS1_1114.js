@@ -71,6 +71,12 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   /* ⑤-2 번외가 거절 → 실패로 */
   y = await Y.step('HOME', { ...gather(), rej: [{ id: 'y24aLOST1', err: '엑셀 파일이 없거나 너무 큼', rows: ['aladin_A1'] }] }); ok(led().r.aladin_A1.st === 'autofail' && (y.rejAck || []).includes('y24aLOST1'), '⑤ 번외가 맡김을 거절하면 장부에 실패로(되풀이 거절은 빼고)', { e: led().r.aladin_A1, y });
   await new Promise((r) => setTimeout(r, 50)); const as = (led().autoSt || {}).CLOUD_HOME; ok(as && as.ver === 'cloud' && as.why && as.login === 'ok', '⑧ 클라우드 까닭 한 줄을 진단 칸(autoSt.CLOUD_HOME)에 적음 — 값·손님 정보 없음', as);
+  /* ⑨ 첫 시도가 실패 → 사람이 「↩ 다시 올릴 수 있게」 + 「▶ 이어 가기」 → 첫 1건 고르기가 다시 열림 */
+  { const F2 = makeDb(); for (const [c, docs] of Object.entries(store)) for (const [id, v] of Object.entries(docs)) if (c !== 'app_settings' || id !== 'y24_reg') (F2.store[c] = F2.store[c] || {})[id] = JSON.parse(JSON.stringify(v));
+    F2.store.app_settings.platforms = { y24: {} }; F2.store.app_settings.y24_reg = { r: { aladin_A4: { lid: 'aladin_A4', isbn: '9788900000042', grade: '상', skus: ['x'], st: 'retry', auto: 1, at: new Date(T - 3600e3).toISOString() } }, auto: { stop: null } };
+    const Y2 = makeY24Auto({ db: F2.db, C: F2.C, FV: F2.FV, now, getText: async (f) => texts[f], getUrl: async () => { throw new Error('x'); }, xlsx: XLSX }); T += 61e3;
+    const y9 = await Y2.step('HOME', { st: { login: 'ok', hold: false, en: true, wait: [], cur: null }, res: {}, rej: [] });
+    ok(y9.jobs.length === 1 && y9.jobs[0].rows.length === 1, '⑨ 푼 줄(retry)만 있으면 첫 1건 고르기가 다시 열림(예전엔 장부 줄 수에 세어 영영 못 고름)', y9); }
   /* ⑦ 홀로 연결 창구 안 */
   const { makeSolo } = require(path.join(TOP, 'cloud/col2solo.js')); const crypto = require('crypto'); const kp = crypto.generateKeyPairSync('ed25519'); const pub = kp.publicKey.export({ type: 'spki', format: 'pem' });
   put('app_settings', 'col2_solo', { pcs: { HOME: { pub }, 'LOGGER-1': { pub, kind: 'logger' } } }); let called = 0; const SO = makeSolo({ db: F.db, C: F.C, FV: F.FV, log: () => {}, mods: async () => ({}), now: () => Date.now(), y24: { step: async (pc) => { called++; return { v: 1, why: 'ok ' + pc, ack: [], jobs: [] }; } } });
