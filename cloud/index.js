@@ -2111,8 +2111,19 @@ async function regAux(b) { const op = String(b.op || ''); if (!['cat', 'author',
 
 /* ── 사진 가격: 책등 글자 (Google Vision) → 책등마다 묶음 ── */
 let visionClient = null;
+/* (spine2 11/14) 🔤 구글 글자 읽기 한 달 몫 — app_settings/cut_ocr_quota { m:'YYYY-MM', n, cap(기본 900) } · 문서 글자 읽기는 한 달 1,000단위까지 무료(구글 가격표 11/14 확인) → ✂ 묶음 사진 판별(/cut-ocr)은 cap에서 멈춤 · 📷 사진 견적 책등(/spines)은 막지 않고 수만 함께 셈 */
+/* CUTOCR-START */ const CUT_OCR_CAP = 900;
+async function visionQuota(take) { const ref = C('app_settings').doc('cut_ocr_quota'); const m = nowIso().slice(0, 7); let out = null;
+  await db.runTransaction(async (tx) => { const d = await tx.get(ref); const x = (d.exists && d.data()) || {}; const cap = Number.isFinite(+x.cap) && +x.cap > 0 ? +x.cap : CUT_OCR_CAP; const n = x.m === m ? +x.n || 0 : 0; const sp = x.m === m ? +x.sp || 0 : 0;
+    if (take === 'cut' && n + sp >= cap) { out = { ok: false, m, n: n + sp, cap }; return; } out = { ok: true, m, n: n + sp + (take ? 1 : 0), cap }; if (take) tx.set(ref, { m, n: n + (take === 'cut' ? 1 : 0), sp: sp + (take === 'spines' ? 1 : 0), cap, at: nowIso() }, { merge: true }); }); return out; }
+async function cutOcr(b64) { const q = await visionQuota('cut'); if (!q.ok) return { ok: false, err: `이번 달 구글 글자 읽기 무료 몫(${q.cap}단위)을 다 씀 — 다음 달 1일에 다시 · 그동안 ① 기기 안 읽기나 ✎ 고치기`, quota: { n: q.n, cap: q.cap } };
+  if (!visionClient) { const vision = require('@google-cloud/vision'); visionClient = new vision.ImageAnnotatorClient(); }
+  const [res] = await visionClient.documentTextDetection({ image: { content: Buffer.from(b64, 'base64') }, imageContext: { languageHints: ['ko', 'en'] } }); const fa = res.fullTextAnnotation; const paras = [];
+  const pg = fa && fa.pages && fa.pages[0]; if (pg) { const Wd = pg.width || 1, Ht = pg.height || 1; for (const bl of pg.blocks || []) for (const pa of bl.paragraphs || []) { const v = (pa.boundingBox && pa.boundingBox.vertices) || []; if (!v.length) continue; const xs = v.map((p) => p.x || 0), ys = v.map((p) => p.y || 0); const text = (pa.words || []).map((w) => (w.symbols || []).map((x) => x.text).join('')).join(' ').trim(); if (text) paras.push({ text, box: { x: Math.min(...xs) / Wd, y: Math.min(...ys) / Ht, w: (Math.max(...xs) - Math.min(...xs)) / Wd, h: (Math.max(...ys) - Math.min(...ys)) / Ht } }); } }
+  return { ok: true, paras: paras.slice(0, 600), quota: { n: q.n, cap: q.cap } }; } /* CUTOCR-END */
 async function spines(b64) {
   if (!visionClient) { const vision = require('@google-cloud/vision'); visionClient = new vision.ImageAnnotatorClient(); }
+  visionQuota('spines').catch(() => {}); /* (spine2) 수만 셈 — 막지 않음 */
   const [res] = await visionClient.documentTextDetection({ image: { content: Buffer.from(b64, 'base64') }, imageContext: { languageHints: ['ko', 'en'] } });
   const fa = res.fullTextAnnotation; if (!fa || !fa.pages || !fa.pages.length) return { spines: [], w: 0, h: 0 };
   const pg = fa.pages[0]; const Wd = pg.width || 1, Ht = pg.height || 1; const paras = [];
@@ -5743,6 +5754,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/storage-get') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); return send(200, { ok: true, files: await storageGet(b.names) }); }
     if (path === '/ppt') { const u = await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); return send(200, await pptStore(b, u)); }
     if (path === '/kmsocr') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); try { return send(200, await kmsRoute(b)); } catch (e) { return send(e.code === 400 ? 400 : 200, { ok: false, err: '글자 읽기 실패: ' + String(e.message || e).slice(0, 200) }); } } /* 📜 김미소책방 매출 문서: 사진 → Vision 글자 → 날짜·금액 표 ({ocr}만 보내면 다시 나누기만) */
+    if (path === '/cut-ocr') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); return send(200, await cutOcr(String(b.image).replace(/^data:[^,]+,/, ''))); } /* (spine2 11/14) ✂ 묶음 사진 판별 🔤 구글 글자 읽기 — 한 달 무료 몫 안에서만 */
     if (path === '/spines') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }
     if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p, true); /* 사람이 누른 시험은 쉬는 시간과 상관없이 한 번 */ return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }
     return send(404, { ok: false, err: '없는 주소' });

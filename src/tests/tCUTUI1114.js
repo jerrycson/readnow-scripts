@@ -27,10 +27,11 @@ const SCENE = `(() => { let seed = 11; const rnd = () => ((seed = (seed * 110351
       ok(await p.evaluate(() => !!window.ReadnowCutout && window.ReadnowCutout.VERSION === '0.1.0'), '공용 셈 파일을 화면 열 때 받음(0.1.0)');
       const st = await p.evaluate(() => { const d = document.querySelector('#cut_study'); d.open = true; return d.textContent; }); ok(['목적', '지금 단계', '점수 그래프', '일지', '고친 점', '남은 어려움', '다음 한 수'].every((k) => st.includes(k)), '🔬 연구 칸 7가지(목적·단계·점수·일지·고친 점·어려움·다음 한 수)');
       /* 뒷면 */
-      await p.evaluate(async () => { const sc = await window.__mk('back'); window.pptBarcodes = async () => sc.codes; await cutRun(sc.file); });
+      await p.evaluate(async () => { const sc = await window.__mk('back'); window.__miss = sc.codes[5].text; window.pptBarcodes = async () => sc.codes.slice(0, 5); window.loadZX = async () => ({ readBarcodes: async () => [{ text: window.__miss + ' 52000' }] }); await cutRun(sc.file); });
       await p.waitForFunction(() => S.cut && S.cut.items.length && !S.cut.busy, null, { timeout: 20000 }).catch(() => {});
       const r = await p.evaluate(() => ({ n: S.cut.items.length, isbn: S.cut.items.filter((b) => b.isbn).length, cards: document.querySelectorAll('[data-cutn]').length, t0: S.cut.items[0].target, t1: S.cut.items[1].target, t2: S.cut.items[2].target, conf: S.cut.items.map((b) => b.conf), last: !!S.cutLast }));
-      ok(r.n === 6 && r.isbn === 6 && r.cards === 6, '뒷면 6권 · ISBN 6 · 카드 6', r); ok(r.t0 && !r.t0.has && r.t1 && r.t1.has && !r.t2, '등록 줄: 빈 칸 · 사람 사진 있음(덮지 않음) · 올린 줄은 안 잡음', [r.t0, r.t1, r.t2]); ok(r.conf.every((c) => c >= 0.9), '띄워 놓은 뒷면 확신 높음', r.conf);
+      ok(r.n === 6 && r.isbn === 6 && r.cards === 6, '뒷면 6권 · ISBN 6 · 카드 6', r);
+      ok(await p.evaluate(() => { const b = S.cut.items[5]; return b.isbn === window.__miss && b.add === '52000' && b.how === 'reread'; }), '바코드 0인 조각을 원본 크기로 다시 읽어 ISBN·부가기호 찾음'); ok(r.t0 && !r.t0.has && r.t1 && r.t1.has && !r.t2, '등록 줄: 빈 칸 · 사람 사진 있음(덮지 않음) · 올린 줄은 안 잡음', [r.t0, r.t1, r.t2]); ok(r.conf.every((c) => c >= 0.9), '띄워 놓은 뒷면 확신 높음', r.conf);
       await p.evaluate(async () => { await cutApply([S.cut.items[0], S.cut.items[1]]); });
       const fs1 = await p.evaluate(() => ({ r0: window.__FS.reg_items.r0.photos, r1: window.__FS.reg_items.r1.photos }));
       ok(fs1.r0 && fs1.r0.z && fs1.r0.z[0] && /_cut\.jpg$/.test(fs1.r0.z[0].path) && fs1.r0.z[0].cut && fs1.r0.z[0].cut.mode === 'back', '빈 줄: 추가 이미지 1에 잘린 그림', fs1.r0); ok(fs1.r1.z[0].name === 'human.jpg', '사람이 넣은 사진은 그대로', fs1.r1.z[0]);
@@ -44,6 +45,19 @@ const SCENE = `(() => { let seed = 11; const rnd = () => ((seed = (seed * 110351
       await p.click('[data-cutfix="2"]'); await p.fill('[data-cutfixin]', '소년이온다 한강'); await p.click('[data-cutfixgo]'); await p.waitForSelector('[data-cutpick="0"]', { timeout: 3000 }).catch(() => {});
       const pickT = await p.evaluate(() => (document.querySelector('[data-cutpick="0"]') || {}).textContent || ''); ok(/소년이 온다/.test(pickT), '글자로 찾기 → 첫 후보 소년이 온다', pickT);
       await p.click('[data-cutpick="0"]'); await p.waitForTimeout(300); ok(await p.evaluate(() => S.cut.items[1].isbn === '9788936434120' && S.cut.items[1].human === 'fix'), '고르면 그 ISBN · 사람 고침 기록');
+      /* 🔤 글자로 맞추기 — 기기 안(Tesseract 대신 가짜 읽기) · 구글(가짜 클라우드) */
+      await p.evaluate(async () => { S.cut.mode = 'front'; const keep = S.cutLast; S.cutLast = null; const sc = await window.__mk('front'); await cutRun(sc.file); window.__keep = keep; });
+      await p.waitForFunction(() => S.cut && S.cut.mode === 'front' && S.cut.items.length && !S.cut.busy, null, { timeout: 20000 }).catch(() => {});
+      ok(await p.evaluate(() => !!document.querySelector('[data-cutocr="t"]') && !!document.querySelector('[data-cutocr="g"]') && !!document.querySelector('[data-cutlist]')), '🔤 글자로 맞추기 카드(목록 고름 · 기기 안 · 구글)');
+      await p.evaluate(async () => { S._cutList = 'all'; window.cutTessWorker = async () => ({ recognize: async () => ({ data: { text: '소년이온다 한강 장편소설' } }) }); window.cutTessFree = async () => {}; await cutOcrTess(); });
+      const t1 = await p.evaluate(() => ({ n: S.cut.items.filter((b) => b.how === 'ocr-t').length, isbn: S.cut.items.filter((b) => b.how === 'ocr-t').map((b) => b.isbn), note: S.cut.ocrNote }));
+      ok(t1.n === 1 && t1.isbn[0] === '9788936434120' && /기기 안 읽기/.test(t1.note || ''), '기기 안 읽기 → 소년이 온다 하나만(같은 상품 두 조각에 안 줌)', t1);
+      await p.evaluate(async () => { const b = S.cut.items.find((x) => !x.isbn); window.__gb = b.n; window.cloudCall = async (path, body) => (path === '/cut-ocr' && /^data:image\/jpeg/.test(body.image) ? { ok: true, quota: { n: 3, cap: 900 }, paras: [{ text: '채식주의자 한강 창비', box: { x: b.cx / S.cut.W - 0.01, y: b.cy / S.cut.H - 0.01, w: 0.02, h: 0.02 } }] } : { ok: false }); await cutOcrCloud(); });
+      const g1 = await p.evaluate(() => { const b = S.cut.items.find((x) => x.n === window.__gb); return { isbn: b.isbn, how: b.how, q: S.cutQuota, note: S.cut.ocrNote }; });
+      ok(g1.isbn === '9788936433598' && g1.how === 'ocr-g' && g1.q.n === 3 && /이번 달 3\/900/.test(g1.note || ''), '구글 읽기 → 조각 안 글자만 모아 채식주의자 · 이번 달 몫 표시', g1);
+      await p.evaluate(() => { window.cloudCall = async () => ({ ok: false, err: '이번 달 구글 글자 읽기 무료 몫(900단위)을 다 씀', quota: { n: 900, cap: 900 } }); }); await p.evaluate(() => cutOcrCloud().catch(() => {})); await p.waitForTimeout(300);
+      ok(await p.evaluate(() => /무료 몫/.test(S.cut.ocrNote || '') && !S.cut.busy), '몫을 다 쓰면 거절 글 · 멈추지 않음');
+      await p.evaluate(() => { S.cutLast = window.__keep; S.cut.mode = 'front'; });
       /* 앞면(같은 자리) */
       await p.evaluate(async () => { S.cut.mode = 'front'; const sc = await window.__mk('front'); await cutRun(sc.file); }); await p.waitForFunction(() => S.cut && S.cut.mode === 'front' && S.cut.items.length && !S.cut.busy, null, { timeout: 20000 }).catch(() => {});
       const f = await p.evaluate(() => ({ n: S.cut.items.length, isbn: S.cut.items.map((b) => b.isbn), way: S.cut.pairWay, back: S.cutLast.items.map((b) => b.isbn) }));
