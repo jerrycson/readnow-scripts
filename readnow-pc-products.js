@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.334의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.335의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.334' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.334', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.335' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.335', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3917,7 +3917,7 @@
    * 웹앱 '오늘 출고 ② 발송 요청'을 새 탭 맨 앞으로 열고 데스크톱 알림. 한 번만(GM rn-shipopen = last.at — 이 PC의 여러 알라딘 탭이 겹쳐도 하나만) · 1시간 넘게 지난 알림은 열지 않음 */
   auth.onAuthStateChanged((u) => { if (!u || window.__rnShipOpenUn) return; window.__rnShipOpenUn = C('app_settings').doc('ship_notify').onSnapshot((d) => { try {
     const L = d.exists && d.data().last; if (!L || !L.at || !(L.pcOpen || []).includes(PC_NAME)) return; if (Date.now() - Date.parse(L.at) > 3600e3) return; if (GM_getValue('rn-shipopen', '') === L.at) return; GM_setValue('rn-shipopen', L.at);
-    const SURL = 'https://jerrycson.github.io/readnow-scripts/app/?go=deliv'; (async () => { /* (11/13 col2mig) 🔀 번외 이전(보이지 않는 작업 창) 탭이면 그 창 안에 열면 안 보임 → 이 PC 도우미가 사람 크롬에 엶(/work/open) · 안 되면 예전처럼 */ const W0 = window.__rnWork; let ok = false; if (W0 && W0.isWork && W0.isWork()) { try { const r = await W0.call('/work/open', { url: SURL, why: '🔔 출고 알림' }, 10000); ok = !!(r && r.ok); } catch (e) {} } if (!ok) GM_openInTab(SURL, { active: true, insert: true, setParent: true }); })(); try { GM_notification({ title: L.title || '📦 오늘 출고', text: L.body || '', timeout: 0 }); } catch (e) {} log(`🔔 출고 알림 — 웹앱 발송 요청 탭을 앞으로 엶 (${L.n || 0}건)`); } catch (e) {} }, () => {}); });
+    const SURL = 'https://readnow.kr/app/?go=deliv'; (async () => { /* (11/13 col2mig) 🔀 번외 이전(보이지 않는 작업 창) 탭이면 그 창 안에 열면 안 보임 → 이 PC 도우미가 사람 크롬에 엶(/work/open) · 안 되면 예전처럼 */ const W0 = window.__rnWork; let ok = false; if (W0 && W0.isWork && W0.isWork()) { try { const r = await W0.call('/work/open', { url: SURL, why: '🔔 출고 알림' }, 10000); ok = !!(r && r.ok); } catch (e) {} } if (!ok) GM_openInTab(SURL, { active: true, insert: true, setParent: true }); })(); try { GM_notification({ title: L.title || '📦 오늘 출고', text: L.body || '', timeout: 0 }); } catch (e) {} log(`🔔 출고 알림 — 웹앱 발송 요청 탭을 앞으로 엶 (${L.n || 0}건)`); } catch (e) {} }, () => {}); });
   let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
   const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false) && cloudBeat.login === 'ok' && cloudBeat.lastDelivAt && Date.now() - Date.parse(cloudBeat.lastDelivAt) < 20 * 60000); /* (urg2 11/13 근원) 클라우드가 살아 있어도 알라딘 로그인이 풀렸으면(신호 login 'off'·'fail') 또는 발송 요청을 20분 넘게 못 읽었으면 PC 칸이 맡음 — 11/13 10시 뒤 클라우드가 로그아웃된 채 '살아 있음'만 보내 PC 발송 요청 읽기가 계속 건너뛰어졌음 */ // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
