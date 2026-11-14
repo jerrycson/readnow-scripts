@@ -38,7 +38,8 @@ const catSeg = (b) => { const c0 = b && b.categories && b.categories[0]; const v
 const KINDS = ['국내도서', '외국도서', '세트', '잡지', '음반', 'LP', 'DVD', '블루레이', '그 밖']; /* (shopmisc1 · 정범님 11/14) 세트 = 책 세트(cloud/shop-cat.js ourPath) */
 const SC = require('./shop-cat.js'); let SETFIX = ''; /* (shopmisc1) 🗂 우리숍 주제분류 바꿈표·세트 · SETFIX = 서가 설정 '세트 권 수 바로잡기'(build가 채움) */
 /* (shopmisc1) 손님에게 내보내는 경로 = 알라딘 경로(kindPath) → 우리 분류(shop-cat.js) · 자료(prd_books)는 그대로 */
-const shopPath = (b, sku, t, id) => SC.ourPath(kindPath(b, sku), t, id, SETFIX);
+const shopPath = (b, sku) => SC.subjPath(kindPath(b, sku)); /* (shopmisc1 2회) 분야 경로 — 세트도 그 분야에 */
+const setPathOf = (b, sku, t, id) => SC.setPath(kindPath(b, sku), t, id, SETFIX); /* 세트면 '세트>분야' 경로(세트 모음) · 아니면 null */
 function kindPath(b, sku) { let seg = catSeg(b).map((x) => s(x, 30)).filter(Boolean); if (seg.length && /중고샵|^중고$/.test(seg[0])) seg = seg.slice(1);
   const r0 = String(seg[0] || '').replace(/^중고\s*/, ''); let k = null, rest = seg.slice(1);
   if (/^국내도서$|^도서$/.test(r0)) k = '국내도서'; else if (/^외국도서$/.test(r0)) k = '외국도서'; else if (/^(음반|CD|music)$/i.test(r0)) k = '음반'; else if (/^블루레이$|blu-?ray/i.test(r0)) k = '블루레이';
@@ -49,8 +50,8 @@ function kindPath(b, sku) { let seg = catSeg(b).map((x) => s(x, 30)).filter(Bool
   const mi = rest.findIndex((x) => /잡지|magazine/i.test(x)); if ((k === '국내도서' || k === '외국도서') && mi >= 0 && mi <= 1) rest = k === '국내도서' ? rest.slice(mi + 1) : ['외국 잡지', ...rest.slice(0, mi), ...rest.slice(mi + 1)].filter((x, i, A) => !(i > 0 && /잡지/.test(x) && x === A[i - 1])), k = '잡지';
   return { k, rest: rest.slice(0, 6) }; }
 const cpOf = (P) => [P.k, ...P.rest].join('>').slice(0, 160);
-const catOf = (b, sku, t, id) => { const P = shopPath(b, sku, t, id); return s(P.k === '국내도서' ? P.rest[0] || '' : P.k, 24) || null; }; /* (shop2) 국내도서는 둘째 칸(소설/시/희곡…) · 다른 종류는 종류 이름(외국도서·블루레이…) — 전엔 '중고국내도서'·'인문/사회'(외국도서)가 분야로 섞였음 */
-const cat2Of = (b, sku, t, id) => { const P = shopPath(b, sku, t, id); const v = P.k === '국내도서' ? P.rest[1] : P.rest[0]; return v ? s(v, 24) || null : null; };
+const catOf = (b, sku) => { const P = shopPath(b, sku); return s(P.k === '국내도서' ? P.rest[0] || '' : P.k, 24) || null; }; /* (shop2) 국내도서는 둘째 칸(소설/시/희곡…) · 다른 종류는 종류 이름(외국도서·블루레이…) — 전엔 '중고국내도서'·'인문/사회'(외국도서)가 분야로 섞였음 */
+const cat2Of = (b, sku) => { const P = shopPath(b, sku); const v = P.k === '국내도서' ? P.rest[1] : P.rest[0]; return v ? s(v, 24) || null : null; };
 const pd = (v) => { const d = String(v || '').replace(/[^\d]/g, ''); return d.length >= 6 ? d.slice(0, 4) + '-' + d.slice(4, 6) : null; };
 const tsIso = (v) => { if (!v) return null; if (typeof v.toDate === 'function') return v.toDate().toISOString(); const t = Date.parse(v); return t ? new Date(t).toISOString() : null; };
 
@@ -65,12 +66,12 @@ function pubItem(id, l, b) {
   const ph = (l.photos || []).filter((x) => x && x.stored && x.kind !== 'preview' && !/\/letslook\//i.test(String(x.src || ''))) /* (shelf8) 예전 사진 받기가 넣어 둔 알라딘 미리보기(letslook)는 실물 사진이 아님 — 샘플 칸으로 따로 */.slice(0, 6).map((x) => imgOf(x, true)).filter(Boolean);
   const cover = imgOf(b.images && b.images.front, true) || imgOf(b.cover, true);
   const author = s(b.author || (b.contributors || []).slice(0, 2).map((c) => c && c.name).filter(Boolean).join(', ') || l.author, 60) || null;
-  return { id: String(id), t, a: author, pb: s(b.publisher || l.publisher, 40) || null, pd: pd(b.pubDate), c: catOf(b, l.sku, t, id), c2: cat2Of(b, l.sku, t, id), cp: cpOf(shopPath(b, l.sku, t, id)), g: s(l.grade, 4) || null, p, lp: num(b.priceList || l.priceList) || null,
+  return { id: String(id), t, a: author, pb: s(b.publisher || l.publisher, 40) || null, pd: pd(b.pubDate), c: catOf(b, l.sku), c2: cat2Of(b, l.sku), cp: cpOf(shopPath(b, l.sku)), cs: ((P) => (P ? cpOf(P) : null))(setPathOf(b, l.sku, t, id)), /* (shopmisc1 2회) cs = 세트 경로(세트일 때만) */ g: s(l.grade, 4) || null, p, lp: num(b.priceList || l.priceList) || null,
     im: cover || ph[0] || null, ph, sp: imgOf(b.images && b.images.spine, false) || null, bk: imgOf(b.images && b.images.back, true) || null, pg: num(b.pages) || null, sz: szOf(b.size), pv: ['done', 'shared'].includes(String(l.previewsStatus || '')) ? 1 : null, isbn: /^97[89]\d{10}$/.test(String(l.isbn13 || b.isbn13 || '')) ? String(l.isbn13 || b.isbn13) : null, q: Math.max(1, +l.qty || 1), at: tsIso(l.registeredAt) || tsIso(l.firstSeenAt) || null };
 }
 /* ══ (11/11 shelf1) 📚 서가 책장 — 판매중 책 전부를 가볍게(칸 이름 cols · 줄마다 배열 · 그림 주소 앞부분은 pre 번호로 줄임) · 4,000권씩 나눠 받음
  *  판매지수(sp)는 숫자를 내보내지 않고 순위(sr · 1이 가장 많이 팔림)만 — 공개 요약 칸 밖의 시장 지표를 새지 않게 · 주문 중 'o' · 다른 판매처에서 팔린 책은 뺌 */
-const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv', 'pv', 'rv', 'q', 'cp', 'pk', 'ac', 'cb']; /* (shelfset2) cb = 뒤표지 대표색(세트만 · 세트 책등 한 벌 디자인에 앞표지 색과 함께) */ /* (shelf3 11/13) pk = 사진 판정(c 표지 · o 물건 사진 · n 자리 그림 · 대문자 = 관리자) · ac = 관리자가 고른 표지 사진 */ /* (shop2 11/13) cp = 종류>분류>…>가장 작은 분류 */ /* (shop2 11/13) q = 수량(2 넘을 때만 · 서가 '여러 권 모두 진열/수량 표시') */ /* (shelf8) rv = 손님 별점 [평균, 수](공개 리뷰 0이면 없음) */ /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
+const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv', 'pv', 'rv', 'q', 'cp', 'pk', 'ac', 'cb', 'cs']; /* (shopmisc1 2회) cs = 세트 경로(세트 책장에도 한 번 더) */ /* (shelfset2) cb = 뒤표지 대표색(세트만 · 세트 책등 한 벌 디자인에 앞표지 색과 함께) */ /* (shelf3 11/13) pk = 사진 판정(c 표지 · o 물건 사진 · n 자리 그림 · 대문자 = 관리자) · ac = 관리자가 고른 표지 사진 */ /* (shop2 11/13) cp = 종류>분류>…>가장 작은 분류 */ /* (shop2 11/13) q = 수량(2 넘을 때만 · 서가 '여러 권 모두 진열/수량 표시') */ /* (shelf8) rv = 손님 별점 [평균, 수](공개 리뷰 0이면 없음) */ /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
 const SHELF_PRE = [IMG_BASE, 'https://image.aladin.co.kr/product/'];
 /* (shelf6) 서가 창구 제한 — IP당 1분 120번(손님 한 명이 서가를 열 때 2번: 첫 묶음 + 나머지 한꺼번에 · 같은 IP 손님 60명이 1분 안에 열어도 됨) · 나머지 창구는 그대로 240번 */
 const SHELF_RL = [120, 60e3];
@@ -81,7 +82,7 @@ const preOf = (u) => { if (!u) return null; for (let i = 0; i < SHELF_PRE.length
 function shelfRows(all, held, sold, sp, lk, cvf, rvf, pkf, pick, cbf) { const PI = pick || new Map(); /* (shelf3) 관리자 판정·표지가 클라우드 판정을 이김(헌장 제7조 · 코드가 덮지 않음) */ const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
   const L = (all || []).filter((x) => x && !X.has(x.id)).slice().sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')) || String(b.id).localeCompare(String(a.id))); /* 등록순(오래된 것 먼저) */ /* (shelf4) 새 책 먼저 — 손님 화면이 첫 묶음(4,000권)만 받고 바로 첫 책장을 그림(나머지는 뒤에서) */
   const R = L.map((x) => [x.id, SP.has(x.id) ? +SP.get(x.id) || 0 : -1]).filter((r) => r[1] >= 0).sort((a, b) => b[1] - a[1]); const rank = new Map(R.map((r, i) => [r[0], i + 1]));
-  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null, cvf ? cvf(x.im) : null, x.pv ? 1 : null, (rvf && rvf(x)) || null, x.q > 1 ? Math.min(999, Math.floor(x.q)) : null, x.cp || null, ((PI.get(x.id) || {}).k) || (pkf ? pkf(x.im) : null) || null, preOf((PI.get(x.id) || {}).src) || null, (cbf && cbf(x)) || null]); } /* (shelf8) pv 샘플 있음 */
+  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null, cvf ? cvf(x.im) : null, x.pv ? 1 : null, (rvf && rvf(x)) || null, x.q > 1 ? Math.min(999, Math.floor(x.q)) : null, x.cp || null, ((PI.get(x.id) || {}).k) || (pkf ? pkf(x.im) : null) || null, preOf((PI.get(x.id) || {}).src) || null, (cbf && cbf(x)) || null, x.cs || null]); } /* (shelf8) pv 샘플 있음 */
 /* (shelf3 · 정범님 11/13 21:40) 📷 관리자 표지·판정 — app_settings/shop.shelfPick = { 상품번호: { k: 'C'(표지다)|'O'(표지 아님 · 사진으로)|'N'(그림 없음 · 고유 디자인)|'', src: 관리자가 고른 표지 사진 주소(https · 우리 저장소·알라딘), by, at } }
  *  관리 웹앱 › 🛍 우리숍 주문 › 📷 서가 표지·사진 바로잡기가 씀 · 여기선 꼴만 지킴 · 지우지 않음(빈 k·src = 자동으로 되돌림 — 기록은 남김) */
 const PICK_SRC = /^https:\/\/(firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\/|image\.aladin\.co\.kr\/)[^\s"'<>]{1,400}$/;
@@ -104,14 +105,14 @@ const norm = (x) => String(x || '').toLowerCase().replace(/[\s\-_.,·:;!?'"()[\]
 /* (11/11 shop4) 🆕 들어온 날(한국 날짜) — 손님 화면 '오늘·어제·N일 전' 표 · 첫 화면 '오늘 N권 새로' 셈 */
 const kstDay = (iso) => { const t = Date.parse(iso || ''); return Number.isFinite(t) ? new Date(t + 9 * 3600e3).toISOString().slice(0, 10) : null; };
 /* (shop2) 🗂 분류 나무 — 판매중 상품이 있는 칸만(손님이 눌렀는데 빈 칸이 없게 · 쿠팡·알라딘 중고샵도 상품 있는 분류만) · tree = [[경로, 권 수]] 경로 차례 · kinds = [[종류, 권 수]] KINDS 차례 */
-function catTree(items) { const M = new Map(); for (const x of items) { if (!x || !x.cp) continue; const seg = x.cp.split('>'); for (let i = 1; i <= seg.length; i++) { const k = seg.slice(0, i).join('>'); M.set(k, (M.get(k) || 0) + 1); } }
+function catTree(items) { const M = new Map(); for (const x of items) { if (!x) continue; for (const p of [x.cp, x.cs]) { if (!p) continue; const seg = p.split('>'); for (let i = 1; i <= seg.length; i++) { const k = seg.slice(0, i).join('>'); M.set(k, (M.get(k) || 0) + 1); } } } /* (shopmisc1 2회) 세트는 분야 칸과 세트 칸 둘 다에 셈 */
   const tree = [...M].sort((a, b) => { const A = a[0].split('>'), B = b[0].split('>'); const ka = KINDS.indexOf(A[0]), kb = KINDS.indexOf(B[0]); return ka - kb || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0); });
   return { tree, kinds: KINDS.filter((k) => M.has(k)).map((k) => [k, M.get(k)]) }; }
 function listItems(all, o, held, sold, now) {
   o = o || {}; const X = sold || new Set(); if (X.size) all = all.filter((x) => !X.has(x.id)); const q = String(o.q || '').trim(); const toks = q.split(/\s+/).map(norm).filter(Boolean); const dig = q.replace(/\D/g, '');
   const pMin = Math.max(0, parseInt(o.pmin, 10) || 0), pMax = Math.max(0, parseInt(o.pmax, 10) || 0); /* (11/11 shopc1) 값 범위·할인만·배지 거르기 — 값은 규칙을 얹은 우리숍 판매가 */
   const cpq = SC.legacyCp(s(o.cp, 160)); /* (shopmisc1) 옛 알라딘 경로 주소도 우리 경로로 */ /* (shop2) 분류 경로 거르기 — 그 칸과 그 아래 모두 */
-  const oc = o.c ? SC.mapDomestic([s(o.c, 40)])[0] : ''; /* (shopmisc1) 옛 ?c=알라딘 이름도 */ let L = all.filter((x) => (!oc || x.c === oc) && (!cpq || (x.cp && (x.cp === cpq || x.cp.startsWith(cpq + '>')))) && (!o.g || x.g === o.g) && (!pMin || x.p >= pMin) && (!pMax || x.p <= pMax) && (!o.sale || (x.p0 && x.p < x.p0)) && (!o.bd || (x.bd || []).includes(o.bd)));
+  const oc = o.c ? SC.mapDomestic([s(o.c, 40)])[0] : ''; /* (shopmisc1) 옛 ?c=알라딘 이름도 */ let L = all.filter((x) => (!oc || x.c === oc) && (!cpq || [x.cp, x.cs].some((p) => p && (p === cpq || p.startsWith(cpq + '>')))) && (!o.xs || (o.xs === '1' ? !!x.cs : o.xs === 'x' ? !x.cs : true)) /* (shopmisc1 2회) 세트는 분야·세트 둘 다에서 · xs=1 세트만 · xs=x 세트 빼기 */ && (!o.g || x.g === o.g) && (!pMin || x.p >= pMin) && (!pMax || x.p <= pMax) && (!o.sale || (x.p0 && x.p < x.p0)) && (!o.bd || (x.bd || []).includes(o.bd)));
   if (toks.length) L = L.filter((x) => { if (dig.length >= 10 && x.isbn && x.isbn.includes(dig)) return true; const h = norm(x.t + ' ' + (x.a || '') + ' ' + (x.pb || '')); return toks.every((k) => h.includes(k)); });
   const offOf = (x) => (x.p0 && x.p < x.p0 ? 1 - x.p / x.p0 : 0); const byNew = (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
   const srt = o.s === 'low' ? (a, b) => a.p - b.p : o.s === 'high' ? (a, b) => b.p - a.p : o.s === 'off' ? (a, b) => offOf(b) - offOf(a) || byNew(a, b) : byNew;
@@ -471,4 +472,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { SC, shopPath, quoteQ, pickMap, PICK_SRC, multiOf, KINDS, kindPath, catTree, soldLike, shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { SC, shopPath, setPathOf, quoteQ, pickMap, PICK_SRC, multiOf, KINDS, kindPath, catTree, soldLike, shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };

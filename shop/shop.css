@@ -444,3 +444,5 @@ html.rm *, html.rm *::before, html.rm *::after { animation: none !important; tra
 .aisum { margin: var(--sp-7) 0 var(--sp-2); padding: var(--sp-4) var(--sp-5); border-radius: 12px; background: color-mix(in srgb, currentColor 4%, transparent); }
 .aisum h2 { margin-bottom: var(--sp-3); } .aisum p { margin: 0 0 1em; line-height: 1.7; word-break: keep-all; } .aisum .ai1 { font-weight: 700; font-size: 1.08em; }
 .aisum .aikw { display: flex; flex-wrap: wrap; gap: 6px; } .aisum .aikw span { font-size: .85em; opacity: .75; }
+/* (shopmisc1 2회) 🧩 세트 표 — 분야 목록에 섞여 나와도 한눈에(예스24·알라딘은 제목 '세트' · 우리는 표까지) */
+.card .im .cset { position: absolute; right: 6px; bottom: 6px; z-index: 2; font: 700 11px/1 system-ui, sans-serif; padding: 4px 7px; border-radius: 99px; background: var(--c-brand, #1d2b45); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }

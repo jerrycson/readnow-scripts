@@ -12,19 +12,23 @@ const ROOT = path.resolve(__dirname, '..', '..'); const SH = require(path.join(R
 const BQS = require(path.join(ROOT, 'shop/shelf-core.js')); const BQ = require(path.join(ROOT, 'shop/shop-core.js')); const PR = require(path.join(ROOT, 'readnow-products-core.js'));
 (async () => {
 console.log('① 우리숍 주제분류');
-{ const P = (p, t, id) => { const r = SH.shopPath({ categories: [{ path: p }] }, '', t || '책', id || 'x'); return [r.k, ...r.rest].join('>'); };
+{ const P = (p, t, id) => { const b = { categories: [{ path: p }] }; const z = SH.setPathOf(b, '', t || '책', id || 'x'); if (z) return [z.k, ...z.rest].join('>'); const r = SH.shopPath(b, ''); return [r.k, ...r.rest].join('>'); }; /* 세트면 세트 경로 · 아니면 분야 경로 */
+  const Q = (p) => { const r = SH.shopPath({ categories: [{ path: p }] }, ''); return [r.k, ...r.rest].join('>'); }; /* 분야 경로(세트도 이것을 가짐) */
   ok(P('국내도서>소설/시/희곡>한국소설') === '국내도서>소설·시·희곡>한국소설' && P('국내도서>인문학>철학 일반') === '국내도서>인문>철학 일반' && P('국내도서>사회과학>정치') === '국내도서>사회·정치>정치', '알라딘 이름 → 우리 이름(소설·시·희곡 · 인문 · 사회·정치)');
   ok(P('국내도서>장르소설>추리/미스터리') === '국내도서>소설·시·희곡>장르소설>추리/미스터리' && P('국내도서>중학교참고서>수학') === '국내도서>중고등참고서>중학교>수학' && P('국내도서>좋은부모>육아') === '국내도서>가정·육아>육아', '알라딘만의 1단계는 우리 묶음 아래로(장르소설 → 소설 아래 · 중·고등 참고서 합침 · 좋은부모 → 가정·육아)');
   ok(P('국내도서>만화/라이트노벨>라이트 노벨') === '국내도서>만화>라이트 노벨' && P('국내도서>청소년_추천도서>x') === '국내도서>청소년>추천도서>x' && P('국내도서>모르는_분류>x') === '국내도서>모르는_분류>x', '실제 우리숍에서 찾은 남은 알라딘 이름: 만화/라이트노벨 → 만화 · 청소년_추천도서 → 청소년 › 추천도서 · 모르는 밑줄 이름은 그대로');
   ok(P('국내도서>역사>한국사') === '국내도서>역사>한국사' && P('국내도서>에세이') === '국내도서>에세이' && P('국내도서>새로생긴분야>x') === '국내도서>새로생긴분야>x', '여러 서점이 같이 쓰는 이름은 그대로 · 바꿈표에 없는 새 분야도 빠지지 않고 그대로');
-  ok(P('국내도서>소설/시/희곡>한국소설', '[세트] 시험 대하소설 1~10') === '세트>소설·시·희곡' && P('국내도서>전집/중고전집>유아전집') === '세트>유아전집' && P('외국도서>소설', 'Test Boxed Set') === '세트>외국도서', '세트: 제목의 강한 신호·알라딘 전집 분류 → 세트 종류(그 책의 분야를 아래 칸으로)');
+  ok(P('국내도서>소설/시/희곡>한국소설', '[세트] 시험 대하소설 1~10') === '세트>소설·시·희곡' && P('국내도서>전집/중고전집>유아전집') === '세트>유아전집' && P('외국도서>소설', 'Test Boxed Set') === '세트>외국도서', '세트: 제목의 강한 신호·알라딘 전집 분류 → 세트 경로(그 책의 분야를 아래 칸으로)');
+  ok(Q('국내도서>소설/시/희곡>한국소설') === '국내도서>소설·시·희곡>한국소설' && Q('국내도서>전집/중고전집>유아전집') === '국내도서>유아>전집>유아전집' && Q('국내도서>전집/중고전집>초등 학습 전집') === '국내도서>어린이>전집>초등 학습 전집' && Q('국내도서>전집/중고전집>기타') === '세트>기타', '세트의 분야 경로도 따로(정범님 11/14 20:00 — 분야 목록에도 나옴) · 알라딘 전집은 낱말로 유아·어린이 · 못 고르면 세트에만');
   ok(P('국내도서>에세이', '세트 메뉴 요리책') === '국내도서>에세이' && P('음반>가요', '[CD] 시험 박스 세트 1~3') === '음반>가요', "약한 신호('세트' 낱말만)는 세트 아님 · 음반·영상 박스는 그 종류 그대로");
   { const fix = 'id9 0\nid8 4'; const q = (p, t, id) => { const r = SC.ourPath(SH.kindPath({ categories: [{ path: p }] }, ''), t, id, fix); return r.k; }; ok(q('국내도서>소설/시/희곡', '[세트] 시험 1~3', 'id9') === '국내도서' && q('국내도서>소설/시/희곡', '시험 한 권', 'id8') === '세트', '관리자 바로잡기(서가 설정 「세트 권 수」): 0 = 세트 아님 · 2 넘음 = 세트(제목보다 먼저)'); }
   ok(SH.KINDS.indexOf('세트') === 2 && SC.legacyCp('국내도서>소설/시/희곡>한국소설') === '국내도서>소설·시·희곡>한국소설' && SC.legacyCp('국내도서>전집/중고전집') === '세트' && SC.legacyCp('음반>가요') === '음반>가요', '종류 차례에 세트 · 옛 주소(알라딘 이름)를 우리 경로로 읽음');
   const it = [{ id: 'a', cp: '국내도서>소설·시·희곡>한국소설', c: '소설·시·희곡', p: 1000, t: '가', at: '2026-10-01' }, { id: 'b', cp: '세트>소설·시·희곡', c: '세트', p: 1000, t: '나', at: '2026-10-01' }];
   ok(SH.listItems(it, { cp: '국내도서>소설/시/희곡' }).total === 1 && SH.listItems(it, { c: '소설/시/희곡' }).total === 1 && SH.listItems(it, { cp: '세트' }).total === 1, '목록 거르기: 옛 ?cp=·?c= 알라딘 이름 주소도 찾음 · 세트만 보기');
   const pub = SH.pubItem('u1', { status: '판매중', price: 5000, title: '[세트] 시험 1~5' }, { categories: [{ path: '국내도서>소설/시/희곡>한국소설' }] }); const B0 = { categories: [{ path: '국내도서>소설/시/희곡>한국소설' }] };
-  ok(pub.cp === '세트>소설·시·희곡' && pub.c === '세트' && pub.c2 === '소설·시·희곡' && B0.categories[0].path === '국내도서>소설/시/희곡>한국소설', `공개 요약 cp ${pub.cp} · c ${pub.c} · 도서 정보(알라딘 경로)는 그대로`);
+  ok(pub.cp === '국내도서>소설·시·희곡>한국소설' && pub.cs === '세트>소설·시·희곡' && pub.c === '소설·시·희곡' && B0.categories[0].path === '국내도서>소설/시/희곡>한국소설' && SH.SHELF_COLS[SH.SHELF_COLS.length - 1] === 'cs', `공개 요약: 분야 cp ${pub.cp} + 세트 cs ${pub.cs} · c ${pub.c} · 서가 자료 맨 끝 cs 칸 · 도서 정보(알라딘 경로)는 그대로`);
+  { const L = [{ ...pub, at: '2026-11-01' }, { id: 'n1', t: '낱권', cp: '국내도서>소설·시·희곡>한국소설', c: '소설·시·희곡', p: 1000, at: '2026-11-01' }]; const T2 = new Map(SH.catTree(L).tree); ok(SH.listItems(L, { cp: '국내도서>소설·시·희곡' }).total === 2 && SH.listItems(L, { cp: '세트' }).total === 1 && SH.listItems(L, { cp: '국내도서>소설·시·희곡', xs: 'x' }).total === 1 && SH.listItems(L, { cp: '국내도서>소설·시·희곡', xs: '1' }).total === 1 && T2.get('국내도서>소설·시·희곡') === 2 && T2.get('세트') === 1, '세트가 분야 목록(2)과 세트 모음(1) 둘 다에 · 거르기 「세트만」「세트 빼고」 · 분류 나무 수도 둘 다'); }
+  { const P2 = BQS.plan([{ id: 'u1', t: pub.t, cp: pub.cp, cs: pub.cs, p: 1 }, { id: 'n2', t: '낱권', cp: '국내도서>인문>철학', p: 1 }], BQS.cfgOf({ pack: false }), 'cat'); const W = P2.cases.map((c) => c.name + ':' + c.slots.filter((x) => !x.lab).map((x) => x.id + (x._sc ? '*' : '')).join(',')); ok(W.some((w) => /^소설·시:u1$/.test(w)) && W.some((w) => /^세트:u1\*$/.test(w)), '서가: 세트는 제 분야 책장과 세트 책장 둘 다에 — ' + W.join(' | ')); }
   const T = SH.catTree([pub, { cp: '국내도서>인문>철학' }]); ok(T.kinds.map((k) => k[0]).join() === '국내도서,세트', '분류 나무 종류 차례: 국내도서 → 세트');
   ok(BQS.catOf({ cp: '세트>소설·시·희곡', t: 'x' }).k === 'set' && BQS.catOf({ cp: '국내도서>사회·정치>정치' }).k === 'society' && BQS.catOf({ cp: '국내도서>컴퓨터·IT>x' }).k === 'it' && BQS.catOf({ cp: '국내도서>중고등참고서>중학교' }).k === 'exam' && BQS.catOf({ cp: '국내도서>예술·대중문화>음악' }).k === 'art' && BQS.catOf({ cp: '국내도서>가정·육아>육아' }).k === 'family',
     '서가 책장: 세트 책장 · 우리 이름도 같은 책장으로(사회·정치 · 컴퓨터·IT · 참고서 · 예술 · 가정·육아)');
@@ -34,7 +38,7 @@ console.log('① 우리숍 주제분류');
 console.log('② 웹앱 주제분류에 세트');
 { const A = fs.readFileSync(path.join(ROOT, 'src/app.html'), 'utf8');
   ok(/const SET_CAT = '세트'/.test(A) && /if \(isSetL\(l\)\) return depth === 3 \? bookCatOf\(l\.bookId, 2\) : SET_CAT;/.test(A) && /m && m\.cat\) return depth === 3 \? \(m\.sub \|\| m\.cat\) : m\.cat; if \(isSetL/.test(A), 'listingCat: 사람이 정한 분류가 먼저 → 세트 → 알라딘 분류');
-  ok(/L\.includes\(SET_CAT\) \? L : \[SET_CAT, \.\.\.L\]/.test(A) && /cat: l && isSetL\(l\) \? SET_CAT/.test(A), '분류 고르기 목록에 늘 세트 · 👀 조회수 분석 주제 분류에도 세트');
+  ok(/L\.includes\(SET_CAT\) \? L : \[SET_CAT, \.\.\.L\]/.test(A) && /set: !!\(l && isSetL\(l\)\)/.test(A) && /r\.M\.cat === P\.cat \|\| \(P\.cat === SET_CAT && r\.M\.set\)/.test(A), '분류 고르기 목록에 늘 세트 · 👀 조회수 분석 주제 분류: 세트는 제 분야와 「세트」 둘 다에서');
   const isSet = (t, p1) => { const r = PR.setInfo(t); return (r.set && r.level === 'strong') || /^전집/.test(p1 || ''); }; ok(isSet('[세트] 시험 1~3') && isSet('시험 세트 - 전5권') && !isSet('세트 메뉴 요리책') && isSet('x', '전집/중고전집'), '웹앱 세트 판단 = 공용 setInfo 강한 신호 + 알라딘 전집'); }
 
 console.log('③ 단위 한 곳');
@@ -60,8 +64,8 @@ const SHOT = process.env.RN_SHOT || path.join(os.tmpdir(), 'shopmisc1'); fs.mkdi
 const SVG = (h, w, hh, txt) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}"><rect width="${w}" height="${hh}" fill="hsl(${h},55%,42%)"/><text x="18" y="60" font-size="28" fill="#fff" font-family="sans-serif">${txt}</text><rect x="18" y="${hh - 60}" width="${w * 0.4}" height="34" fill="#fff" opacity=".8"/></svg>`;
 const D0 = BQS.demoItems(60, 7).map((x, i) => ({ ...x, id: 'D' + i, im: null, bk: null, at: '2026-09-' + String(1 + (i % 28)).padStart(2, '0') }));
 /* [id, 제목, cp, 앞 그림, 뒤 그림] — 지어낸 상품 */
-const SPEC = [['B1', '시험 낱권 소설', '국내도서>소설·시·희곡>한국소설', 'f_10', 'b_200'], ['C1', '[CD] 시험 가수 - 1집', '음반>가요', 'f_330', 'b_30'], ['V1', '[DVD] 시험 영화', 'DVD>드라마/코미디', 'f_120', null], ['R1', '[블루레이] 시험 우주 영화', '블루레이>SF', 'f_220', 'b_250'], ['L1', '[LP] 시험 재즈 음반', 'LP>재즈', 'f_40', null], ['S1', '[세트] 시험 대하소설 1~5', '세트>소설·시·희곡', 'f_280', null]];
-const mk = (base) => [...SPEC.map(([id, t, cp, f, b], i) => ({ id, t, a: '지은이 ' + i, cp, c: cp.split('>')[0] === '국내도서' ? cp.split('>')[1] : cp.split('>')[0], p: 12000 + i * 1000, lp: 30000, at: '2026-11-14', q: id === 'C1' ? 3 : null, im: base + '/img/' + f + '.svg', bk: b ? base + '/img/' + b + '.svg' : null })), ...D0];
+const SPEC = [['B1', '시험 낱권 소설', '국내도서>소설·시·희곡>한국소설', 'f_10', 'b_200'], ['C1', '[CD] 시험 가수 - 1집', '음반>가요', 'f_330', 'b_30'], ['V1', '[DVD] 시험 영화', 'DVD>드라마/코미디', 'f_120', null], ['R1', '[블루레이] 시험 우주 영화', '블루레이>SF', 'f_220', 'b_250'], ['L1', '[LP] 시험 재즈 음반', 'LP>재즈', 'f_40', null], ['S1', '[세트] 시험 대하소설 1~5', '국내도서>소설·시·희곡>한국소설', 'f_280', null]];
+const mk = (base) => [...SPEC.map(([id, t, cp, f, b], i) => ({ id, t, a: '지은이 ' + i, cp, c: cp.split('>')[0] === '국내도서' ? cp.split('>')[1] : cp.split('>')[0], p: 12000 + i * 1000, lp: 30000, at: '2026-11-14', q: id === 'C1' ? 3 : null, cs: id === 'S1' ? '세트>소설·시·희곡' : null, im: base + '/img/' + f + '.svg', bk: b ? base + '/img/' + b + '.svg' : null })), ...D0];
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 let rows = []; const base0 = { v: '' };
 const srv = http.createServer((req, res) => { const u = new URL(req.url, 'http://x'); const Jo = (o, s) => { res.writeHead(s || 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
@@ -102,6 +106,7 @@ try {
     ok(media.C1.bkImg && media.V1.noBk && media.backOn, 'CD 뒤표지 그림 보임 · DVD는 뒤표지 사진 없음 표시 · 「뒤표지」 단추 = 뒤표지를 앞으로(창은 그대로)'); ok(media.dragged, '디스크 보기도 아래로 끌어내리면 꽂힘');
     await p.evaluate((s) => document.querySelector(s).scrollIntoView({ block: 'center' }), sp('L1')); await p.click(sp('L1')); await p.waitForTimeout(1300); const lp = await p.evaluate(() => ({ dk: !!document.querySelector('.bqs-ob .dk'), pm: !!document.querySelector('.bqs-ob .pm-lp') })); ok(!lp.dk && lp.pm, 'LP는 예전 꼴 그대로(정사각 재킷 + 판이 옆으로) — CD·영상과 다름'); await shot(p, 'pc1280_disc_L1_lp'); await p.keyboard.press('Escape'); await waitPh(p, 'shelved', 40);
     const hd = await p.evaluate(() => [...document.querySelectorAll('.bqs-case.cur .lab small, .bqs-case.cur .bqs-top small')].map((e) => e.textContent).join(' | ')); ok(/\d개/.test(hd) && !/\d권/.test(hd), '책 · CD · 영상이 섞인 책장 머리는 「개」(모두 책이면 「권」): ' + hd.slice(0, 160));
+    const s1 = await p.evaluate(() => document.querySelectorAll('.sp[data-id="S1"], .bqs-set[data-set="S1"]').length); ok(s1 >= 2, `서가 화면: 세트 S1이 분야 책장과 세트 책장 두 곳에(${s1}곳)`);
     ok(!errs.length, 'PC 서가 화면 오류 없음 ' + errs.join(' | ')); await ctx.close(); }
   { const { ctx, p, errs } = await open(PC, '#/b/C1', '.det .dk'); await p.waitForTimeout(1200); const d = await p.evaluate(() => ({ dk: !!document.querySelector('.det .gcol .dkwrap .dk-cd'), q: (document.querySelector('.facts') || {}).textContent || '', cat: (document.querySelector('.facts .crumbs') || {}).textContent || '' }));
     ok(d.dk && /같은 상품 3장/.test(d.q), `상품 화면(CD): 앞·뒤 표지 + 디스크 · 수량 「${(/같은 상품 3장[^—]*/.exec(d.q) || [''])[0].trim()}」`); await shot(p, 'pc1280_item_C1'); ok(!errs.length, '상품 화면 오류 없음 ' + errs.join(' | ')); await ctx.close(); }

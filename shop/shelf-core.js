@@ -448,7 +448,7 @@
     const picks = String(c.picks || '').split(/[\s,]+/).map((x) => x.trim()).filter(Boolean); const P = new Map(picks.map((id, i) => [id, i]));
     if (key === 'rec') for (const x of L) x._rs = P.has(x.id) ? 1e6 - P.get(x.id) : recScore(x, now);
     let groups;
-    if (key === 'cat') { const M = new Map(); for (const x of L) { const k = catOf(x, c.catDepth === 'deep'); x._k = k; if (!M.has(k.k)) M.set(k.k, { key: k.k, name: k.b, xs: [] }); M.get(k.k).xs.push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
+    if (key === 'cat') { const M = new Map(); for (const x of L.flatMap((y) => (y.cs && !y._dup ? [y, { ...y, cp: y.cs, _sc: 1 }] : [y]))) { /* (shopmisc1 2회 · 정범님 11/14 20:00) 세트는 제 분야 책장 + 세트 책장 둘 다(같은 상품 번호 · 세트 책장 쪽은 _sc) */ const k = catOf(x, c.catDepth === 'deep'); x._k = k; if (!M.has(k.k)) M.set(k.k, { key: k.k, name: k.b, xs: [] }); M.get(k.k).xs.push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
       const first = String(c.catFirst || '').split(/[,，]/).map((v) => v.trim()).filter(Boolean); const fi = (g) => { const i = first.findIndex((v) => v === g.name || v === g.key); return i < 0 ? 99 : i; };
       const salesOf = (g) => g.xs.reduce((a, x) => a + (x.sr ? 1 / Math.log2(1 + x.sr) : 0), 0);
       groups = [...M.values()]; for (const g of groups) { const SM = new Map(); for (const x of g.xs) { const k = x._k.s || ''; if (!SM.has(k)) SM.set(k, []); SM.get(k).push(x); }
