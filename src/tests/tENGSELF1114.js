@@ -54,6 +54,9 @@ let t = E.esStep(s, jU, cfg, true, 'x1', 'x1'); t = E.esStep(t, jU, cfg, true, '
 t = E.esStep(t, jU, cfg, true, 'x3', 'x3'); ok(t.st === '지지' && t.changed.from === '확신', '어긋남 3회 연속 → 확신에서 지지로 한 단계만 내림');
 for (let i = 4; i <= 6; i++) t = E.esStep(t, jU, cfg, true, 'x' + i, 'x' + i); ok(t.st === '불명', '다시 3회 → 지지에서 불명');
 const jO = { ...jS, v: '반대', label: '반대', e: { eff: -0.2, lo: -0.3, hi: -0.1 } }; let u = E.esStep(E.esStep(null, jU, cfg, true, 'a', 'a'), jO, cfg, true, 'b', 'b'); ok(u.st === '반대', '불명 → 반대(표본 넘음)');
+{ const m1 = E.esStep(null, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: { eff: 0.135, yrs: 1 }, m: false }, cfg, true, 'a', 'a'); ok(m1.st === '지지', '달 순위(표본 = 해 수 1)는 날 수 기준 없이 지지'); let m2 = m1; for (let i = 0; i < 9; i++) m2 = E.esStep(m2, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: { eff: 0.135, yrs: 1 }, m: false, mWhy: '달마다 1해뿐' }, cfg, true, 'b' + i, 'b' + i); ok(m2.st === '지지', '한 해뿐이면 확신 안 됨(두 해 넘게)');
+  const mF = E.esStep({ st: '불명', run: { v: '지지', k: 1 } }, { id: 'H7', kind: 'month_rank', v: '지지', label: '지지', n: 1, e: {} }, cfg, true, 'c', 'c'); ok(mF.st === '지지' && mF.changed.from === '불명', '0.35.252 첫 회차에 불명으로 남은 H07은 다음 회차에 스스로 지지로 바로잡힘'); }
+ok(/0을 걸침/.test(E.esNext({ st: '불명' }, { n: 82, v: '불명', e: { lo: -0.05, hi: 0.06 } }, cfg)), '불명 설명 — 표본이 넉넉하면 범위가 0을 걸친다고(표본 탓으로 적지 않음)');
 ok(E.esStep(null, { id: 'H8', kind: 'hour', v: '지지', label: '지지', n: 900, e: { top: '21~23' }, m: false }, cfg, true, 'a', 'a').st === '지지', '시각 가설은 주문 수 표본으로');
 
 console.log('⑤ 배선 단계');
@@ -109,6 +112,26 @@ console.log('⑥ 회차 전체(가짜 Firestore)');
   T = now + 2 * 864e5; await ES.run(); ok(calls.notes.length === 1 && calls.notes[0][0].data.kind === 'card', '이틀째 그대로면 📓 카드 한 장');
   { const ES2 = E.makeEngSelf({ C: (c) => ({ doc: () => ({ get: async () => { if (c === 'ml_sales') throw new Error('읽기 실패'); return { exists: false, data: () => undefined }; }, set: async () => {} }), get: async () => { throw new Error('읽기 실패'); } }), W: () => ({}), log: () => {}, nowIso: () => new Date(T).toISOString(), now: () => T });
     let e1 = null; try { await ES2.run({}); } catch (e) { e1 = e; } const r9 = await ES2.run({}); ok(e1 && r9.skip && /1시간 쉼/.test(r9.skip), '회차가 실패하면 1시간 쉼(10분마다 되풀이 안 함) · 지금 한 번(force)은 그대로'); }
-  const d = await ES.diag({}); ok(d.self && d.wires && Array.isArray(d.ledger) && d.ledger.length === 4, '진단 engself=1 — 요약·배선·장부 줄');
+  /* ⑦ 감시(engself2) */
+  { const W = E.esWatch; const day = (h) => Date.parse('2026-11-15T00:00:00Z') + (h - 9) * 3600e3; /* 한국 h시 */
+    ok(W({ day: '2026-11-14', at: '2026-11-14T08:20:00Z' }, day(17), {}).ok, '17시엔 아직 오늘 회차를 안 기다림(16시+2시간 뒤부터)');
+    const w1 = W({ day: '2026-11-14', at: '2026-11-14T08:20:00Z' }, day(19), {}); ok(w1.missing && !w1.stale, '19시에 오늘 회차가 없으면 빠짐');
+    ok(W({ day: '2026-11-13', at: '2026-11-13T08:20:00Z' }, day(10), {}).stale, '마지막 회차 36시간 넘음 → 멈춤 깃발');
+    ok(W(null, day(19), { on: false }).ok, '설정으로 끈 날은 빠짐으로 안 봄'); }
+  { T = Date.parse('2026-11-17T10:00:00Z'); /* 한국 19시 · 마지막 회차 이틀 전 */ calls.notes.length = 0; DB.set('ml_sales/2026-10', { ym: '2026-10', rows: byM['2026-10'] }); DB.set('ml_sales/_meta', { at: new Date(T).toISOString() });
+    const w = await ES.watch({ force: true }); ok(w.tried && /^ok /.test(w.tried) && w.ok, '감시가 빠진 오늘 회차를 스스로 돌림 → ' + w.tried); ok(DB.get('app_settings/eng_self').by === 'engine:watch' && DB.get('app_settings/eng_self_watch').ok, '회차 주인 engine:watch · 감시 깃발 ok');
+    ok((await ES.watch()) === null, '30분 안 두 번째 감시는 쉼'); }
+  { const DB2 = new Map(); const C2 = (c) => ({ doc: (d) => ({ get: async () => { const v = DB2.get(c + '/' + d); return { exists: !!v, data: () => v }; }, set: async (v, o) => { DB2.set(c + '/' + d, { ...((o && o.merge && DB2.get(c + '/' + d)) || {}), ...JSON.parse(JSON.stringify(v)) }); } }), get: async () => { throw new Error('장부 읽기 실패'); } });
+    let T2 = Date.parse('2026-11-17T10:00:00Z'); const N2 = []; DB2.set('app_settings/eng_self', { day: '2026-11-14', at: '2026-11-14T08:20:00Z' });
+    const ES3 = E.makeEngSelf({ C: C2, W: () => ({}), log: () => {}, nowIso: () => new Date(T2).toISOString(), now: () => T2, notes: async (ops) => N2.push(ops) });
+    const a1 = await ES3.watch({ force: true }); ok(a1.missing && a1.stale && /실패/.test(a1.tried) && a1.tries === 1 && N2.length === 1, '다시 돌려도 실패 + 36시간 넘음 → 🚨 카드 · ' + a1.why.join(' / '));
+    T2 += 31 * 60e3; const a2 = await ES3.watch(); ok(a2.tries === 2 && N2.length === 1, '같은 날 카드는 한 장 · 다시 돌리기 2번째');
+    for (let i = 0; i < 4; i++) { T2 += 31 * 60e3; await ES3.watch(); } ok(DB2.get('app_settings/eng_self_watch').tries === 4, '하루 4번까지만 다시 돌림'); }
+  { /* 재료 36시간 멈춤 → 스스로 다시 셈 → 그래도 그대로면 그날 바로 🚨 카드 */ T = Date.parse('2026-11-18T08:00:00Z'); calls.notes.length = 0; DB.set('app_settings/cons_study', { at: '2026-11-15T00:00:00Z' }); DB.set('ml_sales/_meta', { at: new Date(T).toISOString() }); let redo = 0;
+    const ES4 = E.makeEngSelf({ C, W: () => ({}), log: () => {}, nowIso: () => new Date(T).toISOString(), now: () => T, hol, notes: async (ops) => calls.notes.push(ops), redo: { 'app_settings/cons_study': async () => { redo++; return { skip: 1 }; } } });
+    await ES4.run(); const S4 = DB.get('app_settings/eng_self'); ok(redo === 1 && S4.redone.length === 1 && S4.flag.ok === false && S4.flag.red.includes('fresh_N05'), '소비심리 문서 멈춤 → 스스로 다시 셈 1번 → 그대로라 깃발 빨강');
+    ok(calls.notes.length === 1 && /재료가 멈춤/.test(calls.notes[0][0].data.title), '다시 해도 그대로면 그날 바로 🚨 카드');
+    DB.set('app_settings/cons_study', { at: new Date(T).toISOString() }); T += 864e5; const ES5 = E.makeEngSelf({ C, W: () => ({}), log: () => {}, nowIso: () => new Date(T).toISOString(), now: () => T, hol, redo: { 'app_settings/cons_study': async () => { redo++; return {}; } } }); await ES5.run(); ok(redo === 1 && DB.get('app_settings/eng_self').flag.ok, '재료가 살아나면 다시 셈 안 함 · 깃발 초록'); }
+  const d = await ES.diag({}); ok(d.self && d.wires && d.watch && Array.isArray(d.ledger) && d.ledger.length >= 4, '진단 engself=1 — 요약·배선·장부 줄');
   console.log(bad ? `❌ ${bad}개 실패` : '✓ tENGSELF1114 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e.stack); process.exit(1); });
