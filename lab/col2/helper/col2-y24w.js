@@ -18,6 +18,7 @@
  *   (0.1.38 y24chk · 11/12 진단) 실제 응답(/api/Product/ProductList 11/12 원문) 칸 이름은 REM_CNT(재고수량)·GOODS_STAT_GB(판매상태)·SALE_PR(판매가) · MAN_NO는 서가 관리 코드(PNKLUX 등 — 상품마다 다른 SKU 아님)라 자체코드로 보지 않음
  *     — 예전 이름만 찾던 정규식이 재고 칸을 못 찾아 11/12 17:46~18:27 수량 맡김 5번이 모두 '재고수량 칸이 바뀌지 않음(NaN)'으로 저장 없이 끝남 → 두 이름 다 찾음 · 칸 이름을 못 찾으면 편집기를 아예 건드리지 않음
  *   (11/11 y24ops1) 판매가: 그 줄 판매가 칸(표에서 고칠 수 있는 칸일 때만 · 아니면 아무것도 안 누르고 사람에게) → [수정항목 저장] → 다시 읽어 확인 · 판매중인 상품만 · 한 번에 50% 넘게 바뀌면 안 누름
+ *   (11/14 y24ops1) 판매가는 [상세수정] 화면 '중고판매가' 칸(수량·판매중지가 실제로 성공한 길과 같은 저장 · detPrice)으로 — 표 칸 길은 사람 누르기 장치가 없을 때만
  * 지킴: 같은 맡김·같은 할 일(rk) 두 번 안 함(이 PC 기록 y24-w.json) · 같은 상품번호가 맡김 줄에 이미 있으면 거절 · 처음 성공(목록에서 확인)이 없으면 1건짜리 맡김만 · 한 번에 30줄까지
  *       로거 PC·MJ-MAIN에서는 안 함 · 🚚 출고 중엔 기다림(누르기 전) · 로그인이 풀리면 기다림(누르기 전) · '확실하지 않음'·누른 뒤 실패면 이 쓰기 줄 전체를 멈춤(웹앱 [▶ 이어 가기]로만 다시)
  *       누르는 단추는 [조회]·기간 '1년'·판매상태 '전체'(읽기) · 그 줄 고르기·재고수량 칸 · [수정항목 저장] · [판매상태/기간 변경]·판매중지/판매중 라디오·[변경]뿐 — 상품삭제·바이백·판매완료·판매종료 등은 안 누름 */
@@ -142,6 +143,8 @@ const JS_POP_CLOSE = `(()=>{${POP_JS}const P=pop();const c=P&&P.querySelector('b
  *   · 저장 뒤: 그 화면을 다시 열어 읽고 + 등록상품 목록을 다시 읽어 '수량만 바뀌고 판매가·판매기간·상태·설명은 그대로'인지 → 맞으면 done · 아무것도 안 바뀌면 '저장되지 않음' · 그 밖은 '확실하지 않음'(멈춤 · 사람 확인) */
 const SAVE_RE = /^(수정|저장|수정하기|저장하기|상품\s*수정|상품정보\s*수정|수정\s*완료|수정\s*저장)$/; /* 근거: 없음 — 판매관리 화면 단추 이름 꼴(등록상품 관리 [수정항목 저장]) · '등록'·'신규등록'은 새 상품을 만들 수 있어 넣지 않음 */
 const QTY_LABEL = /재고\s*수량|^재고$/;
+const PRICE_LABEL = /^중고\s*판매가$/; /* (11/14 y24ops1) [상세수정] 원문 칸 라벨 '중고판매가'(DETAIL_HOME_1114_0339 l:중고판매가#26) — 'YES24 가격정보(정가)'·'YES포인트'와 안 겹침 */
+const pNum = (v) => { const s = String(v == null ? '' : v).replace(/[,\s원]/g, ''); return /^\d{1,9}$/.test(s) ? +s : null; }; /* '60,000' → 60000 · 수 아니면 null */
 const IGN_LABEL = /수정\s*일|변경\s*일|최종|일시|등록\s*일/; /* 저장 뒤 비교에서 빼는 칸(저장하면 저절로 바뀌는 날짜) */
 const JS_COLED = (f) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return null;try{const c=gv.columnByField(${JSON.stringify(f)});return c?c.editable!==false&&c.readOnly!==true:null}catch(e){return null}})()`;
 const JS_UBCELL = (r) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표를 못 찾음'};const it=gv.getItemIndex(${r});if(!(it>=0))return{ok:false,why:'줄 위치를 못 찾음'};const g=document.getElementById('productGrid');try{g.scrollIntoView({block:'center'})}catch(e){}
@@ -292,6 +295,36 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     if (after && +after.qty === +to(r) && df2 && df2.includes(q.k) && sd && !sd.bad.length && keep) return { state: 'done', msg: `${what} — [상세수정]에서 재고수량만 고쳐 저장 · 등록상품 목록과 [상세수정] 화면을 다시 읽어 확인(${vTxt(before)} → ${vTxt(after)} · 판매가·판매기간·상태·다른 칸 그대로${sd.ok.some((x) => /:start$/.test(x)) ? ' · 예스24가 저장하며 판매기간 시작일만 오늘로 바꿈(끝 날짜·목록 판매기간 그대로)' : ''})${dl ? ' · 예스24 알림: ' + dl : ''}`, before, after, how: 'detail' };
     if (after && JSON.stringify(after) === JSON.stringify(before) && df2 && df2.length === 0) return { state: 'fail', pre: true, same: true, msg: `[상세수정]에서 저장을 눌렀지만 ${dl ? '예스24가 저장했다는 말 없이(' + dl.slice(0, 60) + ')' : '아무 물음·알림도 없이'} 목록·[상세수정] 화면 값이 그대로 ${vTxt(after)}(바라는 값 ${what}) — 저장되지 않음`, before, after, todo: '🛠 처리할 일에서 다시 맡기기 · 되풀이되면 리드나우 방이 [상세수정] 원문을 보고 고침' };
     return { state: 'unsure', msg: `[상세수정]에서 저장을 누른 뒤 다시 읽으니 바라던 꼴이 아님(목록 ${after ? vTxt(after) : '못 읽음'} · [상세수정] 바뀐 칸 ${df2 ? df2.slice(0, 6).join('·') || '없음' : '못 읽음'})${dl ? ' — 예스24 알림: ' + dl : ''}`, before, after, todo: '예스24 판매관리 › 등록상품 관리에서 그 상품의 수량·판매가·판매기간을 보고, 다르면 손으로 바로잡은 뒤 「✓ 예스24에서 고쳤음」(다시 누르지 않고 멈춤)' }; }
+  /* (11/14 y24ops1 · 정범님 11/14 17:37 「가격도 알라딘처럼」 · 원문 reports/yes24_raw/DETAIL_HOME_1114_0339.json — [상세수정] 화면 '02. 상품등급 및 가격책정'의 '중고판매가' 칸(text · 값 '60,000' · 보임·안 잠김))
+   *  판매가는 수량·판매중지가 실제로 성공한 길과 같은 [상세수정] 저장으로 바꿈(표 칸 길은 실제로 확인된 적 없음):
+   *   · 저장 전: 중고판매가 칸이 꼭 하나 · 그 값(쉼표 뺀 수) = 등록상품 목록 판매가 · 저장 단추 하나 · 글자를 넣은 뒤 다시 읽어 '중고판매가 칸만'(+ 잠긴 칸 — 화면이 판매가에서 스스로 셈하는 할인율·포인트 칸) 바뀌었는지 → 아니면 저장 안 함
+   *   · 저장 뒤: 등록상품 목록을 다시 읽어 판매가 = 새 값 · 수량·상태·판매기간 그대로 · [상세수정]을 다시 열어 바뀐 칸이 중고판매가(+ 같은 잠긴 칸 · 예스24가 저절로 바꾸는 판매기간 시작일)뿐 → done · 아무것도 안 바뀌면 '저장되지 않음' · 그 밖은 '확실하지 않음'(멈춤)
+   *  셈 PRICE_LABEL · pNum 은 시험 t_y24w가 직접 부름 */
+  async function detPrice(j, r, h, before, what) { const failP = (msg, todo) => ({ state: 'fail', pre: true, msg: `${msg} — 아무것도 저장하지 않음`, before, todo: todo || '예스24 판매관리 › 등록상품 관리 › 그 상품 [상세수정]에서 손으로 중고판매가를 고친 뒤 「✓ 예스24에서 고쳤음」 · 리드나우 방에 알려 주세요(원문은 남김)' });
+    j.step = `${r.no} [상세수정] 화면 여는 중(판매가)`; const D = await openDet(h, r.no); if (D.login) return { state: 'login' };
+    if (D.err) { saveDet({ err: D.err, url: D.url || null, pop: D.pop || null }); return failP(D.err); }
+    const d = D.d; saveDet({ url: d.url, how: D.how, F: d.F.slice(0, 90).map(fStr), B: d.B, H: d.H, api: d.api, hasNo: d.hasNo, no: r.no, svHow: d.svHow || null, sbx: d.sbx || null, vm: d.vm || null, kind: 'price' });
+    if (!d.hasNo) return failP(`[상세수정] 화면에서 상품번호 ${r.no}를 못 봄(그 상품 화면인지 확인 못 함)`);
+    const Q = d.F.filter((f) => f.vis && !f.dis && !f.ro && /^(text|number|tel)$/.test(f.t) && PRICE_LABEL.test(f.l)); if (Q.length !== 1) return failP(`[상세수정] 화면에서 중고판매가 칸을 하나로 못 찾음(${Q.length}개 · 칸 라벨 ${d.F.filter((f) => f.vis).map((f) => f.l).filter(Boolean).slice(0, 14).join('·')})`);
+    const q = Q[0]; if (pNum(q.v) !== +h.price) return failP(`[상세수정] 화면 중고판매가(${q.v})가 등록상품 목록 판매가(${h.price}원)와 달라 고치지 않음`);
+    if (d.sv !== 1) return failP(`[상세수정] 화면에서 저장 단추를 하나로 못 찾음(${d.svHow || ''} · 단추 ${d.B.slice(0, 12).join('·')})`);
+    if (o.holdOn()) return { state: 'hold' };
+    j.step = `${r.no} [상세수정] 중고판매가 칸 고치는 중`; const p = await o.ev(JS_KPOS(q.k)); if (!p || !p.ok) return failP('[상세수정] 중고판매가 칸 자리를 못 셈');
+    await o.inp.click(p.x, p.y); await sleep(300 * SC); await o.ev(JS_KSEL(q.k)); await o.inp.text(String(to(r))); await sleep(300 * SC); await o.ev(JS_KBLUR(q.k)); await sleep(700 * SC);
+    const d1 = await o.ev(JS_DET(r.no), 15000); const m0 = fMap(d.F); const m1 = d1 && d1.ok ? fMap(d1.F) : null; const df1 = m1 ? fDiff(d.F, d1.F) : null; const v1 = m1 ? (m1[q.k] || {}).v : null;
+    const lk = (k) => { const f = m0[k] || (m1 && m1[k]) || {}; return !!(f.dis || f.ro); }; const der = df1 ? df1.filter((k) => k !== q.k && lk(k)) : []; /* 화면이 판매가에서 스스로 셈해 넣는 잠긴 칸(사람이 못 고침) */
+    if (!(df1 && df1.includes(q.k) && df1.every((k) => k === q.k || lk(k)) && pNum(v1) === to(r))) { try { await o.nav(o.BASE + PG + '?t=' + now(), 30); } catch (e) {} return failP(`[상세수정]에 ${to(r)}원을 넣은 뒤 다시 읽으니 중고판매가 칸만 바뀐 것이 아님(바뀐 칸 ${df1 ? df1.slice(0, 6).join('·') || '없음' : '못 읽음'} · 중고판매가 ${v1 == null ? '?' : v1})`); }
+    j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [상세수정] 저장 누름(판매가)`; saveQ(); R.phase = 'qty'; const c = await o.ev(JS_DETSAVE); if (!c || !c.ok) { R.phase = ''; j.st = 'run'; saveQ(); return failP((c && c.why) || '[상세수정] 저장 단추를 못 누름'); }
+    await msgPop(); await sleep(2500 * SC); R.phase = ''; const dl = R.dlg.slice(-2).join(' / ');
+    j.step = `${r.no} [상세수정] 화면 다시 열어 확인`; let d2 = null; try { if (D.route) { const a2 = await look(r); const h2 = a2 && a2.hit && a2.hit.length === 1 ? a2.hit[0] : null; const D2 = h2 ? await routeDet(h2, r.no) : null; d2 = D2 && D2.d ? D2.d : null; } else { await o.nav(D.url, 30); await sleep(1000 * SC); d2 = await readDet(r.no); } } catch (e) { d2 = null; }
+    j.step = `${r.no} 등록상품 목록 다시 읽어 확인`; let b = null; try { b = await look(r); } catch (e) { b = { err: String(e.message || e).slice(0, 100) }; } j.st = 'run'; saveQ();
+    const after = b && b.hit && b.hit.length === 1 ? vOf(b.hit[0]) : null; const m2 = d2 && d2.ok ? fMap(d2.F) : null; const df2 = m2 ? fDiff(d.F, d2.F) : null; const v2 = m2 ? (m2[q.k] || {}).v : null;
+    R.rec.det.post = { at: now(), kind: 'price', save: c.t, dlg: R.dlg.slice(-3).map((m) => String(m).slice(0, 80)), diff: df2 ? df2.slice(0, 10) : null, der, v: v2 == null ? null : String(v2).slice(0, 12), list: after ? vTxt(after) : null, lb: before || null, la: after || null, dv: df2 && m2 ? df2.slice(0, 10).map((k) => `${k} ¦ ${String((m0[k] || {}).v ?? '').slice(0, 40)} → ${String((m2[k] || {}).v ?? '').slice(0, 40)}`) : null }; saveRec();
+    const keep = after && before && after.qty === before.qty && after.st === before.st && String(after.dts) === String(before.dts);
+    const sd = df2 && m2 ? sideSplit(df2.filter((k) => !der.includes(k) && !(k !== q.k && lk(k) && pNum((m2[k] || {}).v) != null)), (k) => (m0[k] || m2[k] || {}).l, (k) => (m0[k] || {}).v, (k) => (m2[k] || {}).v, q.k, Date.now()) : null; if (sd) R.rec.det.post.side = sd.ok; saveRec();
+    if (after && +after.price === to(r) && df2 && df2.includes(q.k) && pNum(v2) === to(r) && sd && !sd.bad.length && keep) return { state: 'done', msg: `${what} — [상세수정]에서 중고판매가만 고쳐 저장 · 등록상품 목록과 [상세수정] 화면을 다시 읽어 확인(${vTxt(before)} → ${vTxt(after)} · 수량·판매기간·상태·다른 칸 그대로${der.length ? ' · 화면이 스스로 셈한 잠긴 칸 ' + der.length + '개 함께 바뀜' : ''}${sd.ok.some((x) => /:start$/.test(x)) ? ' · 예스24가 저장하며 판매기간 시작일만 오늘로 바꿈' : ''})${dl ? ' · 예스24 알림: ' + dl : ''}`, before, after, how: 'detail' };
+    if (after && JSON.stringify(after) === JSON.stringify(before) && df2 && df2.length === 0) return { state: 'fail', pre: true, same: true, msg: `[상세수정]에서 저장을 눌렀지만 ${dl ? '예스24가 저장했다는 말 없이(' + dl.slice(0, 60) + ')' : '아무 물음·알림도 없이'} 목록·[상세수정] 화면 값이 그대로 ${vTxt(after)}(바라는 값 ${what}) — 저장되지 않음`, before, after, todo: '다시 맡기기 · 되풀이되면 리드나우 방이 [상세수정] 원문을 보고 고침' };
+    return { state: 'unsure', msg: `[상세수정]에서 판매가 저장을 누른 뒤 다시 읽으니 바라던 꼴이 아님(목록 ${after ? vTxt(after) : '못 읽음'} · [상세수정] 바뀐 칸 ${df2 ? df2.slice(0, 6).join('·') || '없음' : '못 읽음'})${dl ? ' — 예스24 알림: ' + dl : ''}`, before, after, todo: '예스24 판매관리 › 등록상품 관리에서 그 상품의 판매가·수량·판매기간을 보고, 다르면 손으로 바로잡은 뒤 「✓ 예스24에서 고쳤음」(다시 누르지 않고 멈춤)' }; }
   const to = (r) => +r.to;
   async function msgPop() { let seen = ''; for (let k = 0; k < 10; k++) { await sleep(500 * SC); let m = null; try { m = await o.ev(JS_MSGPOP(true), 8000); } catch (e) { m = null; } if (!m || m.none) { if (seen) break; continue; }
       if (m.t && m.t !== seen) { seen = m.t; R.dlg.push('화면 상자: ' + m.t + (m.bt && m.bt.length ? ' [' + m.bt.join('|') + ']' : '') + (m.did ? ' → [확인] 누름' : m.bad ? ' → 위험한 말이라 안 누름' : '')); note(`🟦 예스24 쓰기 — 화면 안 상자: ${m.t.slice(0, 80)}${m.did ? ' → [확인] 누름' : ''}`); } if (!m.did) break; } return seen; }
@@ -342,6 +375,7 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     if (r.kind === 'start' && !/^(08)$/.test(h.st)) return { state: 'fail', pre: true, msg: `판매중지가 아닌 상품(${h.stNm || h.st})은 다시 열지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 손으로' };
     if (r.kind === 'stop' && h.st !== '02') return { state: 'fail', pre: true, msg: `판매중이 아닌 상품(${h.stNm || h.st})은 판매중지로 바꾸지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 상태를 보고 손으로' };
     if (o.holdOn()) return { state: 'hold' }; R.dlg = []; R.qhow = '';
+    if (r.kind === 'price' && o.inp && o.inp.click) return await detPrice(j, r, h, before, what); /* (11/14 y24ops1) 판매가 = [상세수정] 길(수량·판매중지가 실제로 성공한 길) · 사람 누르기 장치가 없을 때만 예전 표 칸 길 */
     if (r.kind === 'qty' && o.inp && o.inp.click) { let ce = null; try { ce = await o.ev(JS_COLED(h.kQ)); } catch (e) { ce = null; } if (ce === false) return await detQty(j, r, h, before, what); } /* (y24re8) 표가 재고수량 칸을 못 고치게 한 상품(실제 예스24 REM_CNT editable 0) → [상세수정] 화면 길 */
     if (r.kind === 'qty' || r.kind === 'price') { const pr = r.kind === 'price'; j.step = `${r.no} ${pr ? '판매가' : '재고수량'} 칸 고치는 중`; const e = pr ? await o.ev(JS_PRICE(h.r, h.kP, r.to)) : (o.inp ? await humanQty(h, r.to) : await o.ev(JS_QTY(h.r, h.kQ, r.to))); /* (y24re 0.1.55) 수량은 사람처럼 더블 클릭·글자·Enter */
       if (!pr && e && e.lock) return { state: 'fail', pre: true, lock: true, msg: `${e.why} — 아무것도 누르지 않음(값을 억지로 넣어 저장하면 예스24가 '경고'를 띄우고 저장하지 않음)`, before, todo: '이 상품은 표에서 수량을 못 바꿈 — [상세수정] 화면 길이 필요(리드나우 방이 원문을 보고 만듦)' };
@@ -394,4 +428,4 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     catch (e) { out.err = String(e.message || e).slice(0, 120); } out.end = now(); R.rec.det.chk = out; saveRec(); note(`🔎 예스24 쓰기 멈춤 확인 읽기(누르지 않음) — ${no}: 목록 ${out.list ? vTxt(out.list) + ' · 판매기간 ' + (out.list.dts || '?') : out.err || '?'}${out.F ? ' · 바뀐 칸 ' + out.F.join(' / ').slice(0, 200) : ''}`); }
   return { put, ack, resume, state, pick, once, cur, dialog, R, chkPick, chkOnce, sideSplit, kstDay };
 }
-module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN, PRICE_JUMP, _js: { JS_FIND, JS_QTY, JS_SELF } }; /* _js = 시험이 화면 쪽 짧은 코드를 가짜 표로 바로 돌려 봄(0.1.38) */
+module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN, PRICE_JUMP, PRICE_LABEL, pNum, _js: { JS_FIND, JS_QTY, JS_SELF } }; /* _js = 시험이 화면 쪽 짧은 코드를 가짜 표로 바로 돌려 봄(0.1.38) */
