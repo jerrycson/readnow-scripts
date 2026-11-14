@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261114-112345.json
+doc=app_settings/y24_reg
+# 1006826081
