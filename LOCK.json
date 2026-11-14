@@ -1,13 +1,13 @@
 {
- "holder": "col2seed",
- "what": "클라우드 판 — 번외 넘김 차례표 둘째 줄(환율 → HOME)",
- "since": "2026-11-14T01:15:59Z",
- "beat": "2026-11-14T01:15:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
-  "done": "웹앱 1.78.623 · 수집기 1.89.332 · 53eeec27 (4시간 점검)",
-  "at": "2026-11-13T23:43:57Z"
+  "who": "col2seed",
+  "done": "클라우드 0.35.249 · 3215b480 (col2seed — 차례표 환율 → HOME 줄)",
+  "at": "2026-11-14T01:23:13Z"
  },
- "host": "vm-col2seed"
+ "host": null
 }
