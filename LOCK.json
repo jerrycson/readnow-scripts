@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "headless1",
+ "what": "번외 화면 원문 담기 판",
+ "since": "2026-11-14T12:22:07Z",
+ "beat": "2026-11-14T12:22:07Z",
  "ask": null,
  "last": {
   "who": "aisum1",
   "done": "클라우드 0.35.264 · 우리숍 0.2.13 · 8f279dda ✍ 모형 고침 · 임시 #/ai",
   "at": "2026-11-14T12:21:54Z"
  },
- "host": null
+ "host": "vm-headless1"
 }
