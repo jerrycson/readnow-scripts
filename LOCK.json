@@ -1,13 +1,13 @@
 {
- "holder": "aisum1",
- "what": "✍ 요약 엔진 모형 저장 고침(클라우드)",
- "since": "2026-11-14T12:15:59Z",
- "beat": "2026-11-14T12:16:58Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shipmix1",
-  "done": "웹앱 1.78.652 출고 묶음 잠금·모든 기기 같은 단추·까닭 가름·출고 끝 알림 · 12ca4054",
-  "at": "2026-11-14T12:15:54Z"
+  "who": "aisum1",
+  "done": "클라우드 0.35.264 · 우리숍 0.2.13 · 8f279dda ✍ 모형 고침 · 임시 #/ai",
+  "at": "2026-11-14T12:21:54Z"
  },
- "host": "vm-aisum1"
+ "host": null
 }
