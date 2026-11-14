@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "note6",
+ "what": "📓 노트 한글 조합·카드 넘침 고침 판(웹앱)",
+ "since": "2026-11-14T03:43:52Z",
+ "beat": "2026-11-14T03:43:52Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-14T03:38:52Z"
  },
- "host": null
+ "host": "vm-note6"
 }
