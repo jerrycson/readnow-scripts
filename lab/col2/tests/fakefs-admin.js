@@ -16,8 +16,8 @@ function makeDb() { const store = {}; const writes = [];
     update: async (v) => { if (col(c)[id] == null) throw Object.assign(new Error('없는 문서'), { code: 'not-found' }); col(c)[id] = apply(col(c)[id], v, true); writes.push({ c, id }); }, collection: (s) => colRef(c + '/' + id + '/' + s) }; }
   function query(c, f) { const q = { _f: f || { w: [], after: null, lim: 0 } };
     const nq = (p) => query(c, { ...q._f, ...p, w: p.w || q._f.w });
-    q.where = (k, op, v) => nq({ w: q._f.w.concat([[k, op, v]]) }); q.orderBy = () => nq({}); q.startAfter = (a) => nq({ after: a }); q.limit = (n) => nq({ lim: n });
-    q.get = async () => { let ids = Object.keys(col(c)).sort(); ids = ids.filter((id) => q._f.w.every(([k, op, v]) => op === '==' && col(c)[id][k] === v)); if (q._f.after != null) ids = ids.filter((id) => id > q._f.after); if (q._f.lim) ids = ids.slice(0, q._f.lim);
+    q.where = (k, op, v) => nq({ w: q._f.w.concat([[k, op, v]]) }); q.orderBy = () => nq({}); q.select = () => nq({}); q.startAfter = (a) => nq({ after: a }); q.limit = (n) => nq({ lim: n });
+    q.get = async () => { let ids = Object.keys(col(c)).sort(); const OPS = { '==': (x, v) => x === v, '>=': (x, v) => x != null && x >= v, '>': (x, v) => x != null && x > v, '<': (x, v) => x != null && x < v, '<=': (x, v) => x != null && x <= v, in: (x, v) => Array.isArray(v) && v.includes(x) }; /* (headless1) 비교 조건도 */ ids = ids.filter((id) => q._f.w.every(([k, op, v]) => OPS[op] && OPS[op](col(c)[id][k], v))); if (q._f.after != null) ids = ids.filter((id) => id > q._f.after); if (q._f.lim) ids = ids.slice(0, q._f.lim);
       const docs = ids.map((id) => snap(c, id)); return { docs, size: docs.length, forEach: (fn) => docs.forEach(fn) }; };
     return q; }
   let autoN = 0; function colRef(c) { const q = query(c); return { ...q, doc: (id) => docRef(c, id == null ? 'auto' + String(++autoN).padStart(6, '0') : id) }; } /* (11/12 handoff4) 이름 없는 doc() = 새 이름(운영 prd_metric_changes·prd_rank_periods) */
