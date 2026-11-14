@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.336의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.338의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.336' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.336', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.338' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.338', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3912,6 +3912,14 @@
     if (!ok) return; GM_setValue('rn-inv-active', { id, at: Date.now() }); try { window.__rnSgStart && window.__rnSgStart('inv_' + id, '송장 입력'); } catch (e) {} /* (11/09 shipfz1) 🚚 출고 보호 — 맡김이 끝나면(1분마다 확인) 풀림 */ log(`송장 입력 맡음 (${id}) — 발송 요청 화면을 새 탭으로 엽니다`);
     try { const st = window.__rnStep && window.__rnStep(ref, seed, '송장 입력'); if (st) { st('info', `맡김 받음 — ${PC_NAME}가 맡아 발송 요청 화면을 새 탭으로 엶`, { res: '맡음' }); await st.flush(); } } catch (e) {} /* (정범님 11/04) 🛰 단계 기록 */
     GM_openInTab('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4#rninv=' + id, { active: false, insert: true }); } // #rninv= : 이 탭이 송장 입력을 맡은 탭 (다른 발송 요청 탭은 끼어들지 않음)
+  /* (정범님 11/14 · shipcheck1 · FACTS F42 엔진 자력) 🔎 송장 입력 재검토 되살리기 — 끝난 맡김(끝난 지 6시간 안)에 재검토가 없거나(입력 탭이 먼저 닫힘) 하다 멈췄거나(10분) 못 읽었으면(5분 뒤 · 3번까지)
+   *  출고 PC가 재검토만 하는 탭을 뒤에서 열어 다시 함(읽기만) · 한 PC만(트랜잭션) · 5분마다 한 건 */
+  const invRckNeed = (v) => { if (!v || v.status !== 'done' || !(v.items || []).some((x) => x && x.state === 'done')) return false; const r = v.rck; if (!r) return true; const age = Date.now() - (Date.parse(r.at || '') || 0);
+    if (r.state === 'run') return age > 10 * 60e3 && (+r.tries || 1) < 4; if (r.state === 'fail') return age > 5 * 60e3 && (+r.tries || 1) < 3; return false; };
+  setInterval(async () => { try { if (PUBONLY || !auth.currentUser || (window.__rnRest && window.__rnRest()) || !shipPcOk().ok || GM_getValue('rn-inv-active', null)) return; const t0 = new Date(Date.now() - 6 * 3600e3).toISOString();
+      const qs = await C('shp_invoices').where('doneAt', '>=', t0).get(); const d = qs.docs.find((x) => invRckNeed(x.data())); if (!d) return; let ok = false;
+      await db.runTransaction(async (tx) => { ok = false; const cur = (await tx.get(d.ref)).data(); if (!invRckNeed(cur)) return; tx.set(d.ref, { rck: { ...(cur.rck || {}), state: 'run', at: nowIso(), pc: PC_NAME, tries: (+((cur.rck || {}).tries) || 0) }, uploadedAt: TS() }, { merge: true }); ok = true; });
+      if (!ok) return; log(`🔎 송장 입력 재검토를 다시 함 (${d.id}) — 배송&구매확정전 읽기 탭을 뒤에서 엶`); GM_openInTab('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4#rnrck=' + d.id, { active: false, insert: true }); } catch (e) {} }, 5 * 60e3);
   // 영업일(월~금) 9~16시: 쉬는 동안 shipAutoMin분마다 발송 요청 다시 읽기
   /* (1.68.0) 🔔 출고 알림 — 클라우드가 출고 시각에 출고별 매출을 확정하고 app_settings/ship_notify.last를 쓰면, 웹앱 설정 ⑫ 'PC 화면 앞으로'에 고른 PC가
    * 웹앱 '오늘 출고 ② 발송 요청'을 새 탭 맨 앞으로 열고 데스크톱 알림. 한 번만(GM rn-shipopen = last.at — 이 PC의 여러 알라딘 탭이 겹쳐도 하나만) · 1시간 넘게 지난 알림은 열지 않음 */
