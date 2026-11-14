@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "aisum1",
+ "what": "✍ 요약 엔진 모형 고침 · 임시 요약 모아 보기(클라우드·우리숍)",
+ "since": "2026-11-14T12:15:59Z",
+ "beat": "2026-11-14T12:15:59Z",
  "ask": null,
  "last": {
   "who": "shipmix1",
   "done": "웹앱 1.78.652 출고 묶음 잠금·모든 기기 같은 단추·까닭 가름·출고 끝 알림 · 12ca4054",
   "at": "2026-11-14T12:15:54Z"
  },
- "host": null
+ "host": "vm-aisum1"
 }
