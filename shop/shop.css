@@ -405,3 +405,42 @@ html.rm *, html.rm *::before, html.rm *::after { animation: none !important; tra
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo .lg-l { display: none; } :root:not([data-theme="light"]) .logo .lg-d { display: inline-flex; } }
 .logo .logo-t { font-weight: 800; font-size: 20px; letter-spacing: -0.03em; margin-left: 6px; } .logo .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .logo { gap: 0; } .logo img.logo-img + .logo-t { margin-left: 6px; }
+/* (shopmisc1 · 정범님 11/14) 💿 CD·DVD·블루레이 — 앞·뒤 표지를 펼친 소책자처럼 함께 세우고 그 사이에서 디스크가 위로 솟음(LP는 정사각 재킷 + 판이 옆으로 — 서가 .pm-lp 그대로) */
+.dk { --pw: 168px; --ar: 142 / 125; margin: 0 auto 12px; padding: 0; max-width: 100%; text-align: center; }
+.dk-dvd { --ar: 135 / 190; --pw: 132px; } .dk-bd { --ar: 135 / 171; --pw: 140px; }
+.dk-row { position: relative; display: flex; justify-content: center; align-items: flex-end; perspective: 1100px; padding-top: calc(var(--pw) * .5); }
+.dk-p { position: relative; width: var(--pw); aspect-ratio: var(--ar); border-radius: 3px; overflow: hidden; background: var(--c-sunk, #e9ecf0); box-shadow: 0 16px 28px -12px rgba(0,0,0,.55), 0 2px 4px rgba(0,0,0,.18); transition: transform .45s cubic-bezier(.3,.1,.2,1), opacity .3s, filter .3s; }
+.dk-p img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk-back { transform-origin: 100% 50%; transform: rotateY(22deg) translateX(4%); z-index: 1; filter: brightness(.93); }
+.dk-front { transform-origin: 0 50%; transform: rotateY(-22deg) translateX(-4%); z-index: 3; }
+.dk-cd .dk-p::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(120deg, rgba(255,255,255,.42), rgba(255,255,255,0) 32%, rgba(255,255,255,0) 72%, rgba(255,255,255,.22)); box-shadow: inset 0 0 0 3px rgba(255,255,255,.55), inset 7px 0 0 rgba(255,255,255,.22); } /* 투명 주얼 케이스 결·경첩 */
+.dk-dvd .dk-p { border: 4px solid #141416; } .dk-bd .dk-p { border: 4px solid #1d5fbf; }
+.dk-bd .dk-p::before { content: "Blu-ray Disc"; position: absolute; top: 0; left: 0; right: 0; height: 13px; background: #1d5fbf; z-index: 2; color: #fff; font: 700 9px/12px system-ui, sans-serif; letter-spacing: .04em; }
+.dk-disc { position: absolute; left: 50%; bottom: 34%; z-index: 2; width: calc(var(--pw) * .92); aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, 0); animation: dkRise .9s cubic-bezier(.25,.1,.2,1) .15s both;
+  background: conic-gradient(from 20deg, #d6dbe2, #fbfbfc, #b9c2ce, #f1e9ff, #c8f0ef, #fbfbfc, #c3cad4, #f6f0d8, #d6dbe2); box-shadow: 0 6px 14px rgba(0,0,0,.3), inset 0 0 0 1px rgba(0,0,0,.18); }
+.dk-dvd .dk-disc { background: conic-gradient(from 40deg, #d8cfb8, #fbf7ea, #c2b593, #efe6cf, #d9d2c0, #fbf7ea, #d8cfb8); } .dk-bd .dk-disc { background: conic-gradient(from 40deg, #a9b9d6, #eef3fb, #7f97c4, #dfe8f7, #b3c3e0, #eef3fb, #a9b9d6); }
+.dk-lbl { position: absolute; left: 24%; top: 24%; width: 52%; height: 52%; border-radius: 50%; background: var(--c-brand, #1d2b45) center / cover no-repeat; box-shadow: 0 0 0 2px rgba(255,255,255,.65); animation: dkSpin 1.4s cubic-bezier(.3,.1,.2,1) .2s both; }
+.dk-lbl::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; margin: -13% 0 0 -13%; border-radius: 50%; background: var(--c-surface, #fff); box-shadow: inset 0 0 0 3px rgba(0,0,0,.12); }
+@keyframes dkRise { from { transform: translate(-50%, 55%); } to { transform: translate(-50%, 0); } }
+@keyframes dkSpin { from { transform: rotate(-200deg); } to { transform: rotate(0); } }
+.dk[data-on="back"] .dk-back { transform: rotateY(0) translateX(10%) scale(1.12); z-index: 4; filter: none; } .dk[data-on="back"] .dk-front { opacity: .55; }
+.dk[data-on="front"] .dk-front:hover { transform: rotateY(-12deg) translateX(-4%); }
+.dk[data-on="disc"] .dk-disc { z-index: 5; animation: none; transform: translate(-50%, -6%) scale(1.12); transition: transform .45s; } .dk[data-on="disc"] .dk-p { opacity: .5; }
+.dk-art { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 10px; background: linear-gradient(160deg, var(--c-brand-soft, #e8ecf4), var(--c-sunk, #dde2ea)); color: var(--c-text, #222); text-align: left; }
+.dk-art b { font-size: 12px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; } .dk-art small { font-size: 10px; color: var(--c-text-2, #666); }
+.dk-bkd .dk-bc { display: block; margin-top: auto; height: 18%; width: 55%; background: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px, currentColor 3px 5px, transparent 5px 6px); opacity: .55; }
+.dk-bkd em { font-style: normal; font-size: 9.5px; color: var(--c-text-3, #888); }
+.dk-cap { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.dk-k { font: 700 11px/1 system-ui, sans-serif; padding: 4px 7px; border-radius: 99px; background: var(--c-brand, #1d2b45); color: #fff; }
+.dk-sw { font: inherit; font-size: 12.5px; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--c-line-2, #ccd); background: var(--c-surface, #fff); color: var(--c-text, #222); cursor: pointer; min-height: 32px; }
+.dk-sw[aria-pressed="true"] { background: var(--c-text, #222); color: var(--c-surface, #fff); border-color: transparent; }
+.dkwrap { margin: 0 0 14px; padding: 14px 8px 4px; border-radius: var(--r-lg, 12px); background: var(--c-surface-2, #f6f7f9); }
+@media (max-width: 480px) { .dk { --pw: min(40vw, 150px); } .dk-dvd { --pw: min(33vw, 120px); } .dk-bd { --pw: min(35vw, 126px); } }
+@media (prefers-reduced-motion: reduce) { .dk-disc, .dk-lbl { animation: none !important; } .dk-p { transition: none !important; } }
+.dkwrap .dk { --pw: 210px; } .dkwrap .dk-dvd { --pw: 168px; } .dkwrap .dk-bd { --pw: 178px; }
+@media (max-width: 480px) { .dkwrap .dk { --pw: min(41vw, 170px); } .dkwrap .dk-dvd { --pw: min(34vw, 136px); } .dkwrap .dk-bd { --pw: min(36vw, 142px); } }
+
+/* (aisum1 11/14) ✍ 이 책 한눈에 */
+.aisum { margin: var(--sp-7) 0 var(--sp-2); padding: var(--sp-4) var(--sp-5); border-radius: 12px; background: color-mix(in srgb, currentColor 4%, transparent); }
+.aisum h2 { margin-bottom: var(--sp-3); } .aisum p { margin: 0 0 1em; line-height: 1.7; word-break: keep-all; } .aisum .ai1 { font-weight: 700; font-size: 1.08em; }
+.aisum .aikw { display: flex; flex-wrap: wrap; gap: 6px; } .aisum .aikw span { font-size: .85em; opacity: .75; }
