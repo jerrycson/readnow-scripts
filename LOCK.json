@@ -1,13 +1,13 @@
 {
- "holder": "spine2",
- "what": "✂ 묶음 사진 판별 엔진 1단계 판(웹앱·클라우드)",
- "since": "2026-11-14T10:57:30Z",
- "beat": "2026-11-14T11:00:42Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "edition1",
-  "done": "웹앱 1.78.643·644 · 클라우드 0.35.258 판본 추적 · 29b5e7ae",
-  "at": "2026-11-14T10:57:26Z"
+  "who": "spine2",
+  "done": "웹앱 1.78.645 · 클라우드 0.35.259 · ✂ 묶음 사진 판별 V01 · 38c3a315",
+  "at": "2026-11-14T11:04:37Z"
  },
- "host": "vm-spine2"
+ "host": null
 }
