@@ -1,2 +1,2 @@
-cmds=y24Write&n=20
-# 35732
+pwhealth=1&engself=1
+# 711813521
