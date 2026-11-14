@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24ops1",
+ "what": "예스24 판매가 시험 스스로 돌게(1줄)",
+ "since": "2026-11-14T11:04:42Z",
+ "beat": "2026-11-14T11:04:42Z",
  "ask": null,
  "last": {
   "who": "spine2",
   "done": "웹앱 1.78.645 · 클라우드 0.35.259 · ✂ 묶음 사진 판별 V01 · 38c3a315",
   "at": "2026-11-14T11:04:37Z"
  },
- "host": null
+ "host": "vm-y24ops1"
 }
