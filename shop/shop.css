@@ -439,3 +439,8 @@ html.rm *, html.rm *::before, html.rm *::after { animation: none !important; tra
 @media (prefers-reduced-motion: reduce) { .dk-disc, .dk-lbl { animation: none !important; } .dk-p { transition: none !important; } }
 .dkwrap .dk { --pw: 210px; } .dkwrap .dk-dvd { --pw: 168px; } .dkwrap .dk-bd { --pw: 178px; }
 @media (max-width: 480px) { .dkwrap .dk { --pw: min(41vw, 170px); } .dkwrap .dk-dvd { --pw: min(34vw, 136px); } .dkwrap .dk-bd { --pw: min(36vw, 142px); } }
+
+/* (aisum1 11/14) ✍ 이 책 한눈에 */
+.aisum { margin: var(--sp-7) 0 var(--sp-2); padding: var(--sp-4) var(--sp-5); border-radius: 12px; background: color-mix(in srgb, currentColor 4%, transparent); }
+.aisum h2 { margin-bottom: var(--sp-3); } .aisum p { margin: 0 0 1em; line-height: 1.7; word-break: keep-all; } .aisum .ai1 { font-weight: 700; font-size: 1.08em; }
+.aisum .aikw { display: flex; flex-wrap: wrap; gap: 6px; } .aisum .aikw span { font-size: .85em; opacity: .75; }
