@@ -6,7 +6,7 @@
  *  웹앱: window.ReadnowCutout · 클라우드(노드): module.exports — 화면·Firestore·저장소를 모름(순수 셈 · 시험 tCUT1114) */
 (function (root, factory) { const m = factory(); if (typeof module === 'object' && module.exports) module.exports = m; else root.ReadnowCutout = m; })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.1.0';
+  const VERSION = '0.1.1';
   /* 설정 기본값 — 근거: 시험 그림(tCUT1114)과 휴대폰 사진 크기에서 정한 첫 값 · 근거 없는 값은 '첫 값'이라 적고 웹앱 설정·배우기로 바꿈 */
   const DEF = {
     side: 640,          // 가르기는 긴 변 640화소로 줄여서(휴대폰 4000화소 그대로 셈하면 느림 · 자르기는 원본에서)
@@ -16,6 +16,12 @@
     close: 2,           // 글자·무늬 구멍 메우기(늘렸다 줄이기 반지름)
     open: 1,            // 바탕 잡티 지우기(줄였다 늘리기)
     minArea: 0.004,     // 그림 넓이의 0.4%보다 작은 덩어리는 잡티
+    bgK: 3,             // (0.1.1) 바탕 색 무리 수(나뭇결·천 무늬) — 1이면 예전처럼 한 색
+    valley: true,       // (0.1.1) 덩어리를 골짜기에서 나눔
+    junk: 0.5,          // (0.1.1) 네모 채움이 이보다 낮은 덩어리는 물건 아님(바코드가 들어 있으면 남김)
+    merge: true,        // (0.1.1) 기대 수보다 많으면 이웃 조각 합침
+    lineT: 0.65,
+    maxTilt: 0.12,      // (0.1.1) 섞인 덩어리의 기울기가 이보다 크면 바로 세워 나눔(라디안 ≈ 7°)        // (0.1.1) 곧은 경계로 나누는 문턱(경계 몫·색 차이 0~1) — 시험 사진(cutout_eval)으로 정함
     edgeT: 16,          // 경계(세로·가로 줄)를 셀 때 밝기 차 문턱
     splitWin: 0.35,     // 나눌 자리를 같은 몫 자리에서 ±35% 안에서 찾음
     gapK: 0.55,         // 바코드 끼리 이만큼(물건 크기 몫) 떨어지면 다른 줄·칸
@@ -44,11 +50,18 @@
   function bgOf(im, band) {
     const bw = Math.max(1, Math.round(Math.min(im.w, im.h) * band)); const R = [], G = [], B = [];
     for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) { if (x >= bw && x < im.w - bw && y >= bw && y < im.h - bw) continue; if ((x + y) % 2) continue; const i = (y * im.w + x) * 4; R.push(im.d[i]); G.push(im.d[i + 1]); B.push(im.d[i + 2]); }
-    const r = med(R), g = med(G), b = med(B); const D = R.map((v, i) => Math.hypot(v - r, G[i] - g, B[i] - b)); return { r, g, b, s: med(D) };
+    const r = med(R), g = med(G), b = med(B); const D = R.map((v, i) => Math.hypot(v - r, G[i] - g, B[i] - b));
+    /* (0.1.1) 바탕 색 무리 — 나뭇결·천 무늬·그림자처럼 바탕이 한 색이 아니면 가장자리 화소를 3무리로(k-평균) · 바탕 = 어느 무리에든 가까운 화소 */
+    const step = Math.max(1, Math.floor(R.length / 4000)); const P = []; for (let i = 0; i < R.length; i += step) P.push([R[i], G[i], B[i]]);
+    let cen = [P[0], P[Math.floor(P.length / 3)], P[Math.floor((2 * P.length) / 3)]].map((x) => x.slice()); let asg = new Int8Array(P.length);
+    for (let it = 0; it < 10; it++) { const sum = cen.map(() => [0, 0, 0, 0]); P.forEach((q, i) => { let bi = 0, bd = 1e9; cen.forEach((c, k) => { const d = (q[0] - c[0]) ** 2 + (q[1] - c[1]) ** 2 + (q[2] - c[2]) ** 2; if (d < bd) { bd = d; bi = k; } }); asg[i] = bi; const S = sum[bi]; S[0] += q[0]; S[1] += q[1]; S[2] += q[2]; S[3]++; }); cen = cen.map((c, k) => (sum[k][3] ? [sum[k][0] / sum[k][3], sum[k][1] / sum[k][3], sum[k][2] / sum[k][3]] : c)); }
+    const cl = cen.map((c, k) => { const ds = []; P.forEach((q, i) => { if (asg[i] === k) ds.push(Math.hypot(q[0] - c[0], q[1] - c[1], q[2] - c[2])); }); return { r: c[0], g: c[1], b: c[2], n: ds.length / P.length, s: med(ds) }; }).filter((c) => c.n >= 0.08);
+    return { r, g, b, s: med(D), cl };
   }
   /* ── 물건 화소: 바탕과 색이 다름 ── */
   function maskOf(im, bg, C) {
-    const t = Math.max(C.minDist, bg.s * C.spreadK); const m = new Uint8Array(im.w * im.h);
+    const t = Math.max(C.minDist, bg.s * C.spreadK); const m = new Uint8Array(im.w * im.h); const CL = C.bgK > 1 && bg.cl && bg.cl.length > 1 ? bg.cl.map((c) => ({ ...c, t: Math.max(C.minDist * 0.8, c.s * C.spreadK) })) : null;
+    if (CL) { for (let j = 0, i = 0; j < m.length; j++, i += 4) { let fg = 1; for (const c of CL) if (Math.hypot(im.d[i] - c.r, im.d[i + 1] - c.g, im.d[i + 2] - c.b) <= c.t) { fg = 0; break; } m[j] = fg; } return { m, t: Math.round(Math.max(...CL.map((c) => c.t))) }; }
     for (let j = 0, i = 0; j < m.length; j++, i += 4) if (Math.hypot(im.d[i] - bg.r, im.d[i + 1] - bg.g, im.d[i + 2] - bg.b) > t) m[j] = 1;
     return { m, t };
   }
@@ -73,13 +86,30 @@
       while (st.length) { const j = st.pop(); const x = j % w, y = (j / w) | 0; n++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; px.push(j);
         const nb = [x > 0 ? j - 1 : -1, x < w - 1 ? j + 1 : -1, y > 0 ? j - w : -1, y < h - 1 ? j + w : -1]; for (const q of nb) if (q >= 0 && m[q] && lab[q] < 0) { lab[q] = id; st.push(q); } }
       out.push({ id, n, sx, sy, sxx, syy, sxy, px }); }
-    const R = [];
-    for (const c of out) { if (c.n < minA) continue; const cx = c.sx / c.n, cy = c.sy / c.n; const mxx = c.sxx / c.n - cx * cx, myy = c.syy / c.n - cy * cy, mxy = c.sxy / c.n - cx * cy;
-      let a = 0.5 * Math.atan2(2 * mxy, mxx - myy); a = normA(a); const co = Math.cos(a), si = Math.sin(a); let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
-      for (const j of c.px) { const x = j % w - cx, y = ((j / w) | 0) - cy; const u = x * co + y * si, v = -x * si + y * co; if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v; }
-      const bw = u1 - u0 + 1, bh = v1 - v0 + 1; const uc = (u0 + u1) / 2, vc = (v0 + v1) / 2;
-      R.push({ cx: cx + uc * co - vc * si, cy: cy + uc * si + vc * co, w: bw, h: bh, a, n: c.n, fill: c.n / (bw * bh), touch: touchEdge(c.px, w, h) }); }
-    return R;
+    return out.filter((c) => c.n >= minA).map((c) => rectOf(c.px, w, h));
+  }
+  /* 화소 목록 → 기운 네모(모멘트 기울기 · 그 기울기의 바깥 네모) · 화소 목록은 px로 남김(골짜기 나누기에 씀) */
+  function rectOf(px, w, h) { let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0; for (const j of px) { const x = j % w, y = (j / w) | 0; n++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; }
+    const cx = sx / n, cy = sy / n; const mxx = sxx / n - cx * cx, myy = syy / n - cy * cy, mxy = sxy / n - cx * cy; let a = normA(0.5 * Math.atan2(2 * mxy, mxx - myy)); const co = Math.cos(a), si = Math.sin(a); let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+    for (const j of px) { const x = j % w - cx, y = ((j / w) | 0) - cy; const u = x * co + y * si, v = -x * si + y * co; if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v; }
+    const bw = u1 - u0 + 1, bh = v1 - v0 + 1; const uc = (u0 + u1) / 2, vc = (v0 + v1) / 2;
+    return { cx: cx + uc * co - vc * si, cy: cy + uc * si + vc * co, w: bw, h: bh, a, n, fill: n / (bw * bh), touch: touchEdge(px, w, h), px }; }
+  /* (0.1.1) 골짜기 나누기 — 덩어리를 그 기울기로 펴서 줄·열마다 물건 화소 수를 세고, 가운데 쪽에 '거의 빈' 골짜기(가장 높은 칸의 25% 아래)가 있으면 거기서 둘로 · 되풀이(깊이 5)
+   *  틈이 가늘게 이어져 여러 권이 한 덩어리가 된 것(바탕 무늬·그림자 다리)을 가름 · 바로 붙인 책은 골짜기가 없어 그대로(뒤의 경계 나누기가 맡음) */
+  function splitValley(r, w, h, minA, depth) { if (depth > 5 || r.fill > 0.93 || r.n < minA * 2) return [r]; const co = Math.cos(r.a), si = Math.sin(r.a); const U = new Float32Array(r.px.length), V = new Float32Array(r.px.length); let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+    r.px.forEach((j, i) => { const x = j % w - r.cx, y = ((j / w) | 0) - r.cy; U[i] = x * co + y * si; V[i] = -x * si + y * co; if (U[i] < u0) u0 = U[i]; if (U[i] > u1) u1 = U[i]; if (V[i] < v0) v0 = V[i]; if (V[i] > v1) v1 = V[i]; });
+    const best = (A, a0, a1) => { const L = Math.max(1, Math.ceil(a1 - a0 + 1)); const hst = new Float32Array(L); for (const v of A) hst[Math.min(L - 1, Math.floor(v - a0))]++; const mx = Math.max(...hst); let bi = -1, bv = 1e9; for (let i = Math.floor(L * 0.12); i < Math.ceil(L * 0.88); i++) { const v = (hst[i - 1] + hst[i] + hst[i + 1]) / 3; if (v < bv) { bv = v; bi = i; } } return bv < mx * 0.25 ? { at: a0 + bi + 0.5, depth: bv / mx } : null; };
+    const cu = best(U, u0, u1), cv = best(V, v0, v1); const pick = cu && (!cv || cu.depth <= cv.depth) ? ['u', cu] : cv ? ['v', cv] : null; if (!pick) return [r];
+    const A = pick[0] === 'u' ? U : V; const a = [], b = []; r.px.forEach((j, i) => (A[i] < pick[1].at ? a : b).push(j)); if (a.length < minA || b.length < minA) return [r];
+    return [...splitValley(rectOf(a, w, h), w, h, minA, depth + 1), ...splitValley(rectOf(b, w, h), w, h, minA, depth + 1)]; }
+  /* (0.1.1) 기대 수보다 많으면 이웃 둘을 합침 — 합친 네모가 가장 네모다운(두 넓이 합 ÷ 합친 네모 넓이가 큰) 짝부터 · 가까운 것끼리만 */
+  function mergeTo(items, want) { const L = items.slice(); let guard = 0; const corners = (b) => { const co = Math.cos(b.a), si = Math.sin(b.a); return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => [b.cx + (u * b.w / 2) * co - (v * b.h / 2) * si, b.cy + (u * b.w / 2) * si + (v * b.h / 2) * co]); };
+    while (L.length > want && guard++ < 200) { let best = null; for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const p = L[i], q = L[j]; const d = Math.hypot(p.cx - q.cx, p.cy - q.cy); if (d > 0.75 * (Math.max(p.w, p.h) + Math.max(q.w, q.h))) continue; const a = (p.a + q.a) / 2, co = Math.cos(a), si = Math.sin(a); let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+        for (const [x, y] of [...corners(p), ...corners(q)]) { const u = x * co + y * si, v = -x * si + y * co; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); } const U = (u1 - u0) * (v1 - v0); const sc = (p.w * p.h + q.w * q.h) / U; if (!best || sc > best.sc) best = { i, j, sc, a, u0, u1, v0, v1 }; }
+      if (!best) break; const { i, j, a, u0, u1, v0, v1 } = best; const co = Math.cos(a), si = Math.sin(a); const uc = (u0 + u1) / 2, vc = (v0 + v1) / 2; const m = { cx: uc * co - vc * si, cy: uc * si + vc * co, w: u1 - u0, h: v1 - v0, a, fill: Math.min(L[i].fill, L[j].fill), merged: 1, touch: L[i].touch || L[j].touch };
+      L.splice(j, 1); L.splice(i, 1, m); }
+    return L; }
+  function noop() {
   }
   const touchEdge = (px, w, h) => { let t = 0; for (const j of px) { const x = j % w, y = (j / w) | 0; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { t++; if (t > 3) return true; } } return false; };
   /* 기울기는 −45°~45°로(가로·세로 어느 쪽이든 물건 변이 축에 가깝게) */
@@ -123,26 +153,42 @@
   /* 씨앗을 줄 수 세기 — 이웃 간격이 물건 크기 × gapK 넘으면 새 무리 */
   function clusters(vals, gap) { const s = vals.slice().sort((p, q) => p - q); if (!s.length) return 0; let k = 1; for (let i = 1; i < s.length; i++) if (s[i] - s[i - 1] > gap) k++; return k; }
 
+  /* (0.1.1) 센 곧은 경계로 나누기 — 덩어리를 펴서 열마다 '위에서 아래까지 이어진 경계 몫'과 '양쪽 색 차이' 중 큰 값 → 문턱을 넘는 봉우리에서 자름(열 먼저, 그다음 각 띠의 줄)
+   *  권수를 몰라도 씀 · 책과 책 사이 틈이 바탕 무늬로 메워져 한 덩어리가 된 것을 가름 · 조각이 너무 얇아지면(덩어리의 12% 아래) 그 자리는 안 자름 */
+  function lineCuts(prof, thr, minFrac) { const L = prof.length; const mn = Math.max(6, L * minFrac); const P = peaks(prof, 0, mn, thr); return P.filter((c) => c.at > L * 0.1 && c.at < L * 0.9); }
+  /* 몇 몫으로 나눌까: 2~6 몫마다 같은 몫 자리 ±25% 안에서 가장 센 경계를 찾고, 그 경계가 '모두' 문턱을 넘는 가장 많은 몫(책 크기는 비슷하다는 바둑판 전제) · 조각 모양이 책답지 않으면(가로/세로 0.35~1.6 밖) 버림 */
+  function bestN(prof, C, other, isCol) { let best = { n: 1, cuts: [] }; for (let n = 2; n <= 6; n++) { const cuts = cutsOf(prof, n, { ...C, splitWin: 0.25 }, null); if (!cuts.length || Math.min(...cuts.map((c) => c.s)) < C.lineT) continue; const xs = [0, ...cuts.map((c) => c.at), prof.length]; const ok = xs.slice(1).every((x, i) => { const w = x - xs[i]; const r = isCol ? w / other : other / w; return r > 0.35 && r < 1.6; }); if (ok) best = { n, cuts }; } return best; }
+  function splitAuto(g, D, b, C) { const S = straight(g, D.w, D.h, b); const J = jumpOf(D, b); const pc = smooth(maxArr(colEdge(S, C.edgeT), J.c)); const bx = bestN(pc, C, S.H, true); const xs = [0, ...bx.cuts.map((c) => c.at), S.W]; const out = [];
+    for (let i = 0; i < xs.length - 1; i++) { const u0 = xs[i], u1 = xs[i + 1]; const ctr = fromLocal(b, (u0 + u1) / 2, S.H / 2); const sub = { cx: ctr.x, cy: ctr.y, w: u1 - u0, h: S.H, a: b.a }; const S2 = straight(g, D.w, D.h, sub); const J2 = jumpOf(D, sub); const pr = smooth(maxArr(rowEdge(S2, C.edgeT), J2.r)); const by = bestN(pr, C, S2.W, false); const ys = [0, ...by.cuts.map((c) => c.at), S2.H];
+      for (let k = 0; k < ys.length - 1; k++) { const c2 = fromLocal(sub, S2.W / 2, (ys[k] + ys[k + 1]) / 2); out.push({ cx: c2.x, cy: c2.y, w: S2.W, h: ys[k + 1] - ys[k], a: b.a, cut: Math.min(...[bx.cuts[i - 1], bx.cuts[i], by.cuts[k - 1], by.cuts[k]].filter(Boolean).map((c) => c.s), 1) }); } }
+    return out; }
+
   /* ═══ 가르기: 그림 한 장 → 물건 상자들 ═══
    *  opt.seeds = [{x, y}] 바코드 가운데(받은 그림 화소) · opt.expect = 기대 물건 수(사람이 적으면) · opt.grid = {r, c}
    *  결과 { items:[{cx,cy,w,h,a, conf, why[]}], bg, note } — 좌표는 받은 그림 화소 */
   function segment(img, opt) {
     const C = cfgOf(opt && opt.cfg); const D = down(img, C.side); const k = D.k; const g = grayOf(D); const bg = bgOf(D, C.band);
     let { m, t } = maskOf(D, bg, C); m = morph(morph(m, D.w, D.h, C.open, 0), D.w, D.h, C.open, 1); m = morph(morph(m, D.w, D.h, C.close, 1), D.w, D.h, C.close, 0); m = fillHoles(m, D.w, D.h);
-    const minA = C.minArea * D.w * D.h; let B = comps(m, D.w, D.h, minA); const why0 = [];
+    const minA = C.minArea * D.w * D.h; let B = comps(m, D.w, D.h, minA); const why0 = []; if (C.valley) B = B.flatMap((b) => splitValley(b, D.w, D.h, minA, 0));
+    if (C.junk) { const nB = B.length; const keepSeed = (b) => ((opt && opt.seeds) || []).some((p) => inBox(b, p.x * k, p.y * k, 0.02)); const big = med(B.map((b) => b.w * b.h)); B = B.filter((b) => b.fill >= C.junk || keepSeed(b) || (b.w * b.h > big * 0.5 && b.fill >= C.junk * 0.8)); if (B.length < nB) why0.push(`물건 아닌 얼룩 ${nB - B.length}개 뺌`); }
+    for (const b of B) delete b.px;
     if (B.length === 1 && B[0].touch && B[0].n > 0.9 * D.w * D.h) why0.push('바탕을 못 찾음(물건이 그림을 거의 다 채움)');
     const seeds = ((opt && opt.seeds) || []).map((p) => ({ x: p.x * k, y: p.y * k, ref: p }));
     /* 한 덩어리에 물건이 여럿(붙여 놓음)이면 나눔 — 씨앗 무리 수 > 넓이 몫 > 기대 수 차례 */
     const singles = B.filter((b) => seeds.filter((p) => inBox(b, p.x, p.y, 0.02)).length <= 1 && b.fill > 0.85);
     const refA = singles.length ? med(singles.map((b) => b.w * b.h)) : 0; const refW = singles.length ? med(singles.map((b) => b.w)) : 0, refH = singles.length ? med(singles.map((b) => b.h)) : 0;
     const out = [];
+    /* (0.1.1) 여러 권이 붙은 섞인 덩어리(채움 낮음)는 모멘트 기울기가 엉뚱함(사진 시험: 20° 넘게 기울어 모든 자름이 대각선) → 큰 기울기면 바로 선 바깥 네모로 고쳐 나눔 */
+    { const mA = med(B.map((b) => b.w * b.h)); B = B.map((b) => { const nS = seeds.filter((p) => inBox(b, p.x, p.y, 0.02)).length; if (!(b.fill < 0.85 && Math.abs(b.a) > C.maxTilt && (nS >= 2 || b.w * b.h > mA * 2.5 || B.length === 1))) return b; const co = Math.abs(Math.cos(b.a)), si = Math.abs(Math.sin(b.a)); const W = b.w * co + b.h * si, H = b.w * si + b.h * co; return { ...b, w: W, h: H, a: 0, fill: b.n / (W * H) }; }); }
     for (const b of B) { const my = seeds.filter((p) => inBox(b, p.x, p.y, 0.02)); let nx = 1, ny = 1, how = '';
       if (my.length >= 2) { const loc = my.map((p) => toLocal(b, p.x, p.y)); const gu = Math.max(8, (refW || b.w / my.length) * C.gapK), gv = Math.max(8, (refH || b.h / my.length) * C.gapK); nx = clusters(loc.map((p) => p.u), gu); ny = clusters(loc.map((p) => p.v), gv); if (nx * ny < my.length) { if (b.w >= b.h) nx = Math.max(nx, Math.ceil(my.length / ny)); else ny = Math.max(ny, Math.ceil(my.length / nx)); } how = `바코드 ${my.length}개 → ${nx}×${ny}로 나눔`; }
       else if (refA && b.w * b.h > refA * 1.6) { nx = Math.max(1, Math.round(b.w / refW)); ny = Math.max(1, Math.round(b.h / refH)); if (nx * ny > 1) how = `홀로 놓인 물건 크기로 ${nx}×${ny}로 나눔`; }
+      if (nx * ny === 1 && my.length <= 1 && C.lineT && !(opt && (opt.expect || opt.grid)) && (b.fill < 0.9 || !refA || b.w * b.h > refA * 1.6)) { /* 권수를 알면 예전 길이 더 나음(잰 값) */ const P = splitAuto(g, D, b, C); if (P.length > 1) { for (const p of P) out.push({ ...p, n: p.w * p.h, fill: b.fill, split: `곧은 경계 ${P.length}조각으로 나눔` }); continue; } }
       if (nx * ny > 1) { for (const p of splitBox(g, D.w, D.h, b, nx, ny, C, my)) out.push({ ...p, n: p.w * p.h, fill: b.fill, split: how }); }
       else out.push({ ...b }); }
     /* 기대 수(사람이 적은 수·바둑판)보다 적으면 가장 큰 상자부터 둘로 */
     const want = (opt && opt.grid && opt.grid.r * opt.grid.c) || (opt && opt.expect) || 0; let guard = 0;
+    if (want && C.merge && out.length > want) { const before = out.length; const M = mergeTo(out, want); out.length = 0; out.push(...M); why0.push(`기대 수 ${want}에 맞춰 조각 ${before - want}개를 이웃과 합침`); }
     while (want && out.length < want && guard++ < 60) { out.sort((p, q) => q.w * q.h - p.w * p.h); const b = out.shift(); const byW = b.w >= b.h; const parts = splitBox(g, D.w, D.h, b, byW ? 2 : 1, byW ? 1 : 2, C, []); for (const p of parts) out.push({ ...p, n: p.w * p.h, fill: b.fill, split: '기대 수에 맞춰 나눔' }); }
     const items = out.map((b) => { const why = []; let c = 1;
       if (b.fill < 0.85) { c *= clamp(b.fill / 0.85, 0.3, 1); why.push(`네모 모양이 덜 반듯함(채움 ${Math.round(b.fill * 100)}%)`); }
@@ -232,7 +278,7 @@
    *  물건 영역 안에서 '위에서 아래까지 이어진 세로 경계'가 센 열을 자름 · 띠 폭이 너무 좁으면(1.2% 아래) 합침
    *  opt.expect = 책 수(알면 그 수에 맞춤) · opt.orient = 'v'(세운 책등 · 기본 저절로) | 'h'(눕혀 쌓은 책등) */
   function spines(img, opt) {
-    const C = cfgOf(opt && opt.cfg); const D = down(img, Math.max(C.side, 900)); const k = D.k; const g = grayOf(D); const bg = bgOf(D, C.band);
+    const C = cfgOf({ bgK: 1, ...((opt && opt.cfg) || {}) }); /* (0.1.1) 책등 줄은 바탕 한 색이 더 나음(밝은 책등이 바탕 무리에 섞임 — 시험 ⑥) */ const D = down(img, Math.max(C.side, 900)); const k = D.k; const g = grayOf(D); const bg = bgOf(D, C.band);
     let { m } = maskOf(D, bg, C); m = morph(morph(m, D.w, D.h, C.close, 1), D.w, D.h, C.close, 0); m = fillHoles(m, D.w, D.h); let B = comps(m, D.w, D.h, C.minArea * D.w * D.h);
     let box = B.length ? B.reduce((p, q) => (q.n > p.n ? q : p)) : { cx: D.w / 2, cy: D.h / 2, w: D.w, h: D.h, a: 0 }; if (B.length > 1) { /* 여러 덩어리 = 띄워 놓은 책등 — 덩어리가 곧 띠 */ const big = B.filter((b) => b.n > 0.25 * med(B.map((x) => x.n))); if (big.length >= 2 && !(opt && opt.expect && big.length < opt.expect * 0.6)) return spOut(big.map((b) => ({ ...b, cut: 1 })), k, 'v'); }
     let orient = opt && opt.orient; const S = straight(g, D.w, D.h, box);
