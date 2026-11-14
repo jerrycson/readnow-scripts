@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "edition1",
+ "what": "클라우드 판본 추적 0.1.1",
+ "since": "2026-11-14T11:29:36Z",
+ "beat": "2026-11-14T11:29:36Z",
  "ask": null,
  "last": {
   "who": "mgmt1",
   "done": "웹앱 1.78.648 · 경영 2차 · 6f4bc2bf",
   "at": "2026-11-14T11:29:35Z"
  },
- "host": null
+ "host": "vm-edition1"
 }
