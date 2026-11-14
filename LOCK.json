@@ -1,13 +1,13 @@
 {
- "holder": "pcdock4",
- "what": "PC 배치 도우미 0.1.5 — 탐색기 창 쌓임 멈춤",
- "since": "2026-11-14T06:05:30Z",
- "beat": "2026-11-14T06:05:30Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shopfont1",
-  "done": "웹앱 1.78.629 · 숍 꾸밈 0.1.3·shop.js 0.2.9 · 🔤 글꼴 역할 main d24cf03c",
-  "at": "2026-11-14T06:04:27Z"
+  "who": "pcdock4",
+  "done": "PC 배치 도우미 0.1.5 main 0cf5a38",
+  "at": "2026-11-14T06:07:21Z"
  },
- "host": "vm-pcdock4"
+ "host": null
 }
