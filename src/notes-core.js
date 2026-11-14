@@ -145,7 +145,7 @@
   function mount(root, store, opt) {
     opt = opt || {};
     if (!document.getElementById('jbn-css')) { const st = document.createElement('style'); st.id = 'jbn-css'; st.textContent = STYLE; document.head.appendChild(st); }
-    const U = { seen: new Set(), tab: 'review', q: '', open: new Set(), comp: null, draft: '', feedDraft: '', busy: false, pend: false, toastT: 0, slot: 1, slotSeen: undefined, dDirty: false, dT: 0, sv: '', mineDraft: '', medit: null };
+    const U = { seen: new Set(), tab: 'review', q: '', open: new Set(), comp: null, draft: '', feedDraft: '', busy: false, pend: false, toastT: 0, slot: 1, slotSeen: undefined, dDirty: false, dT: 0, sv: '', mineDraft: '', medit: null, sd: new Map() }; /* (note7) sd = 카드마다 아직 안 쌓은 문장 메모 초안 [{quote, text}] — 버블에 적은 채 다른 문장을 고르면 여기로(잃지 않음) */
     try { const p = JSON.parse(localStorage.getItem('jbn-ui') || '{}'); if (TABS.some((t) => t[0] === p.tab)) U.tab = p.tab; if (SLOTS.includes(p.slot)) U.slot = p.slot; } catch (e) {}
     const saveUi = () => { try { localStorage.setItem('jbn-ui', JSON.stringify({ tab: U.tab, slot: U.slot })); } catch (e) {} }; /* 기기 편의(고른 탭)만 — 칸 내용은 서버 */
     root.classList.add('jbn');
@@ -174,9 +174,9 @@
       if (open) { const comp = U.comp && U.comp.cardId === c.id;
         body = `<div class="jbn-body" data-body="${esc(c.id)}">${md(c.body) || '<p style="opacity:.6">(본문 없음)</p>'}</div>
         ${ms.map((m) => memoHtml(m, false)).join('')}
-        <div class="jbn-compose" data-comp="${esc(c.id)}">${comp && U.comp.quote ? `<div class="qt">고른 글: “${esc(U.comp.quote.slice(0, 300))}” <button class="jbn-b" data-act="unquote" style="min-height:24px;padding:0 6px">고른 글 빼기</button></div>` : ''}
+        <div class="jbn-compose" data-comp="${esc(c.id)}">${(U.sd.get(c.id) || []).map((x, k) => `<div class="qt" data-sdraft="${k}">✎ 아직 안 쌓은 문장 메모 — “${esc(String(x.quote).slice(0, 200))}” · <span style="font-style:normal;color:var(--memo-tx)">${esc(x.text.slice(0, 300))}</span> <button class="jbn-b" data-act="sdx" data-k="${k}" style="min-height:24px;padding:0 6px">빼기</button></div>`).join('')}${comp && U.comp.quote ? `<div class="qt">고른 글: “${esc(U.comp.quote.slice(0, 300))}” <button class="jbn-b" data-act="unquote" style="min-height:24px;padding:0 6px">고른 글 빼기</button></div>` : ''}
           <label class="sr-only" for="jbn-ta-${esc(c.id)}" style="position:absolute;left:-9999px">이 카드에 메모</label><textarea id="jbn-ta-${esc(c.id)}" data-ta="${esc(c.id)}" placeholder="${comp && U.comp.quote ? '고른 글에 대한 메모' : '이 카드 전체에 대한 메모 — 본문에서 글을 고르면 그 문장에 대한 메모'}">${comp ? esc(U.draft) : ''}</textarea>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="jbn-b pri" data-act="memo">💬 메모 달기</button><span style="font-size:12px;color:var(--fa);align-self:center">카드 전체 메모 · 본문 글을 고르면 그 자리 버블로 · 아래 🧾 통합 노트에도 함께 쌓입니다</span></div></div>`; }
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="jbn-b pri" data-act="memo">💬 메모 달기</button><span style="font-size:12px;color:var(--fa);align-self:center">카드 전체 메모 · 본문 글을 고르면 그 자리 버블로 · 칸이 비어도 고른 글에 쓴 메모가 있으면 이 단추로 함께 · 아래 🧾 통합 노트에 쌓입니다</span></div></div>`; }
       return `<article class="jbn-card" data-card="${esc(c.id)}" data-new="${nw ? 1 : 0}" data-moved="${tab === 'new' && !nw && U.seen.has(c.id) ? 1 : 0}"><div class="jbn-ch"><span class="jbn-imp" title="중요도 ${imp}/3">${'●'.repeat(imp)}<i>${'●'.repeat(3 - imp)}</i></span><div style="flex:1;min-width:0"><button class="jbn-tt" data-act="toggle" aria-expanded="${open}">${esc(c.title || '제목 없음')}</button><div class="jbn-meta">${meta}</div>${open ? '' : `<div class="jbn-snip">${esc(plain(c.body).slice(0, 220))}</div>`}</div><button class="jbn-star" type="button" data-act="fav" aria-pressed="${c.pinned ? 'true' : 'false'}" title="${c.pinned ? '즐겨찾기에서 빼기' : '⭐ 즐겨찾기에 넣기'}" aria-label="${c.pinned ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}">${c.pinned ? '★' : '☆'}</button></div><div class="jbn-acts">${acts}${bdl}</div>${body}</article>`;
     }
     function memoHtml(m, inFeed, cardsById) {
@@ -330,10 +330,16 @@
       if (a === 'mfav') { const on = !(docOf(b.dataset.mid) || {}).pinned; return W([{ op: 'merge', id: b.dataset.mid, data: { pinned: on } }], on ? '⭐ 내 메모 즐겨찾기에 넣었습니다' : '즐겨찾기에서 뺐습니다'); }
       if (a === 'march') return W([{ op: 'merge', id: b.dataset.mid, data: { state: 'archived', stateAt: at } }], '🗄 보관함으로 옮겼습니다 — 지우지 않음 · 🗄 보관함에서 꺼냅니다');
       if (a === 'unquote') { if (U.comp) U.comp.quote = null; render(); return; }
-      if (a === 'memo') { const ta = root.querySelector(`[data-ta="${CSS.escape(id)}"]`); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('메모 글을 적어 주세요'); if (ta) ta.focus(); return; } const d = docOf(id) || {}; const quote = U.comp && U.comp.cardId === id ? U.comp.quote : null; const mid = rid('m');
+      if (a === 'sdx') { const L = (U.sd.get(id) || []).slice(); L.splice(+b.dataset.k, 1); if (L.length) U.sd.set(id, L); else U.sd.delete(id); render(); toast('문장 메모 초안을 뺐습니다'); return; }
+      /* (note7 · 정범님 11/14 14:24) 카드 메모 칸이 비어도 고른 글에 쓴 메모(버블에 적은 것·아직 안 쌓은 초안)가 있으면 함께 쌓음 — 차례: 문장 메모들(고른 차례) → 카드 메모 · 초안은 쓰기 전에 바로 비워 두 번 눌러도 한 번만 */
+      if (a === 'memo') { const ta = root.querySelector(`[data-ta="${CSS.escape(id)}"]`); const txt = ((ta && ta.value) || '').trim(); const sents = (U.sd.get(id) || []).slice(); const bt = U.bub && U.bub.cardId === id ? bta.value.trim() : ''; if (bt) sents.push({ quote: U.bub.quote, text: bt });
+        if (!txt && !sents.length) { toast('메모 글을 적어 주세요 — 본문 글을 고르면 그 문장에 대한 메모도 됩니다'); if (ta) ta.focus(); return; } const d = docOf(id) || {}; const quote = U.comp && U.comp.cardId === id ? U.comp.quote : null;
+        U.sd.delete(id); if (bt) { bubClose(); try { const s0 = window.getSelection(); if (s0) s0.removeAllRanges(); } catch (e2) {} }
         if (ta) ta.value = ''; U.draft = ''; U.comp = null; if (ta) ta.blur();
-        const ops = [{ op: 'set', id: mid, data: { kind: 'memo', cardId: id, cardTitle: String(d.title || '').slice(0, 300), quote: quote || null, text: txt, by: 'jb', at, state: 'open', slot: U.slot } }]; if (d && isNew({ id, ...d })) ops.push({ op: 'merge', id, data: { readAt: at } });
-        return W(ops, '💬 메모를 달았습니다 — 통합 노트(보낼 대기)에 쌓였습니다'); }
+        const t0 = Date.parse(at); const atK = (k) => new Date(t0 + k).toISOString(); /* 같은 때 여럿 — 통합 노트 차례가 흔들리지 않게 1ms씩 */ const title = String(d.title || '').slice(0, 300);
+        const ops = sents.map((x, k) => ({ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: id, cardTitle: title, quote: x.quote, text: x.text, by: 'jb', at: atK(k), state: 'open', slot: U.slot } }));
+        if (txt) ops.push({ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: id, cardTitle: title, quote: quote || null, text: txt, by: 'jb', at: atK(sents.length), state: 'open', slot: U.slot } }); const nm = ops.length; if (d && isNew({ id, ...d })) ops.push({ op: 'merge', id, data: { readAt: at } });
+        return W(ops, sents.length ? `💬 메모 ${nm}건을 통합 노트(보낼 대기)에 쌓았습니다 — 고른 글 ${sents.length}${txt ? ' · 카드 전체 1' : ''}` : '💬 메모를 달았습니다 — 통합 노트(보낼 대기)에 쌓였습니다'); }
       if (a === 'feedmemo') { const ta = root.querySelector('#jbn-feed-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); return; } if (ta) { ta.value = ''; ta.blur(); } U.feedDraft = ''; clearTimeout(U.dT); U.dDirty = false; const n = U.slot;
         return W([{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: txt, by: 'jb', at, state: 'open', slot: n } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at } }], `💾 저장${n}에 쌓았습니다`); }
       if (a === 'mineadd') { const ta = root.querySelector('#jbn-mine-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); if (ta) ta.focus(); return; } if (ta) { ta.value = ''; ta.blur(); } U.mineDraft = '';
@@ -367,11 +373,11 @@
     bub.innerHTML = '<div class="qt" data-bq></div><label for="jbn-bub-ta" style="position:absolute;left:-9999px">고른 글에 대한 메모</label><textarea id="jbn-bub-ta" rows="2" placeholder="메모 — Enter 쌓기 · Shift+Enter 줄바꿈 · Esc 닫기"></textarea><div class="bf"><span>인용과 함께 아래 통합 노트에 쌓입니다</span><span class="jbn-sp"></span><button type="button" class="jbn-b" data-bub="x">닫기</button><button type="button" class="jbn-b pri" data-bub="ok">💬 쌓기</button></div>';
     document.body.appendChild(bub); const bta = bub.querySelector('textarea');
     const bubClose = () => { bub.hidden = true; U.bub = null; bta.value = ''; };
-    function bubOpen(id, q, r) { U.bub = { cardId: id, quote: q }; bub.querySelector('[data-bq]').textContent = '“' + q.slice(0, 240) + (q.length > 240 ? '…' : '') + '”'; bta.value = ''; bub.hidden = false;
+    function bubOpen(id, q, r) { const keep = U.bub && bta.value.trim(); if (keep) { const L = U.sd.get(U.bub.cardId) || []; L.push({ quote: U.bub.quote, text: keep }); U.sd.set(U.bub.cardId, L); } /* (note7) 버블에 적은 채 다른 문장을 고르면 앞 메모는 카드 안 초안으로(예전엔 지워짐) */ U.bub = { cardId: id, quote: q }; bub.querySelector('[data-bq]').textContent = '“' + q.slice(0, 240) + (q.length > 240 ? '…' : '') + '”'; bta.value = ''; bub.hidden = false;
       const W0 = window.innerWidth, H0 = window.innerHeight, w = Math.min(380, W0 - 24); bub.style.width = w + 'px';
       if (W0 <= 520) { bub.style.left = '12px'; bub.style.top = 'calc(8px + env(safe-area-inset-top, 0px))'; } /* 휴대폰: 자판이 아래에서 올라오므로 화면 위에 */
       else { const h = bub.offsetHeight || 150; const below = r.bottom + 8 + h < H0 - 8; bub.style.left = Math.max(12, Math.min(W0 - w - 12, r.left)) + 'px'; bub.style.top = (below ? r.bottom + 8 : Math.max(8, r.top - h - 8)) + 'px'; }
-      try { bta.focus({ preventScroll: true }); } catch (e) { bta.focus(); } }
+      try { bta.focus({ preventScroll: true }); } catch (e) { bta.focus(); } if (keep) { render(); toast('앞 문장 메모는 카드 안에 남겨 두었습니다 — [💬 메모 달기]로 함께 쌓입니다'); } }
     async function bubSave() { const b0 = U.bub; const txt = bta.value.trim(); if (!b0) return; if (!txt) { toast('메모 글을 적어 주세요'); bta.focus({ preventScroll: true }); return; }
       const d = docOf(b0.cardId) || {}; const at = nowIso(); bubClose(); try { const s0 = window.getSelection(); if (s0) s0.removeAllRanges(); } catch (e) {}
       const ops = [{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: b0.cardId, cardTitle: String(d.title || '').slice(0, 300), quote: b0.quote, text: txt, by: 'jb', at, state: 'open', slot: U.slot } }]; if (isNew({ id: b0.cardId, ...d })) ops.push({ op: 'merge', id: b0.cardId, data: { readAt: at } });
@@ -384,6 +390,6 @@
     render();
     return { render, destroy() { U.dead = true; for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
-  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '4' };
+  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '5' };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ⟦jbn core 끝⟧ */
