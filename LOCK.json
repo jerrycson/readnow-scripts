@@ -1,13 +1,13 @@
 {
- "holder": "y24ops1",
- "what": "예스24 운영 기능 판(판매가 상세수정·가격 감시·판매재개·문의 알림)",
- "since": "2026-11-14T10:28:23Z",
- "beat": "2026-11-14T10:32:14Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "y24first1",
-  "done": "웹앱 1.78.640 · 번외 0.1.64 · e2d87d98",
-  "at": "2026-11-14T10:28:22Z"
+  "who": "y24ops1",
+  "done": "웹앱 1.78.641 · 번외 0.1.65 · 8c52aac2",
+  "at": "2026-11-14T10:36:10Z"
  },
- "host": "vm-y24ops1"
+ "host": null
 }
