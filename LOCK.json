@@ -1,13 +1,13 @@
 {
- "holder": "h4",
- "what": "4시간 점검 16:13 — 웹앱 1.78.631 올리기",
- "since": "2026-11-14T07:37:16Z",
- "beat": "2026-11-14T07:37:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "h4",
   "done": "웹앱 1.78.631 · 922da399",
-  "at": "2026-11-14T07:37:08Z"
+  "at": "2026-11-14T07:40:46Z"
  },
- "host": "vm"
+ "host": null
 }
