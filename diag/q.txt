@@ -1,2 +1,2 @@
-perf=400
-# 138538771
+doc=app_settings/pxDaily
+# 3216918253
