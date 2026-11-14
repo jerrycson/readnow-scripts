@@ -60,9 +60,10 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   const J2 = y.jobs[0]; ok(J2 && J2.rows.length === 2 && J2.rows.every((r) => ['aladin_A1', 'aladin_A6'].includes(r.lid)), '④ 첫 건 ✅ 뒤 여러 건(묶음) — A1·A6(A2 주문 묶임·A3 예스24에 있음·A4 이미 올림은 여전히 뺌)', y);
   ok(J2 && checkJob(J2, REG.R.rec) === '', '④ 번외 검사 통과(첫 성공 뒤라 여러 건)', J2 && checkJob(J2, REG.R.rec)); take({ jobs: [J2] });
   /* ⑤ 실패 → 멈춤 */
-  REG.R.q.res[J2.id] = { state: 'fail', pre: true, msg: '대량 등록 화면 모양이 다름', todo: '리드나우 방에 알려 주세요', at: T, rows: J2.rows.map((r) => r.lid) }; REG.R.q.jobs = [];
+  REG.R.q.res[J2.id] = { state: 'fail', pre: true, msg: '대량 등록 화면 모양이 다름', todo: '리드나우 방에 알려 주세요', raw: { txt: '조회된 데이터가 없습니다', btn: ['업로드', '등록'], inv: 0 }, at: T, rows: J2.rows.map((r) => r.lid) }; REG.R.q.jobs = [];
   T += 61e3; y = await Y.step('HOME', gather()); take(y); const e3 = led().r.aladin_A1;
   ok(e3.st === 'autofail' && led().auto && led().auto.stop && /모양이 다름/.test(led().auto.stop.why) && !y.jobs.length, '⑤ 실패 결과 → 장부 autofail · 멈춤(auto.stop) · 새 묶음 없음', { e3, auto: led().auto });
+  ok(led().auto.last && led().auto.last.raw && /조회된 데이터/.test(led().auto.last.raw.txt) && led().auto.last.raw.btn.length === 2, '⑤ 번외가 멈춘 화면 원문(표 글·단추 이름)을 장부 auto.last.raw에 남김(제13조)', led().auto.last);
   T += 61e3; y = await Y.step('HOME', gather()); ok(!y.jobs.length && /멈춤/.test(y.why), '⑤ 멈춘 동안 새 묶음 없음(사람이 📤 화면 「▶ 이어 가기」)', y.why);
   /* ⑥ 번외가 모르는 묶음 다시 넘김 */
   store.app_settings.y24_reg.auto.stop = null; store.app_settings.y24_reg.r.aladin_A1 = { ...store.app_settings.y24_reg.r.aladin_A1, st: 'auto', job: 'y24aLOST1', at: new Date(T - 4 * 60e3).toISOString(), by: '🤖 자동 올림 · 클라우드(HOME)' };
