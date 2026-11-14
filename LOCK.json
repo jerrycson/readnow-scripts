@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "priv5",
+ "what": "수집기 1.89.x 옛 웹앱 링크 두 곳 readnow.kr로(머리 그대로)",
+ "since": "2026-11-14T06:37:15Z",
+ "beat": "2026-11-14T06:37:15Z",
  "ask": null,
  "last": {
   "who": "pcdock4",
   "done": "PC 배치 도우미 0.1.5 main 0cf5a38",
   "at": "2026-11-14T06:07:21Z"
  },
- "host": null
+ "host": "vm-priv5"
 }
