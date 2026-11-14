@@ -49,9 +49,10 @@ const MAP = {
   N11: { q: '구매자 나이·성별 분포와 함께 산 책이 판매 속도·값·매입값과 어떻게 이어지나?', open: 'sellerLearn' },
   N12: { q: '연구가 찾은 앞 페이지 전략대로 우리 상품을 다시 앞으로 올리면 정말 더 팔리나(상품 단위 · 견줄 무리와 채점)?', open: 'frontBump' },
   N13: { q: '끌올을 상품마다 언제·몇 번 했고, 끌올 뒤 정말 더 팔렸나(누적 판매율 차이·95% 신뢰 구간·유의 여부)?', open: 'bumpEff' }, /* (11/13 bump1) */
+  N15: { q: '우리 상품의 판본(옛 판·새 판·다른 번역본·원서)은 모두 무엇이고, 새 판이 나왔나 — 엔진이 스스로 찾고 같은 책인지 판별하나?', open: 'edition' }, /* (11/14 edition1) */
 };
 /* 웹앱 쪽에서 쓰는 Firestore 요약 문서(있으면 그 문서의 at을 '마지막 갱신'으로 · 작은 문서만) */
-const FS = { R12: 'buyback_stats', R19: 'extras_study', R20: 'badge_study', N06: 'voice_study', N07: 'bench_obs', N12: 'front_bump_eval', N13: 'front_bump_eval' }; /* (11/12 front1) seller_learn·seller_hyp는 커서 읽지 않음(웹앱이 at만 보려고 통째로 받음) */
+const FS = { R12: 'buyback_stats', R19: 'extras_study', R20: 'badge_study', N06: 'voice_study', N07: 'bench_obs', N12: 'front_bump_eval', N13: 'front_bump_eval', N15: 'ed_study' }; /* (11/12 front1) seller_learn·seller_hyp는 커서 읽지 않음(웹앱이 at만 보려고 통째로 받음) */
 /* 원본 위치 — 비공개 저장소의 폴더 이름만(파일 이름은 연구 폴더 안) */
 const srcOf = (s) => { const D = (s.docs || []).map(String); const top = [...new Set(D.map((d) => (d.match(/^research\/([A-Z]+)\//) || [])[1]).filter(Boolean))]; return top.length ? top.map((t) => `research/${t}/`) : D.some((d) => /^reports\//.test(d)) ? ['reports/'] : []; };
 const lvState = (s) => { const lv = String(s.level || ''); const L = s.metric && s.metric.last; if (L && L.value && !/첫 값 없음|꺼짐|배정 0/.test(L.value) && !/아직 안 돎/.test(lv)) return 'result'; /* 실험이 꺼졌거나 아직 안 돈 연구의 '0'은 결과로 치지 않음 */ if (/^L0|설계|아직 안 돎|멈춤/.test(lv)) return 'collect'; return 'run'; };
