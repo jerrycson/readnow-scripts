@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "shipfix1",
+ "what": "ALPS 도우미 0.5.8 판 내기(미리보기 실패 까닭 가름·기록)",
+ "since": "2026-11-14T06:42:57Z",
+ "beat": "2026-11-14T06:42:57Z",
  "ask": null,
  "last": {
   "who": "priv5",
   "done": "수집기 1.89.335 main 4abf9e3c — 옛 웹앱 링크 두 곳 readnow.kr",
   "at": "2026-11-14T06:42:30Z"
  },
- "host": null
+ "host": "vm-shipfix1"
 }
