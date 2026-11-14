@@ -73,12 +73,14 @@ w = E.esWireStep({ ...wd, money: false }, { stage: 3, since: '2026-11-10', up: 2
 ws = { stage: 2, since: 'a' }; for (let i = 0; i < 3; i++) { w = E.esWireStep(wd, ws, { fresh: {}, hyp: {}, score: { W02: { n: 40, v: -0.1 } } }, cfg, 'e' + i); ws = w.st; } ok(ws.stage === 1, '대조 손해 3일 연속 → 한 단계 내림');
 w = E.esWireStep({ id: 'W03', stage: 2, hyp: ['H06'] }, null, { fresh: {}, hyp: { H06: '불명' } }, cfg, 'f'); ok(w.st.stage === 1 && /근거 가설/.test(w.ch.why), '근거 가설이 지지 아래로 → 한 단계 내림');
 w = E.esWireStep({ id: 'W05', stage: 0, srcDoc: 'app_settings/extras_study' }, null, { fresh: { 'app_settings/extras_study': '✅' }, hyp: {} }, cfg, 'g'); ok(w.st.stage === 1, '후보(0)는 재료가 살아 있으면 그림자(1)로 — 판단은 안 바뀜');
+{ let q = { stage: 1, since: 'a' }; const dW = { id: 'W08', stage: 1, money: true, score: { min_n: 30, k_days: 2 } }; for (let i = 0; i < 2; i++) { const r = E.esWireStep(dW, q, { fresh: {}, hyp: {}, score: { W08: { kind: 'eff30', n: 40, v: 0.02, hiv: 0.2 } } }, cfg, 'k' + i); q = r.st; } ok(q.stage === 2, 'wire1 대조 점수(eff30 아래 끝 > 0) 2일 연속 → 1 → 2(돈 배선이라도 3 아래는 울타리 없이)');
+  let q2 = { stage: 2, since: 'a' }; for (let i = 0; i < 3; i++) q2 = E.esWireStep(dW, q2, { fresh: {}, hyp: {}, score: { W08: { kind: 'eff30', n: 40, v: -0.3, hiv: -0.1 } } }, cfg, 'm' + i).st; ok(q2.stage === 1, 'eff30 위 끝 < 0(대조 손해) 3일 → 한 단계 내림'); }
 ws = { stage: 2 }; for (let i = 0; i < 3; i++) { w = E.esWireStep({ id: 'W04', stage: 2, reads: ['web:W04'] }, ws, { fresh: {}, hyp: {}, reads: { W04: 0 } }, cfg, 'h' + i); ws = w.st; } ok(/3일째/.test(w.fix || ''), '읽은 횟수 0이 3일 → 고칠 일 알림');
 
 console.log('⑥ 회차 전체(가짜 Firestore)');
 (async () => {
   const DB = new Map(); const key = (c, d) => c + '/' + d;
-  const C = (c) => ({ doc: (d) => ({ get: async () => { const v = DB.get(key(c, d)); return { exists: !!v, data: () => (v ? JSON.parse(JSON.stringify(v)) : undefined), id: d }; }, set: async (v, o) => { const cur = (o && o.merge && DB.get(key(c, d))) || {}; DB.set(key(c, d), JSON.parse(JSON.stringify({ ...cur, ...v }))); } }),
+  const C = (c) => ({ doc: (d) => ({ get: async () => { const v = DB.get(key(c, d)); return { exists: !!v, data: () => (v ? JSON.parse(JSON.stringify(v)) : undefined), id: d }; }, set: async (v, o) => { const und = (x, p) => { if (x === undefined) throw new Error('undefined 값: ' + p); if (x && typeof x === 'object') for (const [k, y] of Object.entries(x)) und(y, p + '.' + k); }; und(v, c + '/' + d); /* 진짜 Firestore처럼 undefined를 거절(0.35.250 첫 회차 실패를 시험이 못 잡았음) */ const cur = (o && o.merge && DB.get(key(c, d))) || {}; DB.set(key(c, d), JSON.parse(JSON.stringify({ ...cur, ...v }))); } }),
     get: async () => { const L = [...DB.entries()].filter(([k]) => k.startsWith(c + '/')).map(([k, v]) => ({ id: k.slice(c.length + 1), data: () => v })); return { forEach: (f) => L.forEach(f), size: L.length }; },
     orderBy: () => ({ limit: (n) => ({ get: async () => { const L = [...DB.entries()].filter(([k]) => k.startsWith(c + '/')).sort((a, b) => (a[1].at < b[1].at ? 1 : -1)).slice(0, n).map(([k, v]) => ({ id: k.slice(c.length + 1), data: () => v })); return { forEach: (f) => L.forEach(f) }; } }) }) });
   const byM = {}; for (const r of L1) { const ym = r.split('\u0001')[2].slice(0, 7); (byM[ym] = byM[ym] || []).push(r); } for (const [ym, rows] of Object.entries(byM)) DB.set('ml_sales/' + ym, { ym, rows });
@@ -105,6 +107,8 @@ console.log('⑥ 회차 전체(가짜 Firestore)');
   DB.set('ml_sales/2026-10', { ym: '2026-10', rows: byM['2026-10'].slice(0, 50) }); T = now + 864e5; await ES.run(); const S3 = DB.get('app_settings/eng_self');
   ok(S3.saw.ledger.st === '❌' && S3.hs.H06.st === '지지' && S3.alerts.some((a) => a.lv === '🚨') && calls.notes.length === 0, '줄어든 장부는 판정에 안 씀(상태 그대로) · 🚨 알림 · 첫날은 카드 안 냄');
   T = now + 2 * 864e5; await ES.run(); ok(calls.notes.length === 1 && calls.notes[0][0].data.kind === 'card', '이틀째 그대로면 📓 카드 한 장');
+  { const ES2 = E.makeEngSelf({ C: (c) => ({ doc: () => ({ get: async () => { if (c === 'ml_sales') throw new Error('읽기 실패'); return { exists: false, data: () => undefined }; }, set: async () => {} }), get: async () => { throw new Error('읽기 실패'); } }), W: () => ({}), log: () => {}, nowIso: () => new Date(T).toISOString(), now: () => T });
+    let e1 = null; try { await ES2.run({}); } catch (e) { e1 = e; } const r9 = await ES2.run({}); ok(e1 && r9.skip && /1시간 쉼/.test(r9.skip), '회차가 실패하면 1시간 쉼(10분마다 되풀이 안 함) · 지금 한 번(force)은 그대로'); }
   const d = await ES.diag({}); ok(d.self && d.wires && Array.isArray(d.ledger) && d.ledger.length === 4, '진단 engself=1 — 요약·배선·장부 줄');
   console.log(bad ? `❌ ${bad}개 실패` : '✓ tENGSELF1114 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e.stack); process.exit(1); });
