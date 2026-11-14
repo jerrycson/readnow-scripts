@@ -16,7 +16,11 @@ const DOC = 'col2_handoff';
 const FRESH_H = 3; /* 웹앱 C2HO_FRESH_H와 같음 */
 /* 차례표 — 한 줄 = 한 PC의 한 일. 다음 줄은 앞 줄이 실제로 도는 것(진단 recentUp 'writer 번외 <PC>')을 확인한 뒤 더함 */
 const SEED = [
-  { id: 'rv5-1113-nl-home', k: 'ext.nl', pc: 'HOME', on: true, minV: '0.1.25', task: 'ext.nl', why: '국립중앙도서관 ISBN 서지 — 11/13 HOME 102건 모두 같음 · 로그인 없음 · 돈 무관' }
+  { id: 'rv5-1113-nl-home', k: 'ext.nl', pc: 'HOME', on: true, minV: '0.1.25', task: 'ext.nl', why: '국립중앙도서관 ISBN 서지 — 11/13 HOME 102건 모두 같음 · 로그인 없음 · 돈 무관' },
+  /* (11/14 일꾼 col2seed) 둘째 줄 — 국중 → HOME이 하루 문제없음(맥박 11/14 00:15Z · 운영 JS-MAIN·HOME 기록 '국립중앙도서관은 번외 수집기(HOME)로 넘김' 6번·다시 물음 0 · 번외 HOME 오류 0) 확인 뒤.
+   *  needSame: 11/12·11/13 번외 환율은 수출입은행 키를 못 받아(그 PC 웹앱이 키를 건네야 함) frankfurter로 읽어 '출처 다름'이었음 — 그대로 넘기면 번외는 쓰지 않고(수출입은행만 씀) 운영만 쉼.
+   *  그래서 그 PC 번외가 운영과 같은 값(=수출입은행 고시)을 1건 이상 읽은 날에만 넘김 */
+  { id: 'c2s-1114-fx-home', k: 'ext.fx', pc: 'HOME', on: true, minV: '0.1.25', task: 'ext.fx', needSame: 1, why: '💱 환율(수출입은행) — 하루 1건 · 로그인 없음 · 돈 무관 · HOME 번외가 수출입은행 고시를 운영과 같게 읽은 날' }
 ];
 const LG_JOBS = new Set(['dynamic', 'shopSum', 'bench']); /* 웹앱 C2HO_JOBS lg:true와 같음 */
 const verGE = (a, b) => { const p = (s) => String(s || '').split('.').map((x) => +x || 0); const A = p(a), B = p(b); for (let i = 0; i < Math.max(A.length, B.length); i++) { if ((A[i] || 0) !== (B[i] || 0)) return (A[i] || 0) > (B[i] || 0); } return true; };
@@ -37,6 +41,7 @@ function decide(s, doc, days, solo, now) {
   const at = Date.parse(d.at || '') || 0; if (!at || now - at > FRESH_H * 3600e3) return { act: 'wait', why: `${pc} 번외 소식이 ${FRESH_H}시간 넘게 없음` };
   if (!verGE(d.ver, s.minV || '0.1.25')) return { act: 'wait', why: `${pc} 번외 ${d.ver || '?'} — ${s.minV} 이상 필요` };
   const P = (d.tasks[s.task || s.k] || {}).pass || {}; if (P.can !== true) return { act: 'wait', why: `아직 '넘길 수 있음' 아님(${String(P.why || '판정 없음').slice(0, 60)})` };
+  if (s.needSame) { const T = d.tasks[s.task || s.k] || {}; if (!((+T.same || 0) >= s.needSame)) return { act: 'wait', why: `${pc} 번외가 운영과 같은 값을 아직 ${+T.same || 0}/${s.needSame}건${(T.why || {}).ext ? ' (출처 다름 ' + T.why.ext + ' — 번외가 운영 키를 못 받음)' : ''}` }; } /* (11/14 col2seed) */
   return { act: 'on', why: s.why || '넘길 수 있음' };
 }
 function makeSeed({ db, C, log, seed }) {
