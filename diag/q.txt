@@ -1,2 +1,2 @@
-doc=app_settings/pxDaily
-# 3216918253
+recentUp=px_exp&mins=300
+# 125424795
