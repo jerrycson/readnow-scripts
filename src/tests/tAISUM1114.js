@@ -47,6 +47,8 @@ const M = A.learn({}, [{ src, kw: ['사계절', '노트', '하린', '편지', '�
 ok(M.pick['사계절'] && M.pick['사계절'][0] === 1 && M.tpl.t1[1][0] === 1 && M.N === 1, '고른 몫·틀 이긴 몫·문서 수');
 const g3 = A.engWrite(src, M); ok(g3.kw.includes('사계절') && g3.kw.includes('노트'), `배운 뒤 키워드: ${g3.kw.join(',')}`);
 
+{ const big = { v: 'm1', N: 3, df: Object.fromEntries(Array.from({ length: 20000 }, (_, i) => ['w' + i, i])), pick: { a: [1, 2] }, tpl: { t1: { 0: [1, 0] }, t2: {} } }; const st = A.modelIn(big); const back = A.modelOut(st);
+  ok(typeof st.dfJ === 'string' && Object.keys(st).every((k) => typeof st[k] !== 'object') && JSON.stringify(st).length < 900000 && Object.keys(back.df).length === 12000 && back.pick.a[1] === 2 && back.tpl.t1[0][0] === 1, '모형 저장 꼴: 지도 칸 없이 글 한 칸 · 1MB 안 · 되읽기 같음'); }
 console.log('⑧ 이음 — 클라우드·우리숍·웹앱');
 const IX = fs.readFileSync(path.join(REPO, 'cloud/index.js'), 'utf8'); ok(/require\('\.\/aisum\.js'\)\.makeAiSum/.test(IX) && /J0\.aisum \? await AISUM\.put/.test(IX) && /AISUM\.judge/.test(IX) && /if \(q\.aisum\)/.test(IX) && /AISUM\.daily\(\)/.test(IX), '클라우드: 받기·견줌·진단·매일 회차');
 const SH = fs.readFileSync(path.join(REPO, 'cloud/shop.js'), 'utf8'); ok(/aiSumOf\(it\.isbn\)/.test(SH) && /\.\.\.\(ai \? \{ ai \} : \{\}\)/.test(SH), '숍 서버: /shop/item에 ai');
@@ -54,5 +56,6 @@ const SJ = fs.readFileSync(path.join(REPO, 'shop/shop.js'), 'utf8'); ok(/\$\{aiS
 const W = fs.readFileSync(path.join(REPO, 'src/app.html'), 'utf8'); ok(/SEC\('요약·추천글', \(\) => aisCardHtml\(l, b\)\)/.test(W) && /function openAiSum\(\)/.test(W) && /aisum: \['✍ 요약·추천글 엔진'/.test(W) && /N14: \['✍ 상품 요약·추천글 엔진', 'aisum'\]/.test(W), '웹앱: 상품 상세 카드·연구 페이지·연구 목록');
 ok(/human: \{ \.\.\.g, at:/.test(W) && !/human:/.test(A.makeAiSum.toString().replace(/v\.human|d0\.human|ex\.human|d\.human|doc\.human|other|human\.at|'human\.at'/g, '')), '사람 글은 웹앱만 씀 · 클라우드 쓰기에는 human 칸이 없음');
 ok(!/\b(alert|confirm|prompt)\(/.test(W.slice(W.indexOf('/* ══ (aisum1'), W.indexOf('function openFound()'))), '브라우저 팝업 없음');
+ok(/path === '\/shop\/ailist'/.test(SH) && /if \(R\.name === 'ai'\) return aiPage/.test(SJ) && /href=\\?"#\/ai\\?"/.test(SJ) && (SJ.match(/aisum-tmp/g) || []).length >= 3, '임시 페이지 #/ai — 숍 창구·화면 길·첫 화면 링크(임시 표시)');
 const RJ = JSON.parse(fs.readFileSync(path.join(REPO, 'facts-docs/research.json'), 'utf8')); ok(RJ.studies.some((x) => x.id === 'N14' && x.open === 'aisum'), '공개 연구 목록에 N14');
 console.log(`\n${fail ? '❌' : '✓'} tAISUM1114 ${pass}개 통과 · ${fail}개 실패`); process.exit(fail ? 1 : 0);
