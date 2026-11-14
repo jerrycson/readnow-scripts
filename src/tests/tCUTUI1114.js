@@ -39,6 +39,11 @@ const SCENE = `(() => { let seed = 11; const rnd = () => ((seed = (seed * 110351
       ok(E.e && E.e.recs && E.e.recs.length >= 3 && E.e.recs.some((x) => x.ok === false) && E.e.log && E.e.log.length >= 2 && E.e.tot.items === 6, '엔진 요약: 확인 기록(맞음·고침)·일지·판별 수', E.e && { recs: E.e.recs, log: E.e.log, tot: E.e.tot });
       ok(E.e && E.e.cal && E.e.cal.back && E.e.cal.back.n >= 3 && E.e.stage === 2, '배우기 결과(방법마다 확인 수·문턱)·단계 2', E.e && E.e.cal);
       ok(E.pu && E.pu.studies && E.pu.studies.V01 && E.pu.studies.V01.at, '🧬 진화 증거 V01', E.pu); ok(E.ses.length === 1, '판별 기록 ppt_sessions/cut_…', E.ses);
+      /* 글자로 찾기(견본 그림 없이) — ✎ 고치기에 제목 몇 글자 → 후보 → 고름 */
+      await p.evaluate(() => { S.plist = new Map([['L1', { isbn13: '9788936434120', title: '소년이 온다', author: '한강', publisher: '창비' }], ['L2', { isbn13: '9788936433598', title: '채식주의자', author: '한강', publisher: '창비' }]]); cutDraw(); });
+      await p.click('[data-cutfix="2"]'); await p.fill('[data-cutfixin]', '소년이온다 한강'); await p.click('[data-cutfixgo]'); await p.waitForSelector('[data-cutpick="0"]', { timeout: 3000 }).catch(() => {});
+      const pickT = await p.evaluate(() => (document.querySelector('[data-cutpick="0"]') || {}).textContent || ''); ok(/소년이 온다/.test(pickT), '글자로 찾기 → 첫 후보 소년이 온다', pickT);
+      await p.click('[data-cutpick="0"]'); await p.waitForTimeout(300); ok(await p.evaluate(() => S.cut.items[1].isbn === '9788936434120' && S.cut.items[1].human === 'fix'), '고르면 그 ISBN · 사람 고침 기록');
       /* 앞면(같은 자리) */
       await p.evaluate(async () => { S.cut.mode = 'front'; const sc = await window.__mk('front'); await cutRun(sc.file); }); await p.waitForFunction(() => S.cut && S.cut.mode === 'front' && S.cut.items.length && !S.cut.busy, null, { timeout: 20000 }).catch(() => {});
       const f = await p.evaluate(() => ({ n: S.cut.items.length, isbn: S.cut.items.map((b) => b.isbn), way: S.cut.pairWay, back: S.cutLast.items.map((b) => b.isbn) }));
