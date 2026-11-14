@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "y24ops1",
+ "what": "웹앱 1.78.646 올리기(검사 이름표 다툼으로 막힌 push 다시)",
+ "since": "2026-11-14T11:13:56Z",
+ "beat": "2026-11-14T11:13:56Z",
  "ask": null,
  "last": {
   "who": "headless1",
   "done": "웹앱 1.78.646 · 클라우드 0.35.260 · 번외 0.1.66 · ef03ac1b",
   "at": "2026-11-14T11:13:47Z"
  },
- "host": null
+ "host": "vm-y24ops1"
 }
