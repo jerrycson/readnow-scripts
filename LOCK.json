@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "pwatch1",
+ "what": "가격 감시 대상 0 스스로 알아채기 — 웹앱·클라우드 판",
+ "since": "2026-11-14T08:11:50Z",
+ "beat": "2026-11-14T08:11:50Z",
  "ask": null,
  "last": {
   "who": "engself1",
   "done": "클라우드 0.35.252 · 7bfe005d",
   "at": "2026-11-14T08:08:49Z"
  },
- "host": null
+ "host": "vm-pwatch1"
 }
