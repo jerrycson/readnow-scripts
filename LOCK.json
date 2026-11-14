@@ -1,13 +1,13 @@
 {
- "holder": "mgmt1",
- "what": "1.78.648 push",
- "since": "2026-11-14T11:24:30Z",
- "beat": "2026-11-14T11:25:39Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "mjcode1",
-  "done": "웹앱 1.78.647 — 미등록 상품 관리 코드 붙박기 · 알라딘 바로 장바구니 (b15fbbca)",
-  "at": "2026-11-14T11:24:24Z"
+  "who": "mgmt1",
+  "done": "웹앱 1.78.648 · 경영 2차 · 6f4bc2bf",
+  "at": "2026-11-14T11:29:35Z"
  },
- "host": "vm-mgmt1"
+ "host": null
 }
