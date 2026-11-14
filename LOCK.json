@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "engself1",
+ "what": "클라우드 엔진 감시·달 순위(engself1)",
+ "since": "2026-11-14T09:32:31Z",
+ "beat": "2026-11-14T09:32:31Z",
  "ask": null,
  "last": {
   "who": "shipfix1",
   "done": "웹앱 1.78.637 · ALPS 도우미 0.5.8(지역 보류) · d8160e45",
   "at": "2026-11-14T09:32:24Z"
  },
- "host": null
+ "host": "vm-engself1"
 }
