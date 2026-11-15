@@ -103,7 +103,7 @@ function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + 
 }
 function runOne(P, t, port, tmo) {
   return new Promise((res) => { const t0 = Date.now(); let out = '';
-    const c = cp.spawn('node', [t + '.js'], { cwd: P, env: { ...process.env, RN_PORT: String(port), RN_APP: path.join(P, '..', 'app.html') }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const c = cp.spawn('node', [t + '.js'], { cwd: P, env: { ...process.env, RN_PORT: String(port), RN_APP: path.join(P, '..', 'app.html'), RN_GIT_REPO: TOP }, stdio: ['ignore', 'pipe', 'pipe'] });
     const k = setTimeout(() => { out += `\n❌ 시간 넘음(${tmo}초)`; try { c.kill('SIGKILL'); } catch (e) {} }, tmo * 1000);
     c.stdout.on('data', (d) => { out += d; }); c.stderr.on('data', (d) => { out += d; });
     c.on('close', (code) => { clearTimeout(k); res(judge(t, out, code, Date.now() - t0)); }); });
