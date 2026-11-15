@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "date": "2026-11-16",
-  "version": 19,
+  "version": 20,
   "userApproved": false,
   "confidence": "not-ready",
   "scope": "기본 전신과 얼굴 · 남녀 2~8등신 · 45도 전체 회전",
   "deferred": "기본형이 안정될 때까지 몸매 30종 이상의 수량 확대와 의상·생물·동작·소품 확장 보류",
-  "activeStudy": "한쪽 손·발 분리 관찰과 전신 자세의 접지 관계 검토"
+  "activeStudy": "발 정렬 후 전신 조화 검토, 성인 흉곽·가슴·겨드랑이 연결 대조"
 }

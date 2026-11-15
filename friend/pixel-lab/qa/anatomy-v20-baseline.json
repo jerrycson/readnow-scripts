@@ -1,0 +1,110 @@
+{
+  "version": 19,
+  "note": "20차 발 정렬 전 성인 상체·머리 좌표와 자연형 표시",
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "natural",
+      "upperHash": "1e1d9b6c11445ad50df3282ef6ca1ad720100ecdcd0410639d0317c64452f909",
+      "imageHash": "6bb445df4eef26b63a1afc99907a98d68f4fb3b6b02e3eee35048f35ee6bc2e1"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "manga",
+      "upperHash": "c9d84d491f966bd857de7dc32e183db1966eb263a4a0bcc8d092dc186e5da38e"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "natural",
+      "upperHash": "dcc7751407ca3437652f33bbe60096ed66a0d0d33f5b1cad53b7417cf04c4ae2",
+      "imageHash": "f2884f13a0bc98ba74babb86e88de549afdcb60d81c1125b006deb04366660c4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "manga",
+      "upperHash": "80a418a459aa0efece521f142bc8c76dc2af6c6d836f86f02fcde330881815e5"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "natural",
+      "upperHash": "90ed883f820d49f984c0321a2f3cf56709a12465a9c36110fd52090999c34996",
+      "imageHash": "96b874970e0bbaf3e6081da5b90d2a97765a58cdefed73194d38ff7a15db11aa"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "manga",
+      "upperHash": "39c100c45d8735ccb12e2740041f24421778a7e8e8fb65ba338f06bf91d9826f"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "natural",
+      "upperHash": "d7685f5f1ffc871380d1241784662b27c69db4270c1a46df58abea570ebb2721",
+      "imageHash": "c1a1cb0fb1dedc97677b958bf7b86a233c68ea9951049209155317fac3867481"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "manga",
+      "upperHash": "523cedad799d6aa75be9467d76dea1bef9ed8cf901a4c6bd800763d11ed3566d"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "natural",
+      "upperHash": "81802605cd748a234548f518bf19ac1501c36c901efad4850df3e21947f3f919",
+      "imageHash": "71a2a45b365e338c8e001503677c18fe6d6ebc6dde1d7746077bc4de5ca2e3b5"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "manga",
+      "upperHash": "f42db0bb446ff878f76dbcb058565b67a223b68de5f2ab734a841a788ffad94b"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "natural",
+      "upperHash": "51cf23b48f26699989e7b1a287516b12d88b3ba55ea475c09734b6f2ec86787f",
+      "imageHash": "c144a6bc5aca659a4efdb5b19a2f1e4284383432d9512a8856e462608de935a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "manga",
+      "upperHash": "3686c6b1d0ab2e1e16f40877e4cd2ea08a0dfe061aa8fdea5c90e36c52d92de6"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "natural",
+      "upperHash": "c6b30b138c65d8eb51ed1a010fd1c49c317f4ae26ba6c201f0bdc94d540997a3",
+      "imageHash": "c97525eafa8be8116c341ffc90f266e7e5aeff5e5bbc480bc980be1db759110c"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "manga",
+      "upperHash": "20688ed6566c3a0ae5aea3b35e57a51d7d84d8ae35e59d8b4dff7657522423be"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "natural",
+      "upperHash": "78747cb24b725a89bef9d628dc60ab685e79fdb2c79ffd34e162c4caeb0b06a5",
+      "imageHash": "e18ff7091b6667ab7e448ab08f20c2b04c6af89e2a79dc67653ec415125ed801"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "manga",
+      "upperHash": "2f7d413aab805d415dba108daf9c85328ac01b220472650e97109da014c63bad"
+    }
+  ]
+}
