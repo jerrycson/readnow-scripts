@@ -27,6 +27,7 @@ jobs:
           node src/tests/standalone/run.cjs
           node src/tests/tSHIPPC.js
           node src/tests/tSENDPREP1115.js
+          node src/tests/tSHOP9_1112.js
 
   shop-browser:
     runs-on: ubuntu-latest
@@ -43,6 +44,8 @@ jobs:
           export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
           RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
           node src/tests/tORDERCLIENT.js
+          node src/tests/tCARTSTORE.js
+          RN_UI=1 node src/tests/tSHOP9_1112.js
           node src/tests/standalone/shelf-browser.cjs
 
       - name: 고정된 서버 계약 의존 코드 준비

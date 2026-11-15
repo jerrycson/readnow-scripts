@@ -50,6 +50,58 @@ async function run() {
   const sendOrder = async h => { h.expectWrites(1); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.settle(); const req = h.hold((u, r) => u.pathname === '/shop/order-attempt' && r.method() === 'POST'); await fillOrder(h); await submitForm(h); req.body = await req.seen; return req; };
   const received = { ok: true, no: 'BQ20261116-AAAAA', t: 'a'.repeat(32), total: 2000, items: [BOOK] };
   try {
+
+    async function secondTab(h,hash){const p=await h.ctx.newPage();p.on('pageerror',e=>h.errors.push(e.message));await p.addInitScript(base=>{window.BQ_API=base;},h.base);await p.goto(h.base+'/s/index.html'+(hash||'#/wish'));return p;}
+    async function holdCart(p){await p.evaluate(()=>{window.cartHold=navigator.locks.request(BQCartStore.LOCK,async()=>{window.cartHeld=true;await new Promise(r=>window.releaseCart=r);});});await p.waitForFunction(()=>window.cartHeld);}
+    const cartSaveFault=()=>{const original=Storage.prototype.setItem;window.cartSaveFails=true;Storage.prototype.setItem=function(k,v){if(k==='bq-cart'&&window.cartSaveFails)throw new DOMException('합성 저장 공간 거절','QuotaExceededError');return original.call(this,k,v);};};
+    await test('옛 시험 로그인 거절이 새 로그인과 장바구니를 지우지 않음',async h=>{
+      await h.p.evaluate(()=>{localStorage.setItem('bq-tok','synthetic-old-session');localStorage.setItem('bq-was-test','1');});h.expectWrites(1);const req=h.hold('/shop/a');await h.nav('#/me');await req.seen;await h.p.evaluate(()=>localStorage.setItem('bq-tok','synthetic-new-session'));req.release({ok:false,login:1,err:'합성 이전 로그인 끝남'},401);await h.settle();assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-tok')),'synthetic-new-session');assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-was-test')),'1');
+    });
+    await test('시험 정리가 잠금을 기다리는 사이 새 로그인은 목록 보존',async h=>{
+      const p=await h.ctx.newPage();await p.goto(h.base+'/s/synthetic-blank');await p.addScriptTag({url:h.base+'/s/cart-store.js'});await holdCart(p);await h.p.evaluate(()=>{localStorage.setItem('bq-tok','synthetic-old-session');localStorage.setItem('bq-was-test','1');});h.expectWrites(1);const req=h.hold('/shop/a');await h.nav('#/me');await req.seen;req.release({ok:false,login:1,err:'합성 시험 로그인 끝남'},401);await h.p.waitForFunction(async()=>!!(await navigator.locks.query()).pending.length);await p.evaluate(()=>localStorage.setItem('bq-tok','synthetic-new-session'));await p.evaluate(()=>window.releaseCart());await h.settle();assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-tok')),'synthetic-new-session');assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-was-test')),'1');
+    });
+    await test('같은 시험 로그인의 종료 정리는 잠금 안에서 하며 주문 조회 주소 보존',async h=>{
+      await h.p.evaluate(()=>{localStorage.setItem('bq-tok','synthetic-old-session');localStorage.setItem('bq-was-test','1');localStorage.setItem('bq-orders','[{"no":"BQ20261116-00001","t":"synthetic-lookup"}]');});h.expectWrites(1);const req=h.hold('/shop/a');await h.nav('#/me');await req.seen;req.release({ok:false,login:1,err:'합성 시험 로그인 끝남'},401);await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===0);assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-orders')).length),1);assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-was-test')),null);
+    });
+    await test('시험 정리의 잠금 도구가 없으면 직접 삭제로 우회하지 않음',async h=>{
+      await h.p.evaluate(()=>{localStorage.setItem('bq-tok','synthetic-old-session');localStorage.setItem('bq-was-test','1');Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});});h.expectWrites(1);const req=h.hold('/shop/a');await h.nav('#/me');await req.seen;req.release({ok:false,login:1,err:'합성 시험 로그인 끝남'},401);await h.settle();assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-was-test')),'1');assert.match(await h.p.locator('#toast').textContent(),/저장 기능을 사용할 수 없습니다/);
+    });
+    await test('실제 저장 직전 탭을 멈춰도 다른 탭 추가를 잠금 뒤에 보존',async h=>{
+      await h.nav('#/b/TEST-B');await h.p.locator('#add').waitFor();const p=await secondTab(h,'#/b/TEST-C');await p.locator('#add').waitFor();
+      const code=fs.readFileSync(path.join(ROOT,'shop/cart-store.js'),'utf8'),pos=code.indexOf('s.setItem(key, text)');assert(pos>=0);const before=code.slice(0,pos),lineNumber=before.split('\n').length-1,columnNumber=before.length-before.lastIndexOf('\n')-1;
+      const url=await h.p.evaluate(()=>[...document.scripts].map(x=>x.src).find(x=>x.includes('/cart-store.js'))),cdp=await h.ctx.newCDPSession(h.p);await cdp.send('Debugger.enable');const bp=await cdp.send('Debugger.setBreakpointByUrl',{url,lineNumber,columnNumber});assert(bp.locations.length);let click;
+      try{const stopped=new Promise(r=>cdp.once('Debugger.paused',r));click=h.p.locator('#add').click().catch(e=>e);await stopped;await cdp.send('Debugger.removeBreakpoint',{breakpointId:bp.breakpointId});await p.locator('#add').click();await p.waitForFunction(async()=>!!(await navigator.locks.query()).pending.length);assert.deepEqual(await p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).map(x=>x.id)),['TEST-A']);await cdp.send('Debugger.resume');await click;await p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===3);assert.deepEqual(await p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).map(x=>x.id).sort()),['TEST-A','TEST-B','TEST-C']);}
+      finally{await cdp.send('Debugger.resume').catch(()=>{});await cdp.detach();if(click)await click;}
+    });
+    await test('저장이 잠금을 기다리는 동안 성공 안내를 먼저 표시하지 않음',async h=>{
+      const p=await secondTab(h);await holdCart(p);await h.nav('#/b/TEST-B');await h.p.locator('#add').click();await h.p.waitForFunction(async()=>!!(await navigator.locks.query()).pending.length);assert.doesNotMatch(await h.p.locator('#toast').textContent(),/담았습니다/);assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);await p.evaluate(()=>window.releaseCart());await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===2);await h.settle();assert.match(await h.p.locator('#toast').textContent(),/담았습니다/);
+    });
+    await test('담기 저장 실패는 성공 안내 없이 기존 목록 보존',async h=>{
+      await h.p.evaluate(cartSaveFault);await h.nav('#/b/TEST-B');await h.p.locator('#add').click();await h.settle();assert.match(await h.p.locator('#toast').textContent(),/안전하게 저장하지 못했습니다/);assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);
+    });
+    await test('주문 준비 저장 실패는 접수 0회이며 입력과 장바구니 보존',async h=>{
+      await h.nav('#/order');await h.p.locator('#f_name').waitFor();await h.settle();await fillOrder(h);const before=await h.p.evaluate(()=>localStorage.getItem('bq-cart'));await h.p.evaluate(cartSaveFault);await submitForm(h);await h.settle();assert.match(await h.p.locator('#oerr').textContent(),/안전하게 저장하지 못했습니다/);assert.equal(await h.p.locator('#f_name').inputValue(),'가상 주문자');assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-cart')),before);assert.equal(h.ledger.size,0);assert.equal((await h.p.evaluate(()=>BQOrderJournal.create().read())).active,null);
+    });
+    await test('잠금 도구가 없으면 담기와 주문 전송을 우회하지 않음',async h=>{
+      await h.p.evaluate(()=>Object.defineProperty(navigator,'locks',{configurable:true,value:undefined}));await h.nav('#/b/TEST-B');await h.p.locator('#add').click();await h.settle();assert.match(await h.p.locator('#toast').textContent(),/저장 기능을 사용할 수 없습니다/);await h.nav('#/order');await h.settle();assert.equal(await h.p.locator('#of').count(),0);assert.match(await h.p.locator('#main').textContent(),/저장 기능을 사용할 수 없습니다/);assert.equal(h.ledger.size,0);
+    });
+    await test('옛 파일에 저장 모듈이 빠져도 원래 쓰기로 우회하지 않음',async h=>{
+      await h.ctx.route('**/cart-store.js*',r=>r.fulfill({status:200,contentType:'text/javascript',body:''}));await h.p.reload();await h.nav('#/b/TEST-B');await h.p.locator('#add').click();await h.settle();assert.match(await h.p.locator('#toast').textContent(),/저장 기능을 준비하지 못했습니다/);assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),1);
+    });
+    await test('손상 장바구니는 주문 없음으로 바꾸지 않고 확인 안내',async h=>{
+      await h.p.evaluate(()=>localStorage.setItem('bq-cart','{합성 손상}'));await h.nav('#/cart');await h.settle();assert.match(await h.p.locator('#main').textContent(),/안전하게 저장하지 못했습니다/);assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-cart')),'{합성 손상}');
+    });
+    await test('접수 후 장바구니 저장 실패에도 조회 주소 보존과 새 구매 보류',async h=>{
+      const req=await sendOrder(h);await h.p.evaluate(cartSaveFault);req.release(received);await h.p.locator('#orecheck').waitFor();assert.match(await h.p.locator('#main').textContent(),/앞선 주문이 접수/);assert.equal(await h.p.locator('#main a[href*="done/"]').count(),1);assert.equal(await h.p.locator('#orenext').count(),0);assert.equal((await h.p.evaluate(()=>BQOrderJournal.create().read())).active.state,'completed');assert.equal(h.ledger.size,1);await h.p.evaluate(()=>window.cartSaveFails=false);await h.p.locator('#orecheck').click();await h.p.locator('#orenext').waitFor();assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).length),0);assert.equal(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-orders')).length),1);
+    });
+    await test('옛 서가 파일은 비동기 담기 결과를 성공으로 오해하지 않음',async h=>{
+      await h.ctx.route('**/shelf.js*',r=>r.fulfill({status:200,contentType:'text/javascript',body:'window.BQShelf={mount(){window.badMount=true;}};'}));await h.nav('#/shelf?demo=5');await h.p.locator('#again').waitFor();assert.match(await h.p.locator('#main').textContent(),/서가 화면을 새로 고친 뒤/);assert.equal(await h.p.evaluate(()=>!!window.badMount),false);
+    });
+    await test('저장 대기 중 도착한 쿠폰 응답이 이미 제출한 금액 의도를 바꾸지 않음',async h=>{
+      await h.ctx.route('**/shop/cfg',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...CFG,promo:{coupon:true}})}));await h.p.reload();await h.p.evaluate(()=>BQCartStore.create().prepare());await h.nav('#/order');await h.p.locator('#f_cp').waitFor();await h.settle();await fillOrder(h);const p=await secondTab(h);await holdCart(p);
+      const quote=h.hold('/shop/quote');await h.p.locator('#f_cp').fill('SYNTHETIC');await h.p.locator('#cpgo').click();await quote.seen;quote.release({ok:true,items:[BOOK],bad:[],n:1,sum0:2000,bundle:0,coupon:{nm:'합성 할인',d:1000},sum:2000,fee:0,total:1000,free:null});await h.p.waitForFunction(async()=>!!(await navigator.locks.query()).pending.length);
+      h.expectWrites(1);const sent=h.hold('/shop/order-attempt');await submitForm(h);await h.p.waitForFunction(async()=>(await navigator.locks.query()).pending.length>=2);await p.evaluate(()=>window.releaseCart());const body=await sent.seen;assert.equal(body.expect,2000);assert.equal(body.cp,undefined);sent.release(received);await h.p.locator('.done').waitFor();
+    });
     async function replaceInOtherTab(h){
       const p=await h.ctx.newPage();p.on('pageerror',e=>h.errors.push(e.message));await p.addInitScript(base=>{window.BQ_API=base;},h.base);
       await p.goto(h.base+'/s/index.html#/cart');await p.locator('[data-del="TEST-A"]').waitFor();await p.waitForTimeout(150);

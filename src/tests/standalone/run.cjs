@@ -7,7 +7,7 @@ async function run() {
   for (const file of ['shop/shop.js', 'cloud/shop.js', 'src/app.html', 'readnow-exec-core.js', 'local/readnow-alps.js']) {
     results.push({ name: '시험 변경 감지: ' + file, ok: policy.CODE_RE.test(file) && policy.requiredTests([file]).length > 0 });
   }
-  const files = ['shop/order-journal.js', 'shop/shop.js', 'shop/shop-core.js', 'shop/shelf.js', 'readnow-exec-core.js', 'cloud/shop.js', 'cloud/index.js', 'local/readnow-alps.js', 'src/readnow-collector.src.js', 'src/tools/test-gate.js', 'src/tools/test-policy.cjs', 'hosting/build.js'];
+  const files = ['shop/cart-store.js', 'shop/shop-acct.js', 'shop/order-journal.js', 'shop/shop.js', 'shop/shop-core.js', 'shop/shelf.js', 'readnow-exec-core.js', 'cloud/shop.js', 'cloud/index.js', 'local/readnow-alps.js', 'src/readnow-collector.src.js', 'src/tools/test-gate.js', 'src/tools/test-policy.cjs', 'hosting/build.js'];
   for (const f of files) { try { new vm.Script(fs.readFileSync(path.join(root, f), 'utf8'), { filename: f }); results.push({ name: '구문: ' + f, ok: true }); } catch (e) { results.push({ name: f, ok: false, error: e.stack }); } }
   let n = 0; for (const m of fs.readFileSync(path.join(root, 'src/app.html'), 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) { if (/\bsrc\s*=/.test(m[1]) || /application\/(?:ld\+)?json/.test(m[1])) continue; try { new vm.Script(m[2]); results.push({ name: '웹앱 스크립트 ' + ++n, ok: true }); } catch (e) { results.push({ name: '웹앱 스크립트 ' + ++n, ok: false, error: e.stack }); } }
   return results;
