@@ -51,7 +51,9 @@
 <li data-card><a href="#section-51">51. 정강이의 면과 발목 전이</a></li>
 <li data-card><a href="#section-52">52. 허벅지 안쪽&#183;바깥쪽과 무릎 위의 연결</a></li>
 <li data-card><a href="#section-53">53. 28차 다리의 부피 분리와 512px 관찰</a></li>
-<li data-card><a href="#section-54">54. 29차 — 작은 전신의 길이&#183;폭&#183;명암을 분리해 비교</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
+<li data-card><a href="#section-54">54. 29차 — 작은 전신의 길이&#183;폭&#183;명암을 분리해 비교</a></li>
+<li data-card><a href="#section-55">55. 30차 — 등신별 턱&#183;눈&#183;코&#183;귀의 관계</a></li>
+<li data-card><a href="#section-56">56. 30차 전체 모아보기 — 남아 있는 품질 문제</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
 <p><a href="../../pixel-lab/">기본형 연구실 열기</a> · <a href="journal.html">실행 일지</a> · <a href="architecture.html">복구 범위</a></p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 골격에서 연속적인 몸으로</h2>
 <p><strong>한 줄:</strong> 흉곽·골반·관절의 연결이 먼저다.</p>
@@ -507,4 +509,25 @@
 <p><a href="../../pixel-lab/studies/chibi-v29-body.png">28차·C·D 전신 비교</a> · <a href="../../pixel-lab/studies/chibi-v29-face.png">남녀 얼굴 명암 전후</a> · <a href="../../pixel-lab/continuous-review.html">실제 회전</a></p>
 <p><strong>한계:</strong> 어깨의 볼록한 연결과 무릎 전후의 곡률, 단조로운 얼굴이 남아 있다. 명암이 부드러워졌다는 이유로 귀여움이나 인체의 완성을 주장하지 않는다. 다음 비교는 2·3·4등신별 얼굴의 위치·턱 윤곽을 따로 설계하는 것이다. 사용자 승인과 체형·콘텐츠 확장은 계속 보류한다.</p>
 <p><strong>29차 검증:</strong> 작은 기본형 검사 6/6, 전체 회전표 14/14·896방향을 통과했다. 몸통·사지가 하나의 닫힌 표면으로 이어지고 발바닥이 바닥 높이에 맞는다. 작은 얼굴 18종의 좌표·법선·면과 성인 전신 16종의 실제 렌더가 28차와 동일함을 확인했다. 384개 작은 전신 시점도 생성 범위를 통과했다. 이는 연결·회귀 검사이며 미적 완성이나 완전한 자기 교차 검사가 아니다. 이번 단계의 브라우저 클릭은 수행하지 않았다.</p>
+</article>
+<article id="section-55" data-card><h2>55. 30차 — 등신별 턱·눈·코·귀의 관계</h2>
+<p><strong>한 줄:</strong> 2·3·4등신의 얼굴을 같은 배치로 복사하지 않는다.</p>
+<p><strong>한 문장:</strong> 머리의 높이를 유지한 채 낮은 등신의 낮고 둥근 이목구비와 4등신의 더 분명한 턱·코를 별도로 조정하고, 귀도 눈의 높이에 맞춰 함께 이동했다.</p>
+<p><strong>주요 개념:</strong> 두개골과 턱, 낮은 얼굴 요소, 볼과 코의 앞뒤 관계, 귀 부착, 부분 변경의 전신 영향.</p>
+<p><strong>문제:</strong> 29차까지 작은 얼굴은 모든 등신에서 눈 중심이 턱 위 0.35 머리 단위에 있었다. 머리 폭만 달라졌고 턱과 눈·코의 상대 배치는 거의 같았다. 4등신에서는 코가 눈 주변의 큰 둥근 면보다 뒤로 들어가 보였고, 아래턱도 2등신과 비슷한 넓은 모양이었다. 이번에는 이 차이를 실제 정면·45도·측면·뒷면 렌더로 확인했다.</p>
+<p><strong>후보 A:</strong> 눈 중심을 2·3·4등신별 0.32·0.36·0.40으로 나누고, 눈 폭과 위·아래 윤곽도 조금씩 달리했다. 코와 입은 새 눈 위치에 연동했다. 턱의 낮은 단면 폭을 줄이되 2등신의 변화는 작게, 4등신의 변화는 더 크게 했다. 코의 앞쪽 부피도 등신별로 나눴다. 귀의 구조는 유지하면서 부착 높이와 가로 위치를 새 두상 표면에 맞췄다.</p>
+<p><strong>후보 B:</strong> 눈을 더 내리고 턱을 더 좁히며 코를 더 앞으로 내밀었다. 2등신까지 턱이 뾰족해지고 눈이 과하게 아래로 모이는 인상이 있어 채택하지 않았다. 이번 실험의 A/B는 화면에 있는 단순한 눈·큰 홍채·넓은 머리의 A/B/C 선택과 별개다.</p>
+<p><strong>선택:</strong> A를 적용했다. 여성형 후보 비교 후 남성형과 전신 크기도 직접 보았다. 몸통·팔다리와 성인 모델을 바꾸지 않고 작은 얼굴만 고쳤다. 4등신의 측면에서 코와 턱을 구분하기 쉬워졌지만, 이것이 실제 해부학 비례의 정확한 재현이나 일본풍의 완성을 뜻하지 않는다. 얼굴의 개성·눈매·뺨의 곡면, 목과 턱 아래 연결은 더 발전시켜야 한다.</p>
+<p><a href="../../pixel-lab/studies/chibi-v30-face-female.png">여성형 29차·A·B 비교</a> · <a href="../../pixel-lab/studies/chibi-v30-face-male.png">남성형 29차·A 비교</a> · <a href="../../pixel-lab/studies/chibi-v30-body.png">전신 29차·A 비교</a></p>
+<p><strong>30차 검증:</strong> 작은 기본형 검사 6/6, 회전표 14/14·896방향, 얼굴 전용 검사 2/2를 통과했다. 얼굴의 432개 시점에서 두상 투영 경계를 확인하고 18개 얼굴의 뒷면에서 눈·홍채·반짝임이 비치지 않음을 확인했다. 작은 몸 6종의 형상·관절과 성인 전신 렌더 16종은 이전과 같다. 실제 브라우저 클릭·완전한 자기 교차 판정·사용자 미적 승인은 하지 않았다.</p>
+</article>
+<article id="section-56" data-card><h2>56. 30차 전체 모아보기 — 남아 있는 품질 문제</h2>
+<p><a href="../../pixel-lab/studies/anatomy-v30-overview-body.png">남녀 2~8등신 전신 모아보기</a> · <a href="../../pixel-lab/studies/anatomy-v30-overview-face.png">같은 기본형의 얼굴 모아보기</a></p>
+<p>남녀 14개 기본형의 정면·45도 전신과 얼굴을 원본 192px로 다시 렌더해 직접 확인했다. 이는 새 후보가 아닌 현재 구현 상태를 한 번에 비교하는 판이다. 전신은 화면 안에 들어오도록 등신별 배율이 다르며, 얼굴은 머리 단위의 크기를 맞춘다.</p>
+<p><strong>1. 4등신과 5등신 사이의 스타일 단절:</strong> 작은 독자 조형과 성인 기반 형상 사이에 턱·귀·목·몸통 표현의 차이가 크다. 현재는 각 형식의 시험 기본형이며 같은 캐릭터가 자연스럽게 성장한 연속 디자인이라고 볼 수 없다. 다음 단계에서는 4등신의 얼굴과 5등신의 얼굴을 같은 머리 단위로 맞대고 볼·턱·목의 연결부터 대조해야 한다.</p>
+<p><strong>2. 성인 어깨·겨드랑이:</strong> 전신에서 위팔이 몸통 옆에 평행하게 내려가는 인상이 남는다. 25차에서 시험한 어깨 변형 후보는 채택하지 않았고, 현재 형태가 해결됐다고 기록하지 않는다. 쇄골·삼각근·가슴과 위팔 사이의 앞뒤 경계, 팔 안쪽 여유를 45도와 측면에서 함께 수정해야 한다.</p>
+<p><strong>3. 성인 손과 팔 끝:</strong> 손의 길이는 조절했지만 손등·손바닥 방향과 손가락의 자연스러운 모임이 충분하지 않다. 정면 크기를 맞추는 것과 전완에서 손목으로 이어지는 회전은 다른 문제다. 한쪽 손 확대와 전신 크기를 번갈아 비교해야 한다.</p>
+<p><strong>4. 성인 얼굴의 턱·입:</strong> 여성형은 눈의 확대와 입술 명암 보정 뒤에도 턱과 입 주변이 딱딱하고, 사선에서 입이 앞으로 튀어나온 듯한 인상이 남는다. 남성형은 눈매·광대·턱의 개성이 단조롭다. 이마가 넓게 보이는 점에는 머리카락이 없는 기본형이라는 조건도 작용하지만, 머리카락으로 형상 문제를 덮는 방식으로 해결하지 않는다.</p>
+<p><strong>5. 작은 전신:</strong> 몸통과 사지는 더 잘 묶였으나 어깨·무릎의 볼록함, 몸통의 단순한 덩어리감이 남는다. 인체 연결을 잃지 않으면서 어떤 굴곡을 생략할지 더 비교해야 한다.</p>
+<p><strong>판정:</strong> 회전·연결 검사는 통과했지만 조형 완성도는 여전히 승인 전이다. 여성 30종 이상 체형, 의상, 다른 생물, 애니메이션으로 넘어가지 않는다. 이번 모아보기는 현재 결함을 숨기지 않고 다음 수정의 기준을 고정하는 자료다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
