@@ -26,6 +26,9 @@ const idOk = (id) => /^[A-Za-z0-9_.:@+-]{1,120}$/.test(String(id || '')) && !/^\
 function clean(d, isMeta) {
   const o = {}; if (!d || typeof d !== 'object' || Array.isArray(d)) return { o, bad: '모양' };
   for (const [k, v] of Object.entries(d)) {
+    const textLimit = k === 'body' ? BODY_MAX : (k === 'text' || k === 'draft' || k === 'quote') ? STR[k] : 0;
+    if (textLimit && v != null && String(v).length > textLimit) return { o: {}, bad: '길이 초과:' + k };
+
     if (v === null) { if (k === 'body' || STR[k] || ['kind', 'state', 'imp', 'ord', 'tags', 'memoIds', 'pinned', 'archived', 'trashed', 'fwd'].includes(k)) o[k] = null; continue; }
     if (k === 'body') { o.body = s(v, BODY_MAX); continue; }
     if (STR[k]) { o[k] = s(v, STR[k]); continue; }
