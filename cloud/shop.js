@@ -100,6 +100,7 @@ const shelfParts = (rows) => { const P = []; for (let i = 0; i < rows.length; i 
 /* shop_holds 한 장이 지금 살아 있나 — until(다른 판매처 팔림 표시 · 하루)이 지나면 풂 */
 const STOCK = require('./shop-stock.js');
 const ATTEMPT = require('./shop-order-attempt.js');
+const ACCOUNT_ORDERS = require('./shop-account-orders.js');
 const holdOn = (h, now) => !!(h && h.on && !(h.until && Date.parse(h.until) < (now || Date.now())));
 const norm = (x) => String(x || '').toLowerCase().replace(/[\s\-_.,·:;!?'"()[\]{}<>/\\]+/g, '');
 /* 목록 거르기·정렬·쪽 — 순수 셈(시험 tSHOP1111) */
@@ -339,6 +340,8 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
       const finish = (result) => { out = result; if (attempt) { const saved = ATTEMPT.record(attempt, hash, result, new Date(now).toISOString()); tx.set(C('shop_order_attempts').doc(attempt.id), saved); out = ATTEMPT.reply(saved, attempt, hash); } };
       if (refusal) { finish(refusal); return; }
       if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) { finish([400, { ok: false, err: f.why, cp: 1 }]); return; } }
+      const account = au ? await ACCOUNT_ORDERS.read(tx, C, au.uid) : null;
+      if (account && !ACCOUNT_ORDERS.active(account.user)) { finish([403, { ok: false, login: 1, err: '계정 상태가 바뀌었습니다 — 로그인 상태를 확인한 뒤 다시 주문해 주세요' }]); return; }
       const ls = await tx.getAll(...refs); const hs = await tx.getAll(...v.ids.map((id) => C('shop_holds').doc(id))); const rs = await Promise.all(hs.map((h, i) => h.exists && h.data().schema === 2 ? tx.get(C('shop_reservations').doc(STOCK.id(v.ids[i], no))) : Promise.resolve({ exists: false })));
       const priorOrder = await tx.get(C('shop_orders').doc(no)); if (priorOrder.exists) { finish([409, { ok: false, err: '주문 번호를 다시 준비해야 합니다 — 잠시 뒤 다시 주문해 주세요' }]); return; }
       const bad = []; const lines = [];
@@ -357,8 +360,9 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
         ...(au ? { uid: au.uid } : {}), buyer: v.buyer, rcv: v.rcv, agree: { privacy: new Date(now).toISOString(), terms: new Date(now).toISOString(), ver: '2026-11-11' }, tokH: hashTok(tok), ipk: ik, ua: s(req.headers['user-agent'], 120),
         hist: [{ at: new Date(now).toISOString(), by: '손님', what: `주문 접수 ${(() => { const m = {}; for (const x of lines) { const it = CAT.items.get(String(x.lid)); const u = SC.unitOf(it && it.cp, x.t); m[u] = (m[u] || 0) + (x.qty || 1); } return ['권', '세트', '장', '개'].filter((u) => m[u]).map((u) => m[u] + u).join(' · ') || '0권'; })()} · ${total}원` /* (shopmisc1) 📏 책 권 · 음반 장 … */ }], uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' });
       for (const [i, x] of lines.entries()) { const h = hs[i].exists ? hs[i].data() : null; if (h && h.schema === 2) { const next = STOCK.reserve(h, rs[i].exists ? rs[i].data() : null, no, x.qty, ls[i].data().qty, true, new Date(now).toISOString()); tx.set(C('shop_holds').doc(x.lid), { ...next.hold, uploadedAt: FV.serverTimestamp() }); tx.set(C('shop_reservations').doc(STOCK.id(x.lid, no)), next.entry); } else tx.set(C('shop_holds').doc(x.lid), { on: 1, no, at: new Date(now).toISOString(), t: x.t, uploadedAt: FV.serverTimestamp() }); } /* (shopux1) 같은 책 둘째 권부터는 같은 잡아 둠 — 한 번만 씀 */
+      if (account) ACCOUNT_ORDERS.append(tx, account, [{ no, t: tok, at: new Date(now).toISOString(), total, n: lines.length }], new Date(now).toISOString());
       finish([200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, disc: q.disc || 0, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p, ...(x.qty > 1 ? { n: x.qty } : {}) })) }]); created = true; });
-    if (created && au && out && out[0] === 200) await ACCT.addOrder(au.uid, { no, t: out[1].t, at: new Date(now).toISOString(), total: out[1].total, n: out[1].items.length }).catch((e) => log && log('👤 주문을 계정에 잇지 못함', no, e.message));
+    if (created && au) ACCT.ordersChanged(au.uid);
     HELD.at = 0; if (created && out && out[0] === 200) log && log(`🛍 우리숍 주문 접수 ${no} · ${out[1].items.length}권`); return out || [500, { ok: false, err: '주문을 저장하지 못했습니다 — 잠시 뒤 다시' }];
   }
   async function orderStatus(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
