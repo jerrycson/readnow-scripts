@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-11-15T14:57:14.962Z",
+  "fingerprint": "b6e4012693eee1f69c683ecb7b186d924932e07a56b85c2acc5e529322682f04",
+  "sourceSummary": {
+    "total": 35,
+    "uniqueUrls": 35,
+    "duplicates": []
+  },
+  "collection": {
+    "checked": 35,
+    "available": 29
+  },
+  "memory": [
+    {
+      "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
+      "scope": "v2-tests",
+      "severity": 2,
+      "title": "울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
+      "evidence": "지원 동작의 8프레임·네 방향 누락과 잘림",
+      "next": "해당 크기·방향·동작을 고정하고 프레임의 차이가 읽히는 후보를 비교한다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"지원 동작의 8프레임·네 방향 누락과 잘림\""
+      ],
+      "observations": 1,
+      "priority": 204
+    },
+    {
+      "id": "source:cornell-bird:unavailable",
+      "scope": "source:cornell-bird",
+      "severity": 1,
+      "title": "출처 재확인 · cornell-bird",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:loc-walk:unavailable",
+      "scope": "source:loc-walk",
+      "severity": 1,
+      "title": "출처 재확인 · loc-walk",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-coat:unavailable",
+      "scope": "source:met-coat",
+      "severity": 1,
+      "title": "출처 재확인 · met-coat",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-dress:unavailable",
+      "scope": "source:met-dress",
+      "severity": 1,
+      "title": "출처 재확인 · met-dress",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-rodin:unavailable",
+      "scope": "source:met-rodin",
+      "severity": 1,
+      "title": "출처 재확인 · met-rodin",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:site-05:unavailable",
+      "scope": "source:site-05",
+      "severity": 1,
+      "title": "출처 재확인 · site-05",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    }
+  ],
+  "reports": [
+    {
+      "id": "pure-tests",
+      "path": "../pixel-lab/qa/pure-tests.json",
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "id": "v2-tests",
+      "path": "../pixel-lab/qa/v2-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "v2-browser-tests",
+      "path": "../pixel-lab/qa/v2-browser-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "world-tests",
+      "path": "../pixel-lab/qa/world-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "motion-tests",
+      "path": "../pixel-lab/qa/motion-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "animal-tests",
+      "path": "../pixel-lab/qa/animal-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "engine-tests",
+      "path": "./tests.json",
+      "passed": 7,
+      "total": 7
+    }
+  ],
+  "runs": [
+    {
+      "at": "2026-11-15T14:57:14.624Z",
+      "fingerprint": "b6e4012693eee1f69c683ecb7b186d924932e07a56b85c2acc5e529322682f04",
+      "suites": 7,
+      "passed": 38,
+      "total": 38,
+      "openIssues": 7
+    }
+  ],
+  "limits": [
+    "등록한 공개 출처를 다시 확인하는 수집기이며 전 인터넷을 탐색하지 않음",
+    "원문의 요약·해석은 검토된 연구 카드이며 자동 생성하지 않음",
+    "반복 실패의 우선순위를 누적하지만 신경망 학습이나 스스로 코드 수정은 하지 않음",
+    "후보 채택에는 분리된 평가 사례와 시각 검토 기록이 필요하며 운영 배포는 하지 않음"
+  ]
+}
