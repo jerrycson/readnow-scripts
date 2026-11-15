@@ -612,6 +612,57 @@
       "concepts": "뒤꿈치, 안쪽 아치, 바깥쪽 아치, 중족부, 접지",
       "analysisPage": "../research/pixel/anatomy.html#section-16",
       "reuse": "원문 링크와 자체 분석. 참고 도판은 로컬 관찰용이며 배포 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-mesh-01",
+      "kind": "document",
+      "title": "MakeHuman 기본 메시와 연속 인체 표면",
+      "url": "https://static.makehumancommunity.org/about/concepts/basemesh.html",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "부위가 연결되는 표면을 하나의 몸으로 비교한다.",
+      "oneSentence": "가시 인체 표면과 관절 기준점을 분리해 현재 모델의 어깨·골반·관절 연결을 대조한다.",
+      "concepts": "가시 표면, 보조 메시, 관절 기준점, 변형 가중치, 연결성",
+      "analysisPage": "../research/pixel/anatomy.html#section-17",
+      "reuse": "공식 기본 메시·성인 변형·뼈대는 CC0-1.0. 고정 커밋과 파일 해시 및 변형 범위는 continuous/THIRD_PARTY.md에 기록."
+    },
+    {
+      "id": "face-jp-03",
+      "title": "MediBang 얼굴 아타리와 비례",
+      "url": "https://medibangpaint.com/use/2020/10/learn-about-facial-proportions/",
+      "oneLine": "이목구비보다 머리와 얼굴 기준선을 먼저 정한다.",
+      "oneSentence": "머리 외곽과 중심선·눈높이를 잡은 뒤 코와 입의 위치를 조절한다.",
+      "concepts": "머리 외곽, 얼굴 중심선, 눈높이, 배치와 세부",
+      "section": 19,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-19",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "face-jp-04",
+      "title": "MediBang 코의 구조와 시점별 생략",
+      "url": "https://medibangpaint.com/use/2023/04/how-to-draw-nose/",
+      "oneLine": "작게 생략한 코에도 앞·옆·아래 면이 있다.",
+      "oneSentence": "코의 네 면을 이해한 뒤 정면·사선·위아래 시점에서 필요한 선과 면만 선택한다.",
+      "concepts": "코등, 양옆 면, 코 아래 면, 시점, 선택적 생략",
+      "section": 20,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-20",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "face-jp-05",
+      "title": "MediBang 올려다본 얼굴",
+      "url": "https://medibangpaint.com/use/2020/01/how-to-draw-various-face-directions-aori/",
+      "oneLine": "고개를 들면 턱 아래와 코 아래의 보이는 면이 바뀐다.",
+      "oneSentence": "곡면 위의 눈·입과 귀의 투영을 함께 바꾸어 올려다본 얼굴을 구성한다.",
+      "concepts": "올려다봄, 턱 아래, 곡면, 투영, 단축",
+      "section": 21,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-21",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
     }
   ]
 }

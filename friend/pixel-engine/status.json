@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T16:38:59.077Z",
-  "fingerprint": "b89eef14966e7d548715fd7e1e5f888b4cde7c77b48cc9f2a25bf196bd44e95f",
+  "updatedAt": "2026-11-15T17:15:51.989Z",
+  "fingerprint": "8fd371af969cb570c513218b3651f08efe61ec4a5a0d4a31e5ed69e928f27782",
   "sourceSummary": {
-    "total": 51,
-    "uniqueUrls": 51,
+    "total": 55,
+    "uniqueUrls": 55,
     "duplicates": []
   },
   "collection": {
@@ -17,16 +17,17 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "8차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "9차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
         "{\"version\":7,\"confidence\":\"not-ready\"}",
         "\"7차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"8차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"8차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"9차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 3,
-      "priority": 312
+      "observations": 4,
+      "priority": 316
     },
     {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
@@ -201,6 +202,12 @@
       "total": 14
     },
     {
+      "id": "continuous-v9-tests",
+      "path": "../pixel-lab/qa/continuous-v9-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -246,6 +253,14 @@
       "suites": 13,
       "passed": 74,
       "total": 74,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T17:15:51.989Z",
+      "fingerprint": "8fd371af969cb570c513218b3651f08efe61ec4a5a0d4a31e5ed69e928f27782",
+      "suites": 14,
+      "passed": 78,
+      "total": 78,
       "openIssues": 7
     }
   ],
