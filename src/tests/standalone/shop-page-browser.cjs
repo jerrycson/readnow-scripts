@@ -50,6 +50,41 @@ async function run() {
   const sendOrder = async h => { h.expectWrites(1); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.settle(); const req = h.hold((u, r) => u.pathname === '/shop/order-attempt' && r.method() === 'POST'); await fillOrder(h); await submitForm(h); req.body = await req.seen; return req; };
   const received = { ok: true, no: 'BQ20261116-AAAAA', t: 'a'.repeat(32), total: 2000, items: [BOOK] };
   try {
+    async function replaceInOtherTab(h){
+      const p=await h.ctx.newPage();p.on('pageerror',e=>h.errors.push(e.message));await p.addInitScript(base=>{window.BQ_API=base;},h.base);
+      await p.goto(h.base+'/s/index.html#/cart');await p.locator('[data-del="TEST-A"]').waitFor();await p.waitForTimeout(150);
+      await p.locator('[data-del="TEST-A"]').click();await p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===0);
+      await p.evaluate(()=>{location.hash='#/b/TEST-A';});await p.locator('#add').click();
+      await p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===1);
+      return JSON.parse(await p.evaluate(()=>localStorage.getItem('bq-cart')))[0];
+    }
+    await test('떠난 장바구니의 늦은 재고 응답이 다른 탭에서 다시 담은 줄을 보존',async h=>{
+      const old=h.hold('/shop/check');await h.nav('#/cart');await old.seen;await h.nav('#/wish');await h.p.locator('h1.pt').waitFor();
+      const fresh=await replaceInOtherTab(h);assert(fresh._entry);old.release({ok:true,st:{'TEST-A':'x'},p:{}});await h.settle();
+      const actual=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')));assert.equal(actual.length,1,'새로 담은 상품 보존');assert.equal(actual[0]._entry,fresh._entry);
+    });
+    await test('늦은 견적 거절이 다른 탭에서 삭제 후 다시 담은 줄을 보존',async h=>{
+      const old=h.hold('/shop/quote');await h.nav('#/cart');await old.seen;const fresh=await replaceInOtherTab(h);assert(fresh._entry);
+      old.release({ok:true,items:[],bad:[{id:'TEST-A'}],n:0,sum0:0,bundle:0,coupon:null,sum:0,fee:0,total:0,free:null});await h.settle();
+      const actual=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')));assert.equal(actual.length,1,'새 줄은 이전 견적의 대상이 아님');assert.equal(actual[0]._entry,fresh._entry);
+    });
+
+    await test('현재 장바구니의 늦은 재고 응답도 새 줄을 지우지 않고 다시 표시',async h=>{
+      const old=h.hold('/shop/check');await h.nav('#/cart');await old.seen;const fresh=await replaceInOtherTab(h);
+      old.release({ok:true,st:{'TEST-A':'x'},p:{}});await h.settle();const actual=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')));assert.equal(actual.length,1);assert.equal(actual[0]._entry,fresh._entry);assert.equal(await h.p.locator('[data-del="TEST-A"]').count(),1);
+    });
+    for(const width of[1280,390])await test('다른 탭에서 수량을 바꾸면 제출을 멈추고 초안을 보존하며 다시 확인',async h=>{
+      await h.nav('#/order');await h.p.locator('#f_name').waitFor();await h.settle();await fillOrder(h);
+      const p=await h.ctx.newPage();p.on('pageerror',e=>h.errors.push(e.message));await p.addInitScript(base=>{window.BQ_API=base;},h.base);await p.goto(h.base+'/s/index.html#/cart');await p.locator('[data-qi="TEST-A"]').waitFor();await p.waitForTimeout(150);await p.locator('[data-qi="TEST-A"]').click();await p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart'))[0].n===2);await p.waitForTimeout(150);
+      const fresh=h.hold('/shop/quote');await submitForm(h);const requested=await fresh.seen;assert.equal(requested.qty['TEST-A'],2);fresh.release({ok:true,items:[BOOK],bad:[],n:2,sum0:4000,bundle:0,coupon:null,sum:4000,fee:0,total:4000,free:null});await h.settle();
+      assert.match(await h.p.locator('#oerr').textContent(),/장바구니가 바뀌었습니다/);assert.equal(await h.p.locator('#f_name').inputValue(),'가상 주문자');assert.match(await h.p.locator('#olines').textContent(),/× 2/);assert.match(await h.p.locator('#go').textContent(),/4,000/);assert.equal(h.ledger.size,0);assert.equal((await h.p.evaluate(()=>BQOrderJournal.create().read())).active,null);
+      h.expectWrites(1);const sent=h.hold('/shop/order-attempt');await submitForm(h);const body=await sent.seen;assert.equal(body.qty['TEST-A'],2);assert.equal(body.expect,4000);sent.release({...received,total:4000,items:[{...BOOK,qty:2}]});await h.p.locator('.done').waitFor();assert.equal(h.ledger.size,1);
+    },width);
+    await test('바뀐 장바구니의 견적 확인 실패는 앞선 합계로 접수하지 않음',async h=>{
+      await h.nav('#/order');await h.p.locator('#f_name').waitFor();await h.settle();await fillOrder(h);await replaceInOtherTab(h);
+      for(let i=0;i<2;i++){const fresh=h.hold('/shop/quote');await submitForm(h);await fresh.seen;fresh.release({ok:false,err:'합성 견적 확인 실패'},503);await h.settle();assert.equal(h.ledger.size,0);assert.equal(await h.p.locator('#f_name').inputValue(),'가상 주문자');}
+      assert.equal((await h.p.evaluate(()=>BQOrderJournal.create().read())).active,null);
+    });
     for (const width of [1280, 390]) await test('이전 상품 오류가 작성 중인 주문서를 덮지 않음', async h => {
       const old = h.hold('/shop/item'); await h.nav('#/b/TEST-A'); await old.seen; await h.nav('#/order'); await h.p.locator('#f_name').fill('가상 입력 내용');
       old.release({ ok: false, err: '이전 상품의 가짜 오류' }, 400); await h.settle(); assert.equal(await h.p.locator('#f_name').count(), 1, '현재 주문서 유지'); assert.equal(await h.p.locator('#f_name').inputValue(), '가상 입력 내용');

@@ -19,6 +19,9 @@
   function pageScope() { const epoch = ++pageEpoch, hash = location.hash; return () => epoch === pageEpoch && location.hash === hash; }
   const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const cart = () => LS.get('bq-cart', []);
+  const cartStamp = (list) => JSON.stringify(list);
+  const quoteCart = new WeakMap();
+  const quoteCurrent = (q) => quoteCart.get(q) === cartStamp(cart());
   const cartEntries = (c) => c.map(x => x._entry ? x : { ...x, _entry: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) });
   const setCart = (c) => { LS.set('bq-cart', cartEntries(c)); badge(); };
   let orderInFlight = false, orderDraftEpoch = 0;
@@ -279,9 +282,9 @@
   /* ══ (11/11 shopc1) 🧮 장바구니 값은 클라우드가 셈(/shop/quote — 규칙 할인·묶음 할인·쿠폰·배송비) · 옛 클라우드면 이 기기 셈(예전 그대로)
    *  근거(약속 42): 쿠팡·알라딘 장바구니 '○원 더 담으면 무료배송' 막대 · 교보 '몇 권 더 담으면 추가 할인' · Shopify 할인 코드 칸(주문서 안) */
   const localQ = (L, c) => { const S0 = B.cartSum(L, c); const fl = B.freeLeft(S0.sum, c); return { n: S0.n, sum0: S0.sum, bundle: 0, coupon: null, disc: 0, sum: S0.sum, fee: S0.fee, total: S0.total, free: fl == null ? null : { over: c.freeOver, left: fl }, nextB: null, local: 1 }; };
-  async function quoteOf(cp) { const qm = B.qtyOf(cart()); return api('/shop/quote', { method: 'POST', body: JSON.stringify({ items: cart().map((x) => x.id), cp: cp || '', ...(qm ? { qty: qm } : {}) }) }); }
+  async function quoteOf(cp) { const list = cart(), stamp = cartStamp(list), qm = B.qtyOf(list); const q = await api('/shop/quote', { method: 'POST', body: JSON.stringify({ items: list.map((x) => x.id), cp: cp || '', ...(qm ? { qty: qm } : {}) }) }); quoteCart.set(q, stamp); return q; }
   /* 받은 값으로 장바구니를 맞춤 — 값이 바뀐 책은 새 값으로 · 팔린 책은 뺌(알림) · 바뀐 것이 있으면 참 */
-  function syncCart(Q) { if (!Q || Q.local) return false; const P = new Map((Q.items || []).map((x) => [x.id, x])); const badIds = new Set((Q.bad || []).map((x) => x.id)); let ch = false;
+  function syncCart(Q) { if (!Q || Q.local || !quoteCurrent(Q)) return false; const P = new Map((Q.items || []).map((x) => [x.id, x])); const badIds = new Set((Q.bad || []).map((x) => x.id)); let ch = false;
     const next = cart().filter((x) => { if (badIds.has(x.id)) { ch = true; return false; } return true; }).map((x) => { const y = P.get(x.id); if (y && (y.p !== x.p || (y.p0 || null) !== (x.p0 || null))) { ch = true; const o = { ...x, p: y.p }; if (y.p0) o.p0 = y.p0; else delete o.p0; return o; } return x; });
     if (ch) { setCart(next); if ((Q.bad || []).length) toast(`팔린 책 ${Q.bad.length}권을 장바구니에서 뺐습니다`); else toast('할인이 바뀐 책 값을 새로 맞췄습니다'); } return ch; }
   /* (shopmisc1 · 정범님 11/14) 📏 합계 줄 단위 — 장바구니가 모두 책이면 예전처럼 '책 N권' · 섞이면 '상품 3권 · 1장' (수가 서버 셈과 다르면 '상품 N개') */
@@ -291,7 +294,8 @@
       ${Q.nextB ? `<div class="hint nb">${ic('book', 'sm')} ${Q.nextB.need}권 더 담으면 ${Q.nextB.pct ? Q.nextB.pct + '%' : won(Q.nextB.won)} 묶음 할인</div>` : ''}
       <div class="sum"><div><span>${qLab(Q.n)}</span><b>${won(Q.sum0)}</b></div>${Q.bundle ? `<div class="dc"><span>묶음 할인</span><b>−${won(Q.bundle)}</b></div>` : ''}${Q.coupon ? `<div class="dc"><span>쿠폰 ${esc(Q.coupon.nm)}</span><b>−${won(Q.coupon.d)}</b></div>` : ''}<div><span>배송비</span><b>${won(Q.fee)}</b></div><div class="tot"><span>합계</span><b>${won(Q.total)}</b></div></div>`; }
   /* (shelf2 · 원칙 56) 담은 책 살펴보기 — 팔린 책은 빼고 값이 바뀐 책은 새 값으로 · 무엇이 바뀌었는지 알림 글(없으면 '') · 클라우드가 옛 판(404)이거나 연결이 안 되면 그대로 */
-  async function cartFresh() { const L = cart(); if (!L.length) return ''; let r; try { r = await api('/shop/check?' + B.qs({ ids: L.map((x) => x.id).join(',') })); } catch (e) { return ''; }
+  async function cartFresh(current) { const L = cart(), stamp = cartStamp(L); if (!L.length) return ''; let r; try { r = await api('/shop/check?' + B.qs({ ids: L.map((x) => x.id).join(',') })); } catch (e) { return ''; }
+    if ((current && !current()) || stamp !== cartStamp(cart())) return '';
     const f = B.cartFix(cart(), r.st, r.p); if (!f.gone.length && !f.moved.length) return ''; setCart(f.cart);
     return `<div class="bar wait fresh" role="status">${ic('info')}<div><b>담아 두신 책을 살펴보았습니다</b><ul>${f.gone.map((x) => `<li><b>${esc(x.t)}</b> — ${esc(x.why)}이라 장바구니에서 뺐습니다</li>`).join('')}${f.moved.map((x) => `<li><b>${esc(x.t)}</b> — 값이 ${won(x.a)} → <b>${won(x.b)}</b>로 바뀌었습니다</li>`).join('')}</ul></div></div>`; }
   /* (shelf3) 장바구니 — 먼저 /shop/check로 팔린 책·값 바뀐 책을 알려 드리고(shelf2) 그다음 클라우드 셈(/shop/quote · shopc1) · 둘 다 옛 클라우드면 이 기기 셈 */
@@ -304,8 +308,8 @@
       : emptyH('bag', '장바구니가 비었습니다', '마음에 드는 책을 담아 보세요 — 찜해 둔 책은 찜 목록에 있습니다', `<a class="btn" href="#/list?s=new">새로 들어온 책</a><a class="btn ghost" href="#/wish">찜 목록</a>`)}${seen.length ? `<section class="sec">${SEC_H('최근 본 책')}${railH(seen)}</section>` : ''}`; imgArm(main());
     $$('[data-qd],[data-qi]').forEach((b) => (b.onclick = () => { const id = b.dataset.qd || b.dataset.qi; const x = cart().find((y) => y.id === id); if (!x) return; const n = (x.n || 1) + (b.dataset.qi ? 1 : -1); setCart(B.cartSetN(cart(), id, n, mulMax())); cartPage(''); }));
     $$('[data-del]').forEach((b) => (b.onclick = () => { const x = cart().find((y) => y.id === b.dataset.del); setCart(B.cartDel(cart(), b.dataset.del)); cartPage(''); if (x) undoToast(x); }));
-    if (!L.length) return; if (note === undefined) { const n = await cartFresh(); if (!current()) return; if (n) return cartPage(n); note = ''; }
-    try { const Q = await quoteOf(''); if (!current() || !$('#qsum')) return; if (syncCart(Q)) return cartPage(note); $('#qsum').innerHTML = sumH(Q); const g = $('#toOrder'); if (g) g.textContent = `${won(Q.total)} 주문하기 ›`; } catch (e) {} }
+    if (!L.length) return; if (note === undefined) { const n = await cartFresh(current); if (!current()) return; if (n || cartStamp(L) !== cartStamp(cart())) return cartPage(n || ''); note = ''; }
+    try { const Q = await quoteOf(''); if (!current() || !$('#qsum')) return; if (!quoteCurrent(Q)) return cartPage(note); if (syncCart(Q)) return cartPage(note); $('#qsum').innerHTML = sumH(Q); const g = $('#toOrder'); if (g) g.textContent = `${won(Q.total)} 주문하기 ›`; } catch (e) {} }
   /* 뺀 책 되돌리기(실수로 ✕ — 4초) */
   function undoToast(x) { const t = $('#toast'); t.innerHTML = `「${esc(x.t)}」 뺐습니다 <button type="button" class="undo">되돌리기</button>`; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 4200);
     const u = $('.undo', t); if (u) u.onclick = () => { const r = B.cartAdd(cart(), x, (ST.cfg || {}).maxItems); if (!r.why) { setCart(r.cart); if (B.route(location.hash).name === 'cart') cartPage(''); } t.classList.remove('on'); }; }
@@ -351,7 +355,7 @@
     if (journal.active && !resuming) { await orderRecovery(journal, current); return; }
     if (!cart().length) { if (resuming) await orderRecovery(journal, current); else location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); return; } if (!current()) return;
     if (c.orderProtocol !== 1 && !isTest()) { main().innerHTML = '<h1 class="pt">주문서</h1><div class="empty">주문 확인 기능을 준비하고 있습니다. 잠시 뒤 새로 고쳐 주세요.<p><a href="#/cart">장바구니로</a></p></div>'; return; }
-    if (!shopOpen(c)) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const note = await cartFresh(); if (!current()) return; const L = cart(); if (!L.length) { location.hash = '#/cart'; return; } const S0 = B.cartSum(L, c); let Q = localQ(L, c); let cpOk = ''; /* (shopc1) Q = 클라우드가 셈한 값(묶음·쿠폰) · cpOk = 적용된 쿠폰 번호 · (shelf2) note = 살펴본 알림 */
+    if (!shopOpen(c)) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const note = await cartFresh(current); if (!current()) return; const L = cart(); if (!L.length) { location.hash = '#/cart'; return; } const S0 = B.cartSum(L, c); let Q = localQ(L, c); let cpOk = ''; /* (shopc1) Q = 클라우드가 셈한 값(묶음·쿠폰) · cpOk = 적용된 쿠폰 번호 · (shelf2) note = 살펴본 알림 */
     const fld = (k, lb, typ, ph, extra) => `<label class="f" data-f="${k}"><span>${lb}</span><input id="f_${k}" type="${typ || 'text'}" ${ph ? `placeholder="${esc(ph)}"` : ''} ${extra || ''}><em></em></label>`;
     main().innerHTML = `<h1 class="pt">주문서</h1>${note || ''}<form id="of" novalidate>
       <fieldset><legend>주문하시는 분</legend>${fld('name', '이름', 'text', '', 'autocomplete="name" maxlength="30"')}${fld('phone', '휴대폰', 'tel', '010-0000-0000', 'autocomplete="tel" inputmode="numeric"')}${fld('email', '메일 (선택)', 'email', '주문 안내를 메일로도 받으려면', 'autocomplete="email" maxlength="80"')}<div class="hint">주문 접수·입금 확인·보냄 알림은 휴대폰 문자(메일을 적으시면 메일도)로 — 알림 보내기는 준비 중이라 지금은 주문 뒤 받는 조회 주소로 확인해 주세요</div></fieldset>
@@ -366,8 +370,9 @@
         <label class="ck" data-f="agreeT"><input type="checkbox" id="f_agreeT"> (필수) 주문할 책·값·배송비·<a href="#/p/terms" target="_blank">구매 조건(교환·환불)</a>을 확인했습니다<em></em></label></fieldset>
       <input type="text" id="f_hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="gobar"><button class="btn wide" id="go" type="submit">${won(Q.total)} 주문하기</button></div><div id="oerr" class="err" hidden></div></form>`;
-    const showQ = (q) => { Q = q; $('#qsum').innerHTML = sumH(q); $('#olines').innerHTML = cart().map((x) => `<div class="ol"><span>${esc(x.t)}${x.n > 1 ? ` <small class="qn">× ${x.n}${B.unitOf(x)}</small>` : ''}</span>${priceH(x)}</div>`).join(''); const on = $('#on'); if (on) on.textContent = B.units(cart()); const g = $('#go'); if (g && !g.disabled) g.textContent = `${won(q.total)} 주문하기`; };
-    let quoteEpoch = 0; const reQ = async (cp) => { const epoch = ++quoteEpoch; try { const q = await quoteOf(cp); if (epoch !== quoteEpoch || !current() || !$('#qsum')) return null; syncCart(q); if (!cart().length) { location.hash = '#/cart'; return null; } showQ(q); return q; } catch (e) { return null; } };
+    let displayedCart = cartStamp(L);
+    const showQ = (q) => { Q = q; displayedCart = cartStamp(cart()); $('#qsum').innerHTML = sumH(q); $('#olines').innerHTML = cart().map((x) => `<div class="ol"><span>${esc(x.t)}${x.n > 1 ? ` <small class="qn">× ${x.n}${B.unitOf(x)}</small>` : ''}</span>${priceH(x)}</div>`).join(''); const on = $('#on'); if (on) on.textContent = B.units(cart()); const g = $('#go'); if (g && !g.disabled) g.textContent = `${won(q.total)} 주문하기`; };
+    let quoteEpoch = 0; const reQ = async (cp, retried) => { const epoch = ++quoteEpoch; try { const q = await quoteOf(cp); if (epoch !== quoteEpoch || !current() || !$('#qsum')) return null; if (!quoteCurrent(q)) return retried ? null : reQ(cp, true); syncCart(q); if (!cart().length) { location.hash = '#/cart'; return null; } showQ(q); return q; } catch (e) { return null; } };
     reQ('');
     const cg = $('#cpgo'); if (cg) cg.onclick = async () => { const v = $('#f_cp').value.trim(); const box = $('[data-f="cp"]'); cg.disabled = true; const q = await reQ(v); cg.disabled = false; const em = $('em', box);
       if (!q) { em.textContent = '지금은 쿠폰을 확인할 수 없습니다 — 잠시 뒤'; return; } if (v && q.cpErr) { cpOk = ''; box.classList.add('bad'); em.textContent = q.cpErr; } else { cpOk = v; box.classList.remove('bad'); em.textContent = v ? `✓ ${won(q.coupon ? q.coupon.d : 0)} 할인` : ''; } };
@@ -385,6 +390,7 @@
     const val = () => { const g = (k) => { const el = $('#f_' + k, form); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }; return { name: g('name'), phone: g('phone'), email: g('email'), same: g('same'), rname: g('rname'), rphone: g('rphone'), zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), memo: g('memo'), dep: g('dep'), agreeP: g('agreeP'), agreeT: g('agreeT'), hp: g('hp') }; };
     form.onsubmit = async (e) => { e.preventDefault(); if (!current()) return; if (typeof B.cartAfterOrder !== 'function') { const err = $('#oerr', form); err.hidden = false; err.textContent = '주문 화면을 새로 고친 뒤 다시 진행해 주세요'; return; } if (orderInFlight) { toast('앞선 주문을 처리하고 있습니다 — 결과를 받은 뒤 진행해 주세요'); return; } const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
+      if (displayedCart !== cartStamp(cart())) { saveDraft(); await reQ(cpOk); if (current()) { const err = $('#oerr', form); err.hidden = false; err.textContent = '다른 화면에서 장바구니가 바뀌었습니다 — 상품과 합계를 다시 확인한 뒤 주문해 주세요'; } return; }
       const submitted = cartEntries(cart()); setCart(submitted); const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
       const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted); let request = null;
       try {
