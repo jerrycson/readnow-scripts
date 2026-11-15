@@ -663,6 +663,30 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anime.html#section-21",
       "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-arm-jp-01",
+      "title": "Dani Puente 팔의 해부 구조와 작화",
+      "url": "https://www.clipstudio.net/oekaki/archives/164836",
+      "oneLine": "팔은 위팔·전완·손과 어깨띠를 연결해 읽는다.",
+      "oneSentence": "팔의 구간 비율, 드러나는 뼈의 기준점, 어깨와 전완의 회전을 함께 검토한다.",
+      "concepts": "위팔, 전완, 손, 쇄골, 견갑골, 척골, 회전",
+      "analysisPage": "../research/pixel/anatomy.html#section-18",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "reuse": "원문 링크와 자체 분석. 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-overview-jp-01",
+      "title": "MediBang 위에서 본 인체의 골격",
+      "url": "https://medibangpaint.com/use/2021/05/skeleton-structure-of-the-human-body-from-a-birds-eye-view/",
+      "oneLine": "위에서 보면 머리·어깨의 면과 몸의 가림이 달라진다.",
+      "oneSentence": "상부에서 드러나는 두개골·어깨·흉곽과 사선에서 가려지는 팔·다리를 비교한다.",
+      "concepts": "상부 시점, 두개골, 어깨 두께, 가림, 원근과 정투영",
+      "analysisPage": "../research/pixel/anatomy.html#section-19",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "reuse": "원문 링크와 자체 분석. 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
     }
   ]
 }

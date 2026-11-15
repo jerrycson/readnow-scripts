@@ -20,7 +20,8 @@
 <li data-card><a href="#section-20">20. MediBang 코의 구조와 시점별 생략</a></li>
 <li data-card><a href="#section-21">21. MediBang 올려다본 얼굴</a></li>
 <li data-card><a href="#section-22">22. 성인 얼굴 참고 시안과 실제 모델 비교</a></li>
-<li data-card><a href="#section-23">23. 작은 등신의 몸통과 얼굴 재구성</a></li></ul></nav></aside><main id="content"><div class="intro"><p>2026-11-16. 인체 승인 전 집중 연구. 해부학은 연결과 움직임의 근거로, 일본 작화는 선택할 비례와 생략의 근거로 사용한다. 아래 내용에서 원전 요약과 프로젝트의 해석·수정안을 구분한다. 특정 작가의 스타일을 일본 전체의 표준으로 부르지 않는다.</p>
+<li data-card><a href="#section-23">23. 작은 등신의 몸통과 얼굴 재구성</a></li>
+<li data-card><a href="#section-24">24. 성인 눈꺼풀과 코의 면을 다시 맞춘 실험</a></li></ul></nav></aside><main id="content"><div class="intro"><p>2026-11-16. 인체 승인 전 집중 연구. 해부학은 연결과 움직임의 근거로, 일본 작화는 선택할 비례와 생략의 근거로 사용한다. 아래 내용에서 원전 요약과 프로젝트의 해석·수정안을 구분한다. 특정 작가의 스타일을 일본 전체의 표준으로 부르지 않는다.</p>
 <p><a href="../../pixel-lab/reference-study.html">참고 그림과 현재 모델 대조</a> · <a href="../../pixel-lab/anatomy-review.html">6차/7차 모델 비교</a></p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. MediBang — 分割を使っていろいろな頭身を描いてみよう</h2>
 <p><a href="https://medibangpaint.com/use/2019/09/human-figure-proportions/">일본어 원문</a></p>
@@ -238,4 +239,10 @@
 <p>첫 시안에서는 팔이 몸에 붙어 보였다. 팔꿈치와 손목을 바깥으로 옮겨 빈 공간을 만들었다. 머리의 네모난 아래쪽은 둥근 곡면으로 바꾸고, 동공이 가는 선처럼 보이던 눈은 홍채를 넓혔다. A는 단순한 눈, B는 큰 홍채, C는 더 넓은 머리로 비교한다. 남녀 시작형의 차이는 작은 눈썹·눈꺼풀 표현이며 확대 검사에서 차이를 확인한다. 작은 전신에서 충분히 구별된다고 판정하지 않는다.</p>
 <p><strong>발견한 구현 결함:</strong> 4등신의 손끝이 표면 계산 범위를 넘어 열린 테두리 66개를 만들었다. 그림의 프레임 잘림 검사만으로는 발견되지 않았다. 범위를 넓히고 표면의 모든 변이 두 면에 속하는지와 몸이 한 덩어리로 연결되는지를 검사했다. 머리의 낮은 다각형 해상도와 눈 부착 곡면이 달라 눈이 떠 보이는 문제도 수정했다.</p>
 <p><strong>남은 결함:</strong> 둥근 머리가 지나치게 구처럼 보이며, 귀와 볼의 연결·옆면 눈의 인상이 아직 부족하다. 몸통과 팔다리의 단순함이 귀여움으로 이어지는지 계속 검토한다. <a href="../../pixel-lab/continuous-review.html">새 기본형을 실제로 돌려 비교</a> · <a href="../../pixel-lab/rotation-review.html">남녀 2~8등신 전체 회전표</a>.</p>
+</article>
+<article id="section-24" data-card><h2>24. 성인 눈꺼풀과 코의 면을 다시 맞춘 실험</h2>
+<p>11차는 눈 선을 임의의 타원에 붙이는 대신 안구가 피부 밖으로 보이는 경계를 찾아 윗눈꺼풀 선을 붙였다. 눈썹도 관처럼 떠 있는 부품에서 피부 표면을 따르는 면으로 바꿨다. 눈의 다각형 해상도를 높이고 눈확과 홍채를 함께 조절했다.</p>
+<p>코에는 두 차례 실패가 있었다. 평활화로 코를 눌러 버린 안과 원래 부피를 강하게 되살려 코끝이 둥글게 튀어나온 안을 비교했다. 다음 안은 코 안쪽과 바깥 표면을 같은 깊이에 모아 조각난 음영이 생겼다. 이 안은 폐기하고 기존 표면의 깊이 차이를 보존한 채 앞·옆·아래 면을 조절했다. 최종 비교안도 코와 볼의 연결, 입 주변 명암은 더 다듬어야 한다.</p>
+<p>얼굴 확대의 회전 중심을 실제 두개골 깊이 중앙에 맞췄다. 정면에서 맞아 보이던 얼굴이 옆면에서 화면 가장자리로 치우치던 문제를 교정했다. 새 그림은 실제 렌더 결과이며 생성 참고 그림과 구분한다. <strong>기본형은 여전히 미승인이다.</strong></p>
+<p><img src="../../pixel-lab/studies/anatomy-v11-face.png" alt="실제 성인 얼굴 교정 시안" /></p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
