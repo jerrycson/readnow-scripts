@@ -11,7 +11,7 @@ function rotation(yaw,pitch){
  return v=>{const x=cy*v[0]+sy*v[2],z=-sy*v[0]+cy*v[2];return [x,cp*v[1]-sp*z,sp*v[1]+cp*z];};
 }
 export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outline=true,breathAmplitude,portrait=false,sceneOverride,studyResolution,castShadows=false,isolateDetail=false}={}){
- if(studyResolution!==undefined&&![128,192,256].includes(studyResolution))throw new Error('연구용 원본 크기는 128·192·256px입니다.');
+ if(studyResolution!==undefined&&![128,192,256,512].includes(studyResolution))throw new Error('연구용 원본 크기는 128·192·256·512px입니다.');
  const s=validateSettings(settings),w=studyResolution||s.resolution,h=w,data=new Uint8ClampedArray(w*h*4),depthBuffer=new Float32Array(w*h).fill(-Infinity);
  const originalScene=sceneOverride||bodyParts(s,phase,action,{breathAmplitude}),scene=isolateDetail?selectAnatomyDetail(originalScene,portrait):originalScene,rot=rotation(yaw,pitch),detailJoint=portrait==='hand'?scene.joints?.right?.wrist:portrait==='foot'?scene.joints?.right?.ankle:null,scale=(w-8)/(scene.detailSelection?.frame??(portrait==='hand'?1.08:portrait==='foot'?1.28:portrait==='ear'?.76:portrait==='legs'?scene.height*.57:portrait==='torso'?3.8:portrait==='hair'?3.2:portrait?1.48:scene.frame)),mats=materialLibrary(s);
  const center=scene.detailSelection?.center[1]??(detailJoint?detailJoint[1]+(portrait==='hand'?-.30:-.08):portrait==='ear'?scene.height-.56:portrait==='legs'?scene.height*.26:portrait==='torso'?scene.height*.66:portrait==='hair'?scene.height-1.1:portrait?scene.height-.48:scene.cameraCenter?.[1]??scene.height/2);

@@ -62,3 +62,15 @@ Our manga-only mapping now coordinates body width/depth and hand length across 5
 ## Foundation v25 — skin tone transitions
 
 Adult manga skin uses our 25-color refinement of the existing 9-color palette. All vertex positions, normals and faces remain v24; natural and chibi materials remain unchanged. Rejected dual-quaternion and local shoulder-fill experiments are not included in the runtime. The research records distinguish algebraic tests, visual comparison and anatomical approval. No third-party skinning code is included.
+
+
+## 28차 다리 부피 분리
+
+동일한 고정 원전 a8bc2d54ff0ac92e78ff71431b1023eda42bf482의 CC0 armslegs 변형 네 파일을 사용했다. 자체 자세 변환 뒤 차이를 계산하고 허벅지·종아리의 가중치를 따로 적용했다. 각 성별 854개 정점만 포함하며 관절·발과 상체는 보존한다. 원전의 프로그램 코드는 가져오지 않았다.
+
+- l-lowerleg-muscle-incr.target: 1bf7eec202cb0507761a45e31895e8b18b16891f
+- r-lowerleg-muscle-incr.target: b9aa5ede5ae8571478692c0981b1915afe0fc9dc
+- l-upperleg-muscle-incr.target: 534e022f995865ebfe5ac6b8f03107c5dbf81e57
+- r-upperleg-muscle-incr.target: 82555abf562bbda689187f655060ee80d0ed1816
+
+각 파일의 CC0 헤더와 Git blob 해시를 확인했다. 최종 가중치는 남성 상부 0.25·하부 0.50, 여성 상부 0.10·하부 0.25다. 초기 분리 후보의 중복 가중치 오류를 수정한 C2이며 인체 정상 수치를 뜻하지 않는다. 원전 링크: https://github.com/makehumancommunity/makehuman/tree/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/targets/armslegs

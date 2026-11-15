@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T20:26:57.646Z",
-  "fingerprint": "3711a30fc1df58628f8d01501004fd8a94ff5b3eb379f201b62c22d88318981c",
+  "updatedAt": "2026-11-15T20:37:13.353Z",
+  "fingerprint": "8d9b4de40812eebcaf39dddb65f34d5a187f5513028f3d74bb2f4cc6b3080d43",
   "sourceSummary": {
-    "total": 81,
-    "uniqueUrls": 81,
+    "total": 86,
+    "uniqueUrls": 86,
     "duplicates": []
   },
   "collection": {
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "27차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "28차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -41,9 +41,10 @@
         "\"24차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"25차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"26차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"27차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"27차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"28차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 21,
+      "observations": 22,
       "priority": 380
     },
     {
@@ -447,6 +448,18 @@
       "total": 14
     },
     {
+      "id": "legs-v28-tests",
+      "path": "../pixel-lab/qa/legs-v28-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v28-tests",
+      "path": "../pixel-lab/qa/rotation-v28-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -644,6 +657,14 @@
       "suites": 51,
       "passed": 444,
       "total": 444,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:37:13.353Z",
+      "fingerprint": "8d9b4de40812eebcaf39dddb65f34d5a187f5513028f3d74bb2f4cc6b3080d43",
+      "suites": 53,
+      "passed": 463,
+      "total": 463,
       "openIssues": 7
     }
   ],

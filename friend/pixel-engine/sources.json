@@ -988,6 +988,66 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anime.html#section-40",
       "reuse": "공개 본문과 자체 분석. 도판 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "leg-bones-28",
+      "title": "Proko — 다리 뼈와 발목 기준점",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-legs-bone-anatomy-for-artists",
+      "oneLine": "뼈 기준점을 근육 부피와 별도로 확인한다.",
+      "oneSentence": "관절 연결과 안팎 발목 높이를 여러 방향에서 비교한다.",
+      "concepts": "대퇴골, 무릎뼈, 정강뼈, 종아리뼈, 발목",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-49",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "calf-anatomy-28",
+      "title": "Proko — 종아리와 아킬레스건",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-the-calf-anatomy-for-artists/",
+      "oneLine": "종아리 안팎의 높이와 부피는 같지 않다.",
+      "oneSentence": "근육의 큰 부피가 아래의 힘줄 구간으로 이어지는 흐름을 본다.",
+      "concepts": "장딴지근, 가자미근, 아킬레스건, 비대칭",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-50",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "lower-leg-28",
+      "title": "Proko — 정강이의 면과 발목 전이",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-the-lower-leg-anatomy-for-artists",
+      "oneLine": "뼈 앞면과 주변 근육의 단면을 구분한다.",
+      "oneSentence": "평평한 면과 둥근 부피가 발목으로 이어지는 관계를 대조한다.",
+      "concepts": "정강뼈 내측 면, 앞정강근, 단면, 발목 경사",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-51",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "quads-anatomy-28",
+      "title": "Proko — 허벅지와 무릎 위 연결",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-legs-the-quad-muscles",
+      "oneLine": "무릎 위의 근육 끝은 같은 높이가 아니다.",
+      "oneSentence": "안팎 부착과 가운데 힘줄 면을 큰 부피 속에서 확인한다.",
+      "concepts": "안쪽넓은근, 가쪽넓은근, 넙다리곧은근, 힘줄",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-52",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "legs-cheishiru-28",
+      "title": "Cheishiru — 다리·발의 작화용 단순화",
+      "url": "https://tips.clip-studio.com/ja-jp/articles/6735",
+      "oneLine": "다리와 발을 같은 전신 비례 안에서 비교한다.",
+      "oneSentence": "길이·굵기·관절·발의 연결을 따로 보고 전체 조화를 확인한다.",
+      "concepts": "길이 기준점, 측면, 종아리, 발목, 지지면",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-41",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
     }
   ]
 }
