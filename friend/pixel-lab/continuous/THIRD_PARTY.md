@@ -52,3 +52,8 @@ Same pinned MakeHuman CC0 source commit. Both ear size targets use weight 0.65:
 | ears/r-ear-scale-incr.target | d795b17ef87c79e8fb4c0396405bfe17c49fc534 |
 
 The compiler subtracts the same adult posed basis before/after ear targets. Each sex has 1,016 sparse changed vertices in ears and surrounding attachment, with no joint or head-height change. Runtime face smoothing can propagate this to adjacent vertices. Raw target headers and Git blob hashes verified. Adult manga form only; natural and chibi remain unchanged. Eye palette separation, line thickness and mouth width changes are our rendering choices. Rejected shoulder smoothing trials are not part of the public geometry. No application code or third-party reference images are included.
+
+
+## Foundation v24 — proportion mapping
+
+Our manga-only mapping now coordinates body width/depth and hand length across 5–8 heads. Neck blending preserves the previous upper-face coordinates. The 8-head form, natural forms and chibi remain unchanged. No additional third-party mesh or application code is used. Public reference links and original analysis are in the research pages; external MediBang diagrams remain observation-only and are not redistributed. These mapping coefficients are design choices, not medical or population standards.

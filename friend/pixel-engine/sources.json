@@ -875,6 +875,18 @@
       "concepts": "비례 안내선, 실루엣, 손발 크기, 세부 선택",
       "analysisPage": "../research/pixel/anime.html#section-33",
       "reuse": "일본어 제공 본문은 자동 번역 표시. 이번 단계 도판·영상 직접 관찰 없음"
+    },
+    {
+      "id": "figure-jp-balance-24",
+      "kind": "document",
+      "title": "MediBang sakaki — 기본 아타리와 어깨·팔 배치",
+      "url": "https://medibangpaint.com/use/2021/03/how-to-draw-a-rough-sketch-to-improve-quality-2/",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "등신과 몸의 폭·관절 위치를 함께 맞춘다.",
+      "oneSentence": "어깨·손목·팔꿈치·무릎을 같은 기준점으로 비교하되 작화 예시를 인체의 유일한 법칙으로 삼지 않는다.",
+      "concepts": "어깨 폭, 상하체, 손목, 팔꿈치, 무릎, 아타리",
+      "analysisPage": "../research/pixel/anime.html#section-35",
+      "reuse": "본문과 어깨·팔 도해 2개 직접 관찰. 외부 도판 공개 재배포 없음"
     }
   ]
 }

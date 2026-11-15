@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T19:41:37.414Z",
-  "fingerprint": "2efd8b44450ecd79d334988a69a3f072f013036d17ad90dcc5342dd94586d4e9",
+  "updatedAt": "2026-11-15T19:55:08.772Z",
+  "fingerprint": "b6722c9a5e258248d2b4a071cd552e50ba3a8102043c9724ba8314ea0d0178a4",
   "sourceSummary": {
-    "total": 72,
-    "uniqueUrls": 72,
+    "total": 73,
+    "uniqueUrls": 73,
     "duplicates": []
   },
   "collection": {
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "23차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "24차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -37,10 +37,11 @@
         "\"20차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"21차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"22차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"23차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"23차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"24차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 17,
-      "priority": 368
+      "observations": 18,
+      "priority": 372
     },
     {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
@@ -389,6 +390,24 @@
       "total": 4
     },
     {
+      "id": "anatomy-v24-tests",
+      "path": "../pixel-lab/qa/anatomy-v24-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v24-tests",
+      "path": "../pixel-lab/qa/rotation-v24-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v24-tests",
+      "path": "../pixel-lab/qa/detail-v24-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -546,6 +565,22 @@
       "suites": 42,
       "passed": 364,
       "total": 364,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:54:13.998Z",
+      "fingerprint": "cf7c85d284806c9529c9f7f307e3993f288e630d264288ac2345e37af68bb11f",
+      "suites": 44,
+      "passed": 384,
+      "total": 384,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:55:08.772Z",
+      "fingerprint": "b6722c9a5e258248d2b4a071cd552e50ba3a8102043c9724ba8314ea0d0178a4",
+      "suites": 45,
+      "passed": 388,
+      "total": 388,
       "openIssues": 7
     }
   ],
