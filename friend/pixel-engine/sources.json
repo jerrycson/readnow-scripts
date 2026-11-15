@@ -791,6 +791,18 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anime.html#section-30",
       "reuse": "원문 링크와 자체 분석. 원본 도판은 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "nose-planes-18",
+      "kind": "document",
+      "title": "Proko 코의 큰 면과 해부학 구조",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-a-nose-anatomy-and-structure",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "코의 세부 전에 앞·옆·아래 면의 방향을 정한다.",
+      "oneSentence": "콧등·코끝·콧방울의 부피와 회전에 따른 가림을 비교한다.",
+      "concepts": "큰 면, 콧등, 코끝, 콧방울, 비중격, 가림",
+      "analysisPage": "../research/pixel/anatomy.html#section-28",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용으로만 보관"
     }
   ]
 }

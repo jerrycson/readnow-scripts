@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T18:38:04.999Z",
-  "fingerprint": "45d36bc25d6a7b4b32d9012c01aa2ac6500fb4c67768b2c699e1cca9d80fa1e0",
+  "updatedAt": "2026-11-15T18:46:34.912Z",
+  "fingerprint": "7be7a970165aef7a3f7ecd934e8b007140db855e10f50f86f85684f7bb10707a",
   "sourceSummary": {
-    "total": 65,
-    "uniqueUrls": 65,
+    "total": 66,
+    "uniqueUrls": 66,
     "duplicates": []
   },
   "collection": {
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "17차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "18차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -31,10 +31,11 @@
         "\"14차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"15차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"16차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"17차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"17차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"18차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 11,
-      "priority": 344
+      "observations": 12,
+      "priority": 348
     },
     {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
@@ -305,6 +306,18 @@
       "total": 14
     },
     {
+      "id": "anatomy-v18-tests",
+      "path": "../pixel-lab/qa/anatomy-v18-tests.json",
+      "passed": 11,
+      "total": 11
+    },
+    {
+      "id": "rotation-v18-tests",
+      "path": "../pixel-lab/qa/rotation-v18-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -414,6 +427,14 @@
       "suites": 29,
       "passed": 224,
       "total": 224,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:46:34.912Z",
+      "fingerprint": "7be7a970165aef7a3f7ecd934e8b007140db855e10f50f86f85684f7bb10707a",
+      "suites": 31,
+      "passed": 249,
+      "total": 249,
       "openIssues": 7
     }
   ],
