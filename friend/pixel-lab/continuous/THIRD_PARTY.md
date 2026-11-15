@@ -57,3 +57,8 @@ The compiler subtracts the same adult posed basis before/after ear targets. Each
 ## Foundation v24 — proportion mapping
 
 Our manga-only mapping now coordinates body width/depth and hand length across 5–8 heads. Neck blending preserves the previous upper-face coordinates. The 8-head form, natural forms and chibi remain unchanged. No additional third-party mesh or application code is used. Public reference links and original analysis are in the research pages; external MediBang diagrams remain observation-only and are not redistributed. These mapping coefficients are design choices, not medical or population standards.
+
+
+## Foundation v25 — skin tone transitions
+
+Adult manga skin uses our 25-color refinement of the existing 9-color palette. All vertex positions, normals and faces remain v24; natural and chibi materials remain unchanged. Rejected dual-quaternion and local shoulder-fill experiments are not included in the runtime. The research records distinguish algebraic tests, visual comparison and anatomical approval. No third-party skinning code is included.

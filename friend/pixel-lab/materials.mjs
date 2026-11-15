@@ -3,10 +3,12 @@ const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
 const ramp=(colors,extra={})=>({colors:colors.map(hex),roughness:.8,specular:0,pattern:'none',...extra});
 const skin={clay:['#49372f','#93694c','#c08e65','#e1b183','#f3d5ac'],amber:['#483731','#8c5b3e','#b67a4f','#d9a164','#f0c997'],umber:['#2c2730','#51372f','#794e3d','#a37152','#cfa37b']};
 const skinStudy={clay:['#594237','#90664f','#ad7f61','#c39573','#d5a887','#e3ba98','#edc7a7','#f5d6b8','#fde2c8'],amber:['#483731','#805239','#a16c49','#b88055','#cb9463','#d9a574','#e5b585','#efc597','#f6d4ac'],umber:['#2c2730','#51372f','#6b4637','#815640','#95674d','#a7795b','#b68c6b','#c8a080','#d8b394']};
+const refinedSkin=Object.fromEntries(Object.entries(skinStudy).map(([name,colors])=>[name,Array.from({length:25},(_,i)=>{const p=i/24*(colors.length-1),a=Math.floor(p),t=p-a,A=hex(colors[a]),B=hex(colors[Math.min(a+1,colors.length-1)]);return '#'+A.map((v,k)=>Math.round(v+(B[k]-v)*t).toString(16).padStart(2,'0')).join('');})]));
 export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부드러운 부피와 낮은 대비',silk:'실크 · 좁고 긴 밝은 주름',leather:'가죽 · 단단한 경계와 부분 광택'};
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
+ 'study-skin':ramp(refinedSkin[s.palette],{skin:true}),
  'portrait-sclera':ramp(['#84766d','#afa096','#d2c8ba','#e7ddce','#f4ecdf']),
  'portrait-iris':ramp(['#241b18','#3c2920','#66442d','#956e47','#c09b6e']),
  'portrait-pupil':ramp(['#100e10','#181315','#21181a','#2c1e1d','#3a2922']),

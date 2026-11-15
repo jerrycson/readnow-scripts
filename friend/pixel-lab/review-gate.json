@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "date": "2026-11-16",
-  "version": 24,
+  "version": 25,
   "userApproved": false,
   "confidence": "not-ready",
   "scope": "기본 전신과 얼굴 · 남녀 2~8등신 · 45도 전체 회전",
   "deferred": "기본형이 안정될 때까지 몸매 30종 이상의 수량 확대와 의상·생물·동작·소품 확장 보류",
-  "activeStudy": "전신 비례 교정 후 겨드랑이·어깨와 얼굴 조화 재검토"
+  "activeStudy": "피부 명암 조율 후 코·입·턱과 어깨의 입체 연결 재검토"
 }

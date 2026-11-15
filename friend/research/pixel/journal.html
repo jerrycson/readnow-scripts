@@ -24,7 +24,8 @@
 <li data-card><a href="#section-24">25. 21차 — 성인 가슴&#183;흉곽의 곡면 분리 실험</a></li>
 <li data-card><a href="#section-25">26. 22차 — 어깨 수정안 제외, 귀&#183;눈&#183;입 가독성 정리</a></li>
 <li data-card><a href="#section-26">27. 23차 — 작은 몸의 긴 타원&#183;관 형태 수정</a></li>
-<li data-card><a href="#section-27">28. 24차 — 몸의 세로 압축과 폭&#183;두께의 불균형 수정</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-27">28. 24차 — 몸의 세로 압축과 폭&#183;두께의 불균형 수정</a></li>
+<li data-card><a href="#section-28">29. 25차 — 미채택 어깨 변형과 피부 명암 전이 조정</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -229,4 +230,8 @@
 <article id="section-27" data-card><h2>28. 24차 — 몸의 세로 압축과 폭·두께의 불균형 수정</h2>
 <p>일본의 6등신·어깨·팔 도해 3개를 직접 대조했다. 남녀 전신 512px 관찰에서 5~7등신의 세로 압축에 비해 폭과 깊이가 과하게 유지되는 것을 확인했다. A/B를 정면·측면·사선·후면에서 비교하고 A를 적용했다. 초기 얼굴 보존 검사 실패는 목 전이가 얼굴 평활화까지 영향을 준 원인으로 좁혔다. 목 구간을 분리한 뒤 검사 6/6이 통과했다. 회전표 14/14·896방향, 손·발 분리 검사 4/4·2,304방향도 확인했다.</p>
 <p>최종 비교 그림은 실제 실행 코드로 원본 256px에서 다시 생성했다. 8등신·자연형·작은 기본형의 16개 이미지 보존을 확인했다. 실제 브라우저 클릭·저장과 운영 통합 배포는 이번 단계에서 미확인이다. 다음 검토는 겨드랑이·어깨와 얼굴 전체 조화다. 사용자 승인 전이며 콘텐츠 확장은 계속 보류한다.</p>
+</article>
+<article id="section-28" data-card><h2>29. 25차 — 미채택 어깨 변형과 피부 명암 전이 조정</h2>
+<p>대흉근·삼각근의 연결과 관절 변형을 검토했다. 부피 보존 변형 A/B는 개선이 작았고 홈을 메우는 C/D는 다른 경계를 만들어 제외했다. 같은 기하의 피부 램프를 9·17·25색으로 비교한 E/F 중 F를 채택했다. 전체 과정과 미채택 이유는 인체 연구 40~43절에 기록했다.</p>
+<p>표현 검사 4/4와 회전표 14/14·896방향을 확인했다. 기본형 22개의 기하, 보존 대상 14개 이미지, 성인 512방향의 실루엣이 이전과 같다. 명암 수정이 해부학적 완성을 대신한다고 판단하지 않는다. 실제 브라우저 클릭·저장·운영 통합 배포는 이번 단계에서 미확인이다. 기본형의 코·입·턱과 어깨 연결을 이어서 검토한다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

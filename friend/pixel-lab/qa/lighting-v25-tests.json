@@ -1,0 +1,52 @@
+{
+  "version": 25,
+  "checkedAt": "2026-11-15T20:03:26.180Z",
+  "visualApproval": false,
+  "scope": "성인 작화형의 피부 명암만 조율; 기하·실루엣 보존",
+  "results": [
+    {
+      "name": "모든 기본형의 좌표·법선·삼각형 보존",
+      "ok": true,
+      "detail": {
+        "cases": 22
+      }
+    },
+    {
+      "name": "자연형·작은 기본형의 실제 이미지 유지",
+      "ok": true,
+      "detail": {
+        "cases": 14
+      }
+    },
+    {
+      "name": "남녀 성인 64방향의 픽셀 실루엣 유지",
+      "ok": true,
+      "detail": {
+        "views": 512
+      }
+    },
+    {
+      "name": "기존 재질 보존·새 피부 팔레트의 단조 명도",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "palette": "clay",
+            "colors": 25
+          },
+          {
+            "palette": "amber",
+            "colors": 25
+          },
+          {
+            "palette": "umber",
+            "colors": 25
+          }
+        ],
+        "note": "픽셀별 블러·랜덤 디더링 없이 한정된 색을 선택한다."
+      }
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}
