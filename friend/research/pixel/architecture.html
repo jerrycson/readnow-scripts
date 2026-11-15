@@ -1,0 +1,120 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>보존 검증과 구조 선택 · 책방 친구</title><style>:root{--bg:#f7f5ef;--paper:#fffefb;--ink:#243a32;--muted:#59675e;--line:#d9dfd5;--accent:#276849;--warm:#a94d28}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,'Malgun Gothic',sans-serif}a{color:#185e42;text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #ce662f;outline-offset:4px}.skip{position:absolute;left:12px;top:-80px}.skip:focus{top:12px;background:white;padding:12px;z-index:9}header{padding:38px max(24px,calc((100vw - 1360px)/2));background:#e7eee3;border-bottom:1px solid var(--line)}.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--accent)}h1{font-size:clamp(27px,4vw,42px);line-height:1.25;margin:12px 0}.subtitle{max-width:760px;color:var(--muted);margin:0}nav.top{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}nav.top a{padding:8px 15px;border:1px solid #becbb9;border-radius:8px;text-decoration:none;background:#fff9}nav.top a[aria-current=page]{background:var(--accent);color:white;border-color:var(--accent)}.layout{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:285px minmax(0,1fr);gap:30px;padding:30px 24px 70px}aside{align-self:start;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding:4px 12px 10px 0}aside h2{font-size:17px;margin:0 0 12px}label{display:block;font-size:14px;font-weight:650}input{width:100%;border:1px solid #a9bca5;border-radius:7px;padding:11px;background:white;font:inherit;margin:6px 0}button{font:inherit;color:var(--accent);background:transparent;border:1px solid #bbcbbb;border-radius:7px;padding:6px 10px;cursor:pointer}.tools{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0 14px}.status{font-size:13px;color:var(--muted)}.toc{list-style:none;padding:0;margin:16px 0}.toc a{display:block;font-size:14px;line-height:1.5;text-decoration:none;padding:8px;border-radius:6px}.toc a:hover{background:#e6ede2}main{min-width:0}.intro{padding:4px 0 20px;color:var(--muted)}article{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:28px 34px;margin-bottom:24px;scroll-margin-top:20px}article h2{font-size:23px;line-height:1.5;margin:0 0 18px;letter-spacing:-.03em}article p{margin:15px 0}article img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:16px auto}article strong{color:#175135}code{font-size:.9em;background:#edf0e8;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14px}th,td{padding:10px;border:1px solid var(--line);vertical-align:top;text-align:left}th{background:#edf2e8}footer{max-width:1400px;margin:auto;padding:20px 24px 35px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}[hidden]{display:none!important}.empty{padding:20px;border:1px dashed var(--line)}@media(max-width:800px){header{padding:25px 18px}.layout{grid-template-columns:1fr;padding:20px 16px;gap:18px}aside{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:18px}.toc{max-height:230px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}article{padding:22px 20px}article h2{font-size:21px}body{font-size:15px}}@media(max-width:440px){.toc{grid-template-columns:1fr}article{padding:20px 16px}}@media print{body{background:white;font-size:10.5pt;line-height:1.65}header{padding:0 0 15px;background:white}.layout{display:block;padding:0}aside,nav.top,.skip,footer,.empty{display:none}article{border:0;border-radius:0;padding:0;break-before:page}article h2{font-size:18pt}a{color:inherit}article[hidden]{display:block!important}@page{size:A4;margin:18mm}}</style></head><body><a class="skip" href="#content">본문으로 이동</a><header><div class="eyebrow">책방 친구 · 픽셀 아트 연구</div><h1>보존 검증과 구조 선택</h1><p class="subtitle">옛 버전의 실제 복구 범위, 선택 근거, 새 기본형과 설정 창의 검사 결과입니다.</p><nav class="top" aria-label="연구 페이지"><a href="index.html">원전 21개</a><a href="sites.html">연구 사이트 5곳</a><a href="journal.html">실행 일지</a><a href="architecture.html" aria-current="page">복구와 구조 선택</a><a href="anatomy.html">인체·재질 실험</a><a href="../../pixel-lab/">기본형 연구실</a><a href="../../research.html">기존 연구 영역</a></nav></header><div class="layout"><aside><h2>자료 찾기</h2><label for="query">제목·개념·본문 검색</label><input id="query" type="search" placeholder="예: 실루엣, 회전, 팔레트" autocomplete="off"><div class="tools"><button id="reset" type="button">검색 초기화</button><button id="print" type="button">인쇄</button></div><p id="status" class="status" role="status" aria-live="polite"></p><nav aria-label="문서 목차"><ul class="toc"><li data-card><a href="#section-1">01. 기존 운영판의 실제 복구</a></li>
+<li data-card><a href="#section-2">02. 복구 기록의 범위</a></li>
+<li data-card><a href="#section-3">03. 세 가지 시스템 선택의 비교</a></li>
+<li data-card><a href="#section-4">04. 새 기본형과 설정 창의 첫 구현</a></li>
+<li data-card><a href="#section-5">05. 실행한 검사와 결과</a></li>
+<li data-card><a href="#section-6">06. 다음 누적 작업</a></li></ul></nav></aside><main id="content"><div class="intro"><p>검사일: 2026-11-15. 이 문서는 첫 구현 시점의 기록이다. 이후 인체·재질·동작 개선은 <a href="anatomy.html">2차 실험</a>에 누적한다. <a href="../../pixel-lab/">새 기본형 연구실</a>에서 남녀 기본형, 회전, 설정과 생활 무대를 직접 확인할 수 있다. 아래 결과는 실행한 환경에 한정한다.</p>
+</div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 기존 운영판의 실제 복구</h2>
+<p>공개 보존 갈래 <code>archive/friend-chars-2026-11-14</code>의 커밋 <code>d16e3ef6080fcf1b49f90d346fbe0fef4b740379</code>에서 본체 0.15.20, 부트 파일, 진입 HTML을 별도 보존 폴더로 내려받았다. Git blob SHA와 SHA-256을 기록했다. 본체 1,822,042바이트의 SHA-256은 <code>b938e0b03b63a81496918887e32105cf352f43ed45ae6098edef6a23190ed17e</code>다.</p>
+<p>격리된 브라우저에서 원본 본체를 실행하여 캐릭터 24개의 SVG를 생성하고, 파싱과 실제 표시를 확인했다. 보존 안내문은 22명으로 적혀 있었으나 실행 목록에는 추가된 2명이 더 있었다. 기존 설정 창이 열리고 크기 변경이 미리보기에 적용되는 것도 확인했다.</p>
+<p>검증 환경은 운영 계정과 데이터베이스에 연결하지 않았다. 따라서 옛 설정의 클라우드 저장·로그인·기기 연결을 복구 완료로 판정하지 않는다. 저장 시도에서 데이터베이스 의존성이 드러났으며, 이는 격리 환경에서 의도한 결과다. 운영 원본 파일을 수정하거나 기존 계정 값을 덮어쓰지 않았다.</p>
+<p><strong>판정:</strong> 옛 운영 캐릭터의 그림과 설정 표시를 다시 실행할 수 있다. 과거 운영 서비스 전체의 재출고를 검증한 것은 아니다. 현재 시스템의 빈 캐릭터 모드는 유지한다.</p>
+</article>
+<article id="section-2" data-card><h2>02. 복구 기록의 범위</h2>
+<p>이 공개 페이지는 공개 운영판의 실행 검사와 새 연구실 구현을 기록한다. 별도 보관 자료의 세부 목록과 검증 보고서는 로컬 보존 기록에서 관리한다. 새 캐릭터에는 기존 캐릭터 자산을 사용하지 않는다.</p>
+</article>
+<article id="section-3" data-card><h2>03. 세 가지 시스템 선택의 비교</h2>
+<table>
+<thead>
+<tr>
+<th>선택</th>
+<th>확인한 장점</th>
+<th>확인한 복잡성</th>
+<th>이번 선택</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기존 시스템 전체 활용</td>
+<td>기존 그림·설정 창이 다시 실행됨. 운영 연결이 이미 있음</td>
+<td>큰 본체 안에 SVG 그림·설정·계정 저장이 결합됨. 기존 기기 선택 규칙이 새 캐릭터별 단일 존재 규칙과 다름</td>
+<td>채택하지 않음</td>
+</tr>
+<tr>
+<td>부분 교체</td>
+<td>새 캐릭터·설정·저장을 독립 검증하면서 기존 PC·안드로이드 연결 규약을 활용 가능</td>
+<td>계정 서버와 실제 프로그램 연결을 별도로 구현·검사해야 함</td>
+<td><strong>현 단계 채택</strong></td>
+</tr>
+<tr>
+<td>프로그램까지 전면 신규</td>
+<td>경계를 새로 설계할 수 있음</td>
+<td>투명 창, 클릭 통과, 배율, 단축키, 안드로이드 서비스와 권한까지 재구현·재시험해야 함</td>
+<td>필요가 입증될 때 재검토</td>
+</tr>
+</tbody>
+</table>
+<p>세 선택을 모두 완제품으로 만들어 속도를 측정한 비교는 아니다. 기존 원본 실행, 저장 의존성 확인, PC·안드로이드 코드와 연결 규약 조사, 새 연구실의 실제 구현 결과를 근거로 결정했다. 현재 가장 작은 변경 범위에서 독립 검증 가능한 선택이다.</p>
+<p>새 연구실의 모델·렌더러·저장·설정 창은 새로 작성했다. 기존 프로그램에서는 연결 메시지의 형식만 참고한 얇은 어댑터를 둔다. 실제 프로그램 화면이 이 연구실로 교체된 상태는 아니다. 운영 경로 전환은 별도 출고 검증을 거친다.</p>
+</article>
+<article id="section-4" data-card><h2>04. 새 기본형과 설정 창의 첫 구현</h2>
+<ul>
+<li>남성·여성 각각 2~8등신, 총 14개 중립 연구 마네킹. 옷·머리·장비가 없는 형태로 시작한다.</li>
+<li>구조 후보 A·B·C는 몸 연결과 굵기가 다른 세 가지 시안이다. B를 임시 기본으로 두었으며 미적 최종안으로 확정하지 않았다.</li>
+<li>수평·수직 각각 0~315도, 45도 간격. 수평 회전 후 수직 회전을 적용하며 각 상태의 깊이와 가림을 다시 계산한다.</li>
+<li>기본형 목록, 64칸 각도표, 드래그·키보드 회전, 현재 PNG 저장, 후보 선택과 비교 메모를 제공한다.</li>
+<li>설정 창에서 이름·기본형·등신·구조·해상도·표시 배율·팔레트·걷기 속도·움직임·격자를 바꾼다. 미리보기, 취소, 저장, 이전 설정 복원을 제공한다.</li>
+<li>기록은 별도 IndexedDB에 저장하며, 동시 저장 충돌을 감지한다. 충돌 시 입력을 보관한 뒤 최신값을 읽고, 앞선 입력을 명시적으로 다시 적용할 수 있다.</li>
+<li>이전 설정을 복원해도 현재 경험 기록은 유지한다. 전체 연구 기록을 JSON으로 내보낼 수 있다.</li>
+<li>생활 무대는 이 페이지 안의 바닥과 언덕을 걷고, 가로로 옮겨도 표면 높이를 따른다. 돌봄·탐색·연습은 경험으로 누적하고 성격을 미리 고정하지 않는다.</li>
+</ul>
+<p>같은 브라우저의 연구 창 사이에서는 캐릭터별 잠금을 사용한다. 새 창이 표시되기 전에 이전 창을 숨긴다. 서로 다른 캐릭터를 다른 창에 나누어 둘 수 있다. 실제 계정·다른 기기 간 이동은 서버가 필요하며 아직 연결하지 않았다.</p>
+</article>
+<article id="section-5" data-card><h2>05. 실행한 검사와 결과</h2>
+<table>
+<thead>
+<tr>
+<th>검사</th>
+<th>결과</th>
+<th>범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>독립 계약 검사</td>
+<td>7/7 통과</td>
+<td>입력 검증, 접지, 중립 경험·중복 사건, 임대 만료, 프로그램 메시지, 깊이 회전, 전수 렌더</td>
+</tr>
+<tr>
+<td>회전 상태 전수 검사</td>
+<td>2,688/2,688 통과</td>
+<td>3시안 × 14기본형 × 64상태, 48px에서 빈 그림·잘림·비정상 값 검사</td>
+</tr>
+<tr>
+<td>실제 브라우저 저장·잠금 검사</td>
+<td>6/6 통과</td>
+<td>IndexedDB 재접속·동시 저장·복원 이력·친구별 독립성, Web Locks와 BroadcastChannel</td>
+</tr>
+<tr>
+<td>실제 두 탭의 동일 캐릭터 전환</td>
+<td>통과</td>
+<td>새 탭 활성화 후 이전 탭 숨김 확인</td>
+</tr>
+<tr>
+<td>설정 저장·새로고침·복원</td>
+<td>통과</td>
+<td>등신·팔레트 저장, 다음 읽기, 이전 저장본 표시</td>
+</tr>
+<tr>
+<td>실제 두 탭의 설정 충돌</td>
+<td>통과</td>
+<td>오래된 저장 거절, 입력 보관, 최신값 읽기, 앞선 입력 복귀와 저장</td>
+</tr>
+<tr>
+<td>화면과 파일</td>
+<td>통과</td>
+<td>1280px·390px 확인, 작은 설정 창 넘침 수정, PNG 내려받기</td>
+</tr>
+</tbody>
+</table>
+<p>픽셀 수나 잘림 검사가 해부학적 정확성·미적 완성도를 보증하지는 않는다. 현재 형태는 구조 실험용이다. 64px·96px 전수 검사, 다양한 동작 중 관절 연결, 인체 표지점 검토와 재질·의상 비교는 다음 제작 단계에서 진행한다.</p>
+</article>
+<article id="section-6" data-card><h2>06. 다음 누적 작업</h2>
+<ol>
+<li>인체 원전과 실제 형태의 공개 참고 이미지를 대조해 흉곽·골반·어깨·관절·손발의 연결을 고친다. 성별 차이를 하나의 고정 체형으로 단순화하지 않고 체형 범위를 별도로 설계한다.</li>
+<li>원단·머리·금속·가죽처럼 재질마다 명암의 폭, 반사 크기, 주름과 겹침을 달리한다. 작은 해상도에서 모든 질감을 넣기보다 읽히는 단서를 비교한다.</li>
+<li>동물·판타지·SF·로봇·외계형의 형태군과 옷·장비·소품·환경 시안을 만든다. 원래 게임의 캐릭터나 자산을 복제하지 않는다.</li>
+<li>걷기·쉬기·관찰·만지기·상호작용을 작은 시험 공간에 연결하고, 실패 사례와 수정 결과를 일지에 남긴다.</li>
+<li>실제 계정 기반 단일 존재, 운영 프로그램 연결, 빈 노트·작업판, 연구 자동화는 구현과 검증 상태를 별도로 추적한다.</li>
+</ol>
+</article></main></div><footer>기록 기준 2026-11-15 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
