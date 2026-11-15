@@ -11,6 +11,7 @@ function factory() {
   if(start<0||end<0)throw Error('서버 합성 저장소 준비 함수를 찾지 못했습니다');
   const {mockDb,between}=require(path.join(tests,'stability.test.cjs'));
   const scope={vm,crypto,Buffer,URL,mockDb,between,orderSeq:0,shop:fs.readFileSync(path.join(ROOT,'cloud/shop.js'),'utf8'),SH:require(path.join(ROOT,'cloud/shop.js')),STOCK:require(path.join(ROOT,'cloud/shop-stock.js')),ATTEMPT:require(path.join(ROOT,'cloud/shop-order-attempt.js'))};
+  if(fs.existsSync(path.join(ROOT,'cloud/shop-account-orders.js')))scope.ACCOUNT_ORDERS=require(path.join(ROOT,'cloud/shop-account-orders.js'));
   vm.createContext(scope);vm.runInContext(source.slice(start,end),scope);return scope.fixture;
 }
 async function run() {
