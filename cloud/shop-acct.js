@@ -131,6 +131,13 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     });
     UC.delete(uid); PFC.delete(uid); return out;
   }
+  // 세션 변경은 최신 회원 문서를 읽은 거래 안에서만 한다. 결과 불명 때도 인증 캐시를 비운다.
+  async function sessionTxn(uid, change) {
+    try { return await db.runTransaction(async tx => {
+      const ref = C('shop_users').doc(uid), d = await tx.get(ref);
+      return change(d.exists ? d.data() : null, tx, ref);
+    }); } finally { UC.delete(uid); }
+  }
   /* 열쇠 = 손님 번호 + '.' + 무작위 32자 · 문서엔 해시만(sess) · 90일 · 기기 5대 */
   async function authOf(req) { const m = /^Bearer\s+(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String((req.headers && req.headers.authorization) || '')); if (!m) return null; const u = await uGet(m[1]); if (!u || u.gone || u.arch) return null;
     const h = H(m[1] + '.' + m[2]); const t = Date.now(); const ok = (u.sess || []).some((x) => x && x.h === h && Date.parse(x.exp) > t); return ok ? { uid: m[1], u, h } : null; }
@@ -150,19 +157,34 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     if (out && out[0] === 200) log && log(`👤 우리숍 ${test ? '시험 ' : ''}손님 가입 ${uid}`); return out; }
   async function login(b, req) { const ik = ipKey(req); const f = (FAIL.get(ik) || []).filter((x) => Date.now() - x < 600e3); if (f.length >= 10) return E(429, '로그인을 너무 많이 틀렸습니다 — 10분 뒤 다시 해 주세요');
     const em = String(b.em || '').trim().toLowerCase(); const fail = () => { f.push(Date.now()); FAIL.set(ik, f); if (FAIL.size > 5000) FAIL.clear(); return E(401, '메일 또는 비밀번호가 맞지 않습니다'); };
-    if (!EMAIL.test(em)) return fail(); const ed = await C('shop_users_em').doc(emKey(em)).get(); const uid = ed.exists ? (ed.data() || {}).uid : null; const u = uid ? await uGet(uid, true) : null; if (!u || u.gone || !pwOk(b.pw, u.pw)) return fail();
-    if (u.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)'); const S0 = sessNew(u); await uSet(uid, { sess: S0.sess, last: nowIso() }); return OK({ tok: S0.tok, me: meView({ ...u, sess: S0.sess }) }); }
+    if (!EMAIL.test(em)) return fail(); const er = C('shop_users_em').doc(emKey(em)), ed = await er.get(); const uid = ed.exists ? (ed.data() || {}).uid : null; const u = uid ? await uGet(uid, true) : null;
+    if (!u || u.uid !== uid || u.em !== em || u.gone || !pwOk(b.pw, u.pw)) return fail();
+    if (u.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)');
+    const out = await sessionTxn(uid, async (v, tx, ref) => {
+      const latestEmail = await tx.get(er);
+      if (!v || v.uid !== uid || v.gone || v.em !== em || v.pw !== u.pw || !latestEmail.exists || (latestEmail.data() || {}).uid !== uid) return E(401, '메일 또는 비밀번호가 맞지 않습니다');
+      if (v.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)');
+      const S0 = sessNew(v), t = nowIso(); tx.set(ref, { sess: S0.sess, last: t, up: t }, { merge: true });
+      return OK({ tok: S0.tok, me: meView({ ...v, sess: S0.sess }) });
+    });
+    return out[0] === 401 ? fail() : out;
+  }
   /* ── (11/14 shopview2 · 작업판 v11 정범님 「손님 화면을 내가 직접 볼 수 있게」) 👀 손님 화면으로 보기 — 관리 웹앱 단추 하나로 🧪 시험 계정에 바로 들어감(결제만 막힘 — 주문 창구가 시험 계정을 403 · 손님 화면은 마지막 단추를 「🧪 결제는 하지 않습니다」로)
    *  관리자(asView)가 1회 열쇠(5분 · 문서엔 해시만)를 받아 booksqueen.com/?bqas=<손님 번호>.<열쇠> 로 엶 → 손님 화면이 asIn으로 바꿔 로그인 열쇠를 받음(열쇠는 한 번 쓰면 끝)
    *  ⚠ 시험 계정(시험 표시 + @test.booksqueen.invalid 메일 두 겹 · F37)만 — 진짜 손님 계정으로는 절대 들어가지 않음 */
   async function asIn(b, req) { const ik = ipKey(req); if (limitWait('asi' + ik, 20, 600e3)) return E(429, '잠시 뒤 다시 해 주세요');
     const m = /^(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String(b.c || '')); if (!m) return E(400, '들어가기 열쇠가 이상합니다');
-    const u = await uGet(m[1], true); const a = u && u.asv; const t = Date.now();
-    if (!isTestAcct(u) || u.gone || u.arch || !a || !a.h || a.h !== H(m[2]) || !(Date.parse(a.exp) > t)) return E(401, '들어가기 열쇠가 끝났습니다(5분 · 한 번만) — 관리 웹앱에서 「👀 손님 화면으로 보기」를 다시 눌러 주세요', { asv: 0 });
-    const hrs = Math.max(1, Math.min(720, Math.round(+a.hrs || 24))); const tok = u.uid + '.' + rnd(16);
-    const sess = [{ h: H(tok), exp: new Date(t + hrs * 3600e3).toISOString(), at: new Date(t).toISOString(), asv: 1 }, ...(u.sess || []).filter((x) => x && Date.parse(x.exp) > t)].slice(0, SESS_MAX);
-    await uSet(u.uid, { sess, last: nowIso(), asv: { ...a, h: null, used: nowIso() } }); /* 열쇠는 한 번만(해시를 비움) */
-    log && log(`👀 손님 화면으로 보기 — 시험 계정 ${u.uid} 들어감(${s(a.by, 80)})`); return OK({ tok, me: meView({ ...u, sess }), hrs }); }
+    const result = await sessionTxn(m[1], (u, tx, ref) => {
+      const a = u && u.asv, t = Date.now();
+      if (!isTestAcct(u) || u.uid !== m[1] || u.gone || u.arch || !a || !a.h || a.h !== H(m[2]) || !(Date.parse(a.exp) > t)) return { out: E(401, '들어가기 열쇠가 끝났습니다(5분 · 한 번만) — 관리 웹앱에서 「👀 손님 화면으로 보기」를 다시 눌러 주세요', { asv: 0 }) };
+      const hrs = Math.max(1, Math.min(720, Math.round(+a.hrs || 24))), tok = u.uid + '.' + rnd(16);
+      const sess = [{ h: H(tok), exp: new Date(t + hrs * 3600e3).toISOString(), at: new Date(t).toISOString(), asv: 1 }, ...(u.sess || []).filter(x => x && Date.parse(x.exp) > t)].slice(0, SESS_MAX);
+      const at = nowIso(); tx.set(ref, { sess, last: at, up: at, asv: { ...a, h: null, used: at } }, { merge: true });
+      return { out: OK({ tok, me: meView({ ...u, sess }), hrs }), by: a.by };
+    });
+    if (result.out[0] === 200) log && log('👀 손님 화면으로 보기 — 시험 계정 ' + m[1] + ' 들어감(' + s(result.by, 80) + ')');
+    return result.out;
+  }
   /* ── 구매 인증: 이 계정으로 한 주문 중 입금 확인 뒤(입금·출고·보냄·끝) 같은 책(ISBN 또는 그 실물) */
   async function buyOf(u, k) { const L = (u.ords || []).slice(0, 100).map((x) => x && x.no).filter(Boolean); if (!L.length) return null; const ds = await db.getAll(...L.map((no) => C('shop_orders').doc(no)));
     for (const d of ds) { const o = d.exists ? d.data() : null; if (!o || o.uid !== u.uid || !ORD_OK.has(o.st)) continue; const x = (o.items || []).find((y) => (y.isbn && 'i' + y.isbn === k) || 'd' + y.lid === k); if (x) return { t: x.t, im: x.im || null, id: x.lid }; } return null; }
@@ -183,12 +205,21 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     const A = await authOf(req); if (!A) return E(401, '로그인이 필요합니다', { login: 1 }); const { uid } = A; let u = A.u;
     if (limitWait('au' + uid, 300, 600e3)) return E(429, '잠시 뒤 다시 해 주세요');
     if (o === 'me') { if (Date.now() - Date.parse(u.last || 0) > 3600e3) uSet(uid, { last: nowIso() }).catch(() => {}); return OK({ me: meView(u) }); }
-    if (o === 'out') { await uSet(uid, { sess: (u.sess || []).filter((x) => x && x.h !== A.h) }); return OK(); }
+    if (o === 'out') return sessionTxn(uid, (v, tx, ref) => {
+      if (!liveSession(v, A)) return E(401, '로그인이 필요합니다', { login: 1 });
+      tx.set(ref, { sess: v.sess.filter(x => x && x.h !== A.h), up: nowIso() }, { merge: true }); return OK();
+    });
     if (o === 'set') { const up = {}; if (b.bio != null) { const bio = sLong(b.bio, 300).replace(/\n+/g, ' '); if ([...bio].length > 150) return E(400, '소개는 150자까지'); if (LINK.test(bio) || PHONEISH.test(bio)) return E(400, '소개에 주소·전화 번호는 넣지 않습니다'); up.bio = bio; }
       if (b.notif && typeof b.notif === 'object') { const notif = {}; for (const k of ['order', 'restock', 'price', 'follow', 'news']) if (k in b.notif) notif[k] = b.notif[k] ? 1 : 0; if (Object.keys(notif).length) up.notif = notif; }
       if (b.goal != null) { const n = Math.round(+b.goal); if (!(n >= 0 && n <= 1000)) return E(400, '독서 목표는 0~1,000권'); up.goal = { n }; }
       return profileSet(A, up, b.nick == null ? null : nickNorm(b.nick)); }
-    if (o === 'pw') { if (!pwOk(b.old, u.pw)) return E(400, '지금 비밀번호가 맞지 않습니다', { f: 'old' }); const w = pwWhy(b.nw); if (w) return E(400, w, { f: 'nw' }); const S0 = sessNew({ ...u, sess: [] }); await uSet(uid, { pw: pwHash(b.nw), sess: S0.sess }); return OK({ tok: S0.tok }); }
+    if (o === 'pw') { if (!pwOk(b.old, u.pw)) return E(400, '지금 비밀번호가 맞지 않습니다', { f: 'old' }); const w = pwWhy(b.nw); if (w) return E(400, w, { f: 'nw' }); const password = pwHash(b.nw);
+      return sessionTxn(uid, (v, tx, ref) => {
+        if (!liveSession(v, A) || v.pw !== u.pw) return E(401, '로그인 상태가 바뀌었습니다 — 다시 로그인해 주세요', { login: 1 });
+        const S0 = sessNew({ ...v, sess: [] }); tx.set(ref, { pw: password, sess: S0.sess, up: nowIso() }, { merge: true });
+        return OK({ tok: S0.tok });
+      });
+    }
     if (o === 'bye') { if (!pwOk(b.pw, u.pw)) return E(400, '비밀번호가 맞지 않습니다', { f: 'pw' }); /* 회원 탈퇴 — 메일·별명 묶음을 풀고 로그인 0 · 쓴 글은 화면에서 빠짐(개인정보 보호법 · 주문 기록은 전자상거래법 5년 그대로) */
       const t = nowIso();
       for (const cn of ['shop_reviews', 'shop_quotes', 'shop_lists']) { const ss = await C(cn).where('uid', '==', uid).get(); const W = []; ss.forEach((d) => W.push(d.ref.set({ gone: 1 }, { merge: true }))); await Promise.all(W); } RVC.clear(); NEW.at = 0;

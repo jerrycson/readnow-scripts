@@ -8,6 +8,7 @@ function requiredTests(files) {
   if (files.some((f) => /^(cloud\/shop(?:-stock|-order-attempt)?\.js|src\/tests\/(?:tORDERRETRY\.js|standalone\/order-attempt\.test\.cjs))$/.test(f))) out.add('tORDERRETRY');
   if (files.some(f => /^(cloud\/shop(?:-acct|-account-orders)?\.js|shop\/shop-acct\.js|src\/tests\/(?:tACCOUNTORDERS\.js|standalone\/account-orders(?:-browser|\.test)\.cjs))$/.test(f))) ['tACCOUNTORDERS', 'tSHOP9_1112'].forEach(t => out.add(t));
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTIDENTITY\.js|standalone\/account-identity\.test\.cjs))$/.test(f))) ['tACCOUNTIDENTITY', 'tSHOP9_1112'].forEach(t => out.add(t));
+  if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTSESSION\.js|tSHOPVIEW2_1114\.js|standalone\/account-session\.test\.cjs))$/.test(f))) ['tACCOUNTSESSION', 'tSHOP9_1112', 'tSHOPVIEW2_1114'].forEach(t => out.add(t));
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };

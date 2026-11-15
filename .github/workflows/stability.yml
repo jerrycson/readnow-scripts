@@ -28,6 +28,7 @@ jobs:
           node src/tests/tSHIPPC.js
           node src/tests/tSENDPREP1115.js
           node src/tests/tSHOP9_1112.js
+          node src/tests/tSHOPVIEW2_1114.js
 
   account-browser:
     runs-on: ubuntu-latest
