@@ -28,6 +28,14 @@ async function run({ root }) {
   await test('접수 정리: 같은 결과를 다시 적용해도 남은 수량 보존', () => { const left = B.cartAfterOrder([{ ...A, n: 3 }], [A]); assert.deepEqual(B.cartAfterOrder(left, [A]), left); const stored = left.map(x => ({ ...x, _entry: 'remaining' })); assert.deepEqual(B.cartAfterOrder(stored, [A]), stored); });
   await test('접수 정리: 입력 배열과 줄을 바꾸지 않음', () => { const now = Object.freeze([Object.freeze({ ...A, n: 3 }), Object.freeze(N)]), sent = Object.freeze([Object.freeze(A)]); assert.equal(B.cartAfterOrder(now, sent)[0].n, 2); assert.equal(now[0].n, 3); });
   await test('주문 전송: 장바구니 줄 소유권은 서버 요청에 포함하지 않음', () => { const body = B.orderBody({ name: '가상 주문자', same: true }, [{ ...A, n: 2 }]); assert.deepEqual(body.items, [A.id]); assert.deepEqual(body.qty, { [A.id]: 2 }); assert(!JSON.stringify(body).includes('_entry')); });
+  await test('수량 담기: 첫 줄에 재고를 보존하고 주문 수량은 한 권', () => { const x = B.cartAdd([], { ...A, q: 3 }, 20).cart[0]; assert.equal(x.q, 3); assert.equal(x.n, undefined); const body = B.orderBody({ same: true }, [x]); assert.equal(body.qty, undefined); assert(!JSON.stringify(body).includes('"q"')); });
+  await test('수량 담기: 재고 정보는 유효한 정수일 때만 보존', () => { for (const q of [undefined, 0, -1, 1.5, Infinity, '잘못된 값']) assert.equal(B.cartAdd([], { ...A, q }, 20).cart[0].q, undefined); assert.equal(B.cartAdd([], { ...A, q: '3' }, 20).cart[0].q, 3); });
+  await test('되돌리기: 선택 수량과 부가 칸을 보존하고 줄 소유권은 새로 발급', () => { const old = Object.freeze({ ...A, q: 3, n: 2, extra: '보존', u: '장' }); const r = B.cartRestore([], old, 20, 3); assert.equal(r.why, null); assert.deepEqual(r.cart, [{ id: A.id, p: A.p, q: 3, n: 2, extra: '보존', u: '장' }]); assert.equal(old._entry, 'entry-A'); });
+  await test('되돌리기: 한 권 형식과 합계를 유지', () => { const r = B.cartRestore([N], A, 20, 0); assert.equal(r.why, null); assert.equal(r.cart[1].n, undefined); assert.deepEqual(B.cartSum(r.cart, {}), { n: 2, sum: 5000, fee: 0, total: 5000 }); });
+  await test('되돌리기: 다른 탭이 다시 담은 같은 상품은 덮지 않음', () => { const newer = { ...A, _entry: 'new-owner', n: 3, q: 3 }; const r = B.cartRestore([newer], { ...A, n: 2, q: 3 }, 20, 3); assert(r.why); assert.deepEqual(r.cart, [newer]); });
+  await test('되돌리기: 종류 수 제한을 넘기지 않음', () => { const r = B.cartRestore([N], A, 1, 3); assert(r.why); assert.deepEqual(r.cart, [N]); });
+  await test('되돌리기: 바뀐 설정·재고·잘못된 수량을 조용히 줄이지 않음', () => { for (const [n, q, mul] of [[2, 3, 0], [2, 3, 1], [3, 2, 3], [0, 3, 3], [1.5, 3, 3], [-1, 3, 3]]) { const r = B.cartRestore([N], { ...A, n, q }, 20, mul); assert(r.why); assert.deepEqual(r.cart, [N]); } });
+  await test('수량 단추: 첫 담기에서 재고와 설정 한도까지 조절 가능', () => { const first = B.cartAdd([], { ...A, q: 3 }, 20).cart; assert.equal(B.cartSetN(first, A.id, 10, 9)[0].n, 3); assert.equal(B.cartSetN(first, A.id, 10, 2)[0].n, 2); assert.equal(B.cartSetN(first, A.id, 1, 9)[0].n, undefined); });
   return results;
 }
 module.exports = { run };

@@ -51,6 +51,22 @@ async function run() {
   const received = { ok: true, no: 'BQ20261116-AAAAA', t: 'a'.repeat(32), total: 2000, items: [BOOK] };
   try {
 
+    for (const width of [390,1280]) {
+      await test('재고 3개 상품 첫 담기 뒤 수량 조절',async h=>{
+        await h.nav('#/b/TEST-B');await h.p.locator('#add').click();await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).some(x=>x.id==='TEST-B'));await h.nav('#/cart');await h.p.locator('.cartl').waitFor();await h.settle();const x=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')).find(x=>x.id==='TEST-B'));assert.equal(x.q,3,'처음 담은 줄의 재고 보존');assert.equal(await h.p.locator('[data-qi="TEST-B"]').count(),1,'수량 단추 표시');await h.p.locator('[data-qi="TEST-B"]').click();await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).find(x=>x.id==='TEST-B').n===2);await h.settle();await h.p.locator('[data-qi="TEST-B"]').click();await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).find(x=>x.id==='TEST-B').n===3);await h.settle();assert.equal(await h.p.locator('[data-qi="TEST-B"]').isDisabled(),true);
+      },width);
+      await test('두 권 삭제 후 되돌리기는 선택 수량 보존',async h=>{
+        await h.p.evaluate(()=>{const list=JSON.parse(localStorage.getItem('bq-cart'));list[0].n=2;localStorage.setItem('bq-cart',JSON.stringify(list));});await h.nav('#/cart');await h.p.locator('[data-del="TEST-A"]').click();await h.p.locator('#toast .undo').click();await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===1);const x=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart'))[0]);assert.equal(x.n,2,'되돌린 선택 수량');assert.equal(x.q,3,'되돌린 재고');
+      },width);
+    }
+    for (const width of [390,1280]) {
+      await test('되돌리기는 다른 탭에서 새로 담은 같은 상품을 덮지 않음',async h=>{
+        await h.p.evaluate(()=>{const list=JSON.parse(localStorage.getItem('bq-cart'));list[0].n=2;localStorage.setItem('bq-cart',JSON.stringify(list));});await h.nav('#/cart');await h.p.locator('[data-del="TEST-A"]').click();const p=await secondTab(h,'#/b/TEST-A');await p.locator('#add').click();await p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===1);const latest=await p.evaluate(()=>localStorage.getItem('bq-cart'));await h.p.locator('#toast .undo').click();await h.settle();assert.equal(await h.p.evaluate(()=>localStorage.getItem('bq-cart')),latest);assert.match(await h.p.locator('#toast').textContent(),/이미 담은 책/);
+      },width);
+      await test('되돌린 두 권은 이전 주문의 늦은 완료 정리에서 보존',async h=>{
+        const sent=await h.p.evaluate(()=>{const list=JSON.parse(localStorage.getItem('bq-cart'));list[0].n=2;list[0]._entry='synthetic-before-remove';localStorage.setItem('bq-cart',JSON.stringify(list));return list;});await h.nav('#/cart');await h.p.locator('[data-del="TEST-A"]').click();await h.p.locator('#toast .undo').click();await h.p.waitForFunction(()=>JSON.parse(localStorage.getItem('bq-cart')).length===1);const restored=await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart')));assert.equal(restored[0].n,2);assert.notEqual(restored[0]._entry,sent[0]._entry);await h.p.evaluate(cart=>BQCartStore.create().finish({state:'completed',cart,result:{receipt:{no:'BQ20261116-00002',t:'a'.repeat(32),n:2,total:4000,at:'2026-11-16T00:00:00Z'}}}),sent);assert.deepEqual(await h.p.evaluate(()=>JSON.parse(localStorage.getItem('bq-cart'))),restored);
+      },width);
+    }
     async function secondTab(h,hash){const p=await h.ctx.newPage();p.on('pageerror',e=>h.errors.push(e.message));await p.addInitScript(base=>{window.BQ_API=base;},h.base);await p.goto(h.base+'/s/index.html'+(hash||'#/wish'));return p;}
     async function holdCart(p){await p.evaluate(()=>{window.cartHold=navigator.locks.request(BQCartStore.LOCK,async()=>{window.cartHeld=true;await new Promise(r=>window.releaseCart=r);});});await p.waitForFunction(()=>window.cartHeld);}
     const cartSaveFault=()=>{const original=Storage.prototype.setItem;window.cartSaveFails=true;Storage.prototype.setItem=function(k,v){if(k==='bq-cart'&&window.cartSaveFails)throw new DOMException('합성 저장 공간 거절','QuotaExceededError');return original.call(this,k,v);};};

@@ -39,7 +39,15 @@
   function discSw(e) { const b = e.target && e.target.closest && e.target.closest('[data-dk-sw]'); if (!b) return false; const f = b.closest('.dk'); if (!f) return false; e.preventDefault(); e.stopPropagation(); f.dataset.on = b.dataset.dkSw; f.querySelectorAll('[data-dk-sw]').forEach((q) => q.setAttribute('aria-pressed', String(q === b))); return true; }
   const units = (c) => (c || []).reduce((a, x) => a + (x && x.n > 1 ? x.n : 1), 0);
   const cartAdd = (cart, it, max, mul) => { const c = (cart || []).filter((x) => x && x.id); const ex = c.find((x) => x.id === it.id); if (ex && mul > 1 && +it.q > 1) { const lim = Math.min(+it.q, mul); const n = ex.n > 1 ? ex.n : 1; if (n >= lim) { const u = unitOf(it); return { cart: c, why: `이 상품은 ${lim}${u}까지 담을 수 있습니다(재고 ${+it.q}${u})` }; } return { cart: c.map((x) => (x.id === it.id ? { ...x, n: n + 1, q: +it.q } : x)), why: null, n: n + 1 }; }
-    if (ex) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; const u = unitOf(it); return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}), ...(u !== '권' ? { u } : {}) }], why: null }; }; /* (shopmisc1) u = 단위(책이 아닐 때만) */ /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
+    if (ex) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; const u = unitOf(it); return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(Number.isSafeInteger(+it.q) && +it.q > 1 ? { q: +it.q } : {}), ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}), ...(u !== '권' ? { u } : {}) }], why: null }; }; /* (shopmisc1) u = 단위(책이 아닐 때만) */ /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
+  /* 삭제 되돌리기: 수량·부가 칸은 보존하고 새 줄 식별자는 저장 도구가 발급한다. */
+  function cartRestore(cart, it, max, mul) {
+    const added = cartAdd(cart, it, max); if (added.why) return added;
+    const n = it.n == null ? 1 : it.n, lim = mul > 1 ? Math.min(mul, +it.q > 1 ? +it.q : 1) : 1;
+    if (!Number.isSafeInteger(n) || n < 1 || n > lim) return { cart, why: '이전에 선택한 수량을 지금 설정으로 되돌릴 수 없습니다 — 상품을 다시 확인해 주세요' };
+    const restored = { ...it }; delete restored._entry;
+    return { cart: [...added.cart.slice(0, -1), restored], why: null };
+  }
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
   /* 같은 책 권 수 바꾸기(장바구니 −·+) — 1이면 n을 뺌(한 권 줄과 같은 꼴) */
   const cartSetN = (cart, id, n, lim) => (cart || []).map((x) => { if (!x || x.id !== id) return x; const k = Math.max(1, Math.min(Math.round(+n) || 1, lim || 9999, +x.q > 1 ? +x.q : 1)); const o = { ...x }; if (k > 1) o.n = k; else delete o.n; return o; });
@@ -89,5 +97,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { DKN, discKind, discH, discSw, UNIT, unitKind, unitOf, unitsTxt, kindUnit, units, cartSetN, cartAfterOrder, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { DKN, discKind, discH, discSw, UNIT, unitKind, unitOf, unitsTxt, kindUnit, units, cartSetN, cartAfterOrder, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartRestore, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
