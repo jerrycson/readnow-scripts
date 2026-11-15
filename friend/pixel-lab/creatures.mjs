@@ -5,27 +5,41 @@ export function creatureScene(s,phase=0,action='idle'){
  const bob=moving?Math.cos(phase*2)*.035:Math.sin(phase)*.012;
  const eyes=(center,spacing,size=.06)=>{for(const side of [-1,1])E(parts,add(center,[side*spacing,0,0]),[size,size*.85,size*.45],'eye',null,'eye');};
  if(['fox','cat','drake'].includes(kind)){
-  const cat=kind==='cat',dragon=kind==='drake',mat=dragon?'scale':'fur',length=cat?.60:.76,base=rest?.58:1.05;
-  E(parts,[0,base+bob,-.12],[cat?.38:.43,cat?.39:.43,length],mat,null,'quadruped-body');
-  E(parts,[0,base+.18+bob,.46],[.34,.40,.34],dragon?'white':mat,null,'chest');
-  const headY=base+.52+(action==='look'?.08*Math.sin(phase):0);
-  E(parts,[0,headY,.70],[cat?.36:.32,.34,cat?.31:.40],mat,null,'head');
-  E(parts,[0,headY-.10,cat?.97:1.06],[cat?.19:.21,.15,cat?.15:.31],'white',null,'muzzle');
-  E(parts,[0,headY-.075,cat?1.10:1.32],[.075,.06,.055],'eye',null,'nose');
-  eyes([0,headY+.035,.99],.18,.05);
+  const cat=kind==='cat',dragon=kind==='drake',mat=dragon?'scale':cat?'catFur':'fur',length=cat?.69:.82,base=rest?.58:cat?.97:1.05;
+  E(parts,[0,base+bob,-.12],[cat?.43:dragon?.43:.36,cat?.43:.38,length],mat,null,'quadruped-body');
+  E(parts,[0,base+.14+bob,.42],[cat?.35:.30,.38,.32],dragon?'white':mat,null,'chest');
+  const headY=base+(cat?.44:.52)+(action==='look'?.08*Math.sin(phase):0);
+  E(parts,[0,headY,.70],[cat?.38:.30,cat?.32:.34,cat?.29:.36],mat,null,'head');
+  if(cat){
+   for(const side of [-1,1]){
+    E(parts,[side*.18,headY-.08,.88],[.19,.17,.16],mat,null,'cheek');
+    E(parts,[side*.09,headY-.13,1.005],[.12,.09,.105],'white',null,'muzzle-pad');
+    E(parts,[side*.18,headY+.035,.966],[.068,.055,.036],'catEye',null,'cat-eye');
+    E(parts,[side*.18,headY+.035,1.003],[.021,.047,.012],'eye',null,'cat-pupil');
+    for(const dy of [-.035,.025])taper(parts,[side*.13,headY-.12,1.07],[side*.47,headY-.10+dy,1.035],[[0,.006,.006],[1,.003,.003]],'white','whisker');
+   }
+   E(parts,[0,headY-.09,1.10],[.048,.035,.032],'leather',null,'nose');
+  }else{
+   taper(parts,[0,headY-.08,.94],[0,headY-.13,1.32],[[0,.19,.17],[.55,.135,.12],[1,.075,.055]],'white','tapered-muzzle');
+   E(parts,[0,headY-.13,1.34],[.07,.045,.035],'eye',null,'nose');eyes([0,headY+.035,.99],.17,.048);
+  }
   for(const side of [-1,1]){
-   taper(parts,[side*.22,headY+.20,.60],[side*.28,headY+(cat?.60:.68),.59],[[0,.16,.115],[1,.008,.015]],dragon?'brass':mat,'ear-or-horn');
-   if(!dragon)taper(parts,[side*.225,headY+.28,.687],[side*.27,headY+.55,.635],[[0,.075,.025],[1,.005,.008]],'leather','inner-ear');
+   const earTip=cat?.59:.87;
+   taper(parts,[side*.22,headY+.20,.60],[side*(cat?.29:.37),headY+earTip,.59],[[0,.17,.075],[.32,cat?.13:.19,.060],[1,.018,.018]],dragon?'brass':mat,'ear-or-horn');
+   if(!dragon)taper(parts,[side*.225,headY+.28,.675],[side*(cat?.29:.36),headY+earTip-.06,.615],[[0,.085,.022],[.30,cat?.07:.11,.018],[1,.008,.008]],'leather','inner-ear');
    for(const front of [true,false]){
     const offset=(side<0?Math.PI:0)+(front?.35:0),g=gaitFoot(phase+offset,1,.46,running?.26:.14,running);
     const root=[side*.29,base-.14,front?.41:-.57],paw=[side*.30,.13+(moving?g.lift:0),(front?.53:-.60)+(moving?g.z:0)];
     const middle=[side*.31,(root[1]+paw[1])*.5,paw[2]+(front?-.10:.16)];
-    taper(parts,root,middle,[[0,.13,.15],[1,.085,.09]],mat,'upper-leg');taper(parts,middle,paw,[[0,.09,.10],[1,.065,.07]],mat,'lower-leg');
+    if(!front)E(parts,[root[0],root[1]-.04,root[2]],[cat?.23:.18,.27,.25],mat,null,'haunch');
+    taper(parts,root,middle,[[0,cat?.15:.12,.15],[1,.085,.09]],mat,'upper-leg');
+    if(front)taper(parts,middle,paw,[[0,.09,.10],[1,.065,.07]],mat,'lower-leg');
+    else{const hock=[paw[0],paw[1]+.24,paw[2]-.15];taper(parts,middle,hock,[[0,.095,.10],[1,.06,.065]],mat,'lower-hind-leg');taper(parts,hock,paw,[[0,.065,.07],[1,.055,.06]],mat,'metatarsal');}
     E(parts,[paw[0],paw[1]-.04,paw[2]+.055],[.105,.09,.14],front?'white':mat,null,'paw');
    }
   }
   const sway=Math.sin(phase-.6)*.22;
-  const tailStart=[0,base+.10,-length*.95],tailMiddle=[sway,base+.34,-1.2],tailEnd=[sway+.10,base+(cat?.78:.38),-1.69];
+  const tailStart=[0,base+.10,-length*.95],tailMiddle=[sway,base+(cat?.45:.28),-1.2],tailEnd=[sway+(cat?.22:.10),base+(cat?1.0:.28),cat?-1.48:-1.74];
   taper(parts,tailStart,tailMiddle,[[0,.15,.16],[.6,cat?.09:.25,cat?.09:.25],[1,cat?.075:.22,cat?.075:.22]],mat,'tail');
   taper(parts,tailMiddle,tailEnd,[[0,cat?.075:.22,cat?.075:.22],[.6,cat?.07:.15,cat?.07:.15],[1,.025,.025]],cat?mat:'white','tail-tip');
   if(dragon){
@@ -39,22 +53,27 @@ export function creatureScene(s,phase=0,action='idle'){
   }
   if(s.accessory==='scarf')E(parts,[0,base+.4,.55],[.37,.10,.32],'cloth',null,'scarf');
   if(s.accessory==='satchel')box(parts,[.43,base+.1,-.16],[.11,.22,.25],'leather','saddlebag');
-  return {parts,height:2.5,frame:4.5,gait:{stride:.46,stance:running?.42:.60},provenance:'original-quadruped-v2'};
+  return {parts,height:2.5,frame:4.5,gait:{stride:.46,stance:running?.42:.60},provenance:'original-quadruped-v4'};
  }
  if(kind==='bird'){
-  const base=rest?.62:1.0;
-  E(parts,[0,base+bob,0],[.44,.60,.40],'white',null,'bird-body');E(parts,[0,base+.62,.13],[.34,.34,.32],'fur',null,'bird-head');
-  eyes([0,base+.67,.41],.16,.055);
-  taper(parts,[0,base+.56,.39],[0,base+.50,.77],[[0,.12,.13],[1,.008,.008]],'brass','beak');
+  const base=rest?.52:.72;
+  E(parts,[0,base+bob,0],[.49,.46,.55],'white',[0,.85,.35],'bird-body');
+  E(parts,[0,base+.43,.32],[.34,.33,.32],'white',null,'bird-head');
+  E(parts,[0,base+.59,.30],[.35,.19,.33],'feather',null,'crown');
+  E(parts,[0,base+.27,.54],[.22,.16,.13],'feather',null,'throat');
+  for(const side of [-1,1])E(parts,[side*.24,base+.47,.53],[.045,.042,.025],'eye',null,'bird-eye');
+  taper(parts,[0,base+.38,.60],[0,base+.35,.87],[[0,.085,.07],[1,.008,.008]],'feather','beak');
   for(const side of [-1,1]){
    const flap=wave?Math.sin(phase*2)*.8:0;
-   taper(parts,[side*.36,base+.27,0],[side*(.57+Math.max(0,flap)*.7),base-.3+flap,-.12],[[0,.16,.24],[.6,.12,.20],[1,.025,.045]],'cloth','wing');
+   E(parts,[side*(.41+Math.max(0,flap)*.35),base+.04+flap*.3,-.13],[.115,.42,.23],'feather',[side*flap,.32,-1],'wing');
+   for(let j=0;j<3;j++)taper(parts,[side*.40,base+.14,-.10-j*.07],[side*(.43+Math.max(0,flap)*.75),base-.17+flap,-.66-j*.075],[[0,.035,.025],[1,.02,.015]],j===0?'white':'feather','flight-feather');
    const g=gaitFoot(phase,side,.34,.12),foot=[side*.18,.055+(moving?g.lift:0),(moving?g.z:0)+.06];
-   taper(parts,[side*.18,base-.4,0],foot,[[0,.04,.045],[1,.035,.035]],'brass','leg');
-   for(const dx of [-.055,0,.055])taper(parts,foot,[foot[0]+dx,.04,foot[2]+.20],[[0,.025,.025],[1,.012,.012]],'brass','toe');
+   taper(parts,[side*.18,base-.3,0],foot,[[0,.035,.04],[1,.026,.026]],'feather','leg');
+   for(const dx of [-.055,0,.055])taper(parts,foot,[foot[0]+dx,foot[1]-.015,foot[2]+.16],[[0,.022,.022],[1,.010,.010]],'feather','toe');
+   taper(parts,foot,[foot[0],foot[1]-.015,foot[2]-.10],[[0,.022,.022],[1,.010,.010]],'feather','back-toe');
   }
-  for(const side of [-1,0,1])taper(parts,[side*.08,base-.05,-.30],[side*.17,base-.23,-.75],[[0,.09,.04],[1,.06,.025]],'cloth','tail-feather');
-  return {parts,height:2.2,frame:3.4,gait:{stride:.34,stance:.60},provenance:'original-bird-v2'};
+  for(const side of [-1,0,1])taper(parts,[side*.08,base-.05,-.37],[side*.13,base-.13,-1.12],[[0,.065,.035],[1,.045,.018]],'feather','tail-feather');
+  return {parts,height:2.0,frame:3.4,gait:{stride:.34,stance:.60},provenance:'original-bird-v4'};
  }
  const robot=kind==='robot',golem=kind==='golem',mat=robot?'metal':golem?'stone':'alien',height=robot?3.2:golem?3.4:3.6;
  const lower=rest?.65:0,bodyY=height*.53-lower+bob;

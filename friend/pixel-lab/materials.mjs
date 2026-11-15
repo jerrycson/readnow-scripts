@@ -14,6 +14,9 @@ export function materialLibrary(s){
   metal:ramp(['#1f293a','#374556','#637f8b','#a7c4c8','#f0f4dc'],{roughness:.16,specular:1.1,metal:true}),
   brass:ramp(['#3e302e','#70512f','#a7803b','#d7ba6c','#fff1bb'],{roughness:.23,specular:1,metal:true}),
   fur:ramp(['#3c2c2e','#794337','#b16b3b','#da9b54','#f0c78a'],{pattern:'fur'}),
+  catFur:ramp(['#30343e','#535b68','#79858c','#a6b2b3','#d5dcce'],{pattern:'cat'}),
+  catEye:ramp(['#354331','#596e3b','#88a258','#b7c879','#e4e8b4']),
+  feather:ramp(['#222b35','#35424e','#536472','#82939b','#b9c5c2'],{roughness:.8,specular:.10}),
   white:ramp(['#55575b','#8a9695','#b7c0ad','#d9d9bb','#f4eacf']),
   scale:ramp(['#203c39','#326153','#4c8e6e','#80b28a','#c1d6a1'],{roughness:.5,specular:.25,pattern:'scale'}),
   stone:ramp(['#2e3c41','#53635b','#788574','#a2ad8b','#d0d2ad'],{pattern:'stone'}),
@@ -34,6 +37,7 @@ export function shade(mat,normal,pos,resolution){
   if(mat.pattern==='wool')value+=.018*Math.sin(pos[0]*34)*Math.sin(pos[1]*28);
   if(mat.pattern==='hair')value+=.06*Math.sin(pos[0]*28+pos[2]*9);
   if(mat.pattern==='fur')value+=.025*Math.sin(pos[0]*21+pos[1]*10);
+  if(mat.pattern==='cat')value-=Math.max(0,Math.sin(pos[2]*17+pos[1]*5))*.08;
   if(mat.pattern==='scale')value+=.035*Math.sin(pos[0]*18)*Math.sin(pos[1]*19);
   if(mat.pattern==='stone')value+=.04*Math.sin(pos[0]*13+pos[1]*7+pos[2]*11);
  }
