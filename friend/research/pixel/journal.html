@@ -18,7 +18,8 @@
 <li data-card><a href="#section-18">19. 15차 같은 형태의 명암 대조</a></li>
 <li data-card><a href="#section-19">20. 16차 어깨&#183;가슴&#183;등&#183;복부&#183;팔다리의 연결</a></li>
 <li data-card><a href="#section-20">21. 17차 작은 등신의 귀&#183;눈&#183;볼</a></li>
-<li data-card><a href="#section-21">22. 18차 성인 코&#183;볼 명암과 홍채&#183;입선</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-21">22. 18차 성인 코&#183;볼 명암과 홍채&#183;입선</a></li>
+<li data-card><a href="#section-22">23. 19차 한쪽 손&#183;발 관찰</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -192,4 +193,9 @@
 <p>2026-11-16. A~G 시안을 비교했다. 코가 흐려지는 안, 콧등 대비가 과한 안, 눈·코 안쪽의 얇은 면을 뒤집는 변형안, 눈꺼풀과 안구가 맞지 않는 안을 제외했다. 기존 피부 표면의 좌표를 보존하면서 명암·홍채·입선을 조정한 G안을 연구 화면에 적용했다.</p>
 <p>성인 검사 11/11, 회전표 14/14(896방향)가 통과했다. 17차 복원본의 16개 성인 표면 좌표 해시와 자연형 그림 8개를 보존 기준으로 삼았다. 새 망가형의 명암 변화는 의도된 변경이므로 과거 이미지 해시와 같다고 주장하지 않는다. 기존 명암 보고서는 당시 결과로 남긴다.</p>
 <p>자료는 66개다. 전후 얼굴 도판을 직접 비교했지만 목표 참고 그림의 수준에는 미달한다. 사용자 인체 승인과 새 화면의 브라우저 클릭 검사는 아직 없다.</p>
+</article>
+<article id="section-22" data-card><h2>23. 19차 한쪽 손·발 관찰</h2>
+<p>2026-11-16. 몸통이나 반대쪽 발이 확대 부위를 가리는 문제를 확인했다. 한쪽 손·발의 기존 면만 선택하는 관찰 옵션을 추가하고 원래 좌표·면을 보존했다. 관찰 구도는 부위에 맞춰 모든 회전 방향을 포함한다.</p>
+<p>검사 4/4: 기존 이미지 42개 보존, 원본 기하 무변경, 새 기본형의 손·발 1,792방향, 8차 비교 시안 512방향. 첫 실행은 기준 그림 파일 생성이 시간 초과로 중단돼 한 항목이 실패했다. 기준 파일을 별도 실행으로 생성한 뒤 네 항목을 모두 다시 확인했다. 새 UI의 브라우저 클릭 검사는 하지 못했다.</p>
+<p>자료 수는 기존 66개다. 발 원전 세 도판을 재관찰한 범위를 기록했다. 인체 승인 전이며 다음은 발바닥 기울기와 자세의 지지점 대조다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
