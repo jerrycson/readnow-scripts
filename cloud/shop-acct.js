@@ -13,6 +13,7 @@
  *  운영자(관리 웹앱 → 클라우드 /shop-admin · 로그인 허용 계정만): 시험 계정 만들기·목록·보관/숨김·비밀번호 다시 · 리뷰/밑줄 숨김·보이기 — 지우기 없음
  *  시험 계정(test:1): 별명 앞 🧪 · 실제 주문 못 넣음(매출 0) · 그 글은 본인 화면에만(공개 목록·별점 평균·첫 화면에서 빠짐) */
 'use strict';
+const ACCOUNT_ORDERS = require('./shop-account-orders.js');
 const crypto = require('crypto');
 const s = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n || 200);
 const sLong = (v, n) => String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').replace(/\n{4,}/g, '\n\n\n').trim().slice(0, n);
@@ -164,8 +165,8 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
       const key = kk + ':' + (kk === 'price' ? x.id : isbn); const on = !!b.on; if (on && !(u.alerts || {})[key] && Object.values(u.alerts || {}).filter(Boolean).length >= 100) return E(400, '알림 신청은 100개까지');
       const v = on ? { k: kk, id: x ? x.id : s(b.id, 80) || null, isbn, t: x ? x.t : s(b.t, 120), im: x ? x.im || null : null, p: x ? x.p : null, at: nowIso() } : null; await uSet(uid, { alerts: { [key]: v } }); return OK({ key, on }); }
     if (o === 'alerts') { await ready(); const st = alertState(u.alerts, await vw(), await held(), await soldX()); return OK({ L: st }); }
-    if (o === 'orders') { const L = (u.ords || []).slice(0, 100); if (!L.length) return OK({ L: [] }); const ds = await db.getAll(...L.map((x) => C('shop_orders').doc(x.no))); const out = [];
-      ds.forEach((d, i) => { const ob = d.exists ? d.data() : null; if (!ob || ob.uid !== uid) return; out.push({ ...view(ob), t: L[i].t || null }); }); return OK({ L: out }); }
+    if (o === 'orders') { let repairPending = false; try { await repairOrders(uid, b.recover); } catch (e) { repairPending = true; log && log('👤 기기 주문의 계정 연결을 나중에 다시 확인합니다'); } u = await uGet(uid, true); if (!u || u.gone || u.arch) return E(401, '로그인 상태를 확인해 주세요', { login: 1 }); const L = (u.ords || []).slice(0, 100); if (!L.length) return OK({ L: [], ...(repairPending ? { repairPending: 1 } : {}) }); const ds = await db.getAll(...L.map((x) => C('shop_orders').doc(x.no))); const out = [];
+      ds.forEach((d, i) => { const ob = d.exists ? d.data() : null; if (!ob || ob.uid !== uid) return; out.push({ ...view(ob), t: L[i].t || null }); }); return OK({ L: out, ...(repairPending ? { repairPending: 1 } : {}) }); }
     if (o === 'rv') { if (limitWait('arv' + uid, 20, 3600e3)) return E(429, '잠시 뒤 다시 해 주세요(짧은 시간에 리뷰가 많음)'); const k = String(b.k || ''); if (!K_RE.test(k)) return E(400, '책 번호가 이상함'); const c = rvCheck(b); if (c.err) return E(400, c.err);
       if (c.v.ph.some((n) => !n.startsWith('rv/' + uid + '/'))) return E(400, '사진이 이상함'); const x = await bookOf(b.id, k); const buy = await buyOf(u, k).catch(() => null); const rid = 'r_' + H(k + '|' + uid).slice(0, 20); let out = null;
       await db.runTransaction(async (tx) => { out = null; const ref = C('shop_reviews').doc(rid); const d = await tx.get(ref); const was = d.exists ? d.data() : null; const info = x ? { id: x.id, t: x.t, a: x.a || null, im: x.im || null } : was ? { id: was.id, t: was.t, a: was.a, im: was.im } : buy ? { id: buy.id, t: buy.t, a: null, im: buy.im } : null;
@@ -248,7 +249,9 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     if (path === '/shop/rvimg') return img(res, q);
     return false; }
   /* 주문이 계정과 이어짐(주문 접수 성공 뒤) — 마이페이지 주문 내역·구매 인증 */
-  async function addOrder(uid, rec) { const u = await uGet(uid, true); if (!u) return; await uSet(uid, { ords: [{ no: rec.no, t: rec.t, at: rec.at, total: rec.total, n: rec.n }, ...(u.ords || []).filter((x) => x && x.no !== rec.no)].slice(0, 200) }); }
+  function ordersChanged(uid) { UC.delete(uid); PFC.delete(uid); }
+  async function repairOrders(uid, records) { const changed = await ACCOUNT_ORDERS.repair(db, C, uid, records, nowIso()); if (changed) ordersChanged(uid); return changed; }
+  async function addOrder(uid, rec) { return repairOrders(uid, [rec]); }
   /* ── 운영자(관리 웹앱 · 클라우드 로그인 허용 계정) — 지우기 없음(보관·숨김만) */
   async function admin(b, who) { b = b || {}; const o = String(b.op || ''); const by = s(who && who.email, 80) || 'admin';
     if (o === 'mkTest') { const n = Math.max(1, Math.min(10, Math.round(+b.n || 3))); const tag = rnd(2); const out = []; for (let i = 1; i <= n; i++) { const T = mkTestOne(i, tag); const r = await join({ em: T.em, pw: T.pw, nick: T.nick }, { headers: {} }, true, by); if (r[0] === 200) out.push({ uid: r[1].me.uid, em: T.em, nick: T.nick, pw: T.pw }); }
@@ -292,6 +295,6 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
   /* /b/ 검색용 화면 — 공개 리뷰 평균·수·대표 3개(구글 별점 표시 · 리뷰가 실제로 화면에 있을 때만) */
   async function seoRv(it) { const k = kOf(it); if (!k) return null; try { const R = await rvFor(k); const L = R.L.filter(rvShown); if (!L.length) return null; const S0 = rvStats(L); return { avg: S0.avg, n: S0.n, top: rvSort(L).slice(0, 3).map((r) => ({ nick: r.nick, st: r.st, s100: r.s100, at: r.at })) }; } catch (e) { return null; } }
   rsLoad();
-  return { handle, authOf, addOrder, admin, op, ratingOf, seoRv, rsLoad };
+  return { handle, authOf, addOrder, ordersChanged, admin, op, ratingOf, seoRv, rsLoad };
 }
 module.exports = { isTestAcct, TEST_EM, rvSummary, qaAcct, pwHash, pwOk, pwWhy, nickWhy, nickNorm, nickKey, emKey, kOf, K_RE, rvCheck, rvStats, rvShown, rvSort, rvPub, qCheck, RD, goalOf, alertState, mkTestOne, PH_RE, bookMini, makeAcct };

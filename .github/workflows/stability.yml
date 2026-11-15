@@ -27,3 +27,19 @@ jobs:
           node src/tests/standalone/run.cjs
           node src/tests/tSHIPPC.js
           node src/tests/tSENDPREP1115.js
+          node src/tests/tSHOP9_1112.js
+
+  account-browser:
+    runs-on: ubuntu-latest
+    container: node:22-bookworm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 고정된 브라우저 시험 도구 준비
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rn-browser" --no-save --ignore-scripts --package-lock=false playwright@1.62.1
+          node "$RUNNER_TEMP/rn-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: 계정 목록 보존과 복구 화면 검사
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
+          RN_ACCOUNT_UI=1 node src/tests/tACCOUNTORDERS.js
