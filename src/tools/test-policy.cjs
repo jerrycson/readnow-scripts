@@ -7,6 +7,7 @@ function requiredTests(files) {
   if (files.some((f) => /^(src\/app\.html|src\/readnow-collector\.src\.js|readnow-exec-core\.js|local\/readnow-alps\.js|cloud\/index\.js)$/.test(f))) ['tSHIPMIX0', 'tSHIPHOLD1114', 'tSHIPPC', 'tSENDPREP1115'].forEach((t) => out.add(t));
   if (files.some((f) => /^(shop\/|src\/tests\/(?:tSHELFLIFE\.js|standalone\/shelf(?:-browser|\.test)\.cjs))/.test(f))) out.add('tSHELFLIFE');
   if (files.some((f) => /^(shop\/|src\/tests\/(?:tSHOPPAGE\.js|standalone\/shop-page(?:-browser|\.test)\.cjs))/.test(f))) out.add('tSHOPPAGE');
+  if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|src\/tests\/(?:tORDERCLIENT\.js|standalone\/order-journal-browser\.cjs))$/.test(f))) out.add('tORDERCLIENT');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
