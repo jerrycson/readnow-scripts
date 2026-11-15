@@ -42,6 +42,7 @@ jobs:
         run: |
           export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
           RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
+          node src/tests/tORDERCLIENT.js
           node src/tests/standalone/shelf-browser.cjs
 
   account-browser:
