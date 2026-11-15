@@ -87,7 +87,7 @@ function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + 
   cp.execSync(`git archive ${TARGET} -- . ':(exclude)manual' ':(exclude)diag' ':(exclude)backups' | tar -x -C ${Q}`, { cwd: TOP, stdio: ['ignore', 'ignore', 'inherit'], shell: '/bin/bash' }); // 설명서 사본(164MB)·진단·백업 기록만 뺀 저장소 그대로
   const W = path.join(Q, 'w'); fs.mkdirSync(path.join(W, 'out'), { recursive: true });
   const ln = (a, b) => { try { fs.symlinkSync(a, b); } catch (e) {} };
-  for (const f of ['app.html', 'split.js', 'release.js', 'sw.js']) if (fs.existsSync(path.join(Q, 'src', f))) fs.copyFileSync(path.join(Q, 'src', f), path.join(W, f));
+  for (const f of ['app.html', 'notes-core.js', 'split.js', 'release.js', 'sw.js']) if (fs.existsSync(path.join(Q, 'src', f))) fs.copyFileSync(path.join(Q, 'src', f), path.join(W, f));
   fs.copyFileSync(path.join(Q, 'src', 'readnow-collector.src.js'), path.join(W, 'readnow-collector.user.js'));
   for (const f of fs.readdirSync(Q).filter((x) => /^readnow-.*\.js$/.test(x))) { ln(path.join(Q, f), path.join(W, f)); ln(path.join(Q, f), path.join(W, 'out', f)); }
   for (const d of ['cloud', 'local', 'research', 'facts-docs']) if (fs.existsSync(path.join(Q, d))) ln(path.join(Q, d), path.join(W, d));

@@ -11,6 +11,7 @@
  *  지우지 않음 — 휴지통(state 'trashed')에서 되살림. 공개 저장소에는 이 코드만 — 노트 글은 Firestore·비공개 쪽에만 */
 'use strict';
 const crypto = require('crypto');
+const noteGuard = require('./notes-guard.js');
 const COL = 'jb_notes';
 const KINDS = ['card', 'memo', 'batch', 'meta', 'slot', 'jbmemo']; // (note5 11/13) slot = 💾 저장1·2·3 칸(쓰던 글 draft) · jbmemo = 📝 내 메모(정범님 혼자 · 리드에게 안 감)
 const STATES = ['open', 'held', 'done', 'archived', 'trashed']; // held = ⏸ 보류(note4 11/13)
@@ -25,7 +26,7 @@ const idOk = (id) => /^[A-Za-z0-9_.:@+-]{1,120}$/.test(String(id || '')) && !/^\
 function clean(d, isMeta) {
   const o = {}; if (!d || typeof d !== 'object' || Array.isArray(d)) return { o, bad: '모양' };
   for (const [k, v] of Object.entries(d)) {
-    if (v === null) { o[k] = null; continue; }
+    if (v === null) { if (k === 'body' || STR[k] || ['kind', 'state', 'imp', 'ord', 'tags', 'memoIds', 'pinned', 'archived', 'trashed', 'fwd'].includes(k)) o[k] = null; continue; }
     if (k === 'body') { o.body = s(v, BODY_MAX); continue; }
     if (STR[k]) { o[k] = s(v, STR[k]); continue; }
     if (k === 'kind') { if (KINDS.includes(v)) o.kind = v; continue; }
@@ -45,18 +46,21 @@ function clean(d, isMeta) {
 }
 
 /* 쓰기 묶음 — ops:[{op:'set'|'merge', id, data}] · 서버가 updatedAt을 찍음(아티팩트·웹앱 시계와 상관없이 늘 앞으로) */
-async function writeOps(C, ops, by) {
+async function writeOps(C, ops, by, db) {
   const out = { n: 0, bad: [], ids: [] }; if (!Array.isArray(ops)) return { ...out, bad: ['ops 없음'] };
-  const L = ops.slice(0, 60); const at = nowIso();
+  if (!ops.length || ops.length > 60) return { ...out, bad: ['ops는 1~60개'] };
+  const L = ops; const at = nowIso(); const pending = [];
   for (const x of L) {
     const id = String((x && x.id) || ''); if (!idOk(id)) { out.bad.push('id:' + id.slice(0, 20)); continue; }
+    try { noteGuard.validate([x]); } catch (e) { out.bad.push(id + ':' + e.code); continue; }
     const { o, bad } = clean(x.data, id === '_meta'); if (bad) { out.bad.push(id + ':' + bad); continue; }
-    if (id !== '_meta' && !o.kind && x.op === 'set') o.kind = 'card';
     o.updatedAt = at; o.lastBy = s(by || 'claude', 40);
     if (x.op === 'set' && !o.createdAt) o.createdAt = at;
     const txt = JSON.stringify(o); if (/01[016789][- ]?\d{3,4}[- ]?\d{4}/.test(txt.replace(/010-0000-0000/g, ''))) { out.bad.push(id + ':휴대전화 번호 꼴'); continue; }
-    try { await C(COL).doc(id).set(o, { merge: x.op !== 'set' }); out.n++; out.ids.push(id); } catch (e) { out.bad.push(id + ':' + String(e.message || e).slice(0, 60)); }
+    pending.push({ ...x, id, data: o });
   }
+  if (pending.length) try { const r = await noteGuard.write(db || C(COL).firestore, id => C(COL).doc(id), pending, at, s(by || 'claude', 40)); out.n = r.n; out.ids = r.ids; }
+  catch (e) { out.bad.push((e.id || 'ops') + ':' + (e.code || String(e.message || e).slice(0, 60))); }
   return out;
 }
 
@@ -94,10 +98,10 @@ const TOOLS = [
   { name: 'note_info', description: '정범 노트 저장소 연결 확인 — 문서 수·판 번호(읽기만)', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true } },
   { name: 'note_sync', description: '정범 노트의 바뀐 문서 받기. cursor 없이 부르면 전부, 앞 답의 cursor를 주면 그 뒤 바뀐 것만. wait(초, 0~25)를 주면 바뀐 것이 없을 때 그만큼 기다렸다가 바뀌는 순간 답함(실시간).', inputSchema: { type: 'object', properties: { cursor: { type: 'string' }, wait: { type: 'number', minimum: 0, maximum: 25 } }, additionalProperties: false }, annotations: { readOnlyHint: true } },
   { name: 'note_get', description: '본문이 빠져 온 문서(_noBody)의 전체를 id로 받기(최대 40개)', inputSchema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' }, maxItems: 40 } }, required: ['ids'], additionalProperties: false }, annotations: { readOnlyHint: true } },
-  { name: 'note_write', description: '정범 노트 쓰기 — ops:[{op:"set"|"merge", id, data}] (최대 60) · kind card·memo·batch·slot(💾 저장 칸)·jbmemo(정범님 내 메모 — 리드는 쓰지 않음) · 지우지 않음(state "trashed")', inputSchema: { type: 'object', properties: { ops: { type: 'array', maxItems: 60, items: { type: 'object', properties: { op: { type: 'string', enum: ['set', 'merge'] }, id: { type: 'string' }, data: { type: 'object' } }, required: ['op', 'id', 'data'] } }, by: { type: 'string' } }, required: ['ops'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false } },
+  { name: 'note_write', description: '정범 노트 쓰기 — ops:[{op:"set"|"merge", id, data, base}] (최대 60) · 기존 body/text/draft 변경은 읽었던 값을 base:{필드:값}에 넣음 · 생략한 칸 보존 · kind card·memo·batch·slot(💾 저장 칸)·jbmemo(정범님 내 메모 — 리드는 쓰지 않음) · 지우지 않음(state "trashed")', inputSchema: { type: 'object', properties: { ops: { type: 'array', maxItems: 60, items: { type: 'object', properties: { op: { type: 'string', enum: ['set', 'merge'] }, id: { type: 'string' }, data: { type: 'object' }, base: { type: 'object', description: '편집 시작 때 읽은 body/text/draft 값. 충돌하면 현재 글을 다시 읽고 비교.' } }, required: ['op', 'id', 'data'] } }, by: { type: 'string' } }, required: ['ops'], additionalProperties: false }, annotations: { readOnlyHint: false, destructiveHint: false } },
 ];
 const PROTOS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-function makeNotes({ C, log, ver }) {
+function makeNotes({ C, db, log, ver }) {
   const live = makeLive(C, log);
   let keyMemo = null, keyAt = 0;
   /* (note3 11/13) 커넥터로 불린 자취 — 도구마다 마지막 때·횟수·실패·누가(by) · 진단 notes=1의 mcp 칸(아티팩트↔웹앱이 실제로 이어졌는지 리드가 가름) */
@@ -110,7 +114,7 @@ function makeNotes({ C, log, ver }) {
     if (name === 'note_info') { const r = await live.sync('', 0); return { ok: true, n: r.n, ver, at: r.at }; }
     if (name === 'note_sync') return live.sync(a.cursor, a.wait);
     if (name === 'note_get') return { docs: await live.get(a.ids) };
-    if (name === 'note_write') return writeOps(C, a.ops, (a.by && String(a.by)) || by || 'mcp'); /* (note3) 부른 쪽이 준 by가 먼저(예전엔 늘 'artifact'로 덮여 리드·아티팩트를 못 가렸음) */
+    if (name === 'note_write') return writeOps(C, a.ops, (a.by && String(a.by)) || by || 'mcp', db); /* (note3) 부른 쪽이 준 by가 먼저 */
     throw Object.assign(new Error('모르는 도구: ' + name), { code: -32602 });
   }
   async function rpc(m, authed) {
@@ -150,6 +154,6 @@ function makeNotes({ C, log, ver }) {
     const mine = D.filter((d) => d.kind === 'jbmemo').length; const slots = D.filter((d) => d.kind === 'slot').map((d) => ({ slot: d.slot, draftLen: String(d.draft || '').length, at: d.at || null }));
     return { n: r.n, by, unread, queued, recent, mine, slots, mcp: seen, at: r.at };
   }
-  return { handle, write: (ops, by) => writeOps(C, ops, by), diag, live, rpc, TOOLS, seen };
+  return { handle, write: (ops, by) => writeOps(C, ops, by, db), diag, live, rpc, TOOLS, seen };
 }
 module.exports = { makeNotes, clean, writeOps, COL };

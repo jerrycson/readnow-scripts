@@ -14,7 +14,7 @@ function fakeC() { const D = {}; const L = {};
     doc: (id) => ({ get: async () => ({ exists: D[n].has(id), data: () => (D[n].has(id) ? JSON.parse(JSON.stringify(D[n].get(id))) : undefined) }),
       set: async (o, opt) => { const had = D[n].has(id); const v = opt && opt.merge && had ? { ...D[n].get(id), ...o } : { ...o }; D[n].set(id, v); const ch = [{ type: had ? 'modified' : 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } }]; setTimeout(() => L[n].forEach((f) => f({ docChanges: () => ch })), 5); } }),
     onSnapshot: (f) => { const all = [...D[n].entries()].map(([id, v]) => ({ type: 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } })); setTimeout(() => f({ docChanges: () => all }), 5); L[n].add(f); return () => L[n].delete(f); } }; };
-  return { C: col, D }; }
+  return { C: require('./notes-fake-tx.cjs')(col), D }; }
 const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판', 'QSpoAQ2dd2PpGNtwHV9QfN'], ['🏗 리드나우 2 설계안', '3f9yMZiMDDvpKeWPCiXzZ5'], ['🙋 결정 판', '8Ti2qi1ggdrt6uSAuBbYxb'], ['🗂 점검 과제 차례', 'Vk5XZ8pebDUA7gcupfUQCB']];
 
 (async () => {
@@ -31,7 +31,7 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
 
   let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
   if (!chromium) { console.log('… ② 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0); }
-  const b = await chromium.launch(); const errs = [];
+  const b = await chromium.launch(process.env.RN_BROWSER ? { executablePath: process.env.RN_BROWSER } : {}); const errs = [];
   // ── ② 화면 핵심(가짜 저장소) ──
   { const a = await b.newPage({ viewport: { width: 1000, height: 900 } }); a.on('pageerror', (e) => errs.push(e.message));
     await a.setContent('<!doctype html><meta charset="utf-8"><div id="root"></div>');
@@ -42,7 +42,7 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
         ['r1', { kind: 'card', cat: '우리숍', sub: '서버', imp: 2, title: '검토 카드', body: '본문', src: 'lead', readAt: 'x', state: 'open' }]]);
       const subs = new Set(); window.__docs = docs; window.__ops = [];
       const store = { docs: () => docs, onChange: (f) => subs.add(f), status: () => ({ ok: true, label: '시험' }), send: async () => ({ status: 'queued' }),
-        write: async (ops) => { for (const o of ops) { window.__ops.push(o); docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); } setTimeout(() => subs.forEach((f) => f()), 5); } };
+        write: async (ops) => { for (const o of ops) { window.__ops.push(o); docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); } setTimeout(() => subs.forEach((f) => f()), 5); return { n: ops.length, bad: [] }; } };
       try { localStorage.removeItem('jbn-ui'); } catch (e) {}
       window.__ui = JBN.mount(document.getElementById('root'), store, {}); });
     const ids = () => a.evaluate(() => [...document.querySelectorAll('[data-card]')].map((x) => x.dataset.card).join());
@@ -116,7 +116,7 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
       docs.set('b1', { kind: 'card', cat: '웹앱', sub: '노트', imp: 3, title: '작업판과 이어진 카드', body: '작업판 n1113p 에서 고르시면 됩니다.', ref: '작업판 n1113p', src: 'lead', readAt: 'x', state: 'open' });
       const subs = new Set(); window.__docs = docs; window.__slow = 1500; window.__fail = false;
       const store = { docs: () => docs, onChange: (f) => subs.add(f), status: () => ({ ok: true, label: '시험' }), send: async () => ({ status: 'queued' }),
-        write: (ops) => new Promise((res, rej) => setTimeout(() => { if (window.__fail) return rej(Object.assign(new Error('커넥터 거절'), { code: 'tool_error' })); for (const o of ops) docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); subs.forEach((f) => f()); res(); }, window.__slow)) };
+        write: (ops) => new Promise((res, rej) => setTimeout(() => { if (window.__fail) return rej(Object.assign(new Error('커넥터 거절'), { code: 'tool_error' })); for (const o of ops) docs.set(o.id, o.op === 'set' ? { ...o.data } : { ...(docs.get(o.id) || {}), ...o.data }); subs.forEach((f) => f()); res({ n: ops.length, bad: [] }); }, window.__slow)) };
       try { localStorage.removeItem('jbn-ui'); } catch (e) {}
       window.__ui = JBN.mount(document.getElementById('root'), store, {}); });
     await a.waitForSelector('[data-card="k3"] [data-act="done"]'); /* (note5) 잰 값 = 페이지 안에서 누름 → 화면 바뀜(Playwright가 누르기 전에 기다리는 시간은 빼고 — 컴퓨터가 바쁠 때 1초 넘게 튀었음) */
@@ -127,8 +127,8 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
     await a.evaluate(() => { window.__fail = true; window.__slow = 400; }); await a.click('[data-card="k5"] [data-act="archive"]');
     ok(await a.evaluate(() => !document.querySelector('[data-card="k5"]')), '②-3 실패할 쓰기도 먼저 화면에서 옮김');
     await a.waitForTimeout(700);
-    const rb = await a.evaluate(() => ({ back: !!document.querySelector('[data-card="k5"]'), toast: (document.querySelector('.jbn-toast') || {}).textContent || '' }));
-    ok(rb.back && /되돌렸습니다/.test(rb.toast), '②-3 저장 실패 → 화면을 되돌리고 "저장 못 함 — 되돌렸습니다"');
+    const rb = await a.evaluate(() => ({ back: !!document.querySelector('[data-card="k5"]'), toast: (document.querySelector('.jbn-toast') || {}).textContent || '', pending: !!document.querySelector('[aria-label="미저장 글"]') }));
+    ok(rb.back && /미저장 글/.test(rb.toast) && rb.pending, '②-3 저장 실패 → 화면을 되돌리고 미저장 내용 보존');
     const rms = await a.evaluate(() => { const t = performance.now(); for (let i = 0; i < 10; i++) window.__ui.render(); return (performance.now() - t) / 10; });
     ok(rms < 60, `②-3 카드 41장 전체 다시 그리기 한 번 ${rms.toFixed(1)}ms`);
     const ln = await a.evaluate(() => ({ btn: (document.querySelector('[data-card="b1"] .jbn-bdb') || {}).href, txt: (document.querySelector('[data-card="b1"] .jbn-bdb') || {}).textContent }));
