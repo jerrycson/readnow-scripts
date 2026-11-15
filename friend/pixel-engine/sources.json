@@ -765,6 +765,32 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anatomy.html#section-26",
       "reuse": "공개 노트와 자체 분석. 도판은 로컬 관찰용으로만 보관"
+    },
+    {
+      "id": "chibi-face-jp-17",
+      "title": "MediBang 작은 얼굴의 볼과 눈 비율",
+      "url": "https://medibangpaint.com/use/2021/10/how-to-draw-a-chibi-characters-face/",
+      "oneLine": "작은 몸에 맞춰 얼굴의 비율과 세부도 함께 단순화한다.",
+      "oneSentence": "낮은 눈과 넓고 둥근 볼을 바탕으로 홍채·윗눈꺼풀은 읽히게 하고 코·입 세부를 줄인다.",
+      "concepts": "얼굴과 몸의 동시 변형, 볼, 눈 위치, 홍채 비율, 선 생략",
+      "section": 29,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-29",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "ear-structure-17",
+      "title": "Proko 귀의 부착과 내부 구조",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-ears-anatomy-and-structure",
+      "oneLine": "귀는 돌출과 오목함이 이어진 구조다.",
+      "oneSentence": "귀의 부착부와 귀둘레·맞둘레·귓불을 함께 보며 여러 방향의 부피와 가림을 구성한다.",
+      "concepts": "귀 부착면, 귀둘레, 맞둘레, 귓불, 이주",
+      "section": 30,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-30",
+      "reuse": "원문 링크와 자체 분석. 원본 도판은 공개 자산에 포함하지 않음"
     }
   ]
 }

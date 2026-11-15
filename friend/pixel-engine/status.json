@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T18:28:30.700Z",
-  "fingerprint": "4b78689d2fd30b852e93e9872efb1680206ba11f856b56e11512c4fd78635cbc",
+  "updatedAt": "2026-11-15T18:38:04.999Z",
+  "fingerprint": "45d36bc25d6a7b4b32d9012c01aa2ac6500fb4c67768b2c699e1cca9d80fa1e0",
   "sourceSummary": {
-    "total": 63,
-    "uniqueUrls": 63,
+    "total": 65,
+    "uniqueUrls": 65,
     "duplicates": []
   },
   "collection": {
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "16차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "17차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -30,10 +30,11 @@
         "\"12차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"14차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"15차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"16차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"16차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"17차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 10,
-      "priority": 340
+      "observations": 11,
+      "priority": 344
     },
     {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
@@ -292,6 +293,18 @@
       "total": 14
     },
     {
+      "id": "chibi-v17-tests",
+      "path": "../pixel-lab/qa/chibi-v17-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v17-tests",
+      "path": "../pixel-lab/qa/rotation-v17-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -393,6 +406,14 @@
       "suites": 27,
       "passed": 205,
       "total": 205,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:38:04.999Z",
+      "fingerprint": "45d36bc25d6a7b4b32d9012c01aa2ac6500fb4c67768b2c699e1cca9d80fa1e0",
+      "suites": 29,
+      "passed": 224,
+      "total": 224,
       "openIssues": 7
     }
   ],
