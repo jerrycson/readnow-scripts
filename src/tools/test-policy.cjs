@@ -12,6 +12,7 @@ function requiredTests(files) {
   if (files.some(f => /^(shop\/(?:cart-store|shop|shop-acct|shop-core|shelf)\.js|shop\/index\.html|src\/tests\/(?:tCARTSTORE\.js|standalone\/(?:cart-store|shelf-cart)-browser\.cjs))$/.test(f))) out.add('tCARTSTORE');
   if (files.some(f => /^(shop\/(?:shop-acct|token-store)\.js|cloud\/shop-acct\.js)$/.test(f))) out.add('tSHOP9_1112');
   if (files.some(f => /^(shop\/(?:shop-core|shop)\.js|src\/tests\/tSHOPQTY_1113\.js)$/.test(f))) out.add('tSHOPQTY_1113');
+  if (files.some(f => /^(shop\/(?:shop|shop-acct|order-journal|token-store)\.js|cloud\/shop(?:-acct|-order-attempt|-account-orders|-stock)?\.js|src\/tests\/(?:tACCOUNTAUTHUI\.js|standalone\/(?:account-auth-browser|order-journal-browser|order-attempt\.test)\.cjs))$/.test(f))) out.add('tACCOUNTAUTHUI');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
