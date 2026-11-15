@@ -1,5 +1,5 @@
 // tSHOPQTY_1113 — (11/13 shopux1 · 정범님 20:47 카드 n1113cartqty ⓑ 「2권 이상 담기 열기 · 설정 변경 가능」) 🛍 같은 책 여러 권 담기
-//   ① 한 권 주문은 예전과 바이트 하나 다르지 않음 — 옛 판(b32b544f) 셈과 새 셈을 같은 입력으로 견줌: 장바구니 담기·합계·주문 글(orderBody) · 클라우드 주문 검사(checkOrder)
+//   ① 한 권 주문 글·합계는 예전과 동일(장바구니에는 재고 표시 q를 보존) — 옛 판(b32b544f) 셈과 새 셈을 같은 입력으로 견줌: 장바구니 담기·합계·주문 글(orderBody) · 클라우드 주문 검사(checkOrder)
 //   ② 클라우드 창구(가짜 Firestore + 진짜 http): 수량 3권 책을 2권 주문 → 주문 기록 줄 2개(각 1권 · 같은 상품) · 합계 2권 값 · '주문 중' 한 번 · 재고보다 많이/설정보다 많이/설정 끔이면 거절 · 견적도 2권 값
 //   ③ 웹앱 현금 판매 기록(bqCashDoc · 출고 목록·송장·알라딘 판매중지가 읽는 기록): 2권 주문 → 줄 2개 · 줄마다 1권 · 같은 상품 · 책값 합 = 낸 책값
 // 실행: node src/tests/tSHOPQTY_1113.js · 손님 정보 없음(손님A · 010-0000-0000)
@@ -7,14 +7,16 @@ const fs = require('fs'); const path = require('path'); const http = require('ht
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
 const ROOT = path.resolve(__dirname, '..', '..'); const SH = require(path.join(ROOT, 'cloud/shop.js')); const BQ = require(path.join(ROOT, 'shop/shop-core.js'));
 const OLD = 'b32b544f'; /* shopux1 앞 판(shop2 둘째) */
-const git = (f) => cp.execSync(`git -C "${ROOT}" show ${OLD}:${f}`, { encoding: 'utf8', maxBuffer: 64e6 });
+// 보관 시험에서도 옛 판 비교만 원본 Git 저장소에서 읽고, 실행 대상 소스는 ROOT를 유지한다.
+const git = (f) => cp.execFileSync('git', ['-C', process.env.RN_GIT_REPO || ROOT, 'show', OLD + ':' + f], { encoding: 'utf8', maxBuffer: 64e6 });
 (async () => {
 console.log('① 한 권 주문은 예전과 똑같음(옛 판 셈과 견줌)');
 { const sb = { module: { exports: {} } }; sb.exports = sb.module.exports; vm.runInNewContext(git('shop/shop-core.js'), sb); const OB = sb.module.exports;
   const it = (i, q) => ({ id: 'aladin_U' + i, t: '시험 책 ' + i, g: '상', p: 4000 + i * 1000, im: null, ...(q ? { q } : {}) }); const f = { name: '손님A', phone: '010-0000-0000', same: true, zip: '06000', addr1: '서울 어딘가 1길 1', addr2: '101호', memo: '문 앞', dep: '', agreeP: true, agreeT: true, hp: '', cp: '', expect: 9000 };
   let c0 = [], c1 = []; const steps = [[it(1), 20], [it(2), 20], [it(1), 20], [it(3, 3), 20], [it(4), 2]]; let same = true;
-  for (const [x, mx] of steps) { const a = OB.cartAdd(c0, x, mx), b = BQ.cartAdd(c1, x, mx); if (JSON.stringify(a) !== JSON.stringify(b)) same = false; c0 = a.cart; c1 = b.cart; }
-  ok(same && JSON.stringify(OB.cartSum(c0, { shipFee: 3500 })) === JSON.stringify(BQ.cartSum(c1, { shipFee: 3500 })) && JSON.stringify(OB.orderBody(f, c0)) === JSON.stringify(BQ.orderBody(f, c1)), '담기(같은 책 또 담기 · 수량 3권 책도 · 최대 권 수) · 합계 · 주문 글이 옛 판과 바이트까지 같음(여러 권 설정을 주지 않으면)');
+  for (const [x, mx] of steps) { const a = OB.cartAdd(c0, x, mx), b = BQ.cartAdd(c1, x, mx); const legacy = { ...b, cart: b.cart.map(({ q, ...row }) => row) }; if (JSON.stringify(a) !== JSON.stringify(legacy)) same = false; c0 = a.cart; c1 = b.cart; }
+  ok(same && JSON.stringify(OB.cartSum(c0, { shipFee: 3500 })) === JSON.stringify(BQ.cartSum(c1, { shipFee: 3500 })) && JSON.stringify(OB.orderBody(f, c0)) === JSON.stringify(BQ.orderBody(f, c1)), '담기 업무 규칙(재고 표시 q만 추가) · 합계 · 한 권 주문 글은 옛 판과 같음');
+  ok(c1.find(x => x.id === 'aladin_U3').q === 3 && c1.find(x => x.id === 'aladin_U3').n === undefined, '처음 담은 재고 3권 정보는 남고 선택 수량은 1권');
   const b1 = BQ.orderBody(f, [it(1)]); ok(!('qty' in b1) && JSON.stringify(b1) === JSON.stringify(OB.orderBody(f, [it(1)])), '한 권 주문 글에는 qty 칸 없음');
   const tmp = path.join(ROOT, 'cloud', '_old_shop_' + process.pid + '.js'); fs.writeFileSync(tmp, git('cloud/shop.js')); let OSH = null; try { OSH = require(tmp); } finally { fs.unlinkSync(tmp); } /* 옛 판 클라우드 셈을 잠깐 불러 견줌(이 시험이 만든 임시 파일만 치움) */
   const B = { items: ['aladin_U1', 'aladin_U2'], buyer: { name: '손님A', phone: '010-0000-0000' }, rcv: { zip: '06000', addr1: '서울 어딘가 1길 1' }, agree: { privacy: true, terms: true }, cp: 'ab-1', expect: 9000 };

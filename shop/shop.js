@@ -320,7 +320,7 @@
     try { const Q = await quoteOf(''); if (!current() || !$('#qsum')) return; if (!quoteCurrent(Q)) return cartPage(note); if (await syncCart(Q, current)) { if (current()) return cartPage(note); return; } if (!current()) return; if (!quoteCurrent(Q)) return cartPage(note); $('#qsum').innerHTML = sumH(Q); const g = $('#toOrder'); if (g) g.textContent = `${won(Q.total)} 주문하기 ›`; } catch (e) {} }
   /* 뺀 책 되돌리기(실수로 ✕ — 4초) */
   function undoToast(x) { const t = $('#toast'); t.innerHTML = `「${esc(x.t)}」 뺐습니다 <button type="button" class="undo">되돌리기</button>`; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 4200);
-    const u = $('.undo', t); if (u) u.onclick = async () => { if (u.disabled) return; u.disabled = true; try { const why = await cartAdd(x, (ST.cfg || {}).maxItems); if (why) toast(why); else { if (B.route(location.hash).name === 'cart') cartPage(''); t.classList.remove('on'); } } catch (e) { toast(e.message); } finally { u.disabled = false; } }; }
+    const u = $('.undo', t); if (u) u.onclick = async () => { if (u.disabled) return; u.disabled = true; try { if (typeof B.cartRestore !== 'function') throw new Error('장바구니 화면을 새로 고친 뒤 다시 확인해 주세요'); const result = await cartChange(list => { const restored = B.cartRestore(list, x, (ST.cfg || {}).maxItems, mulMax()); return restored.why ? { value: restored.why } : { cart: restored.cart }; }); const why = result.value; if (why) toast(why); else { if (B.route(location.hash).name === 'cart') cartPage(''); t.classList.remove('on'); } } catch (e) { toast(e.message); } finally { u.disabled = false; } }; }
 
 
   async function orderReceipt(saved) { if (!cartStore) throw cartMissing(); const r = await cartStore.finish(saved); badge(); return r.receipt; }
