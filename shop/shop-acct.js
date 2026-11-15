@@ -40,7 +40,7 @@
   const RD = { want: '읽고 싶어요', ing: '읽는 중', done: '다 읽음' }; const RDI = { want: '<svg class="ic sm" aria-hidden="true"><use href="#i-star"/></svg>', ing: '<svg class="ic sm" aria-hidden="true"><use href="#i-book"/></svg>', done: '<svg class="ic sm" aria-hidden="true"><use href="#i-check"/></svg>' } /* (shopux1) 이모지 대신 숍 아이콘 묶음 */;
   async function clearTestSession(wasT) { if (!wasT) return; try { if (!X().clearTestCart) throw new Error('시험 장바구니 정리를 다시 확인해 주세요'); await X().clearTestCart(''); if (authToken() !== '') throw new Error('로그인 상태가 바뀌어 시험 기록을 보존했습니다'); ['bq-test-orders', 'bq-seen', 'bq-wish', 'bq-was-test'].forEach(k => { try { localStorage.removeItem(k); } catch (er) {} }); } catch (er) { X().toast(er.message); } }
   async function A(b, owner, canSend) { const requestedToken = owner === undefined ? authToken() : owner; if (requestedToken !== authToken()) throw sessionChanged(); if (X().AUTH_OWNER !== 1) throw new Error('계정 저장 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요');
-    if (canSend && X().REQUEST_SCOPE !== 1) throw new Error('리뷰 저장 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요');
+    if (canSend && X().REQUEST_SCOPE !== 1) throw new Error('저장 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요');
     try { const result = await X().api('/shop/a', { method: 'POST', body: JSON.stringify(b), auth: 1, ownerToken: requestedToken, ...(canSend ? { canSend } : {}) }); if (authToken() !== requestedToken) throw sessionChanged(); return result; }
     catch (e) { if (e.status === 401 && e.j && e.j.login && tok() === requestedToken && !pendingToken) { const wasT = !!(ME && ME.test) || X().LS.get('bq-was-test', 0) === 1; await saveToken('', requestedToken, '서버에서 이전 로그인이 끝났다고 확인했습니다', () => clearTestSession(wasT)); } throw e; }
   }
@@ -118,6 +118,10 @@
   function qBind(root, list) { const owner = tok(), scopeRoot = root, request = accountRequest(owner, () => scopeRoot && scopeRoot.isConnected); const all = list || [...((IT.R && IT.R.q) || []), ...((IT.mine && IT.mine.q) || [])];
     $$('[data-qcard]', root).forEach((b) => (b.onclick = () => { const q = all.find((y) => y.qid === b.dataset.qcard); if (q) shareCard({ kind: 'q', t: q.t || (IT.x && IT.x.t), tx: q.tx, pg: q.pg, nick: q.nick, id: IT.x && IT.x.id }); }));
     $$('[data-qdel]', root).forEach((b) => (b.onclick = async () => { if (!X().twice(b, '한 번 더 = 숨기기')) return; try { await request({ op: 'qDel', qid: b.dataset.qdel }); b.closest('blockquote').remove(); if (IT.mine && IT.mine.q) IT.mine.q = IT.mine.q.filter((q) => q.qid !== b.dataset.qdel); X().toast('밑줄을 숨겼습니다'); } catch (e) { X().toast(errTxt(e)); } })); }
+  // 값이 같아져도 대기 중 다시 편집한 의도는 보존한다. 작성 내용은 기기 저장소에 복사하지 않는다.
+  function watchEdits(form, read, onEdit) { let revision = 0; const touch = () => { revision++; if (onEdit) onEdit(); }; form.addEventListener('input', touch); form.addEventListener('change', touch);
+    return { touch, capture: () => ({ revision, value: JSON.stringify(read()) }), changed: mark => mark.revision !== revision || mark.value !== JSON.stringify(read()) };
+  }
   /* ✍ 리뷰 쓰기 — 별은 반 별 단위(10칸 단추 · 키보드 ←→) · 100자평 필수 · 긴 글·사진·스포일러 선택 */
   function rvForm(edit) { const owner = tok(), book = IT.x, key = IT.k, route = location.hash; const box = $('#bqaForm'); if (!box || !book) return; const my = (edit && IT.mine && IT.mine.rv) || null; let st = my ? my.st : 0; let ph = my ? [...(my.ph || [])] : []; const wr = $('#bqaWr'); if (wr) wr.hidden = true;
     box.innerHTML = `<form class="bqa-form" id="bqaF" novalidate><div class="bqa-si" role="radiogroup" aria-label="별점(반 별 단위)"><span class="bqst lg" id="bqaSv" style="--v:${st / 2}"><i></i></span><span class="hit">${Array.from({ length: 10 }, (_, i) => `<button type="button" role="radio" aria-checked="${st === i + 1}" data-st="${i + 1}" aria-label="별 ${(i + 1) / 2}개"></button>`).join('')}</span><b id="bqaSn">${st ? (st / 2).toFixed(1) + '점' : '별을 눌러 주세요'}</b></div>
@@ -126,35 +130,42 @@
         <label class="ck"><input type="checkbox" id="bqaSpo"${my && my.spo ? ' checked' : ''}> ⚠ 줄거리(스포일러)가 있어요 — 다른 손님 화면에선 가려 둠</label></details>
       <div class="bqa-pu"><label class="btn ghost sm">📷 사진(3장까지)<input type="file" id="bqaPh" accept="image/*" multiple hidden></label><span id="bqaPv"></span></div>
       <div class="hint">별명으로 공개됩니다 · 주소·전화 번호·인터넷 주소는 넣지 않아요 · 욕설·광고는 신고되면 가려집니다</div>
-      <div class="bqa-row"><button class="btn" id="bqaGo">${my ? '고친 리뷰 올리기' : '리뷰 올리기'}</button><button type="button" class="btn ghost" id="bqaX">그만두기</button></div><div id="bqaE" class="err" hidden></div></form>`;
+      <div class="bqa-row"><button class="btn" id="bqaGo">${my ? '고친 리뷰 올리기' : '리뷰 올리기'}</button><button type="button" class="btn ghost" id="bqaX">그만두기</button></div><div id="bqaE" class="err" hidden></div><p id="bqaSaved" class="hint" role="status" hidden></p></form>`;
     const form = $('#bqaF', box), field = s => $(s, form), preview = field('#bqaPv'), photoInput = field('#bqaPh'), go = field('#bqaGo'), message = field('#bqaE');
     const alive = () => location.hash === route && form.isConnected && $('#bqaF', box) === form && $('#bqaForm') === box && IT.k === key && IT.x && IT.x.id === book.id;
     const current = () => alive() && tok() === owner, request = accountRequest(owner, current, true);
-    let uploading = false, submitting = false;
+    let uploading = false, submitting = false, savedOnce = !!my, savedAfterOpen = false;
+    const savedNote = field('#bqaSaved'), note = text => { if (alive()) { savedNote.hidden = !text; savedNote.textContent = text; } };
+    const readReview = () => ({ st, s100: field('#bqaS1').value, body: field('#bqaBd').value, spo: field('#bqaSpo').checked ? 1 : 0, ph: ph.slice() });
+    const edits = watchEdits(form, readReview, () => { if (current() && savedAfterOpen && !submitting) note('추가로 고친 내용은 아직 저장하지 않았습니다 — 확인한 뒤 다시 저장해 주세요'); });
     const problem = e => { if (alive()) { message.hidden = false; message.textContent = errTxt(e); } };
     const ready = () => { if (!alive()) return false; if (owner !== authToken()) throw sessionChanged(); return true; };
-    const buttons = () => { if (!alive()) return; photoInput.disabled = uploading || submitting || ph.length >= 3; go.disabled = uploading || submitting; go.textContent = uploading ? '사진 처리 중…' : submitting ? '올리는 중…' : my ? '고친 리뷰 올리기' : '리뷰 올리기'; form.setAttribute('aria-busy', String(uploading || submitting)); };
+    const buttons = () => { if (!alive()) return; photoInput.disabled = uploading || submitting || ph.length >= 3; go.disabled = uploading || submitting; go.textContent = uploading ? '사진 처리 중…' : submitting ? '올리는 중…' : savedOnce ? '고친 리뷰 올리기' : '리뷰 올리기'; form.setAttribute('aria-busy', String(uploading || submitting)); };
     { const hv = field('.hit'), sv = field('#bqaSv'); if (hv && sv) hv.style.width = sv.offsetWidth + 'px'; }
-    const setSt = v => { if (!current()) return; st = v; field('#bqaSv').style.setProperty('--v', v / 2); field('#bqaSn').textContent = (v / 2).toFixed(1) + '점'; $$('[data-st]', form).forEach(b => b.setAttribute('aria-checked', String(+b.dataset.st === v))); };
+    const setSt = v => { if (!current()) return; st = v; edits.touch(); field('#bqaSv').style.setProperty('--v', v / 2); field('#bqaSn').textContent = (v / 2).toFixed(1) + '점'; $$('[data-st]', form).forEach(b => b.setAttribute('aria-checked', String(+b.dataset.st === v))); };
     $$('[data-st]', form).forEach(b => { b.onclick = () => setSt(+b.dataset.st); b.onkeydown = e => { if (!current()) return; if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); setSt(Math.min(10, (st || 0) + 1)); field('[data-st="' + st + '"]').focus(); } if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); setSt(Math.max(1, (st || 2) - 1)); field('[data-st="' + st + '"]').focus(); } }; });
     const cnt = () => { field('#bqaC1').textContent = [...field('#bqaS1').value].length + '/100'; field('#bqaC2').textContent = [...field('#bqaBd').value].length + '/5000'; }; field('#bqaS1').oninput = cnt; field('#bqaBd').oninput = cnt; cnt();
-    const pv = () => { if (!current()) return; preview.innerHTML = ph.map((n, i) => '<span class="pv"><img src="' + esc(imgU(n)) + '" alt=""><button type="button" data-pd="' + i + '" aria-label="사진 빼기">✕</button></span>').join(''); $$('[data-pd]', preview).forEach(b => { b.disabled = submitting; b.onclick = () => { if (!current() || submitting) return; ph.splice(+b.dataset.pd, 1); pv(); }; }); buttons(); }; pv();
+    const pv = () => { if (!current()) return; preview.innerHTML = ph.map((n, i) => '<span class="pv"><img src="' + esc(imgU(n)) + '" alt=""><button type="button" data-pd="' + i + '" aria-label="사진 빼기">✕</button></span>').join(''); $$('[data-pd]', preview).forEach(b => { b.disabled = submitting; b.onclick = () => { if (!current() || submitting) return; ph.splice(+b.dataset.pd, 1); edits.touch(); pv(); }; }); buttons(); }; pv();
     photoInput.onchange = async e => { const files = [...e.target.files].slice(0, Math.max(0, 3 - ph.length)); e.target.value = ''; let started = false;
       try { if (!ready()) return; if (uploading || submitting) { problem(new Error('사진이나 리뷰를 처리 중입니다 — 끝난 뒤 다시 골라 주세요')); return; } if (!files.length) return; uploading = true; started = true; message.hidden = true; buttons();
         for (const f of files) { if (!ready()) return; if (ph.length >= 3) break; const progress = document.createElement('small'); progress.className = 'hint up'; progress.setAttribute('role', 'status'); progress.textContent = '사진 처리 중…'; preview.appendChild(progress);
           try { const blob = await shrink(f); if (!ready()) return; if (X().REQUEST_SCOPE !== 1) throw new Error('사진 저장 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요');
             const r = await X().api('/shop/a/photo', { method: 'POST', body: blob, ctype: blob.type, auth: 1, ownerToken: owner, canSend: current, ms: 40000 });
-            if (!ready()) return; if (!r || typeof r.n !== 'string' || !r.n) throw new Error('저장한 사진을 확인하지 못했습니다 — 사진 목록을 확인해 주세요'); ph.push(r.n);
+            if (!ready()) return; if (!r || typeof r.n !== 'string' || !r.n) throw new Error('저장한 사진을 확인하지 못했습니다 — 사진 목록을 확인해 주세요'); ph.push(r.n); edits.touch();
           } catch (er) { if (!alive()) return; problem(new Error('사진: ' + errTxt(er))); if (owner !== tok()) return; } finally { progress.remove(); }
           pv();
         }
       } catch (er) { problem(er); } finally { if (started) uploading = false; buttons(); }
     };
-    field('#bqaX').onclick = () => { if (!alive()) return; box.innerHTML = ''; const w = $('#bqaWr'); if (w) w.hidden = false; };
+    field('#bqaX').onclick = () => { if (!alive()) return; box.innerHTML = ''; if (savedAfterOpen && owner === tok()) { item(book); return; } const w = $('#bqaWr'); if (w) w.hidden = false; };
     form.onsubmit = async e => { e.preventDefault(); if (uploading) { problem(new Error('사진 처리가 끝난 뒤 리뷰를 올려 주세요')); return; } if (submitting) return;
       try { if (!ready()) return; message.hidden = true; if (!st) { problem(new Error('별점을 골라 주세요')); return; } submitting = true; buttons(); pv();
-        await request({ op: 'rv', k: key, id: book.id, st, s100: field('#bqaS1').value, body: field('#bqaBd').value, spo: field('#bqaSpo').checked ? 1 : 0, ph: ph.slice() });
-        if (!current()) return; X().toast(my ? '✏ 리뷰를 고쳤습니다' : '⭐ 리뷰를 올렸습니다 — 고맙습니다!'); meAt = 0; item(book);
+        const mark = edits.capture(), sent = readReview(), wasSaved = savedOnce; note('');
+        const result = await request({ op: 'rv', k: key, id: book.id, ...sent });
+        if (!current()) return; savedOnce = savedAfterOpen = true; meAt = 0; meEpoch++;
+        if (result && result.rv && result.rv.k === key) IT.mine = { ...(IT.mine || {}), rv: result.rv };
+        if (edits.changed(mark)) { note('먼저 보낸 리뷰는 저장했습니다. 기다리는 동안 편집한 입력은 그대로 두었습니다 — 확인한 뒤 다시 저장해 주세요'); return; }
+        X().toast(wasSaved ? '✏ 리뷰를 고쳤습니다' : '⭐ 리뷰를 올렸습니다 — 고맙습니다!'); item(book);
       } catch (er) { problem(er); } finally { submitting = false; buttons(); if (current()) pv(); }
     };
     box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
@@ -248,7 +259,27 @@
         <form class="bqa-form" id="pf2"><b>비밀번호 바꾸기</b><label class="f" data-f="old"><span>지금 비밀번호</span><input id="p_old" type="password" autocomplete="current-password"><em></em></label><label class="f" data-f="nw"><span>새 비밀번호 <small>(8자 이상 · 영문+숫자)</small></span><input id="p_nw" type="password" autocomplete="new-password"><em></em></label><button class="btn ghost sm">바꾸기</button><small class="hint">바꾸면 다른 기기는 로그아웃됩니다</small></form>
         <div class="bqa-row"><button type="button" class="btn ghost" id="pout">로그아웃</button></div>
         <details class="bqa-bye"><summary>회원 탈퇴</summary><p class="hint">탈퇴하면 메일·별명 묶음을 바로 풀고, 쓴 리뷰·밑줄·북리스트는 화면에서 빠집니다. 주문 기록은 법에 따라 5년 보관 뒤 파기합니다.</p><form id="pf3" class="bqa-row"><input id="p_bye" type="password" placeholder="비밀번호" aria-label="비밀번호" autocomplete="current-password"><button class="btn ghost bad sm" id="pbye">탈퇴</button></form></details>`;
-      $('#pf1').onsubmit = async (e) => { e.preventDefault(); try { await request({ op: 'set', ...(u.test ? {} : { nick: $('#p_nick').value }), bio: $('#p_bio').value }); meAt = 0; X().toast('저장했습니다'); if (el.isConnected) mePage({ t: 'info' }); } catch (er) { if (!el.isConnected) return; const x = $('[data-f="nick"]', el); x.classList.add('bad'); $('em', x).textContent = errTxt(er); } };
+      const profile = $('#pf1', el), profileField = s => $(s, profile), profileButton = $('button', profile), profileRoute = location.hash;
+      const profileAlive = () => location.hash === profileRoute && el.isConnected && profile.isConnected && $('#pf1', el) === profile;
+      const profileCurrent = () => profileAlive() && owner === tok(), profileRequest = accountRequest(owner, profileCurrent, true);
+      const profileNote = document.createElement('p'); profileNote.id = 'p_save_status'; profileNote.className = 'hint'; profileNote.setAttribute('role', 'status'); profileNote.hidden = true; profile.appendChild(profileNote);
+      let profileBusy = false, profileSaved = false;
+      const profileStatus = text => { if (profileAlive()) { profileNote.hidden = !text; profileNote.textContent = text; } };
+      const readProfile = () => ({ ...(u.test ? {} : { nick: profileField('#p_nick').value }), bio: profileField('#p_bio').value });
+      const profileEdits = watchEdits(profile, readProfile, () => { if (profileCurrent() && profileSaved && !profileBusy) profileStatus('추가로 고친 회원 정보는 아직 저장하지 않았습니다 — 확인한 뒤 다시 저장해 주세요'); });
+      profile.onsubmit = async e => { e.preventDefault(); if (profileBusy) return; let committed = false;
+        try { if (!profileAlive()) return; if (owner !== authToken()) throw sessionChanged(); profileBusy = true; profileButton.disabled = true; profileButton.textContent = '저장 중…'; profile.setAttribute('aria-busy', 'true'); profileStatus(''); const oldError = profileField('[data-f="nick"]'); oldError.classList.remove('bad'); $('em', oldError).textContent = '';
+          const mark = profileEdits.capture(), sent = readProfile(); const result = await profileRequest({ op: 'set', ...sent }); committed = true; meAt = 0; meEpoch++;
+          const confirmed = result && result.me ? result.me : (await profileRequest({ op: 'me' })).me;
+          if (!profileCurrent()) return; profileSaved = true;
+          if (!confirmed || confirmed.uid !== u.uid || typeof confirmed.nick !== 'string') throw new Error('저장한 회원 정보를 다시 확인하지 못했습니다');
+          const changed = profileEdits.changed(mark); u = confirmed; meEpoch++; rememberMe(confirmed); navMe();
+          if (!changed) { profileField('#p_nick').value = confirmed.nick; profileField('#p_bio').value = confirmed.bio || ''; }
+          const who = $('.bqa-me .who'); if (who) { const avatar = $('.av', who), name = $('h1', who), bio = $('.hint', who); if (avatar) avatar.textContent = [...confirmed.nick][0] === '🧪' ? '🧪' : [...confirmed.nick][0] || '?'; if (name) { name.textContent = confirmed.nick; if (confirmed.test) { const badge = document.createElement('span'); badge.className = 'bqa-test'; badge.textContent = '🧪 시험 계정 — 주문은 안 됨 · 글은 나만 보임'; name.append(' ', badge); } } if (bio) bio.textContent = confirmed.bio || '소개를 적어 보세요(⚙ 회원 정보)'; }
+          profileStatus(changed ? '먼저 보낸 회원 정보는 저장했습니다. 기다리는 동안 편집한 입력은 그대로 두었습니다 — 확인한 뒤 다시 저장해 주세요' : '회원 정보를 저장했습니다'); X().toast('보낸 회원 정보를 저장했습니다');
+        } catch (er) { if (!profileAlive()) return; if (committed) profileStatus('보낸 회원 정보는 저장했습니다. 최신 정보 확인은 끝나지 않았습니다 — 입력을 보존했으니 현재 계정에서 다시 확인해 주세요'); else { const x = profileField('[data-f="nick"]'); x.classList.add('bad'); $('em', x).textContent = errTxt(er); } }
+        finally { profileBusy = false; if (profileAlive()) { profileButton.disabled = false; profileButton.textContent = '저장'; profile.setAttribute('aria-busy', 'false'); } }
+      };
       $('#pf2').onsubmit = async (e) => { e.preventDefault(); try { await changeSession(owner, async () => { const r = await request({ op: 'pw', old: $('#p_old').value, nw: $('#p_nw').value }); await saveToken(resultToken(r), owner, '서버에서 비밀번호를 바꿨습니다', () => { X().toast('비밀번호를 바꿨습니다'); if (el.isConnected) mePage({ t: 'info' }); }); }); } catch (er) { if (!el.isConnected) return; const f = (er.j && er.j.f) || 'nw'; const x = $(`[data-f="${f}"]`); x.classList.add('bad'); $('em', x).textContent = errTxt(er); } };
       $('#pout').onclick = async () => { try { await changeSession(owner, async () => { let confirmed = false; try { await request({ op: 'out' }); confirmed = true; } catch (e) { if (pendingToken) throw e; } if (authToken() !== owner) return; await saveToken('', owner, confirmed ? '서버에서 로그아웃을 확인했습니다' : '서버의 로그아웃 응답은 확인하지 못했습니다', () => { X().toast(confirmed ? '로그아웃했습니다' : '이 기기에서 로그아웃했습니다 — 서버의 처리 결과는 확인하지 못했습니다'); if (el.isConnected) location.hash = '#/'; }); }); } catch (e) { X().toast(errTxt(e)); } };
       $('#pf3').onsubmit = async (e) => { e.preventDefault(); const b = $('#pbye'); if (!X().twice(b, '한 번 더 = 탈퇴(되돌릴 수 없음)')) return; try { await changeSession(owner, async () => { await request({ op: 'bye', pw: $('#p_bye').value }); await saveToken('', owner, '서버에서 회원 탈퇴를 마쳤습니다', () => { X().toast('탈퇴했습니다 — 그동안 고마웠습니다'); if (el.isConnected) location.hash = '#/'; }); }); } catch (er) { X().toast(errTxt(er)); } }; } };
