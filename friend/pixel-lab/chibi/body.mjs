@@ -32,5 +32,5 @@ export function chibiStudy(s){
  }
  const floor=Math.min(...mesh.vertices.map(v=>v.p[1]));for(const v of mesh.vertices)v.p[1]-=floor;parts.push(mesh);
  const p={cute:true,manga:false,f:s.sex==='female',t:(n-2)/6};chibiFace(parts,s,chin);
- const scene={parts,height:n,frame:n+1.1,joints:{right:{wrist:[armX+.17,wristY,.018],ankle:[ankleX,ankleY,0]},left:{wrist:[-armX-.035,wristY,.018],ankle:[-ankleX,ankleY,0]}},landmarks:{chin:[0,chin,0],pelvis,shoulder},provenance:'original-neutral-chibi-study-v10',scope:'2–4 head neutral stylized mannequin; body variation and action expansion deferred'};cache.set(key,scene);return scene;
+ const scene={parts,height:n,frame:n+1.1,joints:Object.fromEntries([['right',1],['left',-1]].map(([side,sign])=>[side,{shoulder:[sign*armX,shoulder-.07-floor,0],elbow:[sign*(armX+.11),elbowY-floor,.005],wrist:[sign*(armX+.17),wristY-floor,.018],hip:[sign*hipX,pelvis-floor,0],knee:[sign*(hipX+.012),ankleY+(pelvis-ankleY)*.49-floor,.018],ankle:[sign*ankleX,ankleY-floor,0]}])),landmarks:{chin:[0,chin,0],pelvis,shoulder},provenance:'original-neutral-chibi-study-v13',scope:'2–4 head neutral stylized mannequin; body variation and action expansion deferred'};cache.set(key,scene);return scene;
 }

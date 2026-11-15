@@ -713,6 +713,32 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anatomy.html#section-22",
       "reuse": "원문 링크와 자체 분석. 외부 도판은 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "face-jp-06",
+      "title": "MediBang 옆얼굴의 눈·귀·입",
+      "url": "https://medibangpaint.com/use/2020/11/how-to-draw-face-seen-from-the-side/",
+      "oneLine": "옆얼굴에서는 눈과 입의 보이는 폭이 줄어든다.",
+      "oneSentence": "옆눈의 쐐기 모양과 홍채, 귀와 코·입·턱의 관계를 대조한다.",
+      "concepts": "측면 단축, 눈꺼풀, 홍채, 귀 위치, 윤곽",
+      "section": 26,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-26",
+      "reuse": "원문 링크와 자체 분석. 외부 도판 공개 재배포 없음"
+    },
+    {
+      "id": "face-artist-01",
+      "title": "SpencerCain 눈의 깊이",
+      "url": "https://tips.clip-studio.com/ja-jp/articles/2566",
+      "oneLine": "눈꺼풀 뒤에 안구의 부피가 있다.",
+      "oneSentence": "개구부와 안구를 구분해 사선·측면에서 보이는 형태를 구성한다.",
+      "concepts": "안구, 개구부, 눈꺼풀, 가림, 시선",
+      "section": 27,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-27",
+      "reuse": "원문 링크와 자체 분석. 외부 도판 공개 재배포 없음"
     }
   ]
 }

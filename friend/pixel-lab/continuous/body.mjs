@@ -20,7 +20,7 @@ export function continuousStudy(s){
  const eyes=['L','R'].map(side=>proportion(source.joints['eye.'+side]));
  function stylize(p){if(!manga)return p;let [x,y,z]=p;const h=y-(n-1),neck=Math.exp(-(((h+.25)/.21)**2))*Math.exp(-((Math.abs(x)/.24)**4));x*=1-neck*(s.sex==='female'?.14:.10);
   if(h<-.10)return [x,y,z];
-  for(const eye of eyes){const dx=p[0]-eye[0],dy=p[1]-eye[1],gate=clamp((p[2]-eye[2]+.075)/.075),w=Math.exp(-((dx/.155)**2+(dy/.135)**2)*1.4)*gate;x+=(dx*.38+Math.sign(eye[0])*.027)*w;y+=(dy*(s.sex==='female'?.68:.40)+Math.sign(eye[0])*dx*.10-(s.sex==='male'?.027:0))*w;z+=.018*w;}
+  for(const eye of eyes){const dx=p[0]-eye[0],dy=p[1]-eye[1],gate=clamp((p[2]-eye[2]+.075)/.075),w=Math.exp(-((dx/.155)**2+(dy/.135)**2)*1.4)*gate;x+=(dx*(s.sex==='female'?.80:.38)+Math.sign(eye[0])*.027)*w;y+=(dy*(s.sex==='female'?.68:.40)+Math.sign(eye[0])*dx*.10-(s.sex==='male'?.027:0))*w;z+=.018*w;}
   const front=clamp((p[2]-.22)/.22),nose=Math.exp(-((x/.145)**2+((h-.35)/.19)**2)*1.3)*front;
   z-=Math.max(0,z-.48)*.10*nose;
   z-=.025*Math.exp(-((x/.13)**2+((h-.205)/.075)**2)*1.4)*front;
@@ -43,13 +43,15 @@ export function continuousStudy(s){
  const skin={name:'continuous-CC0-derived-body',mat:'skin',vertices,faces:skinFaces},parts=[skin,{name:'surface-upper-lip',mat:'lip',vertices,faces:lipFaces},{name:'surface-lower-lip',mat:'lower-lip',vertices,faces:lowerLipFaces}];
  const headFaces=DATA.faces.filter(f=>f.every(i=>vertices[i].p[1]>n-.85));
  const ray=frontRay(vertices,headFaces,n);
- function ribbon(name,rows){const mesh={name,mat:'face-ink',vertices:[],faces:[]};for(const[x,y,radius]of rows){for(const dy of[-radius,radius]){const yy=y+dy,z=ray(x,yy);mesh.vertices.push({p:[x,yy,z+.002],n:[0,0,1]});}const i=mesh.vertices.length-2;if(i>=2)mesh.faces.push([i-2,i-1,i],[i,i-1,i+1]);}parts.push(mesh);}
- for(const side of ['L','R']){const eye=transform(source.joints['eye.'+side]);if(manga)eye[2]-=.028;E(parts,eye,[manga?.108:.082,manga?.104:.079,.079],'sclera',null,'study-eyeball');E(parts,[eye[0],eye[1],eye[2]+.076],[manga?.044:.033,manga?(s.sex==='female'?.054:.045):.038,.008],'iris',null,'study-iris');E(parts,[eye[0],eye[1],eye[2]+.084],[manga?.018:.015,manga?.029:.024,.005],'eye',null,'study-pupil');
-  const brow=[];for(let i=0;i<=20;i++){const u=i/10-1,x=eye[0]+u*.105,y=eye[1]+(s.sex==='female'?.095:.068)+.014*(1-u*u)+Math.sign(eye[0])*u*.009,radius=(s.sex==='female'?.0075:.017)*(1-.65*Math.abs(u));if(Number.isFinite(ray(x,y)))brow.push([x,y,radius]);}ribbon('surface-brow-ribbon',brow);
+ function ribbon(name,rows,surface=ray){const mesh={name,mat:'face-ink',vertices:[],faces:[]};for(const[x,y,radius]of rows){for(const dy of[-radius,radius]){const yy=y+dy,z=surface(x,yy);mesh.vertices.push({p:[x,yy,z+.002],n:[0,0,1]});}const i=mesh.vertices.length-2;if(i>=2)mesh.faces.push([i-2,i-1,i],[i,i-1,i+1]);}parts.push(mesh);}
+ for(const side of ['L','R']){const eye=transform(source.joints['eye.'+side]);if(manga)eye[2]-=.028;E(parts,eye,[manga?(s.sex==='female'?.125:.108):.082,manga?.104:.079,.079],'sclera',null,'study-eyeball');E(parts,[eye[0],eye[1],eye[2]+.076],[manga?.044:.033,manga?(s.sex==='female'?.054:.045):.038,.008],'iris',null,'study-iris');E(parts,[eye[0],eye[1],eye[2]+.084],[manga?.018:.015,manga?.029:.024,.005],'eye',null,'study-pupil');
+  const brow=[];for(let i=0;i<=20;i++){const u=i/10-1,x=eye[0]+u*.105,y=eye[1]+(s.sex==='female'?.095:.068)+.014*(1-u*u)+Math.sign(eye[0])*u*.009,radius=(s.sex==='female'?.0095:.017)*(1-.65*Math.abs(u));if(Number.isFinite(ray(x,y)))brow.push([x,y,radius]);}ribbon('surface-brow-ribbon',brow);
   if(manga){
    E(parts,[eye[0]-.011,eye[1]+.022,eye[2]+.089],[.009,.010,.003],'sclera',null,'study-eye-glint');
-   const lid=[];const ballZ=(x,y)=>{const q=1-((x-eye[0])/.108)**2-((y-eye[1])/.104)**2;return q>0?eye[2]+.079*Math.sqrt(q):-Infinity;};
-   for(let i=0;i<=40;i++){const x=eye[0]+(i/20-1)*.108;let top=-Infinity;for(let j=-40;j<=40;j++){const y=eye[1]+j*.0023;if(ballZ(x,y)>ray(x,y)+.0002)top=y;}if(!Number.isFinite(top))continue;let lo=top,hi=top+.0023;for(let k=0;k<10;k++){const mid=(lo+hi)/2;if(ballZ(x,mid)>ray(x,mid)+.0002)lo=mid;else hi=mid;}const y=(lo+hi)/2;lid.push([x,y+.001,s.sex==='female'?.0045:.003]);}ribbon('actual-upper-eyelid',lid);
+   const lid=[];const ballZ=(x,y)=>{const q=1-((x-eye[0])/(s.sex==='female'?.125:.108))**2-((y-eye[1])/.104)**2;return q>0?eye[2]+.079*Math.sqrt(q):-Infinity;};
+   for(let i=0;i<=40;i++){const x=eye[0]+(i/20-1)*(s.sex==='female'?.125:.108);let top=-Infinity;for(let j=-40;j<=40;j++){const y=eye[1]+j*.0023;if(ballZ(x,y)>ray(x,y)+.0002)top=y;}if(!Number.isFinite(top))continue;let lo=top,hi=top+.0023;for(let k=0;k<10;k++){const mid=(lo+hi)/2;if(ballZ(x,mid)>ray(x,mid)+.0002)lo=mid;else hi=mid;}const y=(lo+hi)/2;lid.push([x,y+.001,s.sex==='female'?.009:.0055]);}ribbon('actual-upper-eyelid',lid,(x,y)=>Math.max(ray(x,y),ballZ(x,y))); 
+   if(s.sex==='female'&&lid.length>4){const outer=lid.slice().sort((a,b)=>Math.abs(b[0])-Math.abs(a[0]))[0],sign=Math.sign(eye[0]),x=outer[0]+sign*.026,y=outer[1]+.010,z=ray(x,y);if(Number.isFinite(z))taper(parts,[outer[0],outer[1],ray(outer[0],outer[1])+.003],[x,y,z+.003],[[0,.006,.002],[1,.001,.001]],'face-ink','study-outer-lash');}
+  
   }
  }
  if(manga){const seam=[];for(let i=0;i<=20;i++){const u=i/10-1,x=u*.102,y=mouth[1]+.002+.004*Math.cos(u*Math.PI),z=ray(x,y);if(Number.isFinite(z))seam.push([x,y,z+.002]);}for(let i=1;i<seam.length;i++)taper(parts,seam[i-1],seam[i],[[0,.002,.0015],[1,.002,.0015]],'face-ink','surface-mouth-line');}

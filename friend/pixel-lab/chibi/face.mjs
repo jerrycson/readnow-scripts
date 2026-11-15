@@ -1,16 +1,32 @@
-import{ellipsoid as E,norm,taper}from'../geometry.mjs';import{humanEar}from'../ear-anatomy.mjs';
-export function chibiFace(parts,s,chin){const t=s.heads-2,width=[.60,.57,.54][t]*(s.candidate==='A'?.94:s.candidate==='C'?1.06:1),depth=.43,f=s.sex==='female',simple=s.candidate==='A';
-const head={name:'chibi-skull',mat:'skin',vertices:[],faces:[]},rows=48,segments=64;for(let j=0;j<=rows;j++)for(let k=0;k<=segments;k++){const a=j/rows*Math.PI,b=k/segments*Math.PI*2,q=[Math.sin(a)*Math.cos(b),Math.cos(a),Math.sin(a)*Math.sin(b)];head.vertices.push({p:[q[0]*width,chin+.5+q[1]*.5,q[2]*depth],n:norm([q[0]/width,q[1]/.5,q[2]/depth])});}for(let j=0;j<rows;j++)for(let k=0;k<segments;k++){const a=j*(segments+1)+k,b=a+segments+1;head.faces.push([a,b,a+1],[a+1,b,b+1]);}parts.push(head);
-const front=(x,y)=>depth*Math.sqrt(Math.max(0,1-(x/width)**2-((y-chin-.5)/.5)**2)),normal=(x,y)=>norm([x/(width*width),(y-chin-.5)/.25,front(x,y)/(depth*depth)]);
-function patch(name,mat,cx,cy,rx,ry,offset){const vertices=[{p:[cx,cy,front(cx,cy)+offset],n:normal(cx,cy)}],faces=[];for(let j=0;j<32;j++){const a=j/32*Math.PI*2,x=cx+rx*Math.cos(a),y=cy+ry*Math.sin(a);vertices.push({p:[x,y,front(x,y)+offset],n:normal(x,y)});}for(let j=0;j<32;j++)faces.push([0,j+1,(j+1)%32+1]);parts.push({name,mat,vertices,faces});}
-const eyeY=chin+.38,eyeX=width*.38,ew=.116,eh=.125;
-for(const sign of[-1,1]){const ex=sign*eyeX;
-if(simple){patch('chibi-simple-eye','face-ink',ex,eyeY,.039,.092,.005);patch('chibi-glint','sclera',ex-.009,eyeY+.043,.008,.012,.008);}else{patch('chibi-eye-white','sclera',ex,eyeY,ew,eh,.003);patch('chibi-iris','iris',ex,eyeY-.004,ew*.84,eh*.92,.006);patch('chibi-pupil','face-ink',ex,eyeY-.002,ew*.42,eh*.64,.009);patch('chibi-glint','sclera',ex-ew*.21,eyeY+eh*.39,ew*.15,eh*.15,.012);}
-const upper=[];for(let j=0;j<=16;j++){const a=j/16*Math.PI,x=ex+Math.cos(a)*ew,y=eyeY+Math.sin(a)*eh;upper.push([x,y,front(x,y)+.007]);}if(!simple)for(let j=1;j<upper.length;j++)taper(parts,upper[j-1],upper[j],[[0,.006,.002],[1,.006,.002]],'face-ink','chibi-upper-lid');
-const brow=[];for(let j=0;j<=8;j++){const u=j/4-1,x=ex+u*.083,y=eyeY+.19+.013*(1-u*u);brow.push([x,y,front(x,y)+.004]);}for(let j=1;j<brow.length;j++)taper(parts,brow[j-1],brow[j],[[0,f?.003:.005,.002],[1,f?.003:.005,.002]],'face-ink','chibi-brow');
-if(f&&!simple){const a=[ex+sign*ew*.85,eyeY+eh*.5],b=[ex+sign*ew*1.06,eyeY+eh*.71];taper(parts,[...a,front(...a)+.007],[...b,front(...b)+.007],[[0,.004,.002],[1,.001,.001]],'face-ink','chibi-outer-lash');}
-humanEar(parts,{width:.9,length:.85,tilt:0,lobe:.65},sign,width,chin,true);
+import{norm,taper,cross,sub}from'../geometry.mjs';
+import{humanEar}from'../ear-anatomy.mjs';
+const clamp=x=>Math.max(0,Math.min(1,x));
+function curve(rows,x){let i=0;while(i<rows.length-2&&x>rows[i+1][0])i++;const[x0,y0]=rows[i],[x1,y1]=rows[i+1],d=(y1-y0)/(x1-x0),a=i?(y0-rows[i-1][1])/(x0-rows[i-1][0]):d,b=i<rows.length-2?(rows[i+2][1]-y1)/(rows[i+2][0]-x1):d,m0=a*d>0?2/(1/a+1/d):0,m1=b*d>0?2/(1/b+1/d):0,t=clamp((x-x0)/(x1-x0));return(2*t**3-3*t*t+1)*y0+(t**3-2*t*t+t)*(x1-x0)*m0+(-2*t**3+3*t*t)*y1+(t**3-t*t)*(x1-x0)*m1;}
+export function chibiFace(parts,s,chin){
+ const t=s.heads-2,width=[.56,.53,.50][t]*(s.candidate==='A'?.94:s.candidate==='C'?1.06:1),depth=.43,f=s.sex==='female',simple=s.candidate==='A';
+ const widths=[[0,0],[.05,.56],[.12,.78],[.22,.91],[.36,.98],[.50,1],[.65,.99],[.80,.91],[.92,.65],[1,0]],depths=[[0,0],[.05,.30],[.12,.57],[.22,.80],[.36,.93],[.50,1],[.65,1],[.80,.91],[.92,.65],[1,0]],centers=[[0,.13],[.12,.06],[.36,0],[.65,-.045],[1,0]];
+ function profile(h){const cap=Math.sqrt(Math.max(0,1-((h-.5)/.5)**2));return{rx:width*(h>=.5?cap:curve(widths,h)),rz:depth*(h>=.5?cap:curve(depths,h)),z:curve(centers,h)};}
+ const front=(x,y)=>{const h=y-chin,{rx,rz,z}=profile(h);return z+rz*Math.sqrt(Math.max(0,1-(Math.abs(x)/Math.max(.00001,rx))**2.7))+.025*Math.exp(-((x/.050)**2+((h-.28)/.045)**2))+.008*Math.exp(-((x/.10)**2+((h-.17)/.025)**2));};
+ const normal=(x,y)=>{const e=.0001;return norm([-(front(x+e,y)-front(x-e,y))/(2*e),-(front(x,y+e)-front(x,y-e))/(2*e),1]);};
+ const head={name:'chibi-skull-cheek-jaw',mat:'skin',vertices:[],faces:[]},rows=64,segments=80;
+ for(let j=0;j<=rows;j++)for(let k=0;k<=segments;k++){const h=j/rows,a=k/segments*Math.PI*2,{rx,rz,z}=profile(h),x=rx*Math.cos(a),zz=Math.sin(a)>=0?front(x,chin+h):z+rz*Math.sin(a);head.vertices.push({p:[x,chin+h,zz],n:[0,0,0]});}
+ for(let j=0;j<rows;j++)for(let k=0;k<segments;k++){const a=j*(segments+1)+k,b=a+segments+1;head.faces.push([a,b,a+1],[a+1,b,b+1]);}
+ for(const face of head.faces){const[a,b,c]=face.map(i=>head.vertices[i].p),n=cross(sub(b,a),sub(c,a));for(const i of face)for(let k=0;k<3;k++)head.vertices[i].n[k]+=n[k];}
+ const weld=new Map();for(const v of head.vertices){const key=v.p.map(x=>x.toFixed(8)).join(':');if(!weld.has(key))weld.set(key,[0,0,0]);for(let k=0;k<3;k++)weld.get(key)[k]+=v.n[k];}for(const v of head.vertices)v.n=norm(weld.get(v.p.map(x=>x.toFixed(8)).join(':')));parts.push(head);
+ function patch(name,mat,cx,cy,rx,ry,offset){const mesh={name,mat,vertices:[],faces:[]},rings=6,segments=48;for(let i=0;i<=rings;i++)for(let k=0;k<=segments;k++){const a=k/segments*Math.PI*2,x=cx+rx*i/rings*Math.cos(a),y=cy+ry*i/rings*Math.sin(a);mesh.vertices.push({p:[x,y,front(x,y)+offset],n:normal(x,y)});}for(let i=0;i<rings;i++)for(let k=0;k<segments;k++){const a=i*(segments+1)+k,b=a+segments+1;mesh.faces.push([a,b,a+1],[a+1,b,b+1]);}parts.push(mesh);}
+ function line(name,mat,points,r){for(let k=1;k<points.length;k++)taper(parts,points[k-1],points[k],[[0,r,.0015],[1,r,.0015]],mat,name);}
+ const eyeY=chin+.38,eyeX=width*.40,ew=.125,upperH=f?.100:.090,lowerH=.070;
+ for(const sign of[-1,1]){const ex=sign*eyeX;
+  if(simple){patch('chibi-simple-eye','face-ink',ex,eyeY,.039,.079,.003);patch('chibi-glint','sclera',ex-.008,eyeY+.031,.008,.010,.005);}
+  else{const eye={vertices:[],faces:[]},cols=48,rows=24,materials=new Map(['sclera','iris','face-ink'].map(m=>[m,[]]));
+   for(let i=0;i<=cols;i++){const u=i/cols*2-1,x=ex+ew*u,a=(Math.max(0,1-u*u))**.65,tilt=sign*u*.010;for(let j=0;j<=rows;j++){const y=eyeY+tilt+a*(-lowerH+(upperH+lowerH)*j/rows);eye.vertices.push({p:[x,y,front(x,y)+.003],n:normal(x,y)});}}
+   for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){const a=i*(rows+1)+j,b=a+rows+1;for(const face of[[a,b,a+1],[a+1,b,b+1]]){const p=[0,1].map(k=>face.reduce((v,id)=>v+eye.vertices[id].p[k],0)/3),u=(p[0]-ex)/.061,v=(p[1]-eyeY-.003)/.080,pupil=((p[0]-ex)/.025)**2+((p[1]-eyeY-.006)/.052)**2;materials.get(pupil<1?'face-ink':u*u+v*v<1?'iris':'sclera').push(face);}}
+   for(const[mat,faces]of materials)parts.push({name:'chibi-almond-eye-'+mat,mat,vertices:eye.vertices,faces});patch('chibi-glint','sclera',ex-.018,eyeY+.040,.010,.013,.006);
+   const upper=[];for(let i=0;i<=32;i++){const u=i/16-1,x=ex+ew*u,y=eyeY+sign*u*.010+upperH*Math.max(0,1-u*u)**.65;upper.push([x,y,front(x,y)+.006]);}line('chibi-upper-lid','face-ink',upper,f?.007:.005);
+  }
+  const brow=[];for(let i=0;i<=16;i++){const u=i/8-1,x=ex+u*.093,y=eyeY+.146+.012*(1-u*u)+sign*u*.008;brow.push([x,y,front(x,y)+.005]);}line('chibi-brow','face-ink',brow,f?.0035:.0055);
+  humanEar(parts,{width:.95,length:.85,tilt:0,lobe:.65},sign,profile(.44).rx,chin,true);
+ }
+ const smile=[];for(let i=0;i<=20;i++){const u=i/10-1,x=u*.063,y=chin+.165+.018*u*u;smile.push([x,y,front(x,y)+.004]);}line('chibi-smile','face-ink',smile,.003);
+ return{width,depth,front};
 }
-// A small surface smile retains its curvature when the head rotates.
-const smile=[];for(let j=0;j<=16;j++){const u=j/8-1,x=u*.060,y=chin+.16+.019*u*u;smile.push([x,y,front(x,y)+.005]);}for(let j=1;j<smile.length;j++)taper(parts,smile[j-1],smile[j],[[0,.003,.002],[1,.003,.002]],'face-ink','chibi-smile');
-E(parts,[0,chin+.25,front(0,chin+.25)+.002],[.014,.014,.009],'skin',null,'chibi-nose');return{width,depth,front};}
