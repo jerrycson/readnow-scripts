@@ -1,5 +1,6 @@
 import {ellipsoid as E,loft,taper,mix} from './geometry.mjs';
 import {humanEar} from './ear-anatomy.mjs';
+import {sculptHead} from './head-surface.mjs';
 // Authored shape recipes; descriptors do not imply ethnicity, personality or health.
 const entries=(rows,keys)=>rows.map(([name,...values],i)=>Object.freeze({id:i,name,...Object.fromEntries(keys.map((k,j)=>[k,values[j]]))}));
 export const FACE_SHAPES=entries([
@@ -35,38 +36,34 @@ export const EAR_SHAPES=entries([
 export const FACIAL_OPTIONS={faceShape:FACE_SHAPES,eyeShape:EYE_SHAPES,noseShape:NOSE_SHAPES,mouthShape:MOUTH_SHAPES,earShape:EAR_SHAPES};
 export function makeFace(parts,s,p,chin){
  const {cute,manga,t}=p,face=FACE_SHAPES[s.faceShape],eyes=EYE_SHAPES[s.eyeShape],nose=NOSE_SHAPES[s.noseShape],mouth=MOUTH_SHAPES[s.mouthShape],ear=EAR_SHAPES[s.earShape];
- const baseWidth=cute?(s.candidate==='A'?.54:s.candidate==='C'?.63:.59):manga?.38:mix(.365,.35,t),width=baseWidth*face.width,depth=cute?.435:.36;
- const lower=cute?width*.52:face.jaw*(manga?.20:.24),cheek=width*face.cheek;
- const rings=[[chin+.015,lower,depth*.46,.02],[chin+.14,cute?width*.79:width*(.50+face.jaw*.32),depth*.78,.025],[chin+.34,cheek*(cute?.97:.92),depth*.98,.01],[chin+.58,width,depth,-.015],[chin+.79,width*.94,depth*.91,-.02],[chin+.94,width*.58,depth*.58,-.02],[chin+1,.04,.05,-.025]];
- for(const ring of rings)ring[0]=chin+(ring[0]-chin-.5)*face.length+.5;
- loft(parts,rings,'skin','head');
- const front=(x,y)=>{let a=rings[0],b=rings[1];for(let i=0;i<rings.length-1;i++)if(y>=rings[i][0]&&y<=rings[i+1][0]){a=rings[i];b=rings[i+1];break;}const k=Math.max(0,Math.min(1,(y-a[0])/(b[0]-a[0]))),rx=mix(a[1],b[1],k),rz=mix(a[2],b[2],k),zc=mix(a[3],b[3],k);return zc+rz*Math.sqrt(Math.max(.06,1-(x/rx)**2));};
- const patchOnFace=(name,mat,cx,cy,rx,ry,offset)=>{const vertices=[{p:[cx,cy,front(cx,cy)+offset],n:[0,0,1]}],faces=[];for(let k=0;k<20;k++){const a=k/20*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;vertices.push({p:[x,y,front(x,y)+offset],n:[0,0,1]});}for(let k=0;k<20;k++)faces.push([0,k+1,(k+1)%20+1]);parts.push({name,mat,vertices,faces});};
- const eyeY=chin+(cute?.40:manga?.46:.49),eyeX=width*(cute?.40:.43),ew=(cute?.10:manga?.080:.062)*eyes.width,eh=(cute?.105:manga?.060:.032)*eyes.height*(1-s.age*.22);
+ const {width,depth,front,normal}=sculptHead(parts,s,p,chin,face,nose,mouth);
+ const patchOnFace=(name,mat,cx,cy,rx,ry,offset)=>{const vertices=[{p:[cx,cy,front(cx,cy)+offset],n:normal(cx,cy)}],faces=[];for(let k=0;k<20;k++){const a=k/20*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;vertices.push({p:[x,y,front(x,y)+offset],n:normal(x,y)});}for(let k=0;k<20;k++)faces.push([0,k+1,(k+1)%20+1]);parts.push({name,mat,vertices,faces});};
+ const eyeY=chin+(cute?.35:manga?.46:.49),eyeX=width*(cute?.40:.43),ew=(cute?.125:manga?.089:.070)*eyes.width,eh=(cute?.115:manga?(p.f?.057:.048):.032)*eyes.height*(1-s.age*.22);
  for(const side of [-1,1]){
-  const ex=side*eyeX,ez=front(ex,eyeY)+.012;
-  const patch={name:'eye-white',mat:'sclera',vertices:[{p:[ex,eyeY,ez+.014],n:[0,0,1]}],faces:[]};
-  for(let k=0;k<16;k++){const a=k/16*Math.PI*2,x=Math.cos(a)*ew,y=Math.sin(a)*eh*(Math.sin(a)>0?eyes.arch:.8)+x*eyes.tilt*side;patch.vertices.push({p:[ex+x,eyeY+y,front(ex+x,eyeY+y)+.018],n:[0,0,1]});}
+  const ex=side*eyeX,ez=front(ex,eyeY)+.006;
+  const patch={name:'eye-white',mat:'sclera',vertices:[{p:[ex,eyeY,ez],n:normal(ex,eyeY)}],faces:[]};
+  for(let k=0;k<16;k++){const a=k/16*Math.PI*2,x=Math.cos(a)*ew,y=Math.sin(a)*eh*(Math.sin(a)>0?eyes.arch:.8)+x*eyes.tilt*side;patch.vertices.push({p:[ex+x,eyeY+y,front(ex+x,eyeY+y)+.006],n:normal(ex+x,eyeY+y)});}
   for(let k=0;k<16;k++)patch.faces.push([0,1+k,1+(k+1)%16]);parts.push(patch);
-  patchOnFace('iris','iris',ex,eyeY,Math.min(ew*.46,eh*.65),eh*.72,.029);
-  patchOnFace('pupil','eye',ex,eyeY,Math.min(ew*.25,eh*.3),eh*.45,.032);
-  if(cute||manga)patchOnFace('eye-glint','sclera',ex-ew*.12,eyeY+eh*.28,ew*.13,eh*.17,.035);
-  for(let k=0;k<6;k++){const a=k/6*Math.PI,b=(k+1)/6*Math.PI,x1=Math.cos(a)*ew,x2=Math.cos(b)*ew,y1=Math.sin(a)*eh*eyes.arch+x1*eyes.tilt*side,y2=Math.sin(b)*eh*eyes.arch+x2*eyes.tilt*side;taper(parts,[ex+x1,eyeY+y1,front(ex+x1,eyeY+y1)+.025],[ex+x2,eyeY+y2,front(ex+x2,eyeY+y2)+.025],[[0,cute?.012:.009,.009],[1,cute?.012:.009,.009]],'hair','upper-eyelid');}
-  for(let k=0;k<3;k++){const x1=ex-ew*.9+k*ew*.6,x2=x1+ew*.6,y1=eyeY+eh+.055+eyes.tilt*(x1-ex)*side,y2=eyeY+eh+.055+eyes.tilt*(x2-ex)*side;taper(parts,[x1,y1,front(x1,y1)+.008],[x2,y2,front(x2,y2)+.008],[[0,.011,.005],[1,.010,.005]],'hair','brow');}
+  patchOnFace('iris','iris',ex,eyeY,Math.min(ew*.49,eh*.64),eh*.76,.009);
+  patchOnFace('pupil','eye',ex,eyeY,Math.min(ew*.23,eh*.28),eh*.43,.012);
+  if(cute||manga)patchOnFace('eye-glint','sclera',ex-ew*.12,eyeY+eh*.28,ew*.10,eh*.14,.015);
+  for(let k=0;k<12;k++){const a=k/12*Math.PI,b=(k+1)/12*Math.PI,x1=Math.cos(a)*ew,x2=Math.cos(b)*ew,y1=Math.sin(a)*eh*eyes.arch+x1*eyes.tilt*side,y2=Math.sin(b)*eh*eyes.arch+x2*eyes.tilt*side;taper(parts,[ex+x1,eyeY+y1,front(ex+x1,eyeY+y1)+.006],[ex+x2,eyeY+y2,front(ex+x2,eyeY+y2)+.006],[[0,cute?.008:p.f?.005:.006,.004],[1,cute?.008:p.f?.005:.006,.004]],'hair','upper-eyelid');}
+  for(let k=0;k<6;k++){const x1=ex-ew*.9+k*ew*.3,x2=x1+ew*.3,y1=eyeY+eh+.045+eyes.tilt*(x1-ex)*side,y2=eyeY+eh+.045+eyes.tilt*(x2-ex)*side;taper(parts,[x1,y1,front(x1,y1)+.004],[x2,y2,front(x2,y2)+.004],[[0,p.f?.005:.008,.003],[1,p.f?.004:.007,.003]],'hair','brow');}
   humanEar(parts,ear,side,width,chin,cute);
   if(!cute&&s.age>.4){taper(parts,[ex-ew*.6,eyeY-eh-.035,front(ex,eyeY)-.003],[ex+ew*.9,eyeY-eh-.045,front(ex+ew*.8,eyeY)+.008],[[0,.008,.006],[1,.006,.006]],'skin-shadow','under-eye-fold');}
  }
- const ny=chin+(cute?.27:.34),nw=(cute?.025:.043)*nose.width,nh=(cute?.030:.085)*nose.length,nz=front(0,ny);
- if(cute)E(parts,[0,ny+nose.tip,nz+.025],[nw,nh,.027*nose.depth],'skin',null,'nose');
- else {
-  const top=chin+.53,tip=ny+nose.tip*.4-(nose.length-1)*.09,extension=(manga?.065:.095)*nose.depth;
-  loft(parts,[[tip-.045,nw*.75,.025,nz+.035],[tip-.012,nw,.043,nz+extension*.62],[tip+.035,nw*.72,.040,nz+extension*.8],[top-.055,nw*.50,.028,front(0,top-.055)+extension*.30],[top,nw*.34,.014,front(0,top)+.003]],'skin','nose-bridge-tip');
-  for(const side of [-1,1]){E(parts,[side*nw*.82,tip-.025,nz+.032],[nw*.52,.026,.036],'skin',null,'nose-wing');if(!manga)E(parts,[side*nw*.64,tip-.040,nz+.048],[nw*.25,.008,.012],'skin-shadow',null,'nostril');}
- }
- const my=chin+(cute?.17:.19),mw=(cute?.059:.071)*mouth.width,mz=front(0,my)+.018;
- for(const side of [-1,1]){
-  taper(parts,[0,my+mouth.cupid*.25,mz],[side*mw,my+mouth.corner,mz-.007],[[0,.010*mouth.fullness,.008],[1,.006,.006]],'lip','upper-lip');
-  if(!cute)taper(parts,[0,my-.014*mouth.fullness,mz+.005],[side*mw,my+mouth.corner,mz-.007],[[0,.012*mouth.fullness,.008],[1,.005,.006]],'lip','lower-lip');
+ const ny=chin+(cute?.27:.305+nose.tip*.4-(nose.length-1)*.075);
+ if(cute)E(parts,[0,ny+nose.tip,front(0,ny)+.011],[.021*nose.width,.022*nose.length,.018*nose.depth],'skin',null,'nose');
+ else if(!manga)for(const side of [-1,1]){const x=side*.032*nose.width;patchOnFace('nostril','lip',x,ny-.031,.010*nose.width,.004,.005);}
+ const my=chin+(cute?.17:.19),mw=(cute?.059:p.f?.095:.10)*mouth.width;
+ // A ribbon conforms to the mask in every view, including the lip corners.
+ // Small changes in surface colour describe the lips without detached rods.
+ const line=u=>my+(cute?.014:mouth.corner)*u*u-(cute?.003:mouth.cupid*.16*Math.exp(-((u/.23)**2)));
+ for(const [name,mat,lower]of cute?[['mouth-line','lip',false]]:[['upper-lip','lip',false],['lower-lip','lower-lip',true]]){
+  const mesh={name,mat,vertices:[],faces:[]};
+  for(let i=0;i<=24;i++){const u=i/12-1,x=u*mw,y=line(u),thickness=(cute?.012:lower?.017:.012)*mouth.fullness*Math.max(0,1-u*u),edge=y+(lower?-1:1)*thickness;for(const yy of [y,edge])mesh.vertices.push({p:[x,yy,front(x,yy)+.005],n:normal(x,yy)});if(i){const j=i*2;mesh.faces.push([j-2,j-1,j],[j,j-1,j+1]);}}
+  parts.push(mesh);
  }
  return {width,depth};
 }
+

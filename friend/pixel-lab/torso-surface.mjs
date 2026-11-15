@@ -8,7 +8,7 @@ export function torsoSurface(parts,rings,s,p,py,sy){
  function section(y){let i=0;while(i<rings.length-2&&y>rings[i+1][0])i++;const t=clamp((y-rings[i][0])/(rings[i+1][0]-rings[i][0]),0,1);return [1,2,3].map(k=>catmull(rings[Math.max(0,i-1)][k]||0,rings[i][k]||0,rings[i+1][k]||0,rings[Math.min(rings.length-1,i+2)][k]||0,t));}
  function point(a,y){const [rx,rz,zc]=section(y),sn=Math.sin(a),x=Math.cos(a)*rx;let z=zc+rz*sn;
   const front=Math.max(0,sn)**2,back=Math.max(0,-sn)**2;
-  if(front>0){
+  if(front>0&&!p.cute){
    let relief=0;
    for(const side of [-1,1]){
     if(s.sex==='female'){
@@ -34,8 +34,11 @@ export function torsoSurface(parts,rings,s,p,py,sy){
    relief+=.018*(1-s.adiposity*.65)*Math.exp(-(((y-clavicleY)/.038)**2))*smooth(.08,.2,Math.abs(x))*(1-smooth(chest*.72,chest*.93,Math.abs(x)));
    z+=front*relief;
   }
-  if(back>0){let relief=0;for(const side of [-1,1]){relief+=depth*.30*mound(x,y,side*hip*.44,py-.045,hip*.52,.27);relief+=.025*muscle*mound(x,y,side*chest*.45,py+torso*.75,chest*.28,torso*.17);}z-=back*relief;}
-  return [x,y,z];
+  if(back>0&&!p.cute){let relief=0;for(const side of [-1,1]){relief+=depth*.30*mound(x,y,side*hip*.44,py-.045,hip*.52,.27);relief+=.025*muscle*mound(x,y,side*chest*.45,py+torso*.75,chest*.28,torso*.17);}z-=back*relief;}
+  // The groin edge rises toward the side of the pelvis. A level cut across
+  // both upper legs reads as a separate belt even with identical materials.
+  const joinWeight=1-smooth(low,py+.13,y),edgeLift=(p.cute?.10:.29)*Math.abs(Math.cos(a))**1.7;
+  return [x,y+joinWeight*edgeLift,z];
  }
  const mesh={name:'ribcage-waist-pelvis',mat:'skin',vertices:[],faces:[]},rows=52,segments=40,eps=.0005;
  for(let j=0;j<=rows;j++)for(let i=0;i<=segments;i++){

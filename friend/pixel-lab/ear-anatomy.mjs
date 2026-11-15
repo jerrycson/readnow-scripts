@@ -11,17 +11,18 @@ export function humanEar(parts,ear,side,width,chin,cute=false){
  }
  for(let r=0;r<rows;r++)for(let i=0;i<contour.length;i++){const a=r*contour.length+i,b=r*contour.length+(i+1)%contour.length,c=a+contour.length,d=b+contour.length;bowl.faces.push([a,c,b],[b,c,d]);}local.push(bowl);
  function ridge(points,radius,name){for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1];taper(local,a,b,[[0,radius,radius],[1,radius,radius]],'skin',name);E(local,b,[radius,radius,radius],'skin',null,name+'-joint');}}
- ridge(contour,.012*(.85+ear.width*.15),'ear-helix');
+ ridge(contour,.008*(.85+ear.width*.15),'ear-helix');
  const lift=.026,uv=([u,v,w=lift])=>[u*sx,v*sy,w];
- ridge([[-.08,-.60],[-.27,-.24],[-.28,.15],[-.18,.43]].map(uv),.010,'ear-antihelix');
- ridge([[-.18,.43],[-.41,.68]].map(uv),.009,'ear-antihelix-upper');
- ridge([[-.18,.43],[.10,.63]].map(uv),.009,'ear-antihelix-forward');
+ ridge([[-.08,-.60],[-.27,-.24],[-.28,.15],[-.18,.43]].map(uv),.005,'ear-antihelix');
+ ridge([[-.18,.43],[-.41,.68]].map(uv),.005,'ear-antihelix-upper');
+ ridge([[-.18,.43],[.10,.63]].map(uv),.005,'ear-antihelix-forward');
  E(local,uv([.17,-.14,-.008]),[.021,.030,.006],'skin-shadow',null,'ear-canal-shadow');
- E(local,uv([.32,-.19,.020]),[.022,.030,.018],'skin',null,'ear-tragus');
- E(local,uv([-.04,-.52,.023]),[.021,.020,.016],'skin',null,'ear-antitragus');
+ E(local,uv([.32,-.19,.020]),[.015,.023,.012],'skin',null,'ear-tragus');
+ E(local,uv([-.04,-.52,.023]),[.014,.016,.010],'skin',null,'ear-antitragus');
  E(local,uv([-.04,-.82,.016]),[sx*.42,sy*(.18+ear.lobe*.08),.027],'skin',null,'ear-lobule');
  const center=[side*(width-.010),chin+.44,-.028],angle=.30+ear.tilt,co=Math.cos(angle),sn=Math.sin(angle);
  const orient=v=>[side*(-sn*v[0]+co*v[2]),v[1],co*v[0]+sn*v[2]],tilt=v=>[v[0]-.10*v[1],v[1],v[2]];
  transformMeshes(local,v=>{const q=orient(tilt(v));return q.map((x,k)=>x+center[k]);},v=>orient(tilt(v)));
  parts.push(...local);
 }
+

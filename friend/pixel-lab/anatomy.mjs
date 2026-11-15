@@ -4,6 +4,7 @@ import {makeFace} from './facial.mjs';
 import {addDesignedHair} from './hair-design.mjs';
 import {torsoSurface} from './torso-surface.mjs';
 import {limbSurface} from './limb-surface.mjs';
+import {footSurface} from './foot-surface.mjs';
 import {ellipsoid as E,loft,taper,box,add,sub,mul,mix,lerp,twoBone,bendPoint,transformMeshes} from './geometry.mjs';
 
 // These are original design proportions, not a claim that one ideal body describes all people.
@@ -14,7 +15,7 @@ export function proportions(settings){
  const shoulder=(cute?mix(.27,.41,(n-2)/2):mix(f?.70:.84,f?.84:1,(n-5)/3)*(1+(s.shoulderWidth-.5)*.34+muscle*.12+fat*.10)*(manga?.91:1))*bulk;
  const hip=(cute?mix(.28,.40,(n-2)/2):mix(f?.58:.51,f?.70:.61,(n-5)/3)*(1+(s.pelvisWidth-.5)*.42+fat*.24))*bulk;
  // Head units are measured without hair. The crotch lies below the hip joint.
- const pelvis=cute?.10+(n-1)*.43:n*(manga?.535:.52)+.08+(s.legRatio-.5)*.32,shoulderY=n-(cute?1.035:1.32),foot=mix(.075,.14,t);
+ const pelvis=cute?.53+.46*(n-2)+.08*(n-2)**2:n*(manga?.535:.52)+.08+(s.legRatio-.5)*.32,shoulderY=n-(cute?1.035:1.32),foot=mix(.075,.14,t);
  const arm=cute?(n-1)*.39:shoulderY-(pelvis-.20),leg=pelvis-foot;
  const chest=shoulder*(cute?.88:.86),waist=cute?hip*1.03:mix(hip*.90,shoulder*.59,.6)*(1+fat*.85-(s.waistCurve-.5)*.36)*(manga?.99:1);
  const depth=(cute?mix(.20,.27,(n-2)/2):mix(.28,.37,(n-5)/3))*(1+fat*.65+muscle*.16);
@@ -40,13 +41,17 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
   [py+torso*.26,waist,depth*(cute?.98:.80+Math.max(0,fat)*.62),.025+Math.max(0,fat)*.16],
   [py+torso*.48,chest*.85,depth*.92,.015],
   [py+torso*.73,chest,depth*(cute?1:f?1.02+s.chestVolume*.24:1.04),.035],
-  [sy-.09,shoulder*.81,depth*.83,0],
-  [sy+.055,shoulder*.49,depth*.65,-.015],
+  [sy-.09,shoulder*(cute?.81:.94),depth*.83,0],
+  [sy+.055,shoulder*(cute?.49:.64),depth*.65,-.015],
   [sy+.15,mix(.11,.17,t),depth*.50,-.015]
  ];
- if(cute)loft(torsoParts,rings,'skin','ribcage-waist-pelvis');else torsoSurface(torsoParts,rings,s,p,py,sy);
+ torsoSurface(torsoParts,rings,s,p,py,sy);
  if(cute)E(torsoParts,[0,sy+.15,0],[.12,.14,.13],'skin',null,'neck');
- else loft(torsoParts,[[sy+.02,.20,depth*.58,-.015],[sy+.16,.145,depth*.48,-.015],[sy+.34,.16,depth*.50,-.005]],'skin','neck');
+ else {
+  const neck=loft(torsoParts,[[sy+.02,.20,depth*.58,-.025],[sy+.16,.145,depth*.48,-.015],[sy+.34,.16,depth*.50,-.005]],'skin','neck',24);
+  // The nape attaches higher behind the jaw than the front of the throat.
+  for(const v of neck.vertices){const q=Math.max(0,Math.min(1,(v.p[1]-sy-.16)/.18)),raw=(1-(v.p[2]+.005)/(depth*.5))/2,factor=Math.max(0,Math.min(1,raw)),dy=.60*q*factor/.18,dz=raw>0&&raw<1?-.30*q*q/depth:0,[nx,ny,nz]=v.n;v.p[1]+=.30*q*q*factor;v.n=[nx,ny/(1+dy),nz-ny*dz/(1+dy)];}
+ }
  // Clavicle slope and shoulder cap; skin retains broad planes instead of isolated muscle dots.
  for(const side of [-1,1]){
   const capRadius=(cute?mix(.105,.14,(n-2)/2):mix(f?.14:.17,f?.17:.20,(n-5)/3)+muscle*.13+fat*.16)*bulk;
@@ -86,7 +91,7 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
  const joints={pelvis:[0,py,0],neck:trunk([0,sy+.15,0])},feet=[];
  for(const side of [-1,1]){
   const armW=(cute?mix(.105,.14,(n-2)/2):mix(f?.14:.17,f?.17:.20,(n-5)/3)+muscle*.13+fat*.16)*bulk;
-  const sh=trunk([side*(shoulder*(cute?1:.94)+Math.max(0,fat)*.12),sy-(cute?.015:.08),0]);
+  const sh=trunk([side*(shoulder*(cute?1:.88)+Math.max(0,fat)*.12),sy-(cute?.015:.08),0]);
   let elbow=[sh[0]+side*(cute?.055:.10),sh[1]-arm*.52,sh[2]],wrist=[sh[0]+side*(cute?.055:.18),sh[1]-arm,sh[2]+(cute?0:.025)];
   const swing=moving?Math.sin(phase+(side<0?Math.PI:0))*(running?.62:.30):0;
   elbow=bendPoint(elbow,sh,swing);wrist=bendPoint(wrist,sh,swing);
@@ -97,7 +102,7 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
    taper(parts,sh,elbow,[[0,armW*.95,armW],[.28,armW*1.06,armW*1.10],[.72,armW*.86,armW*.85],[1,armW*.70,armW*.73]],'skin','upper-arm');
    taper(parts,elbow,wrist,[[0,armW*.73,armW*.76],[.23,armW*.86,armW*.83],[.72,armW*.59,armW*.56],[1,armW*.48,armW*.45]],'skin','forearm');
   }else{
-   limbSurface(parts,add(sh,[0,.075,0]),elbow,armW,'upper-arm',side,s);
+   limbSurface(parts,sh,elbow,armW,'upper-arm',side,s);
    limbSurface(parts,elbow,wrist,armW,'forearm',side,s);
   }
   E(parts,elbow,[armW*.70,armW*.60,armW*.72],'skin',null,'elbow');
@@ -116,7 +121,7 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
    const digitStart=add(wrist,add(mul(handDirection,handLength*.46),[offset*handWidth,0,0])),digitEnd=add(wrist,add(mul(handDirection,handLength*[.91,1,.95,.80][i]),[offset*handWidth*1.04,0,.02]));
    taper(parts,digitStart,digitEnd,[[0,handWidth*.23,handWidth*.23],[.6,handWidth*.21,handWidth*.21],[1,handWidth*.17,handWidth*.17]],'skin','finger');
   }
-  const hx=side*hip*(cute?.57:.70),hipPoint=[hx,py,0],stride=leg*(running?.46:.28),ankleX=cute?hx+side*.025:side*hip*.39;
+  const hx=side*hip*(cute?.57:.60),hipPoint=[hx,py,0],stride=leg*(running?.46:.28),ankleX=cute?hx+side*.025:side*hip*.42;
   const gait=gaitFoot(phase,side,stride,leg*(running?.18:.095),running);
   let ankle=[ankleX,foot+.035+(moving?gait.lift:0),moving?gait.z:0];
   if(action==='kick'&&side===1){const kick=Math.max(0,Math.sin(phase));ankle=[ankleX,foot+.035+leg*.18*kick,leg*.55*kick];}
@@ -132,8 +137,9 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
   }
   E(parts,knee,[calf*.90+extra,calf*(cute?.90:.70)+extra,calf*.93+extra],legMat,null,'knee');
   const footY=ankle[1]-.035,footZ=ankle[2]+(cute?mix(.055,.12,(n-2)/2):.21),footLength=cute?mix(.17,.25,(n-2)/2):mix(.44,.52,(n-5)/3);
-  E(parts,[ankle[0],footY,footZ],[cute?mix(.10,.14,(n-2)/2):mix(.18,.21,(n-5)/3),foot,footLength],pants?'leather':'skin',null,'foot');
-  feet.push({side,ankle,ground:footY-foot,stance:!moving||gait.stance});
+  if(cute||pants)E(parts,[ankle[0],footY,footZ],[cute?mix(.10,.14,(n-2)/2):mix(.18,.21,(n-5)/3),foot,footLength],pants?'leather':'skin',null,'foot');
+  else footSurface(parts,ankle,footY-foot,mix(.18,.21,(n-5)/3),footLength,side);
+  feet.push({side,ankle,ground:footY-foot,stance:(!moving||gait.stance)&&Math.abs(footY-foot)<1e-7});
   joints[side<0?'left':'right']={shoulder:sh,elbow,wrist,hip:hipPoint,knee,ankle};
  }
  const head=[],headCenter=[0,n-.50-lower+bob,0],chin=n-1-lower+bob;
@@ -175,5 +181,5 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
   let min=Infinity;for(const mesh of parts)for(const v of mesh.vertices)min=Math.min(min,v.p[1]);
   transformMeshes(parts,v=>[v[0],v[1]-min,v[2]],v=>v);
  }
- return {parts,height:n,frame:n+(action==='sleep'?1.5:1.1),cameraCenter:action==='sleep'?[-n*.16,Math.max(shoulder,hip)+.42,.12]:undefined,joints,feet,proportions:p,gait:{stride:leg*(running?.46:.28),stance:running?.42:.60},provenance:'original-anatomy-study-v7'};
+ return {parts,height:n,frame:n+(action==='sleep'?1.5:1.1),cameraCenter:action==='sleep'?[-n*.16,Math.max(shoulder,hip)+.42,.12]:undefined,joints,feet,proportions:p,gait:{stride:leg*(running?.46:.28),stance:running?.42:.60},provenance:'original-anatomy-study-v8'};
 }

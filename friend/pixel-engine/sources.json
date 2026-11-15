@@ -564,6 +564,54 @@
       "concepts": "격자, 색과 명도의 덩어리, 관찰 거리, 전체 이미지.",
       "analysisPage": "../research/pixel/anime.html#section-12",
       "reuse": "공개 원문의 분석과 관찰. 원본 이미지 재배포 없음"
+    },
+    {
+      "id": "face-jp-01",
+      "kind": "document",
+      "title": "Palmie Mozu 얼굴 정면과 옆면",
+      "url": "https://www.palmie.jp/lessons/17",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "두개골과 턱 아래 면을 함께 구성한다.",
+      "oneSentence": "얼굴 앞면·후두부·턱과 목의 연결을 여러 시점에서 대조한다.",
+      "concepts": "두개골, 얼굴 앞면, 턱 아래 면, 상하 시점",
+      "analysisPage": "../research/pixel/anime.html#section-15",
+      "reuse": "원문 링크와 자체 분석. 참고 도판은 로컬 관찰용이며 배포 자산에 포함하지 않음"
+    },
+    {
+      "id": "face-jp-02",
+      "kind": "document",
+      "title": "CLIP STUDIO 옆얼굴과 사선 얼굴",
+      "url": "https://www.clipstudio.net/oekaki/archives/176083",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "중심선과 두개골의 부피로 얼굴 방향을 맞춘다.",
+      "oneSentence": "맨머리 기준에서 귀와 눈·코·입의 투영을 시점별로 비교한다.",
+      "concepts": "얼굴 중심선, 옆면, 후두부, 이목구비 투영",
+      "analysisPage": "../research/pixel/anime.html#section-16",
+      "reuse": "원문 링크와 자체 분석. 참고 도판은 로컬 관찰용이며 배포 자산에 포함하지 않음"
+    },
+    {
+      "id": "face-en-01",
+      "kind": "document",
+      "title": "GABIzolis Profiles for Beginners",
+      "url": "https://tips.clip-studio.com/en-us/articles/8110",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "두개골과 얼굴 앞면으로 옆얼굴을 이해한다.",
+      "oneSentence": "기본 구조에서 현실형과 일본풍 얼굴의 변형을 구분한다.",
+      "concepts": "두개골, 얼굴 앞면, 스타일 변형",
+      "analysisPage": "../research/pixel/anime.html#section-17",
+      "reuse": "원문 링크와 자체 분석. 참고 도판은 로컬 관찰용이며 배포 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-foot-01",
+      "kind": "document",
+      "title": "Proko How to Draw Feet",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-feet",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "뒤꿈치·아치·앞발의 연결을 만든다.",
+      "oneSentence": "발등과 안쪽 아치, 바깥쪽 지지, 앞발의 비대칭을 연속 표면에 반영한다.",
+      "concepts": "뒤꿈치, 안쪽 아치, 바깥쪽 아치, 중족부, 접지",
+      "analysisPage": "../research/pixel/anatomy.html#section-16",
+      "reuse": "원문 링크와 자체 분석. 참고 도판은 로컬 관찰용이며 배포 자산에 포함하지 않음"
     }
   ]
 }

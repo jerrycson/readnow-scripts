@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-11-16",
-  "version": 7,
+  "version": 8,
   "userApproved": false,
   "confidence": "not-ready",
   "scope": "기본 전신과 얼굴 · 남녀 2~8등신 · 45도 전체 회전",

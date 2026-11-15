@@ -9,7 +9,7 @@ export function limbSurface(parts,a,b,radius,kind,side,s,mat='skin'){
  const axis=norm(sub(b,a)),forward=norm(sub([0,0,1],mul(axis,dot(axis,[0,0,1])))),right=norm(cross(forward,axis));
  const length=Math.hypot(...sub(b,a)),m=s.muscularity*(1-s.adiposity*.7),soft=s.adiposity;
  const profiles={
-  'upper-arm':[[0,.58,.64],[.12,1.16,1.03],[.34,1.00,1.21],[.57,.97,1.15],[.83,.74,.83],[1,.68,.72]],
+  'upper-arm':[[0,.20,.30],[.10,1.05,1.20],[.25,1.06,1.24],[.44,1.00,1.21],[.63,.94,1.12],[.83,.74,.83],[1,.68,.72]],
   forearm:[[0,.72,.74],[.20,.94,.89],[.38,.90,.81],[.64,.72,.61],[.88,.55,.44],[1,.52,.42]],
   thigh:[[0,.97,1.02],[.20,1.05,1.10],[.48,.93,1.02],[.74,.70,.75],[.91,.49,.52],[1,.47,.48]],
   calf:[[0,.82,.88],[.17,.88,1.03],[.35,1.02,1.17],[.58,.81,.91],[.80,.52,.59],[1,.44,.50]]
@@ -29,7 +29,7 @@ export function limbSurface(parts,a,b,radius,kind,side,s,mat='skin'){
    x+=side*radius*(.16+.12*m)*(bump(t,.40,.28)*outside-bump(t,.78,.15)*inside);
    x-=side*radius*(.10+soft*.12)*bump(t,.16,.24)*inside; // adductor wedge
    z+=radius*m*.18*bump(t,.40,.32)*front;
-   z-=radius*.10*bump(t,.42,.30)*back;
+   z-=radius*(.25*bump(t,.12,.18)+.10*bump(t,.42,.30))*back;
   }else{
    x+=side*radius*(.12+.12*m)*(bump(t,.25,.16)*outside-bump(t,.40,.20)*inside);
    z-=radius*(.11+.16*m)*bump(t,.34,.23)*back;

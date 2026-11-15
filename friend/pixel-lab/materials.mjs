@@ -2,12 +2,13 @@ import {norm,dot} from './geometry.mjs';
 const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
 const ramp=(colors,extra={})=>({colors:colors.map(hex),roughness:.8,specular:0,pattern:'none',...extra});
 const skin={clay:['#49372f','#93694c','#c08e65','#e1b183','#f3d5ac'],amber:['#483731','#8c5b3e','#b67a4f','#d9a164','#f0c997'],umber:['#2c2730','#51372f','#794e3d','#a37152','#cfa37b']};
+const skinStudy={clay:['#594237','#90664f','#ad7f61','#c39573','#d5a887','#e3ba98','#edc7a7','#f5d6b8','#fde2c8'],amber:['#483731','#805239','#a16c49','#b88055','#cb9463','#d9a574','#e5b585','#efc597','#f6d4ac'],umber:['#2c2730','#51372f','#6b4637','#815640','#95674d','#a7795b','#b68c6b','#c8a080','#d8b394']};
 export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부드러운 부피와 낮은 대비',silk:'실크 · 좁고 긴 밝은 주름',leather:'가죽 · 단단한 경계와 부분 광택'};
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
-  sclera:ramp(['#7b807e','#a9b2a4','#d7dfcb','#f0edd7','#fff6df']),iris:ramp(['#152a2f','#1d3a42','#285561','#43858b','#9bcbbe']),lip:ramp(['#513d36','#785047','#a97868','#c99c86','#e3bea1']),'skin-shadow':ramp(skin[s.palette].slice(0,3).concat(skin[s.palette].slice(2,4))),
-  skin:ramp(s.designStyle==='manga'&&s.palette==='clay'?['#664439','#b67e63','#e0a982','#f1c7a1','#ffe2be']:skin[s.palette]),eye:ramp(['#15252b','#15252b','#1d3038','#263e44','#b1d0cb']),mouth:ramp(skin[s.palette].slice(0,2).concat(skin[s.palette].slice(1,4))),
+  sclera:ramp(['#7b807e','#a9b2a4','#d7dfcb','#f0edd7','#fff6df']),iris:ramp(['#2b211e','#3d2c24','#6f5134','#a08257','#d4b78a']),lip:ramp(['#513d36','#785047','#a97868','#c99c86','#e3bea1']),'skin-shadow':ramp(skin[s.palette].slice(0,3).concat(skin[s.palette].slice(2,4))),
+  'lower-lip':ramp(['#805b49','#b4866e','#d0a28a','#e5bba0','#f0cbb0']),skin:ramp(skinStudy[s.palette],{skin:true}),eye:ramp(['#15252b','#15252b','#1d3038','#263e44','#b1d0cb']),mouth:ramp(skin[s.palette].slice(0,2).concat(skin[s.palette].slice(1,4))),
   cloth:ramp(cloth,{roughness:{cotton:.9,wool:1,silk:.25,leather:.5}[s.fabric],specular:{cotton:.04,wool:.02,silk:.85,leather:.4}[s.fabric],pattern:s.fabric}),
   trousers:ramp(['#242f39','#39444b','#59656b','#808981','#b0afa1'],{roughness:.9,pattern:'cotton'}),
   hair:ramp(['#201d27','#322c31','#554137','#81604a','#b88a60'],{roughness:.35,specular:.7,pattern:'hair'}),
@@ -29,6 +30,7 @@ export function materialLibrary(s){
 const light=norm([-.55,.8,1]),half=norm([light[0],light[1],light[2]+1]);
 export function shade(mat,normal,pos,resolution){
  const diffuse=dot(normal,light),nh=Math.max(0,dot(normal,half));
+ if(mat.skin){const value=.27+.69*Math.max(0,diffuse);return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
  let value=(diffuse+.18)/1.15;
  const spec=Math.pow(nh,4+(1-mat.roughness)*65)*(mat.specular||0);
  if(mat.metal)value=.05+.60*Math.max(0,diffuse)+spec;else value+=spec;
