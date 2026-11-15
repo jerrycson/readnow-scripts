@@ -21,7 +21,7 @@ async function run(options = {}) {
       SHOP_ORIGINS: [], ADM_ORIGINS: [], SRV: 'synthetic', process: { env: {} }, URL, limitWait: () => 0, ready: async () => {} };
     vm.createContext(ctx); vm.runInContext(shop.split('\n').find(x => x.startsWith('const holdOn =')) + '\n' + between(shop, '  async function order(req, body)', '  async function lookup('), ctx);
     vm.runInContext(between(shop, '  async function handle(req, res, path)', '  const readBody =') + '\n' + shop.split('\n').find(x => x.startsWith('  const readBody =')), ctx);
-    return { db, ctx, settings, links, logs, order: b => ctx.order({ headers: {} }, b), status: a => ctx.orderStatus({ attempt: a }), close: a => ctx.orderClose({ attempt: a }) };
+    return { db, ctx, settings, links, logs, order: b => ctx.order({ headers: {} }, b), status: a => ctx.orderStatus({ attempt: a }), close: a => ctx.orderClose({ attempt: a }, { headers: {} }) };
   }
   await test('같은 결정의 순차 재제출은 주문·예약 한 번과 같은 조회 토큰', async () => { const f = fixture(), b = body(), first = await f.order(b), again = await f.order(copy(b)); assert.deepEqual(copy(again), copy(first)); assert.equal(count(f, 'shop_orders'), 1); assert.equal(count(f, 'shop_order_attempts'), 1); assert.equal(f.db.data.get('shop_holds/L').reservedQty, 1); });
   await test('서로 다른 서버의 같은 요청 동시 접수는 한 번', async () => { const f = fixture(), g = fixture({ db: f.db }), b = body(); const [a, z] = await Promise.all([f.order(b), g.order(copy(b))]); assert.equal(a[0], 200); assert.deepEqual(copy(a), copy(z)); assert.equal(count(f, 'shop_orders'), 1); assert.equal(f.db.data.get('shop_holds/L').reservedQty, 1); });
@@ -60,6 +60,7 @@ async function run(options = {}) {
   await test('다른 비밀값은 기존 요청을 닫거나 결과를 볼 수 없음', async () => { const f=fixture(),b=body();await f.order(b);const before=copy([...f.db.data]),r=await f.close({...b.attempt,secret:'f'.repeat(64)});assert.equal(r[0],404);assert(!r[1].result);assert.deepEqual(copy([...f.db.data]),before); });
   await test('닫기 저장 실패는 확정 거절을 가장하지 않고 기존 요청 유지', async () => { const f=fixture(),b=body();f.db.setFail(true);await assert.rejects(f.close(b.attempt));assert.equal(count(f,'shop_order_attempts'),0);assert.equal(count(f,'shop_orders'),0);f.db.setFail(false);assert.equal((await f.order(b))[0],200); });
   await test('형식 오류 닫기와 반복 닫기는 새 주문·예약을 만들지 않음', async () => { const f=fixture(),b=body();assert.equal((await f.close({}))[0],400);const first=await f.close(b.attempt);assert.deepEqual(copy(await f.close(b.attempt)),copy(first));assert.equal(count(f,'shop_order_attempts'),1);assert.equal(count(f,'shop_orders'),0); });
+  await test('요청 닫기 쓰기 한도에 도달하면 저장하지 않고 조회는 유지', async () => { const f=fixture(),b=body();f.ctx.limited=key=>key.startsWith('oc');const r=await f.close(b.attempt);assert.equal(r[0],429);assert.equal(count(f,'shop_order_attempts'),0);assert.equal((await f.status(b.attempt))[1].state,'absent'); });
   return results;
 }
 module.exports = { run };

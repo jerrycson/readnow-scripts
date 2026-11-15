@@ -364,7 +364,8 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   async function orderStatus(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
     const out = await db.runTransaction(tx => ATTEMPT.read(C, attempt, null, tx)); if (!out) return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: 'absent' }];
     if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
-  async function orderClose(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
+  async function orderClose(body, req) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
+    if (limited('oc' + ipKey(req), 10, 3600e3)) return [429, { ok: false, err: '요청 닫기를 잠시 기다려 주세요 — 처리 결과 조회는 계속할 수 있습니다' }];
     const out = await db.runTransaction(async tx => { const prior = await ATTEMPT.read(C, attempt, null, tx); if (prior) return prior;
       const saved = ATTEMPT.closedRecord(attempt, new Date().toISOString()); tx.set(C('shop_order_attempts').doc(attempt.id), saved); return ATTEMPT.reply(saved, attempt, null); });
     if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
@@ -453,7 +454,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
       { const r = await ANL.handle(req, res, path, q, send, readBody, ipKey); if (r) return r; } /* (11/13 shopadm1) 📊 /shop/t 방문 셈 · 💬 /shop/ask · 👀 /shop/pv */
       { const r = await ACCT.handle(req, res, path, q, send, readBody); if (r) return r; } /* (11/12 shop9) 👤 손님 계정·⭐ 리뷰·서재(cloud/shop-acct.js) */
       if (path === '/shop/order-status') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderStatus(await readBody(req)); return send(code, obj); }
-      if (path === '/shop/order-close') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderClose(await readBody(req)); return send(code, obj); }
+      if (path === '/shop/order-close') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderClose(await readBody(req), req); return send(code, obj); }
       if (path === '/shop/order-attempt') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const body = await readBody(req), a = ATTEMPT.parse(body && body.attempt); if (!a || a.error) return send(400, { ok: false, err: '주문 요청 번호를 다시 확인해 주세요' }); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
