@@ -52,7 +52,7 @@ jobs:
         if: ${{ hashFiles('cloud/shop-order-attempt.js') == '' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: a110555fb9b88ee77c63ef01f738be0d81dbb139
+          ref: b31f863f66a4bd998fcbc596b1245cce92aac59e
           path: .order-server
       - name: 실제 서버 함수와 고객 화면 HTTP 통합 검사
         run: |
@@ -63,3 +63,4 @@ jobs:
             cp .order-server/src/tests/standalone/stability.test.cjs src/tests/standalone/stability.test.cjs
           fi
           node src/tests/tORDERINTEGRATED.js
+          node src/tests/tACCOUNTAUTHUI.js

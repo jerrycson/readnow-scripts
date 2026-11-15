@@ -324,6 +324,7 @@
     const u = $('.undo', t); if (u) u.onclick = async () => { if (u.disabled) return; u.disabled = true; try { if (typeof B.cartRestore !== 'function') throw new Error('장바구니 화면을 새로 고친 뒤 다시 확인해 주세요'); const result = await cartChange(list => { const restored = B.cartRestore(list, x, (ST.cfg || {}).maxItems, mulMax()); return restored.why ? { value: restored.why } : { cart: restored.cart }; }); const why = result.value; if (why) toast(why); else { if (B.route(location.hash).name === 'cart') cartPage(''); t.classList.remove('on'); } } catch (e) { toast(e.message); } finally { u.disabled = false; } }; }
 
 
+  const orderOwnerChanged = () => new Error('주문을 시작한 로그인 상태가 바뀌었습니다 — 앞선 계정으로 돌아가거나 주문 결과를 먼저 확인해 주세요');
   async function orderReceipt(saved) { if (!cartStore) throw cartMissing(); const r = await cartStore.finish(saved); badge(); return r.receipt; }
   async function orderRecovery(snapshot, current) {
     let saved = snapshot.active, absent = false, message = '';
@@ -340,11 +341,21 @@
         else throw new Error('주문 결과를 확인할 수 없습니다');
       } catch (e) { message = e.message; }
     }
+    let canResume = false, ownerMessage = '';
+    if (saved.state === 'pending') {
+      try { const token = accountToken(); canResume = await orderJournal.owns(saved, token); if (!window.BQOrderJournal.sameOwner(token, accountToken())) canResume = false; }
+      catch (e) { ownerMessage = e.message; }
+      if (!canResume && !ownerMessage) ownerMessage = saved.schema === 1 ? '앞선 주문을 시작한 계정을 확인할 수 없습니다. 처리 결과를 확인하거나 미접수 요청을 닫아 주세요.' : saved.owner === 'guest' ? '앞선 주문은 비회원으로 시작했습니다. 로그아웃한 뒤 이어가거나 미접수 요청을 닫아 주세요.' : '앞선 주문을 시작한 회원으로 로그인해야 이어갈 수 있습니다. 결과 확인과 미접수 요청 닫기는 계속 사용할 수 있습니다.';
+    }
     if (!current()) return;
     let receipt = saved.state === 'completed' ? saved.result.receipt : null, cleaned = saved.state !== 'completed';
     if (receipt) { try { await orderReceipt(saved); cleaned = true; } catch (e) { message = '주문은 접수됐습니다. 장바구니 정리를 다시 확인한 뒤 새 주문을 시작해 주세요'; } }
     if (!current()) return;
-    main().innerHTML = `<h1 class="pt">주문 결과 확인</h1><div class="empty" role="status">${saved.state === 'completed' ? '<b>앞선 주문이 접수됐습니다</b><br>새로 주문하기 전에 앞선 주문을 확인해 주세요.' : saved.state === 'rejected' ? '<b>앞선 주문은 접수되지 않았습니다</b><br>' + esc(saved.result.err) : '<b>앞선 주문의 결과를 확인하고 있습니다</b><br>' + (absent ? '아직 처리 기록이 없습니다. 다시 전송하려면 앞선 주문과 같은 내용을 입력해 주세요.' : '연결이 돌아오면 결과를 다시 확인해 주세요. 새 주문은 잠시 기다려 주세요.')}<br>${message ? `<small>${esc(message)}</small><br>` : ''}${receipt ? `<p><a class="btn" href="#/done/${encodeURIComponent(receipt.no)}?t=${receipt.t}">접수된 주문 보기</a></p>` : ''}<button class="btn ghost" id="orecheck" type="button">처리 결과 다시 확인</button> ${saved.state === 'pending' ? (absent ? '<button class="btn" id="oreretry" type="button">같은 주문 내용 입력</button> <button class="btn ghost" id="oreclose" type="button">미접수 요청 닫기</button>' : '') : cleaned ? '<button class="btn" id="orenext" type="button">확인하고 주문서로</button>' : ''}<p><a href="#/cart">장바구니 보기</a></p></div>`;
+    main().innerHTML = `<h1 class="pt">주문 결과 확인</h1><div class="empty" role="status">${saved.state === 'completed' ? '<b>앞선 주문이 접수됐습니다</b><br>새로 주문하기 전에 앞선 주문을 확인해 주세요.' : saved.state === 'rejected' ? '<b>앞선 주문은 접수되지 않았습니다</b><br>' + esc(saved.result.err) : '<b>앞선 주문의 결과를 확인하고 있습니다</b><br>' + (absent ? (canResume ? '아직 처리 기록이 없습니다. 다시 전송하려면 앞선 주문과 같은 내용을 입력해 주세요.' : '아직 처리 기록이 없습니다. 아래 안내를 확인해 주세요.') : '연결이 돌아오면 결과를 다시 확인해 주세요. 새 주문은 잠시 기다려 주세요.')}<br>${message ? `<small>${esc(message)}</small><br>` : ''}${receipt ? `<p><a class="btn" href="#/done/${encodeURIComponent(receipt.no)}?t=${receipt.t}">접수된 주문 보기</a></p>` : ''}<button class="btn ghost" id="orecheck" type="button">처리 결과 다시 확인</button> ${saved.state === 'pending' ? (absent ? '<button class="btn ghost" id="oreclose" type="button">미접수 요청 닫기</button>' : '') : cleaned ? '<button class="btn" id="orenext" type="button">확인하고 주문서로</button>' : ''}<p><a href="#/cart">장바구니 보기</a></p></div>`;
+    if (ownerMessage) { const hint = document.createElement('p'); hint.id = 'oreowner'; hint.setAttribute('role', 'status'); hint.textContent = ownerMessage; main().querySelector('.empty').appendChild(hint);
+      if (saved.schema === 2) { const link = document.createElement('a'); link.className = 'btn ghost'; link.href = saved.owner === 'guest' ? '#/me' : '#/login?next=%23%2Forder'; link.textContent = saved.owner === 'guest' ? '로그인 상태 확인' : '앞선 계정으로 로그인'; hint.appendChild(document.createElement('br')); hint.appendChild(link); }
+    }
+    if (canResume && $('#oreclose')) { const retry = document.createElement('button'); retry.type = 'button'; retry.id = 'oreretry'; retry.className = 'btn'; retry.textContent = '같은 주문 내용 입력'; $('#oreclose').before(retry, document.createTextNode(' ')); }
     $('#orecheck').onclick = () => { if (current()) orderPage(); };
     const retry = $('#oreretry'); if (retry) retry.onclick = () => { if (current()) orderPage({ resumeId: saved.id }); };
     const close = $('#oreclose'); if (close) close.onclick = async () => {
@@ -357,11 +368,14 @@
     };
     const next = $('#orenext'); if (next) next.onclick = async () => { if (!current() || !cleaned) return; next.disabled = true; try { await orderJournal.acknowledge(saved.id, snapshot.revision); if (current()) orderPage(); } catch (e) { if (current()) { next.disabled = false; toast(e.message); } } };
   }
-  async function orderPage(options) { const current = pageScope(); let journal;
-    try { if (!orderJournal || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); journal = await orderJournal.read(); }
+  async function orderPage(options) { const current = pageScope(); let journal, formToken;
+    try { if (!orderJournal || !window.BQOrderJournal || window.BQOrderJournal.OWNER_VERSION !== 1 || typeof orderJournal.owns !== 'function' || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); formToken = accountToken(); journal = await orderJournal.read(); }
     catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
     if (!current()) return;
     const resuming = journal.active && journal.active.state === 'pending' && options && options.resumeId === journal.active.id;
+    if (resuming) { try { if (!await orderJournal.owns(journal.active, formToken)) { if (current()) await orderRecovery(journal, current); return; } }
+      catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
+    }
     if (journal.active && !resuming) { await orderRecovery(journal, current); return; }
     if (!cart().length) { if (resuming) await orderRecovery(journal, current); else location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); return; } if (!current()) return;
     if (c.orderProtocol !== 1 && !isTest()) { main().innerHTML = '<h1 class="pt">주문서</h1><div class="empty">주문 확인 기능을 준비하고 있습니다. 잠시 뒤 새로 고쳐 주세요.<p><a href="#/cart">장바구니로</a></p></div>'; return; }
@@ -403,18 +417,20 @@
       if (displayedCart !== cartStamp(cart())) { saveDraft(); await reQ(cpOk); if (current()) { const err = $('#oerr', form); err.hidden = false; err.textContent = '다른 화면에서 장바구니가 바뀌었습니다 — 상품과 합계를 다시 확인한 뒤 주문해 주세요'; } return; }
       const intentQuote = Q, intentCoupon = cpOk, intentStamp = displayedCart; const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
       let request = null;
-      try { if (!cartStore) throw cartMissing(); const submitted = await cartStore.prepare(intentStamp); if (!current()) return; badge(); if (displayedCart === intentStamp) displayedCart = cartStamp(submitted); const body = B.orderBody({ ...f, cp: intentCoupon, expect: intentQuote.local ? null : intentQuote.total }, submitted);
+      try { if (!window.BQOrderJournal.sameOwner(formToken, accountToken())) throw orderOwnerChanged(); if (!cartStore) throw cartMissing(); const submitted = await cartStore.prepare(intentStamp); if (!current()) return; if (!window.BQOrderJournal.sameOwner(formToken, accountToken())) throw orderOwnerChanged(); badge(); if (displayedCart === intentStamp) displayedCart = cartStamp(submitted); const body = B.orderBody({ ...f, cp: intentCoupon, expect: intentQuote.local ? null : intentQuote.total }, submitted);
         if (resuming) {
           const latest = await orderJournal.read();
           if (!latest.active || latest.active.id !== journal.active.id || latest.active.state !== 'pending') { if (current()) await orderRecovery(latest, current); return; }
-          if (!await orderJournal.matches(latest.active, body)) throw new Error('앞선 주문과 내용이 다릅니다 — 같은 책·수량·주소·쿠폰·합계로 입력하거나 가게로 문의해 주세요');
+          if (!await orderJournal.matches(latest.active, body, formToken)) throw new Error('앞선 주문과 내용이 다릅니다 — 같은 책·수량·주소·쿠폰·합계로 입력하거나 가게로 문의해 주세요');
           request = latest.active;
         } else {
-          const opened = await orderJournal.begin(journal.revision, body, submitted); journal = opened;
+          const opened = await orderJournal.begin(journal.revision, body, submitted, formToken); journal = opened;
           if (!opened.created) { if (current()) await orderRecovery(opened, current); else toast('앞선 주문의 처리 결과를 확인해 주세요'); return; }
           request = opened.active;
         }
-        const r = await api('/shop/order-attempt', { method: 'POST', auth: 1, body: JSON.stringify({ ...body, attempt: { id: request.id, secret: request.secret } }) });
+        const sendToken = accountToken();
+        if (!window.BQOrderJournal.sameOwner(formToken, sendToken) || !await orderJournal.owns(request, sendToken)) throw orderOwnerChanged();
+        const r = await api('/shop/order-attempt', { method: 'POST', auth: 1, ownerToken: sendToken, canSend: () => current() && form.isConnected, body: JSON.stringify({ ...body, attempt: { id: request.id, secret: request.secret } }) });
         const saved = await orderJournal.settle(request.id, 200, r); await orderReceipt(saved);
         try { if (draftText !== undefined && draftEpoch === orderDraftEpoch && sessionStorage.getItem(DK) === draftText) sessionStorage.removeItem(DK); } catch (e2) {}
         if (current()) location.hash = '#/done/' + encodeURIComponent(r.no) + '?t=' + r.t + '&new=1';
