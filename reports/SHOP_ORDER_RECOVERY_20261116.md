@@ -24,7 +24,7 @@
 - Q/w/pw 배포 사본에서 tORDERCLIENT 23/23, tORDERRETRY 35/35, tORDERINTEGRATED 5/5와 실제 게이트 판정 통과. 브라우저 요청은 로컬 합성 응답만 사용하며 바깥 연결은 차단한다.
 - tORDERCLIENT는 브라우저가 없으면 실패한다. 실제 저장 거래 검사를 경고나 생략 성공으로 바꾸지 않는다. 기존 tSHOPPAGE와 CI 브라우저 작업을 유지하고 필수 변경 감지에 연결했다.
 
-실행: node src/tests/standalone/run.cjs, RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js, node src/tests/tORDERCLIENT.js, node src/tests/tORDERINTEGRATED.js. 종단 검사는 서버 PR까지 합친 작업본이 필요하다. CI는 서버 a110555fb9b88ee77c63ef01f738be0d81dbb139를 고정해 고객 코드와 함께 검사한다. 브라우저 시험에는 Playwright 1.62.1과 Chromium/Edge가 필요하다. RN_PLAYWRIGHT·RN_BROWSER로 설치 경로를 지정할 수 있다.
+실행: node src/tests/standalone/run.cjs, RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js, node src/tests/tORDERCLIENT.js, node src/tests/tORDERINTEGRATED.js. 종단 검사는 서버 PR까지 합친 작업본이 필요하다. CI는 함께 체크아웃한 서버 계약이 있으면 그 현재 코드를 검사한다. 서버 계약이 아직 없는 고객 가지에서만 a110555fb9b88ee77c63ef01f738be0d81dbb139를 고정 의존으로 준비한다. 이후 통합된 서버를 옛 의존 코드로 덮어쓰지 않는다. 계정 주문 목록 보완이 포함된 시험 틀도 함께 읽는다. 브라우저 시험에는 Playwright 1.62.1과 Chromium/Edge가 필요하다. RN_PLAYWRIGHT·RN_BROWSER로 설치 경로를 지정할 수 있다.
 
 ## 적용 근거와 남은 검증
 
