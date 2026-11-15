@@ -14,7 +14,8 @@
 <li data-card><a href="#section-14">15. 11차 성인 얼굴과 팔 구간 비율 교정</a></li>
 <li data-card><a href="#section-15">16. 12차 팔 전체 길이와 손목&#183;손 크기</a></li>
 <li data-card><a href="#section-16">17. 13차 작은 등신 얼굴 구조</a></li>
-<li data-card><a href="#section-17">18. 14차 성인 눈꺼풀과 눈의 가로폭</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-17">18. 14차 성인 눈꺼풀과 눈의 가로폭</a></li>
+<li data-card><a href="#section-18">19. 15차 같은 형태의 명암 대조</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -170,4 +171,8 @@
 <article id="section-17" data-card><h2>18. 14차 성인 눈꺼풀과 눈의 가로폭</h2>
 <p>2026-11-16. 윗눈꺼풀 선을 굵게만 만든 첫 안은 안구에 묻히는 문제가 남았다. 피부와 안구 표면 양쪽을 기준으로 깊이를 수정하고 여성 기본형의 보이는 눈 폭을 늘렸다. 기존 팔·손과 전신 비례는 유지했다. 실제 정면·사선·측면 비교 그림을 연구 페이지에 기록했다.</p>
 <p>성인 검사 8/8, 최신 남녀 2~8등신 회전표 14/14를 확인했다. 검사에 추가한 항목은 눈꺼풀 선이 안구 안쪽에 묻히는 오류의 재발 방지다. 관절·손 비례와 얼굴 구도 검사도 함께 통과했다. 구조 검사 합격을 미적 완성도 승인으로 취급하지 않는다. 얼굴의 명암과 전체 조화, 작은 등신 옆눈은 추가 수정 대상이다. 사용자 승인과 새 UI 클릭 검사는 아직 없다.</p>
+</article>
+<article id="section-18" data-card><h2>19. 15차 같은 형태의 명암 대조</h2>
+<p>2026-11-16. 14차 기본형과 64방향 회전표는 보존했다. ‘가려지는 그림자 비교’ 옵션을 추가해 턱·목·귀·팔의 가림을 함께 볼 수 있게 했다. 기본 렌더는 변경하지 않았으며 14차 기준 이미지 해시 16개와 일치한다. 그림자 줄무늬가 생긴 초기 실패안을 로컬에 남기고 계산 범위·기울기 오차를 수정했다.</p>
+<p>새 명암 검사 4/4, 그림자를 켠 남녀 2~8등신 896방향의 표시 범위가 통과했다. 결과와 실제 시각 판단은 구분한다. 이 옵션은 검토용이며 새로운 인체 승인이나 콘텐츠 단계 진입이 아니다. 자료 수는 기존 61개로 유지한다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

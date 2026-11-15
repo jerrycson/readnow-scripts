@@ -29,8 +29,8 @@ export function materialLibrary(s){
  };
 }
 const light=norm([-.55,.8,1]),half=norm([light[0],light[1],light[2]+1]);
-export function shade(mat,normal,pos,resolution){
- const diffuse=dot(normal,light),nh=Math.max(0,dot(normal,half));
+export function shade(mat,normal,pos,resolution,visibility=1){
+ const diffuse=dot(normal,light)*visibility,nh=Math.max(0,dot(normal,half))*visibility;
  if(mat.skin){const value=.27+.69*Math.max(0,diffuse);return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
  let value=(diffuse+.18)/1.15;
  const spec=Math.pow(nh,4+(1-mat.roughness)*65)*(mat.specular||0);
