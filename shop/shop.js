@@ -324,7 +324,7 @@
       <input type="text" id="f_hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="gobar"><button class="btn wide" id="go" type="submit">${won(Q.total)} 주문하기</button></div><div id="oerr" class="err" hidden></div></form>`;
     const showQ = (q) => { Q = q; $('#qsum').innerHTML = sumH(q); $('#olines').innerHTML = cart().map((x) => `<div class="ol"><span>${esc(x.t)}${x.n > 1 ? ` <small class="qn">× ${x.n}${B.unitOf(x)}</small>` : ''}</span>${priceH(x)}</div>`).join(''); const on = $('#on'); if (on) on.textContent = B.units(cart()); const g = $('#go'); if (g && !g.disabled) g.textContent = `${won(q.total)} 주문하기`; };
-    const reQ = async (cp) => { try { const q = await quoteOf(cp); if (!current() || !$('#qsum')) return null; syncCart(q); if (!cart().length) { location.hash = '#/cart'; return null; } showQ(q); return q; } catch (e) { return null; } };
+    let quoteEpoch = 0; const reQ = async (cp) => { const epoch = ++quoteEpoch; try { const q = await quoteOf(cp); if (epoch !== quoteEpoch || !current() || !$('#qsum')) return null; syncCart(q); if (!cart().length) { location.hash = '#/cart'; return null; } showQ(q); return q; } catch (e) { return null; } };
     reQ('');
     const cg = $('#cpgo'); if (cg) cg.onclick = async () => { const v = $('#f_cp').value.trim(); const box = $('[data-f="cp"]'); cg.disabled = true; const q = await reQ(v); cg.disabled = false; const em = $('em', box);
       if (!q) { em.textContent = '지금은 쿠폰을 확인할 수 없습니다 — 잠시 뒤'; return; } if (v && q.cpErr) { cpOk = ''; box.classList.add('bad'); em.textContent = q.cpErr; } else { cpOk = v; box.classList.remove('bad'); em.textContent = v ? `✓ ${won(q.coupon ? q.coupon.d : 0)} 할인` : ''; } };

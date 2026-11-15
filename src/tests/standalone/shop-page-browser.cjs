@@ -98,6 +98,15 @@ async function run() {
     await test('가짜 주문 성공으로 지운 초안이 늦은 저장으로 다시 생기지 않음', async h => {
       h.expectWrites(1); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.settle(); await h.p.evaluate(() => { const fields = { name: '가상 주문자', phone: '01000000000', zip: '00000', addr1: '가상 시험 주소', addr2: '가상 상세' }; for (const [k, v] of Object.entries(fields)) document.querySelector('#f_' + k).value = v; for (const k of ['agreeP', 'agreeT']) document.querySelector('#f_' + k).checked = true; document.querySelector('#f_name').dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('#of').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); }); await h.p.locator('.done').waitFor(); await h.p.waitForTimeout(450); assert.equal(await h.p.evaluate(() => sessionStorage.getItem('bq-odraft')), null); assert.deepEqual(await h.p.evaluate(() => JSON.parse(localStorage.getItem('bq-cart'))), []);
     });
+
+    await test('최신 쿠폰 합계를 오래된 최초 합계가 덮지 않음', async h => {
+      const config = h.hold('/shop/cfg'); await h.nav('#/order'); await config.seen; const old = h.hold('/shop/quote'); config.release({ ...CFG, promo: { coupon: true } }); await old.seen; await h.p.locator('#f_cp').fill('FAKE-COUPON'); const coupon = h.hold('/shop/quote'); await h.p.locator('#cpgo').click(); await coupon.seen; coupon.release({ ok: true, items: [BOOK], bad: [], n: 1, sum0: 2000, bundle: 0, coupon: { d: 200 }, sum: 1800, fee: 0, total: 1800, free: null }); await h.p.waitForFunction(() => document.querySelector('#go').textContent.includes('1,800'));
+      old.release({ ok: true, items: [BOOK], bad: [], n: 1, sum0: 2000, bundle: 0, coupon: null, sum: 2000, fee: 0, total: 2000, free: null }); await h.settle(); assert.match(await h.p.locator('#go').textContent(), /1,800/); assert.match(await h.p.locator('[data-f="cp"] em').textContent(), /200원 할인/);
+    });
+    await test('최신 쿠폰 확인이 실패해도 이전 합계가 뒤늦게 가격을 바꾸지 않음', async h => {
+      const config = h.hold('/shop/cfg'); await h.nav('#/order'); await config.seen; const old = h.hold('/shop/quote'); config.release({ ...CFG, promo: { coupon: true } }); await old.seen; await h.p.locator('#f_cp').fill('FAKE-COUPON'); const coupon = h.hold('/shop/quote'); await h.p.locator('#cpgo').click(); await coupon.seen; coupon.release({ ok: false, err: '가짜 쿠폰 확인 실패' }, 400); await h.p.waitForFunction(() => document.querySelector('[data-f="cp"] em').textContent.includes('확인할 수 없습니다'));
+      old.release({ ok: true, items: [{ ...BOOK, p: 999 }], bad: [], n: 1, sum0: 999, sum: 999, fee: 0, total: 999, free: null }); await h.settle(); assert.match(await h.p.locator('#go').textContent(), /2,000/); assert.equal(await h.p.evaluate(() => JSON.parse(localStorage.getItem('bq-cart'))[0].p), 2000);
+    });
   } finally { await browser.close(); await new Promise(r => server.close(r)); }
   return results;
 }
