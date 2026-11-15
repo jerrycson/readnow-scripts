@@ -77,6 +77,27 @@ async function run() {
     await test('가짜 취소 완료가 이동한 화면을 다시 주문 조회로 바꾸지 않음', async h => {
       h.expectWrites(1); await h.nav('#/done/TEST-ORDER?t=synthetic'); await h.p.locator('#cx').waitFor(); const old = h.hold('/shop/cancel'); await h.p.locator('#cx').click(); await h.p.locator('#cx').click(); await old.seen; await h.nav('#/wish'); await h.p.locator('h1.pt').waitFor(); old.release({ ok: true }); await h.settle(); assert.match(await h.p.locator('#main').textContent(), /찜 목록/);
     });
+
+    for (const width of [1280, 390]) await test('입력 직후 이동·즉시 재진입해도 주문서 초안 보존', async h => {
+      await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.p.evaluate(() => { const el = document.querySelector('#f_name'); el.value = '가상 보존 내용'; el.dispatchEvent(new Event('input', { bubbles: true })); location.hash = '#/wish'; });
+      await h.p.waitForFunction(() => document.querySelector('#main').textContent.includes('찜 목록')); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); assert.equal(await h.p.locator('#f_name').inputValue(), '가상 보존 내용'); await h.p.waitForTimeout(450); assert.equal(await h.p.locator('#f_name').inputValue(), '가상 보존 내용'); assert.equal(await h.p.evaluate(() => JSON.parse(sessionStorage.getItem('bq-odraft')).name), '가상 보존 내용');
+    }, width);
+    await test('최신 초안은 사라진 주문서의 입력 이벤트로 덮이지 않음', async h => {
+      await h.nav('#/order'); await h.p.locator('#f_name').fill('이전 가상 입력'); await h.p.evaluate(() => { window.oldForm = document.querySelector('#of'); }); await h.nav('#/wish'); await h.p.waitForFunction(() => document.querySelector('#main').textContent.includes('찜 목록'));
+      await h.nav('#/order'); await h.p.locator('#f_name').fill('최신 가상 입력'); await h.p.evaluate(() => { const old = window.oldForm.querySelector('#f_name'); old.value = '늦은 이전 입력'; old.dispatchEvent(new Event('input', { bubbles: true })); }); await h.p.waitForTimeout(450);
+      assert.equal(await h.p.evaluate(() => JSON.parse(sessionStorage.getItem('bq-odraft')).name), '최신 가상 입력'); assert.equal(await h.p.locator('#f_name').inputValue(), '최신 가상 입력');
+    });
+    await test('빈 칸·받는 분 변경은 저장하고 동의·쿠폰·숨김 칸은 저장하지 않음', async h => {
+      const req = h.hold('/shop/cfg'); await h.nav('#/order'); await req.seen; req.release({ ...CFG, promo: { coupon: true } }); await h.p.locator('#f_name').fill('지울 가상 이름');
+      await h.p.evaluate(() => { const name = document.querySelector('#f_name'); name.value = ''; name.dispatchEvent(new Event('input', { bubbles: true })); const same = document.querySelector('#f_same'); same.checked = false; same.dispatchEvent(new Event('change', { bubbles: true })); for (const k of ['agreeP', 'agreeT', 'all']) document.querySelector('#f_' + k).checked = true; document.querySelector('#f_cp').value = 'FAKE-COUPON'; document.querySelector('#f_hp').value = 'fake-hidden'; const r = document.querySelector('#f_rname'); r.value = '가상 받는 분'; r.dispatchEvent(new Event('input', { bubbles: true })); location.hash = '#/wish'; });
+      await h.p.waitForFunction(() => document.querySelector('#main').textContent.includes('찜 목록')); await h.p.waitForTimeout(450); const saved = await h.p.evaluate(() => JSON.parse(sessionStorage.getItem('bq-odraft'))); assert.deepEqual(saved, { same: false, rname: '가상 받는 분' }); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); assert.equal(await h.p.locator('#f_name').inputValue(), ''); assert.equal(await h.p.locator('#f_same').isChecked(), false); assert.equal(await h.p.locator('#f_rname').inputValue(), '가상 받는 분'); assert.equal(await h.p.locator('#f_agreeP').isChecked(), false);
+    });
+    await test('초안 저장 권한 오류가 현재 입력과 화면을 깨뜨리지 않음', async h => {
+      await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.p.evaluate(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v) { if (this === sessionStorage && k === 'bq-odraft') throw new DOMException('가짜 저장 거절', 'QuotaExceededError'); return set.call(this, k, v); }; }); await h.p.locator('#f_name').fill('저장 거절 중 가상 입력'); await h.p.waitForTimeout(450); assert.equal(await h.p.locator('#f_name').inputValue(), '저장 거절 중 가상 입력'); assert.equal(await h.p.locator('#go').isEnabled(), true);
+    });
+    await test('가짜 주문 성공으로 지운 초안이 늦은 저장으로 다시 생기지 않음', async h => {
+      h.expectWrites(1); await h.nav('#/order'); await h.p.locator('#f_name').waitFor(); await h.settle(); await h.p.evaluate(() => { const fields = { name: '가상 주문자', phone: '01000000000', zip: '00000', addr1: '가상 시험 주소', addr2: '가상 상세' }; for (const [k, v] of Object.entries(fields)) document.querySelector('#f_' + k).value = v; for (const k of ['agreeP', 'agreeT']) document.querySelector('#f_' + k).checked = true; document.querySelector('#f_name').dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('#of').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); }); await h.p.locator('.done').waitFor(); await h.p.waitForTimeout(450); assert.equal(await h.p.evaluate(() => sessionStorage.getItem('bq-odraft')), null); assert.deepEqual(await h.p.evaluate(() => JSON.parse(localStorage.getItem('bq-cart'))), []);
+    });
   } finally { await browser.close(); await new Promise(r => server.close(r)); }
   return results;
 }
