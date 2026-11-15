@@ -827,6 +827,30 @@
       "concepts": "곡률, 두께, 흉곽 위 배치, 단순화 한계, 개체 차이",
       "analysisPage": "../research/pixel/anatomy.html#section-33",
       "reuse": "무료 Notes와 자체 분석. 외부 도판 공개 재배포 없음"
+    },
+    {
+      "id": "anatomy-deltoid-22",
+      "kind": "document",
+      "title": "Proko 삼각근의 부착과 세 면",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-deltoids-anatomy-for-artists/",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "삼각근은 위팔 위에 붙인 공이 아니다.",
+      "oneSentence": "쇄골·견봉·견갑골에서 위팔로 이어지는 방향을 보고 큰 면과 겨드랑이 전이를 구분한다.",
+      "concepts": "전면, 측면, 후면, 부착선, 큰 면, 비대칭",
+      "analysisPage": "../research/pixel/anatomy.html#section-35",
+      "reuse": "무료 Notes·도판 3개 직접 관찰. 외부 도판 공개 재배포 없음"
+    },
+    {
+      "id": "anatomy-shoulder-bones-22",
+      "kind": "document",
+      "title": "Proko 어깨뼈의 기준점과 연결",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-the-shoulder-bones",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "어깨의 방향은 흉곽 위의 뼈 기준점에서 읽는다.",
+      "oneSentence": "흉곽과 쇄골·견봉·견갑골의 가림을 확인한 뒤 근육 면을 연결한다.",
+      "concepts": "흉곽, 쇄골, 견봉, 견갑골, 단축, 겹침",
+      "analysisPage": "../research/pixel/anatomy.html#section-36",
+      "reuse": "무료 Notes와 자체 분석. 이번 단계의 직접 도판·영상 관찰 없음"
     }
   ]
 }

@@ -7,6 +7,9 @@ export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
+ 'portrait-sclera':ramp(['#84766d','#afa096','#d2c8ba','#e7ddce','#f4ecdf']),
+ 'portrait-iris':ramp(['#241b18','#3c2920','#66442d','#956e47','#c09b6e']),
+ 'portrait-pupil':ramp(['#100e10','#181315','#21181a','#2c1e1d','#3a2922']),
   'face-ink':ramp(['#352722','#3b2b24','#433025','#4d372a','#59412e']),
   sclera:ramp(['#7b807e','#a9b2a4','#d7dfcb','#f0edd7','#fff6df']),iris:ramp(['#2b211e','#3d2c24','#6f5134','#a08257','#d4b78a']),lip:ramp(['#513d36','#785047','#a97868','#c99c86','#e3bea1']),'skin-shadow':ramp(skin[s.palette].slice(0,3).concat(skin[s.palette].slice(2,4))),
   'lower-lip':ramp(['#805b49','#b4866e','#d0a28a','#e5bba0','#f0cbb0']),skin:ramp(skinStudy[s.palette],{skin:true}),eye:ramp(['#15252b','#15252b','#1d3038','#263e44','#b1d0cb']),mouth:ramp(skin[s.palette].slice(0,2).concat(skin[s.palette].slice(1,4))),

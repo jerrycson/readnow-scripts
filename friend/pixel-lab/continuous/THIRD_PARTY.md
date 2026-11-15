@@ -40,3 +40,15 @@ CC0 target data from the same pinned MakeHuman commit a8bc2d54ff0ac92e78ff71431b
 | female-young-averagemuscle-averageweight-averagecup-minfirmness.target | 659e3f2e54a788ffb8f11ca41602f55a17166230 | 0.40 |
 
 Compiled using the existing adult age-25 basis and v20 pose. The 299 affected vertices receive 12 passes of local Laplacian relaxation, strength 0.40, fading over 3 graph rings to a fixed boundary. Chest normals receive 3 passes at weight 0.50 only on interior affected vertices. These are our implementation choices, not anatomical standards. Only the refined female manga basis uses these deltas; male, natural, head and limbs are unchanged. Source target headers and Git blob hashes were verified locally. No MakeHuman application code was copied. External Proko images are observation references and are not redistributed.
+
+
+## Foundation v22 — adult ear shape and facial readability
+
+Same pinned MakeHuman CC0 source commit. Both ear size targets use weight 0.65:
+
+| File | Git blob SHA |
+| --- | --- |
+| ears/l-ear-scale-incr.target | 6f945f8353c0ff7433d67db92a7a6bee8156c566 |
+| ears/r-ear-scale-incr.target | d795b17ef87c79e8fb4c0396405bfe17c49fc534 |
+
+The compiler subtracts the same adult posed basis before/after ear targets. Each sex has 1,016 sparse changed vertices in ears and surrounding attachment, with no joint or head-height change. Runtime face smoothing can propagate this to adjacent vertices. Raw target headers and Git blob hashes verified. Adult manga form only; natural and chibi remain unchanged. Eye palette separation, line thickness and mouth width changes are our rendering choices. Rejected shoulder smoothing trials are not part of the public geometry. No application code or third-party reference images are included.

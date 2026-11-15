@@ -21,7 +21,8 @@
 <li data-card><a href="#section-21">22. 18차 성인 코&#183;볼 명암과 홍채&#183;입선</a></li>
 <li data-card><a href="#section-22">23. 19차 한쪽 손&#183;발 관찰</a></li>
 <li data-card><a href="#section-23">24. 20차 발 정렬</a></li>
-<li data-card><a href="#section-24">25. 21차 — 성인 가슴&#183;흉곽의 곡면 분리 실험</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-24">25. 21차 — 성인 가슴&#183;흉곽의 곡면 분리 실험</a></li>
+<li data-card><a href="#section-25">26. 22차 — 어깨 수정안 제외, 귀&#183;눈&#183;입 가독성 정리</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -214,4 +215,8 @@
 <li>실제 코드 그림과 분석을 인체 연구 페이지에 기록했다. 외부 참고 이미지는 공개 배포하지 않는다. 브라우저 클릭·저장 조작 및 운영 웹앱 통합 배포는 이번 단계에서 확인하지 않았다.</li>
 <li>인체 승인 전 상태와 확장 보류를 유지한다. 다음 초점은 겨드랑이·어깨와 얼굴의 전체 조화다.</li>
 </ul>
+</article>
+<article id="section-25" data-card><h2>26. 22차 — 어깨 수정안 제외, 귀·눈·입 가독성 정리</h2>
+<p>어깨 참고 도판 5개를 직접 관찰하고 단면 깊이를 측정했다. 어깨를 평활화한 A/B는 개선이 충분하지 않아 적용하지 않았다. 귀의 기존 구조를 유지한 크기 C/D를 비교하고, D에 눈의 명암·입 폭을 조절한 E를 적용했다. 원전 귀 자료 출력 파일명 오류는 생성기에서 수정한 뒤 재실행했다. 초기 실패 결과를 검증 통과로 집계하지 않았다.</p>
+<p>15개 성인 검사와 14개 회전표 검사, 이전 몸·자연형·작은 등신 보존을 확인했다. 128px 얼굴 원본도 정수 배율로 대조했다. 인체 연구에 실제 결과와 미채택 후보 이유를 기록했으며 브라우저 클릭 검증·운영 배포는 하지 않았다. 다음 검토는 작은 등신의 목·몸통·팔다리 연결과 성인 얼굴의 전체 조화다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
