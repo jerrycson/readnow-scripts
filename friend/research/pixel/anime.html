@@ -19,7 +19,8 @@
 <li data-card><a href="#section-19">19. MediBang 얼굴 아타리와 비례</a></li>
 <li data-card><a href="#section-20">20. MediBang 코의 구조와 시점별 생략</a></li>
 <li data-card><a href="#section-21">21. MediBang 올려다본 얼굴</a></li>
-<li data-card><a href="#section-22">22. 성인 얼굴 참고 시안과 실제 모델 비교</a></li></ul></nav></aside><main id="content"><div class="intro"><p>2026-11-16. 인체 승인 전 집중 연구. 해부학은 연결과 움직임의 근거로, 일본 작화는 선택할 비례와 생략의 근거로 사용한다. 아래 내용에서 원전 요약과 프로젝트의 해석·수정안을 구분한다. 특정 작가의 스타일을 일본 전체의 표준으로 부르지 않는다.</p>
+<li data-card><a href="#section-22">22. 성인 얼굴 참고 시안과 실제 모델 비교</a></li>
+<li data-card><a href="#section-23">23. 작은 등신의 몸통과 얼굴 재구성</a></li></ul></nav></aside><main id="content"><div class="intro"><p>2026-11-16. 인체 승인 전 집중 연구. 해부학은 연결과 움직임의 근거로, 일본 작화는 선택할 비례와 생략의 근거로 사용한다. 아래 내용에서 원전 요약과 프로젝트의 해석·수정안을 구분한다. 특정 작가의 스타일을 일본 전체의 표준으로 부르지 않는다.</p>
 <p><a href="../../pixel-lab/reference-study.html">참고 그림과 현재 모델 대조</a> · <a href="../../pixel-lab/anatomy-review.html">6차/7차 모델 비교</a></p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. MediBang — 分割を使っていろいろな頭身を描いてみよう</h2>
 <p><a href="https://medibangpaint.com/use/2019/09/human-figure-proportions/">일본어 원문</a></p>
@@ -231,4 +232,10 @@
 <p>새 머리 시안은 imagegen 기본 도구로 만든 성인 남녀 30세의 정면·45도·옆면 참고 그림이다. 머리와 목 윗부분만 포함한다. 기존 3차원 모델의 얼굴과 CLIP STUDIO의 얼굴 구성 도판을 참고 입력으로 사용했다. 해부학적 정답이나 실제 구동 모델로 표시하지 않는다. 같은 인물의 시점별 일관성도 별도 검토 대상이다.</p>
 <p>실제 모델과 그림을 머리끝–턱 길이에 맞춰 나란히 표시하거나 겹칠 수 있다. 수동 기준점을 바꿀 수 있고 가로세로를 서로 다른 비율로 늘리지 않는다. 처음 제공하는 기준점은 육안으로 지정한 근사값이다. 생성 그림의 완성도가 실제 모델에 자동으로 적용된 것으로 취급하지 않는다.</p>
 <p><strong>현재 판정:</strong> 연속 표면은 어깨·골반·손발의 연결을 개선했지만 얼굴은 여전히 이마·볼·턱의 명암이 부자연스럽고 목표한 일본풍의 눈과 입 형태에 미치지 못한다. 눈 간격, 입 높이, 코 부피, 안구 깊이와 눈썹 표현을 여러 차례 수정했으며 인체 승인은 보류한다. 다음 과제는 눈꺼풀의 실제 경계와 얼굴의 넓은 면을 함께 설계하는 것이다.</p>
+</article>
+<article id="section-23" data-card><h2>23. 작은 등신의 몸통과 얼굴 재구성</h2>
+<p>MediBang의 2·3등신 비교 도판과 얼굴·몸통 예시를 다시 직접 대조했다. 기존 8차는 머리 아래에 잘록한 단차와 관절 덩어리가 반복되어 작은 성인 인형처럼 보였다. 이번에는 2·3·4등신별 어깨·골반·팔 길이를 다시 정하고 둥근 중성 몸통과 팔다리를 하나의 연속 표면으로 구성했다. 성인 가슴이나 골반의 세부 묘사는 이 형태에 가져오지 않았다.</p>
+<p>첫 시안에서는 팔이 몸에 붙어 보였다. 팔꿈치와 손목을 바깥으로 옮겨 빈 공간을 만들었다. 머리의 네모난 아래쪽은 둥근 곡면으로 바꾸고, 동공이 가는 선처럼 보이던 눈은 홍채를 넓혔다. A는 단순한 눈, B는 큰 홍채, C는 더 넓은 머리로 비교한다. 남녀 시작형의 차이는 작은 눈썹·눈꺼풀 표현이며 확대 검사에서 차이를 확인한다. 작은 전신에서 충분히 구별된다고 판정하지 않는다.</p>
+<p><strong>발견한 구현 결함:</strong> 4등신의 손끝이 표면 계산 범위를 넘어 열린 테두리 66개를 만들었다. 그림의 프레임 잘림 검사만으로는 발견되지 않았다. 범위를 넓히고 표면의 모든 변이 두 면에 속하는지와 몸이 한 덩어리로 연결되는지를 검사했다. 머리의 낮은 다각형 해상도와 눈 부착 곡면이 달라 눈이 떠 보이는 문제도 수정했다.</p>
+<p><strong>남은 결함:</strong> 둥근 머리가 지나치게 구처럼 보이며, 귀와 볼의 연결·옆면 눈의 인상이 아직 부족하다. 몸통과 팔다리의 단순함이 귀여움으로 이어지는지 계속 검토한다. <a href="../../pixel-lab/continuous-review.html">새 기본형을 실제로 돌려 비교</a> · <a href="../../pixel-lab/rotation-review.html">남녀 2~8등신 전체 회전표</a>.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
