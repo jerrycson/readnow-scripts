@@ -1940,6 +1940,109 @@ const ICON = {
  *  JBN.mount(root, store, opt) — store = { docs(): Map(id → 문서), write(ops) → Promise, onChange(fn), status() → {mode, label, tip, ok}, send(text, memoIds) → Promise<{status, via, err}>, linkTo? }
  *  구조: 대분류(cat) › 중분류(sub) › 소분류(leaf) — 같은 칸 안에서는 중요도(imp 3→1) 높은 것부터 · 카드 겉 [✅ 완료] [🗄 보관] [🗑 휴지통] · 지우지 않음(휴지통에서 되살림)
  *  탭: 검토 · 🆕 새로 온 것(아직 안 읽은 리드 카드 — 검토 중인 묶음과 섞지 않음 · 펼치는 순간 읽음 = 검토로 옮김 · 접을 때 이 목록에서 빠짐) · ⏸ 보류(정범님 '보류해줘' — note4 11/13) · ✅ 완료 · 🗄 보관함 · 🗑 휴지통 · 📝 내 메모(정범님 혼자 · 리드에게 안 감 · 접기·⭐·보관 — note5) · ⚙ 노트 설정(입력칸 펼침 높이·저장 단추 크기·내 메모 처음 모양) · 맨 아래 🧾 통합 노트(메모가 함께 쌓임 · 직접 쓰기 · 💬 리드에게 보내기 · 💾 저장1·2·3 칸마다 따로 쌓고 서버에 보존 — note5) */
+/* ⟦jbn write guard 시작⟧ — 웹앱·아티팩트·클라우드가 같은 부분 수정 계약을 사용 */
+(function (G) {
+  'use strict';
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
+  const TEXT = ['body', 'text', 'draft'];
+  const value = (v) => v == null ? '' : String(v);
+  function fail(code, id, field) {
+    const e = new Error(code === 'note-conflict' ? '다른 기기에서 글이 바뀌었습니다 — 현재 글을 확인해 주세요' : '노트 저장 형식을 확인해 주세요');
+    e.code = code; e.id = id; if (field) e.field = field; throw e;
+  }
+  function validate(ops) {
+    if (!Array.isArray(ops) || !ops.length || ops.length > 60) fail('note-format');
+    for (const o of ops) {
+      if (!o || !['set', 'merge'].includes(o.op) || !/^[A-Za-z0-9_.:@+-]{1,120}$/.test(o.id || '') || /^\.\.?$/.test(o.id) || !o.data || typeof o.data !== 'object' || Array.isArray(o.data)) fail('note-format', o && o.id);
+      if (o.base != null && (typeof o.base !== 'object' || Array.isArray(o.base))) fail('note-format', o.id);
+      if (o.data._noBody) fail('note-incomplete', o.id, 'body');
+    }
+    return ops;
+  }
+  function plan(old, op, at, by) {
+    validate([op]); const data = { ...op.data }; delete data._noBody;
+    if (!old && op.op === 'set' && op.id !== '_meta' && !data.kind) data.kind = 'card';
+    for (const k of TEXT) {
+      if (!own(data, k)) continue;
+      if (data[k] != null && typeof data[k] !== 'string') fail('note-format', op.id, k);
+      // 같은 값의 재전송은 허용. 다른 값은 편집 시작 때 읽은 글이 지금도 같을 때만.
+      if (old && value(old[k]) !== value(data[k]) && (!own(op.base, k) || value(op.base[k]) !== value(old[k]))) fail('note-conflict', op.id, k);
+    }
+    // set에서도 기존 문서에서 생략한 칸을 지우지 않고 최초 생성 시각을 보존.
+    if (old && old.createdAt) data.createdAt = old.createdAt;
+    else if (op.op === 'set' && !data.createdAt) data.createdAt = at;
+    data.updatedAt = at; data.lastBy = by;
+    data.rev = Math.max(0, Number.isSafeInteger(old && old.rev) ? old.rev : 0) + 1;
+    return data;
+  }
+  function withBase(ops, docs) {
+    return validate(ops).map(o => {
+      const base = { ...(o.base || {}) }, old = docs.get(o.id) || {};
+      if (old._noBody && own(o.data, 'body')) fail('note-incomplete', o.id, 'body');
+      for (const k of TEXT) if (own(o.data, k) && !own(base, k)) base[k] = value(old[k]);
+      return { ...o, data: { ...o.data }, base };
+    });
+  }
+  async function write(db, refOf, ops, at, by) {
+    validate(ops); if (!db || typeof db.runTransaction !== 'function') fail('note-transaction-unavailable');
+    return db.runTransaction(async tx => {
+      const refs = new Map(), state = new Map();
+      for (const o of ops) if (!refs.has(o.id)) refs.set(o.id, refOf(o.id));
+      // Firestore 읽기를 모두 먼저 수행. 충돌하면 묶음 전체를 쓰지 않음.
+      for (const [id, ref] of refs) { const snap = await tx.get(ref); state.set(id, snap.exists ? snap.data() : null); }
+      const pending = [];
+      for (const o of ops) { const d = plan(state.get(o.id), o, at, by); state.set(o.id, { ...(state.get(o.id) || {}), ...d }); pending.push([refs.get(o.id), d]); }
+      for (const [ref, d] of pending) tx.set(ref, d, { merge: true });
+      return { n: ops.length, ids: ops.map(o => o.id), bad: [] };
+    });
+  }
+  function serial(fn) {
+    let tail = Promise.resolve();
+    return (...args) => { const result = tail.then(() => fn(...args)); tail = result.catch(() => {}); return result; };
+  }
+  function client(store) {
+    const chains = new Map();
+    const send = serial(async ops => {
+      const sent = ops.map(o => {
+        const base = { ...o.base };
+        for (const k of TEXT) {
+          const prev = o.chain && chains.get(o.chain + ':' + o.id + ':' + k);
+          if (prev && own(base, k) && (value(base[k]) === prev.from || prev.recent.includes(value(base[k])))) base[k] = prev.to;
+        }
+        const copy = { ...o, base }; delete copy.chain; return copy;
+      });
+      const result = await store.write(sent);
+      if (!result || result.n !== sent.length || (result.bad && result.bad.length)) {
+        const e = new Error('저장 결과를 확인하지 못했습니다 — 미저장 글에서 확인해 주세요');
+        e.code = result && (result.bad || []).some(x => /note-conflict/.test(x)) ? 'note-conflict' : 'note-unconfirmed'; throw e;
+      }
+      ops.forEach((o, i) => { if (o.chain) for (const k of TEXT) if (own(o.data, k)) {
+        const key = o.chain + ':' + o.id + ':' + k, prev = chains.get(key);
+        chains.set(key, { from: prev ? prev.from : value(o.base[k]), to: value(sent[i].data[k]), recent: [...(prev ? prev.recent : []), value(o.base[k]), value(sent[i].data[k])].slice(-8) });
+        if (chains.size > 32) chains.delete(chains.keys().next().value);
+      } });
+      return result;
+    });
+    return ops => send(withBase(ops, store.docs()));
+  }
+  function recovery(storage, key) {
+    let entries = []; let durable = true;
+    try { const raw = storage && storage.getItem(key); if (raw) { const parsed = JSON.parse(raw); if (!Array.isArray(parsed)) throw Error('format'); parsed.forEach(x => validate(x.ops)); entries = parsed; } }
+    catch (e) { durable = false; }
+    const persist = () => { try { if (!storage || !durable) throw Error('storage'); storage.setItem(key, JSON.stringify(entries)); return true; } catch (e) { durable = false; return false; } };
+    return {
+      list: () => entries,
+      durable: () => durable && !!storage,
+      put(id, ops) { validate(ops); const saved = JSON.parse(JSON.stringify(ops)); saved.forEach(o => { delete o.chain; }); entries = entries.filter(x => x.id !== id).concat({ id, ops: saved }); return persist(); },
+      remove(id) { entries = entries.filter(x => x.id !== id); return persist(); }
+    };
+  }
+  const api = { TEXT, value, validate, plan, withBase, write, serial, client, recovery };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else G.JBNWrite = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+/* ⟦jbn write guard 끝⟧ */
+
 (function (G) {
   'use strict';
   if (G.JBN) return;
@@ -2081,6 +2184,10 @@ const ICON = {
 
   function mount(root, store, opt) {
     opt = opt || {};
+    const rootListeners = []; const onRoot = (event, fn, options) => { root.addEventListener(event, fn, options); rootListeners.push([event, fn, options]); };
+    let recoveryStorage; try { recoveryStorage = store.recoveryKey ? G.localStorage : G.sessionStorage; } catch (e) {}
+    const recover = G.JBNWrite.recovery(recoveryStorage, store.recoveryKey || 'jbn-unsaved-v1');
+    const sendOps = G.JBNWrite.client(store);
     if (!document.getElementById('jbn-css')) { const st = document.createElement('style'); st.id = 'jbn-css'; st.textContent = STYLE; document.head.appendChild(st); }
     const U = { seen: new Set(), tab: 'review', q: '', open: new Set(), comp: null, draft: '', feedDraft: '', busy: false, pend: false, toastT: 0, slot: 1, slotSeen: undefined, dDirty: false, dT: 0, sv: '', mineDraft: '', medit: null, sd: new Map() }; /* (note7) sd = 카드마다 아직 안 쌓은 문장 메모 초안 [{quote, text}] — 버블에 적은 채 다른 문장을 고르면 여기로(잃지 않음) */
     try { const p = JSON.parse(localStorage.getItem('jbn-ui') || '{}'); if (TABS.some((t) => t[0] === p.tab)) U.tab = p.tab; if (SLOTS.includes(p.slot)) U.slot = p.slot; } catch (e) {}
@@ -2091,14 +2198,16 @@ const ICON = {
     const toast = (m) => { let t = U.toastEl; if (!t) { t = U.toastEl = document.createElement('div'); t.className = 'jbn-toast jbn'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(U.toastT); U.toastT = setTimeout(() => { t.hidden = true; }, 2600); };
     /* (note4 · 정범님 11/13 16:00 '단추 반응이 매우 느려') 누르면 화면은 바로 바뀌고 저장은 뒤에서 — 덧씌움(U.ov)에 먼저 반영해 그리고, 저장이 끝나면 걷음 · 실패하면 되돌리고 알림
      *  (예전: 아티팩트는 커넥터 왕복 note_write가 끝나야 화면이 바뀜 · 웹앱은 Firestore 쓰기 확인을 기다림) */
-    U.ov = new Map(); U.ovN = 0; U.mOpen = new Set(); U.mClosed = new Set(); U.mview = 'all';
-    function view() { const base = store.docs(); if (!U.ov.size) return base; const m = new Map(base); for (const [id, o] of U.ov) m.set(id, o.set ? { ...o.d } : { ...(m.get(id) || {}), ...o.d }); return m; }
-    const W = (ops, ok) => { const tok = ++U.ovN; const mine = [];
+    U.ov = new Map(); U.ovN = 0; U.mOpen = new Set(); U.mClosed = new Set(); U.mview = 'all'; U.writing = new Set(); U.slotBase = new Map(); U.slotChain = new Map();
+    function view() { const base = store.docs(); if (!U.ov.size) return base; const m = new Map(base); for (const [id, o] of U.ov) m.set(id, { ...(m.get(id) || {}), ...o.d }); return m; }
+    function recoveryHtml() { const rows = recover.list().filter(x => !U.writing.has(x.id)); if (!rows.length) return '';
+      return `<details class="jbn-banner" open><summary>⚠ 미저장 글 ${rows.length}건 — 내용을 확인해 주세요</summary><p>${recover.durable() ? '이 기기에 남겨 두었습니다. 현재 글과 비교한 뒤 필요한 글을 복사해 다시 편집할 수 있습니다.' : '기기 저장 공간을 사용할 수 없습니다. 이 화면을 닫기 전에 아래 글을 복사해 주세요.'}</p>${rows.map(x => `<div><textarea readonly aria-label="미저장 글" style="width:100%;min-height:80px">${esc(x.ops.map(o => [o.data.title, o.data.quote, ...G.JBNWrite.TEXT.map(k => o.data[k])].filter(v => v != null && v !== '').join('\n')).filter(Boolean).join('\n\n') || '상태 변경을 저장하지 못했습니다.')}</textarea><button type="button" class="jbn-b" data-act="recover" data-rid="${esc(x.id)}">같은 내용으로 저장 확인</button></div>`).join('')}</details>`; }
+    const W = (ops, ok, retryId) => { ops = G.JBNWrite.withBase(ops, view()); const tok = ++U.ovN; const mine = []; const recoveryId = retryId || rid('w'); recover.put(recoveryId, ops); U.writing.add(recoveryId);
       for (const o of ops) { const prev = U.ov.get(o.id); const ent = o.op === 'set' ? { set: true, d: { ...o.data }, tok } : { set: !!(prev && prev.set), d: { ...((prev && prev.d) || {}), ...o.data }, tok }; U.ov.set(o.id, ent); mine.push([o.id, ent]); }
-      render(); if (ok) toast(ok);
+      render();
       const t0 = Date.now();
-      return Promise.resolve().then(() => store.write(ops)).then(() => { U.lastW = Date.now() - t0; for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); renderSoon(); })
-        .catch((e) => { for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); render(); toast('저장 못 함 — 되돌렸습니다 · ' + (e && (e.message || e.code) || '연결 확인')); }); };
+      return Promise.resolve().then(() => sendOps(ops)).then(() => { U.lastW = Date.now() - t0; recover.remove(recoveryId); U.writing.delete(recoveryId); for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); renderSoon(); if (ok && !U.dead) toast(ok); return true; })
+        .catch((e) => { U.writing.delete(recoveryId); for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); render(); if (!U.dead) toast('저장 못 함 — 미저장 글에 남겼습니다 · ' + (e && (e.message || e.code) || '연결 확인')); return false; }); };
 
     function cardHtml(c, M, tab, showPath) {
       const open = U.open.has(c.id); const ms = M.byCard.get(c.id) || []; const nw = isNew(c); const imp = impOf(c);
@@ -2176,9 +2285,9 @@ const ICON = {
         <div class="r" style="font-size:12px;color:var(--fa)">모든 기기에 같게 저장됩니다(웹앱 📓 · 아티팩트) · 통합 입력칸은 누르면 위 높이로 펼쳐지고, 칸 밖을 누르면 줄어듭니다. <button class="jbn-b" type="button" data-act="cfgx">닫기</button></div></div>`; }
     const setSv = (t) => { U.sv = t; const el = root.querySelector('[data-sv]'); if (el) el.textContent = t; };
     /* (note5) 쓰는 대로 그 칸 문서 slot_<n>에 곧바로 저장(0.4초 모아서 · 칸을 바꾸거나 칸을 떠나거나 창을 닫을 때는 바로) — 다시 그리지 않음(쓰던 글자판 그대로) */
+    function slotOp(n, draft, at) { if (!U.slotBase.has(n)) U.slotBase.set(n, String((store.docs().get('slot_' + n) || {}).draft || '')); if (!U.slotChain.has(n)) U.slotChain.set(n, rid('draft')); return { op: 'merge', id: 'slot_' + n, base: { draft: U.slotBase.get(n) }, chain: U.slotChain.get(n), data: { kind: 'slot', slot: n, draft, at } }; }
     function saveDraft(now) { clearTimeout(U.dT); const go = () => { const n = U.slot, v = U.feedDraft;
-        Promise.resolve().then(() => store.write([{ op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: v, at: nowIso() } }])).then(() => { if (U.slot === n && U.feedDraft === v) U.dDirty = false; if (U.slot === n) setSv('💾 저장됨 ' + kst(nowIso()).slice(6)); const sn = root.querySelector(`[data-slotn="${n}"]`); if (sn && v.trim() && !/✎/.test(sn.textContent)) sn.textContent = /빈 칸/.test(sn.textContent) ? '0·✎' : /^\d/.test(sn.textContent) ? sn.textContent + '·✎' : (/비어/.test(sn.textContent) ? '메모 0' : sn.textContent) + ' · ✎'; })
-          .catch((e) => { if (U.slot === n) setSv('⚠ 저장 못 함 — 이어 쓰면 다시 저장 · ' + String((e && (e.message || e.code)) || '').slice(0, 40)); }); };
+        W([slotOp(n, v, nowIso())]).then(saved => { if (!saved) { if (U.slot === n) setSv('⚠ 미저장 글을 확인해 주세요'); return; } if (U.slot === n && U.feedDraft === v) { U.dDirty = false; setSv('💾 저장됨 ' + kst(nowIso()).slice(6)); } }); };
       if (now) go(); else U.dT = setTimeout(go, 400); }
     function switchSlot(n) { if (!SLOTS.includes(n)) return; const ta = root.querySelector('#jbn-feed-ta'); if (ta && n !== U.slot) U.feedDraft = ta.value; if (n === U.slot) { if (ta) ta.focus(); return; }
       if (U.dDirty) saveDraft(true); U.slot = n; U.slotSeen = n; U.dDirty = false; U.sv = ''; U.feedDraft = String((model(view()).slots.get(n) || {}).draft || ''); saveUi();
@@ -2189,7 +2298,7 @@ const ICON = {
       const ae = document.activeElement; if (imeOn() && root.contains(ae)) { U.pend = true; return; } /* (note6 · 정범님 11/14 12:33) 한글 조합(받침 넣기 전) 중에는 다시 그리지 않음 — 조합이 끝나면(compositionend) 그림 */ if (Date.now() - (U.act || 0) > 80 && root.contains(ae) && ((ae.tagName === 'TEXTAREA' && (ae.value || ae.dataset.feedta || ae.dataset.mineta)) || (ae.tagName === 'INPUT' && ae.value && ae.id !== 'jbn-q'))) { U.pend = true; return; } /* 찾기 칸은 입력 처리에서 다시 그린 뒤 글자 자리까지 되돌림(예전엔 여기서 막혀 찾기가 먹지 않았음) */ /* (note5) 통합 입력칸·내 메모 칸은 비어도 손이 있으면 다시 그리지 않음(쓰던 자리·글자판 그대로) */
       U.pend = false; const M = model(view());
       const ms = M.meta && M.meta.slotCur; if (SLOTS.includes(ms) && ms !== U.slotSeen) { U.slotSeen = ms; if (ms !== U.slot && !U.dDirty) { U.slot = ms; saveUi(); } } /* 다른 기기에서 고른 칸도 같게 */
-      if (!U.dDirty) U.feedDraft = String((M.slots.get(U.slot) || {}).draft || ''); const st = store.status ? store.status() : { label: '', ok: true };
+      if (!U.dDirty) { U.feedDraft = String((M.slots.get(U.slot) || {}).draft || ''); U.slotBase.set(U.slot, U.feedDraft); U.slotChain.set(U.slot, rid('draft')); } const st = store.status ? store.status() : { label: '', ok: true };
       const q = U.q.trim().toLowerCase(); const hit = (c) => !q || (c.title + '\n' + (c.body || '') + '\n' + catOf(c) + ' ' + (c.sub || '') + ' ' + (c.leaf || '') + '\n' + (M.byCard.get(c.id) || []).map((m) => m.text).join('\n')).toLowerCase().includes(q);
       const cnt = {}; TABS.forEach(([k]) => { cnt[k] = 0; }); M.cards.forEach((c) => { cnt[tabOf(c)]++; if (isFav(c)) cnt.fav++; }); cnt.mine = M.mine.filter((d) => d.state !== 'trashed' && d.state !== 'archived').length;
       const inTab = (c) => (U.tab === 'fav' ? isFav(c) : tabOf(c) === U.tab || (U.tab === 'new' && U.seen.has(c.id) && stateOf(c) === 'open')); /* 새로 온 것에서 펼쳐 읽은 카드는 탭을 바꿀 때까지 그 자리에 */
@@ -2201,6 +2310,7 @@ const ICON = {
       let hd = U.hdEl, bd = U.bdEl, qi = U.qEl;
       if (!(hd && bd && qi && hd.parentNode === root && bd.parentNode === root && qi.parentNode === root)) { root.innerHTML = `<div class="jbn-w6h" style="display:contents"></div><label for="jbn-q" style="position:absolute;left:-9999px">찾기</label><input id="jbn-q" class="jbn-q" type="search" placeholder="제목·본문·메모 찾기" autocomplete="off" enterkeyhint="search"><div class="jbn-w6b" style="display:contents"></div>`; hd = U.hdEl = root.querySelector('.jbn-w6h'); bd = U.bdEl = root.querySelector('.jbn-w6b'); qi = U.qEl = root.querySelector('#jbn-q'); qi.value = U.q; } /* value는 만들 때 한 번만 넣음 */
       hd.innerHTML = `<div class="jbn-top"><h2>📓 정범 노트</h2><span class="jbn-conn" data-ok="${st.ok ? 1 : 0}" title="${esc(st.tip || '')}">${esc(st.label || '')}</span><span class="jbn-sp"></span><button class="jbn-b" type="button" data-act="cfg" aria-expanded="${!!U.cfgOpen}" title="노트 설정 — 입력칸 펼침 높이·저장 단추 크기·내 메모 처음 모양">⚙ 노트 설정</button>${opt.topExtra || ''}</div>${U.cfgOpen ? cfgHtml(M) : ''}`;
+      hd.innerHTML += recoveryHtml();
       bd.innerHTML = `<div class="jbn-tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${U.tab === k}">${l}<span class="n">${cnt[k] || ''}</span></button>`).join('')}</div>
         ${U.tab === 'review' && cnt.new ? `<div class="jbn-banner">🆕 검토하시는 동안 새로 온 카드 ${cnt.new}개는 따로 모아 두었습니다. <button class="jbn-b" data-tab="new">새로 온 것 보기</button></div>` : ''}
         ${U.tab === 'new' && cnt.new ? `<div class="jbn-banner">리드가 새로 쌓은 카드입니다. 펼쳐 읽는 순간 검토로 옮겨지고, 읽던 카드는 접을 때 이 목록에서 빠집니다. <button class="jbn-b" data-act="readall">👁 모두 읽음</button></div>` : ''}
@@ -2219,30 +2329,30 @@ const ICON = {
     }
     let rT = 0; const renderSoon = () => { clearTimeout(rT); rT = setTimeout(function go() { if (U.ptr || Date.now() - (U.ptrUp || 0) < 300 || U.bub || selIn()) { rT = setTimeout(go, 150); return; } render(); }, 60); };
     const selIn = () => { try { const g = window.getSelection(); if (!g || g.isCollapsed) return false; const n = g.anchorNode; return !!(n && root.contains(n.nodeType === 1 ? n : n.parentElement)); } catch (e) { return false; } }; /* 글을 고르는 중·버블이 열린 동안은 뒤에서 다시 그리지 않음(고른 글이 풀리지 않게) */
-    root.addEventListener('pointerdown', () => { U.ptr = true; }, true); const ptrUp = () => { U.ptr = false; U.ptrUp = Date.now(); }; document.addEventListener('pointerup', ptrUp, true); document.addEventListener('pointercancel', ptrUp, true); U.docL = [['pointerup', ptrUp, true], ['pointercancel', ptrUp, true]]; /* 창을 닫을 때(destroy) 걷음 */
+    onRoot('pointerdown', () => { U.ptr = true; }, true); const ptrUp = () => { U.ptr = false; U.ptrUp = Date.now(); }; document.addEventListener('pointerup', ptrUp, true); document.addEventListener('pointercancel', ptrUp, true); U.docL = [['pointerup', ptrUp, true], ['pointercancel', ptrUp, true]]; /* 창을 닫을 때(destroy) 걷음 */
     /* (note5 둘째) 통합 입력칸 — 누르면 설정 높이로 크게 · 칸 밖을 누르면 줄어듦(쓰던 글은 칸에 저장) */
     const dockBig = (on) => { const d = root.querySelector('#jbn-dock'); if (d) d.classList.toggle('big', !!on); };
-    root.addEventListener('focusin', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) dockBig(true); });
-    root.addEventListener('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) setTimeout(() => { const ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.feedta)) dockBig(false); }, 120); });
+    onRoot('focusin', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) dockBig(true); });
+    onRoot('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta) setTimeout(() => { const ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.feedta)) dockBig(false); }, 120); });
     const onOut = (e) => { if (U.dead) return; const d = root.querySelector('#jbn-dock.big'); if (!d || d.contains(e.target)) return; const ta = d.querySelector('#jbn-feed-ta'); if (ta && document.activeElement === ta) ta.blur(); dockBig(false); }; document.addEventListener('pointerdown', onOut, true); U.docL.push(['pointerdown', onOut, true]);
     /* (note5 둘째 · 휴대폰 '목록 보기'가 안 됨) 부드러운 굴림이 다시 그리기에 끊겼음 → 바로 그 자리로 */
     function goFeed() { const f = root.querySelector('#jbn-feed'); if (!f) return; const ta = root.querySelector('#jbn-feed-ta'); if (ta && document.activeElement === ta) ta.blur(); dockBig(false);
       f.style.scrollMarginTop = (8 + (opt.padTop ? +opt.padTop() || 0 : 0)) + 'px'; /* 웹앱 창은 위에 붙은 머리(.sh)만큼 덜 내림 */
       const go = () => { try { f.scrollIntoView({ block: 'start', behavior: 'instant' }); } catch (e) { f.scrollIntoView(true); } }; go(); requestAnimationFrame(go); setTimeout(go, 150); } /* 바로(부드러운 굴림 없이) · 이미 돌던 굴림이 덮지 않게 두 번 더 · scrollIntoView라 웹앱의 '누른 자리 지키기'(uikFix)도 이 굴림을 되돌리지 않음 */
-    store.onChange(renderSoon);
-    root.addEventListener('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta && U.dDirty) saveDraft(true); });
+    const offChange = store.onChange(renderSoon);
+    onRoot('focusout', (e) => { if (e.target && e.target.dataset && e.target.dataset.feedta && U.dDirty) saveDraft(true); });
     const flush = () => { if (U.dead) return; if (U.dDirty) saveDraft(true); }; const onHide = () => { if (document.visibilityState === 'hidden') flush(); }; window.addEventListener('pagehide', flush); document.addEventListener('visibilitychange', onHide); /* (🔬 정밀 점검 11/13) 닫을 때 떼도록 이름을 둠 — 예전엔 열 때마다 document·window에 쌓여 닫힌 노트가 옛 초안을 💾 저장 칸에 다시 써 새 초안을 덮을 수 있었음 */
-    root.addEventListener('focusout', () => setTimeout(() => { if (U.pend && !(root.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) render(); }, 30));
-    root.addEventListener('keydown', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mineta && e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) { e.preventDefault(); const bt = root.querySelector('[data-act="mineadd"]'); if (bt) bt.click(); return; } if (t && t.dataset && t.dataset.feedta && e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); const bt = root.querySelector('[data-act="feedmemo"]'); if (bt) bt.click(); } });
+    onRoot('focusout', () => setTimeout(() => { if (U.pend && !(root.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) render(); }, 30));
+    onRoot('keydown', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mineta && e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) { e.preventDefault(); const bt = root.querySelector('[data-act="mineadd"]'); if (bt) bt.click(); return; } if (t && t.dataset && t.dataset.feedta && e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); const bt = root.querySelector('[data-act="feedmemo"]'); if (bt) bt.click(); } });
     /* (note6 · 정범님 11/14 12:33) 한글 조합 지킴 — compositionstart~end 동안은 어떤 칸이든 다시 그리지 않음(U.pend로 미뤘다가 끝나면 그림) · compositionend를 못 받는 키보드에 대비해 2.5초 입력이 없으면 풀림 */
     const imeT = () => { clearTimeout(U.imeTo); U.imeTo = setTimeout(() => { if (U.ime && Date.now() - (U.imeAt || 0) >= 2500) { U.ime = false; if (U.pend) renderSoon(); } }, 2600); };
-    root.addEventListener('compositionstart', () => { U.ime = true; U.imeAt = Date.now(); imeT(); });
-    root.addEventListener('compositionupdate', () => { U.imeAt = Date.now(); imeT(); });
-    root.addEventListener('compositionend', (e) => { U.ime = false; U.imeAt = 0; const t = e.target; if (t && t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); U.qT = setTimeout(render, 120); } else if (U.pend) renderSoon(); });
-    root.addEventListener('focusout', () => { if (U.ime) { U.ime = false; } });
-    root.addEventListener('input', (e) => { const t = e.target; if (e.isComposing && U.ime) U.imeAt = Date.now(); if (t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); if (!(e.isComposing || imeOn())) U.qT = setTimeout(render, 200); /* (note6) 칸은 그대로 두고 목록만 다시 그림 · 조합 중이면 조합이 끝날 때 그림 · 포커스·글자 자리를 코드로 옮기지 않음 */ } else if (t.dataset.ta) { U.comp = U.comp && U.comp.cardId === t.dataset.ta ? U.comp : { cardId: t.dataset.ta, quote: null }; U.draft = t.value; } else if (t.dataset.feedta) { U.feedDraft = t.value; U.dDirty = true; setSv('✎ 저장 중…'); saveDraft(false); const sb = root.querySelector('[data-act="send"]'); const dn = root.querySelector('[data-dockn]'); if (sb && !U.busy) sb.disabled = !(+((dn && dn.dataset.dockn) || 0) || t.value.trim()); } else if (t.dataset.mineta) U.mineDraft = t.value; else if (t.id === 'jbn-med') U.meditDraft = t.value; else if (t.id === 'jbn-ed') U.editDraft = t.value; });
+    onRoot('compositionstart', () => { U.ime = true; U.imeAt = Date.now(); imeT(); });
+    onRoot('compositionupdate', () => { U.imeAt = Date.now(); imeT(); });
+    onRoot('compositionend', (e) => { U.ime = false; U.imeAt = 0; const t = e.target; if (t && t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); U.qT = setTimeout(render, 120); } else if (U.pend) renderSoon(); });
+    onRoot('focusout', () => { if (U.ime) { U.ime = false; } });
+    onRoot('input', (e) => { const t = e.target; if (e.isComposing && U.ime) U.imeAt = Date.now(); if (t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); if (!(e.isComposing || imeOn())) U.qT = setTimeout(render, 200); /* (note6) 칸은 그대로 두고 목록만 다시 그림 · 조합 중이면 조합이 끝날 때 그림 · 포커스·글자 자리를 코드로 옮기지 않음 */ } else if (t.dataset.ta) { U.comp = U.comp && U.comp.cardId === t.dataset.ta ? U.comp : { cardId: t.dataset.ta, quote: null }; U.draft = t.value; } else if (t.dataset.feedta) { U.feedDraft = t.value; U.dDirty = true; setSv('✎ 저장 중…'); saveDraft(false); const sb = root.querySelector('[data-act="send"]'); const dn = root.querySelector('[data-dockn]'); if (sb && !U.busy) sb.disabled = !(+((dn && dn.dataset.dockn) || 0) || t.value.trim()); } else if (t.dataset.mineta) U.mineDraft = t.value; else if (t.id === 'jbn-med') U.meditDraft = t.value; else if (t.id === 'jbn-ed') U.editDraft = t.value; });
     const docOf = (id) => view().get(id);
-    root.addEventListener('click', async (e) => {
+    onRoot('click', async (e) => {
       U.act = Date.now(); /* (note5 둘째) 사람이 누른 동작은 글칸에 손이 있어도 바로 그림 — 휴대폰에서 글칸이 손을 쥔 채라 [✏ 고치기]가 미뤄져 '안 됨'으로 보였음 */
       const cf = e.target.closest('[data-cfg]'); if (cf && root.contains(cf)) { const k = cf.dataset.cfg, v0 = cf.dataset.v; const val = k === 'uiDockH' ? +v0 : k === 'uiMineOpen' ? v0 === '1' : v0; U.mOpen.clear(); U.mClosed.clear(); return W([{ op: 'merge', id: '_meta', data: { [k]: val } }], k === 'uiDockH' ? `✍ 입력칸 펼침 높이 = 화면 ${val}%` : k === 'uiSlotSz' ? `💾 저장 단추 = ${val === 's' ? '작게' : '보통(두 줄)'}` : `📝 내 메모 처음 = ${val ? '펼침' : '접힘'}`); }
       const mv = e.target.closest('[data-mview]'); if (mv && root.contains(mv)) { U.mview = mv.dataset.mview; render(); return; }
@@ -2251,6 +2361,7 @@ const ICON = {
       const gt = e.target.closest('[data-goto]'); if (gt) { const id = gt.dataset.goto; const d = docOf(id); if (d) { U.tab = tabOf({ id, ...d }); U.open.add(id); render(); const el = root.querySelector(`[data-card="${CSS.escape(id)}"]`); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
       const b = e.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
       const cardEl = b.closest('[data-card]'); const id = cardEl && cardEl.dataset.card; const at = nowIso(); const a = b.dataset.act;
+      if (a === 'recover') { const item = recover.list().find(x => x.id === b.dataset.rid); if (item && !U.writing.has(item.id)) return W(item.ops, '저장을 확인했습니다', item.id); return; }
       if (a === 'toggle') { if (U.open.has(id)) { U.open.delete(id); U.seen.delete(id); /* 접을 때 새로 온 것 목록에서 빠짐(펼친 동안은 그 자리 — 읽던 카드가 튀지 않게) */ } else { U.open.add(id); const d = docOf(id); if (d && isNew({ id, ...d })) U.seen.add(id); if (d && isNew({ id, ...d })) W([{ op: 'merge', id, data: { readAt: at } }]); } render(); return; }
       if (a === 'fav') { const on = !(docOf(id) || {}).pinned; return W([{ op: 'merge', id, data: { pinned: on } }], on ? '⭐ 즐겨찾기에 넣었습니다' : '즐겨찾기에서 뺐습니다'); }
       if (a === 'done') return W([{ op: 'merge', id, data: { state: 'done', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '✅ 완료로 옮겼습니다');
@@ -2259,7 +2370,7 @@ const ICON = {
       if (a === 'trash') return W([{ op: 'merge', id, data: { state: 'trashed', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '🗑 휴지통으로 옮겼습니다 — 휴지통에서 되살릴 수 있습니다');
       if (a === 'restore') return W([{ op: 'merge', id, data: { state: 'open', stateAt: at, readAt: (docOf(id) || {}).readAt || at, trashed: false, archived: false } }], '↩ 검토로 되돌렸습니다');
       if (a === 'read') return W([{ op: 'merge', id, data: { readAt: at } }], '👁 읽음 — 검토로 옮겼습니다');
-      if (a === 'readall') { const M = model(view()); const L = M.cards.filter(isNew).map((c) => ({ op: 'merge', id: c.id, data: { readAt: at } })); for (let i = 0; i < L.length; i += 50) await W(L.slice(i, i + 50)); toast(`👁 ${L.length}개를 읽음으로`); return; }
+      if (a === 'readall') { const M = model(view()); const L = M.cards.filter(isNew).map((c) => ({ op: 'merge', id: c.id, data: { readAt: at } })); for (let i = 0; i < L.length; i += 50) if (!await W(L.slice(i, i + 50))) return; toast(`👁 ${L.length}개를 읽음으로`); return; }
       if (a === 'tofeed') { goFeed(); return; }
       if (a === 'cfg') { U.cfgOpen = !U.cfgOpen; render(); return; }
       if (a === 'cfgx') { U.cfgOpen = false; render(); return; }
@@ -2278,28 +2389,28 @@ const ICON = {
         if (txt) ops.push({ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: id, cardTitle: title, quote: quote || null, text: txt, by: 'jb', at: atK(sents.length), state: 'open', slot: U.slot } }); const nm = ops.length; if (d && isNew({ id, ...d })) ops.push({ op: 'merge', id, data: { readAt: at } });
         return W(ops, sents.length ? `💬 메모 ${nm}건을 통합 노트(보낼 대기)에 쌓았습니다 — 고른 글 ${sents.length}${txt ? ' · 카드 전체 1' : ''}` : '💬 메모를 달았습니다 — 통합 노트(보낼 대기)에 쌓였습니다'); }
       if (a === 'feedmemo') { const ta = root.querySelector('#jbn-feed-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); return; } if (ta) { ta.value = ''; ta.blur(); } U.feedDraft = ''; clearTimeout(U.dT); U.dDirty = false; const n = U.slot;
-        return W([{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: txt, by: 'jb', at, state: 'open', slot: n } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at } }], `💾 저장${n}에 쌓았습니다`); }
+        return W([{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: txt, by: 'jb', at, state: 'open', slot: n } }, slotOp(n, '', at)], `💾 저장${n}에 쌓았습니다`); }
       if (a === 'mineadd') { const ta = root.querySelector('#jbn-mine-ta'); const txt = ((ta && ta.value) || '').trim(); if (!txt) { toast('적을 글이 없습니다'); if (ta) ta.focus(); return; } if (ta) { ta.value = ''; ta.blur(); } U.mineDraft = '';
         return W([{ op: 'set', id: rid('j'), data: { kind: 'jbmemo', text: txt, by: 'jb', at, state: 'open' } }], '📝 내 메모에 적었습니다 — Claude에게는 가지 않습니다'); }
-      if (a === 'medit') { U.medit = b.dataset.mid; U.meditDraft = String((docOf(U.medit) || {}).text || ''); render(); const t = root.querySelector('#jbn-med'); if (t) t.focus(); return; }
+      if (a === 'medit') { U.medit = b.dataset.mid; U.meditDraft = String((docOf(U.medit) || {}).text || ''); U.meditBase = U.meditDraft; render(); const t = root.querySelector('#jbn-med'); if (t) t.focus(); return; }
       if (a === 'mcancel') { U.medit = null; U.meditDraft = null; const t = root.querySelector('#jbn-med'); if (t) { t.value = ''; t.blur(); } render(); return; }
-      if (a === 'msave') { const t = root.querySelector('#jbn-med'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 버리려면 [🗑 휴지통]'); return; } U.medit = null; U.meditDraft = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, data: { text: v, editedAt: at } }], '📝 고쳤습니다'); }
+      if (a === 'msave') { const t = root.querySelector('#jbn-med'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 버리려면 [🗑 휴지통]'); return; } U.medit = null; U.meditDraft = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, base: { text: U.meditBase }, data: { text: v, editedAt: at } }], '📝 고쳤습니다'); }
       if (a === 'mtrash') return W([{ op: 'merge', id: b.dataset.mid, data: { state: 'trashed', stateAt: at } }], '🗑 내 메모를 휴지통으로 — 아래 휴지통에서 되살릴 수 있습니다');
       if (a === 'mrestore') { const was = (docOf(b.dataset.mid) || {}).state; return W([{ op: 'merge', id: b.dataset.mid, data: { state: 'open', stateAt: at } }], was === 'archived' ? '↩ 보관에서 꺼냈습니다 — 전체에 있습니다' : '↩ 내 메모를 되살렸습니다'); }
       if (a === 'qup' || a === 'qdown') { const Q = queueOf(model(view())); const k = Q.findIndex((m) => m.id === b.dataset.mid); const j = a === 'qup' ? k - 1 : k + 1; if (k < 0 || j < 0 || j >= Q.length) return; const ord = Q.map((m, x) => x * 10); [ord[k], ord[j]] = [ord[j], ord[k]]; return W(Q.map((m, x) => ({ op: 'merge', id: m.id, data: { ord: ord[x] } }))); }
-      if (a === 'qedit') { U.edit = b.dataset.mid; U.editDraft = String((docOf(U.edit) || {}).text || ''); render(); const t = root.querySelector('#jbn-ed'); if (t) t.focus(); return; }
+      if (a === 'qedit') { U.edit = b.dataset.mid; U.editDraft = String((docOf(U.edit) || {}).text || ''); U.editBase = U.editDraft; render(); const t = root.querySelector('#jbn-ed'); if (t) t.focus(); return; }
       if (a === 'qcancel') { U.edit = null; const t = root.querySelector('#jbn-ed'); if (t) { t.value = ''; t.blur(); } render(); return; }
-      if (a === 'qsave') { const t = root.querySelector('#jbn-ed'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 빼려면 [빼기]'); return; } U.edit = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, data: { text: v, editedAt: at } }], '고쳤습니다'); }
+      if (a === 'qsave') { const t = root.querySelector('#jbn-ed'); const v = ((t && t.value) || '').trim(); if (!v) { toast('글이 비었습니다 — 빼려면 [빼기]'); return; } U.edit = null; if (t) { t.value = ''; t.blur(); } return W([{ op: 'merge', id: b.dataset.mid, base: { text: U.editBase }, data: { text: v, editedAt: at } }], '고쳤습니다'); }
       if (a === 'memotrash') { const mid = b.dataset.mid; return W([{ op: 'merge', id: mid, data: { state: 'trashed' } }], '메모를 휴지통으로 — 지우지는 않았습니다'); }
       if (a === 'send') { if (U.busy) return; const n = U.slot; clearTimeout(U.dT); const fta = root.querySelector('#jbn-feed-ta'); const dr = ((fta && fta.value) || U.feedDraft || '').trim();
         if (dr) { const mid = rid('m'); if (fta) fta.value = ''; U.feedDraft = ''; U.dDirty = false; /* 아직 [적기] 안 한 글도 잃지 않게 그 칸 메모로 먼저 */
-          await W([{ op: 'set', id: mid, data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: dr, by: 'jb', at, state: 'open', slot: n } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at } }]); if (!view().get(mid)) return; }
+          const saved = await W([{ op: 'set', id: mid, data: { kind: 'memo', cardId: null, cardTitle: null, quote: null, text: dr, by: 'jb', at, state: 'open', slot: n } }, slotOp(n, '', at)]); if (!saved) return; }
         const M = model(view()); const un = queueOf(M, n); if (!un.length) return;
         U.busy = true; b.disabled = true; b.textContent = '보내는 중…'; const bid = rid('b'); const text = compose(un, new Map(M.cards.map((c) => [c.id, c])), opt.link) + ` · 묶음 ${bid}`;
         let r; try { r = await store.send(text, un.map((m) => m.id)); } catch (e2) { r = { status: 'queued', via: 'outbox', err: String((e2 && (e2.code || e2.message)) || e2).slice(0, 200) }; }
         r = r || { status: 'queued', via: 'outbox' };
-        const ops = [{ op: 'set', id: bid, data: { kind: 'batch', slot: n, memoIds: un.map((m) => m.id), text, at, via: r.via || 'outbox', status: r.status || 'queued', err: r.err || null } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, draft: '', at, sentAt: at } }].concat(un.map((m) => ({ op: 'merge', id: m.id, data: { batchId: bid } })));
-        U.busy = false; for (let i = 0; i < ops.length; i += 50) await W(ops.slice(i, i + 50)); toast((r.status === 'sent' ? '📨 리드 채팅으로 보냈습니다' : '⏳ 리드가 10분 안에 받아 갑니다(바로 보내기 연결이 안 됨)') + ` · 💾 저장${n}은 비었습니다`); return; }
+        const ops = [{ op: 'set', id: bid, data: { kind: 'batch', slot: n, memoIds: un.map((m) => m.id), text, at, via: r.via || 'outbox', status: r.status || 'queued', err: r.err || null } }, { op: 'merge', id: 'slot_' + n, data: { kind: 'slot', slot: n, sentAt: at } }].concat(un.map((m) => ({ op: 'merge', id: m.id, data: { batchId: bid } })));
+        let savedAll = true; for (let i = 0; i < ops.length; i += 50) if (!await W(ops.slice(i, i + 50))) { savedAll = false; break; } U.busy = false; if (!savedAll) return; toast((r.status === 'sent' ? '📨 리드 채팅으로 보냈습니다' : '⏳ 리드가 10분 안에 받아 갑니다(바로 보내기 연결이 안 됨)') + ` · 💾 저장${n}`); return; }
     });
     // 문장 고르기 → 메모
     const selCheck = () => { const s = window.getSelection && window.getSelection(); const t = s && !s.isCollapsed ? String(s).trim() : ''; const n = s && s.anchorNode; const bd = n && (n.nodeType === 1 ? n : n.parentElement); const body = bd && bd.closest && bd.closest('[data-body]'); if (!t || !body || !root.contains(body) || t.length > 2000) { selBtn.hidden = true; return; } const r = s.getRangeAt(0).getBoundingClientRect(); selBtn.hidden = false; selBtn.style.left = Math.max(8, Math.min(window.innerWidth - 180, r.left)) + 'px'; selBtn.style.top = Math.max(8, Math.min(window.innerHeight - 50, r.bottom + 8)) + 'px'; selBtn._q = t; selBtn._card = body.dataset.body; selBtn._r = { left: r.left, top: r.top, bottom: r.bottom }; };
@@ -2325,7 +2436,7 @@ const ICON = {
     selBtn.addEventListener('click', () => { const id = selBtn._card, q = selBtn._q, r = selBtn._r || { left: 20, top: 20, bottom: 40 }; selBtn.hidden = true; if (!id) return; bubOpen(id, q, r); });
     jump.addEventListener('click', () => { const f = root.querySelector('#jbn-feed'); if (f) f.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
     render();
-    return { render, destroy() { U.dead = true; for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
+    return { render, destroy() { flush(); U.dead = true; for (const [event, fn, options] of rootListeners) root.removeEventListener(event, fn, options); if (typeof offChange === 'function') offChange(); for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); clearTimeout(U.imeTo); clearTimeout(U.selT); clearTimeout(U.toastT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
   G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '5' };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2338,9 +2449,10 @@ const JBN_ART = 'https://claude.ai/artifact/VQdVQndKFHTTVhwmarrvko';
 function jbnStore() {
   const docs = new Map(); const subs = new Set(); let ok = false, err = null;
   const un = db.collection('jb_notes').onSnapshot((ss) => { ss.docChanges().forEach((ch) => { if (ch.type === 'removed') docs.delete(ch.doc.id); else docs.set(ch.doc.id, ch.doc.data()); }); ok = true; err = null; subs.forEach((f) => f()); }, (e) => { err = e; subs.forEach((f) => f()); });
-  return { un, docs: () => docs, onChange: (f) => subs.add(f),
+  return { un, docs: () => docs, onChange: (f) => { subs.add(f); return () => subs.delete(f); },
     status: () => (err ? { ok: false, label: '⚠ 노트를 읽지 못함 — ' + errKo(err) } : ok ? { ok: true, label: '🟢 실시간 · 아티팩트·리드와 같은 노트', tip: '원본 한 곳(Firestore jb_notes) — 어느 쪽에서 써도 몇 초 안에 양쪽에 보입니다' } : { ok: false, label: '불러오는 중…' }),
-    write: async (ops) => { const b = db.batch(); const at = new Date().toISOString(); for (const o of ops) { const d = { ...o.data, updatedAt: at, lastBy: 'webapp' }; if (o.op === 'set' && !d.createdAt) d.createdAt = at; b.set(db.collection('jb_notes').doc(o.id), d, { merge: o.op !== 'set' }); } await b.commit(); },
+    recoveryKey: 'jbn-unsaved-v1:' + (S.user.uid || S.user.email),
+    write: (ops) => JBNWrite.write(db, id => db.collection('jb_notes').doc(id), ops, new Date().toISOString(), 'webapp'),
     send: async () => ({ status: 'queued', via: 'outbox' }) };
 }
 function openNotes() {

@@ -15,7 +15,7 @@ function fakeC() { const D = {}; const L = {};
     doc: (id) => ({ get: async () => ({ exists: D[n].has(id), data: () => (D[n].has(id) ? JSON.parse(JSON.stringify(D[n].get(id))) : undefined) }),
       set: async (o, opt) => { const had = D[n].has(id); const v = opt && opt.merge && had ? { ...D[n].get(id), ...o } : { ...o }; D[n].set(id, v); const ch = [{ type: had ? 'modified' : 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } }]; setTimeout(() => L[n].forEach((f) => f({ docChanges: () => ch })), 1); } }),
     onSnapshot: (f) => { const all = [...D[n].entries()].map(([id, v]) => ({ type: 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } })); setTimeout(() => f({ docChanges: () => all }), 5); L[n].add(f); return () => L[n].delete(f); } }; };
-  return { C: col, D }; }
+  return { C: require('./notes-fake-tx.cjs')(col), D }; }
 const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ op: 'set', id: 'c' + i, data: { kind: 'card', cat: '웹앱', sub: '노트', imp: 2, title: '카드 ' + i, body: '본문 ' + i + '\n\n' + '긴 글 '.repeat(60), src: 'lead', readAt: 'x', state: 'open' } });
   for (let i = 0; i < 4; i++) ops.push({ op: 'set', id: 'm' + i, data: { kind: 'memo', text: '쌓인 메모 ' + i, by: 'jb', at: `2026-11-13T0${i}:00:00Z`, state: 'open', slot: 1 } });
   ops.push({ op: 'set', id: 'j1', data: { kind: 'jbmemo', text: '내 메모 제목\n둘째 줄 본문', by: 'jb', at: '2026-11-13T01:00:00Z', state: 'open' } });
