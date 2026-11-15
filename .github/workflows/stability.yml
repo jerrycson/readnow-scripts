@@ -1,0 +1,29 @@
+name: stability
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'cloud/**'
+      - 'local/**'
+      - 'shop/**'
+      - 'readnow-*-core.js'
+      - 'hosting/build.js'
+      - '.github/workflows/stability.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: stability-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  standalone:
+    runs-on: ubuntu-latest
+    container: node:22-bookworm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 고객 정보와 운영 연결 없는 안전성 시험
+        run: |
+          node src/tests/standalone/run.cjs
+          node src/tests/tSHIPPC.js
+          node src/tests/tSENDPREP1115.js
