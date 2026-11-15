@@ -35,6 +35,8 @@
   function accountRequest(owner, alive, guardSend) { return async b => { if (alive && !alive()) throw new Error('화면이 바뀌었습니다 — 현재 화면에서 다시 확인해 주세요'); const result = await A(b, owner, guardSend ? alive : undefined); if (alive && !alive()) throw new Error('화면이 바뀌었습니다 — 현재 화면에서 다시 확인해 주세요'); return result; }; }
   function cachedMe() { const owner = tok(); if (owner !== meToken) { ME = null; meAt = 0; meToken = owner; meEpoch++; ALN = { at: 0, n: 0 }; } return ME; }
   function rememberMe(value) { cachedMe(); ME = value; meAt = Date.now(); }
+  // 동시에 저장한 다른 영역의 최신 값을 늦은 전체 회원 응답으로 되돌리지 않는다.
+  function rememberFields(value, fields) { const previous = cachedMe(), merged = previous && previous.uid === value.uid ? { ...previous } : { ...value }; for (const key of fields) merged[key] = value[key]; meEpoch++; rememberMe(merged); return merged; }
   function pageScope() { if (X() && typeof X().pageScope === 'function') return X().pageScope(); if (X()) X().main().innerHTML = X().errBox(new Error('계정 화면을 새로 고친 뒤 다시 확인해 주세요')); return null; }
   const kOf = (x) => (x && x.isbn ? 'i' + x.isbn : 'd' + x.id);
   const RD = { want: '읽고 싶어요', ing: '읽는 중', done: '다 읽음' }; const RDI = { want: '<svg class="ic sm" aria-hidden="true"><use href="#i-star"/></svg>', ing: '<svg class="ic sm" aria-hidden="true"><use href="#i-book"/></svg>', done: '<svg class="ic sm" aria-hidden="true"><use href="#i-check"/></svg>' } /* (shopux1) 이모지 대신 숍 아이콘 묶음 */;
@@ -220,7 +222,27 @@
       <div class="nums"><a href="#/me?t=rv"><b>${u.rvN || 0}</b><small>리뷰</small></a><a href="#/me?t=rd"><b>${u.rdN.done}</b><small>다 읽음</small></a><a href="#/me?t=wish"><b>${(X().wish() || []).length}</b><small>찜</small></a><a href="#/me?t=fol"><b>${u.folN || 0}</b><small>팔로워</small></a><span><b>${won(u.pts || 0)}</b><small>적립금 <i>준비 중</i></small></span><span><b>${(u.cps || []).length}장</b><small>쿠폰 <i>준비 중</i></small></span></div>
       <div class="goal"><div>🎯 <b>${G.y}년 독서 목표</b> ${G.n ? `${G.done} / ${G.n}권 (${G.pct}%)` : `<small>다 읽은 책 ${G.done}권 — 목표를 정해 보세요</small>`}</div><i style="--p:${G.pct}%"></i><form id="gf" class="bqa-row"><input id="gn" type="number" inputmode="numeric" min="0" max="1000" value="${G.n || ''}" placeholder="올해 몇 권?" aria-label="올해 독서 목표 권수"><button class="btn ghost sm">목표 정하기</button></form></div></section>
       <nav class="bqa-tabs" aria-label="마이페이지 칸">${TABS.map(([k, n]) => `<a href="#/me?t=${k}" class="${t === k ? 'on' : ''}"${t === k ? ' aria-current="page"' : ''}>${n}${k === 'al' && ALN.n ? ` <b class="dot">${ALN.n}</b>` : ''}</a>`).join('')}</nav><div id="mt">${X().loading(2)}</div>`;
-    $('#gf').onsubmit = async (e) => { e.preventDefault(); try { await A({ op: 'set', goal: +$('#gn').value || 0 }, owner); if (!current()) return; meAt = 0; X().toast('🎯 목표를 정했습니다'); mePage(q); } catch (er) { X().toast(errTxt(er)); } };
+    const goalForm = $('#gf', m), goalInput = $('#gn', goalForm), goalButton = $('button', goalForm), goalBox = goalForm.parentElement;
+    const goalAlive = () => current() && goalForm.isConnected && $('#gf', m) === goalForm;
+    const goalCurrent = () => goalAlive() && owner === tok(), goalRequest = accountRequest(owner, goalCurrent, true);
+    const goalNote = document.createElement('p'); goalNote.id = 'g_save_status'; goalNote.className = 'hint'; goalNote.setAttribute('role', 'status'); goalNote.hidden = true; goalForm.after(goalNote);
+    let goalBusy = false, goalSaved = false;
+    const goalStatus = (text, error) => { if (goalAlive()) { goalNote.hidden = !text; goalNote.className = error ? 'err' : 'hint'; goalNote.textContent = text; } };
+    const goalEdits = watchEdits(goalForm, () => goalInput.value, () => { if (goalCurrent() && goalSaved && !goalBusy) goalStatus('추가로 고친 목표는 아직 저장하지 않았습니다 — 확인한 뒤 다시 정해 주세요'); });
+    goalForm.onsubmit = async e => { e.preventDefault(); if (goalBusy) return; let committed = false;
+      try { if (!goalAlive()) return; if (owner !== authToken()) throw sessionChanged(); goalBusy = true; goalButton.disabled = true; goalButton.textContent = '저장 중…'; goalForm.setAttribute('aria-busy', 'true'); goalStatus('');
+        const mark = goalEdits.capture(), sent = +goalInput.value || 0; const result = await goalRequest({ op: 'set', goal: sent }); committed = true; meAt = 0; meEpoch++;
+        const confirmed = result && result.me ? result.me : (await goalRequest({ op: 'me' })).me;
+        if (!goalCurrent()) return; const next = confirmed && confirmed.goal;
+        if (!confirmed || confirmed.uid !== u.uid || !next || !Number.isInteger(next.y) || next.y < 2000 || next.y > 9999 || !Number.isInteger(next.n) || next.n < 0 || next.n > 1000 || !Number.isInteger(next.done) || next.done < 0 || !Number.isInteger(next.pct) || next.pct < 0 || next.pct > 100) throw new Error('저장한 독서 목표를 다시 확인하지 못했습니다');
+        const changed = goalEdits.changed(mark); rememberFields(confirmed, ['goal']); goalSaved = true;
+        const summary = goalBox.firstElementChild, progress = $('i', goalBox);
+        summary.innerHTML = '🎯 <b>' + next.y + '년 독서 목표</b> ' + (next.n ? next.done + ' / ' + next.n + '권 (' + next.pct + '%)' : '<small>다 읽은 책 ' + next.done + '권 — 목표를 정해 보세요</small>');
+        if (progress) progress.style.setProperty('--p', next.pct + '%'); if (!changed) goalInput.value = next.n || '';
+        goalStatus(changed ? '먼저 보낸 독서 목표는 저장했습니다. 기다리는 동안 고친 입력은 그대로 두었습니다 — 확인한 뒤 다시 정해 주세요' : '독서 목표를 저장했습니다'); X().toast('🎯 보낸 목표를 정했습니다');
+      } catch (er) { if (!goalAlive()) return; goalStatus(committed ? '보낸 독서 목표는 저장했습니다. 최신 목표 확인은 끝나지 않았습니다 — 입력을 보존했으니 현재 계정에서 다시 확인해 주세요' : errTxt(er), !committed); }
+      finally { goalBusy = false; if (goalAlive()) { goalButton.disabled = false; goalButton.textContent = '목표 정하기'; goalForm.setAttribute('aria-busy', 'false'); } }
+    };
     const on = $('.bqa-tabs a.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' });
     try { await (TAB[t] || TAB.ord)($('#mt'), u, q); } catch (e) { const mt = current() && $('#mt'); if (mt) mt.innerHTML = X().errBox(e); } }
   const bookCard = (x, extra) => `<div class="wcard">${x.id ? X().cardH({ id: x.id, t: x.t, a: x.a, im: x.im, p: x.p || 0, g: x.g || null, ...(x.st ? { st: x.st } : {}) }) : `<div class="card"><div class="im"><span class="noim">📕</span></div><div class="tx"><div class="t">${esc(x.t)}</div></div></div>`}${extra || ''}</div>`;
@@ -273,7 +295,7 @@
           const confirmed = result && result.me ? result.me : (await profileRequest({ op: 'me' })).me;
           if (!profileCurrent()) return; profileSaved = true;
           if (!confirmed || confirmed.uid !== u.uid || typeof confirmed.nick !== 'string') throw new Error('저장한 회원 정보를 다시 확인하지 못했습니다');
-          const changed = profileEdits.changed(mark); u = confirmed; meEpoch++; rememberMe(confirmed); navMe();
+          const changed = profileEdits.changed(mark); u = rememberFields(confirmed, ['nick', 'bio']); navMe();
           if (!changed) { profileField('#p_nick').value = confirmed.nick; profileField('#p_bio').value = confirmed.bio || ''; }
           const who = $('.bqa-me .who'); if (who) { const avatar = $('.av', who), name = $('h1', who), bio = $('.hint', who); if (avatar) avatar.textContent = [...confirmed.nick][0] === '🧪' ? '🧪' : [...confirmed.nick][0] || '?'; if (name) { name.textContent = confirmed.nick; if (confirmed.test) { const badge = document.createElement('span'); badge.className = 'bqa-test'; badge.textContent = '🧪 시험 계정 — 주문은 안 됨 · 글은 나만 보임'; name.append(' ', badge); } } if (bio) bio.textContent = confirmed.bio || '소개를 적어 보세요(⚙ 회원 정보)'; }
           profileStatus(changed ? '먼저 보낸 회원 정보는 저장했습니다. 기다리는 동안 편집한 입력은 그대로 두었습니다 — 확인한 뒤 다시 저장해 주세요' : '회원 정보를 저장했습니다'); X().toast('보낸 회원 정보를 저장했습니다');
