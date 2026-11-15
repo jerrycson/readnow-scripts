@@ -1,6 +1,6 @@
 /* 📚 북스퀸 서가 책장 — 화면 모듈(11/11 shelf1) · 외부 라이브러리 없음 · 셈은 shelf-core.js(BQS)
  *  쓰는 법(독립 모듈 — 우리숍 #/shelf · 리드나우2 꾸밈 블록 어디든):
- *    const h = BQShelf.mount(자리, { cfg, load(진행) → 책[], shop:{open}, cart:{ has(id), add(책) → 못 담은 까닭|null, n() }, wish:{ get(), set(목록) }, open(id), toast(글), key:'bq-shelf-' })
+ *    const h = BQShelf.mount(자리, { cfg, load(진행) → 책[], shop:{open}, cart:{ has(id), add(책) → 못 담은 까닭|null 또는 그 Promise, n() }, wish:{ get(), set(목록) }, open(id), toast(글), key:'bq-shelf-' })
  *    h.destroy() — 붙인 듣개·글꼴 모두 뗌
  *  가볍게: DOM엔 지금 책장과 양옆 둘(최대 3 × 300권)만 · 그림은 화면 가까이 올 때 받음 · 글꼴은 그 책장에 쓰인 글자만(Google Fonts text=)
  *  (shelf2) 책등 모양은 상품 번호마다 한 번 정하면 영구(서버 lk · 이 기기 lk) · 앞표지 대표색은 canvas 16×16(CORS 안 되면 제목 낱말로) · 책등을 누르면 그 책등 표면에 바로 단추 셋(담기·찜·자세히)
@@ -375,10 +375,10 @@
       itemOf(x.id).then((m) => { const P = m && Array.isArray(m.pvs) && !(setX(x) && !C.setPv) ? m.pvs : []; if (!P.length || shFor !== b || sheet.hidden) return; const a2 = sheet.querySelector('.sh-act'); if (a2 && !sheet.querySelector('.sb-pv')) a2.insertAdjacentHTML('afterend', `<button type="button" class="sb-pv" data-a="pv">📖 앞 ${P.length}쪽 샘플 보기 <small>알라딘 미리보기처럼 쪽을 넘겨 봅니다</small></button>`); }); /* (shelf8) 샘플이 있는 책 */
       sheet.hidden = false; sheet.querySelector('.sh-p').style.transform = ''; requestAnimationFrame(() => sheet.classList.add('on')); const f = sheet.querySelector('[data-a="cart"],.sb-w'); if (f) f.focus({ preventScroll: true }); }
     function closeSheet() { if (sheet.hidden) return; sheet.classList.remove('on'); const b = shFor; shFor = null; setTimeout(() => { if (!sheet.classList.contains('on')) sheet.hidden = true; }, RM() ? 0 : 200); if (b && b.isConnected) b.focus({ preventScroll: true }); }
-    on(sheet, 'click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; const b = shFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a; if (k === 'x') return closeSheet(); if (!x) return;
+    on(sheet, 'click', async (e) => { const a = e.target.closest('[data-a]'); if (!a) return; const b = shFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a; if (k === 'x') return closeSheet(); if (!x) return;
       if (k === 'open') { closeSheet(); remember(x.id, true); return o.open && o.open(x.id); }
       if (k === 'pv') { closeSheet(); return setTimeout(() => openBook(b, { inside: true }), RM() ? 0 : 220); }
-      if (k === 'cart') { const why = o.cart.add(x); if (why) { o.toast && o.toast(why); return; } closeSheet(); badge(); say(x.t + ' — 장바구니에 담았습니다'); o.toast && o.toast('🛒 장바구니에 담았습니다'); }
+      if (k === 'cart') { if (a.disabled) return; a.disabled = true; let why; try { why = await o.cart.add(x); } catch (err) { why = err.message || '장바구니 저장을 다시 확인해 주세요'; } finally { a.disabled = false; } if (st.dead || !a.isConnected) return; if (why) { o.toast && o.toast(why); return; } closeSheet(); badge(); say(x.t + ' — 장바구니에 담았습니다'); o.toast && o.toast('🛒 장바구니에 담았습니다'); }
       if (k === 'wish') { wishOf(b, x); openSheet(b); } });
     { let y0 = null, dy = 0; const P0 = sheet.querySelector('.sh-p');
       on(P0, 'touchstart', (e) => { y0 = e.touches[0].clientY; dy = 0; P0.style.transition = 'none'; }, { passive: true });
@@ -394,9 +394,9 @@
     on($('.bqs-chips'), 'click', (e) => { const b = e.target.closest('[data-ci]'); if (b) { st.chipsOpen = false; go(+b.dataset.ci); window.scrollTo({ top: Math.max(0, stage.getBoundingClientRect().top + scrollY - 120) }); } });
     on($('.bqs-msort'), 'change', (e) => { const s0 = $('.bqs-sort'); s0.value = e.target.value; s0.dispatchEvent(new Event('change')); });
     on($('.mb-v'), 'click', (e) => { st.cov = !st.cov; LS.set('cov', st.cov); e.currentTarget.setAttribute('aria-pressed', String(st.cov)); sync(true); });
-    on(pop, 'click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; if (e.detail > 1) return; /* 책등을 두 번 누른 둘째 누름이 담기로 새지 않게 */ const b = popFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a;
+    on(pop, 'click', async (e) => { const a = e.target.closest('[data-a]'); if (!a) return; if (e.detail > 1) return; /* 책등을 두 번 누른 둘째 누름이 담기로 새지 않게 */ const b = popFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a;
       if (k === 'x') return closePop(true); if (!x) return; if (k === 'open') { closePop(); return o.open && o.open(x.id); }
-      if (k === 'cart') { const why = o.cart.add(x); if (why) { o.toast && o.toast(why); return; } closePop(); flyCart(b, x); say(x.t + ' — 장바구니에 담았습니다'); }
+      if (k === 'cart') { if (a.disabled) return; a.disabled = true; let why; try { why = await o.cart.add(x); } catch (err) { why = err.message || '장바구니 저장을 다시 확인해 주세요'; } finally { a.disabled = false; } if (st.dead || !a.isConnected) return; if (why) { o.toast && o.toast(why); return; } closePop(); flyCart(b, x); say(x.t + ' — 장바구니에 담았습니다'); }
       if (k === 'wish') { const r = B.wishToggle((o.wish && o.wish.get()) || [], x); o.wish.set(r.wish); b.classList.toggle('wished', r.on); b.setAttribute('aria-label', b.getAttribute('aria-label').replace(/ · 찜함$/, '') + (r.on ? ' · 찜함' : '')); closePop(true); badge(); if (r.on) wishFx(b); o.toast && o.toast(r.on ? '♥ 찜 목록에 넣었습니다' : '찜을 뺐습니다'); } });
     on(document, 'keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
     on(document, 'pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !(popFor && popFor.contains(e.target))) closePop(); }, true);
@@ -585,14 +585,14 @@
       const under = inn.querySelector(d > 0 ? '.pg.r' : '.pg.l'); under.innerHTML = pageH(slot(d > 0 ? 2 * k + 3 : 2 * k - 2), d > 0 ? 'r' : 'l'); under.classList.toggle('ep0', d > 0 ? 2 * k + 3 > OB.P.length : 2 * k - 2 <= 0); inn.appendChild(lf);
       const a = lf.animate(d > 0 ? [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-90deg) translateZ(2px)', offset: 0.5 }, { transform: 'rotateY(-180deg)' }] : [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(90deg) translateZ(2px)', offset: 0.5 }, { transform: 'rotateY(180deg)' }], { duration: 640, easing: 'cubic-bezier(.4,.1,.3,1)' });
       a.onfinish = () => { OB.k = k1; OB.turning = false; innH(); }; }
-    on(sec, 'click', (e) => { const el = OB.el; if (!el || !el.contains(e.target)) return; const a = e.target.closest('[data-a],[data-ear]');
+    on(sec, 'click', async (e) => { const el = OB.el; if (!el || !el.contains(e.target)) return; const a = e.target.closest('[data-a],[data-ear]');
       if (a && a.dataset.ear) { e.preventDefault(); return turnPage(+a.dataset.ear); }
       const pg = OB.inside && e.target.closest('.ob-inn .pg'); if (pg) { const r = pg.getBoundingClientRect(); const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height; const R = pg.classList.contains('r'); /* 접힌 귀 자리(바깥 아래 모서리 · 쪽의 28%) — 3D 안에서는 귀가 눌림을 못 받을 때가 있어 자리로 셈 */
         if (fy > 0.72 && (R ? fx > 0.72 : fx < 0.28)) { e.preventDefault(); return turnPage(R ? 1 : -1); } }
       if (a) { const k = a.dataset.a; const x = OB.x; const b = OB.b; if (k === 'x') return closeBook(); if (!x) return;
         if (k === 'spv' || k === 'sph') { e.preventDefault(); const Z = OB.set; const s0 = Z && Z.G[0] && Z.G[0].src; closeBook(true); const t = s0 && s0.isConnected ? s0 : b; return k === 'spv' ? openBook(t, { inside: true, single: 1 }) : openProd(t, x, 'photo'); } /* (shelfset1) */
         if (k === 'open') { e.preventDefault(); remember(x.id, true); closeBook(true); return o.open && o.open(x.id); }
-        if (k === 'cart') { const why = o.cart.add(x); if (why) { o.toast && o.toast(why); return; } badge(); a.outerHTML = '<a class="oc-b oc-c in" href="#/cart">✓ 담겨 있음 · 장바구니</a>'; say(x.t + ' — 장바구니에 담았습니다'); o.toast && o.toast('🛒 장바구니에 담았습니다'); bump((st.mob && $('.mb-c')) || $('.bqs-cart')); return; }
+        if (k === 'cart') { if (a.disabled) return; a.disabled = true; let why; try { why = await o.cart.add(x); } catch (err) { why = err.message || '장바구니 저장을 다시 확인해 주세요'; } finally { a.disabled = false; } if (st.dead || !a.isConnected) return; if (why) { o.toast && o.toast(why); return; } badge(); a.outerHTML = '<a class="oc-b oc-c in" href="#/cart">✓ 담겨 있음 · 장바구니</a>'; say(x.t + ' — 장바구니에 담았습니다'); o.toast && o.toast('🛒 장바구니에 담았습니다'); bump((st.mob && $('.mb-c')) || $('.bqs-cart')); return; }
         if (k === 'wish') { const r = B.wishToggle((o.wish && o.wish.get()) || [], x); o.wish.set(r.wish); if (b) b.classList.toggle('wished', r.on); badge(); a.classList.toggle('on', r.on); a.setAttribute('aria-pressed', String(r.on)); a.textContent = r.on ? '♥ 찜함' : '♡ 찜'; o.toast && o.toast(r.on ? '♥ 찜 목록에 넣었습니다' : '찜을 뺐습니다'); return; } return; }
       if (e.target.closest('.ob-book')) { if (OB.P) flipBook(); return; } if (e.target.closest('.ss-v')) return; /* (shelfset1) 꺼낸 권을 눌러도 닫히지 않음 */ if (e.target.closest('.ob-card,.ob-tag,.dk')) return; closeBook(); }); /* (shopmisc1) 💿 디스크 보기 안을 눌러도 닫히지 않음 */
     on(document, 'keydown', (e) => { if (!OB.el) return; if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); return closeBook(); } if (OB.inside && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); turnPage(e.key === 'ArrowRight' ? 1 : -1); }
@@ -715,5 +715,5 @@
     const api = { get fontState() { return { ...FST, q: FQ.length, run: fRun, n: FONT_CSS.size }; }, get state() { return { sort: st.sort, i: st.P ? B.mod(st.j, st.P.cases.length) : 0, N: st.P ? st.P.cases.length : 0, z: st.z, n: st.items.length }; }, turn, go, zoom: setZ, badge, refit: () => { const c = curCase(); if (c) delete c.dataset.fz; fitCase(c); }, lookOf: (id) => { const x = byId.get(id); return x ? lookOf(x) : null; }, get colorState() { return { ok: CC.ok, fail: CC.fail, okN: CC.okN, got: CC.got.size, q: CC.q.length }; },
       destroy() { st.dead = true; if (OB.el) { OB.el.remove(); OB.el = null; } lockScroll(false); try { document.body.classList.remove('shelf-mob'); } catch (e) {} cancelAnimationFrame(rw); offs.forEach((f) => f()); if (RO) RO.disconnect(); closePop(); hideTip(); el.querySelectorAll('.bqs-fly,.bqs-fx,.bqs-dust').forEach((x) => x.remove()); } };
     return api; }
-  root.BQShelf = { mount, VER: B.VER };
+  root.BQShelf = { mount, VER: B.VER, CART_ASYNC: 1 };
 })(typeof self !== 'undefined' ? self : this);

@@ -9,7 +9,7 @@ function harness(root) {
   const noop = () => {}, classList = { add: noop, remove: noop, toggle: noop };
   const ctx = { console, pageEpoch: 0, location: { hash: '#/wish' }, document: { body: { classList } }, main: () => body, $$: () => [],
     B: { route: (hash) => ({ name: hash.slice(2).split('?')[0] || 'home', q: Object.fromEntries(new URLSearchParams(hash.split('?')[1] || '')) }) },
-    window: { scrollTo: noop, BQS: { cfgOf: x => ({ on: true, ...x }), previewCfg: () => ({}), demoItems: () => [] }, BQShelf: { mount: (el, options) => { const h = { options, destroyed: 0, destroy() { this.destroyed++; } }; mounts.push(h); el.innerHTML = '서가 화면'; return h; } } },
+    window: { scrollTo: noop, BQS: { cfgOf: x => ({ on: true, ...x }), previewCfg: () => ({}), demoItems: () => [] }, BQShelf: { CART_ASYNC: 1, mount: (el, options) => { const h = { options, destroyed: 0, destroy() { this.destroyed++; } }; mounts.push(h); el.innerHTML = '서가 화면'; return h; } } },
     shelfJs: () => file.promise, cfg: () => cfg.promise, api: () => Promise.resolve({ ok: true }), shopOpen: () => true,
     errBox: e => { errors.push(e.message); return '불러오기 실패'; }, bindAgain: f => { ctx.retry = f; },
     listKeep: noop, moreIO: null, LST: {}, ST: {}, NO_TABS: [], FLOW: [], TT: {},
