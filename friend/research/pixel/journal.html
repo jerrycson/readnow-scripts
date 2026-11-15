@@ -26,7 +26,8 @@
 <li data-card><a href="#section-26">27. 23차 — 작은 몸의 긴 타원&#183;관 형태 수정</a></li>
 <li data-card><a href="#section-27">28. 24차 — 몸의 세로 압축과 폭&#183;두께의 불균형 수정</a></li>
 <li data-card><a href="#section-28">29. 25차 — 미채택 어깨 변형과 피부 명암 전이 조정</a></li>
-<li data-card><a href="#section-29">30. 26차 — 입술의 명암&#183;색 범위&#183;닫힌 선 분리 수정</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-29">30. 26차 — 입술의 명암&#183;색 범위&#183;닫힌 선 분리 수정</a></li>
+<li data-card><a href="#section-30">31. 27차 — 눈 개구부와 눈꺼풀&#183;홍채 조화</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -239,4 +240,8 @@
 <article id="section-29" data-card><h2>30. 26차 — 입술의 명암·색 범위·닫힌 선 분리 수정</h2>
 <p>해부 작화와 일본어 입술 자료를 읽고 도해 5개를 직접 관찰했다. A~D를 비교한 뒤 D를 적용했다. 실제 피부 표면은 보존하고 국소 법선·입술 색 범위·입선을 조정했다. 원본 128px·256px, 피부색 세 계열과 위아래 사선을 확인했다.</p>
 <p>입술 검사 5/5, 회전표 14/14·896방향 통과. 확대 화면의 어깨 잘림을 머리 잘림으로 오인한 검사 조건은 머리 정점의 실제 투영으로 수정했다. 자연형·작은 기본형과 입 외 특징은 보존됐다. 사용자 미승인 상태이며 눈·눈꺼풀과 전신의 남은 연결 문제를 계속 연구한다. 실제 브라우저 클릭·저장과 운영 통합 배포는 이번 단계에서 미확인이다.</p>
+</article>
+<article id="section-30" data-card><h2>31. 27차 — 눈 개구부와 눈꺼풀·홍채 조화</h2>
+<p>눈의 실제 구조와 일본 작화 도해 5개를 대조하고 A~E를 비교했다. 큰 개구부만 넓힌 안의 놀란 인상과 눈썹이 끊기는 결함을 확인했다. 작은 확대량·홍채 크기·윗눈꺼풀 선을 맞춘 E를 적용하고 눈썹의 곡면 분할을 보완했다.</p>
+<p>눈 검사 5/5와 회전표 14/14·896방향 통과. 남녀 성인 214,048면에서 새 방향 역전이 없었으며 자연형·작은 기본형 14개 이미지를 보존했다. 128px·256px 얼굴과 5~8등신 전신의 조화도 다시 보았다. 기본 인체 승인 전 상태를 유지한다. 실제 브라우저 조작과 운영 통합 배포는 미확인이다. 다음 검토는 다리·발과 전신 연결이다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

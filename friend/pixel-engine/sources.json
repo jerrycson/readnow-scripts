@@ -952,6 +952,42 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anatomy.html#section-45",
       "reuse": "공개 본문과 자체 분석. 직접 관찰 범위는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "eye-anatomy-27",
+      "title": "Proko — 눈꺼풀과 안구의 구조",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-eyes-anatomy-and-structure",
+      "oneLine": "보이는 눈과 안구 전체의 크기를 구분한다.",
+      "oneSentence": "안구 중심과 눈꺼풀의 가림을 여러 방향에서 확인한다.",
+      "concepts": "안와, 구면, 눈꺼풀 두께, 홍채, 가림",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-47",
+      "reuse": "공개 본문과 자체 분석. 도판 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "eye-jp-mozukuni-27",
+      "title": "MediBang mozukuni — 눈 비율과 선 강약",
+      "url": "https://medibangpaint.com/use/2020/10/how-to-draw-various-eyes-to-express-human-characters/",
+      "oneLine": "눈의 세로 폭·홍채·윗선을 함께 조절한다.",
+      "oneSentence": "개구부와 흰자 노출을 함께 비교해 기본 인상을 맞춘다.",
+      "concepts": "세로 폭, 홍채, 흰자, 눈썹, 선 강약",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-39",
+      "reuse": "공개 본문과 자체 분석. 도판 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "eye-ecao-27",
+      "title": "Ecao — 실제 눈과 일본풍 눈",
+      "url": "https://tips.clip-studio.com/ja-jp/articles/2629",
+      "oneLine": "양식이 달라도 눈의 공간 관계를 유지한다.",
+      "oneSentence": "안구·눈꺼풀·홍채의 구조와 시점 변화를 바탕으로 단순화한다.",
+      "concepts": "눈 구성, 배치, 구면, 원근, 생략",
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anime.html#section-40",
+      "reuse": "공개 본문과 자체 분석. 도판 직접 관찰 범위·자동 번역 여부는 분석 페이지에 명시. 외부 도판 재배포 없음"
     }
   ]
 }
