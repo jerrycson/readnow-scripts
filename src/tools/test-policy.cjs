@@ -14,6 +14,7 @@ function requiredTests(files) {
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTIDENTITY\.js|standalone\/account-identity\.test\.cjs))$/.test(f))) ['tACCOUNTIDENTITY', 'tSHOP9_1112'].forEach(t => out.add(t));
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTSESSION\.js|tSHOPVIEW2_1114\.js|standalone\/account-session\.test\.cjs))$/.test(f))) ['tACCOUNTSESSION', 'tSHOP9_1112', 'tSHOPVIEW2_1114'].forEach(t => out.add(t));
   if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|src\/tests\/(?:tORDERCLIENT\.js|standalone\/order-journal-browser\.cjs))$/.test(f))) out.add('tORDERCLIENT');
+  if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|cloud\/shop(?:-order-attempt)?\.js|src\/tests\/(?:tORDERINTEGRATED\.js|standalone\/order-contract-browser\.cjs))$/.test(f))) out.add('tORDERINTEGRATED');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
