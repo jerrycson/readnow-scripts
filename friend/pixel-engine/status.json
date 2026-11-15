@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T20:37:13.353Z",
-  "fingerprint": "8d9b4de40812eebcaf39dddb65f34d5a187f5513028f3d74bb2f4cc6b3080d43",
+  "updatedAt": "2026-11-15T20:48:25.948Z",
+  "fingerprint": "48f492c7461c82ffc01e5d8990e074524b0684313c69f3a142cc5653343fd30e",
   "sourceSummary": {
     "total": 86,
     "uniqueUrls": 86,
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "28차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "29차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -42,9 +42,10 @@
         "\"25차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"26차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"27차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"28차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"28차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"29차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 22,
+      "observations": 23,
       "priority": 380
     },
     {
@@ -460,6 +461,18 @@
       "total": 14
     },
     {
+      "id": "chibi-v29-tests",
+      "path": "../pixel-lab/qa/chibi-v29-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v29-tests",
+      "path": "../pixel-lab/qa/rotation-v29-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -665,6 +678,14 @@
       "suites": 53,
       "passed": 463,
       "total": 463,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:48:25.948Z",
+      "fingerprint": "48f492c7461c82ffc01e5d8990e074524b0684313c69f3a142cc5653343fd30e",
+      "suites": 55,
+      "passed": 483,
+      "total": 483,
       "openIssues": 7
     }
   ],
