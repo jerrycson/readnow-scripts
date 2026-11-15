@@ -803,6 +803,30 @@
       "concepts": "큰 면, 콧등, 코끝, 콧방울, 비중격, 가림",
       "analysisPage": "../research/pixel/anatomy.html#section-28",
       "reuse": "원문 링크와 자체 분석. 원본 도판은 로컬 관찰용으로만 보관"
+    },
+    {
+      "id": "anatomy-breast-form-21",
+      "kind": "document",
+      "title": "Proko 가슴의 형태와 흉곽 연결",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-breasts-form-and-motion",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "가슴은 흉곽 위에 이어지는 부드러운 부피다.",
+      "oneSentence": "대흉근과 지방 조직의 관계, 상부 경사와 하부 곡면을 함께 비교한다.",
+      "concepts": "흉곽 곡률, 대흉근, 지방 조직, 상부 전이, 하부 곡면",
+      "analysisPage": "../research/pixel/anatomy.html#section-32",
+      "reuse": "무료 Notes와 자체 분석. 직접 본 도판 2개는 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-breast-errors-21",
+      "kind": "document",
+      "title": "Proko 가슴 작화의 흔한 오류",
+      "url": "https://www.proko.com/course-lesson/common-mistakes-of-drawing-breasts",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "같은 공 두 개를 붙이는 방식에서 벗어난다.",
+      "oneSentence": "상부·하부 곡률과 조직 두께를 관찰하며 한 가지 형태를 모든 신체에 적용하지 않는다.",
+      "concepts": "곡률, 두께, 흉곽 위 배치, 단순화 한계, 개체 차이",
+      "analysisPage": "../research/pixel/anatomy.html#section-33",
+      "reuse": "무료 Notes와 자체 분석. 외부 도판 공개 재배포 없음"
     }
   ]
 }

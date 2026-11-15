@@ -27,3 +27,16 @@ mesh-data.mjs에는 가시 인체 표면 13,380개 점과 26,756개 삼각형이
 ### 20차 발의 기본 자세 정렬
 
 동일한 고정 CC0 인체·뼈대·가중치 자료로 발의 누적 회전을 다시 계산했다. 기존 위다리의 좌우 0.15라디안 회전을 발 관절에서 반대로 보정한 정적 시안이다. 프로그램 소스는 차용하지 않았다. foot-alignment.mjs는 성인 남녀별 기준 높이 이동과 발·발목·종아리 하단의 희소 변위 2,406개를 기록한다. 자연형은 이전 비교 기준을 유지하며 망가 실험형에만 적용한다. 실제 보행이나 임상적 발 자세 표준이 아니다.
+
+
+## Foundation v21 — adult female chest surface
+
+CC0 target data from the same pinned MakeHuman commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482, under makehuman/data/targets/breast/:
+
+| File | Git blob SHA | Weight |
+| --- | --- | --- |
+| breast-point-decr.target | 197951d5bf51c712cc36a4a9d652349a5f8d3b93 | 0.70 |
+| breast-volume-vert-down.target | c3da37d90e810d4a3fb6bee6695184ced54b013a | 0.20 |
+| female-young-averagemuscle-averageweight-averagecup-minfirmness.target | 659e3f2e54a788ffb8f11ca41602f55a17166230 | 0.40 |
+
+Compiled using the existing adult age-25 basis and v20 pose. The 299 affected vertices receive 12 passes of local Laplacian relaxation, strength 0.40, fading over 3 graph rings to a fixed boundary. Chest normals receive 3 passes at weight 0.50 only on interior affected vertices. These are our implementation choices, not anatomical standards. Only the refined female manga basis uses these deltas; male, natural, head and limbs are unchanged. Source target headers and Git blob hashes were verified locally. No MakeHuman application code was copied. External Proko images are observation references and are not redistributed.
