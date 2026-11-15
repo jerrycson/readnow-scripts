@@ -1,0 +1,93 @@
+{
+  "version": 6,
+  "results": [
+    {
+      "name": "기존 저장본 기본값 보충과 범위 검사",
+      "ok": true,
+      "ms": 1
+    },
+    {
+      "name": "2~4등신의 둥근 구조와 성인 세부 분리",
+      "ok": true,
+      "detail": {
+        "cases": 6
+      },
+      "ms": 124
+    },
+    {
+      "name": "체형 20종은 같은 색에서 서로 다른 몸",
+      "ok": true,
+      "detail": {
+        "results": [
+          {
+            "sex": "male",
+            "distinct": 20
+          },
+          {
+            "sex": "female",
+            "distinct": 20
+          }
+        ]
+      },
+      "ms": 2055
+    },
+    {
+      "name": "남녀 체형·나이·비율·망가풍의 회전 누락과 잘림",
+      "ok": true,
+      "detail": {
+        "count": 1920
+      },
+      "ms": 76508
+    },
+    {
+      "name": "눈·코·입·귀·얼굴형의 20개 독립 모양",
+      "ok": true,
+      "detail": {
+        "results": [
+          {
+            "key": "faceShape",
+            "recipes": 20,
+            "distinctThreeViews": 20,
+            "distinctFront": 20
+          },
+          {
+            "key": "eyeShape",
+            "recipes": 20,
+            "distinctThreeViews": 20,
+            "distinctFront": 20
+          },
+          {
+            "key": "noseShape",
+            "recipes": 20,
+            "distinctThreeViews": 20,
+            "distinctFront": 20
+          },
+          {
+            "key": "mouthShape",
+            "recipes": 20,
+            "distinctThreeViews": 20,
+            "distinctFront": 20
+          },
+          {
+            "key": "earShape",
+            "recipes": 20,
+            "distinctThreeViews": 20,
+            "distinctFront": 20
+          }
+        ],
+        "note": "얼굴 확대 투영의 차이. 48px 전신에서 모든 부품이 식별된다는 뜻은 아님."
+      },
+      "ms": 14566
+    },
+    {
+      "name": "극단 체형의 보행 접지와 유효 좌표",
+      "ok": true,
+      "detail": {
+        "count": 160
+      },
+      "ms": 6612
+    }
+  ],
+  "passed": 6,
+  "total": 6
+}

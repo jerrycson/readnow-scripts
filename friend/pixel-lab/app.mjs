@@ -1,4 +1,7 @@
 import {ANGLES,HEADS,CANDIDATES,SPECIES,ACTIONS,APPEARANCE,createProfile,validateSettings,validName,recordExperience,experienceText,baseSamples,rotationStates,normalizeAngle,walkPosition,groundHeight} from './model.mjs';
+import {BODY_AXES,BODY_PRESETS,bodyPreset} from './body-design.mjs';
+import {HAIR_DESIGNS} from './hair-design.mjs';
+import {FACIAL_OPTIONS} from './facial.mjs';
 import {phaseFromDistance} from './motion.mjs';
 import {openStore} from './storage.mjs';
 import {renderPixels,paintCanvas} from './renderer.mjs';
@@ -25,9 +28,20 @@ function fillOptions(el,items,suffix=''){for(const v of items){const o=document.
 fillOptions($('#yaw'),ANGLES,'°');fillOptions($('#pitch'),ANGLES,'°');fillOptions(form.elements.heads,HEADS,'등신');
 function settings(){return validateSettings(profile.settings);}
 function paint(canvas,s=settings(),options={},scale=1){const result=renderPixels(s,options);paintCanvas(canvas,result,scale);return result;}
-function readForm(){const s={};for(const key of ['sex','candidate','palette',...Object.keys(APPEARANCE)])s[key]=form.elements[key].value;for(const key of ['heads','resolution','scale','speed'])s[key]=Number(form.elements[key].value);for(const key of ['motion','grid'])s[key]=form.elements[key].checked;return {name:validName(form.elements.name.value),settings:validateSettings(s)};}
+
+const shapeGrid=form.querySelector('.form-grid');
+for(const c of ['m','f']){const g=document.createElement('optgroup');g.label=c==='m'?'남성 제안 50종 · 공용 적용':'여성 제안 50종 · 공용 적용';for(const h of HAIR_DESIGNS.filter(x=>x.collection===c))g.append(new Option(h.name,h.id));form.elements.hair.append(g);}
+function addSelect(name,title,rows){const label=document.createElement('label');label.textContent=title;const select=document.createElement('select');select.name=name;for(const [value,text]of rows)select.add(new Option(text,String(value)));label.append(select);shapeGrid.append(label);return select;}
+addSelect('designStyle','기본형의 그림체',[['natural','현실형 · 2~4등신은 귀여운형'],['manga','망가풍 · 6~8등신 집중 연구']]);
+const bodySelect=addSelect('bodyPreset','체형 출발점',[['custom','직접 조절'],...BODY_PRESETS.map(p=>[p.id,p.name])]);
+bodySelect.onchange=()=>{if(bodySelect.value!=='custom'){for(const [key,value]of Object.entries(bodyPreset(bodySelect.value)))form.elements[key].value=String(value);previewForm();}};
+for(const [key,title]of Object.entries(BODY_AXES)){const label=document.createElement('label');label.textContent=title;const input=document.createElement('input');input.name=key;input.type='range';input.min='0';input.max='1';input.step='.05';input.setAttribute('aria-label',title);label.append(input);shapeGrid.append(label);input.oninput=()=>{bodySelect.value='custom';};}
+const faceLabels={faceShape:'얼굴형',eyeShape:'눈',noseShape:'코',mouthShape:'입',earShape:'귀'};
+for(const [key,items]of Object.entries(FACIAL_OPTIONS))addSelect(key,faceLabels[key],items.map(x=>[x.id,(x.id+1)+'. '+x.name]));
+
+function readForm(){const s={};for(const key of ['sex','candidate','palette',...Object.keys(APPEARANCE)])s[key]=form.elements[key].value;for(const key of ['heads','resolution','scale','speed',...Object.keys(BODY_AXES),...Object.keys(FACIAL_OPTIONS)])s[key]=Number(form.elements[key].value);for(const key of ['motion','grid'])s[key]=form.elements[key].checked;return {name:validName(form.elements.name.value),settings:validateSettings(s)};}
 function previewForm(){try{const draft=readForm();$('#settings-error').textContent='';paint($('#settings-canvas'),draft.settings,{yaw,pitch},2);}catch(e){$('#settings-error').textContent=e.message;}}
-function fillForm(value){form.elements.name.value=value.name;for(const [key,v]of Object.entries(validateSettings(value.settings))){const el=form.elements[key];if(el.type==='checkbox')el.checked=v;else el.value=v;}}
+function fillForm(value){bodySelect.value='custom';form.elements.name.value=value.name;for(const [key,v]of Object.entries(validateSettings(value.settings))){const el=form.elements[key];if(el.type==='checkbox')el.checked=v;else el.value=v;}}
 function openSettings(){fillForm(profile);$('#settings-error').textContent='';$('#latest').hidden=true;$('#draft-restore').hidden=!sessionStorage.getItem('readnow-pixel-draft-'+profile.id);dialog.showModal();previewForm();form.elements.name.focus();}
 function stopAuto(){clearInterval(autoTimer);autoTimer=null;$('#auto').textContent='자동 회전';}
 function selectOptions(){const selected=profile?.id;$('#profile').replaceChildren();for(const p of profiles){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;$('#profile').append(o);}$('#profile').value=selected;}

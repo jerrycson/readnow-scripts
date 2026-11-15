@@ -3,15 +3,18 @@ import {humanScene} from './anatomy.mjs';
 import {creatureScene} from './creatures.mjs';
 import {norm} from './geometry.mjs';
 import {materialLibrary,shade} from './materials.mjs';
-export function bodyParts(settings,phase=0,action='idle'){const s=validateSettings(settings);return s.species==='human'?humanScene(s,phase,action):creatureScene(s,phase,action);}
+export function bodyParts(settings,phase=0,action='idle',study={}){const s=validateSettings(settings);return s.species==='human'?humanScene(s,phase,action,study):creatureScene(s,phase,action);}
 function rotation(yaw,pitch){
  const y=normalizeAngle(yaw)*Math.PI/180,p=normalizeAngle(pitch)*Math.PI/180,cy=Math.cos(y),sy=Math.sin(y),cp=Math.cos(p),sp=Math.sin(p);
  return v=>{const x=cy*v[0]+sy*v[2],z=-sy*v[0]+cy*v[2];return [x,cp*v[1]-sp*z,sp*v[1]+cp*z];};
 }
-export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outline=true}={}){
- const s=validateSettings(settings),w=s.resolution,h=w,data=new Uint8ClampedArray(w*h*4),depthBuffer=new Float32Array(w*h).fill(-Infinity);
- const scene=bodyParts(s,phase,action),rot=rotation(yaw,pitch),scale=(w-8)/scene.frame,mats=materialLibrary(s);
- const transform=v=>{const p=rot([v.p[0],v.p[1]-scene.height/2,v.p[2]]);return{x:w/2+p[0]*scale,y:h/2-p[1]*scale,z:p[2],n:rot(v.n),world:v.p};};
+export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outline=true,breathAmplitude,portrait=false,sceneOverride,studyResolution}={}){
+ if(studyResolution!==undefined&&![128,192,256].includes(studyResolution))throw new Error('연구용 원본 크기는 128·192·256px입니다.');
+ const s=validateSettings(settings),w=studyResolution||s.resolution,h=w,data=new Uint8ClampedArray(w*h*4),depthBuffer=new Float32Array(w*h).fill(-Infinity);
+ const scene=sceneOverride||bodyParts(s,phase,action,{breathAmplitude}),rot=rotation(yaw,pitch),scale=(w-8)/(portrait==='ear'?.76:portrait==='legs'?scene.height*.57:portrait==='torso'?3.8:portrait==='hair'?3.2:portrait?1.48:scene.frame),mats=materialLibrary(s);
+ const center=portrait==='ear'?scene.height-.56:portrait==='legs'?scene.height*.26:portrait==='torso'?scene.height*.66:portrait==='hair'?scene.height-1.1:portrait?scene.height-.48:scene.cameraCenter?.[1]??scene.height/2;
+ const centerX=portrait?0:scene.cameraCenter?.[0]||0,centerZ=portrait?0:scene.cameraCenter?.[2]||0;
+ const transform=v=>{const p=rot([v.p[0]-centerX,v.p[1]-center,v.p[2]-centerZ]);return{x:w/2+p[0]*scale,y:h/2-p[1]*scale,z:p[2],n:rot(v.n),world:v.p};};
  function triangle(a,b,c,material){
   const den=(b.y-c.y)*(a.x-c.x)+(c.x-b.x)*(a.y-c.y);if(Math.abs(den)<1e-7)return;
   const minX=Math.max(0,Math.floor(Math.min(a.x,b.x,c.x))),maxX=Math.min(w-1,Math.ceil(Math.max(a.x,b.x,c.x))),minY=Math.max(0,Math.floor(Math.min(a.y,b.y,c.y))),maxY=Math.min(h-1,Math.ceil(Math.max(a.y,b.y,c.y)));

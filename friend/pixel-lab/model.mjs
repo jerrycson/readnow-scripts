@@ -1,12 +1,15 @@
 // 새 프로젝트의 독립 데이터 계약. 기존 캐릭터의 코드·좌표·이름을 사용하지 않는다.
+import {BODY_BASE,BODY_AXES} from './body-design.mjs';
+import {FACIAL_OPTIONS} from './facial.mjs';
+import {HAIR_DESIGNS} from './hair-design.mjs';
 export const VERSION=1;
 export const ANGLES=Object.freeze(Array.from({length:8},(_,i)=>i*45));
 export const HEADS=Object.freeze([2,3,4,5,6,7,8]);
 export const CANDIDATES=Object.freeze({A:'A · 단순 구조',B:'B · 균형 구조',C:'C · 굵은 실루엣'});
 export const SPECIES=Object.freeze({human:'사람',fox:'여우',cat:'고양이',bird:'새',drake:'작은 용',golem:'숲의 골렘',robot:'탐사 로봇',alien:'외계 탐험가'});
 export const ACTIONS=Object.freeze({idle:'숨 쉬기',walk:'걷기',run:'달리기',wave:'손 흔들기',sit:'앉기',look:'살펴보기',reach:'손 뻗기',sleep:'잠들기',kick:'공 차기'});
-export const APPEARANCE=Object.freeze({species:Object.keys(SPECIES),build:['balanced','slim','strong'],top:['none','shirt','coat','armor'],bottom:['none','trousers','skirt'],fabric:['cotton','wool','silk','leather'],hair:['none','crop','bob','long','ponytail'],accessory:['none','satchel','scarf','goggles'],outfitColor:['moss','navy','ochre']});
-export const DEFAULTS=Object.freeze({heads:5,sex:'female',candidate:'B',resolution:96,scale:4,palette:'clay',motion:true,grid:false,speed:1,species:'human',build:'balanced',top:'none',bottom:'none',fabric:'cotton',hair:'none',accessory:'none',outfitColor:'moss'});
+export const APPEARANCE=Object.freeze({species:Object.keys(SPECIES),designStyle:['natural','manga'],build:['balanced','slim','strong'],top:['none','shirt','coat','armor'],bottom:['none','trousers','skirt'],fabric:['cotton','wool','silk','leather'],hair:['none','crop','bob','long','ponytail',...HAIR_DESIGNS.map(x=>x.id)],accessory:['none','satchel','scarf','goggles'],outfitColor:['moss','navy','ochre']});
+export const DEFAULTS=Object.freeze({heads:5,sex:'female',candidate:'B',resolution:96,scale:4,palette:'clay',motion:true,grid:false,speed:1,species:'human',designStyle:'natural',...BODY_BASE,faceShape:0,eyeShape:3,noseShape:1,mouthShape:0,earShape:0,build:'balanced',top:'none',bottom:'none',fabric:'cotton',hair:'none',accessory:'none',outfitColor:'moss'});
 export function normalizeAngle(n){return ((Math.round(Number(n)/45)*45)%360+360)%360;}
 export function validateSettings(value){
  const s={...DEFAULTS,...value};
@@ -19,6 +22,8 @@ export function validateSettings(value){
  if(typeof s.motion!=='boolean'||typeof s.grid!=='boolean')throw new Error('표시 설정을 확인해 주세요.');
  if(![0.5,1,1.5].includes(s.speed))throw new Error('걷기 속도를 확인해 주세요.');
  for(const [key,values]of Object.entries(APPEARANCE))if(!values.includes(s[key]))throw new Error('모양 설정을 다시 골라 주세요: '+key);
+ for(const key of Object.keys(BODY_AXES))if(!Number.isFinite(s[key])||s[key]<0||s[key]>1)throw new Error('체형 범위는 0~1입니다: '+key);
+ for(const [key,values]of Object.entries(FACIAL_OPTIONS))if(!Number.isInteger(s[key])||!values[s[key]])throw new Error('얼굴 모양 번호를 확인해 주세요: '+key);
  return Object.fromEntries(Object.keys(DEFAULTS).map(k=>[k,s[k]]));
 }
 export function createProfile(id,name,sex='female',now=Date.now()){

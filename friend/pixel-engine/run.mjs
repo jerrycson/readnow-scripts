@@ -2,14 +2,16 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {validateSources,issuesFromReport,reconcileMemory,validateReport} from './core.mjs';
 const read=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
-const sources=await read('./sources.json'),sourceSummary=validateSources(sources),names=['pure-tests','v2-tests','v2-browser-tests','world-tests','motion-tests','animal-tests'];
+const sources=await read('./sources.json'),sourceSummary=validateSources(sources),names=['pure-tests','v2-tests','v2-browser-tests','world-tests','motion-tests','animal-tests','sleep-tests','body-design-tests','hair-design-tests','anatomy-v7-tests'];
 const reports=[],issues=[],observed=[];
 for(const name of names){const path='../pixel-lab/qa/'+name+'.json';try{const report=validateReport(await read(path));reports.push({id:name,path,report});issues.push(...issuesFromReport(name,report));observed.push(name);}catch(error){issues.push({id:name+':unreadable',scope:name,severity:3,title:'검사 보고서 확인 필요',evidence:error.message,next:'원본 검사를 다시 실행하고 결과 합계를 확인한다.'});}}
 try{const report=validateReport(await read('./tests.json'));reports.push({id:'engine-tests',path:'./tests.json',report});issues.push(...issuesFromReport('engine-tests',report));observed.push('engine-tests');}catch(error){issues.push({id:'engine-tests:unreadable',scope:'engine-tests',severity:3,title:'연구 엔진 검사 확인 필요',evidence:error.message,next:'node test.mjs로 엔진을 검사한다.'});}
 let collection={results:[]};try{collection=await read('./collection.json');}catch{}
 for(const row of collection.results){const scope='source:'+row.id;observed.push(scope);if(!row.ok)issues.push({id:scope+':unavailable',scope,severity:1,title:'출처 재확인 · '+row.id,evidence:row.error,next:'공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.'});else if(row.changed)issues.push({id:scope+':changed',scope,severity:1,title:'원문 변경 검토 · '+row.id,evidence:row.hash,next:'원문을 읽고 실제 내용이 바뀌었는지 비교한다. 해시 변경만으로 새 주장을 채택하지 않는다.'});}
 let old={memory:[],runs:[]};try{old=await read('./status.json');}catch{}
-const semantic={reports:reports.map(x=>({id:x.id,results:x.report.results.map(({ms,...rest})=>rest)})),collection:collection.results.map(({checkedAt,...rest})=>rest)};
+const gate=await read('../pixel-lab/review-gate.json');observed.push('anatomy-review');
+if(!gate.userApproved)issues.push({id:'anatomy-review:foundation-pending',scope:'anatomy-review',severity:3,title:'기본 전신·얼굴의 완성도 미달 · 사용자 승인 전',evidence:gate.version+'차 · 기본형의 품질 검토 중 · 사용자 미승인',next:'같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.'});
+const semantic={gate,issues,reports:reports.map(x=>({id:x.id,results:x.report.results.map(({ms,...rest})=>rest)})),collection:collection.results.map(({checkedAt,...rest})=>rest)};
 const fingerprint=createHash('sha256').update(JSON.stringify(semantic)).digest('hex'),same=old.fingerprint===fingerprint;
 const memory=same?old.memory:reconcileMemory(old.memory,issues,observed),run={at:new Date().toISOString(),fingerprint,suites:reports.length,passed:reports.reduce((n,r)=>n+r.report.passed,0),total:reports.reduce((n,r)=>n+r.report.total,0),openIssues:memory.filter(x=>x.state==='open').length};
 const status={schema:1,updatedAt:run.at,fingerprint,sourceSummary,collection:{checked:collection.results.length,available:collection.results.filter(x=>x.ok).length},memory,reports:reports.map(x=>({id:x.id,path:x.path,passed:x.report.passed,total:x.report.total})),runs:same?old.runs:[...(old.runs||[]),run],limits:['등록한 공개 출처를 다시 확인하는 수집기이며 전 인터넷을 탐색하지 않음','원문의 요약·해석은 검토된 연구 카드이며 자동 생성하지 않음','반복 실패의 우선순위를 누적하지만 신경망 학습이나 스스로 코드 수정은 하지 않음','후보 채택에는 분리된 평가 사례와 시각 검토 기록이 필요하며 운영 배포는 하지 않음']};

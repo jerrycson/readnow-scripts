@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T14:57:14.962Z",
-  "fingerprint": "b6e4012693eee1f69c683ecb7b186d924932e07a56b85c2acc5e529322682f04",
+  "updatedAt": "2026-11-15T16:12:28.557Z",
+  "fingerprint": "18031fc7c1339a6079af13949bf12c119f256cdcfe1924f0d8fe382b9643a18c",
   "sourceSummary": {
-    "total": 35,
-    "uniqueUrls": 35,
+    "total": 47,
+    "uniqueUrls": 47,
     "duplicates": []
   },
   "collection": {
@@ -13,13 +13,28 @@
   },
   "memory": [
     {
+      "id": "anatomy-review:foundation-pending",
+      "scope": "anatomy-review",
+      "severity": 3,
+      "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
+      "evidence": "7차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
+      "state": "open",
+      "evidenceTokens": [
+        "{\"version\":7,\"confidence\":\"not-ready\"}",
+        "\"7차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+      ],
+      "observations": 2,
+      "priority": 308
+    },
+    {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
       "scope": "v2-tests",
       "severity": 2,
       "title": "울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
       "evidence": "지원 동작의 8프레임·네 방향 누락과 잘림",
       "next": "해당 크기·방향·동작을 고정하고 프레임의 차이가 읽히는 후보를 비교한다.",
-      "state": "open",
+      "state": "resolved",
       "evidenceTokens": [
         "\"지원 동작의 8프레임·네 방향 누락과 잘림\""
       ],
@@ -149,6 +164,30 @@
       "total": 3
     },
     {
+      "id": "sleep-tests",
+      "path": "../pixel-lab/qa/sleep-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "body-design-tests",
+      "path": "../pixel-lab/qa/body-design-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "hair-design-tests",
+      "path": "../pixel-lab/qa/hair-design-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "anatomy-v7-tests",
+      "path": "../pixel-lab/qa/anatomy-v7-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -162,6 +201,30 @@
       "suites": 7,
       "passed": 38,
       "total": 38,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T15:09:05.066Z",
+      "fingerprint": "49a298959dfefa58d07620f7554df6637d5511af9e975fb2854eb1c9aceac0c2",
+      "suites": 8,
+      "passed": 42,
+      "total": 42,
+      "openIssues": 6
+    },
+    {
+      "at": "2026-11-15T16:09:13.276Z",
+      "fingerprint": "d71c736970e3ea80358cd943f382a393f0063c3bfed770693d36348fa79163bb",
+      "suites": 11,
+      "passed": 56,
+      "total": 56,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T16:12:28.557Z",
+      "fingerprint": "18031fc7c1339a6079af13949bf12c119f256cdcfe1924f0d8fe382b9643a18c",
+      "suites": 11,
+      "passed": 56,
+      "total": 56,
       "openIssues": 7
     }
   ],

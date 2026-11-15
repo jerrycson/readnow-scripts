@@ -9,17 +9,17 @@
     {
       "name": "지지발 접지와 보행의 양발 분리",
       "ok": true,
-      "ms": 1370,
+      "ms": 10403,
       "detail": {
         "stance": 420,
         "swing": 252,
-        "maxBoneError": 0.006627154813913266
+        "maxBoneError": 0.00730545318014561
       }
     },
     {
       "name": "96·128px 남녀 14형의 64각도",
       "ok": true,
-      "ms": 10812,
+      "ms": 65831,
       "detail": {
         "count": 1792
       }
@@ -27,7 +27,7 @@
     {
       "name": "13개 형태·옷 조합의 전 방향 렌더",
       "ok": true,
-      "ms": 3867,
+      "ms": 16178,
       "detail": {
         "count": 832
       }
@@ -35,22 +35,16 @@
     {
       "name": "지원 동작의 8프레임·네 방향 누락과 잘림",
       "ok": true,
-      "ms": 16392,
+      "ms": 77989,
       "detail": {
         "count": 2880,
-        "warnings": [
-          {
-            "preset": "울 코트와 가방",
-            "action": "sleep",
-            "issue": "64px 옆모습에서 프레임 변화가 읽히지 않음"
-          }
-        ]
+        "warnings": []
       }
     },
     {
       "name": "같은 옷의 재질 구분과 결정성",
       "ok": true,
-      "ms": 70,
+      "ms": 342,
       "detail": {
         "distinct": 4
       }

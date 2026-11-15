@@ -6,7 +6,8 @@ export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
-  skin:ramp(skin[s.palette]),eye:ramp(['#15252b','#15252b','#1d3038','#263e44','#b1d0cb']),mouth:ramp(skin[s.palette].slice(0,2).concat(skin[s.palette].slice(1,4))),
+  sclera:ramp(['#7b807e','#a9b2a4','#d7dfcb','#f0edd7','#fff6df']),iris:ramp(['#152a2f','#1d3a42','#285561','#43858b','#9bcbbe']),lip:ramp(['#513d36','#785047','#a97868','#c99c86','#e3bea1']),'skin-shadow':ramp(skin[s.palette].slice(0,3).concat(skin[s.palette].slice(2,4))),
+  skin:ramp(s.designStyle==='manga'&&s.palette==='clay'?['#664439','#b67e63','#e0a982','#f1c7a1','#ffe2be']:skin[s.palette]),eye:ramp(['#15252b','#15252b','#1d3038','#263e44','#b1d0cb']),mouth:ramp(skin[s.palette].slice(0,2).concat(skin[s.palette].slice(1,4))),
   cloth:ramp(cloth,{roughness:{cotton:.9,wool:1,silk:.25,leather:.5}[s.fabric],specular:{cotton:.04,wool:.02,silk:.85,leather:.4}[s.fabric],pattern:s.fabric}),
   trousers:ramp(['#242f39','#39444b','#59656b','#808981','#b0afa1'],{roughness:.9,pattern:'cotton'}),
   hair:ramp(['#201d27','#322c31','#554137','#81604a','#b88a60'],{roughness:.35,specular:.7,pattern:'hair'}),

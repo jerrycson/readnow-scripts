@@ -5,8 +5,8 @@
       "name": "14형의 양방향 지지발 미끄러짐 수치 검사",
       "ok": true,
       "detail": {
-        "checked": 20012,
-        "maxResidual": 2.3453461395206432e-14,
+        "checked": 19992,
+        "maxResidual": 4.091171845743702e-14,
         "scope": "flat ground, unrounded joint coordinates; raster rounding and slopes remain separate"
       }
     },
