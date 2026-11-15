@@ -4,6 +4,8 @@ import {ARM_DATA} from './continuous/arm-regions.mjs';
 const handWeights = new Map(ARM_DATA.groups.L.hand);
 const forearmWeights = new Map(ARM_DATA.groups.L.fore);
 const selections = new WeakMap();
+function connectedFacesNear(mesh,faces,anchor){const adj=new Map();for(const f of faces)for(const i of f){if(!adj.has(i))adj.set(i,new Set());for(const j of f)adj.get(i).add(j);}let seed=-1,best=Infinity;for(const i of adj.keys()){const d=Math.hypot(...mesh.vertices[i].p.map((v,k)=>v-anchor[k]));if(d<best){best=d;seed=i;}}if(seed<0)return[];const seen=new Set([seed]),todo=[seed];while(todo.length){for(const i of adj.get(todo.pop()))if(!seen.has(i)){seen.add(i);todo.push(i);}}return faces.filter(f=>f.every(i=>seen.has(i)));}
+
 export function selectAnatomyDetail(scene, focus) {
   if (!['hand', 'foot'].includes(focus)) return scene;
   if (selections.get(scene)?.has(focus)) return selections.get(scene).get(focus);
@@ -20,9 +22,10 @@ export function selectAnatomyDetail(scene, focus) {
           ((forearmWeights.get(i) || 0) > .2 && Math.hypot(...p.map((x, k) => x - joint[k])) < .18);
       }
       if (focus === 'foot') return p[0] > 0 && p[1] <= joint[1] + .22;
-      return p[0] > joint[0] - .18 && p[1] < joint[1] + .16 && p[1] > joint[1] - .9;
+      return p[0] > joint[0] - .18 && p[1] < joint[1] + .16 && p[1] > joint[1] - (neutral ? .32 : .9);
     });
-    const faces = mesh.faces.filter(face => face.every(i => selected[i]));
+    let faces = mesh.faces.filter(face => face.every(i => selected[i]));
+    if(neutral && focus === 'hand') faces = connectedFacesNear(mesh, faces, [joint[0],joint[1]-.10,joint[2]]);
     if (faces.length) parts.push({...mesh, faces});
   }
   const points = parts.flatMap(mesh => [...new Set(mesh.faces.flat())].map(i => mesh.vertices[i].p));

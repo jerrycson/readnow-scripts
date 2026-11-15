@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15T19:27:54.313Z",
-  "fingerprint": "936d2de991d970762300427fa6e20429f2198bc220a86a854fda9cf51e745cb3",
+  "updatedAt": "2026-11-15T19:41:37.414Z",
+  "fingerprint": "2efd8b44450ecd79d334988a69a3f072f013036d17ad90dcc5342dd94586d4e9",
   "sourceSummary": {
-    "total": 70,
-    "uniqueUrls": 70,
+    "total": 72,
+    "uniqueUrls": 72,
     "duplicates": []
   },
   "collection": {
@@ -17,7 +17,7 @@
       "scope": "anatomy-review",
       "severity": 3,
       "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
-      "evidence": "22차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "evidence": "23차 · 기본형의 품질 검토 중 · 사용자 미승인",
       "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
       "state": "open",
       "evidenceTokens": [
@@ -36,10 +36,11 @@
         "\"19차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"20차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
         "\"21차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
-        "\"22차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+        "\"22차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"23차 · 기본형의 품질 검토 중 · 사용자 미승인\""
       ],
-      "observations": 16,
-      "priority": 364
+      "observations": 17,
+      "priority": 368
     },
     {
       "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
@@ -370,6 +371,24 @@
       "total": 14
     },
     {
+      "id": "chibi-v23-tests",
+      "path": "../pixel-lab/qa/chibi-v23-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v23-tests",
+      "path": "../pixel-lab/qa/rotation-v23-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v23-tests",
+      "path": "../pixel-lab/qa/detail-v23-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
       "id": "engine-tests",
       "path": "./tests.json",
       "passed": 7,
@@ -519,6 +538,14 @@
       "suites": 39,
       "passed": 340,
       "total": 340,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:41:37.414Z",
+      "fingerprint": "2efd8b44450ecd79d334988a69a3f072f013036d17ad90dcc5342dd94586d4e9",
+      "suites": 42,
+      "passed": 364,
+      "total": 364,
       "openIssues": 7
     }
   ],

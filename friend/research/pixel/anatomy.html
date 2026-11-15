@@ -34,7 +34,8 @@
 <li data-card><a href="#section-34">34. 21차 성인 가슴&#183;흉곽 곡면 대조</a></li>
 <li data-card><a href="#section-35">35. 어깨의 앞&#183;옆&#183;뒤 면과 겨드랑이의 접힘</a></li>
 <li data-card><a href="#section-36">36. 어깨뼈의 기준점과 전신 연결</a></li>
-<li data-card><a href="#section-37">37. 22차 성인 귀와 눈&#183;입 구분</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
+<li data-card><a href="#section-37">37. 22차 성인 귀와 눈&#183;입 구분</a></li>
+<li data-card><a href="#section-38">38. 작은 등신의 몸통&#183;손 연결 재검토</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
 <p><a href="../../pixel-lab/">기본형 연구실 열기</a> · <a href="journal.html">실행 일지</a> · <a href="architecture.html">복구 범위</a></p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 골격에서 연속적인 몸으로</h2>
 <p><strong>한 줄:</strong> 흉곽·골반·관절의 연결이 먼저다.</p>
@@ -360,4 +361,7 @@
 <p><img src="../../pixel-lab/studies/anatomy-v22-face128.png" alt="128px 얼굴 원본을 정수 2배로 표시" /></p>
 <p><strong>후보:</strong> C는 원전 귀 크기 변형 0.35, D는 0.65다. D가 옆면의 내부 구조를 읽는 데 더 나아 E의 바탕으로 사용했다. E는 성인 작화형에만 흰자·갈색 홍채·짙은 동공을 구분하고, 눈썹·윗눈꺼풀의 선 굵기 및 입 폭을 조절했다. 기존 청록 계열 동공과 녹색 기가 있는 흰자가 겹쳐 눈의 중심이 약하게 보이던 점을 수정했다. 얼굴의 모든 부분을 완성했다고 판단하지 않는다.</p>
 <p><strong>검증과 한계:</strong> 귀 원전 데이터의 CC0 표기와 두 파일 해시를 확인했다. 원전에서는 양쪽 귀와 부착 주변 1,016개 정점이 각 성별에서 움직인다. 실행 시의 얼굴 평활화가 인접 영역까지 전달되므로 실제 변경 정점 수는 더 많다. 5~8등신 남녀를 이전 실행 표면과 비교해 새로 뒤집힌 면이 없음을 확인했다. 몸 좌표 22개 사례, 자연형·작은 등신 이미지 14개는 이전과 일치한다. 성인 검사 15개와 전체 회전표 검사 14개가 통과했다. 귀의 뒷면·부착, 얼굴의 조화와 낮은 해상도의 읽힘은 계속 검토한다. 사용자 승인은 아직 없다.</p>
+</article>
+<article id="section-38" data-card><h2>38. 작은 등신의 몸통·손 연결 재검토</h2>
+<p>23차 작은 기본형의 자료별 분석과 실제 전신·손 대조는 <a href="anime.html#section-32">일본 등신 연구 32~34절</a>에 기록했다. 작은 몸의 연결·손 분리 관찰을 수정했으며 성인 전신 16개 렌더와 작은 얼굴 18개는 보존했다. 성인 체형 세부를 작은 중성 몸에 옮기지 않았다.</p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

@@ -851,6 +851,30 @@
       "concepts": "흉곽, 쇄골, 견봉, 견갑골, 단축, 겹침",
       "analysisPage": "../research/pixel/anatomy.html#section-36",
       "reuse": "무료 Notes와 자체 분석. 이번 단계의 직접 도판·영상 관찰 없음"
+    },
+    {
+      "id": "chibi-kamapon-23",
+      "kind": "document",
+      "title": "kamapon 작은 몸통·관절·손발 구성",
+      "url": "https://tips.clip-studio.com/ja-jp/articles/4826?org=1",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "작은 몸에서도 관절과 손발의 연결은 남긴다.",
+      "oneSentence": "머리와 아래가 둥근 몸통에 맞춰 팔다리 길이·관절·손발의 세부를 선택한다.",
+      "concepts": "머리 대 몸 비율, 둥근 하부 몸통, 관절, 손발, 단순화",
+      "analysisPage": "../research/pixel/anime.html#section-32",
+      "reuse": "원문 본문과 정지 도판 4개, GIF의 선택 프레임 직접 관찰. 외부 이미지 공개 재배포 없음"
+    },
+    {
+      "id": "chibi-neko-rina-23",
+      "kind": "document",
+      "title": "Neko-Rina 작은 몸의 두 설계 방식",
+      "url": "https://tips.clip-studio.com/ja-jp/articles/3448",
+      "reviewedAt": "2026-11-16",
+      "oneLine": "작은 몸의 귀여움은 한 가지 비례로 고정되지 않는다.",
+      "oneSentence": "몸통 실루엣과 손발의 크기·세부를 비교해 목표 인상에 맞는 조합을 고른다.",
+      "concepts": "비례 안내선, 실루엣, 손발 크기, 세부 선택",
+      "analysisPage": "../research/pixel/anime.html#section-33",
+      "reuse": "일본어 제공 본문은 자동 번역 표시. 이번 단계 도판·영상 직접 관찰 없음"
     }
   ]
 }
