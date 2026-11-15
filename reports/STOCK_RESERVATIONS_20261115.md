@@ -5,7 +5,7 @@
 ## 저장 계약
 
 - `shop_holds/{listingId}`: `schema:2`, `basis:{kind:'physical-total',qty,observedQty,evidence,actor,at}`, `reservedQty`, `committedQty`, `review`.
-- `shop_reservations/{encodedListingId}__{encodedOrderNo}`: 주문별 수량·상태(`reserved/released/committed`)와 변경 시각. 취소해도 삭제하지 않는다.
+- `shop_reservations/{encodedListingId}__{encodedOrderNo}`: 주문별 수량·상태(`reserved/released/committed/settled`)와 변경 시각. 취소해도 삭제하지 않는다.
 - `shop_stock_audit/{hash}`: 이관·실물 재확인의 이전/다음 값과 확인 근거. 고객 연락처는 이 도구의 입력으로 받지 않는다.
 - schema 2의 `on:1`은 이전 판이 상품 전체를 잠그도록 유지한다. 새 판만 합계와 판매 가능 수량을 해석한다.
 
@@ -25,9 +25,17 @@
 
 ## 이관·재확인 도구
 
-`cloud/shop-stock-admin.js`는 운영자 라이브러리이며 HTTP 경로를 추가하지 않는다. `change(db, input)`은 기본 미리보기다. 상품, 확인 근거, 담당, 실물 수량, 관찰 수량이 필요하다. 적용에는 미리보기의 `stateHash`를 `expectedStateHash`로 전달하고 `apply:true`를 지정해야 한다. 상태나 관찰 수량이 바뀌면 전체 거래를 거절한다. 같은 근거를 다른 수량으로 재사용해도 거절한다.
+`cloud/shop-stock-admin.js`는 운영자 라이브러리이며 HTTP 경로를 추가하지 않는다. `change(db, input)`은 기본 미리보기다. 상품, 확인 근거, 담당, 실물 수량, 관찰 수량이 필요하다. 적용에는 미리보기의 `stateHash`를 `expectedStateHash`로 전달하고 `apply:true`를 지정해야 한다. 상태·관찰 수량·적용 수량·담당·확인 근거·정산할 주문·출고 근거가 바뀌면 전체 거래를 거절한다. 같은 근거를 다른 수량으로 재사용해도 거절한다.
 
 이관은 대응 주문이 `new/paid`이고 각 품목 수량이 명확할 때만 예약을 만든다. 대응 주문·수량이 없거나 출고 후 수량 의미가 불명확하면 전체 잠금과 확인 표시를 보존한다. 이미 수량 형식이면 `mode:'reconcile'`과 새로운 확인 근거로만 실물 기준을 갱신한다. 적용과 감사 기록 저장은 같은 거래다.
+
+## 출고 수량 정산과 입금 기한
+
+재고 재확인만으로 출고 대기 수량(committedQty)을 0으로 바꾸지 않는다. 이 초기 초안의 경로를 가짜 자료로 재현한 뒤 보완했다. 3권 중 1권을 출고로 보낸 상태에서 같은 실물 3권을 다시 세어도 2권만 판매 가능하다.
+
+실제 보낸 주문은 재확인 입력의 settleOrders에 주문 번호를 명시한다. 운영자 라이브러리는 shop_orders의 sent/done 상태, 연결된 crm_orders의 shippedAt·shopNo·취소 여부, 해당 품목 수량과 예약 수량을 모두 확인한다. 확인된 예약만 settled로 옮기고 committedQty를 한 번 차감하며 새 재고 기준·예약·감사 기록을 같은 거래로 저장한다. 출고를 아직 보내지 않았거나 기록이 취소됐거나 수량이 다르면 정산하지 않는다. 자동 반영 경로는 아직 연결하지 않았다.
+
+기존 가게 규칙은 입금 기한이 지나도 자동 취소하지 않고 관리자가 판단하는 방식이다(src/app.html의 숍 설정). 이 규칙을 유지한다. 기한 후 수동 취소와 입금 확인의 경합은 주문 상태를 같은 트랜잭션에서 다시 확인한다.
 
 ## 적용 순서
 
@@ -40,6 +48,6 @@
 
 ## 검증
 
-가짜 Firestore를 이용한 독립 시험 20건 통과. 실제 주문 함수와 손님 취소 함수도 추출하여 실행했다. 운영 Firestore 규칙, 여러 서버 판 혼재, 실제 결제·판매처 동기화·반품은 아직 검증하지 않았다.
+가짜 Firestore를 이용한 독립 시험 31건 통과. 실제 주문 함수와 손님 취소 함수도 추출하여 실행했다. 운영 Firestore 규칙, 여러 서버 판 혼재, 실제 결제·판매처 동기화·반품은 아직 검증하지 않았다.
 
 설계 근거: [Shopify의 예약 일관성 사례](https://shopify.engineering/scaling-inventory-reservations), [Firestore 트랜잭션의 재시도와 읽기/쓰기 순서](https://firebase.google.com/docs/firestore/manage-data/transactions). 데이터베이스 교체 없이 주문별 예약과 합계의 원자성만 적용한다.
