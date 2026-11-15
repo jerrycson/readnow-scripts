@@ -926,6 +926,32 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anatomy.html#section-42",
       "reuse": "공개 원문과 자체 분석. 열람 범위는 분석 페이지에 명시. 외부 코드·이미지 재배포 없음"
+    },
+    {
+      "id": "anatomy-lips-26",
+      "title": "Proko — 입술의 큰 면과 작은 부피",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-lips-anatomy-and-structure",
+      "oneLine": "입술은 얼굴 앞에 그은 평평한 선이 아니다.",
+      "oneSentence": "전체 곡면 위의 중앙·양옆 부피와 면 방향을 구분한다.",
+      "concepts": "치열 곡면, 윗입술, 아랫입술, 중앙 부피, 입꼬리",
+      "section": 44,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-44",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위는 분석 페이지에 명시. 외부 도판 재배포 없음"
+    },
+    {
+      "id": "lips-jp-26",
+      "title": "MediBang mozukuni — 입꼬리와 입술 선",
+      "url": "https://medibangpaint.com/use/2020/12/techniques-for-drawing-attractive-lips/",
+      "oneLine": "작은 입에서도 깊이를 읽을 단서를 고른다.",
+      "oneSentence": "입꼬리와 아랫입술의 관계를 작은 크기에서 비교한다.",
+      "concepts": "입꼬리 그림자, 선 간격, 부피, 생략",
+      "section": 45,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-45",
+      "reuse": "공개 본문과 자체 분석. 직접 관찰 범위는 분석 페이지에 명시. 외부 도판 재배포 없음"
     }
   ]
 }

@@ -1,0 +1,47 @@
+{
+  "version": 26,
+  "checkedAt": "2026-11-15T20:16:34.619Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "성인 전신의 표면 좌표·전체 삼각형 보존",
+      "ok": true,
+      "detail": {
+        "cases": 8
+      }
+    },
+    {
+      "name": "입 주변 외 명암·눈·눈썹 보존 및 법선 안전성",
+      "ok": true,
+      "detail": {
+        "cases": 8,
+        "minDot": 0.8992189921857872,
+        "changed": 5926
+      }
+    },
+    {
+      "name": "자연형·작은 기본형 표시 보존",
+      "ok": true,
+      "detail": {
+        "cases": 14
+      }
+    },
+    {
+      "name": "기존 재질 유지·입술의 피부별 명도 순서",
+      "ok": true,
+      "detail": {
+        "palettes": 3,
+        "lipRamps": 6
+      }
+    },
+    {
+      "name": "입선 연결과 위·아래 얼굴 표시",
+      "ok": true,
+      "detail": {
+        "views": 288
+      }
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}
