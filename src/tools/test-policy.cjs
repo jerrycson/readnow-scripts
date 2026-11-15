@@ -5,6 +5,7 @@ function requiredTests(files) {
   const out = new Set();
   if (files.some((f) => /^(shop\/|cloud\/shop(?:[.-]|\/)|src\/app\.html$)/.test(f))) ['tSHOP1111', 'tSHOPC1111', 'tSHELF1111', 'tSTOCKSAFE', 'tSHOPQTY_1113'].forEach((t) => out.add(t));
   if (files.some((f) => /^(src\/app\.html|src\/readnow-collector\.src\.js|readnow-exec-core\.js|local\/readnow-alps\.js|cloud\/index\.js)$/.test(f))) ['tSHIPMIX0', 'tSHIPHOLD1114', 'tSHIPPC', 'tSENDPREP1115'].forEach((t) => out.add(t));
+  if (files.some((f) => /^(cloud\/shop(?:-stock|-order-attempt)?\.js|src\/tests\/(?:tORDERRETRY\.js|standalone\/order-attempt\.test\.cjs))$/.test(f))) out.add('tORDERRETRY');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
