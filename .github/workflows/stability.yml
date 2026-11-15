@@ -42,4 +42,21 @@ jobs:
         run: |
           export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
           RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
+          node src/tests/tORDERCLIENT.js
           node src/tests/standalone/shelf-browser.cjs
+
+      - name: 고정된 서버 계약 의존 코드 준비
+        if: ${{ hashFiles('cloud/shop-order-attempt.js') == '' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: a110555fb9b88ee77c63ef01f738be0d81dbb139
+          path: .order-server
+      - name: 실제 서버 함수와 고객 화면 HTTP 통합 검사
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
+          if [ ! -f cloud/shop-order-attempt.js ]; then
+            cp -a .order-server/cloud/. cloud/
+            cp .order-server/src/tests/standalone/order-attempt.test.cjs src/tests/standalone/order-attempt.test.cjs
+            cp .order-server/src/tests/standalone/stability.test.cjs src/tests/standalone/stability.test.cjs
+          fi
+          node src/tests/tORDERINTEGRATED.js

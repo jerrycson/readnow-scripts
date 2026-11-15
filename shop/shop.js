@@ -22,6 +22,7 @@
   const cartEntries = (c) => c.map(x => x._entry ? x : { ...x, _entry: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) });
   const setCart = (c) => { LS.set('bq-cart', cartEntries(c)); badge(); };
   let orderInFlight = false, orderDraftEpoch = 0;
+  const orderJournal = window.BQOrderJournal && window.BQOrderJournal.create();
   /* (shelf6) 클라우드가 바쁠 때(429 'Rate exceeded' — 클라우드 한 대가 동시 4개까지만 받음 · 그 429엔 출처(CORS) 머리가 없어 브라우저는 '연결 실패'로만 봄)
    *  ① 읽기(GET)는 booksqueen.com 같은 주소 /shop/…로(Hosting이 클라우드로 넘김 · Firebase CDN이 1분 대신 답함 · 출처 미리 묻기 없음) — 같은 주소가 안 되면(옛 Hosting 설정) 그 화면 동안 클라우드 주소로
    *  ② 읽기에 'Content-Type' 머리를 붙이지 않음(붙이면 브라우저가 요청마다 OPTIONS를 먼저 보내 클라우드 자리를 두 배로 씀)
@@ -310,7 +311,46 @@
     const u = $('.undo', t); if (u) u.onclick = () => { const r = B.cartAdd(cart(), x, (ST.cfg || {}).maxItems); if (!r.why) { setCart(r.cart); if (B.route(location.hash).name === 'cart') cartPage(''); } t.classList.remove('on'); }; }
 
 
-  async function orderPage() { const current = pageScope(); if (!cart().length) { location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); return; } if (!current()) return;
+  function orderReceipt(saved) { const r = saved.result.receipt; const mine = LS.get('bq-orders', []).filter(x => x.no !== r.no); mine.unshift(r); LS.set('bq-orders', mine.slice(0, 20)); setCart(B.cartAfterOrder(cart(), saved.cart)); return r; }
+  async function orderRecovery(snapshot, current) {
+    let saved = snapshot.active, absent = false, message = '';
+    if (!saved) { if (current()) orderPage(); return; }
+    if (saved.state === 'pending') {
+      if (current()) main().innerHTML = '<h1 class="pt">주문 결과 확인</h1><p role="status">앞선 주문의 처리 결과를 확인하고 있습니다…</p>';
+      try {
+        const r = await api('/shop/order-status', { method: 'POST', body: JSON.stringify({ attempt: { id: saved.id, secret: saved.secret } }) });
+        if (r.orderProtocol !== 1 || r.requestId !== saved.id) throw new Error('주문 결과를 확인할 수 없습니다');
+        if (r.state === 'completed' || r.state === 'rejected') {
+          if (!r.result || !r.result.body || r.result.body.attemptState !== r.state) throw new Error('주문 결과를 확인할 수 없습니다');
+          saved = await orderJournal.settle(saved.id, r.result.status, r.result.body);
+        } else if (r.state === 'absent') absent = true;
+        else throw new Error('주문 결과를 확인할 수 없습니다');
+      } catch (e) { message = e.message; }
+    }
+    if (!current()) return;
+    let receipt = null;
+    if (saved.state === 'completed') { try { receipt = orderReceipt(saved); } catch (e) { message = '주문은 접수됐습니다. 이 기기의 표시를 다시 확인해 주세요'; } }
+    main().innerHTML = `<h1 class="pt">주문 결과 확인</h1><div class="empty" role="status">${saved.state === 'completed' ? '<b>앞선 주문이 접수됐습니다</b><br>새로 주문하기 전에 앞선 주문을 확인해 주세요.' : saved.state === 'rejected' ? '<b>앞선 주문은 접수되지 않았습니다</b><br>' + esc(saved.result.err) : '<b>앞선 주문의 결과를 확인하고 있습니다</b><br>' + (absent ? '아직 처리 기록이 없습니다. 다시 전송하려면 앞선 주문과 같은 내용을 입력해 주세요.' : '연결이 돌아오면 결과를 다시 확인해 주세요. 새 주문은 잠시 기다려 주세요.')}<br>${message ? `<small>${esc(message)}</small><br>` : ''}${receipt ? `<p><a class="btn" href="#/done/${encodeURIComponent(receipt.no)}?t=${receipt.t}">접수된 주문 보기</a></p>` : ''}<button class="btn ghost" id="orecheck" type="button">처리 결과 다시 확인</button> ${saved.state === 'pending' ? (absent ? '<button class="btn" id="oreretry" type="button">같은 주문 내용 입력</button> <button class="btn ghost" id="oreclose" type="button">미접수 요청 닫기</button>' : '') : '<button class="btn" id="orenext" type="button">확인하고 주문서로</button>'}<p><a href="#/cart">장바구니 보기</a></p></div>`;
+    $('#orecheck').onclick = () => { if (current()) orderPage(); };
+    const retry = $('#oreretry'); if (retry) retry.onclick = () => { if (current()) orderPage({ resumeId: saved.id }); };
+    const close = $('#oreclose'); if (close) close.onclick = async () => {
+      if (!current()) return; close.disabled = true;
+      try {
+        const r = await api('/shop/order-close', { method: 'POST', body: JSON.stringify({ attempt: { id: saved.id, secret: saved.secret } }) });
+        if (r.orderProtocol !== 1 || r.requestId !== saved.id || !['completed', 'rejected'].includes(r.state) || !r.result || !r.result.body || r.result.body.attemptState !== r.state) throw new Error('요청 처리 결과를 다시 확인해 주세요');
+        await orderJournal.settle(saved.id, r.result.status, r.result.body); if (current()) await orderRecovery(await orderJournal.read(), current);
+      } catch (e) { if (current()) { close.disabled = false; toast('요청 상태를 유지했습니다 — ' + e.message); } }
+    };
+    const next = $('#orenext'); if (next) next.onclick = async () => { if (!current()) return; next.disabled = true; try { await orderJournal.acknowledge(saved.id, snapshot.revision); if (current()) orderPage(); } catch (e) { if (current()) { next.disabled = false; toast(e.message); } } };
+  }
+  async function orderPage(options) { const current = pageScope(); let journal;
+    try { if (!orderJournal || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); journal = await orderJournal.read(); }
+    catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
+    if (!current()) return;
+    const resuming = journal.active && journal.active.state === 'pending' && options && options.resumeId === journal.active.id;
+    if (journal.active && !resuming) { await orderRecovery(journal, current); return; }
+    if (!cart().length) { if (resuming) await orderRecovery(journal, current); else location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); return; } if (!current()) return;
+    if (c.orderProtocol !== 1 && !isTest()) { main().innerHTML = '<h1 class="pt">주문서</h1><div class="empty">주문 확인 기능을 준비하고 있습니다. 잠시 뒤 새로 고쳐 주세요.<p><a href="#/cart">장바구니로</a></p></div>'; return; }
     if (!shopOpen(c)) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const note = await cartFresh(); if (!current()) return; const L = cart(); if (!L.length) { location.hash = '#/cart'; return; } const S0 = B.cartSum(L, c); let Q = localQ(L, c); let cpOk = ''; /* (shopc1) Q = 클라우드가 셈한 값(묶음·쿠폰) · cpOk = 적용된 쿠폰 번호 · (shelf2) note = 살펴본 알림 */
     const fld = (k, lb, typ, ph, extra) => `<label class="f" data-f="${k}"><span>${lb}</span><input id="f_${k}" type="${typ || 'text'}" ${ph ? `placeholder="${esc(ph)}"` : ''} ${extra || ''}><em></em></label>`;
     main().innerHTML = `<h1 class="pt">주문서</h1>${note || ''}<form id="of" novalidate>
@@ -346,11 +386,32 @@
     form.onsubmit = async (e) => { e.preventDefault(); if (!current()) return; if (typeof B.cartAfterOrder !== 'function') { const err = $('#oerr', form); err.hidden = false; err.textContent = '주문 화면을 새로 고친 뒤 다시 진행해 주세요'; return; } if (orderInFlight) { toast('앞선 주문을 처리하고 있습니다 — 결과를 받은 뒤 진행해 주세요'); return; } const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
       const submitted = cartEntries(cart()); setCart(submitted); const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
-      try { const r = await api('/shop/order', { method: 'POST', auth: 1, body: JSON.stringify(B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted)) }); /* (shopc1) expect = 손님이 본 합계 — 서버 셈과 다르면 주문하지 않음 */ const mine = LS.get('bq-orders', []).filter((x) => x.no !== r.no); mine.unshift({ no: r.no, t: r.t, at: new Date().toISOString(), total: r.total, n: r.items.length }); LS.set('bq-orders', mine.slice(0, 20));
-        setCart(B.cartAfterOrder(cart(), submitted)); try { if (draftText !== undefined && draftEpoch === orderDraftEpoch && sessionStorage.getItem(DK) === draftText) sessionStorage.removeItem(DK); } catch (e2) {} if (current()) location.hash = `#/done/${encodeURIComponent(r.no)}?t=${r.t}&new=1`; else { const nextForm = $('#of'); if (nextForm && nextForm !== form) nextForm.dispatchEvent(new Event('bq-order-settled')); toast('주문을 받았습니다 — 내 주문에서 확인할 수 있습니다'); } }
-      catch (er) { if (!current()) { toast('앞선 주문: ' + er.message); return; } go.disabled = false; go.textContent = `${won(Q.total)} 주문하기`; const bad = er.j && er.j.bad;
-        if (er.j && er.j.price) { await reQ(cpOk); if (!current()) return; go.textContent = `${won(Q.total)} 주문하기`; } if (er.j && er.j.cp) { cpOk = ''; const box = $('[data-f="cp"]'); if (box) { box.classList.add('bad'); $('em', box).textContent = er.message; } } if (bad && bad.length) { const ids = new Set(bad.map((x) => x.id)); setCart(cart().filter((x) => !ids.has(x.id) || !submitted.some(y => y.id === x.id && y._entry === x._entry))); if (cart().length) { await reQ(cpOk); if (!current()) return; go.textContent = `${won(Q.total)} 주문하기`; } else go.disabled = true; } /* (shelf2) 뺀 뒤 줄·합계·단추 값도 새로 */
-        oerr.hidden = false; oerr.innerHTML = `<b>⚠ ${esc(er.message)}</b>${bad && bad.length ? `<ul>${bad.map((x) => `<li>${esc(x.t || (L.find((y) => y.id === x.id) || {}).t || x.id)} — ${esc(x.why)}</li>`).join('')}</ul><small>그 책은 장바구니에서 뺐습니다 — 나머지로 다시 주문해 주세요</small> <a href="#/cart">장바구니 보기</a>` : ''}`; } finally { orderInFlight = false; } };
+      const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted); let request = null;
+      try {
+        if (resuming) {
+          const latest = await orderJournal.read();
+          if (!latest.active || latest.active.id !== journal.active.id || latest.active.state !== 'pending') { if (current()) await orderRecovery(latest, current); return; }
+          if (!await orderJournal.matches(latest.active, body)) throw new Error('앞선 주문과 내용이 다릅니다 — 같은 책·수량·주소·쿠폰·합계로 입력하거나 가게로 문의해 주세요');
+          request = latest.active;
+        } else {
+          const opened = await orderJournal.begin(journal.revision, body, submitted); journal = opened;
+          if (!opened.created) { if (current()) await orderRecovery(opened, current); else toast('앞선 주문의 처리 결과를 확인해 주세요'); return; }
+          request = opened.active;
+        }
+        const r = await api('/shop/order-attempt', { method: 'POST', auth: 1, body: JSON.stringify({ ...body, attempt: { id: request.id, secret: request.secret } }) });
+        const saved = await orderJournal.settle(request.id, 200, r); orderReceipt(saved);
+        try { if (draftText !== undefined && draftEpoch === orderDraftEpoch && sessionStorage.getItem(DK) === draftText) sessionStorage.removeItem(DK); } catch (e2) {}
+        if (current()) location.hash = '#/done/' + encodeURIComponent(r.no) + '?t=' + r.t + '&new=1';
+        else { const nextForm = $('#of'); if (nextForm && nextForm !== form) nextForm.dispatchEvent(new Event('bq-order-settled')); toast('주문을 받았습니다 — 내 주문에서 확인할 수 있습니다'); }
+      } catch (er) {
+        if (request) {
+          try { if (window.BQOrderJournal.outcome(request, er.status, er.j)) await orderJournal.settle(request.id, er.status, er.j); } catch (e2) {}
+          if (current()) { try { await orderRecovery(await orderJournal.read(), current); } catch (e2) { go.disabled = true; oerr.hidden = false; oerr.textContent = '앞선 주문의 처리 결과를 확인해야 합니다 — 새로 고치거나 가게로 문의해 주세요'; } }
+          else toast('앞선 주문의 처리 결과를 주문서에서 확인해 주세요');
+          return;
+        }
+        if (!current()) return; go.disabled = false; go.textContent = won(Q.total) + ' 주문하기'; oerr.hidden = false; oerr.textContent = er.message;
+      } finally { orderInFlight = false; } };
     if (isTest()) testPayWire(L, () => Q, val); /* (shopux1) 🧪 시험 계정 — 마지막 단추만 바꿔 끼움(실제 주문 넣기 줄은 그대로 · 시험 계정은 거기까지 가지 않음) */ }
 
   /* 🧪 시험 결제 — 칸 검사는 진짜와 같게 · 주문을 보내지 않고 '시험 주문 확인' 화면만(이 기기 기록 bq-test-orders · 진짜 「내 주문」과 따로) */
