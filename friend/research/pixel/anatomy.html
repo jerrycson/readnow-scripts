@@ -4,7 +4,8 @@
 <li data-card><a href="#section-4">04. 실제 옷의 구조와 재질</a></li>
 <li data-card><a href="#section-5">05. 픽셀에서 재질을 읽는 기준</a></li>
 <li data-card><a href="#section-6">06. 현재 시안과 움직이는 시험 공간</a></li>
-<li data-card><a href="#section-7">07. 검사 결과와 다음 개선 기준</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
+<li data-card><a href="#section-7">07. 검사 결과와 다음 개선 기준</a></li>
+<li data-card><a href="#section-8">08. 3차 보완: 보폭과 공의 움직임</a></li></ul></nav></aside><main id="content"><div class="intro"><p>기록일: 2026-11-15. 실제 참고 이미지를 열어 관찰한 내용과 새 코드의 실험 결과를 연결한다. 아래 관찰은 미술 제작을 위한 해석이다. 특정 신체가 사람의 표준이라는 뜻은 아니며, 2~8등신은 나이 구분이 아닌 조형 비례다. 기존 캐릭터의 좌표·모델·텍스처는 사용하지 않았다.</p>
 <p><a href="../../pixel-lab/">기본형 연구실 열기</a> · <a href="journal.html">실행 일지</a> · <a href="architecture.html">복구 범위</a></p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 골격에서 연속적인 몸으로</h2>
 <p><strong>한 줄:</strong> 흉곽·골반·관절의 연결이 먼저다.</p>
@@ -53,7 +54,7 @@
 <article id="section-6" data-card><h2>06. 현재 시안과 움직이는 시험 공간</h2>
 <p>새 형태는 사람·여우·고양이·새·작은 용·숲의 골렘·탐사 로봇·외계 탐험가 8종이다. 옷 조합을 포함한 13개 시안을 한 화면에서 고르고 저장할 수 있다. 사람은 숨 쉬기·걷기·달리기·손 흔들기·앉기·살펴보기·손 뻗기·잠들기를 제공한다. 다른 종류는 실제 구현한 동작만 선택 목록에 표시한다.</p>
 <p>책꽂이·화분·공·의자·등을 놓은 공간은 같은 재현번호에서 같은 배치와 선택 흐름을 재생한다. 캐릭터는 대상 선택 → 접근 → 관찰 → 반응을 수행하며 방문한 사물을 기억한다. 처음 보는 사물, 휴식 필요, 탐색·연습 경험이 선택 가중치에 들어간다. 이는 학습된 신경망이나 범용 화면 인식이 아니라 명시적으로 만든 행동 규칙의 첫 실험이다.</p>
-<p>보행 자체, 사물 접촉, 도구 사용은 구분한다. 현재 공 앞에서 달리기 동작을 선택할 수 있지만 공을 실제로 차서 이동시키지는 않는다. 의자에 접근해 앉는 포즈를 취하지만 좌판과 엉덩이의 접촉 정합은 후속 작업이다. 이러한 차이를 일지에서 숨기지 않는다.</p>
+<p>보행 자체, 사물 접촉, 도구 사용은 구분한다. 2차에서는 공 앞에서 달리기 동작만 선택했다. 아래 3차 보완에서 공 차기와 공의 이동을 연결했다. 의자에 접근해 앉는 포즈를 취하지만 좌판과 엉덩이의 접촉 정합은 후속 작업이다. 이러한 차이를 일지에서 숨기지 않는다.</p>
 </article>
 <article id="section-7" data-card><h2>07. 검사 결과와 다음 개선 기준</h2>
 <table>
@@ -108,4 +109,11 @@
 </tbody>
 </table>
 <p>이번 렌더 검사는 총 5,312개다. 통과는 작품 완성 선언이 아니다. 다음은 발 미끄러짐, 의자 접촉, 공의 이동, 앉을 때 옷의 겹침, 동물별 실루엣 차이, 작은 얼굴과 손의 가독성 순으로 비교한다. 각 후보의 이전 버전을 보존하고 동일 조건에서 나란히 판단한다.</p>
+</article>
+<article id="section-8" data-card><h2>08. 3차 보완: 보폭과 공의 움직임</h2>
+<p><strong>문제:</strong> 이전 생활 무대는 화면 이동 속도와 다리의 주기를 따로 계산했다. 몸 좌표계의 발이 땅에 붙어 있어도 화면에서는 미끄러질 수 있었다. 또한 그림의 가장 낮은 픽셀을 매번 바닥에 맞추면 달리기의 뜬 발도 강제로 바닥에 내려온다.</p>
+<p><strong>수정:</strong> 발이 지지 구간에서 뒤로 움직이는 거리와 캐릭터의 실제 화면 이동 거리를 연결했다. 그림 경계 대신 몸의 기준 바닥을 화면 좌표로 투영하여 사용한다. 화면 너비가 달라져도 접근 속도는 표시 픽셀 기준으로 일정하게 유지하며 사물 앞에 멈추는 거리도 보정한다.</p>
+<p><strong>공 실험:</strong> 사람형에 공 차기 동작을 추가했다. 공을 향해 접근·관찰한 뒤 동작의 정해진 시점에 한 번 충격을 주고, 공의 수평 이동·상하 튀기·감쇠·좌우 반사를 계산한다. 함께 만날 사물을 직접 고르는 단추도 추가했다. 이 첫 물리 반응은 동작 시점에 연결한 규칙이며 발끝 메시와 공의 충돌을 정밀하게 푸는 물리 엔진은 아니다. 높이는 각 위치의 무대 표면에 상대적인 값이다.</p>
+<p><strong>검사:</strong> 새 검사 5/5 통과. 남녀 14형의 좌우 이동에서 지지발 좌표 20,012쌍을 비교해 최대 잔차 약 2.35×10⁻¹⁴ 표시 픽셀이었다. 이는 평지의 반올림 전 좌표 결과다. 실제 픽셀 반올림·화면 갱신 간격·경사면의 양발 높이 차이는 별도 문제다. 공 차기 14형 × 8시점 × 16방향, 총 1,792개 렌더가 비어 있거나 잘리지 않았다. 지연 충격 1회, 튀기·착지·완전 정지, 양쪽 경계 반사도 통과했다.</p>
+<p><strong>아직 남은 것:</strong> 의자 높이에 맞춘 앉기, 경사면의 다리별 접지, 공과 발의 정확한 접촉, 사물끼리 충돌, 옷의 동작 중 교차, 여러 친구의 공동 행동이다. 2차 체크포인트는 별도 보존했다.</p>
 </article></main></div><footer>기록 기준 2026-11-15 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

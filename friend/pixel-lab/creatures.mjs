@@ -39,7 +39,7 @@ export function creatureScene(s,phase=0,action='idle'){
   }
   if(s.accessory==='scarf')E(parts,[0,base+.4,.55],[.37,.10,.32],'cloth',null,'scarf');
   if(s.accessory==='satchel')box(parts,[.43,base+.1,-.16],[.11,.22,.25],'leather','saddlebag');
-  return {parts,height:2.5,frame:4.5,provenance:'original-quadruped-v2'};
+  return {parts,height:2.5,frame:4.5,gait:{stride:.46,stance:running?.42:.60},provenance:'original-quadruped-v2'};
  }
  if(kind==='bird'){
   const base=rest?.62:1.0;
@@ -54,7 +54,7 @@ export function creatureScene(s,phase=0,action='idle'){
    for(const dx of [-.055,0,.055])taper(parts,foot,[foot[0]+dx,.04,foot[2]+.20],[[0,.025,.025],[1,.012,.012]],'brass','toe');
   }
   for(const side of [-1,0,1])taper(parts,[side*.08,base-.05,-.30],[side*.17,base-.23,-.75],[[0,.09,.04],[1,.06,.025]],'cloth','tail-feather');
-  return {parts,height:2.2,frame:3.4,provenance:'original-bird-v2'};
+  return {parts,height:2.2,frame:3.4,gait:{stride:.34,stance:.60},provenance:'original-bird-v2'};
  }
  const robot=kind==='robot',golem=kind==='golem',mat=robot?'metal':golem?'stone':'alien',height=robot?3.2:golem?3.4:3.6;
  const lower=rest?.65:0,bodyY=height*.53-lower+bob;
@@ -80,5 +80,5 @@ export function creatureScene(s,phase=0,action='idle'){
  if(golem)taper(parts,[0,headY+.30,0],[.13,headY+.77,0],[[0,.055,.055],[1,.025,.025]],'leather','sprout-stem');
  if(golem)for(const side of [-1,1])E(parts,[side*.14,headY+.66,0],[.20,.08,.055],'leaf',[side, .4,0],'sprout-leaf');
  if(!golem&&!robot)for(const side of [-1,1])taper(parts,[side*.28,headY+.35,-.06],[side*.38,headY+.72,-.1],[[0,.08,.07],[1,.025,.025]],'glow','antenna');
- return {parts,height,frame:height+1.5,provenance:'original-fantasy-scifi-v2'};
+ return {parts,height,frame:height+1.5,gait:{stride:.55,stance:.60},provenance:'original-fantasy-scifi-v2'};
 }

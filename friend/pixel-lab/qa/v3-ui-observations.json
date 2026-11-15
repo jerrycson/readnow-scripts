@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-15",
+  "viewportWidth": 390,
+  "checks": {
+    "objectButtons": true,
+    "kickJournalSaved": true,
+    "responsiveLifeHeadingFixed": true,
+    "consoleErrors": 0
+  },
+  "limitations": [
+    "Exact foot-ball contact not tested",
+    "Flat-ground numerical coupling is separate from raster and slopes"
+  ]
+}

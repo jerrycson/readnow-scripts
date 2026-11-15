@@ -90,6 +90,7 @@ export function humanScene(settings,phase=0,action='idle'){
   const hx=side*hip*.57,hipPoint=[hx,py,0],stride=leg*(running?.46:.28);
   const gait=gaitFoot(phase,side,stride,leg*(running?.18:.095),running);
   let ankle=[hx+side*.025,foot+.035+(moving?gait.lift:0),moving?gait.z:0];
+  if(action==='kick'&&side===1){const kick=Math.max(0,Math.sin(phase));ankle=[hx+side*.025,foot+.035+leg*.18*kick,leg*.55*kick];}
   if(sitting)ankle=[hx+side*.03,foot+.035,leg*.55];
   const restLeg=leg-.035,knee=twoBone(hipPoint,ankle,restLeg*.51,restLeg*.49),thigh=mix(.108,f?.27:.255,t)*bulk,calf=mix(.079,.165,t)*bulk;
   const pants=s.bottom==='trousers',legMat=pants?'trousers':'skin',extra=pants?.03:0;
@@ -148,5 +149,5 @@ export function humanScene(settings,phase=0,action='idle'){
   let min=Infinity;for(const mesh of parts)for(const v of mesh.vertices)min=Math.min(min,v.p[1]);
   transformMeshes(parts,v=>[v[0],v[1]-min,v[2]],v=>v);
  }
- return {parts,height:n,frame:n+1.1,joints,feet,proportions:p,provenance:'original-anatomy-study-v2'};
+ return {parts,height:n,frame:n+1.1,joints,feet,proportions:p,gait:{stride:leg*(running?.46:.28),stance:running?.42:.60},provenance:'original-anatomy-study-v2'};
 }

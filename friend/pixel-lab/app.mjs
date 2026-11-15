@@ -1,15 +1,16 @@
 import {ANGLES,HEADS,CANDIDATES,SPECIES,ACTIONS,APPEARANCE,createProfile,validateSettings,validName,recordExperience,experienceText,baseSamples,rotationStates,normalizeAngle,walkPosition,groundHeight} from './model.mjs';
+import {phaseFromDistance} from './motion.mjs';
 import {openStore} from './storage.mjs';
 import {renderPixels,paintCanvas} from './renderer.mjs';
 import {StudyPresence} from './presence.mjs';
-import {createWorld,stepWorld,drawWorld} from './world.mjs';
+import {createWorld,stepWorld,stepProps,drawWorld,approachObject} from './world.mjs';
 import {PRESETS,ACTION_SUPPORT,BARE} from './catalog.mjs';
 import {createHostBridge} from './host-bridge.mjs';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const dialog=$('#settings-dialog'),form=$('#settings-form'),host=createHostBridge();
 let store,profiles=[],profile,yaw=0,pitch=0,tab='turn',autoTimer=null,renderToken=0,busy=false;
 let direction=1,walking=false,x=25,foot=38,footPadding=12,lastFrame=0,lastPaint=0,phase=0,lifeDrag=false;
-let world=createWorld(42),autonomy=false,worldPending=[];
+let world=createWorld(42),autonomy=false,worldPending=[],lifeGait={stride:20,stance:.6};
 let action='idle',animationPlaying=false,animationTime=0,animationLast=0;
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const presence=new StudyPresence({onChange:id=>{
@@ -61,19 +62,20 @@ async function renderAngles(){const token=++renderToken,grid=$('#angle-grid');gr
  for(const p of ANGLES){cell(p+'°');for(const y of ANGLES){if(token!==renderToken)return;const b=document.createElement('button'),c=document.createElement('canvas');b.setAttribute('aria-label',`수평 ${y}도 수직 ${p}도 보기`);b.append(c);grid.append(b);paint(c,{...settings(),resolution:64},{yaw:y,pitch:p});b.onclick=()=>{yaw=y;pitch=p;changeTab('turn');};$('#angle-progress').textContent=`${++done} / 64개 상태 생성`;await new Promise(requestAnimationFrame);}}
 }
 async function renderJournal(){const list=$('#journal-list');list.replaceChildren();const entries=await store.journal();if(!entries.length){list.textContent='아직 기록이 없습니다.';return;}for(const entry of entries.slice(-50).reverse()){const li=document.createElement('li'),time=document.createElement('time'),text=document.createElement('span');time.dateTime=new Date(entry.at).toISOString();time.textContent=new Date(entry.at).toLocaleString('ko-KR');text.textContent=`${entry.name} · ${entry.description}`;li.append(time,text);list.append(li);}}
-function lifePaint(){if(!presence.activeId||!profile)return;const s={...settings(),resolution:64};const result=paint($('#life-canvas'),s,{yaw:(walking||autonomy)?(direction>0?90:270):0,pitch:0,phase,action:autonomy?world.action:walking&&s.motion?'walk':'idle'},3);footPadding=(result.height-1-result.metrics.bounds[3])*3;}
+function lifePaint(){if(!presence.activeId||!profile)return;const s={...settings(),resolution:64};const result=paint($('#life-canvas'),s,{yaw:(walking||autonomy)?(direction>0?90:270):0,pitch:0,phase,action:autonomy?world.action:walking&&s.motion?'walk':'idle'},3);footPadding=(result.height-1-result.groundRow)*3;lifeGait=result.gait?{stride:result.gait.stride*3,stance:result.gait.stance}:lifeGait;}
 function loop(now){
  const dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;
  if(tab==='animation'&&animationPlaying&&settings().motion&&!reduceMotion.matches){animationTime+=dt*4;if(now-animationLast>125){paintAnimation();animationLast=now;}}
 
  if(presence.activeId&&tab==='life'){
   const stage=$('#life-stage'),width=stage.clientWidth,spriteW=192,min=-40,max=Math.max(min,width-spriteW+40);
-  if(autonomy&&!lifeDrag&&settings().motion&&!reduceMotion.matches){const event=stepWorld(world,dt,{speed:settings().speed,practice:profile.experience.practice,exploration:profile.experience.exploration,supported:ACTION_SUPPORT[settings().species]});x=world.x*width-96;direction=world.direction;phase+=dt*(world.action==='run'?7:4);if(event){worldPending.push({...event,profileId:profile.id});const li=document.createElement('li');li.textContent=event.description;$('#world-events').prepend(li);while($('#world-events').children.length>12)$('#world-events').lastChild.remove();}$('#world-status').textContent='재현번호 '+world.seed+' · '+(world.target?.label||'주변')+' · '+ACTIONS[world.action];}
-  if(!autonomy&&walking&&!lifeDrag&&settings().motion&&!reduceMotion.matches){x+=direction*dt*32*settings().speed;if(x>=max){x=max;direction=-1;}else if(x<=min){x=min;direction=1;}phase+=dt*5*settings().speed;}
+  if(autonomy&&!lifeDrag&&settings().motion&&!reduceMotion.matches){const priorX=x,priorAction=world.action;const event=stepWorld(world,dt,{speed:settings().speed,travelRate:32/width,standOff:Math.min(.10,24/width),practice:profile.experience.practice,exploration:profile.experience.exploration,supported:ACTION_SUPPORT[settings().species]});x=world.x*width-96;direction=world.direction;if(priorAction!==world.action)phase=0;else if(world.action==='walk'||world.action==='run')phase=phaseFromDistance(phase,x-priorX,lifeGait.stride,lifeGait.stance);else phase=world.action==='kick'?Math.min(Math.PI*2,phase+dt*4):phase+dt*4;if(event){worldPending.push({...event,profileId:profile.id});const li=document.createElement('li');li.textContent=event.description;$('#world-events').prepend(li);while($('#world-events').children.length>12)$('#world-events').lastChild.remove();}$('#world-status').textContent='재현번호 '+world.seed+' · '+(world.target?.label||'주변')+' · '+ACTIONS[world.action];}
+  if(!autonomy&&settings().motion&&!reduceMotion.matches)stepProps(world,dt);
+  if(!autonomy&&walking&&!lifeDrag&&settings().motion&&!reduceMotion.matches){const priorX=x;x+=direction*dt*32*settings().speed;if(x>=max){x=max;direction=-1;}else if(x<=min){x=min;direction=1;}phase=phaseFromDistance(phase,x-priorX,lifeGait.stride,lifeGait.stance);}
   x=walkPosition(x,0,min,max);const center=x+spriteW/2;
   foot=groundHeight(center,width);
   const c=$('#life-canvas');c.style.left=x+'px';c.style.bottom=(foot-footPadding)+'px';
-  if(now-lastPaint>130){lifePaint();lastPaint=now;}
+  if(now-lastPaint>100){lifePaint();drawWorld($('#world-canvas'),world,groundHeight);lastPaint=now;}
  }
  if(worldPending.length&&!busy){const event=worldPending.shift();if(event.profileId===profile.id)commit({...profile,worldMemory:{...world.memory}},'공간 '+world.seed+' · '+event.description).catch(e=>{autonomy=false;$('#autonomy').textContent='스스로 둘러보기';message(e.message,true);});}
  requestAnimationFrame(loop);
@@ -121,3 +123,7 @@ $('#sheet').onclick=safe(async()=>{const size=settings().resolution,c=document.c
 
 $('#world-change').onclick=()=>{world=createWorld((world.seed+7919)>>>0,profile.worldMemory||{});$('#world-events').replaceChildren();drawWorld($('#world-canvas'),world,groundHeight);$('#world-status').textContent='재현번호 '+world.seed+' · 새 시험 공간';};
 $('#autonomy').onclick=()=>{if(!presence.activeId)return message('먼저 생활 무대를 시작해 주세요.');if(!settings().motion||reduceMotion.matches)return message('움직임 줄이기가 적용되어 있습니다.');autonomy=!autonomy;walking=false;$('#walk').textContent='자율 걷기 시작';world.memory={...(profile.worldMemory||{})};world.x=Math.max(.04,Math.min(.96,(x+96)/$('#life-stage').clientWidth));$('#autonomy').textContent=autonomy?'둘러보기 멈추기':'스스로 둘러보기';};
+
+$$('[data-object]').forEach(button=>button.onclick=()=>{if(!presence.activeId)return message('먼저 생활 무대를 시작해 주세요.');if(!settings().motion||reduceMotion.matches)return message('움직임 줄이기가 적용되어 있습니다.');world.x=Math.max(.04,Math.min(.96,(x+96)/$('#life-stage').clientWidth));world.memory={...(profile.worldMemory||{})};approachObject(world,button.dataset.object);autonomy=true;walking=false;phase=0;$('#walk').textContent='자율 걷기 시작';$('#autonomy').textContent='둘러보기 멈추기';});
+
+addEventListener('resize',()=>{if(!profile)return;if(tab==='life'){drawWorld($('#world-canvas'),world,groundHeight);lifePaint();}if(tab==='animation')paintAnimation();});

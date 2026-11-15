@@ -4,7 +4,7 @@ export const ANGLES=Object.freeze(Array.from({length:8},(_,i)=>i*45));
 export const HEADS=Object.freeze([2,3,4,5,6,7,8]);
 export const CANDIDATES=Object.freeze({A:'A · 단순 구조',B:'B · 균형 구조',C:'C · 굵은 실루엣'});
 export const SPECIES=Object.freeze({human:'사람',fox:'여우',cat:'고양이',bird:'새',drake:'작은 용',golem:'숲의 골렘',robot:'탐사 로봇',alien:'외계 탐험가'});
-export const ACTIONS=Object.freeze({idle:'숨 쉬기',walk:'걷기',run:'달리기',wave:'손 흔들기',sit:'앉기',look:'살펴보기',reach:'손 뻗기',sleep:'잠들기'});
+export const ACTIONS=Object.freeze({idle:'숨 쉬기',walk:'걷기',run:'달리기',wave:'손 흔들기',sit:'앉기',look:'살펴보기',reach:'손 뻗기',sleep:'잠들기',kick:'공 차기'});
 export const APPEARANCE=Object.freeze({species:Object.keys(SPECIES),build:['balanced','slim','strong'],top:['none','shirt','coat','armor'],bottom:['none','trousers','skirt'],fabric:['cotton','wool','silk','leather'],hair:['none','crop','bob','long','ponytail'],accessory:['none','satchel','scarf','goggles'],outfitColor:['moss','navy','ochre']});
 export const DEFAULTS=Object.freeze({heads:5,sex:'female',candidate:'B',resolution:96,scale:4,palette:'clay',motion:true,grid:false,speed:1,species:'human',build:'balanced',top:'none',bottom:'none',fabric:'cotton',hair:'none',accessory:'none',outfitColor:'moss'});
 export function normalizeAngle(n){return ((Math.round(Number(n)/45)*45)%360+360)%360;}

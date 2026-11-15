@@ -5,7 +5,7 @@
       "name": "같은 재현번호의 배치와 행동 일치",
       "ok": true,
       "detail": {
-        "events": 80
+        "events": 76
       }
     },
     {
@@ -61,7 +61,7 @@
         "visits": {
           "books": 18,
           "plant": 20,
-          "ball": 25,
+          "ball": 24,
           "bench": 33,
           "lamp": 11
         }

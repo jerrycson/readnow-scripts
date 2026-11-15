@@ -1,5 +1,5 @@
 export const ACTION_SUPPORT={
- human:['idle','walk','run','wave','sit','look','reach','sleep'],
+ human:['idle','walk','run','wave','sit','look','reach','sleep','kick'],
  fox:['idle','walk','run','sit','look'],cat:['idle','walk','run','sit','look'],
  bird:['idle','walk','run','wave','sit'],drake:['idle','walk','run','wave','sit','look'],
  golem:['idle','walk','run','wave','sit'],robot:['idle','walk','run','wave','sit'],alien:['idle','walk','run','wave','sit']

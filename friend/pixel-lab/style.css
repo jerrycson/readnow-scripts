@@ -8,3 +8,7 @@
 @media(max-width:900px){.preset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.frame-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:600px){.preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.preset-card{padding:8px}.animation-stage{height:330px}.animation-stage canvas{max-width:100%;height:auto!important}}
 
 #world-canvas{position:absolute;left:0;top:0;pointer-events:none}.world-events{font-size:13px;color:var(--muted);max-height:180px;overflow:auto}.world-events li{padding:4px 0}
+
+.world-choices{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:18px 0}.world-choices button{font-size:14px}
+
+.section-head>div{flex:1 1 280px;min-width:0}.section-head{margin-bottom:12px}@media(max-width:600px){.section-head>div{flex-basis:100%}.section-head p{margin-bottom:4px}}
