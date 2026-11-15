@@ -364,6 +364,10 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   async function orderStatus(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
     const out = await db.runTransaction(tx => ATTEMPT.read(C, attempt, null, tx)); if (!out) return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: 'absent' }];
     if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
+  async function orderClose(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
+    const out = await db.runTransaction(async tx => { const prior = await ATTEMPT.read(C, attempt, null, tx); if (prior) return prior;
+      const saved = ATTEMPT.closedRecord(attempt, new Date().toISOString()); tx.set(C('shop_order_attempts').doc(attempt.id), saved); return ATTEMPT.reply(saved, attempt, null); });
+    if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
   async function lookup(no, tok) { no = s(no, 30); if (!/^BQ\d{8}-[A-Z0-9]{5}$/.test(no) || !/^[0-9a-f]{32}$/.test(String(tok || ''))) return null; const d = await C('shop_orders').doc(no).get(); if (!d.exists) return null; const o = d.data() || {};
     const a = Buffer.from(String(o.tokH || '')), b = Buffer.from(hashTok(tok)); if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null; return { ref: d.ref, o }; }
   const ST = { new: '주문 접수 — 입금을 기다립니다', paid: '입금 확인 — 포장 준비 중', ship: '출고 준비 중', sent: '보냈습니다', done: '끝', cancel: '취소됨' };
@@ -449,6 +453,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
       { const r = await ANL.handle(req, res, path, q, send, readBody, ipKey); if (r) return r; } /* (11/13 shopadm1) 📊 /shop/t 방문 셈 · 💬 /shop/ask · 👀 /shop/pv */
       { const r = await ACCT.handle(req, res, path, q, send, readBody); if (r) return r; } /* (11/12 shop9) 👤 손님 계정·⭐ 리뷰·서재(cloud/shop-acct.js) */
       if (path === '/shop/order-status') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderStatus(await readBody(req)); return send(code, obj); }
+      if (path === '/shop/order-close') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderClose(await readBody(req)); return send(code, obj); }
       if (path === '/shop/order-attempt') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const body = await readBody(req), a = ATTEMPT.parse(body && body.attempt); if (!a || a.error) return send(400, { ok: false, err: '주문 요청 번호를 다시 확인해 주세요' }); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
