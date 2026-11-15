@@ -3,6 +3,7 @@
 const CODE_RE = /^(src\/app\.html|app\/|src\/readnow-collector\.src\.js|readnow-[a-z0-9-]+\.js$|cloud\/|local\/|shop\/|friend\/|src\/tests\/|src\/tools\/)/;
 function requiredTests(files) {
   const out = new Set();
+  if (files.includes('src/app.html')) out.add('tLIFECYCLE');
   if (files.some((f) => /^(shop\/|cloud\/shop(?:[.-]|\/)|src\/app\.html$)/.test(f))) ['tSHOP1111', 'tSHOPC1111', 'tSHELF1111'].forEach((t) => out.add(t));
   if (files.some((f) => /^(src\/app\.html|src\/readnow-collector\.src\.js|readnow-exec-core\.js|local\/readnow-alps\.js|cloud\/index\.js)$/.test(f))) ['tSHIPMIX0', 'tSHIPHOLD1114', 'tSHIPPC', 'tSENDPREP1115'].forEach((t) => out.add(t));
   return [...out];
