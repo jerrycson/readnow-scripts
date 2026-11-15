@@ -687,6 +687,32 @@
       "kind": "document",
       "reviewedAt": "2026-11-16",
       "reuse": "원문 링크와 자체 분석. 도판은 로컬 관찰용이며 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-hand-jp-01",
+      "title": "CLIP STUDIO 손의 덩어리와 얼굴 대비 크기",
+      "url": "https://www.clipstudio.net/oekaki/archives/149736",
+      "oneLine": "손의 덩어리와 얼굴 대비 크기를 먼저 본다.",
+      "oneSentence": "손바닥·엄지·네 손가락과 관절을 묶어 전체 비례를 점검한다.",
+      "concepts": "손바닥, 엄지, 미튼, 관절, 크기",
+      "section": 21,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-21",
+      "reuse": "원문 링크와 자체 분석. 외부 도판은 공개 자산에 포함하지 않음"
+    },
+    {
+      "id": "anatomy-hand-en-02",
+      "title": "Proko 손의 입체 구성",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-hands-from-imagination-step-by-step",
+      "oneLine": "손목부터 손가락까지 이어지는 입체를 만든다.",
+      "oneSentence": "단순한 손바닥과 손가락의 방향, 엄지 밑동, 손목 전이를 먼저 구성한다.",
+      "concepts": "입체 단순화, 손바닥, 엄지 밑동, 손목 전이",
+      "section": 22,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-22",
+      "reuse": "원문 링크와 자체 분석. 외부 도판은 공개 자산에 포함하지 않음"
     }
   ]
 }

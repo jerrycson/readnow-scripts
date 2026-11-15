@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "date": "2026-11-16",
-  "version": 11,
+  "version": 12,
   "userApproved": false,
   "confidence": "not-ready",
   "scope": "기본 전신과 얼굴 · 남녀 2~8등신 · 45도 전체 회전",
   "deferred": "기본형이 안정될 때까지 몸매 30종 이상의 수량 확대와 의상·생물·동작·소품 확장 보류",
-  "activeStudy": "기본 전신·얼굴: 작은 등신의 연속 표면, 성인 얼굴·팔 비율·실제 관절 대조"
+  "activeStudy": "기본 전신·얼굴: 성인 팔·손 크기 교정, 얼굴·귀·머리 조화 대조"
 }
