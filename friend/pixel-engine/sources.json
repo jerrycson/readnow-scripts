@@ -739,6 +739,32 @@
       "reviewedAt": "2026-11-16",
       "analysisPage": "../research/pixel/anime.html#section-27",
       "reuse": "원문 링크와 자체 분석. 외부 도판 공개 재배포 없음"
+    },
+    {
+      "id": "anatomy-pecs-01",
+      "title": "Proko 대흉근의 부착과 큰 면",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-pecs-anatomy-and-form",
+      "oneLine": "가슴의 큰 면은 어깨와 위팔로 이어진다.",
+      "oneSentence": "쇄골·흉골·위팔과의 관계에서 대흉근의 면과 부착 방향을 비교한다.",
+      "concepts": "대흉근, 쇄골, 흉골, 위팔, 겨드랑이",
+      "section": 25,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-25",
+      "reuse": "공개 노트와 자체 분석. 도판은 로컬 관찰용으로만 보관"
+    },
+    {
+      "id": "anatomy-abs-01",
+      "title": "Proko 복직근의 층과 경계",
+      "url": "https://www.proko.com/course-lesson/how-to-draw-abs-anatomy",
+      "oneLine": "복부는 같은 크기의 여섯 블록이 아니다.",
+      "oneSentence": "넓은 복부 면과 얕은 중심·가로 경계를 체격과 비대칭에 맞춰 비교한다.",
+      "concepts": "복직근, 복벽의 층, 경계, 피하지방, 비대칭",
+      "section": 26,
+      "kind": "document",
+      "reviewedAt": "2026-11-16",
+      "analysisPage": "../research/pixel/anatomy.html#section-26",
+      "reuse": "공개 노트와 자체 분석. 도판은 로컬 관찰용으로만 보관"
     }
   ]
 }

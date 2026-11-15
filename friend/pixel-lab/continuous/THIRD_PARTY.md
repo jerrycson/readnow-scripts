@@ -20,3 +20,5 @@ mesh-data.mjs에는 가시 인체 표면 13,380개 점과 26,756개 삼각형이
 11차의 limb-regions.mjs는 위 CC0 기본 가중치에서 팔 영역을 추출한 데이터다. 새로운 프로그램 코드를 가져온 것은 아니다. 성인 실험형의 팔꿈치 위치와 목 변형 범위를 교정했고, 눈꺼풀·눈썹·코의 표면과 얼굴 확대 중심을 직접 수정했다.
 
 12차 arm-regions.mjs는 같은 CC0 가중치의 위팔·전완·손목·중수골·손가락 묶음이다. 손목 높이와 손 크기를 독립적으로 조절하고 전완 단면을 연결하는 변형은 직접 작성했다.
+
+16차 surface-study.mjs는 같은 CC0 성인 자료의 추가 표면 차이다. 원전 파일·SHA·혼합량은 데이터의 provenance.targets에 기록했다. maxmuscle-averageweight 남녀 성인 파일, torso-muscle-pectoral-incr, torso-muscle-dorsi-incr, stomach-tone-incr의 5개를 사용했다. 직접 작성한 포즈 변환 뒤 머리 영역과 좁은 접힘의 변형을 제한했다. 머리 단위와 뼈대 좌표는 유지한다. selected weights는 조형 선택이며 의학적 계측치가 아니다.

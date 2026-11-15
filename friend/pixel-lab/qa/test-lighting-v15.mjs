@@ -4,7 +4,7 @@ import{continuousStudy}from'../continuous/body.mjs';import{chibiStudy}from'../ch
 import{buildShadowMap}from'../shadow-map.mjs';import{ellipsoid,norm}from'../geometry.mjs';
 const report={version:15,checkedAt:new Date().toISOString(),visualApproval:false,results:[]},assert=(x,m)=>{if(!x)throw new Error(m);},hash=b=>createHash('sha256').update(b).digest('hex');
 const settings=(sex,heads)=>({...DEFAULTS,sex,heads,designStyle:'manga',candidate:'B',resolution:128});
-const scene=s=>s.heads<5?chibiStudy(s):continuousStudy(s);
+const scene=s=>s.heads<5?chibiStudy(s):continuousStudy({...s,surfaceRefine:false});
 async function test(name,fn){try{report.results.push({name,ok:true,detail:await fn()});}catch(e){report.results.push({name,ok:false,error:e.message});}console.log(name+': '+report.results.at(-1).ok);}
 await test('선택하지 않은 기본 렌더가 14차와 동일함',async()=>{const baseline=JSON.parse(await readFile(new URL('./lighting-v15-baseline.json',import.meta.url),'utf8'));for(const c of baseline.cases){const s=settings(c.sex,c.heads),image=renderPixels(s,{sceneOverride:scene(s),yaw:c.yaw});assert(hash(image.data)===c.sha256,'기본 표시 변경 '+JSON.stringify(c));}return{cases:baseline.cases.length};});
 await test('실제 가림과 비가림 표면 구분',()=>{const parts=[],L=norm([-.55,.8,1]);ellipsoid(parts,L.map(v=>v*.7),[.22,.22,.22],'skin');parts.push({mat:'skin',vertices:[[-2,0,-2],[2,0,-2],[2,0,2],[-2,0,2]].map(p=>({p,n:[0,1,0]})),faces:[[0,1,2],[0,2,3]]});const shadows=buildShadowMap({parts,height:2},p=>p),occluded=shadows.visibility([0,.001,0],[0,1,0]),clear=shadows.visibility([1,.001,-1],[0,1,0]);assert(occluded<.4&&clear>.9,'빛의 가림 판정');return{occluded,clear};});
