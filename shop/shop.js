@@ -37,9 +37,20 @@
    *  ③ 읽기가 429·502·503·504·연결 실패면 Retry-After(없으면 1.5·4·8초 + 흔들기)만큼 기다렸다 최대 3번 다시 — 주문(POST)은 다시 보내지 않음(두 번 접수 막기) */
   const SAME = { on: !window.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '') };
   const RETRY_ST = [429, 502, 503, 504]; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  function accountToken() { if (!window.BQA || typeof window.BQA.authToken !== 'function') throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요'); return window.BQA.authToken(); }
-  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; if (!(get && SAME.on)) await pickApi(); const base = get && SAME.on ? location.origin : API; const bound = opt && Object.prototype.hasOwnProperty.call(opt, 'ownerToken'), token = bound || (opt && opt.auth) ? accountToken() : ''; if (bound && opt.ownerToken !== token) throw new Error('로그인 상태가 바뀌었습니다 — 현재 계정에서 다시 확인해 주세요'); if (opt && Object.prototype.hasOwnProperty.call(opt, 'canSend') && (typeof opt.canSend !== 'function' || opt.canSend() !== true)) throw new Error('화면이 바뀌었습니다 — 현재 화면에서 다시 확인해 주세요'); const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
-    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && token ? { Authorization: 'Bearer ' + (bound ? opt.ownerToken : token) } : {}) } }) }); /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */ let j = null; try { j = await r.json(); } catch (e) {}
+  function accountToken() { if (!window.BQA || window.BQA.SESSION_PROTOCOL !== 2 || typeof window.BQA.authToken !== 'function') throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요'); return window.BQA.authToken(); }
+  async function api1(path, opt) {
+    const get = !opt || !opt.method || opt.method === 'GET'; if (!(get && SAME.on)) await pickApi();
+    const base = get && SAME.on ? location.origin : API, bound = !!(opt && Object.prototype.hasOwnProperty.call(opt, 'ownerToken')), guarded = bound || !!(opt && opt.auth);
+    const token = guarded ? accountToken() : '', proof = opt && opt.sessionProof;
+    let action = ''; if (!get && path === '/shop/a') { try { action = JSON.parse(opt.body).op; } catch (e) {} }
+    const transition = ['login', 'join', 'asIn', 'pw', 'out', 'bye'].includes(action);
+    if ((transition && (!guarded || !proof || proof.action !== action)) || (!transition && proof)) throw new Error('로그인 화면을 새로 고친 뒤 다시 확인해 주세요');
+    if (guarded && (!window.BQA || window.BQA.SESSION_PROTOCOL !== 2 || typeof window.BQA.authorize !== 'function' || typeof window.BQA.checkOwner !== 'function')) throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요');
+    const validate = () => { if (guarded && ((bound && opt.ownerToken !== token) || token !== accountToken())) throw new Error('로그인 상태가 바뀌었습니다 — 현재 계정에서 다시 확인해 주세요'); if (opt && Object.prototype.hasOwnProperty.call(opt, 'canSend') && (typeof opt.canSend !== 'function' || opt.canSend() !== true)) throw new Error('화면이 바뀌었습니다 — 현재 화면에서 다시 확인해 주세요'); };
+    validate(); let ctl, t, ownership;
+    const dispatch = () => { validate(); ctl = new AbortController(); t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000); return fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && token ? { Authorization: 'Bearer ' + (bound ? opt.ownerToken : token) } : {}) } }) }); }; /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */
+    try { if (guarded) ownership = await window.BQA.authorize(token, dispatch, proof); const r = await (guarded ? ownership.value : dispatch()); let j = null; try { j = await r.json(); } catch (e) {}
+      if (guarded && (transition || (opt && opt.verifyOwner))) await window.BQA.checkOwner(token, ownership.revision);
       if (get && base !== API && (!j || typeof j !== 'object') && r.status !== 429 && r.status < 500) { SAME.on = false; return api1(path, opt); } /* 같은 주소 넘김이 아직 없음(HTML 404 등) → 클라우드 주소로 */
       if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || (r.status === 429 ? '사람이 많아 잠시 기다리는 중입니다' : '연결이 잠시 안 됩니다')); e.j = j; e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000 || (j && j.retry ? j.retry * 1000 : 0); throw e; } return j; }
     catch (e) { if (e.name === 'AbortError') { const x = new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); x.slow = 1; throw x; } if (e instanceof TypeError) { const x = new Error('인터넷 연결을 확인해 주세요'); x.net = 1; throw x; } throw e; } finally { clearTimeout(t); } }
@@ -580,7 +591,7 @@
   document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || e.defaultPrevented) return; const R = B.route(location.hash); const r = shelfRet(); if (R.name !== 'b' || !r || r.id !== R.arg) return; if (document.querySelector('.lb, .modal, dialog[open]')) return; e.preventDefault(); backToShelf(r); });
   document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-backshelf]'); if (!a) return; e.preventDefault(); const r = shelfRet(); if (r) backToShelf(r); });
   window.addEventListener('hashchange', (e) => { try { LST.fromShelf = /#\/shelf/.test(new URL(e.oldURL).hash) && /#\/b\//.test(location.hash); } catch (er) { LST.fromShelf = false; } });
-  window.BQX = { api, AUTH_OWNER: 1, REQUEST_SCOPE: 1, pageScope, toast, clearTestCart, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
+  window.BQX = { api, AUTH_OWNER: 1, SESSION_PROTOCOL: 2, REQUEST_SCOPE: 1, pageScope, toast, clearTestCart, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
   /* (shopux1) 맨 위로(긴 목록 · 쿠팡·무신사) · 휴대폰에서 로고 줄이 밀려 올라가면 찾기 줄 옆에 장바구니 단추 */
   { let ticking = false; const tp = () => { ticking = false; const y = window.scrollY; const tt = $('#totop'); if (tt) tt.hidden = y < 1400; const hd = $('#top'); if (hd) hd.classList.toggle('stuck', y > 54); };
     window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(tp); } }, { passive: true }); const tt = $('#totop'); if (tt) tt.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' }); }

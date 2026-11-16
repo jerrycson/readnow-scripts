@@ -13,6 +13,7 @@ function requiredTests(files) {
   if (files.some(f => /^(shop\/(?:shop-acct|token-store)\.js|cloud\/shop-acct\.js)$/.test(f))) out.add('tSHOP9_1112');
   if (files.some(f => /^(shop\/(?:shop-core|shop)\.js|src\/tests\/tSHOPQTY_1113\.js)$/.test(f))) out.add('tSHOPQTY_1113');
   if (files.some(f => /^(shop\/(?:shop|shop-acct|order-journal|token-store)\.js|cloud\/shop(?:-acct|-order-attempt|-account-orders|-stock)?\.js|src\/tests\/(?:tACCOUNTAUTHUI\.js|standalone\/(?:account-auth-browser|order-journal-browser|order-attempt\.test)\.cjs))$/.test(f))) out.add('tACCOUNTAUTHUI');
+  if (files.some(f => /^(shop\/(?:token-store|shop|shop-acct|shop-track)\.js|shop\/index\.html|src\/tests\/(?:tTOKENSTORE\.js|standalone\/token-store(?:-browser|\.test)\.cjs))$/.test(f))) out.add('tTOKENSTORE');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
