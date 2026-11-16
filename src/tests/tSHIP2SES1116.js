@@ -68,6 +68,8 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     try { o.H.lease = await alpsInvAuto(M('A-12', '121212121212'), 'y.csv', 'AJ7', { force: true, os: r5.id }); } catch (e) { o.H.lease = 'THROW ' + (e.code || e.message); }
     o.H.lease7 = (await db.collection('shp_invoices').doc('alps_AJ7').get()).exists;
     // J — 출고 단계 탭(넓은 화면) · 카드에 두 세션이 보이게 A 상태로
+    /* 흉내 Firestore는 구독을 끊지 못하고 쓰기마다 모든 구독을 다시 부름 — 출고 화면을 여는 동안 빈 세션 목록으로 덮이지 않게 두 세션·맡김을 흉내 저장소에도 넣음 */
+    const put = async (c, x) => { const { id, ...v } = x; await db.collection(c).doc(id).set(v); }; for (const r of [r1, r2]) await put('shp_runs', r); for (const b of [B1, B2]) await put('shp_invoices', b); await W(300);
     setDay([r1, r2], [B1, B2]); S.shipTab = 'deliv'; S._shipRowsC = null; await openShip(); await W(700);
     const sh = () => document.getElementById('sheet'); const tabs = () => [...sh().querySelectorAll('.shp-tabs [data-stab]')].map((b) => b.dataset.stab);
     const grp = () => [...sh().querySelectorAll('.shp-tabs .shp-tg')].map((g) => g.dataset.tg + ':' + [...g.querySelectorAll('[data-stab]')].map((b) => b.dataset.stab).join('/') + (g.querySelector('.shp-tgh') ? '' : '(머리 없음)'));
