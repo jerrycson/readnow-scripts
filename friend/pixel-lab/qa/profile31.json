@@ -1,0 +1,1287 @@
+{
+  "status": "연구 후보 · 기본형 승인 대기",
+  "rendered": 512,
+  "scope": "남녀 4등신 × 원형/A/B/C × 64 · 얼굴 48px, 앞뒤 깊이만 변경",
+  "rows": [
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 0,
+      "changed": [
+        100,
+        123,
+        79
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 45,
+      "changed": [
+        64,
+        91,
+        50
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 90,
+      "changed": [
+        29,
+        41,
+        24
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 135,
+      "changed": [
+        8,
+        11,
+        6
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 180,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 225,
+      "changed": [
+        10,
+        14,
+        5
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 270,
+      "changed": [
+        34,
+        46,
+        28
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 0,
+      "yaw": 315,
+      "changed": [
+        83,
+        96,
+        64
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 0,
+      "changed": [
+        52,
+        71,
+        41
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 45,
+      "changed": [
+        31,
+        50,
+        19
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 90,
+      "changed": [
+        20,
+        32,
+        3
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 135,
+      "changed": [
+        2,
+        5,
+        1
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 180,
+      "changed": [
+        1,
+        2,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 225,
+      "changed": [
+        2,
+        4,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 270,
+      "changed": [
+        17,
+        26,
+        2
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 45,
+      "yaw": 315,
+      "changed": [
+        34,
+        52,
+        19
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 45,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 90,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 135,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 180,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 225,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 270,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 90,
+      "yaw": 315,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 45,
+      "changed": [
+        1,
+        2,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 90,
+      "changed": [
+        18,
+        26,
+        4
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 135,
+      "changed": [
+        22,
+        32,
+        14
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 180,
+      "changed": [
+        32,
+        52,
+        20
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 225,
+      "changed": [
+        23,
+        38,
+        17
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 270,
+      "changed": [
+        19,
+        26,
+        8
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 135,
+      "yaw": 315,
+      "changed": [
+        4,
+        7,
+        1
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 45,
+      "changed": [
+        8,
+        14,
+        5
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 90,
+      "changed": [
+        34,
+        47,
+        27
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 135,
+      "changed": [
+        83,
+        105,
+        62
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 180,
+      "changed": [
+        109,
+        132,
+        71
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 225,
+      "changed": [
+        81,
+        115,
+        56
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 270,
+      "changed": [
+        32,
+        47,
+        30
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 180,
+      "yaw": 315,
+      "changed": [
+        11,
+        15,
+        8
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 0,
+      "changed": [
+        2,
+        3,
+        1
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 45,
+      "changed": [
+        7,
+        8,
+        1
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 90,
+      "changed": [
+        77,
+        92,
+        44
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 135,
+      "changed": [
+        116,
+        134,
+        78
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 180,
+      "changed": [
+        119,
+        140,
+        82
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 225,
+      "changed": [
+        105,
+        143,
+        72
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 270,
+      "changed": [
+        59,
+        77,
+        37
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 225,
+      "yaw": 315,
+      "changed": [
+        6,
+        9,
+        3
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 0,
+      "changed": [
+        13,
+        15,
+        13
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 45,
+      "changed": [
+        25,
+        29,
+        15
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 90,
+      "changed": [
+        24,
+        28,
+        10
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 135,
+      "changed": [
+        15,
+        23,
+        6
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 180,
+      "changed": [
+        22,
+        29,
+        7
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 225,
+      "changed": [
+        20,
+        26,
+        16
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 270,
+      "changed": [
+        24,
+        28,
+        15
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 270,
+      "yaw": 315,
+      "changed": [
+        11,
+        21,
+        7
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 0,
+      "changed": [
+        141,
+        164,
+        105
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 45,
+      "changed": [
+        83,
+        106,
+        83
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 90,
+      "changed": [
+        42,
+        62,
+        31
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 135,
+      "changed": [
+        7,
+        9,
+        3
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 180,
+      "changed": [
+        4,
+        8,
+        2
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 225,
+      "changed": [
+        8,
+        11,
+        1
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 270,
+      "changed": [
+        57,
+        73,
+        40
+      ]
+    },
+    {
+      "sex": "female",
+      "pitch": 315,
+      "yaw": 315,
+      "changed": [
+        114,
+        126,
+        88
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 0,
+      "changed": [
+        100,
+        123,
+        79
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 45,
+      "changed": [
+        64,
+        91,
+        50
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 90,
+      "changed": [
+        29,
+        41,
+        24
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 135,
+      "changed": [
+        8,
+        11,
+        6
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 180,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 225,
+      "changed": [
+        10,
+        14,
+        5
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 270,
+      "changed": [
+        34,
+        46,
+        28
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 0,
+      "yaw": 315,
+      "changed": [
+        83,
+        96,
+        64
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 0,
+      "changed": [
+        52,
+        71,
+        41
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 45,
+      "changed": [
+        31,
+        50,
+        19
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 90,
+      "changed": [
+        20,
+        32,
+        3
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 135,
+      "changed": [
+        2,
+        5,
+        1
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 180,
+      "changed": [
+        1,
+        2,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 225,
+      "changed": [
+        2,
+        4,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 270,
+      "changed": [
+        17,
+        26,
+        2
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 45,
+      "yaw": 315,
+      "changed": [
+        34,
+        52,
+        19
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 45,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 90,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 135,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 180,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 225,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 270,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 90,
+      "yaw": 315,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 45,
+      "changed": [
+        1,
+        2,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 90,
+      "changed": [
+        18,
+        26,
+        4
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 135,
+      "changed": [
+        22,
+        32,
+        14
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 180,
+      "changed": [
+        32,
+        52,
+        20
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 225,
+      "changed": [
+        23,
+        38,
+        17
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 270,
+      "changed": [
+        19,
+        26,
+        8
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 135,
+      "yaw": 315,
+      "changed": [
+        4,
+        7,
+        1
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 0,
+      "changed": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 45,
+      "changed": [
+        8,
+        14,
+        5
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 90,
+      "changed": [
+        34,
+        47,
+        27
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 135,
+      "changed": [
+        83,
+        105,
+        62
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 180,
+      "changed": [
+        109,
+        132,
+        71
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 225,
+      "changed": [
+        81,
+        115,
+        56
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 270,
+      "changed": [
+        32,
+        47,
+        30
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 180,
+      "yaw": 315,
+      "changed": [
+        11,
+        15,
+        8
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 0,
+      "changed": [
+        2,
+        3,
+        1
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 45,
+      "changed": [
+        7,
+        8,
+        1
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 90,
+      "changed": [
+        77,
+        92,
+        44
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 135,
+      "changed": [
+        116,
+        134,
+        78
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 180,
+      "changed": [
+        119,
+        140,
+        82
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 225,
+      "changed": [
+        105,
+        143,
+        72
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 270,
+      "changed": [
+        59,
+        77,
+        37
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 225,
+      "yaw": 315,
+      "changed": [
+        6,
+        9,
+        3
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 0,
+      "changed": [
+        13,
+        15,
+        13
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 45,
+      "changed": [
+        25,
+        29,
+        15
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 90,
+      "changed": [
+        24,
+        28,
+        10
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 135,
+      "changed": [
+        15,
+        23,
+        6
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 180,
+      "changed": [
+        22,
+        29,
+        7
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 225,
+      "changed": [
+        20,
+        26,
+        16
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 270,
+      "changed": [
+        24,
+        28,
+        15
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 270,
+      "yaw": 315,
+      "changed": [
+        11,
+        21,
+        7
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 0,
+      "changed": [
+        141,
+        164,
+        105
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 45,
+      "changed": [
+        83,
+        106,
+        83
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 90,
+      "changed": [
+        42,
+        62,
+        31
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 135,
+      "changed": [
+        7,
+        9,
+        3
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 180,
+      "changed": [
+        4,
+        8,
+        2
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 225,
+      "changed": [
+        8,
+        11,
+        1
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 270,
+      "changed": [
+        57,
+        73,
+        40
+      ]
+    },
+    {
+      "sex": "male",
+      "pitch": 315,
+      "yaw": 315,
+      "changed": [
+        114,
+        126,
+        88
+      ]
+    }
+  ]
+}
