@@ -13,6 +13,19 @@
       "adminSha": "a55fbad8cfa2dd259a3a010b3684de7f6016252fe8c03b5c819810ca22342819",
       "at": "2026-11-16T06:00:43.508Z",
       "label": "픽셀·습관 연구와 전신 30차, 변형 계획"
+    },
+    {
+      "id": "81f099cf091d319f86602e22",
+      "project": "bookfriend",
+      "round": 31,
+      "cards": 116,
+      "sources": 109,
+      "chapters": 7,
+      "cardsSha": "ab075d1d06d46f2b42b28b53aff39936a5624d8f43f73c5e4d687bd99821834d",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "41fae9648e6d9baff4414ad07fddc785771377634d521432e148cc9e501279cd",
+      "at": "2026-11-16T06:19:28.239Z",
+      "label": "31차 · 31차 · 입술–턱끝–목 앞선의 깊이"
     }
   ]
 }
