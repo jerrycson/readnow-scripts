@@ -40,6 +40,20 @@
       "at": "2026-11-16T12:29:36.097Z",
       "label": "32차 · 얼굴 블라인드 비교와 관절 실험",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "c5faf3771534d54d98a4d33e",
+      "project": "bookfriend",
+      "round": 33,
+      "cards": 141,
+      "sources": 132,
+      "chapters": 9,
+      "cardsSha": "9415caf7fca21560c772292692c890f229fa5d34ce288f95362e26bc72a505b6",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "d0d477e117944d138724bba301f3d9c722c8f54a99611c1f6f68600ed21ac80e",
+      "at": "2026-11-16T14:05:00.000Z",
+      "label": "33차 · 얼굴과 가슴 형태, 극단 자세 대조",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }
