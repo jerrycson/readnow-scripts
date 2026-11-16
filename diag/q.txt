@@ -1,8 +1,2 @@
 perf=600
-@health&hours=24
-doc=app_settings/write_watch
-doc=prd_jobs/pcBeat
-doc=app_settings/value_model
-doc=app_settings/buyback_stats
-doc=app_settings/extras_study
-# 3037127443
+# 194346621
