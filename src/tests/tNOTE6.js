@@ -4,6 +4,7 @@
 //  ③ 390폭에서 긴 문장·긴 주소·코드·표·긴 ref 카드가 페이지를 가로로 넘치지 않음 · 접힌 카드 제목은 말줄임
 const fs = require('fs'), path = require('path');
 const NOTESF = [path.join(__dirname, '..', '..', 'cloud', 'notes.js'), path.join(__dirname, '..', 'cloud', 'notes.js')].find((f) => fs.existsSync(f));
+{ const miss = [['클라우드 노트 cloud/notes.js', NOTESF]].filter(([, f]) => !f || !fs.existsSync(f)).map(([n]) => n); if (miss.length) { console.log('❌ 시험에 쓸 파일을 못 찾음 — ' + miss.join(' · ') + ' (건너뛰지 않고 실패로 알림)'); process.exit(1); } }
 let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '❌ ') + m); if (!c) bad++; };
 function fakeC() { const D = {}; const L = {}; const col = (n) => { D[n] = D[n] || new Map(); L[n] = L[n] || new Set(); return { doc: (id) => ({ get: async () => ({ exists: D[n].has(id), data: () => (D[n].has(id) ? JSON.parse(JSON.stringify(D[n].get(id))) : undefined) }), set: async (o, opt) => { const had = D[n].has(id); const v = opt && opt.merge && had ? { ...D[n].get(id), ...o } : { ...o }; D[n].set(id, v); const ch = [{ type: had ? 'modified' : 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } }]; setTimeout(() => L[n].forEach((f) => f({ docChanges: () => ch })), 1); } }), onSnapshot: (f) => { const all = [...D[n].entries()].map(([id, v]) => ({ type: 'added', doc: { id, data: () => JSON.parse(JSON.stringify(v)) } })); setTimeout(() => f({ docChanges: () => all }), 5); L[n].add(f); return () => L[n].delete(f); } }; }; return { C: require('./notes-fake-tx.cjs')(col), D }; }
 const LONG = '이것은아주긴문장입니다띄어쓰기가없이계속이어지는한국어글자들이화면오른쪽밖으로뻗어나가는지보려는시험용문장입니다'.repeat(3);
