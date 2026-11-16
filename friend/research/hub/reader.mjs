@@ -56,12 +56,14 @@ function reveal(host){
   if(matchMedia('(max-width:740px)').matches||host.getBoundingClientRect().top<54)host.scrollIntoView({block:'start'});
 }
 function setList(container,rows,chosen,choose){
+  const top=container.scrollTop;
   const nodes=rows.map((r,i)=>{
     const b=button('',()=>choose(i),'item');b.append(text('small',r.group||''),document.createTextNode(r.title));
+    const snippet=r.line||r.source?.querySelector('p')?.textContent;if(snippet)b.append(text('span',snippet,'snippet'));
     if(r.key===chosen)b.setAttribute('aria-current','true');
     return b;
   });
-  container.replaceChildren(...nodes);
+  container.replaceChildren(...nodes);container.scrollTop=top;
 }
 const documents={index:'픽셀 제작 자료',sites:'주요 연구 사이트',journal:'회차별 실행 일지',architecture:'복구와 구조 선택',anatomy:'인체·재질·움직임',anime:'일본 등신·참고 대조'};
 export const docName=key=>Object.hasOwn(documents,key)?key:'journal';
@@ -69,9 +71,28 @@ function studyTarget(url){
   const m=url.pathname.match(/\/research\/pixel\/(index|sites|journal|architecture|anatomy|anime)\.html$/);
   return url.origin===location.origin && m?{doc:m[1],chapter:url.hash.slice(1)}:null;
 }
+const stored=key=>{try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}};
+const saved=new Set(stored('friend-library-stars33')||[]);
+let pin=stored('friend-library-pin33')||'';
+function remember(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch{}}
 export function library(rows,goDoc){
-  const rail=el('cards'),host=el('reading'),q=el('search').value,group=el('group').value;
-  const filtered=rows.filter(r=>(!group||r.group===group)&&matches([r.title,r.group,r.line,r.unit,r.detail].join(' '),q)).map(r=>({...r,key:stableKey(r)}));
+  const rail=el('cards'),host=el('reading'),q=el('search').value,group=get('group'),groups=(get('groups')||group).split('|').filter(Boolean),bookmarks=get('saved')==='1';
+  const filtered=rows.filter(r=>(!groups.length||groups.includes(r.group))&&(!bookmarks||saved.has(stableKey(r)))&&matches([r.title,r.group,r.line,r.unit,r.detail,r.url||''].join(' '),q)).map(r=>({...r,key:stableKey(r)}));
+  const facets=el('facets');
+  const counts=new Map();for(const row of rows)counts.set(row.group,1+(counts.get(row.group)||0));
+  const chips=[...counts].map(([name,count])=>{
+    const b=button(name+' '+count,()=>{
+      const next=groups.includes(name)?groups.filter(v=>v!==name):[...groups,name];
+      route({group:null,groups:next.join('|'),card:null});host.closest('.split').classList.remove('inspecting');library(rows,goDoc);
+    });
+    b.dataset.group=name;b.setAttribute('aria-pressed',String(groups.includes(name)));return b;
+  });
+  facets.replaceChildren(...chips);
+  const bookmarkMode=v=>{route({saved:v?'1':null,card:null});host.closest('.split').classList.remove('inspecting');library(rows,goDoc);};
+  el('onlySaved').onclick=()=>bookmarkMode(true);el('allItems').onclick=()=>bookmarkMode(false);
+  el('allItems').setAttribute('aria-pressed',String(!bookmarks));el('onlySaved').setAttribute('aria-pressed',String(bookmarks));
+  el('onlySaved').textContent='★ 저장 자료 '+saved.size;
+  el('clearFilter').onclick=()=>{el('search').value='';el('group').value='';route({q:null,group:null,groups:null,saved:null,card:null});host.closest('.split').classList.remove('inspecting');library(rows,goDoc);};
   const score=r=>terms(q).reduce((sum,t)=>sum+(r.title.toLocaleLowerCase().includes(t)?2:0)+(String(r.line||'').toLocaleLowerCase().includes(t)?1:0),0);
   filtered.reverse();if(q)filtered.sort((a,b)=>score(b)-score(a));
   el('count').textContent=filtered.length+' / '+rows.length+'건';
@@ -87,9 +108,15 @@ export function library(rows,goDoc){
     const orig=link('출처 열기 ↗',r.url),local=link('연구 원문·결과 보기',r.local);
     if(orig){orig.target='_blank';orig.rel='noopener';links.append(orig);}
     if(local){const target=studyTarget(new URL(local.href));if(target)local.onclick=e=>{if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey){e.preventDefault();goDoc(target);}};links.append(local);}
+    const star=button(saved.has(r.key)?'★ 저장됨':'☆ 저장',()=>{
+      if(saved.has(r.key))saved.delete(r.key);else saved.add(r.key);remember('friend-library-stars33',[...saved]);route({card:r.key});library(rows,goDoc);
+    });star.setAttribute('aria-pressed',String(saved.has(r.key)));
+    const pair=button(pin===r.key?'기준 해제':'비교 기준으로 고정',()=>{pin=pin===r.key?'':r.key;remember('friend-library-pin33',pin);draw(i);});links.prepend(star,pair);
+    const ref=pin!==r.key&&rows.find(x=>stableKey(x)===pin),comparison=text('section','','pinned');
+    if(ref){comparison.append(text('h3','고정한 자료와 비교'),text('strong',ref.title),text('p',ref.line),text('p',ref.unit),button('고정 해제',()=>{pin='';remember('friend-library-pin33','');draw(i);}));}
     const jump=text('div','','jump');
     for(const [name,dest] of [['요약',short],['상세 설명',detail]])jump.append(button(name,()=>dest.scrollIntoView()));
-    host.replaceChildren(mobileBack(host,el('search')),text('p',r.group,'meta'),title,lead,links,jump,short,detail,pageNav(filtered,i,n=>draw(n,true)));
+    host.replaceChildren(mobileBack(host,el('search')),text('p',r.group,'meta'),title,lead,links,...(ref?[comparison]:[]),jump,short,detail,pageNav(filtered,i,n=>draw(n,true)));
     if(action){reveal(host);const active=rail.children[i];if(active.offsetTop<rail.scrollTop||active.offsetTop>rail.scrollTop+rail.clientHeight)rail.scrollTop=Math.max(0,active.offsetTop-rail.offsetTop-24);}
   };
   const index=filtered.findIndex(r=>r.key===get('card'));draw(Math.max(0,index));if(index>=0)host.closest('.split').classList.add('inspecting');
@@ -97,12 +124,13 @@ export function library(rows,goDoc){
 const docCache=new Map();let loadId=0;
 export async function originals(){
   const token=++loadId,key=docName(get('doc')),url=new URL('../pixel/'+key+'.html',location.href);
-  const rail=el('chapters'),host=el('originalBody');el('doc').value=key;el('docSearch').value=get('dq');
+  const rail=el('chapters'),host=el('originalBody');el('doc').value=key;el('doc').dispatchEvent(new Event('choice-sync'));el('docSearch').value=get('dq');
   if(!docCache.has(key)){
     host.replaceChildren(text('p','원문을 읽는 중입니다.'));rail.replaceChildren();
     const res=await fetch(url);if(!res.ok)throw Error('원문을 읽을 수 없습니다 '+res.status);
     const html=new DOMParser().parseFromString(await res.text(),'text/html');
     const nodes=[...html.querySelectorAll('article[id]')];
+    if(key==='journal')nodes.sort((a,b)=>(b.id==='round33')-(a.id==='round33'));
     docCache.set(key,nodes.map(n=>({title:n.querySelector('h2')?.textContent||n.id,key:n.id,body:n.textContent,source:n})));
   }
   if(token!==loadId)return;

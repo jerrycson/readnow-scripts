@@ -59,16 +59,17 @@ function rotate(v,axis,a){
   if(axis==='y')return [x*c+z*s,y,z*c-x*s];
   return [x*c-y*s,x*s+y*c,z];
 }
-function operation(id,angles,points,scene){
+export function operation(id,angles,points,scene){
   const kind=kindOf(id),sign=id.startsWith('left.')?-1:1,origin=points[id];
   const rotations=[];
-  const next={shoulder:'elbow',elbow:'wrist',hip:'knee'}[kind];
+  const next=({shoulder:'elbow',elbow:'wrist',hip:'knee',...(scene.rigAxes?{knee:'ankle'}:{})})[kind];
   const tip=next?points[id.split('.')[0]+'.'+next]:null;
   const twistAxis=tip?norm(origin.map((x,i)=>x-tip[i])):null;
-  for(const [axis,[,,,basis,direction]] of Object.entries(joints[kind].axes)){
+  for(const [axis,[,,,basis,direction]] of Object.entries((scene.rigAxes||joints)[kind].axes)){
     const value=angles[axis]||0;
     if(value) rotations.push([basis,value*Math.PI/180*direction*(kind!=='neck' && basis!=='x'?sign:1)]);
   }
+  if(scene.rigAxes)rotations.sort(([a],[b])=>Number(b==='y')-Number(a==='y'));
   const reach=kind==='shoulder'?Math.max(0,angles.side||0,angles.bend||0):0;
   const elevation=smooth(45,155,reach)*(scene.height<5?.085:.14);
   const opening=kind==='jaw'?smooth(0,24,angles.bend||0):0;
@@ -147,7 +148,7 @@ function distalRegion(scene,mesh,id){
   cache.set(key,region);return region;
 }
 const restBanks=new WeakMap();
-function bankFor(scene,part,id){
+export function bankFor(scene,part,id){
   let banks=restBanks.get(scene);if(!banks){banks=new WeakMap();restBanks.set(scene,banks);}
   let bank=banks.get(part.vertices);if(!bank){bank=new Map();banks.set(part.vertices,bank);}
   if(bank.has(id))return bank.get(id);

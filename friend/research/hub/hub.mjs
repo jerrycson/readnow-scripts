@@ -1,4 +1,6 @@
 import {readBlocks,mergeHistory} from './archives.mjs';
+import {choices} from '../../pixel-lab/choice33.mjs';
+import {records33} from './round33.mjs';
 import {additions} from './round32-cards.mjs';
 import {route,library,originals,initReader,showError} from './reader.mjs';
 const query=k=>new URL(location.href).searchParams.get(k)||'';
@@ -25,6 +27,8 @@ function documentTab(){
   document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===tab)));
   if(tab==='originals'){originals().catch(showError);return;}if(tab==='library')return;
   el('privateTitle').textContent=tab==='board'?'공동 계획표':'밤샘 연구 보고서';
+  const row=history.find(r=>r.id===selected),fallback=history.find(r=>r.id===row?.hostSource);
+  el('archiveProvenance').textContent=fallback && !(blockReader&&cloudRows.has(selected)) ? row.round+'차에서 보는 '+fallback.round+'차 보존판입니다.' : row ? row.round+'차 관리자 원문입니다.' : '';
   el('access').hidden=!!archive;frame.hidden=!archive;
   if(archive && frame.srcdoc!==archive[tab])frame.srcdoc=archive[tab];
 }
@@ -47,7 +51,7 @@ async function hostedCards(row){
   const source=row.hostSource?history.find(r=>r.id===row.hostSource):row;
   const data=decode(await get('versions/'+source.id+'/cards.json',source.cardsSha));
   if(!row.hostSource)return data;
-  const full={...data,cards:[...data.cards,...additions]};
+  const full={...data,cards:[...data.cards,...additions,...(row.round===33?records33:[])]};
   if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');
   return full;
 }
@@ -56,7 +60,7 @@ async function select(id){
   const seq=++generation, row=history.find(r=>r.id===id);
   const reply=blockReader && cloudRows.has(id) ? await readBlocks(cloudRows.get(id).cardBlocks,blockReader,hash,row.cardsSha) : await hostedCards(row);
   if(seq!==generation)return;
-  selected=id; releases.value=id;archive=null;frame.removeAttribute('srcdoc');dataset=reply.cards;
+  selected=id; releases.value=id;syncEditions();archive=null;frame.removeAttribute('srcdoc');dataset=reply.cards;
   const previous=query('group');
   el('group').replaceChildren(new Option('전체 분야',''),...[...new Set(dataset.map(x=>x.group))].map(x=>new Option(x,x)));
   if([...el('group').options].some(x=>x.value===previous))el('group').value=previous;
@@ -73,7 +77,7 @@ async function refresh(){
     releases.replaceChildren(...list.map((r,i)=>new Option((i+1)+' · '+r.label+' · '+r.at.slice(0,10),r.id)));
     const pinned=list.find(r=>r.id===query('rev'));
     const desired=pinned?.id||((follow||!list.some(v=>v.id===selected))?latest.id:selected);
-    if(desired!==selected)await select(desired);else releases.value=selected;
+    if(desired!==selected)await select(desired);else releases.value=selected;syncEditions();
     el('connection').textContent=(blockReader?'Firestore 구독 · ':(['localhost','127.0.0.1'].includes(location.hostname)?'로컬 미리보기 · ':'웹 게시 자료 · '))+(latest.sources?latest.sources+'개 출처 · ':'')+'마지막 확인 '+new Date().toLocaleTimeString('ko-KR');
   }finally{busy=false;if(refreshAgain){refreshAgain=false;queueMicrotask(()=>refresh().catch(failure));}}
 }
@@ -108,6 +112,10 @@ el('cloud').onclick=async()=>{
   }catch(e){el('feedback').textContent='연결 확인 · '+(e.code||e.message);}
 };
 initReader();
+const syncDocs=choices(el('doc'),el('docChoices'));
+el('doc').addEventListener('choice-sync',syncDocs);
+const syncEditions=choices(releases,el('editions'),opt=>opt.text.match(/(\d+)차/)?.[0]||opt.text);
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();(tab==='originals'?el('docSearch'):el('search')).focus();}});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;route({tab},true);documentTab();});
 el('search').oninput=el('group').onchange=()=>{route({q:el('search').value,group:el('group').value,card:null});el('reading').closest('.split').classList.remove('inspecting');draw();};
 releases.onchange=()=>{route({rev:releases.value,card:null},true);select(releases.value).catch(failure);};
