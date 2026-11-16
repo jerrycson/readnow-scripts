@@ -9,14 +9,14 @@ const RG = require('../helper/col2-y24reg.js');
 const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 60); k++) { v = await f(); if (v) return v; await wait(ms || 250); } return v; };
 const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /^\d+$/.test(p))) { try { if (fs.readFileSync('/proc/' + p + '/cmdline', 'utf8').includes(D)) process.kill(+p, 'SIGKILL'); } catch (e) {} } };
 
-function fakeY24() { const S = { prods: [{ GOODS_NO: '100000001', EAN: '9788900000009', ENTR_GOODS_CD: 'OLD001' }], regs: [], log: [], noPreview: false, seq: 200000000 };
+function fakeY24() { const S = { prods: [{ GOODS_NO: '100000001', EAN: '9788900000009', ENTR_GOODS_CD: 'OLD001' }], regs: [], log: [], noPreview: false, gridOnly: false, seq: 200000000 };
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title><script>function api(p,o,cb){var x=new XMLHttpRequest();x.open('POST',p);x.setRequestHeader('Content-Type','application/json');x.onload=function(){cb&&cb(x.responseText)};x.send(JSON.stringify(o))}</script></head><body>${b}</body></html>`;
   const bulk = () => page('대량등록', `<div><div class="custom-radio"><input type="radio" name="radio-inline" value="01" id="r1"><label for="r1"><span>바코드</span></label></div><div class="custom-radio"><input type="radio" name="radio-inline" value="02" id="r2"><label for="r2"><span>상품번호</span></label></div></div>
 <button type="button" class="btn btn-success" onclick="document.getElementById('f').click()"> 엑셀파일 업로드 </button><input type="file" id="f" hidden="hidden">
 <div id="productGrid">조회된 데이터가 없습니다.</div><button type="button" onclick="api('/api/Product/DeleteAll',{})">상품삭제</button>
 <div class="btnarea_wrap_btm"><button type="button" class="btn btn-primary btn-lg" id="reg"> 등록 </button></div>
 <div class="layerPop" id="pop" style="display:none"><h1> 등록 완료 </h1><button type="button" class="close">×</button><ul><li>총 <span id="ns">0</span>개의 상품이 판매중으로 등록되었습니다.</li><li>총 <span>0</span>개의 상품이 미출간으로 등록되었습니다.</li></ul></div>
-<script>var LINES=[];document.getElementById('f').onchange=function(){if(!document.getElementById('r1').checked)return alert('바코드를 고르세요');var fr=new FileReader();fr.onload=function(){LINES=String(fr.result).trim().split('\\n');${'if(window.NOPV)return;'}document.getElementById('productGrid').innerText=LINES.join(' | ')};fr.readAsText(this.files[0])};
+<script>var LINES=[];document.getElementById('f').onchange=function(){if(!document.getElementById('r1').checked)return alert('바코드를 고르세요');var fr=new FileReader();fr.onload=function(){LINES=String(fr.result).trim().split('\\n');${'if(window.NOPV)return;if(window.GRIDONLY){var R=LINES.map(function(l){var a=l.split(",");return {BARCODE:a[0],ENTR_GOODS_CD:a[1],RSLT_MSG:""}});var gv={getDataSource:function(){return {getRowCount:function(){return R.length},getJsonRow:function(i){return R[i]}}},getItemIndex:function(i){return i}};document.getElementById("productGrid").__vue__={gridView:gv};return;}'}document.getElementById('productGrid').innerText=LINES.join(' | ')};fr.readAsText(this.files[0])};
 document.getElementById('reg').onclick=function(){if(!LINES.length)return alert('파일 없음');if(!confirm('선택한 상품을 등록하시겠습니까?'))return;api('/api/Product/BulkReg',{lines:LINES},function(t){var j=JSON.parse(t);document.getElementById('ns').innerText=j.n;document.getElementById('pop').style.display='block'})};
 document.querySelector('#pop .close').onclick=function(){document.getElementById('pop').style.display='none'};</script>`);
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => { S.log.push({ m: q.method, p: u.pathname, body: b.slice(0, 300) });
@@ -26,7 +26,7 @@ document.querySelector('#pop .close').onclick=function(){document.getElementById
       if (u.pathname === '/api/Product/DeleteAll') { S.prods = []; return H(200, 'application/json', '{}'); }
       if (u.pathname.startsWith('/api/')) return H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }));
       if (u.pathname === '/') return H(200, 'text/html', page('판매관리', '첫 화면'));
-      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : '<body>'));
+      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : S.gridOnly ? '<body><script>window.GRIDONLY=1</script>' : '<body>'));
       if (u.pathname === '/Product/ProductList') return H(200, 'text/html', page('등록상품', `<button type="button" onclick="api('/api/Product/ProductList',{SDATE:'2026-11-01',EDATE:'2026-11-10',goodsStatGb:'02',PAGE_NO:1,PAGE_SIZE:20})">조회</button>`));
       return H(200, 'text/html', page('기타', '없음')); }); });
   return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ srv, S, base: `http://127.0.0.1:${srv.address().port}` }))); }
@@ -67,6 +67,8 @@ const job = (id, rows) => ({ id, rows, xlsx: b64(rows), by: '시험 웹앱' });
     await feed({ hold: { on: true, why: '시험 출고' } }); const n1 = Y.S.regs.length; r = await H.api('POST', '/y24/reg/put', job('job-D', [row(2), row(3)])); ok(r.j.ok, '첫 성공 뒤 2건 맡김 받음');
     for (let k = 0; k < 12; k++) { await feed({ hold: { on: true, why: '시험 출고' } }); await wait(250); } s = await rs(); ok(Y.S.regs.length === n1 && s.wait.length === 1 && /출고/.test(s.why || ''), '🚚 출고 중엔 아무것도 안 누르고 기다림', s.why);
     x = await resOf('job-D'); ok(x && x.state === 'done' && Object.keys(x.gno).length === 2 && Y.S.regs.length === n1 + 1 && Y.S.regs[n1] === 2, '출고가 끝나면 이어감 → 2건 done', x && x.msg);
+    console.log('③-2 (y24first1 · HOME 11/14) 미리보기가 그림 표(RealGrid)라 화면 글에 줄이 없어도 표 자료에서 우리 줄을 찾음');
+    Y.S.gridOnly = true; { const n3 = Y.S.regs.length; await H.api('POST', '/y24/reg/put', job('job-G', [row(5)])); const xg = await resOf('job-G'); ok(xg && xg.state === 'done' && Y.S.regs.length === n3 + 1, '표 자료(getDataSource·getJsonRow)에서 ISBN을 보고 [등록] → done', xg && xg.msg); } Y.S.gridOnly = false;
     console.log('④ 미리보기가 안 뜨면 멈춤');
     Y.S.noPreview = true; const n2 = Y.S.regs.length; await H.api('POST', '/y24/reg/put', job('job-E', [row(4)])); x = await resOf('job-E');
     ok(x && x.state === 'fail' && x.pre && /미리보기/.test(x.msg) && x.todo && Y.S.regs.length === n2, '미리보기 목록에 우리 줄이 없으면 [등록]을 누르지 않고 멈춤 + 사람이 할 일', x && x.msg);

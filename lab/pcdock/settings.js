@@ -6,8 +6,8 @@
  *     apps:[{ id, kind, name, icon, … 종류별 칸 }],             ← 목록의 '틀'(놓을 때 처음 값)
  *     place:[{ id, app, name, o:{ 종류별 칸 }, mon, c, r, w, h }],  ← 배치(인스턴스) — 배치마다 자기 설정 o · 칸 자리(왼쪽 위 c·r · 너비 w · 높이 h) · 한 칸에 하나
  *   0.1.0의 v:1(배치에 자기 설정이 없음)은 읽을 때 틀의 값을 배치마다 복사해 v:2로 옮김(migrated) — 예전 파일은 old\에 남김(지우지 않음)
- *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeFirst },  clean:{ keep:[프로세스 이름] },
- *     selfAdded:true } ← (0.1.7) PC 배치 작은 창을 목록·칸에 한 번 넣었음(사람이 빼면 다시 안 넣음) */
+ *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeFirst(기본 끔), closeFirstV:2(11/16 뒤에 고른 값이라는 표) },  clean:{ keep:[프로세스 이름] },
+ *     selfAdded:true, selfV:2 } ← (0.1.7·0.1.8) PC 배치 작은 창을 목록·칸에 한 번 넣었음(사람이 빼면 다시 안 넣음) */
 (function (root, factory) { const M = factory(root); if (typeof module === 'object' && module.exports) module.exports = M; else root.PDSet = M; })(typeof self !== 'undefined' ? self : this, function (root) {
   'use strict';
   const G = typeof module === 'object' && module.exports ? require('./grid.js') : root.PDGrid;
@@ -15,7 +15,7 @@
   const MAX_BYTES = 200 * 1024;
   const SECRET = /pass(word)?|passwd|비밀번호|token|secret|cookie|cred|api[_-]?key/i;
   const KIND_FIELDS = A.KIND_FIELDS;
-  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20 }, run: { waitSec: 40, reuse: true, closeFirst: true }, clean: { keep: [] } }; }
+  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20, lateSec: 180, showSelf: true }, run: { waitSec: 40, reuse: true, closeFirst: false, closeFirstV: 2, overlap: false }, clean: { keep: [] } }; }
   const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n || 400);
   const okPath = (p) => !p || (/^([a-zA-Z]:\\|\\\\)[^<>"|?*]*$/.test(p) && !/\.\.(\\|$)/.test(p));
   const okUrl = (u) => /^https?:\/\/[^\s"<>]{3,}$/.test(u);
@@ -38,8 +38,17 @@
     let size = 0; try { size = JSON.stringify(input).length; } catch (e) { return { ok: false, errs: ['설정을 글로 바꿀 수 없음'], warns, cfg: d }; }
     if (size > MAX_BYTES) errs.push(`설정이 너무 큼(${Math.round(size / 1024)}KB · 최대 200KB)`);
     (function walk(o, at) { if (!o || typeof o !== 'object') return; for (const k of Object.keys(o)) { if (SECRET.test(k)) errs.push(`비밀값처럼 보이는 칸(${at}${k})은 저장하지 않음`); walk(o[k], at + k + '.'); } })(input, '');
-    const cfg = { v: 2, base: G.baseOf(input.base), mons: {}, apps: [], place: [], auto: { on: !!(input.auto && input.auto.on), delaySec: (() => { const v = input.auto && input.auto.delaySec; return v === '' || v == null || !Number.isFinite(+v) ? 20 : Math.max(0, Math.min(600, Math.round(+v))); })() },
-      run: { waitSec: Math.max(5, Math.min(180, Math.round(+(input.run && input.run.waitSec)) || 40)), reuse: !(input.run && input.run.reuse === false), closeFirst: !(input.run && input.run.closeFirst === false) }, /* (0.1.6) ③ 때 목록의 프로그램 창을 먼저 닫고 새로 — 기본 켬 */
+    const cfg = { v: 2, base: G.baseOf(input.base), mons: {}, apps: [], place: [], auto: { on: !!(input.auto && input.auto.on), delaySec: (() => { const v = input.auto && input.auto.delaySec; return v === '' || v == null || !Number.isFinite(+v) ? 20 : Math.max(0, Math.min(600, Math.round(+v))); })(),
+        /* (0.1.8 · 정범님 11/16 15:28) 윈도우 시작 뒤 늦게 뜨는 프로그램(카카오톡)을 이 초까지 다시 찾아 놓음 · 0 = 안 기다림 */
+        lateSec: (() => { const v = input.auto && input.auto.lateSec; return v === '' || v == null || !Number.isFinite(+v) ? 180 : Math.max(0, Math.min(600, Math.round(+v))); })(),
+        /* (0.1.8) 윈도우 시작 배치 끝에 PC 배치 작은 창을 열어 제 칸에 놓음(끄면 안 엶) */
+        showSelf: !(input.auto && input.auto.showSelf === false) },
+      run: { waitSec: Math.max(5, Math.min(180, Math.round(+(input.run && input.run.waitSec)) || 40)), reuse: !(input.run && input.run.reuse === false), closeFirst: !!(input.run && input.run.closeFirst === true && +input.run.closeFirstV === 2), closeFirstV: 2,
+        /* (0.1.8 · 정범님 11/16 15:28) 칸 겹쳐 놓기 허용 — 켜면 한 칸에 여럿(창이 겹침) · 끄면 예전처럼 한 칸에 하나 */
+        overlap: !!(input.run && input.run.overlap === true) },
+      /* (0.1.6) ③ 때 목록의 프로그램 창을 먼저 닫고 새로 · (11/16 점검 ④-2 🔴) 기본 끔으로 바꿈
+       *  0.1.6~0.1.7은 기본 켬이라 저장 파일의 closeFirst:true가 '사람이 켠 것'인지 '옛 기본값'인지 가를 수 없음 → 표(closeFirstV:2)가 없는 옛 파일은 끔으로 읽음
+       *  (파일은 그대로 둠 · 다음 저장 때 끔+표로 쓰이고 그 전 파일은 old\에 남음) · 켜려면 ① 설정에서 다시 한 번 켬 */
       clean: { keep: Array.isArray(input.clean && input.clean.keep) ? input.clean.keep.map((x) => str(x, 80).replace(/\.exe$/i, '')).filter(Boolean).slice(0, 100) : [] } };
     /* 프로그램 */
     const ids = new Set(); for (const a0 of Array.isArray(input.apps) ? input.apps : []) { if (!a0 || typeof a0 !== 'object') continue; const kind = A.KINDS[a0.kind] ? a0.kind : null; if (!kind) { errs.push(`모르는 종류의 프로그램(${str(a0.kind, 20)})`); continue; }
@@ -71,11 +80,16 @@
     /* (0.1.7 · 정범님 11/14 16:29) 🖥 PC 배치 작은 창 자신 — 창이 하나라 배치도 하나만 · 처음 한 번 목록에 더하고 비어 있는 작은 칸에 놓음(selfAdded — 사람이 뺀 뒤엔 다시 안 넣음 · 모니터를 모르면 다음에) */
     { const sIds = new Set(cfg.apps.filter((a) => a.kind === 'self').map((a) => a.id)); let seen = false;
       cfg.place = cfg.place.filter((p) => { if (!sIds.has(p.app)) return true; if (seen) { warns.push('PC 배치 작은 창은 한 곳에만 놓을 수 있어 두 번째 자리는 뺐습니다'); return false; } seen = true; return true; });
-      if (input.selfAdded) cfg.selfAdded = true;
+      /* (0.1.8) 0.1.7은 빈 칸이 없으면 자리를 못 받고도 selfAdded를 붙여 다시는 안 넣었음 → 표 selfV:2가 없는 파일은 한 번 더 넣어 봄(사람이 뺀 뒤 저장한 파일은 표가 있어 다시 안 넣음) */
+      const retry = input.selfAdded && +input.selfV !== 2 && !cfg.place.some((p) => sIds.has(p.app));
+      if (input.selfAdded && !retry) { cfg.selfAdded = true; cfg.selfV = 2; }
       else if (mons && mons.length) { let tpl = cfg.apps.find((a) => a.kind === 'self'); if (!tpl) { tpl = A.defaultApps().find((a) => a.kind === 'self'); if (ids.has(tpl.id)) tpl = { ...tpl, id: tpl.id + '1' }; ids.add(tpl.id); cfg.apps.push(tpl); }
-        if (!cfg.place.some((p) => p.app === tpl.id)) { const sp = A.selfSpot(cfg, mons, G); if (sp) { let i = 1; while (pids.has('p' + i)) i++; pids.add('p' + i); cfg.place.push({ id: 'p' + i, app: tpl.id, name: '', o: {}, ...sp }); cfg.selfNew = true; } }
-        cfg.selfAdded = true; } }
-    for (const [i, j] of G.overlaps(cfg.place)) errs.push(`한 칸에 둘(${cfg.place[i].name || cfg.place[i].app} · ${cfg.place[j].name || cfg.place[j].app}) — 한 칸에 하나만`);
+        if (!cfg.place.some((p) => p.app === tpl.id)) { const sp = A.selfSpot(cfg, mons, G); if (sp) { let i = 1; while (pids.has('p' + i)) i++; pids.add('p' + i); const { over, ...at } = sp; cfg.place.push({ id: 'p' + i, app: tpl.id, name: '', o: {}, ...at }); cfg.selfNew = true; if (over) warns.push('빈 칸이 없어 PC 배치 작은 창을 주 모니터 오른쪽 위에 겹쳐 놓았습니다 — ① 설정에서 옮길 수 있음'); } }
+        cfg.selfAdded = true; cfg.selfV = 2; }
+      else if (input.selfAdded) cfg.selfAdded = true; }
+    /* 겹침 검사 — 자기 창은 언제나 빼고(작은 창이라 다른 칸 위에 떠도 됨) · 겹쳐 놓기를 켜면 알림만 */
+    const isSelf = (p) => cfg.apps.some((a) => a.id === p.app && a.kind === 'self');
+    for (const [i, j] of G.overlaps(cfg.place)) { if (isSelf(cfg.place[i]) || isSelf(cfg.place[j])) continue; if (cfg.run.overlap) continue; errs.push(`한 칸에 둘(${cfg.place[i].name || cfg.place[i].app} · ${cfg.place[j].name || cfg.place[j].app}) — 한 칸에 하나만(겹쳐 놓으려면 ① 설정 「칸 겹쳐 놓기 허용」을 켭니다)`); }
     if (v1 && Array.isArray(input.apps) && input.apps.some((a) => a && a.kind === 'folder' && a.path)) migrated = true;
     cfg.migrated = migrated || (v1 && !!input.v);
     const mg = cfg.migrated; delete cfg.migrated; const sn = !!cfg.selfNew; delete cfg.selfNew; return { ok: !errs.length, errs, warns, cfg, migrated: !!mg, selfNew: sn }; }

@@ -1,0 +1,24 @@
+{
+  "version": 30,
+  "checkedAt": "2026-11-15T20:53:36.162Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "바뀐 작은 두상의 432개 얼굴 시점 경계",
+      "ok": true,
+      "detail": {
+        "views": 432,
+        "note": "목·어깨는 확대 경계에서 잘릴 수 있으므로 머리 표면의 투영 범위를 별도로 검사"
+      }
+    },
+    {
+      "name": "뒷머리를 통해 눈·홍채·반짝임이 비치지 않음",
+      "ok": true,
+      "detail": {
+        "cases": 18
+      }
+    }
+  ],
+  "passed": 2,
+  "total": 2
+}

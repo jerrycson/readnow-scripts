@@ -1,0 +1,40 @@
+{
+  "version": 3,
+  "results": [
+    {
+      "name": "14형의 양방향 지지발 미끄러짐 수치 검사",
+      "ok": true,
+      "detail": {
+        "checked": 19992,
+        "maxResidual": 4.091171845743702e-14,
+        "scope": "flat ground, unrounded joint coordinates; raster rounding and slopes remain separate"
+      }
+    },
+    {
+      "name": "공 차기 14형·8시점·16방향 렌더",
+      "ok": true,
+      "detail": {
+        "renders": 1792
+      }
+    },
+    {
+      "name": "그림 경계와 분리된 바닥 기준",
+      "ok": true
+    },
+    {
+      "name": "공 반응은 지연 후 한 번, 이동·착지·정지",
+      "ok": true,
+      "detail": {
+        "travel": 0.06526307869108283,
+        "maxHeight": 13.000000000000002,
+        "events": 1
+      }
+    },
+    {
+      "name": "공의 좌우 경계 반사",
+      "ok": true
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}

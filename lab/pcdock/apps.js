@@ -19,7 +19,10 @@
     col2: { url: 'http://127.0.0.1:8797/', prof: '%USERPROFILE%\\ReadNow\\col2\\col2-stat-chrome', title: '^(📊 )?번외 수집기$', extra: ['--disable-extensions'] },
     alps: { url: 'http://127.0.0.1:8898/alps', prof: '%USERPROFILE%\\ReadNow\\print\\chrome-alpswin', title: '^ALPS 도우미', extra: [] } };
   /* (0.1.6) ③ '목록의 프로그램은 먼저 닫고 새로' 때 닫지 않는 창 제목 — 리드나우 수집기(알라딘 수집 탭 · 🪟 리드나우 작업 창 · 🖐 리드나우 손발) · 번외 · ALPS · PC 배치 자신
-   *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy) */
+   *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy)
+   *  (11/16 점검 ④-2 🔴) 앞 탭 제목만으로는 뒤 탭의 샵매니저 수집기·알라딘 로그인 탭을 못 알아봄 → 크롬은 어떤 프로필이든 먼저 닫기에서 아예 뺌(NO_CLOSE_PROCS · C# CloseWhy도 평소 프로필 크롬을 지킴 — 두 겹)
+   *  · 먼저 닫기는 기본 끔 · 윈도우 시작 자동 실행 때는 켜 두었어도 하지 않음(closeFirstFor) */
+  const NO_CLOSE_PROCS = ['chrome'];
   const SELF_TITLE = '리드나우 PC 배치'; /* (0.1.7) 이 작은 창 제목(ui.html <title> · readnow-pcdock.js TITLE과 같음) */
   const KEEP_TITLE = '^🪟 리드나우 작업 창|리드나우 손발|알라딘|aladin|번외 수집|📊 번외|ALPS|리드나우 PC 배치';
   /* kind별 뼈대 — 목록에 처음 놓이는 열두 가지 */
@@ -29,7 +32,7 @@
     { kind: 'phone', name: '휴대폰과 연결', icon: '📱', find: { shell: 'shell:AppsFolder\\Microsoft.YourPhone_8wekyb3d8bbwe!App' } },
     { kind: 'crd', name: 'Chrome 원격 데스크톱', icon: '🖥', find: CHROME_FIND, def: { url: 'https://remotedesktop.google.com/access' } },
     { kind: 'claude', name: 'Claude 앱', icon: '✳', find: { exe: 'claude.exe', paths: ['%LOCALAPPDATA%\\AnthropicClaude\\claude.exe', '%LOCALAPPDATA%\\Programs\\Claude\\Claude.exe'], lnk: ['Claude'], start: ['Claude'] }, def: { mode: 'chat', room: '', artifact: '', how: 'app' } },
-    { kind: 'exe', id: 'kakao', name: '카카오톡', icon: '💬', find: { exe: 'KakaoTalk.exe', paths: ['%LOCALAPPDATA%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles(x86)%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%LOCALAPPDATA%\\Programs\\Kakao\\KakaoTalk\\KakaoTalk.exe'], uninst: ['KakaoTalk', '카카오톡'], lnk: ['카카오톡', 'KakaoTalk'], start: ['카카오톡', 'KakaoTalk'], drv: ['Kakao\\KakaoTalk\\KakaoTalk.exe'] }, match: { title: '카카오톡|KakaoTalk', hidden: '^(카카오톡|KakaoTalk)$', hcls: 'EVA_Window_Dblclk', slow: 30 } }, /* (0.1.7 · 정범님 11/14 16:29 「카카오톡은 열리지도 않아」 — 진단 skip '실행 파일을 못 찾음') start = 시작 메뉴 앱 이름(Get-StartApps) · drv = 드라이브마다 Program Files·Program Files (x86)·뿌리 아래 이 자리 · slow = 로그인 창·업데이트로 늦게 뜨면 30초까지 기다림 */ /* (0.1.6) 트레이에 숨어 떠 있으면(창이 숨김 — 0.1.5는 '보이는 창'만 찾아 못 찾음) 그 창을 보이게 한 뒤 놓음 · hidden = 숨은 창 제목(꼭 같게) · hcls = 카카오톡 본 창 종류(먼저 고름) */
+    { kind: 'exe', id: 'kakao', name: '카카오톡', icon: '💬', find: { exe: 'KakaoTalk.exe', paths: ['%LOCALAPPDATA%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles(x86)%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%ProgramFiles%\\Kakao\\KakaoTalk\\KakaoTalk.exe', '%LOCALAPPDATA%\\Programs\\Kakao\\KakaoTalk\\KakaoTalk.exe'], uninst: ['KakaoTalk', '카카오톡'], lnk: ['카카오톡', 'KakaoTalk'], start: ['카카오톡', 'KakaoTalk'], drv: ['Kakao\\KakaoTalk\\KakaoTalk.exe'] }, match: { title: '카카오톡|KakaoTalk', hidden: '^(카카오톡|KakaoTalk)$', hcls: 'EVA_Window_Dblclk', slow: 30, boot: true } }, /* (0.1.8 · 정범님 11/16 15:28) boot = 윈도우 시작 뒤 늦게 뜰 수 있어 자동 실행이 auto.lateSec(기본 180초)까지 다시 찾아 놓음 · 놓은 뒤 30초에 한 번 더(로그인 창 → 본 창) */ /* (0.1.7 · 정범님 11/14 16:29 「카카오톡은 열리지도 않아」 — 진단 skip '실행 파일을 못 찾음') start = 시작 메뉴 앱 이름(Get-StartApps) · drv = 드라이브마다 Program Files·Program Files (x86)·뿌리 아래 이 자리 · slow = 로그인 창·업데이트로 늦게 뜨면 30초까지 기다림 */ /* (0.1.6) 트레이에 숨어 떠 있으면(창이 숨김 — 0.1.5는 '보이는 창'만 찾아 못 찾음) 그 창을 보이게 한 뒤 놓음 · hidden = 숨은 창 제목(꼭 같게) · hcls = 카카오톡 본 창 종류(먼저 고름) */
     { kind: 'exe', id: 'photoshop', name: '포토샵', icon: '🎨', find: { exe: 'Photoshop.exe', paths: [], glob: ['%ProgramFiles%\\Adobe\\Adobe Photoshop*\\Photoshop.exe'], lnk: ['Adobe Photoshop', 'Photoshop'] } },
     { kind: 'exe', id: 'illustrator', name: '일러스트레이터', icon: '✒', find: { exe: 'Illustrator.exe', paths: [], glob: ['%ProgramFiles%\\Adobe\\Adobe Illustrator*\\Support Files\\Contents\\Windows\\Illustrator.exe'], lnk: ['Adobe Illustrator', 'Illustrator'] } },
     { kind: 'exe', id: 'word', name: '워드', icon: '📝', find: { exe: 'WINWORD.EXE', paths: ['%ProgramFiles%\\Microsoft Office\\root\\Office16\\WINWORD.EXE', '%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\WINWORD.EXE'], lnk: ['Word'] } },
@@ -134,7 +137,11 @@
       skip(a.name, '모르는 종류'); }
     return { steps: steps.filter(Boolean), skipped }; }
   /* (0.1.6) 먼저 닫을 프로그램 = 이번 단계들의 프로세스 이름(크롬·Claude·카카오톡·탐색기 폴더 창 등) · 번외·ALPS 도우미 창은 빼고(자리만) · 휴대폰과 연결은 이름 조건만이라 뺌 */
-  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p) S.add(p); } return [...S]; }
+  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p && !NO_CLOSE_PROCS.some((q) => q.toLowerCase() === String(p).toLowerCase())) S.add(p); } return [...S]; } /* (11/16) 크롬은 절대 넣지 않음 — 뒤 탭 수집기·로그인 탭 */
+  /* (11/16 점검 ④-2) PowerShell에 넘길 먼저 닫기 — null = 하지 않음
+   *  · 설정에서 사람이 켠 때만(cfg.run.closeFirst === true · 옛 기본값 켬은 settings.js가 끔으로 읽음) · 윈도우 시작 자동 실행(opts.auto)이면 언제나 하지 않음 · 닫을 프로그램이 없으면 하지 않음 */
+  function closeFirstFor(cfg, steps, opts) { if (!(cfg && cfg.run && cfg.run.closeFirst === true)) return null; if (opts && opts.auto) return null;
+    const procs = closeProcs(steps); return procs.length ? { procs, keepTitle: KEEP_TITLE } : null; }
   /* PowerShell이 돌려준 결과 한 줄 → 사람이 알아듣는 말 + 원문(접어 둠) */
   function friendly(r) { const how = String((r && r.how) || ''); const nm = (r && r.name) || '';
     if (r && r.ok) return { msg: how, raw: '' };
@@ -149,13 +156,18 @@
     if (/^지금 .* 중$/.test(s)) return { msg: s + ' → 끝난 뒤 다시', raw: '' };
     if (/아직 아무것도 놓지 않았습니다|놓을 수 있는 것이 없음|닫을 목록/.test(s)) return { msg: s, raw: '' };
     return { msg: '윈도우 일(PowerShell)이 중간에 멈춤 → 다시 ③ · 또 그러면 이 기록을 보내 주세요', raw: s }; }
-  /* (0.1.7) PC 배치 창의 처음 자리 — 지금 비어 있는 칸 중 가장 작은 곳(작은 창이 들어갈 만큼 · 같으면 주 모니터 · 위 · 오른쪽 먼저) · 없으면 null */
+  /* (0.1.7) PC 배치 창의 처음 자리 — 지금 비어 있는 칸 중 가장 작은 곳(작은 창이 들어갈 만큼 · 같으면 주 모니터 · 위 · 오른쪽 먼저) · 없으면 주 모니터 오른쪽 위에 겹쳐(over:true) */
   function selfSpot(cfg, mons, G) { let best = null; const base = G.baseOf(cfg.base);
     const hitP = (a, b) => a.mon === b.mon && a.c < b.c + b.w && b.c < a.c + a.w && a.r < b.r + b.h && b.r < a.r + a.h;
     for (const m of mons || []) { const mo = (cfg.mons && cfg.mons[m.id]) || {}; const g = G.gridOf(m, mo.grid, base); const k = (m.dpi || 96) / 96; const wa = m.wa || m.b; const cw = wa.w / g.cols / k, ch = wa.h / g.rows / k;
       const w = Math.min(g.cols, Math.max(1, Math.ceil(300 / cw))), h = Math.min(g.rows, Math.max(1, Math.ceil(380 / ch)));
       for (let r = 0; r + h <= g.rows; r++) { let got = null; for (let c = g.cols - w; c >= 0; c--) { const p = { mon: m.id, c, r, w, h }; if (!(cfg.place || []).some((q) => hitP(p, q))) { got = p; break; } }
         if (got) { const area = cw * w * ch * h; const key = [area, m.primary ? 0 : 1, r]; if (!best || key[0] < best.key[0] - 1 || (Math.abs(key[0] - best.key[0]) <= 1 && (key[1] < best.key[1] || (key[1] === best.key[1] && key[2] < best.key[2])))) best = { p: got, key }; break; } } }
-    return best ? best.p : null; }
-  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
+    if (best) return best.p;
+    /* (0.1.8 · 정범님 11/16 15:28) 빈 칸이 없으면(칸을 다 채운 PC) 주 모니터 오른쪽 위에 겹쳐 놓음 — 작은 창이라 겹침 검사에서 빠짐 · 0.1.7은 여기서 null이라 자리를 못 받았음 */
+    const m = (mons || []).find((x) => x.primary) || (mons || [])[0]; if (!m) return null;
+    const mo = (cfg.mons && cfg.mons[m.id]) || {}; const g = G.gridOf(m, mo.grid, base); const k = (m.dpi || 96) / 96; const wa = m.wa || m.b; const cw = wa.w / g.cols / k, ch = wa.h / g.rows / k;
+    const w = Math.min(g.cols, Math.max(1, Math.ceil(300 / cw))), h = Math.min(g.rows, Math.max(1, Math.ceil(380 / ch)));
+    return { mon: m.id, c: g.cols - w, r: 0, w, h, over: true }; }
+  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, NO_CLOSE_PROCS, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, closeFirstFor, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
 });

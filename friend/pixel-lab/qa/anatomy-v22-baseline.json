@@ -1,0 +1,151 @@
+{
+  "version": 21,
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 2,
+      "designStyle": "manga",
+      "bodyHash": "96038165eca85dfeac0d74a5790d39b39b248b7c73102df424f301a4611a028d",
+      "imageHash": "be4ff8557920e73dc9f62277744a41ff6d5fd1d565d5691f5e245412f4f235d4"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "designStyle": "manga",
+      "bodyHash": "0116e9dd32709da3c41d73f703a105a7686c4f2ebaf67f1c3e4ed578359da435",
+      "imageHash": "bdd0589a800ef5dc30b0a5c508ba3e498d19b1773b7239f39f765df1ba84b43a"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "designStyle": "manga",
+      "bodyHash": "41226b88270448a0e85f44a2b2482a382e65e634a64e75d1081d40306922e50d",
+      "imageHash": "5491018bf91a6114a90d3d0ec5fed613c09a09d589f2bf7530a8c7b545db6596"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "natural",
+      "bodyHash": "1c39ddff80c2ebb5bc7e1817f3dec7287d4439b34c59de9ba63e4a614f0f441b",
+      "imageHash": "6bb445df4eef26b63a1afc99907a98d68f4fb3b6b02e3eee35048f35ee6bc2e1"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "manga",
+      "bodyHash": "31b423183b3f9a74a9e0fef61ec0f4dbc305ffcd508f382fff56ce256387450c"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "natural",
+      "bodyHash": "fde3f2de3ab707fcfec0dcb29e06cdf2a56bbeb6e9ded7ff2e8326f21b88fe4a",
+      "imageHash": "f2884f13a0bc98ba74babb86e88de549afdcb60d81c1125b006deb04366660c4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "manga",
+      "bodyHash": "a7c70d96a14a323ef38dae19844290e95f3efc8d8ce3a9404e5f77ca830e5dce"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "natural",
+      "bodyHash": "9e6214101dbff01e0a7f07c8e3dd9c0f6c1a4cf643028b9817adc958ba180447",
+      "imageHash": "96b874970e0bbaf3e6081da5b90d2a97765a58cdefed73194d38ff7a15db11aa"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "manga",
+      "bodyHash": "102f3fb0f6d431c5fbcd60c80e4943afe418d7929c19f50dde1231f460e5cabd"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "natural",
+      "bodyHash": "dc0c6b488f59684bd3c572a032b833cbe477aa7c840acb60c0c3e573b24110e0",
+      "imageHash": "c1a1cb0fb1dedc97677b958bf7b86a233c68ea9951049209155317fac3867481"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "manga",
+      "bodyHash": "88ceecc0c642431afe5ca92b7de138d6a74d35333fefb46667d8d36334331b6c"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "designStyle": "manga",
+      "bodyHash": "96038165eca85dfeac0d74a5790d39b39b248b7c73102df424f301a4611a028d",
+      "imageHash": "55655eaf9c5b901a625a65716ce88922458a68200c38262e6a3ee242cb9facd2"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "designStyle": "manga",
+      "bodyHash": "0116e9dd32709da3c41d73f703a105a7686c4f2ebaf67f1c3e4ed578359da435",
+      "imageHash": "eccbd9b1ff426f58bab264cadb396e16bab20eda2845cbf3bb94d00ec592d4f5"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "designStyle": "manga",
+      "bodyHash": "41226b88270448a0e85f44a2b2482a382e65e634a64e75d1081d40306922e50d",
+      "imageHash": "b7e26233351a7522aebeaec0a9d7f8f769f6746e01a69c2b7b86b63b71ea5ac4"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "natural",
+      "bodyHash": "e74e743910750aebbd0e63dea08b011cd0c96ece5427bbcbbee081d0752f6640",
+      "imageHash": "71a2a45b365e338c8e001503677c18fe6d6ebc6dde1d7746077bc4de5ca2e3b5"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "manga",
+      "bodyHash": "15852d2e658bc16a7810766aaa7db91e129ba480e2d4eb06a5e2224a91ebcec0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "natural",
+      "bodyHash": "51b13210ced33925aad2b47bd58ece135b19e355680e09e1faa2f67e3fcb13b2",
+      "imageHash": "c144a6bc5aca659a4efdb5b19a2f1e4284383432d9512a8856e462608de935a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "manga",
+      "bodyHash": "0af7cd4c6591b5945ab58875d7d16c75f8b56cba7017744a33432ad15cef5309"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "natural",
+      "bodyHash": "a49853e9026e5028f997f6a9c3aaea16f3b8c2db3054d6c6c5c72789e6aa48d6",
+      "imageHash": "c97525eafa8be8116c341ffc90f266e7e5aeff5e5bbc480bc980be1db759110c"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "manga",
+      "bodyHash": "67658e7beec118be2b1d4f7c3245e05255192a6edd887b3a17a2ecee064c0871"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "natural",
+      "bodyHash": "619179f159e27a9fb2ada20e5dc2ad28d898d5813a23f3376752c191d5e293c6",
+      "imageHash": "e18ff7091b6667ab7e448ab08f20c2b04c6af89e2a79dc67653ec415125ed801"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "manga",
+      "bodyHash": "5b80ff251c6433b77a4fad856f4ec98293dc5b4f1b164570bd1f0a4b45560a03"
+    }
+  ]
+}

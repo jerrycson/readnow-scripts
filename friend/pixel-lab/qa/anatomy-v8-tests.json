@@ -1,0 +1,38 @@
+{
+  "version": 8,
+  "checkedAt": "2026-11-15T16:33:35.887Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "14개 기본형의 실제 머리 길이와 전신 높이",
+      "ok": true,
+      "detail": {
+        "cases": 14
+      }
+    },
+    {
+      "name": "성인 얼굴의 코·입이 얼굴 표면에 속하고 분리된 코 덩어리가 없음",
+      "ok": true,
+      "detail": {
+        "cases": 4
+      }
+    },
+    {
+      "name": "발의 실제 메시가 바닥을 관통하지 않고 지지발이 닿음",
+      "ok": true,
+      "detail": {
+        "cases": 256,
+        "maxSupportGap": 8.326672684688674e-17
+      }
+    },
+    {
+      "name": "모든 기본형·기존 자세의 좌표와 표면 방향이 유효함",
+      "ok": true,
+      "detail": {
+        "cases": 112
+      }
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

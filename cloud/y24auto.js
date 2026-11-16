@@ -14,10 +14,28 @@
 const ISBN_RE = /^(97[89]\d{10}|\d{9}[\dXx])$/;
 const BLOCK_A = '/* ◆y24reg 시작', BLOCK_B = '/* ◆y24reg 끝 */';
 const BLOCK_NAMES = ['Y24R_DEF', 'y24RegCfg', 'y24RegPrice', 'y24RegState', 'y24RegJudge', 'y24RegAoa', 'y24RegFilter', 'y24AutoHuman', 'y24AutoPlan', 'y24AutoCand'];
-const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; /* 웹앱 needXLSX·수집기 @require와 같은 판 */
+const xlsxPkg = () => { try { return require('xlsx'); } catch (e) { return null; } }; /* SheetJS 0.18.5(cloud/package.json 의존 · 웹앱 needXLSX·수집기 @require와 같은 판) — 예전엔 실행 때 cdnjs에서 받아 new Function으로 돌렸음 */
 const WEB_URL = 'https://readnow.kr/app/readnow-webapp.js'; /* 저장소에서 못 받을 때(비공개 뒤) — 같은 덩어리가 든 지금 웹앱 본문 */
 const MKT_MAX = 120; /* 한 번에 시장 지표를 받는 책 수(웹앱 Y24E_MAX 400보다 작게 — 1분마다 불리므로) · 근거: 없음 */
+const BIG_MS = 45 * 60e3; /* 큰 자료(판매중 상품·예스24 목록·관리자 원문·등록·SKU 짝) 다시 읽기 — 근거: 없음(하루 읽기를 ≈1/4.5로 · 판매 놓침은 보내기 직전 한 권 재확인이 막음) */
 const DATA_MS = 10 * 60e3; /* 상품·주문·예스24 목록 다시 읽기(웹앱은 실시간 듣기 · 클라우드는 10분) · 근거: 없음 — 웹앱 y24AdmLoad 10분과 같게 */
+/* (r1116-y24 · 합동 검토 「고친 뒤 내기」) 🛑 팔린 책 내림이 쓰는 알라딘 판매 상태만 작은 켜로 — 큰 켜(BIG_MS 45분)를 그대로 쓰면 주문 신호 없이 알라딘에서만 팔린 책의 예스24 판매중지가 최대 45분 늦었음(이중 판매 창)
+ *  FRESH_MS마다 '지난번 뒤 바뀐 상품 줄'만 읽음(prd_listings.uploadedAt > 지난번 − FRESH_LAP · 클라우드 SKU·조회수 실험과 같은 길 · 칸은 L_FIELDS로 좁힘) → 큰 켜의 그 줄을 새 값으로 바꿈
+ *  바뀐 줄이 FRESH_LIM 이상(수집기 몰아 쓰기)이거나 읽기가 실패하면 → 예스24에 올린(장부 sent) 책 중 판매중으로 보이는 것만 한 권씩 새로 읽음
+ *  판단은 그대로 엄격: 여기서는 '후보가 됨'까지만 · 맡기기 전 한 권 새로 읽기(판매완료·수량 0·재고에서 뺀 까닭 · 그 밖엔 holdMin분)가 그대로 막음 · 근거: 없음 — 판매중지 지연 ≤ FRESH_MS + everyS(2분) ≈ 7분 */
+const FRESH_MS = 5 * 60e3, FRESH_LAP = 5 * 60e3, FRESH_LIM = 1500; /* 한 차례 바뀐 줄 상한(올린 책 수에 맞춰 더 작게 — freshLoad lim) */
+/* (r1116-y24 · 정밀 점검 11/14 ④·⑦ '위험 2 이중 판매') 🛑 알라딘에서 팔린 책 → 예스24 매물 판매중지 맡김 — 자동 올림이 기본 켬·상한 없음인데 내리는 쪽이 없었음
+ *  on = 켬(기본) · day = 하루 맡김 상한 · run = 한 차례 상한 · gapMin = 실패 뒤 다시 맡기기까지 분 · tries = 몇 번 실패하면 사람에게 · everyS = 몇 초마다 · holdMin = 팔림 표시 없이 '판매중 아님'만이면 몇 분 이어 본 뒤
+ *  trip = 한 차례 후보가 이 수를 넘고 올린 줄의 절반을 넘으면 멈춤(자료가 덜 온 때 한꺼번에 내리지 않게) · ⚙ app_settings/platforms.y24.down 으로 바꿈({ on: 0 } = 끔) · 근거: 없음 — 웹앱 자동 내림 예스24 한도(OMNI_LIM 10)보다 작게 시작 */
+const DOWN_DEF = { on: 1, day: 30, run: 3, gapMin: 30, tries: 3, everyS: 120, holdMin: 10, trip: 40 };
+const DOWN_MAX = { day: 200, run: 10, gapMin: 1440, tries: 10, everyS: 3600, holdMin: 1440, trip: 1000 };
+const W_CMD = 'col2_y24_cmd'; /* 번외 예스24 쓰기 맡김(웹앱 Y24W_CMD · 수집기 wRelay가 맡은 PC 번외 /y24/w/put에 넘김) */
+const W_ACT = ['hold', 'expired', 'new', 'took', 'run', 'local']; /* 웹앱 Y24P_ST — 아직 끝나지 않은 맡김 */
+const ID_RE = /^[\w.:|-]{3,160}$/, SELF_RE = /^[\w.-]{2,40}$/; /* 번외 col2-y24w.js checkJob과 같은 검사 */
+const SOLD_R = ['cash', 'elsewhere', 'lost', 'disp']; /* 웹앱 STOP_REASONS 중 '재고에서 뺌'(실물이 없음) */
+const DOWN_SRC = 'alsold'; /* 맡김 줄 출처 — 웹앱 y24PFind가 이 줄은 클라우드에 맡김('wait') */
+const holderOf = (plat) => String((plat && plat.y24Holder) || '').trim().toUpperCase().slice(0, 40) || 'HOME'; /* 웹앱 y24HolderOf */
+function downCfg(plat) { const d = ((plat && plat.y24) || {}).down || {}; const o = { ...DOWN_DEF }; for (const k of Object.keys(DOWN_MAX)) if (d[k] != null && d[k] !== '' && isFinite(+d[k])) o[k] = Math.max(k === 'gapMin' || k === 'holdMin' ? 0 : 1, Math.min(DOWN_MAX[k], Math.round(+d[k]))); if (d.on != null) o.on = d.on ? 1 : 0; return o; }
 
 /* ── 웹앱과 같은 작은 셈(웹앱 줄을 그대로 옮김) ── */
 const y24Isbn = (v) => { let s = String(v || '').replace(/[^0-9Xx]/g, ''); if (/^880\d{10}$/.test(s)) { const b = '978' + s.slice(3, 12); let t = 0; for (let i = 0; i < 12; i++) t += +b[i] * (i % 2 ? 3 : 1); s = b + ((10 - (t % 10)) % 10); } return s.length === 13 ? s : null; }; /* 웹앱 y24Isbn */
@@ -41,31 +59,62 @@ function blockOf(src) { const t = cutBlock(String(src || '')); if (!t) return nu
 function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now || Date.now; const iso = () => new Date(now()).toISOString(); const FV = o.FV;
   const getText = o.getText || (async (f) => { const r = await o.coreFetch(f); if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); });
   const getUrl = o.getUrl || (async (u) => { const r = await fetch(u + (u.includes('?') ? '&' : '?') + 't=' + now()); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); });
-  const M = { mods: null, modsAt: 0, data: null, dataAt: 0, mkt: new Map(), nd: new Map(), reqd: new Map(), last: new Map(), why: new Map() };
+  const M = { mods: null, modsAt: 0, data: null, dataAt: 0, big: null, bigAt: 0, mkt: new Map(), nd: new Map(), reqd: new Map(), last: new Map(), why: new Map() };
   /* 공용 셈 받기(30분마다 새로) — ◆y24reg 덩어리 · ext-core · registry · shipping · SheetJS */
   async function mods() { if (M.mods && now() - M.modsAt < 30 * 60e3) return M.mods; const m = { ...(M.mods || {}) }; const err = [];
     try { m.B = blockOf(await getText('src/app.html')); } catch (e) { m.B = null; } if (!m.B) { try { m.B = blockOf(await getUrl(WEB_URL)); } catch (e) { err.push('웹앱 셈 덩어리: ' + e.message); } }
     try { m.X = o.extMod ? await o.extMod() : evalMod(await getText('readnow-ext-core.js'), 'ReadnowExt'); } catch (e) { err.push('ext-core: ' + e.message); }
     try { m.R = evalMod(await getText('readnow-registry.js'), 'ReadnowRegistry'); } catch (e) { err.push('registry: ' + e.message); }
     try { m.SH = evalMod(await getText('readnow-shipping-core.js'), 'ReadnowShipping'); } catch (e) { err.push('shipping: ' + e.message); }
-    if (!m.XL) { try { m.XL = o.xlsx || evalMod(await getUrl(XLSX_URL), 'XLSX'); } catch (e) { err.push('SheetJS: ' + e.message); } }
+    if (!m.XL) { m.XL = o.xlsx || xlsxPkg(); if (!m.XL) err.push('SheetJS: xlsx 모듈이 없음(cloud/package.json 의존 설치 필요)'); }
     m.err = err; if (m.B && m.X && m.X.y24PriceOf && m.R && m.R.skuFull && m.XL) { M.mods = m; M.modsAt = now(); } else M.mods = null; return m; }
   const doc = async (c, id) => { const d = await C(c).doc(id).get(); return d.exists ? d.data() || {} : null; };
   /* 자료 모으기(10분마다) — 웹앱이 실시간으로 듣던 칸을 읽기만 */
-  async function data(force) { if (!force && M.data && now() - M.dataAt < DATA_MS) return M.data; const D = { at: now() };
-    const [main, plat, ship, lk, seq] = await Promise.all(['main', 'platforms', 'ship_auto', 'y24_link', 'sku_seq'].map((k) => doc('app_settings', k)));
-    D.main = main || {}; D.plat = plat || {}; D.ship = ship || {}; D.lk = { m: (lk && lk.m) || {}, x: (lk && lk.x) || {} };
-    D.sku = new Map(); for (let i = 0; i <= +((seq && seq.mapN) || 0); i++) { const d = await doc('app_settings', 'sku_map_' + i); for (const [k, v] of Object.entries((d && d.m) || {})) D.sku.set(k, v); } /* 웹앱 skuWatch */
-    D.list = []; (await C('prd_listings').where('status', '==', '판매중').get()).forEach((d) => { const v = d.data() || {}; D.list.push({ ...v, id: d.id }); }); /* 웹앱 S.plist 중 판매중(aladinLive가 다시 거름) */
-    D.byLid = new Map(); for (const l of D.list) if (l.listingId != null) D.byLid.set(String(l.listingId), l.id);
-    D.y24 = []; (await C('y24_listings').get()).forEach((d) => { const v = d.data() || {}; D.y24.push({ ...v, goodsNo: v.goodsNo || d.id }); }); /* 웹앱 y24Watch(S.y24.list) */
-    D.adm = new Map(); try { const qs = await C('crm_y24_raw').where('sig', '==', 'POST /api/Product/ProductList').get(); const by = new Map(); qs.forEach((d) => { const v = { id: d.id, ...d.data() }; const base = v.part ? v.id.replace(/_\d+$/, '') : v.id; (by.get(base) || by.set(base, []).get(base)).push(v); }); /* 웹앱 y24AdmLoad(최근 60번) */
+  /* (r1116-y24 · 정밀 점검 11/14 위험 3 읽기 폭증) 자료 모으기를 두 켜로 —
+   *  ① 작은 것(설정 문서 4 · 주문 14일)은 10분마다 — 팔림(주문)·설정은 빨리 봐야 함
+   *  ② 큰 것(판매중 상품 ≈1.6만 · 예스24 목록 · 관리자 화면 원문 · 등록 45일 · SKU 짝)은 BIG_MS(45분)마다 — 예전엔 10분마다 전부 읽어 하루 ≈230만 읽기 → 이제 하루 ≈50만(≈4.5배 적게)
+   *  묵히는 사이 알라딘에서 팔린 책이 자동 올림에 들어가지 않게: 보내기 직전 올릴 책을 한 권씩 새로 읽어 다시 확인(step의 recheck) · 판 안의 칸 값도 그때 새 것으로 바꿈
+   *  읽는 칸을 select()로 좁힘(전송 바이트 줄임 — 읽기 수는 문서 수 그대로) */
+  const L_FIELDS = ['_activeAladin', 'active', 'adult', 'grade', 'isbn13', 'lastSeenAt', 'listingId', 'price', 'priceList', 'qty', 'sku', 'status', 'title']; /* 이 파일이 판매중 상품에서 쓰는 칸 전부 */
+  const Y_FIELDS = ['goodsNo', 'isbn13', 'grade', 'firstSeenAt', 'goneAt', 'lastSeenAt']; /* 예스24 공개 목록에서 쓰는 칸 */
+  const O_FIELDS = ['kind', 'items', 'orderedAt', 'platform', 'orderNo']; /* 주문에서 쓰는 칸 */
+  const R_FIELDS = ['bump', 'mock', 'test', 'y24Reg', 'result', 'stage', 'createdAt']; /* 등록 기록에서 쓰는 칸 */
+  const sel = (q, f) => (q && typeof q.select === 'function' ? q.select(...f) : q);
+  const RAW_SIG = 'POST /api/Product/ProductList'; const RAW_N = 120; /* 웹앱 y24AdmLoad는 60문서 — 그 두 배(쪽 나뉨 여유) */
+  async function bigLoad() { const B = { at: now() }; B.fAt = B.at; B.fresh = new Map(); /* fAt = 판매 상태 작은 켜가 마지막으로 본 때(큰 켜를 읽기 시작한 때부터) · fresh = 그 뒤 바뀐 줄(큰 켜에 없던 새 판매중 줄도) */
+    const seq = await doc('app_settings', 'sku_seq');
+    B.sku = new Map(); for (let i = 0; i <= +((seq && seq.mapN) || 0); i++) { const d = await doc('app_settings', 'sku_map_' + i); for (const [k, v] of Object.entries((d && d.m) || {})) B.sku.set(k, v); } /* 웹앱 skuWatch */
+    B.list = []; B.idx = new Map(); (await sel(C('prd_listings').where('status', '==', '판매중'), L_FIELDS).get()).forEach((d) => { const v = { ...(d.data() || {}), id: d.id }; B.list.push(v); B.idx.set(d.id, v); }); /* 웹앱 S.plist 중 판매중(aladinLive가 다시 거름) */
+    B.byLid = new Map(); for (const l of B.list) if (l.listingId != null) B.byLid.set(String(l.listingId), l.id);
+    B.y24 = []; (await sel(C('y24_listings'), Y_FIELDS).get()).forEach((d) => { const v = d.data() || {}; B.y24.push({ ...v, goodsNo: v.goodsNo || d.id }); }); /* 웹앱 y24Watch(S.y24.list) */
+    B.adm = new Map(); try { let qs; try { qs = await C('crm_y24_raw').where('sig', '==', RAW_SIG).orderBy('at', 'desc').limit(RAW_N).get(); } catch (e) { qs = await C('crm_y24_raw').where('sig', '==', RAW_SIG).limit(RAW_N).get(); } /* 웹앱 y24AdmLoad와 같은 길(색인이 없으면 순서 없이) · 예전엔 전체(limit 없음) */
+      const by = new Map(); qs.forEach((d) => { const v = { id: d.id, ...d.data() }; const base = v.part ? v.id.replace(/_\d+$/, '') : v.id; (by.get(base) || by.set(base, []).get(base)).push(v); });
       const L = [...by.values()].map((X) => ({ at: X[0].at, body: X.sort((a, b) => (a.part || 0) - (b.part || 0)).map((x) => x.body || '').join('') })).sort((a, b) => String(a.at).localeCompare(String(b.at))).slice(-60);
-      for (const r of L) { let j = null; try { j = JSON.parse(r.body); } catch (e) { continue; } const A = (j && (j.PRODUCT_LIST || j.RESULT_LIST || j.LIST)) || []; if (Array.isArray(A)) for (const x of A) { const a = y24AdmRow(x, r.at); if (a) D.adm.set(a.no, a); } } } catch (e) { D.admErr = e.code || e.message; }
-    D.held = new Map(); const cut = new Date(now() - 14 * 864e5).toISOString(); /* 웹앱 y24HeldMap(MC_DAYS 14일) — 주문에 들어온 상품은 실물이 묶임 */
-    (await C('crm_orders').where('orderedAt', '>=', cut).get()).forEach((d) => { const v = d.data() || {}; if (v.kind !== 'sale') return; for (const it of v.items || []) { if (it.lineStatus && it.lineStatus !== 'normal') continue; const lid = it.listingKey || (it.aladinUsedCode ? 'aladin_' + it.aladinUsedCode : it.listingId != null ? D.byLid.get(String(it.listingId)) : null); if (lid && !D.held.has(lid)) D.held.set(lid, (v.platform === 'cash' ? '현금 ' : '주문 ') + String(v.orderNo || d.id || '').slice(-8)); } });
-    D.reg = new Map(); const since = new Date(now() - 45 * 864e5).toISOString(); (await C('reg_items').where('createdAt', '>=', since).get()).forEach((d) => { const v = d.data() || {}; if (!v.bump) D.reg.set(d.id, { id: d.id, ...v }); }); /* 웹앱 regWatch */
+      for (const r of L) { let j = null; try { j = JSON.parse(r.body); } catch (e) { continue; } const A = (j && (j.PRODUCT_LIST || j.RESULT_LIST || j.LIST)) || []; if (Array.isArray(A)) for (const x of A) { const a = y24AdmRow(x, r.at); if (a) B.adm.set(a.no, a); } } } catch (e) { B.admErr = e.code || e.message; }
+    B.reg = new Map(); const since = new Date(now() - 45 * 864e5).toISOString(); (await sel(C('reg_items').where('createdAt', '>=', since), R_FIELDS).get()).forEach((d) => { const v = d.data() || {}; if (!v.bump) B.reg.set(d.id, { id: d.id, ...v }); }); /* 웹앱 regWatch */
+    return B; }
+  async function data(force) { if (!force && M.data && now() - M.dataAt < DATA_MS) return M.data; const D = { at: now() };
+    if (force || !M.big || now() - M.bigAt >= BIG_MS) { M.big = await bigLoad(); M.bigAt = now(); }
+    const [main, plat, ship, lk] = await Promise.all(['main', 'platforms', 'ship_auto', 'y24_link'].map((k) => doc('app_settings', k)));
+    D.main = main || {}; D.plat = plat || {}; D.ship = ship || {}; D.lk = { m: (lk && lk.m) || {}, x: (lk && lk.x) || {} };
+    Object.assign(D, M.big, { at: D.at, bigAt: M.bigAt }); /* 큰 켜는 같은 개체를 나눠 씀(묵힘 사이 recheck가 바꾼 값이 이어짐) */
+
+    D.held = new Map(); D.heldAt = new Map(); const cut = new Date(now() - 14 * 864e5).toISOString(); /* 웹앱 y24HeldMap(MC_DAYS 14일) — 주문에 들어온 상품은 실물이 묶임 · (r1116-y24) heldAt = 그 상품의 가장 늦은 주문 시각(팔린 책 내림이 '올린 뒤 팔림'을 가림) */
+    (await sel(C('crm_orders').where('orderedAt', '>=', cut), O_FIELDS).get()).forEach((d) => { const v = d.data() || {}; if (v.kind !== 'sale') return; for (const it of v.items || []) { if (it.lineStatus && it.lineStatus !== 'normal') continue; const lid = it.listingKey || (it.aladinUsedCode ? 'aladin_' + it.aladinUsedCode : it.listingId != null ? D.byLid.get(String(it.listingId)) : null); if (!lid) continue; if (!D.held.has(lid)) D.held.set(lid, (v.platform === 'cash' ? '현금 ' : '주문 ') + String(v.orderNo || d.id || '').slice(-8)); const t = String(v.orderedAt || ''); if (t > ((D.heldAt.get(lid) || {}).t || '')) D.heldAt.set(lid, { t, ch: String(v.platform || '') }); } });
     M.data = D; M.dataAt = now(); return D; }
+  /* (r1116-y24 · 합동 검토) 판매 상태 작은 켜 — 팔린 책 내림(downStep)만 부름 · sent = 장부에 예스24로 올린(sent) 상품 열쇠들 → { via, n, reads } */
+  async function freshLoad(sent) { const B = M.big; if (!B || !B.idx) return null; if (now() - (B.fAt || 0) < FRESH_MS) return M.fLast || null; const t0 = now(); let via = 'delta', n = 0, reads = 0;
+    const put = (id, v) => { B.fresh.set(id, v); const b = B.idx.get(id); if (b) { for (const k of L_FIELDS) { if (v[k] === undefined) delete b[k]; else b[k] = v[k]; } } }; /* 큰 켜의 그 줄도 새 값으로(자동 올림 차례도 같은 값을 봄) */
+    const liveNow = (id) => { const f = B.fresh.get(id); return f ? aladinLive(f) : aladinLive(B.idx.get(id)); }; const ids0 = [...new Set(sent)].filter(liveNow); /* 올린 책 중 지금 판매중으로 보이는 것(판매중 아님은 이미 후보 → 맡기기 전 한 권 새로 읽음) */
+    if (!ids0.length) { M.fLast = { via: '없음(올린 책 중 판매중 0)', n: 0, reads: 0 }; return M.fLast; } /* 읽을 까닭 없음 · fAt는 그대로(다음에 그 뒤 바뀐 줄을 다 봄) */
+    const lim = Math.min(FRESH_LIM, Math.max(100, ids0.length)); /* 바뀐 줄이 올린 책 수보다 많으면 올린 책을 콕 집어 읽는 쪽이 쌈 → 한 차례 읽기 ≤ 2 × max(100, 올린 책) */
+    let qs = null; try { qs = await sel(C('prd_listings').where('uploadedAt', '>', new Date((B.fAt || t0) - FRESH_LAP)), L_FIELDS).limit(lim).get(); } catch (e) { qs = null; }
+    const seen = new Set(); if (qs) { reads += Math.max(1, qs.size); qs.forEach((d) => { seen.add(d.id); if (!/^_perm/.test(d.id)) { put(d.id, d.data() || {}); n++; } }); }
+    if (!qs || qs.size >= lim) { via = qs ? 'doc(바뀐 줄 ' + qs.size + '+)' : 'doc(바뀐 줄 읽기 실패)'; /* 다 못 봄 → 올린 책 중 판매중으로 보이는 것만 콕 집어 */
+      const ids = ids0.filter((id) => !seen.has(id));
+      for (let k = 0; k < ids.length; k += 100) { const part = ids.slice(k, k + 100); const got = await Promise.all(part.map((id) => C('prd_listings').doc(id).get().catch(() => null))); reads += part.length;
+        got.forEach((d, i) => { if (d && d.exists) { put(part[i], d.data() || {}); n++; } }); } }
+    B.fAt = t0; M.fLast = { via, n, reads }; if (via !== 'delta') log('🛑 팔린 책 내림 — 판매 상태를 한 권씩 다시 읽음', via, reads + '읽기'); return M.fLast; }
   /* 웹앱 y24SkuSelf(skuFullOf + skuCoresL) */
   const skuSelf = (R, D, l) => { R.skuSupSet((D.main.reg || {}).srcX || []); const v = D.sku.get(l.id); const cores = v ? (v.c || []).map((c) => String(c).replace(/^RN(?=[a-z0-9]{5}$)/, '')) : []; const mg = String(l.sku || '').replace(/\s+/g, ''); return cores.map((c) => R.skuFull(mg, c)).filter(Boolean); };
   /* 웹앱 y24WantLids — 사람이 누른 기록(w.on) → 넣을 때 적힌 값(y24Reg) · 기기 🚦 토글은 기기에만 있어 모름 → 끔(기본값과 같음 · 모르면 안 올리는 쪽) */
@@ -100,8 +149,10 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
   const xlsxOf = (m, rows) => { const X = m.XL; const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(m.B.y24RegAoa(rows)), 'Sheet1'); return X.write(wb, { type: 'base64', bookType: 'xlsx' }); }; /* 웹앱 y24AutoXlsx */
   const ref = () => C('app_settings').doc('y24_reg');
   /* 번외 결과 → 장부(웹앱 y24AutoApply와 같음 — 그 맡김 줄만 · 아직 'auto'인 줄만) */
+  /* (r1116-y24) 번외가 멈춘 화면 원문 — 3,000자를 넘으면 앞쪽을 잘라 안에 글로 넣음(예전엔 글자 수로 자른 JSON을 다시 풀다 늘 실패해 null이 저장됐음) */
+  const rawCut = (raw) => { let t; try { t = JSON.stringify(raw); } catch (e) { return null; } if (typeof t !== 'string') return null; if (t.length <= 3000) { try { return JSON.parse(t); } catch (e) { return null; } } return { cut: 1, len: t.length, txt: t.slice(0, 2900) }; };
   async function apply(led, resMap) { const at = iso(); const r = {}; let stop = null, last = null;
-    for (const [jid, x] of Object.entries(resMap || {})) { last = { job: jid, state: x.state, msg: String(x.msg || '').slice(0, 200), at, n: (x.rows || []).length };
+    for (const [jid, x] of Object.entries(resMap || {})) { last = { job: jid, state: x.state, msg: String(x.msg || '').slice(0, 200), at, n: (x.rows || []).length, ...(x.raw && typeof x.raw === 'object' ? { raw: rawCut(x.raw) } : {}) }; /* (headless1) 번외가 멈춘 화면 원문(앞 300자·단추 이름 — 우리 상품 글뿐) */
       for (const lid of x.rows || []) { const e = (led.r || {})[lid]; if (!e || e.job !== jid || e.st !== 'auto') continue; const g = x.gno && x.gno[lid];
         if (g) r[lid] = { st: 'sent', ok: 1, gno: String(g), how: '🤖 번외 자동 확인(자체코드)', okAt: at, okBy: '🤖 번외 수집기', unsure: null, why: null, todo: null };
         else if (x.state === 'fail') r[lid] = { st: 'autofail', why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null, failAt: at };
@@ -122,15 +173,125 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
   function stSave(pc, why, st, plan) { try { const k = ('CLOUD_' + String(pc).toUpperCase()).replace(/[^A-Z0-9_-]/g, '_').slice(0, 36); const w = String(why || '').slice(0, 200); const sig = w + '|' + (st && st.login) + '|' + (st && st.en); const o2 = stSig.get(k);
     if (o2 && o2.sig === sig && now() - o2.at < 10 * 60e3) return; stSig.set(k, { sig, at: now() });
     ref().set({ autoSt: { [k]: { why: w, login: (st && st.login) || null, en: st && st.en != null ? !!st.en : null, hold: !!(st && st.hold), plan: plan || null, ver: 'cloud', at: iso() } } }, { merge: true }).catch(() => {}); } catch (e) {} }
+  /* ══ (r1116-y24 · 정밀 점검 11/14 ④·⑦ '위험 2 이중 판매') 🛑 알라딘에서 팔린 책 → 예스24 매물 판매중지 맡김
+   *  왜: 자동 올림(기본 켬·상한 없음)으로 예스24에 올린 책이 알라딘에서 팔려도 예스24 매물을 내리는 길이 '통합 장부 자동 내림'(웹앱이 열린 PC · 켠 뒤 들어온 주문 · 이은 예스24 매물이 꼭 하나일 때)뿐이었음
+   *      → 웹앱이 닫혀 있거나 짝을 못 지으면 예스24에 그대로 남아 같은 실물을 두 번 팔 수 있음
+   *  어떻게: 자동 올림과 같은 길 — 같은 장부(app_settings/y24_reg r[상품].down) · 같은 실행 주체(맡은 PC 번외 · col2_y24_cmd → 수집기 wRelay → 번외 /y24/w/put 판매중지 · 웹앱 🛠 예스24 맡기기와 같은 문서 모양)
+   *   ① 장부에 '올라감'(st sent · 예스24 상품 번호 앎)인 줄 중 알라딘에서 판매중이 아닌 것(또는 올린 뒤 알라딘 주문이 들어온 한 권짜리)
+   *   ② 보내기 직전 그 상품 문서·판매중지 까닭을 새로 읽어 다시 확인 · 팔림 표시(판매완료·수량 0·'재고에서 뺌' 까닭·주문)가 없으면 holdMin분 이어 판매중 아님일 때만
+   *   ③ 예스24가 이미 판매중 아님 · 예스24에서 팔림 → 맡기지 않고 '이미'로 적음
+   *   ④ 겹침 막기: 통합 장부 자동 내림 기록(omni_auto.c · 예스24 · 3일)이나 끝나지 않은 예스24 쓰기 맡김(같은 상품 번호)이 있으면 건너뜀 · 맡김 줄 열쇠(rid)를 웹앱과 같은 꼴로 → 웹앱도 이 맡김을 보고 다시 맡기지 않음(y24PRid)
+   *   ⑤ 되풀이 0: 장부 down.st(sent·done·already·human)이면 다시 안 함 · 하루 상한(downDay)·한 차례 상한 · 실패하면 gapMin분 뒤 새 열쇠로 · tries번 실패하면 사람(human)
+   *   ⑥ 대량 막이: 후보가 trip을 넘고 올린 줄의 절반을 넘으면 멈춤 · 알라딘 판매중 목록이 비면 멈춤
+   *  지킴: 맡은 PC(platforms.y24Holder · 기본 HOME)의 번외가 부를 때만 · 로거·MJ-MAIN은 앞에서 빠짐 · 예스24 로그인 전·출고 중엔 새 맡김을 미룸 · 지우지 않음 · 예스24에 직접 요청하지 않음(번외가 판매관리 화면에서) */
+  const msOf = (v) => { if (!v) return 0; if (v.toMillis) return v.toMillis(); return Date.parse(String(v)) || 0; };
+  const D_TERM = ['sent', 'done', 'already', 'human'];
+  M.dLast = 0; M.dSeen = new Map(); M.dSkip = new Map(); M.dWhy = ''; const dSig = { sig: '', at: 0 };
+  async function dSave(o) { const sig = JSON.stringify(o); if (sig === dSig.sig && now() - dSig.at < 10 * 60e3) return; dSig.sig = sig; dSig.at = now(); /* 웹앱 y24AutoLine이 보이는 상태 한 줄 · autoSt 아래라 웹앱 장부 다시 셈(regV)을 깨우지 않음 */
+    try { await ref().set({ autoSt: { _ALSOLD: { ...o, ver: 'cloud', at: iso() } } }, { merge: true }); } catch (e) {} }
+  const dSkipSet = (lid, min) => M.dSkip.set(lid, now() + min * 60e3);
+  function gnoOf(e, D) { if (e.gno && /^\d{5,15}$/.test(String(e.gno))) return String(e.gno); const S0 = new Set(e.skus || []); if (!S0.size) return null; const L = [...D.adm.values()].filter((a) => String(a.self || '').split(/[,\s]+/).some((x) => S0.has(x))); return L.length === 1 ? L[0].no : null; } /* 장부에 번호가 없으면 관리자 목록 자체코드로 — 꼭 하나일 때만 */
+  function y24Off(D, Y, no) { const A = D.adm.get(no) || null; const P = Y.get(no) || null; /* 예스24가 이미 판매중이 아님 — 관리자 목록(새것)·공개 목록 */
+    if (A && A.st && !['02', '99'].includes(A.st) && (!P || P.goneAt || !P.lastSeenAt || String(A.at || '') >= String(P.lastSeenAt))) return `예스24 관리자 목록에서 이미 판매중 아님(${A.st})`;
+    if (P && P.goneAt && !(A && ['02', '99'].includes(A.st) && String(A.at || '') > String(P.goneAt))) return '예스24 공개 목록에서 이미 사라짐'; return ''; }
+  async function dDedupe() { const no = new Map(); /* 통합 장부 자동 내림·끝나지 않은 맡김 — 같은 예스24 상품 번호면 두 번 내리지 않음 */
+    try { const o = await doc('app_settings', 'omni_auto'); const t0 = now() - 3 * 864e5; for (const v of Object.values((o && o.c) || {})) if (v && v.ch === 'yes24' && v.no && v.st !== 'fail' && msOf(v.at) > t0) no.set(String(v.no), `통합 장부 자동 내림이 이미 맡음(${v.st || ''})`); } catch (e) { return () => '통합 장부 자동 내림 기록을 못 읽음'; }
+    try { const qs = await C(W_CMD).where('st', 'in', W_ACT).limit(100).get(); qs.forEach((d) => { const v = d.data() || {}; for (const r of ((v.job || {}).rows) || []) if (r && r.no && !no.has(String(r.no))) no.set(String(r.no), `끝나지 않은 예스24 쓰기 맡김이 있음(${v.st})`); }); } catch (e) { return () => '예스24 쓰기 맡김 줄을 못 읽음'; }
+    return (g) => no.get(String(g)) || ''; }
+  /* 맡김 줄 — 웹앱 ledY24Row와 같은 rid(줄 열쇠|번호) · rk는 시도마다 새로(번외가 끝낸 열쇠는 '되풀이 0'으로 막으므로) */
+  function dRow(x, D, at, n) { const key = (x.e.skus || [])[0] || 'al:' + x.lid; let rid = key + '|' + x.gno; if (!ID_RE.test(rid) || rid.length > 130) rid = 'al:' + x.lid + '|' + x.gno; if (!ID_RE.test(rid) || rid.length > 130) return null;
+    const rk = [rid, 'stop', '', at.replace(/\D/g, '').slice(0, 14) + '-' + n].join('|'); if (!ID_RE.test(rk)) return null; const title = String(x.e.title || '').slice(0, 60);
+    const A = D.adm.get(x.gno) || {}; const sk = x.e.skus || []; const self = SELF_RE.test(String(A.self || '')) ? String(A.self) : sk.length === 1 && SELF_RE.test(String(sk[0])) ? String(sk[0]) : '';
+    const isbn = /^\d{10,13}$/.test(String(x.e.isbn || '')) ? String(x.e.isbn) : ''; if (!self && !isbn && title.trim().length < 2) return null;
+    return { rid, rk, no: x.gno, kind: 'stop', to: null, title, src: DOWN_SRC, ...(self ? { self } : { isbn, q: title }) }; }
+  async function dSend(pc, plat, cfg, x, D, why, today) { const at = iso(); const jid = 'y24s' + at.replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const by = '☁ 클라우드 팔린 책 내림(' + pc + ')'; let res = 'cap';
+    await db.runTransaction(async (tx) => { const cur = (await tx.get(ref())).data() || {}; const e = (cur.r || {})[x.lid]; if (!e || e.st !== 'sent') { res = 'gone'; return; } const d0 = e.down && (!e.down.gno || e.down.gno === x.gno) ? e.down : {}; /* 트랜잭션 안에서 다시 셈 — 다른 차례·다른 서버가 먼저 맡겼으면 그만 */
+      if (D_TERM.includes(d0.st) || (d0.st === 'fail' && msOf(d0.nextAt) > now())) { res = 'dup'; return; }
+      const dd = cur.downDay && cur.downDay.day === today ? +cur.downDay.n || 0 : 0; if (dd >= cfg.day) { res = 'cap'; return; }
+      const n = (+d0.n || 0) + 1; const row = dRow(x, D, at, n); if (!row) { res = 'bad'; return; }
+      tx.set(ref(), { r: { [x.lid]: { down: { st: 'sent', job: jid, at, n, gno: x.gno, rid: row.rid, rk: row.rk, why: String(why).slice(0, 200), by: 'cloud:' + pc, nextAt: null, endAt: null } } }, downDay: { day: today, n: dd + 1 } }, { merge: true });
+      tx.set(C(W_CMD).doc(jid), { k: 'w', job: { id: jid, rows: [row] }, st: 'new', holder: holderOf(plat), by, at, src: DOWN_SRC, tries: 0, trail: [{ at, m: '☁ 알라딘에서 팔림 → 예스24 판매중지 맡김 — ' + String(why).slice(0, 120), by }] });
+      res = 'ok'; x.jid = jid; });
+    return res; }
+  /* 맡긴 것 결과 보기 — 끝남(done·already) · 실패(gapMin분 뒤 다시 · tries번이면 사람) · 맡긴 일 줄(hold)이면 다시 셈 뒤 같은 문서를 다시 보냄(웹앱 ledY24HoldRetry와 같음 — 웹앱은 이 줄을 클라우드에 맡김) */
+  async function dPoll(pc, plat, cfg, R, upd, cnt) { const by = '☁ 클라우드 팔린 책 내림(' + pc + ')';
+    for (const [lid, e] of Object.entries(R).filter(([, e]) => e && e.down && e.down.st === 'sent' && e.down.job).slice(0, 20)) { const dn = e.down; let v = null; try { v = await doc(W_CMD, dn.job); } catch (x) { cnt.wait++; continue; }
+      const fin = (st2, why) => { upd[lid] = { down: { ...dn, st: st2, why: String(why || '').slice(0, 200), endAt: iso() } }; };
+      const failed = (why) => { const n = +dn.n || 1; if (n >= cfg.tries) { fin('human', `${n}번 못 내림 — 사람 확인(예스24 판매관리): ${String(why || '').slice(0, 140)}`); cnt.human++; } else { upd[lid] = { down: { ...dn, st: 'fail', why: String(why || '').slice(0, 200), failAt: iso(), nextAt: new Date(now() + cfg.gapMin * 60e3).toISOString() } }; cnt.fail++; } };
+      if (!v) { failed('맡김 문서가 없음'); continue; }
+      if (v.st === 'cancelled') { fin('cancel', '사람이 맡김을 취소함' + (v.cancelBy ? ' · ' + String(v.cancelBy).slice(0, 40) : '') + ' — 다시 맡기지 않음'); cnt.cancel++; continue; }
+      if (v.st === 'done') { const res = v.res || {}; const x = (res.rows && res.rows[dn.rid]) || (v.drop || {})[dn.rid] || res; const s2 = String(x.state || x.st || res.state || ''); if (s2 === 'done') { fin('done', '예스24 판매중지 됨'); cnt.done++; } else if (s2 === 'already') { fin('already', x.msg || res.msg || '이미 판매중지'); cnt.done++; } else failed(x.msg || res.msg || s2 || '실패'); continue; }
+      if (v.st === 'hold') { if (msOf(v.retryAt) > now()) { cnt.wait++; continue; }
+        let l = null; try { l = await doc('prd_listings', lid); } catch (x) { cnt.wait++; continue; }
+        if (aladinLive(l)) { try { await C(W_CMD).doc(dn.job).set({ st: 'done', doneAt: iso(), res: { state: 'already', msg: '☁ 다시 확인 — 알라딘에 다시 판매중이라 예스24를 내리지 않고 닫음' }, trail: FV.arrayUnion({ at: iso(), m: '다시 확인 — 알라딘 판매중 → 닫음', by }) }, { merge: true }); } catch (x) {} upd[lid] = { down: { ...dn, st: 'cancel', why: '알라딘에 다시 판매중 — 닫음', endAt: iso() } }; cnt.cancel++; continue; }
+        const dref = C(W_CMD).doc(dn.job); let ok = false; try { await db.runTransaction(async (tx) => { const c = (await tx.get(dref)).data() || {}; if (c.st !== 'hold') return; const at = iso(); tx.set(dref, { st: 'new', at, holder: holderOf(plat), sentAt: at, sentBy: by, tries: (+c.tries || 0) + 1, trail: FV.arrayUnion({ at, m: '☁ 다시 셈(알라딘 아직 판매중 아님) 뒤 맡은 PC에 다시 보냄', by }) }, { merge: true }); ok = true; }); } catch (x) {}
+        if (ok) cnt.resend++; else cnt.wait++; continue; }
+      if (W_ACT.includes(v.st)) { cnt.wait++; continue; }
+      failed('맡김이 ' + String(v.st || '?') + '(으)로 끝남'); } }
+  /* 한 차례(맡은 PC 번외가 부를 때 · everyS초마다) → { why, sent, jobs } */
+  async function downStep(pc, st, plat, ledGet) { const cfg = downCfg(plat); const P = String(pc).trim().toUpperCase(); const holder = holderOf(plat);
+    if (P !== holder) return { why: `맡은 PC(${holder})가 아님 — 팔린 책 내림은 그 PC 차례에만` };
+    if (!cfg.on) { await dSave({ why: '🛑 팔린 책 예스24 내림 꺼 둠(⚙ platforms.y24.down.on)', pc: P }); return { why: '꺼 둠' }; }
+    if (now() - M.dLast < cfg.everyS * 1e3) return { why: M.dWhy || '다음 차례 기다림', skip: 1 }; M.dLast = now();
+    const led = await ledGet(); const R = led.r || {}; const today = kstDay(now()); const upd = {}; const cnt = { sent: 0, wait: 0, fail: 0, human: 0, done: 0, cancel: 0, resend: 0, dup: 0, unk: 0, nogno: 0, hold: 0, already: 0 }; const jobs = []; let fr = null; /* fr = 판매 상태 작은 켜 결과(돌려주는 값에만 — 상태 한 줄 dSave엔 안 넣음: 같은 글이면 쓰지 않는 막이를 깨지 않게) */
+    const fin = async (why, more) => { if (Object.keys(upd).length) { try { await ref().set({ r: upd }, { merge: true }); } catch (e) {} } const dayN = led.downDay && led.downDay.day === today ? +led.downDay.n || 0 : 0; M.dWhy = why;
+      await dSave({ why, pc: P, day: today, dayN: dayN + cnt.sent, dayMax: cfg.day, sent: cnt.sent, wait: cnt.wait + cnt.hold, fail: cnt.fail, human: Object.values(R).filter((e) => e && e.down && e.down.st === 'human').length + cnt.human, ...(more || {}) }); return { why, sent: cnt.sent, jobs, cnt, ...(fr ? { fresh: fr } : {}) }; };
+    await dPoll(P, plat, cfg, R, upd, cnt);
+    if (!Object.values(R).some((e) => e && e.st === 'sent')) return fin('예스24에 올린 책이 장부에 없음 — 내릴 것 0'); /* 읽기 줄이기 — 올린 책이 없으면 큰 자료(판매중 목록 등)를 읽지 않음 */
+    const D = await data(); try { fr = await freshLoad(Object.keys(R).filter((k) => R[k] && R[k].st === 'sent')); } catch (e) { fr = { via: '오류 ' + String((e && e.message) || e).slice(0, 60), n: 0 }; } /* (r1116-y24 · 합동 검토) 판매 상태만 FRESH_MS마다 새로 — 큰 켜(45분)를 기다리지 않음 */
+    const liveIds = new Set(D.list.filter(aladinLive).map((l) => l.id)); for (const [id, v] of (D.fresh || new Map())) { if (aladinLive(v)) liveIds.add(id); else liveIds.delete(id); } const Y = new Map(D.y24.map((x) => [String(x.goodsNo), x]));
+    if (!D.list.length) return fin('⛔ 알라딘 판매중 목록이 비어 있음 — 자료가 덜 온 듯해 예스24를 내리지 않음');
+    const C0 = []; let nLed = 0, reset = 0;
+    for (const [lid, e] of Object.entries(R)) { if (!e || e.st !== 'sent') continue; nLed++; const gno = gnoOf(e, D); const dn = e.down && (!e.down.gno || !gno || e.down.gno === gno) ? e.down : {}; const live = liveIds.has(lid);
+      if (D_TERM.includes(dn.st) || dn.st === 'cancel') { if (dn.st !== 'sent' && live && reset < 5 && now() - msOf(dn.endAt || dn.at) > 3600e3) { upd[lid] = { down: { st: 'live', prev: dn.st, gno: dn.gno || null, n: 0, at: iso(), why: '알라딘에 다시 판매중 — 다시 팔리면 또 내림' } }; reset++; } continue; } /* 다시 올라간 책은 다음에 팔리면 다시 내릴 수 있게 */
+      if (dn.st === 'fail' && msOf(dn.nextAt) > now()) continue;
+      const h = D.heldAt.get(lid); const heldNew = !!(h && h.t > String(e.at || ''));
+      if (live && !heldNew) { M.dSeen.delete(lid); continue; }
+      if (!gno) { cnt.nogno++; continue; }
+      if ((M.dSkip.get(lid) || 0) > now()) continue;
+      if (!M.dSeen.has(lid)) M.dSeen.set(lid, now()); C0.push({ lid, e, gno, live, heldNew, h }); }
+    if (C0.length > cfg.trip && C0.length > nLed / 2) return fin(`⛔ 한꺼번에 너무 많음 — 내릴 후보 ${C0.length}건(올린 ${nLed}건 중) · 자료가 덜 왔을 수 있어 멈춤 · 사람 확인(⚙ platforms.y24.down.trip)`, { cand: C0.length });
+    const canNew = st.login === 'ok' && !st.hold && st.en !== false; let capHit = false, reads = 0; let dd = null;
+    C0.sort((a, b) => (b.heldNew - a.heldNew) || (M.dSeen.get(a.lid) - M.dSeen.get(b.lid)));
+    for (const x of C0) { if (cnt.sent >= cfg.run || reads >= cfg.run * 4) break;
+      const off = y24Off(D, Y, x.gno); if (off) { upd[x.lid] = { down: { st: 'already', gno: x.gno, at: iso(), endAt: iso(), why: off } }; cnt.already++; continue; }
+      if (x.h && x.h.ch === 'yes24') { upd[x.lid] = { down: { st: 'already', gno: x.gno, at: iso(), endAt: iso(), why: '예스24 주문으로 팔림 — 예스24 쪽은 이미 팔림' } }; cnt.already++; continue; }
+      reads++; const l = await doc('prd_listings', x.lid); if (!l) { dSkipSet(x.lid, 60); cnt.unk++; continue; }
+      let sold = ''; const ht = x.h ? x.h.t : '';
+      if (!aladinLive(l)) sold = l.status === '판매완료' || l.qty === 0 ? '알라딘 ' + (l.status === '판매완료' ? '판매완료' : '수량 0') : x.heldNew ? '알라딘 판매중 아님 · 올린 뒤 주문 들어옴' : '';
+      else if (x.heldNew && (l.qty == null || +l.qty <= 1) && ht > String(l.lastSeenAt || '')) sold = '올린 뒤 알라딘 주문 들어옴(목록은 아직 판매중)';
+      else { dSkipSet(x.lid, 10); M.dSeen.delete(x.lid); continue; } /* 새로 읽으니 판매중 — 자료가 늦었음 */
+      const sr = await doc('prd_stop_reasons', x.lid);
+      if (sr && sr.reason === 'elsewhere' && /예스24/.test(String(sr.note || ''))) { upd[x.lid] = { down: { st: 'already', gno: x.gno, at: iso(), endAt: iso(), why: '예스24에서 팔림(판매중지 까닭)' } }; cnt.already++; continue; }
+      if (!sold && sr && SOLD_R.includes(sr.reason)) sold = '알라딘 판매중지 · 까닭 ' + sr.reason;
+      if (!sold) { if (now() - (M.dSeen.get(x.lid) || now()) < cfg.holdMin * 60e3) { cnt.hold++; continue; } sold = `알라딘 ${l.status || '판매중 아님'} ${cfg.holdMin}분 넘게`; }
+      if (!canNew) { cnt.hold++; continue; }
+      if (!dd) dd = await dDedupe(); const dw = dd(x.gno); if (dw) { dSkipSet(x.lid, 30); cnt.dup++; continue; }
+      const r = await dSend(P, plat, cfg, x, D, sold, today); if (r === 'cap') { capHit = true; break; } if (r === 'ok') { cnt.sent++; jobs.push(x.jid); log('🛑 예스24 팔린 책 내림', P, x.jid, x.gno); } else if (r === 'bad') { dSkipSet(x.lid, 60); cnt.unk++; } }
+    const tail = [cnt.wait + cnt.resend ? `결과 기다림 ${cnt.wait + cnt.resend}` : '', cnt.hold ? `미룸 ${cnt.hold}` : '', cnt.fail ? `실패 뒤 다시 기다림 ${cnt.fail}` : '', cnt.human ? `사람 확인 ${cnt.human}` : '', cnt.dup ? `다른 길이 맡음 ${cnt.dup}` : '', cnt.nogno ? `예스24 번호 모름 ${cnt.nogno}` : ''].filter(Boolean).join(' · ');
+    const head = capHit ? `⏸ 오늘 판매중지 상한 ${cfg.day}건을 다 씀 — 내일 이어감` : cnt.sent ? `🛑 ${cnt.sent}건 예스24 판매중지 맡김(알라딘에서 팔림)` : !canNew && cnt.hold ? (st.login !== 'ok' ? '🔐 예스24 로그인 기다림 — 판매중지 맡김을 미룸' : st.hold ? '🚚 출고 중 — 끝나면 판매중지 맡김' : '이 PC 번외 예스24 읽기가 꺼져 있음 — 판매중지 맡김을 미룸') : C0.length ? `팔린 책 ${C0.length}건 확인 중` : '팔린 책 없음 — 예스24에서 내릴 것 0';
+    return fin(head + (tail ? ' · ' + tail : ''), { cand: C0.length }); }
   /* 한 차례 — pc = 서명이 확인된 그 PC · y = 번외가 보낸 { st, res, rej } → { ack, jobs, why } */
   async function step(pc, y) { const out = { v: 1, at: now(), ack: [], jobs: [], why: '' }; const st = (y && y.st) || {}; const say = (w) => { out.why = w; M.why.set(pc, w); stSave(pc, w, st, out.plan); return out; };
     if (/^LOGGER/i.test(pc) || st.ban) return say(st.ban || '로거 PC — 예스24 자동 올림 안 함(약속 0)'); if (/^MJ-MAIN/i.test(pc)) return say('MJ-MAIN(등록·출고 PC) — 예스24 자동 올림 안 함(출고 보호)');
+    const plat = (await doc('app_settings', 'platforms')) || {}; let led0 = null; const ledGet = async () => { if (!led0) { led0 = (await doc('app_settings', 'y24_reg')) || {}; led0.r = led0.r || {}; } return led0; };
+    if (!(plat.y24 || {}).off) { try { out.down = await downStep(pc, st, plat, ledGet); } catch (e) { out.down = { why: '오류: ' + String((e && e.message) || e).slice(0, 120) }; } } /* (r1116-y24) 🛑 팔린 책 내림 — 자동 올림을 꺼도·멈춰도 돎(공용 셈 덩어리가 필요 없음) */
     const m = await mods(); if (!M.mods) return say('클라우드가 공용 셈을 못 받음 — ' + (m.err || []).join(' · ').slice(0, 160));
-    const plat = (await doc('app_settings', 'platforms')) || {}; const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
-    const led = (await doc('app_settings', 'y24_reg')) || {}; led.r = led.r || {};
-    const res = (y && y.res) || {}; const rej = Array.isArray(y && y.rej) ? y.rej.slice(0, 10) : []; const rm = { ...res };
-    for (const x of rej) if (x && x.id && !/되풀이/.test(String(x.err || ''))) rm[x.id] = { state: 'fail', pre: 1, rows: (x.rows || []).map(String), msg: '번외가 맡김을 거절 — ' + String(x.err || '').slice(0, 160), todo: '📤 장부에서 이 줄을 보고 「↩ 다시 올릴 수 있게」 뒤 「▶ 이어 가기」 또는 엑셀 길(손)로' };
-    if (Object.keys(rm).length) { await apply(led, rm); out.ack = Object.keys(res); out.rejAck = rej.map((x) => x.id); }
+    const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
+    const led = await ledGet();
+    const res = (y && y.res) || {}; const rej = Array.isArray(y && y.rej) ? y.rej.slice(0, 10) : []; const rm = { ...res }; const dupRej = [];
+    for (const x of rej) { if (!x || !x.id) continue; const err = String(x.err || '');
+      /* (r1116-y24) '되풀이 0' 거절 — 번외가 이미 한 일(또는 이미 줄에 있는 일)이라 다시 받지 않음. 예전엔 장부에 안 적어 그 줄이 영영 '올리는 중'으로 남고 3분마다 다시 맡겨졌음(거절 기록도 안 지워져 번외가 계속 빠른 차례로 돎)
+       *  · '맡김 줄에 있음'(다른 묶음이 같은 책을 들고 있음) = 그 묶음의 결과를 기다림 → 거절 기록만 지움
+       *  · 그 밖의 되풀이(이미 올림·이미 함) = 번외 기록상 이미 처리됨 → 줄을 '올림(확인 필요)'으로 닫아 다시 맡기지 않음(두 번 올리는 것보다 사람 확인이 안전) */
+      if (/되풀이/.test(err)) { if (!/맡김 줄에 있음/.test(err)) rm[x.id] = { state: 'done', rows: (x.rows || []).map(String), msg: '번외가 되풀이로 거절(이미 처리한 일) — 예스24 등록상품 목록에서 올라갔는지 확인 · ' + err.slice(0, 100), dup: 1 }; dupRej.push(x.id); continue; }
+      rm[x.id] = { state: 'fail', pre: 1, rows: (x.rows || []).map(String), msg: '번외가 맡김을 거절 — ' + String(x.err || '').slice(0, 160), todo: '📤 장부에서 이 줄을 보고 「↩ 다시 올릴 수 있게」 뒤 「▶ 이어 가기」 또는 엑셀 길(손)로' }; }
+    if (Object.keys(rm).length) { await apply(led, rm); out.ack = Object.keys(res); }
+    const rejDone = rej.filter((x) => x && x.id && (!/되풀이/.test(String(x.err || '')) || dupRej.includes(x.id))).map((x) => x.id); if (rejDone.length) out.rejAck = rejDone;
+    /* (y24first1 11/14 · HOME 20:50 첫 자동 올림) 번외 0.1.66까지는 미리보기 표(RealGrid — 그림으로 그리는 표)의 줄을 화면 글에서만 찾아 「미리보기 목록에 우리 줄이 안 보임」으로 늘 멈췄음([등록]은 안 누름 = 예스24에 아무것도 안 올라감)
+     *  → 표 자료를 읽는 번외(0.1.68 뒤 · 멈춤 글에 '(표 …)'가 붙음)가 이 멈춤을 본 때 한 번 저절로 풂(사람 손 없이 · 같은 책은 장부에 실패로 남아 다시 고르지 않고 다음 책으로) · 새 판에서 또 멈추면 그대로 둠 */
+    { const sp = led.auto && led.auto.stop; const vn = (x) => String(x || '0').split('.').reduce((a, q) => a * 1000 + (+q || 0), 0);
+      if (sp && /미리보기 목록에 우리 줄이 안 보임/.test(String(sp.why || '')) && !/\(표 /.test(String(sp.why || '')) && vn(st.ver) >= vn('0.1.68')) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 미리보기 표 읽기 고침(아무것도 누르지 않은 멈춤을 풂)' } }, { merge: true }); led.auto.stop = null; log('🤖 예스24 자동 올림', pc, '미리보기 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {} } }
     if (led.auto && led.auto.stop && !Object.keys(rm).length) return say('⛔ 멈춤 — ' + led.auto.stop.why);
     if (st.en === false) return say('이 PC 번외 예스24 읽기가 꺼져 있음');
     const fly = Object.values(led.r).filter((e) => e && e.auto && e.st === 'auto'); const known = new Set([...(st.wait || []).map((w) => w.id), st.cur && st.cur.id].filter(Boolean)); const me = byOf(pc);
@@ -142,7 +303,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const last = M.last.get(pc) || 0; if (now() - last < (y && y.fast ? 15e3 : 60e3)) return say(M.why.get(pc) || '다음 차례 기다림'); M.last.set(pc, now());
     const D = await data(); const W = wantLids(D, led); const X0 = regX(D, led, cfg, null);
     const L0 = D.list.filter(aladinLive).map((l) => ({ l, L: { id: l.id, title: l.title, isbn: y24Isbn(l.isbn13), grade: y24G(l.grade), price: +l.price || 0, qty: l.qty == null ? 1 : +l.qty, live: aladinLive(l), skus: isDupes(l) ? [] : skuSelf(m.R, D, l), dupes: isDupes(l), adult: !!l.adult, held: D.held.get(l.id) || null, unpub: null } })); /* 웹앱 y24RegL */
-    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.keys(led.r).length;
+    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.values(led.r).filter((e) => e && e.st !== 'retry').length; /* 「↩ 다시 올릴 수 있게」로 푼 줄은 세지 않음(웹앱과 같음) — 첫 시도가 실패해 풀면 첫 1건 고르기가 다시 열림 */
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });
@@ -150,11 +311,20 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length };
     for (const h of P.human.filter((x) => x.mkt).slice(0, 10)) { const i = String(h.row.isbn); const d = M.mkt.get(i); if ((d && d.reqAt && now() - Date.parse(d.reqAt) < 6 * 3600e3) || now() - (M.reqd.get(i) || 0) < 6 * 3600e3) continue; M.reqd.set(i, now());
       try { const at = iso(); await C('y24_mkt').doc(i).set({ isbn: i, req: { at, by: 'cloud y24auto', dev: pc, auto: true } }, { merge: true }); if (d) d.reqAt = at; } catch (e) {} } /* 웹앱 y24mReq(auto) — 클라우드 시장 읽기에 맡김 */
-    if (!P.pick.length) return say(P.t);
-    const jid = 'y24a' + iso().replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const r = await commit(m, cand, Cd, jid, me, pc, cfg);
+    /* (r1116-y24) 보내기 직전 재확인 — 큰 자료가 최대 BIG_MS 묵었으므로 올릴 책(한 차례 25권 이하)을 한 권씩 새로 읽음: 알라딘에서 팔렸거나(판매중 아님·수량 0) 값·등급이 바뀌었으면 이번엔 빼고(자료 개체도 새 값으로 바꿈 → 다음 차례엔 새 값으로 다시 셈) 다시 고름 */
+    let cand2 = cand, P2 = P, drop = 0;
+    for (let round = 0; round < 3 && P2.pick.length; round++) { const bad = new Set();
+      for (const x of P2.pick) { let l = null; try { l = await doc('prd_listings', x.lid); } catch (e) { bad.add(x.lid); continue; } const before = D.idx && D.idx.get(x.lid);
+        if (!l) { bad.add(x.lid); continue; } const chg = !!before && (+before.price !== +l.price || y24G(before.grade) !== y24G(l.grade));
+        if (before) { for (const k of L_FIELDS) { if (l[k] === undefined) delete before[k]; else before[k] = l[k]; } } /* 큰 자료의 그 줄을 새 값으로(다른 길도 같은 값을 봄) */
+        if (!aladinLive(l) || chg) bad.add(x.lid); }
+      if (!bad.size) break; drop += bad.size; cand2 = cand2.filter((c) => !bad.has(c.lid)); P2 = m.B.y24AutoPlan(cand2, led.r, Cd, iso(), cfg, kstDay(now())); }
+    if (drop) { out.plan = { ...out.plan, drop }; log('🔁 예스24 올리기 직전 재확인에서 뺌', pc, drop + '권'); }
+    if (!P2.pick.length) return say(drop ? `재확인에서 ${drop}권을 뺌(알라딘에서 팔렸거나 값이 바뀜) — 다음 차례에 새 값으로 다시 고름` : P.t);
+    const jid = 'y24a' + iso().replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const r = await commit(m, cand2, Cd, jid, me, pc, cfg);
     if (!r || !r.ok.length) return say(r && r.stop ? '⛔ 멈춤 — ' + r.stop.why : (r && r.plan && r.plan.t) || P.t);
     const rows2 = rowsOf(r.ok); out.jobs.push({ id: jid, rows: rows2, xlsx: xlsxOf(m, rows2), by: 'cloud:' + pc }); log('🤖 예스24 자동 올림', pc, jid, rows2.length + '건 맡김');
     return say(`🤖 ${rows2.length}건 번외에 맡김 — 예스24 대량 등록 중`); }
-  return { step, mods, data, _M: M, wantLids, regX, regC, engVal, mktGo };
+  return { step, mods, data, _M: M, wantLids, regX, regC, engVal, mktGo, downStep };
 }
-module.exports = { makeY24Auto, blockOf, cutBlock, y24Isbn, y24AdmRow, aladinLive, BLOCK_NAMES };
+module.exports = { makeY24Auto, blockOf, cutBlock, y24Isbn, y24AdmRow, aladinLive, BLOCK_NAMES, downCfg, holderOf, DOWN_DEF, DOWN_SRC };

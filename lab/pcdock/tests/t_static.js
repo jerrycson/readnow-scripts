@@ -86,4 +86,7 @@ ok(!/localStorage|sessionStorage/.test(rd('ui.html')), '화면은 기기 저장�
 ok(/x-rn-dock/.test(rd('readnow-pcdock.js')) && /listen\(port, '127\.0\.0\.1'/.test(rd('readnow-pcdock.js')), '127.0.0.1에서만 듣고 · 이 창의 부탁만 받음');
 ok(/col2-\w+-chrome|col2/.test(rd('clean.js')) && /D:\\\\ReadNow/.test(rd('clean.js')), '정리 보호 목록에 번외 크롬 프로필·D:\\ReadNow');
 ok(/^\uFEFF?@echo off\r\n/.test(rd('install-pcdock.cmd')) && /\r\n/.test(rd('install-pcdock.cmd')) && !/[^\r]\n/.test(rd('install-pcdock.cmd')), 'install-pcdock.cmd — 줄 끝 CRLF');
+{ const u = rd('ui.html'); /* (0.1.8) 설정 화면 입력칸 3개 — 설정 칸(auto.lateSec·auto.showSelf·run.overlap)을 화면에서 고칠 수 있음 · 배치도 빈 칸 검사가 겹침 허용·자기 창을 settings.js와 같게 봄 */
+  for (const [id, k] of [['oLate', 'C.auto.lateSec'], ['oShowSelf', 'C.auto.showSelf'], ['oOver', 'C.run.overlap']]) ok(u.includes(`id="${id}"`) && u.includes(`$('#${id}').onchange`) && u.includes(k + ' ='), `설정 화면 ${id} 칸 → ${k}`);
+  ok(/const free = \(np, skip\) => \(C\.run && C\.run\.overlap === true\) \|\| isSelfP\(np\)/.test(u), '배치도 빈 칸 검사 — 겹침 허용이면 통과 · PC 배치 창은 검사 밖'); }
 console.log(bad ? `✗ t_static ${bad}/${n} 실패` : `✓ t_static ${n}개 모두 통과`); process.exit(bad ? 1 : 0);

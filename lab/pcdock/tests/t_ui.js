@@ -9,7 +9,7 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
 (async () => { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'pcdocku-')); const FAKE = path.join(__dirname, 'fakeps.js'); fs.chmodSync(FAKE, 0o755);
   const env = { ...process.env, RN_PCDOCK_HOME: D, RN_PCDOCK_PS: FAKE, RN_PCDOCK_NOWIN: '1', RN_PCDOCK_NOUPDATE: '1', RN_PCDOCK_PORT: String(20000 + Math.floor(Math.random() * 20000)), FAKE_LOG: path.join(D, 'fake.log'), FAKE_STARTUP: path.join(D, 'startup.lnk'), FAKE_RUN_FAIL: 'kakao' };
   /* (0.1.7) 앞 흐름은 빈 배치도에서 — PC 배치 작은 창은 이미 넣은 것으로(selfAdded) · 자기 창 놓기는 맨 끝 ⑤에서 */
-  fs.writeFileSync(path.join(D, 'settings.json'), JSON.stringify({ ...require('../settings.js').defaults(), selfAdded: true }));
+  fs.writeFileSync(path.join(D, 'settings.json'), JSON.stringify({ ...require('../settings.js').defaults(), selfAdded: true, selfV: 2 }));
   const sp = cp.spawn(process.execPath, [path.join(__dirname, '..', 'readnow-pcdock.js')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
   const port = await new Promise((res) => { let b = ''; sp.stdout.on('data', (d) => { b += d; const m = /PCDOCK_PORT=(\d+)/.exec(b); if (m) res(+m[1]); }); });
   const br = await require(PW).chromium.launch(); const errs = [];

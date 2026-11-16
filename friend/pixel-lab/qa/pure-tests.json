@@ -1,0 +1,77 @@
+{
+  "passed": 7,
+  "total": 7,
+  "results": [
+    {
+      "name": "입력 계약과 잘못된 등신 거절",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "바닥과 언덕의 연속 접지",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "경험의 중복 적용 방지와 중립 시작",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "캐릭터별 임대와 오래된 기기 요청 거절",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "기존 PC·안드로이드 통로와 새 웹 단독 모드",
+      "ok": true,
+      "ms": 0,
+      "detail": {
+        "pcMessages": 3,
+        "androidMessages": 1,
+        "nativeDeviceExecuted": false
+      }
+    },
+    {
+      "name": "회전은 평면 회전이 아닌 깊이 재투영",
+      "ok": true,
+      "ms": 49,
+      "detail": {
+        "front": 1062,
+        "side": 585,
+        "top": 182
+      }
+    },
+    {
+      "name": "세 시안 × 14개 기본형 × 64상태의 누락·잘림 검사",
+      "ok": true,
+      "ms": 13728,
+      "detail": {
+        "count": 2688,
+        "summary": [
+          {
+            "candidate": "A",
+            "states": 896,
+            "ms": 4892,
+            "minOpaque": 36,
+            "maxOpaque": 282
+          },
+          {
+            "candidate": "B",
+            "states": 896,
+            "ms": 4380,
+            "minOpaque": 42,
+            "maxOpaque": 302
+          },
+          {
+            "candidate": "C",
+            "states": 896,
+            "ms": 4455,
+            "minOpaque": 42,
+            "maxOpaque": 314
+          }
+        ]
+      }
+    }
+  ]
+}
