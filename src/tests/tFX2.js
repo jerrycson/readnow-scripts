@@ -86,7 +86,11 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
   ok(R.next.set === '' && R.next.keep === 'A-01,A-02,K-1', '다음 날 저절로 풀림(어제 문서는 안 봄): ' + JSON.stringify(R.next));
   ok(R.key.lid === '7001' && /f-front\.jpg/.test(R.key.img) && /f-front\.jpg/.test(R.key.direct) && R.key.none === '', '사진 키 짝 — 주문 줄에 열쇠가 없어도 같은 주문 출고 기록의 listingId로 · U코드 그대로도: ' + JSON.stringify(R.key));
   ok(/none/.test(R.busy0) && /f-front\.jpg\+z\+lazy/.test(R.busy1) && /g-front\.jpg\+z\+lazy/.test(R.busy1), '우리 상품 기록을 받는 중이면 끝난 뒤 다시 그려 사진이 나옴(lazy · 큰 보기 달림): ' + R.busy0 + ' → ' + R.busy1);
-  /* 큰 보기 — 마우스 올리기(PC) */
+  /* 큰 보기 — 마우스 올리기(PC) · (kf1117 11/17) 사진 크게 기본은 '앞면 하나'(img1 · 웹앱 1.78.404 · 정범님 '웹앱 전체 한 설정 · 출고도 따름') — 기본을 먼저 보고, 세 면 보기는 그 설정(rn-imgzoom='three')을 고른 뒤 */
+  { const i0 = await p.$('#ss_list img.ss-ph'); await i0.hover(); await p.waitForTimeout(400);
+    const Z0 = await p.evaluate(() => { const z = document.getElementById('pzbox'); return z ? { on: z.style.display === 'block', one: z.classList.contains('one'), faces: [...z.querySelectorAll('.pz-f')].map((f) => f.querySelector('figcaption').textContent.replace(/\s.*/, '')).join(',') } : null; });
+    ok(Z0 && Z0.on && Z0.one && Z0.faces === '앞면', '기본(🖼 앞면 하나): 마우스를 올리면 앞면만 크게: ' + JSON.stringify(Z0));
+    await p.mouse.move(5, 5); await p.waitForTimeout(300); await p.evaluate(() => { try { localStorage.setItem('rn-imgzoom', 'three'); } catch (e) {} }); }
   const im = await p.$('#ss_list img.ss-ph'); await im.hover(); await p.waitForTimeout(400);
   const Z = await p.evaluate(() => { const z = document.getElementById('pzbox'); if (!z) return null; const r = z.getBoundingClientRect(); return { on: z.style.display === 'block', tap: z.className === 'tap', faces: [...z.querySelectorAll('.pz-f')].map((f) => f.querySelector('figcaption').textContent + ':' + (f.querySelector('img') ? f.querySelector('img').getAttribute('src').replace(/.*\//, '') : '없음')).join(','), inV: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight }; });
   await p.mouse.move(5, 5); await p.waitForTimeout(300); const Z2 = await p.evaluate(() => (document.getElementById('pzbox') || {}).style.display);
@@ -125,6 +129,7 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
 }).then(() => H(async (p) => { await p.evaluate(require('./seed.js'));
   const R = await p.evaluate(async (seedSrc) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); await W(1500); await eval('(' + seedSrc + ')')(); window.shipOneShot = async () => null; S.shipTab = 'deliv'; await openShip(); await W(700); const h = document.getElementById('shp_onefold'); const r = h.getBoundingClientRect(); const sh = document.getElementById('sheet');
     const o = { h: Math.round(r.height), doc: document.documentElement.scrollWidth - innerWidth, sheet: sh.scrollWidth - sh.clientWidth }; history.back(); await W(300); openShipDayView('2026-11-02'); await W(800); return o; }, seedAll.toString());
+  await p.evaluate(() => { try { localStorage.setItem('rn-imgzoom', 'three'); } catch (e) {} }); /* (kf1117) 세 면 보기를 고른 기기 — 기본(앞면 하나)은 위 PC 시험이 봄 */
   await p.tap('#ss_list img.ss-ph'); await p.waitForTimeout(400);
   const Z = await p.evaluate(() => { const z = document.getElementById('pzbox'); const r = z ? z.getBoundingClientRect() : null; return z ? { on: z.style.display === 'block', tap: z.className === 'tap', faces: z.querySelectorAll('.pz-f').length, inV: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight } : null; });
   await p.tap('#pzbox [data-pzx]'); await p.waitForTimeout(300); const Z2 = await p.evaluate(() => (document.getElementById('pzbox') || {}).style.display);
