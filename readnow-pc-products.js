@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.342의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.343의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.342' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.342', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.343' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.343', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2251,8 +2251,10 @@
         hit = match(); if (hit) break; }
       if (benchNetBad()) netBad = true; const R = { at: nowIso(), from: prog.page, base, order, tried, past, m: hit ? hit.m : 0, n: A.length, need: RCFG.match, pages: RCFG.pages, ms: Date.now() - t0a };
       const netWhy = hit || fails.length ? null : netBad ? '찾는 동안 테더링 길이 막힘' : R.ms > RCFG.slowMs ? `찾는 데 ${Math.round(R.ms / 60e3)}분 걸림(기준 ${Math.round(RCFG.slowMs / 60e3)}분 — 인터넷이 불안했던 것으로 봄)` : null; /* (11/09 정범님) 쪽을 '못 받음'(인터넷 끊김·시간 초과·테더링 막힘)은 '자리를 못 찾음'이 아님 — 11/09 0~8시 로거 '테더링 확인 안 됨' 동안 딱따구리 회차가 네 번 따로 생김 */
+      const stuck = (() => { if (hit || !fails.length || netBad) return false; const P3 = (prog.resumes || []).slice(-3); return P3.length === 3 && P3.every((x) => x && Array.isArray(x.fail) && !x.to && !x.net && x.fail.join('·') === fails.join('·')); })(); /* (🔬 정밀 점검 11/16 stuck1) 같은 쪽이 잇달아 3번(그 사이 다른 쪽은 받음 · 테더링 막힘 아님) 못 읽히면 '일시 오류'가 아님 — 11/14 02:34~11/16 로거 곰돌이책방 1603/1607쪽 자리 찾기가 1603쪽 하나 때문에 하루 95번 되풀이(저장 8만 개를 그때마다 불러옴 · 상품 페이지 정보 단계도 '읽는 중인 회차'로 막힘) → 그 쪽을 빼고 아래 갈래(끝 쪽 바로 앞·큰 숍은 그대로 이어 읽기·자리 못 찾음)로 */
+      if (stuck) { R.stuck = fails.slice(0, 10); log(`🎯 '${name}': 📍 이어 읽을 자리를 찾는 중 ${fails.join('·')}쪽이 잇달아 3번 안 읽힘(다른 쪽은 받음) — 일시 오류가 아닌 것으로 보고 그 쪽 없이 이어 감`, 1); }
       if (hit) { R.to = hit.page; R.shift = hit.page - base; prog.page = hit.page; log(`🎯 '${name}': 📍 이어 읽기 자리 확인 — 마지막에 읽은 상품 ${A.length}개 중 ${hit.m}개가 순서대로 ${hit.page}쪽에 있음${R.shift ? ` (멈춘 뒤 ${R.shift > 0 ? `새로 올려 ${R.shift}쪽 뒤로` : `팔려서 ${-R.shift}쪽 앞으로`} 밀림)` : ''} → ${hit.page}쪽부터 이어 읽음 (이미 읽은 상품은 건너뜀)`); }
-      else if (fails.length) { /* (1.63.11 자동 점검) 알라딘 일시 오류(429·화면 오류)로 앞뒤 쪽을 못 읽은 것은 '자리 못 찾음'이 아님 — 회차를 끝내지 않고 저장, 다음에 이 자리부터 다시 찾음 (본 읽기의 '읽기 실패 → 다음에 이 쪽부터'와 같게) */
+      else if (fails.length && !stuck) { /* (1.63.11 자동 점검) 알라딘 일시 오류(429·화면 오류)로 앞뒤 쪽을 못 읽은 것은 '자리 못 찾음'이 아님 — 회차를 끝내지 않고 저장, 다음에 이 자리부터 다시 찾음 (본 읽기의 '읽기 실패 → 다음에 이 쪽부터'와 같게) */
         R.fail = fails; prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); log(`🎯 '${name}': 📍 이어 읽을 자리를 찾는 중 ${fails.join('·')}쪽을 읽지 못함(${netBad ? '테더링·인터넷 길이 막힘' : '알라딘 일시 오류'}) — 회차를 끝내지 않고 저장, 다음에 이 자리부터 다시 찾음`, 1); await saveBk(); return 'partial'; }
       else if (netWhy) { R.net = netWhy; prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); log(`🎯 '${name}': 📍 이어 읽을 자리를 이번엔 확인 못 함 — ${netWhy} → 회차를 끝내지 않고 ${base}쪽 자리를 그대로 두고, 인터넷이 돌아오면 이 자리부터 다시 찾음`, 1); await saveBk(); return 'partial'; }
       else if (lastP && base >= lastP - 1) { R.endNear = true; prog.readDone = true; prog.endHit = { page: base, lastP, how: 'resumeEnd', at: nowIso() }; log(`🎯 '${name}': 📍 멈춘 자리(${base}쪽)가 끝 쪽(${lastP}쪽) 바로 앞이라 읽기는 다 끝난 것으로 봄 — 그사이 새로 올라온 상품에 밀려 마지막 상품을 못 찾았을 뿐(못 본 상품은 '이번에 안 보임'으로 두고 다음 회차에서 확정) · 실패로 적지 않음`); } /* (1.72.3) 10/15 왕공주 890/891쪽 */
