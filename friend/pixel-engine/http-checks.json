@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-15",
+  "checks": [
+    {
+      "path": "friend/pixel-engine/index.html",
+      "status": 200,
+      "type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "friend/pixel-engine/view.mjs",
+      "status": 200,
+      "type": "text/javascript; charset=utf-8"
+    },
+    {
+      "path": "friend/pixel-engine/status.json",
+      "status": 200,
+      "type": "application/json; charset=utf-8"
+    },
+    {
+      "path": "friend/pixel-engine/sources.json",
+      "status": 200,
+      "type": "application/json; charset=utf-8"
+    },
+    {
+      "path": "friend/pixel-engine/collection.json",
+      "status": 200,
+      "type": "application/json; charset=utf-8"
+    }
+  ],
+  "browserInteractionVerified": false
+}
