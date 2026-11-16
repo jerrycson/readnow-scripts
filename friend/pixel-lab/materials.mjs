@@ -8,6 +8,8 @@ export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
+ 'areola35':ramp(refinedSkin[s.palette].map(c=>'#'+hex(c).map((v,k)=>Math.round(v*[.78,.62,.63][k]).toString(16).padStart(2,'0')).join('')),{skin:true}),
+ 'papilla35':ramp(refinedSkin[s.palette].map(c=>'#'+hex(c).map((v,k)=>Math.round(v*[.74,.55,.57][k]).toString(16).padStart(2,'0')).join('')),{skin:true}),
  'complexion34':ramp(refinedSkin[s.palette],{skin:true,portrait:true,chin:s.heads-1}),
  'iris34':ramp(['#203138','#344b50','#56767b','#85a2a0','#b7c2b0']),
  'mouth-ink34':ramp(['#563336','#6f4240','#834d47','#925d51','#a66f61']),

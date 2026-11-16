@@ -68,6 +68,20 @@
       "at": "2026-11-16T15:17:00.000Z",
       "label": "34차 · 48px 얼굴과 가슴 기본형·바스트 모핑",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "aa3236a33bda2cf6afd9d5ad",
+      "project": "bookfriend",
+      "round": 35,
+      "cards": 298,
+      "sources": 287,
+      "chapters": 14,
+      "cardsSha": "22d4dcb17f6dd878861af9f8b074f9058c93b2f029178202c0e906a92365c481",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "f1f4da0c6b1842614c88ca683e4f568294dfb5fe2b6c2d101af4c54fe56b38b5",
+      "at": "2026-11-16T17:55:00.000Z",
+      "label": "35차 · 지정 도판 공통형과 20종 · 얼굴·체표 원전 대조",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }
