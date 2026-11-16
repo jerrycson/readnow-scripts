@@ -7789,7 +7789,7 @@ async function alpsLinkPaint(force) { const box = document.getElementById('alps_
  *  진행 = Firestore shp_runs/{YYYYMMDD_n} 한 문서(단계·세부 줄 log·지금 stepNow·사람 몫 need·알림 warn) — 어느 기기에서도 같은 진행(🛰 지금 실행 중 한 줄) · 손님 이름·주소는 넣지 않음(주문번호·수만)
  *  일은 누른 기기(주인)가 함 — 주인 맥박(owner.beat)이 끊기면 다른 기기가 웹앱을 열 때 이어받음(ALPS 단계는 MJ-MAIN 도우미에 닿는 기기만) · 사람에게 묻는 것은 근거 붙은 멈춤 조건에서만 */
 const OS_PH = [['P0', '시작 전 점검'], ['P1', '묶음 정하기'], ['ALPS', 'ALPS 접수·인쇄'], ['MATCH', '송장 맞추기'], ['INV', '알라딘 송장 입력'], ['Y24', '예스24 발송처리'], ['CHECK', '판매처 다시 읽어 확인'], ['NEXT', '남은 주문 보기'], ['END', '끝']];
-const OS_ALPS_WANT = '0.5.6'; /* (11/06 오후) 0.5.6 = 일마다 종이 확인(원스톱 기본 묻지 않음) ·  이 판부터 자정 넘김 날짜 고정 · 인쇄 직전 프린터 확인 — 낮으면 P0이 '새 판 받기'를 부르고 알림(막지는 않음 · 막는 기준은 ALPS_MIN) */
+const OS_ALPS_WANT = '0.5.9'; /* (11/16 #5) 0.5.9 = 요청 번호(operationId)를 돌려줌 — 결과 불명 때 저절로 가려 다시 보내지 않음 · 낮아도 막지 않음(옛 도우미면 아래 osCheckExternal이 파일·시각으로 가리고 못 가리면 사람이 확인) */ /* (11/06 오후) 0.5.6 = 일마다 종이 확인(원스톱 기본 묻지 않음) ·  이 판부터 자정 넘김 날짜 고정 · 인쇄 직전 프린터 확인 — 낮으면 P0이 '새 판 받기'를 부르고 알림(막지는 않음 · 막는 기준은 ALPS_MIN) */
 const OS_TAB = (() => { const k = 'rn-os-tab'; let v = null; try { v = sessionStorage.getItem(k); } catch (e) {} if (!v || !/^os_\w{4,}$/.test(v)) { v = 'os_' + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem(k, v); } catch (e) {} } return v; })(); /* (정범님 11/05 '끊겨도 아무 문제없이 어느 시점이든 계속 연이어') 이 탭의 이름을 탭 저장소(sessionStorage)에 — 새로 고침·새 판 받기 뒤에도 같은 탭이라 90초 기다리지 않고 바로 주인으로 이어서 · 다른 탭·다른 기기는 새 이름 */
 /* 주인 소식이 끊겼나 — 맥박(owner.beat)이 90초 넘음 · 또는 주인 탭이 닫히며 '나감'(owner.leftAt)을 남김(창 닫기·새 판 받기) */
 const osOwnStale = (ow) => { ow = ow || {}; const b = Date.parse(ow.beat || '') || 0; const l = Date.parse(ow.leftAt || '') || 0; return Date.now() - b >= 90e3 || (l && l >= b); };
@@ -8191,13 +8191,15 @@ async function osExternal(r, path, body) {
     return { inFlight: { token, path, at: new Date().toISOString(), file: (body && body.fileName) || ((cur.p1pend || {}).file) || ((osBatch(cur) || {}).file) || null, job: ((osBatch(cur) || {}).alpsId) || null } };
   }, lease);
   try { const result = await alpsFetch(path, { ...(body || {}), operationId: token }); await osOwnedWrite(r.id, (cur) => { if (!cur.inFlight || cur.inFlight.token !== token) throw osLeaseLost(); return { inFlight: null }; }, lease); return result; }
-  catch (e) { if (e.code !== 'os-owner-changed') await osOwnedWrite(r.id, { status: 'wait', need: { k: 'resultUnknown', msg: '도우미 요청의 결과를 확인하지 못함 — 다시 보내지 않고 확인 중', btns: [['checkrun', '처리 결과 다시 확인'], ['stop', '멈춤']] } }, lease).catch(() => {}); throw e; }
+  catch (e) { if (e.code !== 'os-owner-changed') await osOwnedWrite(r.id, { status: 'wait', need: { k: 'resultUnknown', msg: '도우미 요청의 결과를 확인하지 못함 — 다시 보내지 않고 확인 중' + (S.alps && S.alps.st && S.alps.st.ver && vNum(S.alps.st.ver) < vNum(OS_ALPS_WANT) ? ` (도우미 ${S.alps.st.ver} — 출고가 끝난 뒤 도우미 새 판 받기를 하면 다음부터 저절로 가려짐)` : ''), btns: [['checkrun', '처리 결과 다시 확인'], ['stop', '멈춤']] } }, lease).catch(() => {}); throw e; }
 }
 async function osCheckExternal(r) {
   if (!r.inFlight) return false; let st, hist;
   try { st = await alpsFetch('/alps/status'); hist = await alpsFetch('/alps/hist?n=40'); } catch (e) { return false; }
   const q = r.inFlight; const jobs = [st && st.run, ...((hist && hist.hist) || [])].filter(Boolean);
-  const hit = jobs.find((j) => j.operationId === q.token);
+  let hit = jobs.find((j) => j.operationId === q.token);
+  /* (11/16 #5 리드) 옛 도우미(0.5.9 전)는 요청 번호를 돌려주지 않음 → 시작·이어서 요청만, 요청을 보낸 뒤 시작된 같은 파일(같은 날 다시 올려 _2처럼 이름이 바뀐 것도)의 실행이 있으면 그것으로 봄(다시 보내지 않음) · 못 가리면 그대로 사람이 확인 */
+  if (!hit && st && st.ver && vNum(st.ver) < vNum(OS_ALPS_WANT) && (q.path === '/alps/run' || q.path === '/alps/resume') && q.file) { const t = Date.parse(q.at || '') || 0; const R = st.run; if (R && R.id && !R.operationId && String(R.fileName || R.file || '').replace(/(_\d+)?\.xlsx$/i, '') === String(q.file).replace(/(_\d+)?\.xlsx$/i, '') && +R.t0 >= t - 5000) hit = R; }
   if (!hit) return false;
   await osOwnedWrite(r.id, (cur) => { if (!cur.inFlight || cur.inFlight.token !== q.token) throw osLeaseLost(); const b = osBatch(cur); const patch = b && q.path === '/alps/resume' ? osBtPatch(cur, { ...b, alpsId: hit.id, alpsIds: [...new Set([...(b.alpsIds || []), hit.id])], autoRes: (+b.autoRes || 0) + 1 }) : {}; return { ...patch, inFlight: null, status: 'run', need: null }; }); return true;
 }
@@ -8271,7 +8273,7 @@ async function osCheck(r) { const cf = osCfg(); const L = []; const add = (k, lv
   let st = null; if (!PHONE_THIN) { try { st = await alpsFetch('/alps/status'); } catch (e) { st = null; } }
   if (st && st.ok) { add('helper', 'ok', `ALPS 도우미 ${st.ver} · ${st.pc || ''}`);
     if (vNum(st.ver) < vNum(ALPS_MIN)) add('ver', 'err', `ALPS 도우미 판이 낮음(${st.ver} < ${ALPS_MIN})`, { hard: 1, fix: 'MJ-MAIN PowerShell: ' + ALPS_INSTALL });
-    else if (vNum(st.ver) < vNum(OS_ALPS_WANT)) { if (!r.updAsk) { try { await alpsFetch('/alps/update', {}); } catch (e) {} await osPut(r.id, { updAsk: new Date().toISOString() }, `ALPS 도우미 ${st.ver} → ${OS_ALPS_WANT} 새 판 받기를 부름(자정 넘김·프린터 확인 보호)`); add('ver', 'wait', '새 판 받는 중'); } else add('ver', 'warn', `ALPS 도우미 ${st.ver} — ${OS_ALPS_WANT} 전 판이라 자정 넘김 날짜 고정·인쇄 직전 프린터 확인이 없음(새 판은 저절로 받음)`); }
+    else if (vNum(st.ver) < vNum(OS_ALPS_WANT)) { if (!r.updAsk) { try { await alpsFetch('/alps/update', {}); } catch (e) {} await osPut(r.id, { updAsk: new Date().toISOString() }, `ALPS 도우미 ${st.ver} → ${OS_ALPS_WANT} 새 판 받기를 부름(요청 번호 확인·자정 넘김·프린터 확인 보호)`); add('ver', 'wait', '새 판 받는 중'); } else add('ver', 'warn', `ALPS 도우미 ${st.ver} — ${OS_ALPS_WANT} 전 판 — 요청이 끊기면 결과를 저절로 가리지 못해 사람이 확인할 수 있음(새 판은 출고가 끝난 뒤 저절로 받음)`); }
     if (!st.cred || !st.cred.saved) add('cred', 'err', 'ALPS 로그인 정보가 없음', { hard: 1, fix: 'MJ-MAIN 크롬 주소창 http://127.0.0.1:8898/alps' });
     if (!st.cfg || !st.cfg.printer) add('printer', 'err', '롯데택배 프린터를 고르지 않음', { hard: 1, fix: 'MJ-MAIN 크롬 주소창 http://127.0.0.1:8898/alps' });
     else { let pc = null; try { pc = await alpsFetch('/alps/pcheck'); } catch (e) {} if (pc && pc.bad) add('printer', 'err', `프린터 '${st.cfg.printer}' ${pc.bad}`, { hard: 1, fix: '용지·전원·연결을 확인한 뒤 「다시 점검」' }); else if (pc && pc.skip) add('printer', 'warn', `프린터 상태는 못 봄(${pc.skip}) — 인쇄 뒤 종이 확인으로`); else add('printer', 'ok', `프린터 '${st.cfg.printer}' 준비됨${pc && pc.state ? ' · ' + pc.state : ''}`); }
