@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.343의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.344의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.343' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.343', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.344' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.344', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -522,7 +522,7 @@
     const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
     const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
     const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister'), ReadnowExt: gv('ReadnowExt') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
-    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null, hg: 1 } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null, hg: 1, have: I.have || null, bad: (I.bad && I.bad.ver) || null, noeval: I.noeval ? 1 : null, fix: globalThis.__rnLiveFix ? globalThis.__rnLiveFix.to : null, why: globalThis.__rnLiveWhy ? String(globalThis.__rnLiveWhy.why).slice(0, 160) : null } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
   }
   let running = null; let stopFlag = false;
   /* (1.66.0) 🔆 작업이 도는 동안 화면 꺼짐·화면 보호기 막기(Wake Lock) — 화면 보호기가 켜지면 크롬이 창을 '안 보임'으로 보고 타이머를 늦춰 수집이 멈춘 것처럼 됐음 · 공개 전용 PC(로거)는 늘 */

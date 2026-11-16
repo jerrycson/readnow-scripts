@@ -1,7 +1,18 @@
-/* readnow-pc-boot.js — 리드나우 수집기 1.89.343의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
+/* readnow-pc-boot.js — 리드나우 수집기 1.89.344의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
  * 본체(로더)가 받아 둔 판/이 판을 고른 뒤 부름 · 빠른 업데이트로 바뀜 (1.72.0) */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.343' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.344' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 globalThis.__rnBoot = function (BI) { const G = globalThis; const CLASSIC = BI.classic; const gv = (k, d) => { try { return GM_getValue(k, d); } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
+/* (1.89.344 · 정범님 11/16 23:37 「버전이 안 맞다는 경고가 오래 떠 방해」) 🔧 판 번호 바로잡기 — Tampermonkey가 본체(로더)는 그대로 두고 @require 모듈 파일만 readnow.kr 최신으로 다시 받아 오면
+ *  실제로 도는 코드는 새 판(예 343)인데 로더는 본체 판(예 282)으로 셈 → 빨간 띠 '모듈 판이 맞지 않음' + 판 알림이 '새 판이 있다'며 30분마다 새로고침을 되풀이(새 탭마다 띠가 다시 뜸)
+ *  줄에 선 모듈과 이 시작 코드의 판이 '모두 같은 새 판'이면 진짜로 그 판이 도는 것이니 판 번호를 그 판으로 바로잡음(띠·되풀이 새로고침이 멈춤) · 판이 섞여 있으면 그대로 띠를 띄움(진짜 다름) · 머리(로더)는 바꾸지 않음 */
+{ const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0); try {
+  const Q = G.__rnModQ || []; const PM = G.ReadnowPcMods || {}; const vs = Q.map((x) => x && x[1]).concat([PM.boot]); const MV = vs[0];
+  if (BI.used === 'classic' && Q.length && MV && vs.every((v) => v === MV) && vn(MV) > vn(CLASSIC)) { G.__rnLiveVer = MV; G.__RN_FILE_VER = MV; G.__rnLiveFix = { from: CLASSIC, to: MV, n: Q.length };
+    const F0 = gv('rn-live-fixnote', null); if (!(F0 && F0.ver === MV && Date.now() - (+F0.at || 0) < 6 * 3600e3)) { sv('rn-live-fixnote', { ver: MV, at: Date.now() }); setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'info', '🔧 Tampermonkey가 모듈 파일을 새 판 ' + MV + '으로 받아 옴(본체는 ' + CLASSIC + ') — 새 판 코드로 돎 · 판 번호를 ' + MV + '으로 맞춤(빨간 띠·되풀이 새로고침 없음)'); } catch (x) {} }, 3500); } }
+  /* 받아 둔 새 판(rn-live)이 있는데도 옛 판으로 뜬 까닭을 남김(전에는 아무 기록 없이 조용히 옛 판으로 떴음) */
+  const L = gv('rn-live', null); if (BI.used === 'classic' && L && L.ver && vn(L.ver) > vn(CLASSIC)) { const bd = gv('rn-live-bad', null); const why = G.__rnLiveErr ? '시작 실패: ' + G.__rnLiveErr : !L.code ? '받아 둔 코드가 비어 있음' : L.hsig !== BI.hsig ? '머리 서명이 다름' : bd && bd.ver === L.ver ? '전에 시작에 실패한 판이라 쓰지 않음(' + String(bd.err || '').slice(0, 120) + ')' : gv('rn-live-off', false) ? '빠른 업데이트를 꺼 둠' : '까닭 모름'; G.__rnLiveWhy = { ver: L.ver, why };
+    if (!G.__rnLiveErr) { const W0 = gv('rn-live-whynote', null); if (!(W0 && W0.ver === L.ver && W0.why === why && Date.now() - (+W0.at || 0) < 6 * 3600e3)) { sv('rn-live-whynote', { ver: L.ver, why, at: Date.now() }); setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', G.__rnLiveFix && vn(G.__rnLiveFix.to) >= vn(L.ver) ? 'info' : 'warn', '⚡ 받아 둔 판 ' + L.ver + '을 쓰지 않고 ' + (G.__rnLiveFix ? 'Tampermonkey가 받은 모듈 ' + G.__rnLiveFix.to : '본체 ' + CLASSIC) + '으로 뜸 — 까닭: ' + why); } catch (x) {} }, 3600); } } }
+} catch (e) {} }
 /* (1.66.0) 🧭 바깥 사이트 화면 그려 읽기(리더) — 중고닷·번개장터·중고나라·당근·예스24 중고 검색이 화면을 연 뒤 글을 따로 불러오는 방식이라 받은 화면엔 글이 없음
  *  수집기(알라딘 탭)가 그 검색 주소에 ?rnx=표를 붙여 보이지 않는 탭으로 열면, 이 스크립트가 그 탭에서만 '리더'로 깨어나(다른 일은 하나도 안 함)
  *  글 링크가 다 뜰 때까지(같은 수로 2초) 기다렸다가 링크 주소·링크 글·그 글을 담은 칸 글(값·상태)을 GM 저장소로 돌려주고 탭을 닫음 · 사람이 그냥 연 그 사이트에선 깨어나지 않음(?rnx= 없으면) */

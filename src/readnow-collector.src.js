@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.343
+// @version      1.89.344
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4349,7 +4349,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
     const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
     const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister'), ReadnowExt: gv('ReadnowExt') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
-    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null, hg: 1 } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null, hg: 1, have: I.have || null, bad: (I.bad && I.bad.ver) || null, noeval: I.noeval ? 1 : null, fix: globalThis.__rnLiveFix ? globalThis.__rnLiveFix.to : null, why: globalThis.__rnLiveWhy ? String(globalThis.__rnLiveWhy.why).slice(0, 160) : null } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
   }
   let running = null; let stopFlag = false;
   /* (1.66.0) 🔆 작업이 도는 동안 화면 꺼짐·화면 보호기 막기(Wake Lock) — 화면 보호기가 켜지면 크롬이 창을 '안 보임'으로 보고 타이머를 늦춰 수집이 멈춘 것처럼 됐음 · 공개 전용 PC(로거)는 늘 */
