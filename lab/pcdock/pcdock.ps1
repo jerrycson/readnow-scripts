@@ -164,7 +164,12 @@ switch ($Act) {
       if ($m.title -and -not ($w.Title -match $m.title)) { return $false }
       return $true }
     $shellNow = @{}
-    function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false; pre = @(); hintMiss = $false; hidWhy = ''; sec = 0 } }
+    # (0.1.8) 맞는 창이 여럿일 때 — 숨은 창 제목(hidden · 카카오톡은 '카카오톡' 그대로인 본 창)이 꼭 맞는 것 → 창 종류(hcls) → 가장 큰 것 · hidden이 없는 단계는 예전처럼 첫 창
+    #  (0.1.7은 첫 창을 집어 카카오톡의 대화 창·알림 창처럼 제목에 '카카오톡'이 든 다른 창을 놓을 수 있었음)
+    function BestOf($ws, $sp) { $cands = @($ws | Where-Object { $null -ne $_ }); if (-not $cands.Count) { return $null }; $m = $sp.match; if (-not "$($m.hidden)") { return $cands[0] }
+      $sc = @($cands | Sort-Object -Property @{ Expression = { $(if ($_.Title -match "$($m.hidden)") { 0 } else { 1 }) } }, @{ Expression = { $(if ("$($m.hcls)" -and $_.Cls -eq "$($m.hcls)") { 0 } else { 1 }) } }, @{ Expression = { -1 * ($_.R.R - $_.R.L) * ($_.R.B - $_.R.T) } })
+      return $sc[0] }
+    function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false; pre = @(); hintMiss = $false; hidWhy = ''; sec = 0; cls = '' } }
     # (0.1.6) 크롬 프로필(--user-data-dir) — 창 주인(크롬 본 프로세스)의 명령 줄에서 · 평소 크롬은 '' · 못 읽으면 $null(그 창은 프로필로 거르지 않음)
     $script:uddMap = @{}
     function UddOf($cmdl) { if ($null -eq $cmdl) { return $null }; if ("$cmdl" -match '--user-data-dir=(?:"([^"]+)"|(\S+))') { $ud = $(if ($Matches[1]) { $Matches[1] } else { $Matches[2] }); return (Exp $ud).Trim('"').TrimEnd('\').ToLower() }; return '' }
@@ -179,6 +184,8 @@ switch ($Act) {
       if ($script:launchN -ge $script:launchMax) { $st.err = "새 창 상한($($script:launchMax)개)에 닿아 더 안 띄움"; return }
       if ([DateTime]::Now -gt $script:hardEnd) { $st.err = '실행 시간 상한을 넘어 더 안 띄움'; return }
       if ($sp.match.folder) { $fp = "$($sp.match.folder)"; if (-not (Test-Path -LiteralPath $fp -PathType Container)) { $st.err = "폴더가 없음: $fp (건너뜀 — '홈'을 열지 않음)"; return } }
+      # (0.1.8 · 정범님 11/16 15:28) 윈도우 시작 뒤 다시 찾기(Node lateRetry) — 프로세스가 이미 있으면(켜지는 중·로그인 중·트레이) 다시 켜지 않고 창을 기다림
+      if ($sp.match.waitProc -and (Arr $sp.match.procs).Count) { if (@(Get-Process -Name "$(@($sp.match.procs)[0])" -ErrorAction SilentlyContinue).Count) { $st.how = '이미 켜지는 중(프로세스 있음) — 다시 켜지 않고 창을 기다림'; return } }
       $script:launchN = $script:launchN + 1
       try { if ($sp.launch.uri) { Start-Process -FilePath "$($sp.launch.uri)" }
         else { $argList = @(@($sp.launch.args) | Where-Object { $null -ne $_ } | ForEach-Object { if ($sp.launch.expand) { Q (Exp $_) } else { Q $_ } }) -join ' '
@@ -195,7 +202,7 @@ switch ($Act) {
           $ns = NewSt @{ app = $st.s.app; inst = $st.s.inst; name = "$($st.s.name) · $tl"; rect = $st.s.rect; reuse = $false; over = $true; launch = @{ file = 'explorer.exe'; args = @($tp) }; match = @{ procs = @('explorer'); cls = 'CabinetWClass'; title = ''; fresh = $true; folder = $tp; leaf = $tl } }
           Launch $ns; [void]$Res.Add($ns); $st.overN = $st.overN + 1; $st.overWhy = $why }
         else { $st.tabN = $st.tabN + 1 } } }
-    function Put($st, $w, $how) { $r = $st.s.rect; $claimed[[int64]$w.H] = 1; $st.h = [int64]$w.H; $st.title = $w.Title
+    function Put($st, $w, $how) { $r = $st.s.rect; $claimed[[int64]$w.H] = 1; $st.h = [int64]$w.H; $st.title = $w.Title; $st.cls = "$($w.Cls)"
       try { $f = [RnDock]::Place([int64]$w.H, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h); $st.got = (Rc $f); $st.done = $true; $st.how = $how } catch { $st.err = "자리 옮기기 실패: $($_.Exception.Message)"; return }
       if ((Arr $st.s.tabs).Count -and -not $st.s.over -and -not $st.tabbed) { try { Tabs $st ([int64]$w.H) } catch { $st.overWhy = "탭 일 실패: $($_.Exception.Message)" } } }
     # (0.1.6) 트레이에 숨어 떠 있는 창(카카오톡 등 · 0.1.5는 '보이는 창'만 찾아 못 찾음) — 그 프로세스의 숨은 창 중 제목이 꼭 맞는 것(창 종류 hcls 먼저 · 없으면 가장 큰 것)을 보이게 한 뒤 놓음
@@ -235,7 +242,7 @@ switch ($Act) {
     $shellNow = ShellMap
     # 프로그램마다 따로(try) — 하나가 실패해도 나머지는 계속
     foreach ($sp in $steps) { $st = NewSt $sp
-      try { if ($sp.reuse) { $wl = @([RnDock]::Windows()); if ($sp.match.seq) { UddFill $wl }; $hit = @($wl | Where-Object { Fits $_ $sp $false }) | Select-Object -First 1; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } elseif (Unhid $st) { $st.how = '트레이에 숨어 있던 창을 보이게 해 자리만' } }
+      try { if ($sp.reuse) { $wl = @([RnDock]::Windows()); if ($sp.match.seq) { UddFill $wl }; $hit = BestOf @($wl | Where-Object { Fits $_ $sp $false }) $sp; if ($hit) { Put $st $hit '이미 떠 있어 자리만 옮김' } elseif (Unhid $st) { $st.how = '트레이에 숨어 있던 창을 보이게 해 자리만' } }
         if (-not $st.done -and -not $st.err -and $sp.launch) {
           if ($sp.match.seq) { $preK = @([RnDock]::Windows() | ForEach-Object { [int64]$_.H }); Launch $st; if (-not $st.err) { SeqWait $st $preK } } # (0.1.6) 크롬은 하나씩
           else { Launch $st } }
@@ -248,18 +255,21 @@ switch ($Act) {
         try { if ($st.s.match.seq) { $hv = PickFor $st.s $wins $(if ((Arr $st.pre).Count) { $st.pre } else { @($before.Keys) }) $true; if ($hv -lt 0) { $hv = -$hv; $st.hintMiss = $true }
             if ($hv -gt 0) { $hw = @($wins | Where-Object { [int64]$_.H -eq $hv }) | Select-Object -First 1; if ($hw) { Put $st $hw '켬 → 늦게 뜬 창을 자리로' } }; continue } # (0.1.6) 크롬은 그 단계를 띄운 뒤 생긴 창만
           if ($st.s.match.hidden -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $vis = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1; if (-not $vis -and (Unhid $st)) { continue } } # (0.1.6) 켰는데도 창이 숨은 채면 보이게
-          $hit = @($wins | Where-Object { Fits $_ $st.s $true }) | Select-Object -First 1
-          if (-not $hit -and -not $st.s.match.fresh -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $hit = @($wins | Where-Object { Fits $_ $st.s $false }) | Select-Object -First 1 }
+          $hit = BestOf @($wins | Where-Object { Fits $_ $st.s $true }) $st.s
+          if (-not $hit -and -not $st.s.match.fresh -and ([DateTime]::Now - $st.t0).TotalSeconds -gt 3) { $hit = BestOf @($wins | Where-Object { Fits $_ $st.s $false }) $st.s }
           if ($hit) { Put $st $hit ($(if ($st.how) { "$($st.how) → 자리 옮김" } else { '자리 옮김' })) } } catch { $st.err = "이 프로그램 일이 멈춤: $($_.Exception.Message)" } } }
     # 뜬 뒤 스스로 크기를 바꾸는 프로그램(크롬·오피스)이 있어 한 번 더
     if (@($Res | Where-Object { $_.done }).Count) { Start-Sleep -Milliseconds 1500; foreach ($st in @($Res | Where-Object { $_.done -and $_.h })) { try { $r = $st.s.rect; $st.got = (Rc ([RnDock]::Place([int64]$st.h, [int]$r.x, [int]$r.y, [int]$r.w, [int]$r.h))) } catch {} } }
+    # (0.1.8) 늦게 뜨는 프로그램(숨은 창 단서가 있는 단계 · 카카오톡) — 끝날 때 프로세스가 있나(up) · 트레이에 숨은 창이 있나(tray)를 함께 돌려줌 → 기록에 '프로세스 없음 / 트레이에만 / 로그인·업데이트 중'으로 가름
+    foreach ($st in $Res) { $m = $st.s.match; $st.up = $null; $st.tray = $false; if (-not "$($m.hidden)" -or -not @($m.procs).Count) { continue }
+      try { $st.up = [bool](@(Get-Process -Name "$(@($m.procs)[0])" -ErrorAction SilentlyContinue).Count); if (-not $st.done -and $st.up) { $st.tray = [bool](@([RnDock]::Hidden("$(@($m.procs)[0])", "$($m.hidden)")).Count) } } catch {} }
     $out.res = @($Res | ForEach-Object { $howTxt = $(if ($_.done) { $_.how } elseif ($_.err) { $_.err } else { "창을 못 찾음($($wait)초)" })
       if ($_.done -and $_.tabN) { $howTxt = "$howTxt · 탭 $($_.tabN)개 더함" }
       if ($_.overN) { $howTxt = "$howTxt · 탭 $($_.overN)개는 탭 대신 같은 칸에 창을 겹쳐 놓음($($_.overWhy))" }
       if ($_.s.over -and $_.done) { $howTxt = "$howTxt (탭 대신 겹쳐 놓음)" }
       if (-not $_.done -and $_.hidWhy) { $howTxt = "$howTxt · $($_.hidWhy)" }
       if ($_.done -and $_.hintMiss) { $howTxt = "$howTxt (제목이 주소와 달라 새로 뜬 창으로 놓음)" }
-      @{ app = $_.s.app; inst = $_.s.inst; name = $_.s.name; ok = [bool]$_.done; how = $howTxt; title = $_.title; want = $_.s.rect; got = $_.got; helper = $_.s.helper; tabs = $_.tabN; over = $_.overN; sec = $_.sec; miss = [bool]$_.hintMiss } })
+      @{ app = $_.s.app; inst = $_.s.inst; name = $_.s.name; ok = [bool]$_.done; how = $howTxt; title = $_.title; want = $_.s.rect; got = $_.got; helper = $_.s.helper; tabs = $_.tabN; over = $_.overN; sec = $_.sec; miss = [bool]$_.hintMiss; h = [int64]$_.h; cls = "$($_.cls)"; up = $_.up; tray = [bool]$_.tray } })
     Done $out }
   { $_ -eq 'cleanscan' -or $_ -eq 'cleanrun' } {
     $prot = @(@($In.protect) | ForEach-Object { (Exp $_).TrimEnd('\') } | Where-Object { $_ }); $mark = "$($In.mark)"

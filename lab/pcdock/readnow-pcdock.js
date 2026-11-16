@@ -45,7 +45,7 @@ const SF = path.join(HOME, 'settings.json');
 /* 0.1.0 설정(v:1)은 읽을 때 배치마다 자기 설정을 가진 꼴(v:2)로 옮기고, 예전 파일은 old\settings-v1-<시각>.json에 그대로 남김(지우지 않음) */
 function loadCfg() { let j; try { j = JSON.parse(fs.readFileSync(SF, 'utf8')); } catch (e) { const d = SET.validate(SET.defaults(), ST.mons).cfg; if (d.selfAdded && !fs.existsSync(SF)) { try { saveCfg(d); log('① 처음 설정 — 목록에 「리드나우 PC 배치」(이 작은 창)를 넣고 빈 칸에 놓음'); } catch (x) {} } return d; } const v = SET.validate(j, ST.mons);
   /* (0.1.7) PC 배치 작은 창을 목록·빈 칸에 처음 한 번 넣었으면 저장(예전 파일은 old\에) */
-  if (!v.migrated && !j.selfAdded && v.cfg.selfAdded) { try { saveCfg(v.cfg); log('① 목록에 「리드나우 PC 배치」(이 작은 창)를 더함' + (v.selfNew ? ' — 빈 칸에 놓음' : '')); } catch (e) { log('✗ PC 배치 창 더하기: ' + e.message); } }
+  if (!v.migrated && ((!j.selfAdded && v.cfg.selfAdded) || v.selfNew)) { /* (0.1.8) 0.1.7이 빈 칸이 없어 자리를 못 준 파일도 한 번 더(selfNew) */ try { saveCfg(v.cfg); log('① 목록에 「리드나우 PC 배치」(이 작은 창)를 더함' + (v.selfNew ? ' — 칸에 놓음' + (v.warns.some((w) => /겹쳐 놓았/.test(w)) ? '(빈 칸이 없어 주 모니터 오른쪽 위에 겹쳐)' : '') : '')); } catch (e) { log('✗ PC 배치 창 더하기: ' + e.message); } }
   if (v.migrated) { try { const old = path.join(HOME, 'old'); fs.mkdirSync(old, { recursive: true }); fs.copyFileSync(SF, path.join(old, 'settings-v1-' + Date.now() + '.json')); const tmp = SF + '.t'; fs.writeFileSync(tmp, JSON.stringify(v.cfg, null, 1)); fs.renameSync(tmp, SF); log(`① 예전 설정(0.1.0)을 배치마다 따로인 꼴로 옮김 — 배치 ${v.cfg.place.length} · 예전 파일은 old\\에`); } catch (e) { log('✗ 예전 설정 옮기기: ' + e.message); } }
   return v.cfg; }
 function saveCfg(cfg) { const old = path.join(HOME, 'old'); fs.mkdirSync(old, { recursive: true }); if (fs.existsSync(SF)) fs.copyFileSync(SF, path.join(old, 'settings-' + Date.now() + '.json')); /* 예전 설정은 지우지 않고 old\에 */
@@ -121,6 +121,57 @@ async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok
     const out = { ok: !!r.ok, err: fe.msg || undefined, raw: fe.raw || undefined, res, skipped: plan.skipped, closed: r.closed || [], pre: r.pre || null, closeErr: r.closeErr || undefined, mode: close.length ? 'close' : 'keep', sec: Math.round((Date.now() - t0) / 1000) };
     log(`③ 실행·배치(${by}${close.length ? ' · 모두 닫고' : ''}) — ${res.filter((x) => x.ok).length}/${res.length} 놓음 · 건너뜀 ${plan.skipped.length}` + (close.length ? ` · 닫기 부탁 ${(r.closed || []).filter((c) => c.ok).length}/${close.length}` : '') + (r.pre ? ` · 먼저 닫음 ${((r.pre.closed) || []).length} · 지킴 ${((r.pre.kept) || []).length}` : '') + ` · ${out.sec}초` + (r.err ? ' · ' + r.err : '') + res.filter((x) => !x.ok).map((x) => ' · ✗ ' + x.name + ': ' + x.how).join(''));
     setLast({ at: Date.now(), by, ...out, rows: stepRows(cfg, ST.mons, res, plan) }); return out; } finally { ST.busy = ''; runUnlock(); } }
+/* (0.1.8 · 정범님 11/16 15:28 「카카오톡이 여전히 안 열리고 배치도 안 됨 — 윈도우 시작 때 카카오톡이 뜨기 전에 배치가 돈 듯」)
+ *  윈도우 시작 자동 실행이 끝난 뒤에도 늦게 뜨는 프로그램(목록의 match.boot — 카카오톡)을 auto.lateSec(기본 180초)까지 LATE_MS(15초)마다 다시 찾음
+ *  · 실행 파일을 못 찾았으면 다시 찾기(떠 있는 프로세스 경로가 그때 생김) · 프로세스가 이미 있으면 다시 켜지 않고 창을 기다림(waitProc · 마지막 차례만 켬)
+ *  · 보이는 창 → 트레이에 숨은 창(보이게) → 프로세스만(로그인·업데이트 중) → 프로세스 없음을 차례마다 기록 · 놓으면 SETTLE_MS(30초) 뒤 한 번 더(로그인 창이 본 창으로 바뀌면 새 창을 다시 놓음)
+ *  · 차례마다 run.lock을 잡았다 놓음(그 사이 사람이 ③을 누르면 그 차례는 건너뜀) · 결과는 마지막 실행 기록(last.json)의 그 줄에 「n초 뒤 다시 찾아」로 */
+const LATE_MS = () => +process.env.RN_PCDOCK_LATE_MS || 15000;
+const SETTLE_MS = () => +process.env.RN_PCDOCK_SETTLE_MS || 30000;
+const bootPlaces = (cfg) => (cfg.place || []).filter((p) => { const t = (cfg.apps || []).find((a) => a.id === p.app); const c = t && A.catOf(t); return !!(c && c.match && c.match.boot); });
+const kState = (x) => (x.ok ? `창 '${String(x.title || '').slice(0, 30)}'${x.cls ? '(' + x.cls + ')' : ''}을 놓음` : x.up === false ? '프로세스 없음(아직 안 켜짐)' : x.tray ? '트레이에만 있음(숨은 창을 못 보이게 함)' : x.up ? '프로세스는 있는데 창이 아직 없음(로그인·업데이트 중일 수 있음)' : '창 없음');
+async function lateRetry(by, r0) { const cfg0 = loadCfg(); const sec = +cfg0.auto.lateSec || 0; const places = bootPlaces(cfg0); if (!sec || !places.length) return null;
+  const nm = (p) => p.name || ((cfg0.apps.find((a) => a.id === p.app) || {}).name) || p.app;
+  const okIds = new Set(((r0 && r0.res) || []).filter((x) => x.ok).map((x) => x.inst));
+  let todo = places.filter((p) => !okIds.has(p.id)).map((p) => p.id); const settle = new Map(places.filter((p) => okIds.has(p.id)).map((p) => [p.id, { at: Date.now() + SETTLE_MS(), h: (((r0.res || []).find((x) => x.inst === p.id)) || {}).h || 0 }]));
+  const t0 = Date.now(), end = t0 + sec * 1000; const late = {}; let n = 0;
+  log(`② 늦게 뜨는 프로그램 — ` + (todo.length ? todo.map((id) => nm(places.find((p) => p.id === id))).join('·') + ` 다시 찾기(${sec}초까지 ${Math.round(LATE_MS() / 1000)}초마다)` : '다시 찾을 것 없음') + (settle.size ? ` · 놓은 ${[...settle.keys()].map((id) => nm(places.find((p) => p.id === id))).join('·')}은 ${Math.round(SETTLE_MS() / 1000)}초 뒤 한 번 더(로그인 창 → 본 창)` : ''));
+  while ((todo.length && Date.now() < end) || settle.size) {
+    const nextS = settle.size ? Math.min(...[...settle.values()].map((v) => v.at)) : Infinity; const wake = todo.length && Date.now() < end ? Math.min(Date.now() + LATE_MS(), nextS) : nextS;
+    await new Promise((z) => setTimeout(z, Math.max(200, wake - Date.now())));
+    const now = Date.now(); const el = Math.round((now - t0) / 1000); const final = now + LATE_MS() >= end;
+    const tIds = now <= end ? todo.slice() : []; const sIds = [...settle].filter(([, v]) => v.at <= now).map(([id]) => id); if (!tIds.length && !sIds.length) continue;
+    n++; const lk = runLock(); if (!lk.ok) { log(`② 늦게 뜸 ${n}번째(${el}초) — 다른 실행·배치가 도는 중이라 이 차례는 건너뜀`); for (const id of sIds) settle.get(id).at = now + LATE_MS(); continue; }
+    ST.busy = '늦게 뜨는 프로그램 다시 찾기';
+    try { await readMons(); const cfg = loadCfg(); const ids = new Set([...tIds, ...sIds]); const sub = { ...cfg, place: cfg.place.filter((p) => ids.has(p.id)) };
+      if (tIds.length && needFind(cfg.apps.filter((a) => sub.place.some((p) => p.app === a.id))).length && now - ST.foundAt > 30e3) { const fr = await findAll(cfg.apps); log(`② 늦게 뜸 ${n}번째(${el}초) — 실행 파일 다시 찾기 ${fr.ok ? '끝' : '실패 ' + String(fr.err || '').slice(0, 60)}`); }
+      const plan = A.buildPlan(sub, ST.mons, ST.found, G, exeOk); stepSrc(plan);
+      for (const sk of plan.skipped) log(`② 늦게 뜸 ${n}번째(${el}초) — ${sk.app}: ${sk.why}`);
+      for (const st of plan.steps) { if (sIds.includes(st.inst) && !tIds.includes(st.inst)) { st.launch = null; st.reuse = true; st.settle = true; } else st.match.waitProc = !final; }
+      if (!plan.steps.length) { if (final) todo = []; continue; }
+      const r = await ps('run', { steps: plan.steps, waitSec: plan.steps.some((s) => !s.settle) ? 20 : 5, close: [], closeFirst: null }, null, 90e3);
+      if (!r.ok) { log(`② 늦게 뜸 ${n}번째(${el}초) — 윈도우 일 실패: ${String(r.err || '').slice(0, 120)}`); noteErr('late', r.err); continue; }
+      for (const x of r.res || []) { const st = plan.steps.find((q) => q.inst === x.inst) || {};
+        if (st.settle) { const was = settle.get(x.inst); settle.delete(x.inst);
+          log(`② ${x.name} ${Math.round(SETTLE_MS() / 1000)}초 뒤 한 번 더 — ` + (x.ok ? (was && was.h && x.h && was.h !== x.h ? '창이 바뀌어(로그인 창 → 본 창일 수 있음) 새 창을 다시 놓음' : '같은 창 · 자리 다시 맞춤') + ` · ${kState(x)}` : `창을 못 찾음 — ${x.how || ''} · ${kState(x)}`));
+          if (x.ok && was && was.h !== x.h) late[x.inst] = { ...x, how: `(${el}초 뒤 다시 놓아) ` + x.how, late: el }; continue; }
+        log(`② ${x.name} 늦게 뜸 기다림 — ${n}번째(경과 ${el}초): ${x.ok ? '✓ ' : '✗ '}${x.how || ''} · ${kState(x)}`);
+        if (x.ok) { todo = todo.filter((id) => id !== x.inst); settle.set(x.inst, { at: Date.now() + SETTLE_MS(), h: x.h || 0 }); late[x.inst] = { ...x, how: `(${el}초 뒤 다시 찾아) ` + x.how, late: el }; }
+        else if (final) late[x.inst] = { ...x, how: `(${sec}초 동안 ${n}번 다시 찾았지만) ` + (x.how || '') + ' · ' + kState(x), late: el }; }
+      if (final && todo.length) { log(`② ✗ ${todo.map((id) => nm(places.find((p) => p.id === id))).join('·')} — ${sec}초 동안 다시 찾았지만 못 놓음(위 줄마다 까닭)`); todo = []; }
+    } catch (e) { log('② 늦게 뜸 멈춤: ' + e.message); noteErr('late', e.message); } finally { ST.busy = ''; runUnlock(); } }
+  /* 마지막 실행 기록에 덧붙임 — 그 줄을 바꾸고(못 찾음 → 놓음) 실행 파일을 못 찾아 건너뛴 줄은 뺌 */
+  const L = ST.last; const got = Object.values(late);
+  if (L && got.length) { const res = (L.res || []).filter((x) => !late[x.inst]).concat(got.map((x) => { const f = A.friendly(x); return { ...x, msg: f.msg, raw: f.raw }; }));
+    const lateNames = new Set(got.filter((x) => x.ok).map((x) => x.name)); const skipped = (L.skipped || []).filter((k) => !lateNames.has(k.app));
+    const cfg = loadCfg(); setLast({ ...L, res, skipped, late: got.map((x) => ({ n: x.name, ok: !!x.ok, sec: x.late, how: scrubP(x.how || '').slice(0, 140) })), rows: stepRows(cfg, ST.mons, res, A.buildPlan(cfg, ST.mons, ST.found, G, exeOk)) }); }
+  return { late: got, rounds: n }; }
+/* (0.1.8 · 정범님 11/16 15:28) 윈도우 시작 배치가 끝나면 PC 배치 작은 창도 열어 ①에서 정한 칸에(0.1.7은 자동 실행이 창을 안 열어 '작은 창이 지금 안 떠 있음'으로 끝났음)
+ *  보통 켜기와 같은 길(node readnow-pcdock.js — 이미 켜져 있으면 그 서버가 창을 앞으로 + 칸으로) · 끄기 = ① 설정 「윈도우 시작 때 이 창도 열기」 */
+function openSelfAfterBoot() { const cfg = loadCfg(); if (cfg.auto.showSelf === false) { log('② PC 배치 창 — 「윈도우 시작 때 이 창도 열기」가 꺼져 있어 안 엶'); return 'off'; }
+  if (!selfPlace()) { log('② PC 배치 창 — ①에 놓은 칸이 없어 안 엶'); return 'noplace'; }
+  if (process.env.RN_PCDOCK_NOWIN) { log('② PC 배치 창 — 열기 부탁(시험이라 실제로는 안 엶)'); return 'test'; }
+  try { const c = cp.spawn(process.execPath, [path.join(APP, 'readnow-pcdock.js')], { detached: true, stdio: 'ignore', windowsHide: true, env: process.env }); c.unref(); log('② PC 배치 창 — 열어 정한 칸에 놓기 부탁(새 프로세스 ' + c.pid + ')'); return 'spawn'; } catch (e) { log('② ✗ PC 배치 창 열기: ' + e.message); return 'err'; } }
 const RLK = path.join(HOME, 'run.lock');
 function runLock() { for (let k = 0; k < 2; k++) { try { fs.writeFileSync(RLK, JSON.stringify({ pid: process.pid, at: Date.now() }), { flag: 'wx' }); return { ok: true }; } catch (e) { if (e.code !== 'EEXIST') return { ok: true };
       let j = null; try { j = JSON.parse(fs.readFileSync(RLK, 'utf8')); } catch (x) {} let alive = false; try { if (j && j.pid && j.pid !== process.pid) { process.kill(j.pid, 0); alive = true; } } catch (x) { alive = x.code === 'EPERM'; }
@@ -185,14 +236,23 @@ async function frontWin() { const r = await ps('front', { title: TITLE, w: CFG.W
 let showing = null;
 function showWindow(by, opts) { if (!showing) showing = showWindow1(by, opts || {}).finally(() => { showing = null; }); return showing; }
 async function showWindow1(by, opts) { WINST.n++; if (process.env.RN_PCDOCK_NOWIN && !process.env.RN_PCDOCK_CHROME) return { ok: true, skip: true };
-  if (opts.probe || uiOpen()) { const f = await frontWin(); if (f.found) { setWin(by, true, f.moved ? '떠 있던 창을 화면 안으로 옮겨 앞으로' : '떠 있던 창을 앞으로'); return { ok: true, how: 'front', moved: !!f.moved }; } }
+  if (opts.probe || uiOpen()) { const f = await frontWin(); if (f.found) { /* (0.1.8 · 정범님 11/16 15:28 「자기 창도 배치 안 됨」) 떠 있던 창을 앞으로만 하고 ①에서 정한 칸으로는 안 옮겼음 → 칸이 있으면 그 칸으로 */
+      const has = selfPlace(); if (has && !opts.probe) fitSelf(by, false).catch((e) => log('🪟 칸으로 옮기기 멈춤: ' + e.message));
+      setWin(by, true, (f.moved ? '떠 있던 창을 화면 안으로 옮겨 앞으로' : '떠 있던 창을 앞으로') + (has && !opts.probe ? ' · 정한 칸으로 옮김' : '')); return { ok: true, how: 'front', moved: !!f.moved, fit: !!(has && !opts.probe) }; } }
   const t0 = Date.now(); const s = await spawnWin(); if (!s.ok) { setWin(by, false, s.err); return s; }
   const v = verifyWin(by, t0, s.guess); if (opts.wait) return await v; v.catch(() => {}); return { ok: true, how: 'open' }; }
 /* (0.1.7) ①에서 「리드나우 PC 배치」를 놓은 칸(실제 화소) — 그 모니터가 지금 있을 때만 */
+function selfPlace() { const cfg = loadCfg(); const t = cfg.apps.find((a) => a.kind === 'self'); return (t && cfg.place.find((q) => q.app === t.id)) || null; }
 function selfRect() { if (!ST.mons.length) return null; const cfg = loadCfg(); const t = cfg.apps.find((a) => a.kind === 'self'); const p = t && cfg.place.find((q) => q.app === t.id); if (!p) return null;
   const m = ST.mons.find((x) => x.id === p.mon); if (!m) return null; const g = G.gridOf(m, ((cfg.mons || {})[p.mon] || {}).grid, G.baseOf(cfg.base)); if (!G.inGrid(p, g)) return null; return G.cellRect(m, g, p.c, p.r, p.w, p.h); }
+async function fitSelf(by, guess) { for (let k = 0; k < 3 && !ST.mons.length; k++) { await readMons(); if (!ST.mons.length) await new Promise((z) => setTimeout(z, 2000)); }
+  const sr = selfRect(); if (sr) { const r = await ps('fit', { title: TITLE, rect: sr }); log(`🪟 PC 배치 창(${by}) → 정한 칸 ${sr.x},${sr.y} ${sr.w}×${sr.h} — ${r.ok ? '옮김' : '못 옮김 ' + String(r.err || '').slice(0, 80)}`); return r; }
+  if (guess && ST.mons.length) { const r = await ps('fit', { title: TITLE, w: CFG.WIN.w, h: CFG.WIN.h, corner: 'tr' }); log(`🪟 PC 배치 창(${by}) → 정한 칸이 없어 오른쪽 위 — ${r.ok ? '옮김' : '못 옮김'}`); return r; }
+  log(`🪟 PC 배치 창(${by}) — 정한 칸이 없음(① 설정에서 「리드나우 PC 배치」를 칸에 놓으면 그 자리로)`); return { ok: true, skip: true }; }
 async function verifyWin(by, t0, guess) {
-  if (await waitUi(t0, 20000)) { setWin(by, true, '새 창을 띄움'); const sr = selfRect(); if (sr) setTimeout(() => ps('fit', { title: TITLE, rect: sr }).catch(() => {}), 800); else if (guess) setTimeout(async () => { if (!ST.mons.length) await readMons(); if (ST.mons.length) await ps('fit', { title: TITLE, w: CFG.WIN.w, h: CFG.WIN.h, corner: 'tr' }); }, 1500); return { ok: true, how: 'open' }; }
+  /* (0.1.8 · 정범님 11/16 15:28 「자기 창도 배치 안 됨」) 0.1.7은 새 창이 뜬 그 순간 모니터를 아직 못 읽었으면(막 켠 서버 · 모니터 읽기는 화면이 /api/state로 부를 때 시작) selfRect가 비어 칸으로 안 옮겼음
+   *  → 모니터를 다 읽은 뒤(기다림) 정한 칸으로 · 칸이 없을 때만 예전처럼 오른쪽 위 · 어떻게 됐는지 기록에 남김 */
+  if (await waitUi(t0, 20000)) { setWin(by, true, '새 창을 띄움'); setTimeout(() => fitSelf(by, guess).catch((e) => log('🪟 칸으로 옮기기 멈춤: ' + e.message)), 800); return { ok: true, how: 'open' }; }
   const f = await frontWin(); if (f.found) { setWin(by, true, '창은 떴는데 화면이 늦게 불림 — 앞으로 가져옴'); return { ok: true, how: 'front' }; }
   const t1 = Date.now(); const s = await spawnWin(); if (s.ok && await waitUi(t1, 20000)) { setWin(by, true, '처음 부탁이 사라져 한 번 더 띄움'); return { ok: true, how: 'open2' }; }
   const why = s.ok ? '크롬 창이 두 번 다 20초 안에 안 뜸(크롬: ' + scrubP(chromeExe()) + ')' + (f.err ? ' · 창 찾기: ' + f.err : '') : s.err; setWin(by, false, why); return { ok: false, err: why }; }
@@ -276,7 +336,8 @@ function post(port, p, body, ms) { return new Promise((res) => { const data = Bu
 function listen(port) { return new Promise((res, rej) => { server.once('error', rej); server.listen(port, '127.0.0.1', () => { server.removeListener('error', rej); res(server.address().port); }); }); }
 
 async function main() { const argv = process.argv.slice(2); const auto = argv.includes('--autorun');
-  if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep', auto: true }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패')); process.exit(0); }
+  if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep', auto: true }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패'));
+    if (r.ok) openSelfAfterBoot(); try { await lateRetry('윈도우 시작', r); } catch (e) { log('② 늦게 뜸 멈춤: ' + e.message); } process.exit(0); }
   healLauncher();
   /* 이미 켜져 있으면 — (0.1.4) 그 서버에 창을 맡기고 바로 끝남 · 옛 판이면 끄고 넘겨받음 */
   const pf = path.join(HOME, 'port.txt'); let old = 0; try { old = +fs.readFileSync(pf, 'utf8'); } catch (e) {} let took = 0;

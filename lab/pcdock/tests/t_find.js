@@ -29,7 +29,7 @@ console.log('② 단서 · 실행 계획');
   ok(hk && hk.given === 'C:\\Gone\\KakaoTalk.exe', '설정에 경로가 있어도 단서를 넘김(given — 없어졌으면 다시 찾게)', hk);
   ok(hu && hu.exe === 'MyTool.exe' && hu.lnk[0] === 'MyTool' && hu.start[0] === 'MyTool', '사람이 더한 프로그램도 실행 파일 이름으로 같은 찾기(제41조 — 같은 길을 씀)', hu); }
 const MONS = [{ id: 'D1', primary: true, b: { x: 0, y: 0, w: 1920, h: 1080 }, wa: { x: 0, y: 0, w: 1920, h: 1040 }, dpi: 96 }, { id: 'D2', primary: false, b: { x: 1920, y: 0, w: 2560, h: 1440 }, wa: { x: 1920, y: 0, w: 2560, h: 1440 }, dpi: 96 }];
-function cfgWith(place, extra) { const c = SET.defaults(); c.selfAdded = true; c.place = place; Object.assign(c, extra || {}); return SET.validate(c, MONS).cfg; }
+function cfgWith(place, extra) { const c = SET.defaults(); c.selfAdded = true; c.selfV = 2; c.place = place; Object.assign(c, extra || {}); return SET.validate(c, MONS).cfg; }
 { const c = cfgWith([{ id: 'p1', app: 'kakao', o: {}, mon: 'D1', c: 3, r: 2, w: 1, h: 1 }]); c.apps.find((a) => a.id === 'kakao').exe = 'C:\\Gone\\KakaoTalk.exe';
   const miss = (p) => p !== 'C:\\Gone\\KakaoTalk.exe';
   let P = A.buildPlan(c, MONS, { 'KakaoTalk.exe': KP }, G, miss); let s = P.steps[0];
@@ -50,6 +50,23 @@ console.log('③ 「리드나우 PC 배치」 자기 창');
 { const v1 = SET.validate(SET.defaults(), MONS).cfg; v1.place = []; const v2 = SET.validate(v1, MONS); ok(!v2.cfg.place.length && v2.cfg.selfAdded, '사람이 자기 창 자리를 빼고 저장하면 다시 안 넣음');
   v1.place = [{ id: 'a', app: 'self', o: {}, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }, { id: 'b', app: 'self', o: {}, mon: 'D2', c: 0, r: 0, w: 1, h: 1 }]; const v3 = SET.validate(v1, MONS);
   ok(v3.cfg.place.length === 1 && v3.cfg.place[0].id === 'a' && v3.warns.some((w) => /한 곳에만/.test(w)), '자기 창은 한 곳만(두 번째는 빼고 알림)', v3); }
+/* (0.1.8 · 정범님 11/16 15:28 「배치 창 자체도 배치 안 됨」) 빈 칸이 없으면 0.1.7은 칸을 안 만들고 selfAdded만 남겨 다시는 안 넣었음 → 주 모니터 오른쪽 위에 겹쳐 놓고 알림 · 0.1.7이 남긴 파일(표 selfV 없음·칸 없음)은 한 번 다시 넣음 */
+{ const c = SET.defaults(); c.place = MONS.map((m, i) => { const gg = G.gridOf(m, 'auto'); return { id: 'f' + i, app: 'chrome', o: {}, mon: m.id, c: 0, r: 0, w: gg.cols, h: gg.rows }; }); const v = SET.validate(c, MONS); const p = v.cfg.place.find((q) => q.app === 'self');
+  const pm = MONS.find((m) => m.primary) || MONS[0]; const gp = G.gridOf(pm, 'auto');
+  ok(v.ok && p && p.mon === pm.id && p.r === 0 && p.c + p.w === gp.cols && v.warns.some((w) => /겹쳐 놓았습니다/.test(w)) && v.selfNew, '빈 칸이 하나도 없으면 주 모니터 오른쪽 위에 겹쳐 놓고 알림(겹침 검사에서 자기 창은 빠짐)', [p, v.errs, v.warns]); }
+{ const c = SET.defaults(); c.selfAdded = true; c.place = [{ id: 'p1', app: 'kakao', o: {}, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]; const v = SET.validate(c, MONS);
+  ok(v.ok && v.cfg.place.some((q) => q.app === 'self') && v.cfg.selfV === 2 && v.selfNew, '0.1.7이 남긴 파일(selfAdded만 · 칸 없음 · 표 없음)은 한 번 다시 넣음', v.cfg.place);
+  const v2 = SET.validate({ ...v.cfg, place: v.cfg.place.filter((q) => q.app !== 'self') }, MONS); ok(!v2.cfg.place.some((q) => q.app === 'self') && !v2.selfNew, '다시 넣은 뒤(표 selfV:2) 사람이 빼면 다시 안 넣음'); }
+console.log('④ (0.1.8) 칸 겹쳐 놓기 허용 · 윈도우 시작 늦게 뜸 기다림 · 이 창도 열기');
+{ const d = SET.defaults(); ok(d.run.overlap === false && d.auto.lateSec === 180 && d.auto.showSelf === true, '기본 = 겹치기 끔 · 늦게 뜸 180초(3분) 기다림 · 윈도우 시작 때 이 창도 엶', [d.run, d.auto]);
+  const two = [{ id: 'a', app: 'chrome', o: {}, mon: 'D1', c: 0, r: 0, w: 2, h: 2 }, { id: 'b', app: 'kakao', o: {}, mon: 'D1', c: 1, r: 1, w: 1, h: 1 }];
+  const off = SET.validate({ ...SET.defaults(), selfAdded: true, selfV: 2, place: two }, MONS); ok(!off.ok && off.errs.some((e) => /한 칸에 둘/.test(e) && /칸 겹쳐 놓기 허용/.test(e)), '끔이면 거절 + 어디서 켜는지 알림', off.errs);
+  const on = SET.validate({ ...SET.defaults(), selfAdded: true, selfV: 2, place: two, run: { ...SET.defaults().run, overlap: true } }, MONS); ok(on.ok && on.cfg.place.length === 2 && on.cfg.run.overlap === true, '켜면 한 칸에 여럿 놓을 수 있음(그대로 저장)', on.errs);
+  ok(SET.validate({ ...SET.defaults(), run: { overlap: 'true' } }, MONS).cfg.run.overlap === false, '켬은 꼭 true일 때만');
+  const A2 = (auto) => SET.validate({ ...SET.defaults(), auto }, MONS).cfg.auto;
+  ok(A2({ on: true, delaySec: 20, lateSec: 9999 }).lateSec === 600 && A2({ on: true, lateSec: -5 }).lateSec === 0 && A2({ on: true }).lateSec === 180 && A2({ on: true, lateSec: 0 }).lateSec === 0, '늦게 뜸 기다림 0~600초로 자름 · 없던 옛 파일은 180', [A2({ on: true, lateSec: 9999 }), A2({ on: true })]);
+  ok(A2({ on: true }).showSelf === true && A2({ on: true, showSelf: false }).showSelf === false, '이 창도 열기 — 옛 파일은 켬 · 끈 것은 끔');
+  const kk = A.catOf({ id: 'kakao', kind: 'exe' }); ok(kk && kk.match.boot === true && kk.match.hidden && kk.match.hcls === 'EVA_Window_Dblclk', '카카오톡 = 윈도우 시작 때 늦게 뜨는 프로그램(boot) · 트레이·로그인 창 가림(제목·창 종류)', kk && kk.match); }
 { const c = cfgWith([{ id: 's', app: 'self', o: {}, mon: 'D2', c: 0, r: 0, w: 1, h: 1 }, { id: 'w', app: 'chrome', o: { urls: ['https://readnow.kr/app/'] }, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]);
   const P = A.buildPlan(c, MONS, { 'chrome.exe': 'C:\\chrome.exe' }, G); const s = P.steps.find((x) => x.app === 'self');
   ok(s && s.self && s.launch === null && s.reuse && s.match.title === '^리드나우 PC 배치$' && s.match.procs[0] === 'chrome' && s.rect.x === 1920, '③ 때 자기 창은 새로 안 띄우고(launch 없음) 떠 있는 창(제목이 꼭 같음)의 자리만', s);
