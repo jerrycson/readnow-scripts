@@ -1,6 +1,6 @@
 /* (note8 · 정범님 11/16 15:28) 노트 사진·표 붙이기 + 📮 도로명주소 찾기 — 순수 함수 시험(주소는 공공기관 예시 주소만 · 손님 정보 없음) */
 const fs = require('fs'), path = require('path'), vm = require('vm'), assert = require('assert');
-const A = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8'); const N = fs.readFileSync(path.join(__dirname, '..', 'notes-core.js'), 'utf8');
+const A = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8'); const N = fs.readFileSync([path.join(__dirname, '..', 'notes-core.js'), path.join(__dirname, '..', '..', 'src', 'notes-core.js')].find((f) => fs.existsSync(f)), 'utf8'); /* 시험 문지기는 w/pw/에서 돌림(옆에 app.html만 있음) → src/에서도 찾음 */
 const ok = (m) => console.log('✓ ' + m);
 const cx = { window: {}, console }; vm.createContext(cx); vm.runInContext(N, cx); const J = cx.window.JBN;
 const t = J.htmlToMd('<script>alert(1)</script><table><tr><th>책</th><th>값</th></tr><tr><td onclick="x()">가 &amp; 나</td><td>1|2</td></tr></table>');
