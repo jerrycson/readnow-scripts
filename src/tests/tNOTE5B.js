@@ -9,6 +9,7 @@
 const fs = require('fs'), path = require('path');
 const pick = (...L) => L.find((f) => f && fs.existsSync(f));
 const NOTESF = pick(path.join(__dirname, '..', '..', 'cloud', 'notes.js'), path.join(__dirname, '..', 'cloud', 'notes.js'));
+{ const miss = [['클라우드 노트 cloud/notes.js', NOTESF]].filter(([, f]) => !f || !fs.existsSync(f)).map(([n]) => n); if (miss.length) { console.log('❌ 시험에 쓸 파일을 못 찾음 — ' + miss.join(' · ') + ' (건너뛰지 않고 실패로 알림)'); process.exit(1); } }
 let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '❌ ') + m); if (!c) bad++; };
 function fakeC() { const D = {}; const L = {};
   const col = (n) => { D[n] = D[n] || new Map(); L[n] = L[n] || new Set(); return {

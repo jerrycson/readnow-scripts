@@ -6,8 +6,9 @@
 const fs = require('fs'), path = require('path');
 const pick = (...L) => L.find((f) => f && fs.existsSync(f));
 const APPF = pick(process.env.RN_APP, path.join(__dirname, '..', 'app.html'));
-const COREF = pick(path.join(__dirname, '..', 'notes-core.js'));
+const COREF = [path.join(__dirname, '..', 'notes-core.js'), path.join(__dirname, '..', 'src', 'notes-core.js'), path.join(__dirname, '..', '..', 'src', 'notes-core.js')].find((f) => fs.existsSync(f)); /* (p678) 저장소 src/tests · 문지기 자리(w/pw → w/notes-core.js · 저장소 사본 src/) 모두 */
 const NOTESF = pick(path.join(__dirname, '..', '..', 'cloud', 'notes.js'), path.join(__dirname, '..', 'cloud', 'notes.js'));
+{ const miss = [['웹앱 app.html', APPF], ['노트 핵심 notes-core.js', COREF], ['클라우드 노트 cloud/notes.js', NOTESF]].filter(([, f]) => !f || !fs.existsSync(f)).map(([n]) => n); if (miss.length) { console.log('❌ 시험에 쓸 파일을 못 찾음 — ' + miss.join(' · ') + ' (건너뛰지 않고 실패로 알림)'); process.exit(1); } }
 let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '❌ ') + m); if (!c) bad++; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
