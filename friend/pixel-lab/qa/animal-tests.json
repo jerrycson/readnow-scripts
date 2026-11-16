@@ -1,0 +1,55 @@
+{
+  "version": 4,
+  "results": [
+    {
+      "name": "변경한 동물·용 4종의 48·96px 전 방향",
+      "ok": true,
+      "detail": {
+        "renders": 512
+      }
+    },
+    {
+      "name": "지원 동작 8시점·네 방향의 48·96px",
+      "ok": true,
+      "detail": {
+        "renders": 1344
+      }
+    },
+    {
+      "name": "여우와 고양이의 실루엣 비교",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "yaw": 0,
+            "before": 0.9223454833597464,
+            "after": 0.7278645833333334
+          },
+          {
+            "yaw": 45,
+            "before": 0.8659217877094972,
+            "after": 0.7502095557418273
+          },
+          {
+            "yaw": 90,
+            "before": 0.8041237113402062,
+            "after": 0.7051509769094139
+          },
+          {
+            "yaw": 135,
+            "before": 0.8648393194706995,
+            "after": 0.7489397794741306
+          },
+          {
+            "yaw": 180,
+            "before": 0.9223454833597464,
+            "after": 0.7278645833333334
+          }
+        ],
+        "meaning": "lower overlap means different silhouette, not higher artistic quality"
+      }
+    }
+  ],
+  "passed": 3,
+  "total": 3
+}
