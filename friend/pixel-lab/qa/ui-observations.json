@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-15",
+  "checks": {
+    "catalog13Cards": true,
+    "base14Cards": true,
+    "animationFrameSelection": true,
+    "export": {
+      "width": 1024,
+      "height": 128,
+      "bytes": 10820
+    },
+    "worldEventsSaved": true,
+    "mobileSettings": {
+      "viewport": 390,
+      "dialogWidth": 322,
+      "dialogScrollWidth": 322
+    },
+    "consoleErrors": 0
+  },
+  "scope": "Actual local browser interactions, not remote production"
+}
