@@ -38,7 +38,7 @@ function fakeC() { const D = {}; const L = {};
   ok(M.slots.get(2).draft === 'd', '② 칸 문서 slot_<n> 읽힘');
 
   let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!chromium) { console.log('… ③④ 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0); }
+  if (!chromium) { console.log('… ③④ 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE5 통과'); process.exit(bad ? 1 : 0); }
   const b = await chromium.launch(); const errs = [];
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null;
   if (!ART) console.log('… ③ 아티팩트 화면 시험은 RN_JBNOTE로(건너뜀)');
@@ -148,5 +148,5 @@ function fakeC() { const D = {}; const L = {};
   } else console.log('… ④ 웹앱 시험은 RN_PORT(+ harness.js)로(건너뜀)');
   ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
   await b.close();
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE5 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

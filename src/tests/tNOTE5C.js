@@ -9,7 +9,7 @@ function fakeC() { const D = {}; const L = {}; const col = (n) => { D[n] = D[n] 
 (async () => {
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null;
   let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('통과'); process.exit(0); }
+  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('✓ tNOTE5C 통과(화면 시험 건너뜀)'); process.exit(0); }
   const { makeNotes } = require(NOTESF); const b = await chromium.launch(); const errs = [];
   const run = async (mode) => { const F = fakeC(); const KEY = 'k'.repeat(48); await F.C('app_secrets').doc('notes_mcp').set({ key: KEY }); const N = makeNotes({ C: F.C, log: () => {}, ver: 'T' });
     await N.write([{ op: 'set', id: 'c1', data: { kind: 'card', title: '카드', body: '본문', src: 'lead', readAt: 'x', state: 'open' } }], 'lead');
@@ -35,5 +35,5 @@ function fakeC() { const D = {}; const L = {}; const col = (n) => { D[n] = D[n] 
   { const { a, ctx, N } = await run('none'); await a.waitForTimeout(6500);
     const s3 = await st(a); ok(/커넥터가 없습니다/.test(s3.bar) && !/다시 잇는 중/.test(s3.bar), '③ 커넥터가 아예 없으면 되풀이하지 않고 잇는 법 안내 — ' + s3.bar.slice(0, 50)); await ctx.close(); N.live.stop(); }
   ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200)); await b.close();
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE5C 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

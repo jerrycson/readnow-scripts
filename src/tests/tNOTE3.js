@@ -117,5 +117,5 @@ function fakeC() { const D = {}; const L = {};
     ok(!errs.length, '③ 아티팩트 화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
     N2.live.stop(); await b.close();
   }
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE3 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });
