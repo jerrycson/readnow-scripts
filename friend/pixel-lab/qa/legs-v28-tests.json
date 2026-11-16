@@ -1,0 +1,58 @@
+{
+  "version": 28,
+  "checkedAt": "2026-11-15T20:34:57.421Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "선택한 다리 외 좌표·관절·접지와 면 방향 보존",
+      "ok": true,
+      "detail": {
+        "cases": 8,
+        "triangles": 214048,
+        "minDot": 0.973985421695678,
+        "note": "면 방향 검사는 모든 자기 교차 판정이 아니다."
+      }
+    },
+    {
+      "name": "자연형·작은 기본형의 실제 표시 유지",
+      "ok": true,
+      "detail": {
+        "cases": 14
+      }
+    },
+    {
+      "name": "다듬은 얼굴과 분리한 발의 실제 이미지 보존",
+      "ok": true,
+      "detail": {
+        "cases": 48
+      }
+    },
+    {
+      "name": "512px 원본 전신과 부위 표시",
+      "ok": true,
+      "detail": {
+        "whole": 32,
+        "detail": 32
+      }
+    },
+    {
+      "name": "원전 변경점의 인덱스·수치·범위",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "sex": "male",
+            "vertices": 854
+          },
+          {
+            "sex": "female",
+            "vertices": 854
+          }
+        ],
+        "note": "범위는 이번 시안의 변경 검사값이며 인체 정상 범위가 아니다."
+      }
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}

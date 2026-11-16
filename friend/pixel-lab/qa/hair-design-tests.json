@@ -1,0 +1,33 @@
+{
+  "version": 6,
+  "results": [
+    {
+      "name": "머리 100종의 실제 그림 중복 확인",
+      "ok": true,
+      "detail": {
+        "recipes": 100,
+        "distinctThreeViews": 100
+      },
+      "ms": 5208
+    },
+    {
+      "name": "짧은·긴 기본형에서 모든 머리의 회전 잘림 검사",
+      "ok": true,
+      "detail": {
+        "count": 2496,
+        "families": 14
+      },
+      "ms": 29690
+    },
+    {
+      "name": "모든 머리의 걷기 프레임과 재현성",
+      "ok": true,
+      "detail": {
+        "count": 400
+      },
+      "ms": 9777
+    }
+  ],
+  "passed": 3,
+  "total": 3
+}

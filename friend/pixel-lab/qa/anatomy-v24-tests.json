@@ -1,0 +1,170 @@
+{
+  "version": 24,
+  "checkedAt": "2026-11-15T19:52:27.935Z",
+  "visualApproval": false,
+  "scope": "5~7등신의 폭·두께·손 길이 조율; 8등신·자연형·작은 기본형 보존",
+  "results": [
+    {
+      "name": "높이·턱 단위·유한 표면·닫힌 연결 유지",
+      "ok": true,
+      "detail": {
+        "vertices": 107040,
+        "edges": 40134
+      }
+    },
+    {
+      "name": "23차와 비교한 면 방향·머리 기하 보존",
+      "ok": true,
+      "detail": {
+        "faces": 160536,
+        "cases": 6,
+        "note": "각 면의 기존 방향과 비교한다. 자기 교차의 완전한 증명은 아니다."
+      }
+    },
+    {
+      "name": "자연형·2~4등신·8등신의 실제 렌더 보존",
+      "ok": true,
+      "detail": {
+        "cases": 16
+      }
+    },
+    {
+      "name": "팔 비율·손목 높이·손바닥 가중치·좌우 관계",
+      "ok": true,
+      "detail": {
+        "cases": 16,
+        "note": "선택한 정적 작화 기본형의 설계값이다. 사람 전체의 정상 범위가 아니다."
+      }
+    },
+    {
+      "name": "원전의 같은 발바닥 지점을 추적한 접지",
+      "ok": true,
+      "detail": {
+        "measurements": [
+          {
+            "sex": "male",
+            "heads": 5,
+            "side": "right",
+            "heelMin": 0.004593471986202977,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 6,
+            "side": "right",
+            "heelMin": 0.0045834210951297884,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 7,
+            "side": "right",
+            "heelMin": 0.004575400914472283,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 8,
+            "side": "right",
+            "heelMin": 0.004568852476263233,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 5,
+            "side": "left",
+            "heelMin": 0.004593471986202977,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 6,
+            "side": "left",
+            "heelMin": 0.0045834210951297884,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 7,
+            "side": "left",
+            "heelMin": 0.004575400914472283,
+            "ballMin": 0
+          },
+          {
+            "sex": "male",
+            "heads": 8,
+            "side": "left",
+            "heelMin": 0.004568852476263233,
+            "ballMin": 0
+          },
+          {
+            "sex": "female",
+            "heads": 5,
+            "side": "right",
+            "heelMin": 0.002393621415169292,
+            "ballMin": 0.005093699915945125
+          },
+          {
+            "sex": "female",
+            "heads": 6,
+            "side": "right",
+            "heelMin": 0.002390803016091095,
+            "ballMin": 0.005081108683547503
+          },
+          {
+            "sex": "female",
+            "heads": 7,
+            "side": "right",
+            "heelMin": 0.002388582383530814,
+            "ballMin": 0.005071187980389272
+          },
+          {
+            "sex": "female",
+            "heads": 8,
+            "side": "right",
+            "heelMin": 0.002386787576946354,
+            "ballMin": 0.005063169659992939
+          },
+          {
+            "sex": "female",
+            "heads": 5,
+            "side": "left",
+            "heelMin": 0.002393621415169292,
+            "ballMin": 0.005093699915945125
+          },
+          {
+            "sex": "female",
+            "heads": 6,
+            "side": "left",
+            "heelMin": 0.002390803016091095,
+            "ballMin": 0.005081108683547503
+          },
+          {
+            "sex": "female",
+            "heads": 7,
+            "side": "left",
+            "heelMin": 0.002388582383530814,
+            "ballMin": 0.005071187980389272
+          },
+          {
+            "sex": "female",
+            "heads": 8,
+            "side": "left",
+            "heelMin": 0.002386787576946354,
+            "ballMin": 0.005063169659992939
+          }
+        ],
+        "note": "폭이 변해도 동일한 원전 정점들을 추적한다. 보행 물리 검사가 아니다."
+      }
+    },
+    {
+      "name": "남녀 5~8등신 64방향 전신 표시",
+      "ok": true,
+      "detail": {
+        "views": 512
+      }
+    }
+  ],
+  "passed": 6,
+  "total": 6
+}

@@ -1,0 +1,39 @@
+{
+  "version": 15,
+  "checkedAt": "2026-11-15T18:16:01.618Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "선택하지 않은 기본 렌더가 14차와 동일함",
+      "ok": true,
+      "detail": {
+        "cases": 16
+      }
+    },
+    {
+      "name": "실제 가림과 비가림 표면 구분",
+      "ok": true,
+      "detail": {
+        "occluded": 0.22,
+        "clear": 1
+      }
+    },
+    {
+      "name": "남녀 2~8등신 그림자 표시의 64방향",
+      "ok": true,
+      "detail": {
+        "views": 896,
+        "note": "표시 범위 검사이며 모든 시점의 명암을 미적으로 승인한 것이 아니다."
+      }
+    },
+    {
+      "name": "그림자 옵션이 실루엣을 바꾸지 않고 360도 순환함",
+      "ok": true,
+      "detail": {
+        "cases": 8
+      }
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

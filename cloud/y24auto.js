@@ -101,7 +101,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
   const ref = () => C('app_settings').doc('y24_reg');
   /* 번외 결과 → 장부(웹앱 y24AutoApply와 같음 — 그 맡김 줄만 · 아직 'auto'인 줄만) */
   async function apply(led, resMap) { const at = iso(); const r = {}; let stop = null, last = null;
-    for (const [jid, x] of Object.entries(resMap || {})) { last = { job: jid, state: x.state, msg: String(x.msg || '').slice(0, 200), at, n: (x.rows || []).length };
+    for (const [jid, x] of Object.entries(resMap || {})) { last = { job: jid, state: x.state, msg: String(x.msg || '').slice(0, 200), at, n: (x.rows || []).length, ...(x.raw && typeof x.raw === 'object' ? { raw: JSON.parse(JSON.stringify(x.raw).slice(0, 3000).replace(/[\s\S]*/, (t) => { try { JSON.parse(t); return t; } catch (e) { return 'null'; } })) } : {}) }; /* (headless1) 번외가 멈춘 화면 원문(앞 300자·단추 이름 — 우리 상품 글뿐) */
       for (const lid of x.rows || []) { const e = (led.r || {})[lid]; if (!e || e.job !== jid || e.st !== 'auto') continue; const g = x.gno && x.gno[lid];
         if (g) r[lid] = { st: 'sent', ok: 1, gno: String(g), how: '🤖 번외 자동 확인(자체코드)', okAt: at, okBy: '🤖 번외 수집기', unsure: null, why: null, todo: null };
         else if (x.state === 'fail') r[lid] = { st: 'autofail', why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null, failAt: at };
@@ -117,8 +117,13 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
       tx.set(ref(), { r, batches: FV.arrayUnion({ batch: jid, at, by, n: R.ok.length, auto: 1, lids: R.ok.map((x) => x.lid).slice(0, 60) }), auto: { lastJob: jid, lastAt: at, dev: 'cloud:' + pc } }, { merge: true }); });
     return res; }
   const byOf = (pc) => '🤖 자동 올림 · 클라우드(' + pc + ')';
+  /* (headless1 판 뒤) 🔎 클라우드가 왜 맡기지 않는지 진단에서 보이게 — 웹앱 y24AutoStSave와 같은 칸(app_settings/y24_reg.autoSt) · 이름 CLOUD_<PC> · 바뀌었거나 10분 지났을 때만 · 값·손님 정보 없음 */
+  const stSig = new Map();
+  function stSave(pc, why, st, plan) { try { const k = ('CLOUD_' + String(pc).toUpperCase()).replace(/[^A-Z0-9_-]/g, '_').slice(0, 36); const w = String(why || '').slice(0, 200); const sig = w + '|' + (st && st.login) + '|' + (st && st.en); const o2 = stSig.get(k);
+    if (o2 && o2.sig === sig && now() - o2.at < 10 * 60e3) return; stSig.set(k, { sig, at: now() });
+    ref().set({ autoSt: { [k]: { why: w, login: (st && st.login) || null, en: st && st.en != null ? !!st.en : null, hold: !!(st && st.hold), plan: plan || null, ver: 'cloud', at: iso() } } }, { merge: true }).catch(() => {}); } catch (e) {} }
   /* 한 차례 — pc = 서명이 확인된 그 PC · y = 번외가 보낸 { st, res, rej } → { ack, jobs, why } */
-  async function step(pc, y) { const out = { v: 1, at: now(), ack: [], jobs: [], why: '' }; const st = (y && y.st) || {}; const say = (w) => { out.why = w; M.why.set(pc, w); return out; };
+  async function step(pc, y) { const out = { v: 1, at: now(), ack: [], jobs: [], why: '' }; const st = (y && y.st) || {}; const say = (w) => { out.why = w; M.why.set(pc, w); stSave(pc, w, st, out.plan); return out; };
     if (/^LOGGER/i.test(pc) || st.ban) return say(st.ban || '로거 PC — 예스24 자동 올림 안 함(약속 0)'); if (/^MJ-MAIN/i.test(pc)) return say('MJ-MAIN(등록·출고 PC) — 예스24 자동 올림 안 함(출고 보호)');
     const m = await mods(); if (!M.mods) return say('클라우드가 공용 셈을 못 받음 — ' + (m.err || []).join(' · ').slice(0, 160));
     const plat = (await doc('app_settings', 'platforms')) || {}; const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
@@ -126,6 +131,10 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const res = (y && y.res) || {}; const rej = Array.isArray(y && y.rej) ? y.rej.slice(0, 10) : []; const rm = { ...res };
     for (const x of rej) if (x && x.id && !/되풀이/.test(String(x.err || ''))) rm[x.id] = { state: 'fail', pre: 1, rows: (x.rows || []).map(String), msg: '번외가 맡김을 거절 — ' + String(x.err || '').slice(0, 160), todo: '📤 장부에서 이 줄을 보고 「↩ 다시 올릴 수 있게」 뒤 「▶ 이어 가기」 또는 엑셀 길(손)로' };
     if (Object.keys(rm).length) { await apply(led, rm); out.ack = Object.keys(res); out.rejAck = rej.map((x) => x.id); }
+    /* (y24first1 11/14 · HOME 20:50 첫 자동 올림) 번외 0.1.66까지는 미리보기 표(RealGrid — 그림으로 그리는 표)의 줄을 화면 글에서만 찾아 「미리보기 목록에 우리 줄이 안 보임」으로 늘 멈췄음([등록]은 안 누름 = 예스24에 아무것도 안 올라감)
+     *  → 표 자료를 읽는 번외(0.1.68 뒤 · 멈춤 글에 '(표 …)'가 붙음)가 이 멈춤을 본 때 한 번 저절로 풂(사람 손 없이 · 같은 책은 장부에 실패로 남아 다시 고르지 않고 다음 책으로) · 새 판에서 또 멈추면 그대로 둠 */
+    { const sp = led.auto && led.auto.stop; const vn = (x) => String(x || '0').split('.').reduce((a, q) => a * 1000 + (+q || 0), 0);
+      if (sp && /미리보기 목록에 우리 줄이 안 보임/.test(String(sp.why || '')) && !/\(표 /.test(String(sp.why || '')) && vn(st.ver) >= vn('0.1.68')) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 미리보기 표 읽기 고침(아무것도 누르지 않은 멈춤을 풂)' } }, { merge: true }); led.auto.stop = null; log('🤖 예스24 자동 올림', pc, '미리보기 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {} } }
     if (led.auto && led.auto.stop && !Object.keys(rm).length) return say('⛔ 멈춤 — ' + led.auto.stop.why);
     if (st.en === false) return say('이 PC 번외 예스24 읽기가 꺼져 있음');
     const fly = Object.values(led.r).filter((e) => e && e.auto && e.st === 'auto'); const known = new Set([...(st.wait || []).map((w) => w.id), st.cur && st.cur.id].filter(Boolean)); const me = byOf(pc);
@@ -137,7 +146,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const last = M.last.get(pc) || 0; if (now() - last < (y && y.fast ? 15e3 : 60e3)) return say(M.why.get(pc) || '다음 차례 기다림'); M.last.set(pc, now());
     const D = await data(); const W = wantLids(D, led); const X0 = regX(D, led, cfg, null);
     const L0 = D.list.filter(aladinLive).map((l) => ({ l, L: { id: l.id, title: l.title, isbn: y24Isbn(l.isbn13), grade: y24G(l.grade), price: +l.price || 0, qty: l.qty == null ? 1 : +l.qty, live: aladinLive(l), skus: isDupes(l) ? [] : skuSelf(m.R, D, l), dupes: isDupes(l), adult: !!l.adult, held: D.held.get(l.id) || null, unpub: null } })); /* 웹앱 y24RegL */
-    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.keys(led.r).length;
+    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.values(led.r).filter((e) => e && e.st !== 'retry').length; /* 「↩ 다시 올릴 수 있게」로 푼 줄은 세지 않음(웹앱과 같음) — 첫 시도가 실패해 풀면 첫 1건 고르기가 다시 열림 */
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });

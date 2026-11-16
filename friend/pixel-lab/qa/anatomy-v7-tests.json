@@ -1,0 +1,47 @@
+{
+  "version": 7,
+  "checkedAt": "2026-11-15T16:31:24.690Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "가슴 9형의 정면·사선·측면 차이와 7축의 독립 효과",
+      "ok": true,
+      "detail": {
+        "forms": 9,
+        "axes": 7
+      }
+    },
+    {
+      "name": "성인 여성형 전용 축이 작은 등신과 남성형에 섞이지 않음",
+      "ok": true,
+      "detail": {
+        "cases": 7
+      }
+    },
+    {
+      "name": "머리·손목·골반과 다리 축의 기준 관계",
+      "ok": true,
+      "detail": {
+        "cases": 16,
+        "note": "선정한 중립 자세의 설계 기준. 모든 사람에게 적용하는 비율이 아님."
+      }
+    },
+    {
+      "name": "새 표면의 좌표·법선·동작 유효성",
+      "ok": true,
+      "detail": {
+        "cases": 128
+      }
+    },
+    {
+      "name": "참고 정렬은 가로세로 비율을 유지하고 머리 단위를 구분함",
+      "ok": true,
+      "detail": {
+        "uniformScaling": true,
+        "headModePreservesDifference": true
+      }
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}

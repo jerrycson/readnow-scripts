@@ -1,0 +1,129 @@
+{
+  "version": 20,
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "natural",
+      "protectedHash": "0ea3cdecb2a9fcbb8bb4576191d8d500c3b1e29fcce3c58631e6354b90d83fb4",
+      "faceHash": "1f3ba241324846331470aea992a5e15ee1b9fd782d9b810f22413aa0638df8fc",
+      "imageHash": "6bb445df4eef26b63a1afc99907a98d68f4fb3b6b02e3eee35048f35ee6bc2e1"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "manga",
+      "protectedHash": "fb0d889792fafb0511eb8f07815c4dc518d9a1357fbe91f185a9d75be0fb46ad",
+      "faceHash": "53058681c8f4e5506334e7ab090057ce426e7f90a8e7b08c4a7b8586bfe6eacd",
+      "imageHash": "93f71bf629ed25911496c7cc173828761819c6a4e3a11e6c5cc90e591b9847f4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "natural",
+      "protectedHash": "f2c19906f2012a964264b29ae2680fc8e6bddf5a64369670eb986072897d1fd4",
+      "faceHash": "67933bd6b8c3980abac7214ccce59a3a347ce0dd1b6713842b0796b15ef16458",
+      "imageHash": "f2884f13a0bc98ba74babb86e88de549afdcb60d81c1125b006deb04366660c4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "manga",
+      "protectedHash": "2d8e98d70c0b0798fcf48830c85ec8d07ec2b94317ca2f405671a45fea4ce940",
+      "faceHash": "9d03a643c785bc0d50e9c477357c85887a4412587622f43d55dd9412937eb8d4",
+      "imageHash": "1ae65eaca36348f787dab1d9b1ff87fe1948561e0188e59dbf9652cd172c69d7"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "natural",
+      "protectedHash": "30a7cba7f1bd48f74a9e0eb00a27a9a5139af5e3770d85aec945ec7e72f0abf9",
+      "faceHash": "1d4737ad5d6d61897a095a7a85f405f2c44c6d8aa24b170a737853db691ef67d",
+      "imageHash": "96b874970e0bbaf3e6081da5b90d2a97765a58cdefed73194d38ff7a15db11aa"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "manga",
+      "protectedHash": "24a133aae563bb92bb560940fb990beb3b9ed2f0a66a43b119503c6efb1c1360",
+      "faceHash": "febdb4223b89e66cd3ca21e1be41cc5023094bee75e184dea44f56a7b0795859",
+      "imageHash": "901a78edc5164aa56f9e6ea928a1a50b098e24f940d744c8d8e48f6e7370caec"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "natural",
+      "protectedHash": "b195648db1e30fc791f3caeb6b370bc13d1a5aa37f904961f379a6c65b165322",
+      "faceHash": "471566f095b49557acb17b6520a487e50aebe8c88a0e5ff9a1dd18f51908b887",
+      "imageHash": "c1a1cb0fb1dedc97677b958bf7b86a233c68ea9951049209155317fac3867481"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "manga",
+      "protectedHash": "053460dcdb9cc8a0818f82cff82a3c2c058766fc03eabebadeb2b7109ab3e0ee",
+      "faceHash": "7d210a7f3bd5e20733402c88d13b38acdcf8bb0ca2b849fa38d7d006aa05b0a2",
+      "imageHash": "a15689f0bccff76fcd175082e819cbcafd9425b771604be3a98a29902bd18f72"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "natural",
+      "protectedHash": "b469d3625fc4393fe827c490816d22629d8bf123bcb059e4a83882e6f5badc52",
+      "faceHash": "94494331eac854b1306bbf5c6b29c3491def1c567a08c7bf03087900a13c1849",
+      "imageHash": "71a2a45b365e338c8e001503677c18fe6d6ebc6dde1d7746077bc4de5ca2e3b5"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "manga",
+      "protectedHash": "0192f6a624acbffc452d006d42fe424922a5c03ff6689153889bdef011f03400",
+      "faceHash": "6b800c67e922c03512e1c67323d302adeaea504cd3568fb6f18301e8da5be32d"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "natural",
+      "protectedHash": "90348d82f0c47424df8634f9093341718045805383af392f14c52c07bd3eccce",
+      "faceHash": "42ab9d25ab705bef5239bd7180656b01760c51163046c6a374fd407abae55980",
+      "imageHash": "c144a6bc5aca659a4efdb5b19a2f1e4284383432d9512a8856e462608de935a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "manga",
+      "protectedHash": "bb709211cc29d320048bcb7653bb9785c1da748d6f0c80f77958323569fe95f1",
+      "faceHash": "e3897d08ade2131460e4e01cff1e7815b24dc192618a4b9d482dba89c96272c3"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "natural",
+      "protectedHash": "9d7ea27d9a2dfd50c52f2abbb694ba6092385195088c378fa197ec16ac3e96f9",
+      "faceHash": "4da02c4d02c6e191406889a052e5bfcaf98727e5a15494a709604e4979f7283f",
+      "imageHash": "c97525eafa8be8116c341ffc90f266e7e5aeff5e5bbc480bc980be1db759110c"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "manga",
+      "protectedHash": "d231223c6765f45e7235b7924f9c15d93f62bef69ef93ddd1034c31f27939964",
+      "faceHash": "66d34e595bb14e3a75bd2ff6edb6f6fba912b2c3f77c66d99aa2fa774ba0f95e"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "natural",
+      "protectedHash": "97750a9e3de8359e21853c7fa5d20e8e54cf200a48ada5153e11b3a0e5ecd16c",
+      "faceHash": "829fa8ff25b27db8801bc6d623d4cd4ae6933caad31f01d0e74540b71595d125",
+      "imageHash": "e18ff7091b6667ab7e448ab08f20c2b04c6af89e2a79dc67653ec415125ed801"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "manga",
+      "protectedHash": "ae637a9bfe40a38fc4b9707abba04f2cf5f2d375141bc701d7c8bd6eb264d20c",
+      "faceHash": "5ad94350c5c91186552b4ea871fe89da17842713b0a1f813200d6a4bbdd55f40"
+    }
+  ]
+}
