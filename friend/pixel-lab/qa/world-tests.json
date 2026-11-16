@@ -1,0 +1,77 @@
+{
+  "version": 2,
+  "results": [
+    {
+      "name": "같은 재현번호의 배치와 행동 일치",
+      "ok": true,
+      "detail": {
+        "events": 76
+      }
+    },
+    {
+      "name": "8종이 10분 동안 사물에 반응하고 무대 안에 머묾",
+      "ok": true,
+      "detail": [
+        {
+          "species": "human",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "fox",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "cat",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "bird",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "drake",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "golem",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "robot",
+          "events": 83,
+          "objects": 5
+        },
+        {
+          "species": "alien",
+          "events": 83,
+          "objects": 5
+        }
+      ]
+    },
+    {
+      "name": "이전 방문 기억 보존과 첫 만남 구분",
+      "ok": true,
+      "detail": {
+        "visits": {
+          "books": 18,
+          "plant": 20,
+          "ball": 24,
+          "bench": 33,
+          "lamp": 11
+        }
+      }
+    },
+    {
+      "name": "숨겨진 탭의 긴 시간 간격을 0.1초로 제한",
+      "ok": true
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

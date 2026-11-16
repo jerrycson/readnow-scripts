@@ -1,0 +1,236 @@
+{
+  "version": 14,
+  "checkedAt": "2026-11-15T18:08:38.910Z",
+  "visualApproval": false,
+  "kind": "rotation-render-audit",
+  "results": [
+    {
+      "name": "male 2등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 3등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 4등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 5등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 6등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 7등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "male 8등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 2등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 3등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 4등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 5등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 6등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 7등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    },
+    {
+      "name": "female 8등신 64방향 렌더 범위",
+      "ok": true,
+      "detail": {
+        "views": 64,
+        "failures": []
+      }
+    }
+  ],
+  "atlases": [
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 2
+      },
+      "file": "runtime-v14-rotation-male-2.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 3
+      },
+      "file": "runtime-v14-rotation-male-3.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 4
+      },
+      "file": "runtime-v14-rotation-male-4.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 5
+      },
+      "file": "runtime-v14-rotation-male-5.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 6
+      },
+      "file": "runtime-v14-rotation-male-6.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 7
+      },
+      "file": "runtime-v14-rotation-male-7.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "male",
+        "heads": 8
+      },
+      "file": "runtime-v14-rotation-male-8.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 2
+      },
+      "file": "runtime-v14-rotation-female-2.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 3
+      },
+      "file": "runtime-v14-rotation-female-3.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 4
+      },
+      "file": "runtime-v14-rotation-female-4.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 5
+      },
+      "file": "runtime-v14-rotation-female-5.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 6
+      },
+      "file": "runtime-v14-rotation-female-6.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 7
+      },
+      "file": "runtime-v14-rotation-female-7.png",
+      "visualReview": "pending"
+    },
+    {
+      "sample": {
+        "sex": "female",
+        "heads": 8
+      },
+      "file": "runtime-v14-rotation-female-8.png",
+      "visualReview": "pending"
+    }
+  ],
+  "passed": 14,
+  "total": 14
+}

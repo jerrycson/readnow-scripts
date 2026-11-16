@@ -1,0 +1,298 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>픽셀 아트 원전 연구 · 책방 친구</title><style>:root{--bg:#f7f5ef;--paper:#fffefb;--ink:#243a32;--muted:#59675e;--line:#d9dfd5;--accent:#276849;--warm:#a94d28}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 system-ui,'Malgun Gothic',sans-serif}a{color:#185e42;text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #ce662f;outline-offset:4px}.skip{position:absolute;left:12px;top:-80px}.skip:focus{top:12px;background:white;padding:12px;z-index:9}header{padding:38px max(24px,calc((100vw - 1360px)/2));background:#e7eee3;border-bottom:1px solid var(--line)}.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--accent)}h1{font-size:clamp(27px,4vw,42px);line-height:1.25;margin:12px 0}.subtitle{max-width:760px;color:var(--muted);margin:0}nav.top{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}nav.top a{padding:8px 15px;border:1px solid #becbb9;border-radius:8px;text-decoration:none;background:#fff9}nav.top a[aria-current=page]{background:var(--accent);color:white;border-color:var(--accent)}.layout{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:285px minmax(0,1fr);gap:30px;padding:30px 24px 70px}aside{align-self:start;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding:4px 12px 10px 0}aside h2{font-size:17px;margin:0 0 12px}label{display:block;font-size:14px;font-weight:650}input{width:100%;border:1px solid #a9bca5;border-radius:7px;padding:11px;background:white;font:inherit;margin:6px 0}button{font:inherit;color:var(--accent);background:transparent;border:1px solid #bbcbbb;border-radius:7px;padding:6px 10px;cursor:pointer}.tools{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0 14px}.status{font-size:13px;color:var(--muted)}.toc{list-style:none;padding:0;margin:16px 0}.toc a{display:block;font-size:14px;line-height:1.5;text-decoration:none;padding:8px;border-radius:6px}.toc a:hover{background:#e6ede2}main{min-width:0}.intro{padding:4px 0 20px;color:var(--muted)}article{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:28px 34px;margin-bottom:24px;scroll-margin-top:20px}article h2{font-size:23px;line-height:1.5;margin:0 0 18px;letter-spacing:-.03em}article p{margin:15px 0}article img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:16px auto}article strong{color:#175135}code{font-size:.9em;background:#edf0e8;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14px}th,td{padding:10px;border:1px solid var(--line);vertical-align:top;text-align:left}th{background:#edf2e8}footer{max-width:1400px;margin:auto;padding:20px 24px 35px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}[hidden]{display:none!important}.empty{padding:20px;border:1px dashed var(--line)}@media(max-width:800px){header{padding:25px 18px}.layout{grid-template-columns:1fr;padding:20px 16px;gap:18px}aside{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:18px}.toc{max-height:230px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}article{padding:22px 20px}article h2{font-size:21px}body{font-size:15px}}@media(max-width:440px){.toc{grid-template-columns:1fr}article{padding:20px 16px}}@media print{body{background:white;font-size:10.5pt;line-height:1.65}header{padding:0 0 15px;background:white}.layout{display:block;padding:0}aside,nav.top,.skip,footer,.empty{display:none}article{border:0;border-radius:0;padding:0;break-before:page}article h2{font-size:18pt}a{color:inherit}article[hidden]{display:block!important}@page{size:A4;margin:18mm}}</style></head><body><a class="skip" href="#content">본문으로 이동</a><header><div class="eyebrow">책방 친구 · 픽셀 아트 연구</div><h1>픽셀 아트 원전 연구</h1><p class="subtitle">제작자 원전과 공식 문서 21개를 읽고, 몸·동작·배경·표시 실험으로 연결합니다.</p><nav class="top" aria-label="연구 페이지"><a href="index.html" aria-current="page">원전 21개</a><a href="sites.html">연구 사이트 5곳</a><a href="journal.html">실행 일지</a><a href="architecture.html">복구와 구조 선택</a><a href="anatomy.html">인체·재질 실험</a><a href="anime.html">일본 등신·이미지 대조</a><a href="../../pixel-lab/anatomy-review.html">인체 집중 비교</a><a href="../../pixel-lab/continuous-review.html">연속 전신 비교</a><a href="../../pixel-lab/face-reference.html">얼굴 참고 대조</a><a href="../../pixel-lab/">기본형 연구실</a><a href="../../pixel-engine/">연구 엔진</a><a href="../../research.html">기존 연구 영역</a></nav></header><div class="layout"><aside><h2>자료 찾기</h2><label for="query">제목·개념·본문 검색</label><input id="query" type="search" placeholder="예: 실루엣, 회전, 팔레트" autocomplete="off"><div class="tools"><button id="reset" type="button">검색 초기화</button><button id="print" type="button">인쇄</button></div><p id="status" class="status" role="status" aria-live="polite"></p><nav aria-label="문서 목차"><ul class="toc"><li data-card><a href="#section-1">01. Derek Yu의 픽셀 아트 기본기</a></li>
+<li data-card><a href="#section-2">02. Derek Yu의 흔한 실수 교정</a></li>
+<li data-card><a href="#section-3">03. cure의 픽셀 아트 개념과 오류</a></li>
+<li data-card><a href="#section-4">04. Saint11의 매우 낮은 해상도</a></li>
+<li data-card><a href="#section-5">05. Saint11의 스타일 일관성</a></li>
+<li data-card><a href="#section-6">06. Saint11의 3D 참고 활용</a></li>
+<li data-card><a href="#section-7">07. Saint11의 픽셀 확대와 축소</a></li>
+<li data-card><a href="#section-8">08. SLYNYRD의 8방향 기본형과 이동</a></li>
+<li data-card><a href="#section-9">09. SLYNYRD의 8방향 공격 동작</a></li>
+<li data-card><a href="#section-10">10. SLYNYRD의 기본형에서 완성 캐릭터로</a></li>
+<li data-card><a href="#section-11">11. SLYNYRD의 측면 걷기와 달리기</a></li>
+<li data-card><a href="#section-12">12. SLYNYRD의 풍경 배경</a></li>
+<li data-card><a href="#section-13">13. SLYNYRD의 아이소메트릭 전술 화면</a></li>
+<li data-card><a href="#section-14">14. Aseprite 공식 애니메이션 문서</a></li>
+<li data-card><a href="#section-15">15. Aseprite 공식 어니언 스킨 문서</a></li>
+<li data-card><a href="#section-16">16. Aseprite 공식 스프라이트 시트 문서</a></li>
+<li data-card><a href="#section-17">17. Aseprite 공식 타일맵 문서</a></li>
+<li data-card><a href="#section-18">18. Aseprite 공식 색 모드 문서</a></li>
+<li data-card><a href="#section-19">19. Aseprite 공식 명령줄 문서</a></li>
+<li data-card><a href="#section-20">20. Aseprite 공식 슬라이스 문서</a></li>
+<li data-card><a href="#section-21">21. MDN의 웹 픽셀 아트 표시</a></li>
+<li><a href="#section-22">연구를 실제 작업에 연결할 첫 실험 묶음</a></li></ul></nav></aside><main id="content"><div class="intro"><p>확인일: 2026-11-15 KST. 전문가가 직접 쓴 미술·제작 글 13개, Aseprite 공식 문서 7개, MDN 웹 표시 문서 1개다. 문서별 1줄·1문장·1페이지 분석·주요 개념·적용 실험을 분리했다. ‘적용 실험’은 책방 친구를 위한 신규 제안이며 아직 수행하지 않았다. 원문의 예제 자산이나 코드를 새 캐릭터에 복사하지 않는다. 1페이지 분석은 원문 요지와 이 프로젝트의 검증 계획을 함께 읽는 검토 카드 단위다.</p>
+</div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. Derek Yu의 픽셀 아트 기본기</h2>
+<p>출처: <a href="https://www.derekyu.com/makegames/pixelart.html">Pixel Art Tutorial Basics</a> · 저자: Derek Yu · 구분: 제작자 원전</p>
+<p><strong>1줄:</strong> 큰 형태부터 한 픽셀의 역할까지.</p>
+<p><strong>1문장:</strong> 제한한 해상도와 팔레트 안에서 윤곽·입체·명암을 먼저 세우고 픽셀의 배열을 다듬어 읽히는 스프라이트를 만든다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 큰 캐릭터 제작에서 시작해 윤곽 정리, 색, 명암, 경계 처리, 작은 크기로의 표현을 다룬다. 직선과 곡선의 계단 길이가 불규칙하면 의도하지 않은 튀는 점이 생긴다. 그러나 모든 계단을 없애는 것이 목표는 아니며 원하는 형태를 표현하면서 방해되는 불규칙성을 줄여야 한다.</p>
+<p>명암은 외곽을 따라 안쪽으로 칠하는 장식이 아니라 공간 속 덩어리를 설명하는 수단이다. 세부를 지워도 큰 밝고 어두운 덩어리가 남아야 한다. 이 원리는 몸통·골반·얼굴을 서로 다른 부품처럼 그리는 실패를 줄이는 출발점이 된다.</p>
+<p>책방 친구에서는 처음부터 눈·머리카락의 세부에 들어가지 않고 실루엣과 두세 단계 명암으로 기본형을 비교한다. 색 수를 줄였을 때 정체성을 잃는다면 색 자체보다 큰 형태의 구별이 부족한지 살핀다. 원문에 나오는 특정 크기와 팔레트를 그대로 제품 규격으로 채택할 근거는 없다.</p>
+<p><strong>주요 개념:</strong> 윤곽선의 계단 리듬, 덩어리, 광원, 수동 경계 보정, 제한 팔레트, 실제 표시 크기.</p>
+<p><strong>적용 실험:</strong> 같은 4등신 기본형을 윤곽만·평면색·3단계 명암으로 만든다. 정면·옆·사선에서 실루엣이 유지되는지, 축소 상태에서 몸의 방향이 읽히는지 비교한다.</p>
+<p><strong>채택 조건:</strong> 디테일 증가 없이 방향과 몸의 구조가 더 분명해짐. 단순 색 수 증가만으로 좋아진 것처럼 보이면 기각한다.</p>
+</article>
+<article id="section-2" data-card><h2>02. Derek Yu의 흔한 실수 교정</h2>
+<p>출처: <a href="https://www.derekyu.com/makegames/pixelart2.html">Pixel Art Common Mistakes</a> · 저자: Derek Yu · 구분: 제작자 원전</p>
+<p><strong>1줄:</strong> 비슷한 색과 납작한 형태부터 고친다.</p>
+<p><strong>1문장:</strong> 색의 역할을 명확히 나누고 입체적인 덩어리를 회복하면 세부를 더하기 전에도 가독성이 크게 개선될 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 단순한 장면을 고쳐가며 색이 너무 비슷한 문제, 상투적인 색 선택, 외곽에서 중심으로 반복되는 명암, 뻣뻣한 형태를 설명한다. 윤곽을 그대로 두고 명암과 색 수를 정리하는 것만으로도 어떤 물체인지 읽기 쉬워지는 과정을 제시한다.</p>
+<p>핵심은 모든 색이 서로 다른 일을 해야 한다는 점이다. 지나치게 가까운 색을 여럿 두면 픽셀이 뭉개지고 작업 부담만 커질 수 있다. 나뭇잎 수천 개보다 구체 몇 개로 전체 부피를 생각하는 방식은 머리카락과 근육을 다룰 때에도 적용 가능한 원리다.</p>
+<p>책방 친구의 검토에서는 ‘더 자세해졌다’를 개선의 증거로 삼지 않는다. 먼저 명도 분포와 실루엣을 보고, 몸 전체를 작은 조각으로 분해하는 잡음이 줄었는지 확인한다. 취향에 따른 색 변경과 구조 오류 교정을 일지에서 구분한다.</p>
+<p><strong>주요 개념:</strong> 색의 기능, 명도 대비, 평면적인 디자인, 중심만 밝은 명암, 큰 형태의 우선순위.</p>
+<p><strong>적용 실험:</strong> 같은 몸에 12색·24색 후보를 적용하되 전체 광원과 윤곽은 고정한다. 색을 늘린 판이 실제 크기에서 더 읽히는지 가리고 비교한다.</p>
+<p><strong>채택 조건:</strong> 몸의 방향·팔다리 분리가 개선되고 시선이 불필요한 점으로 끌리지 않음. 특정 색 수가 정답이라는 결론은 내리지 않는다.</p>
+</article>
+<article id="section-3" data-card><h2>03. cure의 픽셀 아트 개념과 오류</h2>
+<p>출처: <a href="https://pixeljoint.com/forum/forum_posts.asp?TID=11299">The Pixel Art Tutorial</a> · 저자: cure · 구분: 전문 커뮤니티의 저자 튜토리얼</p>
+<p><strong>1줄:</strong> 픽셀을 통제한다는 뜻을 정의한다.</p>
+<p><strong>1문장:</strong> 픽셀 아트의 핵심은 특정 프로그램이나 낮은 해상도 자체보다 픽셀 덩어리와 경계를 의도적으로 통제하는 데 있다.</p>
+<p><strong>1페이지 분석:</strong> 이 글은 픽셀 아트의 정의에서 시작해 안티앨리어싱, 디더링, 클러스터, 밴딩, 불규칙한 계단, 명암과 팔레트를 설명한다. 컴퓨터에서 그렸거나 색이 적다는 이유만으로 좋은 픽셀 아트가 되는 것은 아니다. 반대로 모든 픽셀을 한 번씩 손으로 찍어야 한다는 뜻도 아니다.</p>
+<p>디더링은 새 색 없이 경계나 질감을 만들지만, 잘못 쓰면 고립된 점과 패턴이 형태를 압도한다. 경계 보정 또한 무조건 넣는 것이 아니며 잘못 놓으면 흐릿해진다. 이러한 구분은 자동 생성 결과를 평가할 때 특히 유용하다.</p>
+<p>책방 친구의 생성기는 해상도를 낮추거나 색을 줄였다는 이유로 합격하지 못한다. 클러스터가 몸의 어느 면을 뜻하는지, 경계 점이 의도적인지 검토해야 한다. 다만 고립 픽셀은 눈빛이나 하이라이트로 필요할 수 있으므로 자동 검사는 경고를 만들고 맥락을 보고 판정한다.</p>
+<p><strong>주요 개념:</strong> 클러스터, 밴딩, 디더링, 수동 안티앨리어싱, 선택적 윤곽, 색 경사.</p>
+<p><strong>적용 실험:</strong> 새 기본형의 정상판에 의도적으로 밴딩·무작위 잡음·과도한 경계 보정을 넣은 비교판을 만든다. 검사기가 오류를 찾되 의도한 눈의 한 픽셀을 오검출하지 않는지 본다.</p>
+<p><strong>채택 조건:</strong> 자동 경고와 사람이 보기에 나쁜 부분의 대응을 설명할 수 있음. 원문의 미적 관례를 모든 스타일의 절대 규칙으로 만들지 않는다.</p>
+</article>
+<article id="section-4" data-card><h2>04. Saint11의 매우 낮은 해상도</h2>
+<p>출처: <a href="https://saint11.art/blog/thoughts_on_low_resolution/">My Thoughts on Very Low Resolution</a> · 저자: Pedro Medeiros · 2020-06-27</p>
+<p><strong>1줄:</strong> 무엇을 생략할지가 캐릭터를 만든다.</p>
+<p><strong>1문장:</strong> 작은 화면에서는 모든 특징을 축소해 넣기보다 정체성을 전달하는 핵심 특징을 선택해 픽셀을 배분해야 한다.</p>
+<p><strong>1페이지 분석:</strong> 저자는 낮은 해상도를 의미를 배치하는 퍼즐로 설명한다. 캐릭터의 머리·수염·자세·주요 소품처럼 성격과 상황을 전달하는 특징을 남기고, 공간을 차지하는 덜 중요한 세부를 생략한다. 광원과 색 수를 단순하게 유지하면서도 부피가 읽히게 한다.</p>
+<p>원문에서 한 픽셀의 이동은 자세나 표정을 바꾸며, 극도로 작은 그림에서는 외곽선조차 표현 공간을 빼앗을 수 있다. 작은 그림의 빈틈을 보는 사람이 보완한다는 설명은 모든 해부학 정보를 축소해 넣으려는 접근의 한계를 보여준다.</p>
+<p>책방 친구의 2등신과 8등신은 같은 몸을 세로로 늘이는 방식으로 만들 수 없다. 같은 화면 높이에서 얼굴에 할당되는 픽셀 수가 다르므로 각 비율의 표현 계약이 필요하다. 머리 크기를 같게 놓는 비교와 몸 높이를 같게 놓는 비교를 함께 해야 비율과 해상도의 효과를 구분한다.</p>
+<p><strong>주요 개념:</strong> 정보 선택, 시각적 정체성, 픽셀 예산, 생략, 자세의 미세 변화.</p>
+<p><strong>적용 실험:</strong> 남녀 기본형의 주요 형태 표지를 세 개씩 정의하고 크기별로 얼마나 읽히는지 검사한다. 장식이 없을 때 구분이 안 되면 단순히 눈을 더 넣기 전에 몸의 실루엣을 고친다.</p>
+<p><strong>채택 조건:</strong> 작은 표시에서도 의도한 방향과 자세가 읽힘. 생략이 해부 구조의 모순으로 이어지면 다시 설계한다.</p>
+</article>
+<article id="section-5" data-card><h2>05. Saint11의 스타일 일관성</h2>
+<p>출처: <a href="https://saint11.art/blog/consistency/">Consistency</a> · 저자: Pedro Medeiros · 2023-04-19</p>
+<p><strong>1줄:</strong> 같은 세계 안에서는 같은 시각 규칙.</p>
+<p><strong>1문장:</strong> 해상도·색·스타일의 일관성을 지키되 캐릭터 세계와 사용자 인터페이스처럼 역할이 다른 영역은 의도적으로 분리할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 해상도, 색, 화풍의 일관성을 나누고 게임 화면·인터페이스·지도에 서로 다른 표현 방식을 사용할 수 있다고 설명한다. 문제는 서로 다른 스타일이 목적 없이 섞이는 경우다. 기본 캔버스에서 그린 뒤 정수배로 확대하는 방법과 개별 스프라이트를 확대할 때의 주의도 다룬다.</p>
+<p>회전과 느린 카메라 이동은 픽셀 격자에서 특별한 문제를 만든다. 정지했을 때 잘 보이던 픽셀이 움직일 때 얇게 갈라지거나 떨릴 수 있다. 따라서 정지 화면만 검토하는 것은 충분하지 않다.</p>
+<p>책방 친구는 고해상도 운영 화면 위에서 산다. 운영 UI 전체를 픽셀로 바꾸기보다는 캐릭터·그 소품·그 세계의 효과에 공통 격자를 적용하는 방향이 적절하다. 말풍선 글자와 운영 버튼은 읽기 쉬운 기존 UI 규칙을 유지한다. 이는 이 프로젝트를 위한 설계 판단이다.</p>
+<p><strong>주요 개념:</strong> 기본 캔버스, 정수배, 세계별 표현 규칙, 픽셀 밀도, 회전·카메라 떨림.</p>
+<p><strong>적용 실험:</strong> 같은 캐릭터를 밝은 웹앱·어두운 바탕화면·사진 배경 위에 배치하고 정지·대각선 이동·회전을 비교한다.</p>
+<p><strong>채택 조건:</strong> 캐릭터와 소품의 픽셀 크기가 맞고 동작 중 격자 혼란이 제한됨. UI와 세계의 시각적 역할이 명확함.</p>
+</article>
+<article id="section-6" data-card><h2>06. Saint11의 3D 참고 활용</h2>
+<p>출처: <a href="https://saint11.art/blog/3d-ref/">Using 3d models as pixel art reference</a> · 저자: Pedro Medeiros · 2023-07-18</p>
+<p><strong>1줄:</strong> 3D는 구조 참고, 픽셀은 다시 설계.</p>
+<p><strong>1문장:</strong> 복잡한 회전은 간단한 3D 모형으로 원근을 확인한 뒤 필요한 프레임을 골라 픽셀 아트로 다시 그릴 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 저자는 회전 간판을 직접 여러 방향으로 그리기 어려워 간단한 3D 모형을 만든 사례를 소개한다. 화면을 기록하고 해상도와 팔레트를 줄인 결과는 출발점이며, 별도 레이어에서 다시 그려 최종 모습을 만든다. 기준체를 지나치게 정교하게 만드는 대신 중요한 원근 관계에 집중한다.</p>
+<p>이 방법은 64회전 상태를 가진 책방 친구에 직접 연결된다. 다만 간판과 관절을 가진 인체는 난도가 다르므로 사례 자체가 몸 전체의 자동 제작 가능성을 증명하지는 않는다. 관절 변형과 얼굴의 매력은 별도 검증이 필요하다.</p>
+<p>새 프로젝트에서는 새로 만든 단순 기준체만 사용하고 옛 메시·리깅·체형 값을 불러오지 않는다. 기준체의 역할은 앞뒤 관계와 관절 위치의 일관성이다. 픽셀에서 얼굴·손·근육의 읽힘을 만드는 결정은 별도로 남긴다.</p>
+<p><strong>주요 개념:</strong> 블로킹, 원근 참고, 프레임 선택, 재드로잉, 기준체와 최종 자산의 분리.</p>
+<p><strong>적용 실험:</strong> 같은 기본형을 직접 픽셀 제작한 판과 새 3D 기준체를 참고한 판으로 만들어, 사선·밑면·뒤에서 일관성과 표현력을 비교한다.</p>
+<p><strong>채택 조건:</strong> 기준체가 제작 시간과 방향 오류를 줄이면서도 기계적으로 축소된 인상을 남기지 않음. 단순 렌더를 완성 픽셀 아트로 보고 통과시키지 않는다.</p>
+</article>
+<article id="section-7" data-card><h2>07. Saint11의 픽셀 확대와 축소</h2>
+<p>출처: <a href="https://saint11.art/blog/scaling/">Scaling Pixel Art</a> · 저자: Pedro Medeiros · 2024-11-14</p>
+<p><strong>1줄:</strong> 확대와 재제작을 구별한다.</p>
+<p><strong>1문장:</strong> 정수배 최근접 확대는 픽셀 구조를 보존하지만 비정수 확대와 임의 축소는 다른 문제를 만들므로 표시 조건별 해법을 시험해야 한다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 이미지 격자와 실제 모니터 픽셀 사이의 대응을 설명한다. 정수배 확대와 보간 방식을 구분하고 비정수 크기가 필요한 경우의 타협을 소개한다. 이미 확대된 이미지를 원래 크기로 되돌리는 것과 원본 자체를 더 작게 만드는 것은 서로 다르다.</p>
+<p>캐릭터를 자유롭게 크게 하거나 작게 하는 UI가 있더라도 어떤 크기에서나 같은 품질이 보장되지는 않는다. 원본에서 한 픽셀이던 눈이나 손가락이 축소로 사라지면 같은 정체성이 유지되지 않을 수 있다.</p>
+<p>책방 친구에서는 장면의 물리 좌표와 최종 그림 좌표를 분리하고, 출력 단계에서 지원 배율에 맞춘다. 저해상도 전용 변형이 필요한 경우 이를 새 자산으로 명시한다. 자동 축소한 그림을 새 해상도용 시안이라고 기록하지 않는다.</p>
+<p><strong>주요 개념:</strong> 원본 해상도, 최근접 보간, 정수배, 비정수 확대, 저해상도 재설계.</p>
+<p><strong>적용 실험:</strong> 100·125·150·200% 시스템 배율과 브라우저 확대 조합에서 정지·대각 이동을 캡처한다. 원본 픽셀의 너비 분포와 외형을 함께 확인한다.</p>
+<p><strong>채택 조건:</strong> 지원 환경별로 알려진 표시 규칙이 있고 눈·입·발이 예기치 않게 사라지지 않음. 모든 배율을 완전히 동일하게 보인다고 약속하지 않는다.</p>
+</article>
+<article id="section-8" data-card><h2>08. SLYNYRD의 8방향 기본형과 이동</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2025/3/24/pixelblog-55-top-down-character-animation">Pixelblog 55 Top Down Character Animation</a> · 저자: Raymond Schlitter · 본문 날짜: 2025-03-31</p>
+<p><strong>1줄:</strong> 나란히 보기와 돌려 보기를 함께 한다.</p>
+<p><strong>1문장:</strong> 기본형을 여러 방향으로 맞춘 다음 회전과 동기 동작으로 비교하면 정지 그림에서 놓친 비율과 관절의 불일치를 찾을 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 저자는 정면·후면·측면 뒤에 사선을 만들고, 같은 위치에 놓아 회전 재생하면서 크기와 팔다리 길이를 수정한다. 대기·달리기의 타이밍을 균일하게 두지 않고 움직임의 극점과 이동 구간의 시간을 달리하는 과정도 설명한다.</p>
+<p>중요한 점은 방향마다 따로 예쁜 그림을 만드는 것으로 끝나지 않는다는 것이다. 같은 동작 시점의 머리·어깨·관절을 비교해야 다른 각도에서도 같은 움직임으로 보인다. 대칭 기본형에는 좌우 복제가 가능하지만 비대칭 머리와 장비에는 그대로 적용할 수 없다.</p>
+<p>책방 친구의 뷰어에 동기 비교 기능이 필요한 직접적인 이유다. 수평 8방향의 실무 경험을 수직 회전까지 확장하되, 원문이 64상태를 검증한 자료라는 주장은 하지 않는다.</p>
+<p><strong>주요 개념:</strong> 회전 검사, 방향별 관절 대응, 비균일 프레임 시간, 대칭과 비대칭, 동기 재생.</p>
+<p><strong>적용 실험:</strong> 기본형의 동일 자세를 8방향으로 놓고 회전한다. 다음으로 걷기 프레임을 같은 위상으로 맞춰 머리·골반·발의 변화를 비교한다.</p>
+<p><strong>채택 조건:</strong> 회전 시 갑자기 두꺼워지는 팔이나 위치가 튀는 관절이 줄고, 방향 전환 중에도 몸의 정체성이 이어짐.</p>
+</article>
+<article id="section-9" data-card><h2>09. SLYNYRD의 8방향 공격 동작</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2025/5/23/pixelblog-56-top-down-character-attack-animation">Pixelblog 56 Top Down Character Attack Animation</a> · 저자: Raymond Schlitter · 본문 날짜: 2025-06-02</p>
+<p><strong>1줄:</strong> 행동의 무게는 타이밍과 단계에서 나온다.</p>
+<p><strong>1문장:</strong> 준비·빠른 움직임·후속 동작·회복의 길이를 달리하면 적은 프레임으로도 도구와 행동의 무게를 구분할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 칼·창·망치를 사례로 방향마다 같은 손에 도구가 남도록 만들고, 각 동작의 준비와 회복 시간을 구분한다. 빠른 이동을 보여주는 잔상 표현을 모든 구간에 쓰지 않으며 어떤 구간의 힘을 강조할 것인지 결정한다.</p>
+<p>애니메이션의 멋과 게임에서 반응하는 속도는 별도 문제다. 준비가 길면 무게감은 커져도 사용자의 입력 반응은 늦어진다. 또 보이는 공격 궤적과 실제 판정 범위가 서로 어긋나지 않아야 한다.</p>
+<p>책방 친구에서는 전투 전에 같은 원리를 창을 톡톡 두드리기·책 들기·단차 오르기에도 적용한다. 몸을 뒤로 뺐다가 접촉하고 힘을 회복하는 과정이 있으면 사물과 상호작용한다는 느낌이 강해질 수 있다. 이는 제안할 실험이지 측정된 효과는 아니다.</p>
+<p><strong>주요 개념:</strong> 준비 동작, 잔상, 반동, 후속 동작, 회복, 도구의 무게, 행동 판정.</p>
+<p><strong>적용 실험:</strong> 가벼운 책과 무거운 책을 드는 동작에 서로 다른 타이밍을 적용한다. 자세 수가 같아도 무게 차이가 읽히는지 비교한다.</p>
+<p><strong>채택 조건:</strong> 단순 속도 변경을 넘어 몸의 힘 사용이 보이며 동작 끝이 다음 행동으로 자연스럽게 이어짐.</p>
+</article>
+<article id="section-10" data-card><h2>10. SLYNYRD의 기본형에서 완성 캐릭터로</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2025/10/2/pixelblog-58-top-down-character-animation-part-3">Pixelblog 58 Top Down Character Animation Part 3</a> · 저자: Raymond Schlitter · 2025-10-04</p>
+<p><strong>1줄:</strong> 디테일은 모든 방향과 프레임의 비용이다.</p>
+<p><strong>1문장:</strong> 몸의 동작을 먼저 검증하고 외형과 장비를 층별로 추가해야 방향·프레임마다 증가하는 세부 작업을 통제할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 저자는 기존 기본형에 옷·머리·장비를 올리는 과정도 많은 작업이 필요하다고 설명한다. 비대칭 특징을 지키려면 각 방향에서 다시 맞춰야 한다. 무기를 들 때 팔 흔들림을 줄이는 등 장비 무게가 기본 동작에 미치는 영향도 반영한다.</p>
+<p>정지 상태의 정확한 디테일이 재생 중에는 번쩍이는 잡음으로 바뀔 수 있다. 저자는 실제 속도로 반복 재생하여 문제를 찾고 색이나 덩어리를 단순하게 하는 방법을 제시한다. 따라서 프레임 하나의 완성도만으로 전체 애니메이션의 완성도를 평가할 수 없다.</p>
+<p>책방 친구의 의상 시스템은 몸 위에 그림을 덮는 데서 끝나지 않는다. 팔 자세, 천의 움직임, 가림 관계, 손의 도구 접촉 위치를 함께 다룬다. 소품을 하나 추가할 때 필요한 고유 프레임 수와 검증 시간을 비용으로 기록한다.</p>
+<p><strong>주요 개념:</strong> 레이어 제작, 비대칭 유지, 프레임 잡음, 장비 하중, 디테일의 누적 비용.</p>
+<p><strong>적용 실험:</strong> 동일 걷기 동작에 옷·머리·한 손 소품을 순서대로 추가하고 매 단계 원속도 재생과 회전 검사를 한다.</p>
+<p><strong>채택 조건:</strong> 새 요소가 정체성을 더하면서 몸의 읽힘과 동작 일관성을 해치지 않음. 장식이 움직임을 가리면 먼저 단순화한다.</p>
+</article>
+<article id="section-11" data-card><h2>11. SLYNYRD의 측면 걷기와 달리기</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2026/1/26/side-view-run-n-gun">Pixelblog 60 Side View Run N Gun</a> · 저자: Raymond Schlitter · 본문 날짜: 2026-02-02</p>
+<p><strong>1줄:</strong> 걷기를 기준으로 몸의 움직임을 세운다.</p>
+<p><strong>1문장:</strong> 기본형의 접지와 무게 이동을 먼저 만들고 상체·하체·도구를 분리하면 이동 중 다양한 행동을 조합할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 작은 측면 기본형으로 걷기·달리기·점프·착지와 도구 사용을 발전시킨다. 팔다리가 길고 표현 공간이 넓어지면 더 많은 중간 자세가 필요할 수 있으며, 작은 몸에서는 프레임을 늘려도 표현할 픽셀이 부족할 수 있다.</p>
+<p>이동하며 다른 행동을 하려면 상체와 하체를 분리할 수 있다. 그러나 두 층의 어깨·골반·흔들림이 맞아야 연결이 자연스럽다. 점프의 준비나 착지 지연은 표현뿐 아니라 반응성에도 영향을 준다.</p>
+<p>책방 친구는 조작형 액션 게임보다 자율 생활 동작이 중요하므로 충분한 준비와 망설임을 표현할 여지가 있다. 반면 마우스에 반응하거나 낙하를 피할 때는 지연이 불편함으로 느껴질 수 있다. 행동의 목적에 따라 타이밍을 분리한다.</p>
+<p><strong>주요 개념:</strong> 접지·내려감·교차·올라감, 보폭, 상하체 분리, 도구 유지, 착지.</p>
+<p><strong>적용 실험:</strong> 2·4·8등신에 같은 이동 거리를 주고 프레임 수·보폭·속도를 조절한다. 8등신의 걷기를 압축해 2등신에 그대로 쓰는 경우와 별도 설계한 경우를 비교한다.</p>
+<p><strong>채택 조건:</strong> 발이 바닥에서 미끄러지지 않고 체형에 맞는 무게와 리듬이 느껴짐. 모든 체형에 같은 프레임 수를 강제하지 않는다.</p>
+</article>
+<article id="section-12" data-card><h2>12. SLYNYRD의 풍경 배경</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2026/5/27/pixelblog-62-landscape-backgrounds">Pixelblog 62 Landscape Backgrounds</a> · 저자: Raymond Schlitter · 구분: 제작자 원전</p>
+<p><strong>1줄:</strong> 배경도 플레이를 위한 정보다.</p>
+<p><strong>1문장:</strong> 거리별 색과 대비·질감 밀도를 조직하면 적은 색으로 깊이를 만들면서 캐릭터와 상호작용 대상을 구분할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 전투 장면을 위한 풍경을 만들며 먼저 지평선과 큰 색 띠를 정하고 산·구름·지형의 세부를 더한다. 낮의 대기 원근 사례에서는 멀어질수록 대비와 채도가 줄고 하늘색 쪽으로 이동한다. 가까운 풀과 먼 풀의 질감 크기도 달라진다.</p>
+<p>멋진 배경은 주인공을 보이지 않게 만들면 제 역할을 못한다. 실시간 행동과 느린 감상 장면은 배경의 정보량을 다르게 요구한다. 이 차이는 책방 친구의 생활 화면, 던전, 서점 탐험에 각각 다른 배경 밀도를 적용할 근거다.</p>
+<p>실제 Windows 화면은 우리가 색을 통제할 수 없으므로 픽셀 배경 원리를 그대로 강제할 수 없다. 우리 웹사이트의 놀이 공간에서는 적용하고, 외부 화면 위에서는 그림자·윤곽·크기 조절로 캐릭터를 구분하는 보완책을 시험한다.</p>
+<p><strong>주요 개념:</strong> 지평선, 전경·중경·원경, 대기 원근, 색 재사용, 질감 규모, 시각적 우선순위.</p>
+<p><strong>적용 실험:</strong> 동일한 캐릭터와 책 아이템을 단순·중간·복잡한 배경에 놓고 찾기 쉬운 정도와 화면 피로를 비교한다.</p>
+<p><strong>채택 조건:</strong> 배경이 공간을 설명하면서 중요한 행동과 사물이 명확함. 낮 풍경의 색 규칙을 밤·실내에 기계적으로 적용하지 않는다.</p>
+</article>
+<article id="section-13" data-card><h2>13. SLYNYRD의 아이소메트릭 전술 화면</h2>
+<p>출처: <a href="https://www.slynyrd.com/blog/2026/4/1/pixelblog-61-isometric-mecha-tactics">Pixelblog 61 Isometric Mecha Tactics</a> · 저자: Raymond Schlitter · 본문 날짜: 2026-04-06</p>
+<p><strong>1줄:</strong> 시점이 바뀌면 보이는 정보도 바뀐다.</p>
+<p><strong>1문장:</strong> 작은 사선 시점에서는 모든 부품을 똑같이 보이게 하기보다 노출되는 형태와 안정적인 실루엣으로 역할을 전달해야 한다.</p>
+<p><strong>1페이지 분석:</strong> 원문은 작은 메카를 기본 도형과 부위 조합으로 만들며 축소하면서 불필요한 부품을 생략한다. 상체·발·무기처럼 시점상 잘 보이는 부분이 전체 인상을 강하게 좌우한다. 형태의 차이를 전술 역할과 연결한 사례도 설명한다.</p>
+<p>책방 친구의 인체에 메카의 비율을 가져올 수는 없지만, 어떤 시점에서 무엇이 가려지는지를 고려하는 원리는 유효하다. 위쪽에서 골반과 허벅지가 가려지는 것은 오류가 아닐 수 있으며, 보이지 않는 부위를 억지로 드러내면 몸이 왜곡될 수 있다.</p>
+<p>64상태 검사에서 모든 방향에 같은 양의 정보를 요구하지 않는다. 대신 몸의 실제 구조, 관절의 관계, 시점에 따른 가림이 논리적인지를 본다. 게임용 유리한 시점과 연구용 전체 회전을 구분한다.</p>
+<p><strong>주요 개념:</strong> 투영, 가림, 시점별 실루엣, 형태 언어, 역할 구분, 지지 면적.</p>
+<p><strong>적용 실험:</strong> 기본형과 상자를 함께 45도 위·옆·아래에서 보며 발의 지지점과 부위 가림을 표시한다. 임의로 펼쳐 보인 판과 구조를 따른 판을 비교한다.</p>
+<p><strong>채택 조건:</strong> 시점마다 몸이 변형되어 보이지 않으면서도 주요 자세가 읽힘. 메카 사례를 인체 해부 근거로 인용하지 않는다.</p>
+</article>
+<article id="section-14" data-card><h2>14. Aseprite 공식 애니메이션 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/animation/">Animation</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 프레임·레이어·동작 구간을 명시한다.</p>
+<p><strong>1문장:</strong> 타임라인과 태그, 프레임별 시간을 사용하면 서로 다른 행동을 한 자산 안에서 구분하고 재생 조건을 재현할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 첫 프레임 제작, 프레임 추가, 이동, 미리보기, 동작 구간 태그와 프레임 시간 변경의 작업 흐름을 설명한다. 이것은 애니메이션을 관리하는 도구 기능의 근거이며 어떤 동작이 아름다운지를 결정하는 미술 이론은 아니다.</p>
+<p>책방 친구에는 대기·걷기·놀람·오르기 같은 행동 구간이 필요하다. 각 구간에 시작·끝·반복 여부·시간·다음 행동으로 전환할 수 있는 시점을 기록해야 엔진이 임의로 중간 자세를 끊지 않는다.</p>
+<p>프레임 번호만 저장하면 편집 후 순서가 바뀔 때 잘못된 행동이 재생될 수 있다. 의미 있는 동작 이름과 내보낸 메타데이터를 연결하고, 파일을 바꾸었을 때 계약이 유지되는지 확인하는 방식을 제안한다.</p>
+<p><strong>주요 개념:</strong> 타임라인, 프레임, 셀, 레이어, 태그, 구간 반복, 프레임 시간.</p>
+<p><strong>적용 실험:</strong> 대기와 걷기를 하나의 시험 자산에 넣고 태그로 각각 내보낸다. 원본 편집기와 웹 뷰어의 구간·속도·종료 자세가 같은지 비교한다.</p>
+<p><strong>채택 조건:</strong> 동작 이름을 바꾸거나 프레임을 추가해도 잘못된 구간이 조용히 재생되지 않고 검사가 오류를 알림.</p>
+</article>
+<article id="section-15" data-card><h2>15. Aseprite 공식 어니언 스킨 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/onion-skinning/">Onion Skinning</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 앞뒤 그림을 겹쳐 움직임을 읽는다.</p>
+<p><strong>1문장:</strong> 이전·다음 프레임을 함께 보되 실제 속도 재생과 병행하면 프레임 사이의 이동과 형태 변화 원인을 찾기 쉽다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 여러 프레임을 동시에 참고하고 앞뒤 몇 장을 보일지, 색 구분을 어떻게 할지 설정하는 기능을 설명한다. 원문은 짧은 기능 안내다. 이 도구만으로 좋은 동작을 자동 판정할 수 있다는 설명은 없다.</p>
+<p>책방 친구에서는 같은 방향의 시간상 앞뒤 프레임과 같은 시점의 방향상 이웃 프레임을 각각 비교할 수 있다. 둘을 한꺼번에 겹치면 시간 변화와 회전 변화가 섞이므로 보기 모드를 분리한다.</p>
+<p>발바닥 고정 구간, 무릎·어깨의 이동 경로, 얼굴이 갑자기 넓어지는 변화를 찾는 데 쓴다. 겹친 그림의 차이가 크다고 항상 오류는 아니다. 빠른 움직임의 과장이나 의도적인 찌그러짐은 동작 목적과 실제 재생으로 판단한다.</p>
+<p><strong>주요 개념:</strong> 이웃 프레임, 겹쳐 보기, 이동 경로, 시간축과 방향축, 의도된 변형.</p>
+<p><strong>적용 실험:</strong> 발 고정점과 머리 중심을 표시한 걷기를 앞뒤 한 장씩 겹쳐 본다. 이어 같은 장면을 실제 속도에서 재생하여 검토 결과가 맞는지 확인한다.</p>
+<p><strong>채택 조건:</strong> 오류 위치와 원인이 설명되고 수정 후 실제 동작도 좋아짐. 겹침 점수 자체를 미적 완성도라고 부르지 않는다.</p>
+</article>
+<article id="section-16" data-card><h2>16. Aseprite 공식 스프라이트 시트 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/sprite-sheet/">Sprite Sheets</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 그림 배열과 재생 의미를 함께 보관한다.</p>
+<p><strong>1문장:</strong> 여러 프레임을 시트로 묶되 프레임의 위치·크기·간격·순서를 명시해야 다른 환경에서도 같은 동작을 재생할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 가로·세로·행렬 형태의 시트와 가져오기 시 오프셋·프레임 크기·간격, 레이어와 태그에 따른 내보내기를 설명한다. 여러 그래픽을 한 장에 담는 아틀라스의 용도도 소개한다.</p>
+<p>책방 친구의 896상태를 큰 이미지 한 장에 넣는 것은 시작일 뿐이다. 어떤 칸이 남성 5등신의 어느 회전인지 알 수 있는 목록이 필요하다. 회전·동작·프레임의 순서를 파일명 추측에 맡기지 않는다.</p>
+<p>텍스처 경계에서 이웃 프레임 색이 섞이거나 잘라낸 여백 때문에 기준점이 이동하는 문제가 생길 수 있으므로, 내보내기 규약과 렌더러가 같은 좌표 해석을 사용해야 한다. 모든 상태를 한 번에 올리는 대신 필요한 묶음부터 읽는 방식도 시험한다.</p>
+<p><strong>주요 개념:</strong> 시트, 아틀라스, 오프셋, 간격, 프레임 사각형, 태그, 자산 목록.</p>
+<p><strong>적용 실험:</strong> 동일 자산을 고정 격자와 압축 배치로 내보낸 뒤 같은 기준점에서 번갈아 재생한다. 누락·중복·뒤바뀐 각도를 검사한다.</p>
+<p><strong>채택 조건:</strong> 파일 배치가 달라도 같은 모습과 위치로 재생되며, 목록과 실제 이미지가 일치함.</p>
+</article>
+<article id="section-17" data-card><h2>17. Aseprite 공식 타일맵 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/tilemap/">Tilemap</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 배경 조각의 재사용 단위를 만든다.</p>
+<p><strong>1문장:</strong> 타일맵은 각 칸이 타일셋의 그림을 참조하는 구조로, 반복되는 환경을 일관되게 만들고 수정할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 공식 문서는 타일맵 레이어, 타일셋, 타일 인덱스의 관계를 설명하고 색 인덱스와 비교한다. 같은 그림을 여러 위치에서 참조할 수 있다는 점이 핵심이다. 이 문서가 충돌·경로 탐색·지형 의미까지 자동 제공하는 것은 아니다.</p>
+<p>책방 친구의 서점과 던전은 책장·바닥·계단·장식 타일을 재사용할 수 있다. 그림 타일과 별개로 걸을 수 있음·높이·잡을 수 있음 같은 의미 정보를 붙여야 실제 행동 공간이 된다.</p>
+<p>OS 화면은 정해진 타일맵이 아니므로 외부 화면을 강제로 격자에 맞추는 방식은 부적절할 수 있다. 내부 놀이 공간에서는 타일을 쓰고, 외부 화면에서는 자유로운 사각형과 지지면을 공통 장면 지도에 넣는다.</p>
+<p><strong>주요 개념:</strong> 타일셋, 인덱스, 타일맵 레이어, 반복 사용, 시각 데이터와 물리 데이터.</p>
+<p><strong>적용 실험:</strong> 같은 바닥 그림에 평지·높은 단차·통과 불가 세 의미를 주고 캐릭터가 다른 경로를 선택하는지 본다.</p>
+<p><strong>채택 조건:</strong> 그림을 바꿔도 물리 의미가 무너지지 않고, 물리 의미를 바꾸면 행동이 정확히 달라짐.</p>
+</article>
+<article id="section-18" data-card><h2>18. Aseprite 공식 색 모드 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/color-mode/">Color Mode</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 색 자체와 색의 역할을 분리한다.</p>
+<p><strong>1문장:</strong> RGBA와 인덱스 색의 차이를 이해하면 팔레트 교체·투명도·색상 변형을 예측 가능하게 설계할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 RGB, 인덱스, 회색조의 차이를 설명한다. RGBA에서는 각 픽셀이 독립된 값을 갖고, 인덱스에서는 팔레트 항목을 참조한다. 해당 팔레트 항목을 바꾸면 참조하는 픽셀들이 함께 바뀐다. 투명색 인덱스도 별도로 다룬다.</p>
+<p>책방 친구에서 피부·머리·옷의 변형을 지원하려면 ‘밝은 피부’, ‘중간 피부’, ‘그늘’ 같은 의미 역할을 유지하는 것이 유리하다. 그러나 색 번호 하나만 바꾸면 모든 피부색에서 같은 명도 관계가 보장되는 것은 아니다.</p>
+<p>팔레트 실험은 색 수, 색의 역할, 투명도, 밝은 배경·어두운 배경에서의 읽힘을 함께 기록한다. 완전 투명 픽셀과 반투명 효과를 구별하고, 원본 본체에 의도하지 않은 흐린 테두리가 생기지 않는지 확인한다.</p>
+<p><strong>주요 개념:</strong> RGBA, 알파, 인덱스 팔레트, 투명색, 의미별 색 역할, 색 변형.</p>
+<p><strong>적용 실험:</strong> 같은 기본형에 서로 다른 피부와 의상 팔레트를 적용한다. 흑백으로도 주요 면이 구분되는지, 투명 경계가 다른 배경에서 깨지지 않는지 본다.</p>
+<p><strong>채택 조건:</strong> 팔레트 교체가 형태와 가독성을 보존함. 색 교체를 해부 구조 개선으로 잘못 기록하지 않는다.</p>
+</article>
+<article id="section-19" data-card><h2>19. Aseprite 공식 명령줄 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/cli/">Command Line Interface</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 내보내기를 재현 가능한 작업으로 만든다.</p>
+<p><strong>1문장:</strong> 배치 실행과 명시적인 옵션·메타데이터 출력을 사용하면 같은 원본을 같은 규칙으로 내보내고 결과를 검사할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 공식 문서는 UI 없이 실행하는 배치 모드, 미리보기, 저장, 색 모드와 팔레트, 시트와 메타데이터 출력 등 자동화 수단을 제공한다. 명령줄 실행은 미술 판단을 대체하지 않으며 자산을 일관되게 포장하는 역할이다.</p>
+<p>책방 친구의 연구 엔진은 원본 자산과 도구 버전, 옵션, 입력 해시, 결과 해시를 기록해야 한다. 성공 종료 코드를 받았더라도 필요한 방향 그림이 모두 있는지, 태그와 프레임 수가 맞는지 결과를 검사한다.</p>
+<p>새 결과가 실패했을 때 마지막 정상 자산을 덮어쓰지 않도록 임시 산출물 검증 뒤 버전을 올린다. 재시도는 같은 입력에 대한 중복 배포나 중복 포인트를 만들지 않아야 한다. 이것은 책방 친구의 자동화 설계 제안이다.</p>
+<p><strong>주요 개념:</strong> 배치 실행, 옵션 고정, 메타데이터, 도구 버전, 해시, 검증 후 채택.</p>
+<p><strong>적용 실험:</strong> 한 시험 자산을 두 번 내보내 결과 목록과 픽셀을 비교한다. 누락된 태그나 손상된 입력을 주었을 때 정상판이 유지되는지 확인한다.</p>
+<p><strong>채택 조건:</strong> 다른 작업자가 같은 명세로 재현할 수 있고, 실패가 성공으로 기록되지 않음. 도구 구매·설치·빌드 여부는 별도로 확정한다.</p>
+</article>
+<article id="section-20" data-card><h2>20. Aseprite 공식 슬라이스 문서</h2>
+<p>출처: <a href="https://aseprite.org/docs/slices/">Slices</a> · 발행: Igara Studio · 구분: 도구 공식 문서</p>
+<p><strong>1줄:</strong> 그림 속 기준점을 이름으로 남긴다.</p>
+<p><strong>1문장:</strong> 이름 있는 영역과 피벗을 기록하면 잘라낸 이미지에서도 접지·부착·말풍선 위치를 일관되게 연결할 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 스프라이트의 사각형 영역에 이름과 정보를 붙이고 피벗 및 9분할 영역을 설정하는 기능을 설명한다. 그림 영역을 표시하는 도구이므로 그 자체가 관절 리깅이나 충돌체를 정의해 주지는 않는다.</p>
+<p>책방 친구에서는 발바닥 기준, 손의 소품 위치, 머리 위 말풍선 위치 같은 의미 있는 점이 필요하다. 외곽 여백을 잘라내거나 시트를 다시 배치해도 이 점들이 같은 몸 위치를 가리켜야 한다.</p>
+<p>캐릭터의 클릭 영역·충돌 영역·그림 영역을 같게 놓으면 긴 머리나 큰 소품이 이동을 방해할 수 있다. 각각의 목적에 맞는 정보를 두고, 슬라이스 또는 별도 자산 목록에서 연결한다. 특정 도구 포맷에 서비스 전체의 의미를 종속시키지 않는다.</p>
+<p><strong>주요 개념:</strong> 명명된 영역, 피벗, 기준점, 소품 부착점, 그림과 충돌의 분리.</p>
+<p><strong>적용 실험:</strong> 여백이 다른 두 시트에서 같은 캐릭터를 교체하며 발 위치·말풍선·손에 든 책이 움직이지 않는지 확인한다.</p>
+<p><strong>채택 조건:</strong> 이미지 포장 변경이 몸의 공간 좌표를 바꾸지 않음. 리깅이 필요한 동작은 별도의 관절 계약으로 검증한다.</p>
+</article>
+<article id="section-21" data-card><h2>21. MDN의 웹 픽셀 아트 표시</h2>
+<p>출처: <a href="https://developer.mozilla.org/en-US/docs/Games/Techniques/Crisp_pixel_art_look">Crisp pixel art look with image-rendering</a> · 발행: MDN · 구분: 웹 개발 기술 문서</p>
+<p><strong>1줄:</strong> CSS 한 줄만으로 모든 화면이 같아지지 않는다.</p>
+<p><strong>1문장:</strong> 이미지·캔버스·CSS·기기 픽셀 사이의 배율을 함께 관리해야 흐림과 불균일한 픽셀 크기를 줄일 수 있다.</p>
+<p><strong>1페이지 분석:</strong> 문서는 <code>image-rendering: pixelated</code>를 이용해 기본 보간의 흐림을 줄이는 방법을 설명한다. 동시에 CSS 픽셀과 기기 픽셀이 정수 비율로 맞지 않으면 일부 픽셀이 더 커지는 문제가 남을 수 있다고 지적한다. 캔버스 안에서 다시 그림을 확대할 때는 별도의 보간과 크기 해석도 존재한다.</p>
+<p>책방 친구의 웹뷰는 Windows 배율, 브라우저 확대, 휴대폰 화면 밀도의 영향을 받는다. 이미지 파일이 정확해도 표시 결과는 다를 수 있으므로 원본 검증과 실제 기기 검증을 분리한다. 원본 픽셀 검사만 통과했다고 화면이 완성되었다고 말하지 않는다.</p>
+<p>캔버스에는 키보드로 접근 가능한 조작과 현재 방향·행동을 설명하는 텍스트가 필요하다. 연구 뷰어의 가로·세로 회전도 드래그만 제공하지 않고 버튼과 숫자 입력을 함께 둔다.</p>
+<p><strong>주요 개념:</strong> 고유 이미지 크기, CSS 크기, 캔버스 크기, 기기 픽셀 비율, 확대, 접근성.</p>
+<p><strong>적용 실험:</strong> 같은 시트를 PC 브라우저·PC 웹뷰·안드로이드 웹뷰에서 표시하고 각 배율의 정지·이동을 비교한다. 지원 대상과 알려진 차이를 일지에 남긴다.</p>
+<p><strong>채택 조건:</strong> 목표 기기에서 선명도·위치·크기와 조작이 확인됨. 외부 사이트의 화면 구조 인식까지 이 문서로 입증했다고 주장하지 않는다.</p>
+</article>
+<article id="section-22"><h2>연구를 실제 작업에 연결할 첫 실험 묶음</h2>
+<table>
+<thead>
+<tr>
+<th>실험</th>
+<th>관련 자료</th>
+<th>비교할 변수</th>
+<th>남길 결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기본형의 읽힘</td>
+<td>01~04</td>
+<td>등신·실루엣·명도</td>
+<td>원본 크기 비교판, 선택 이유</td>
+</tr>
+<tr>
+<td>64상태 제작법</td>
+<td>05~08·13</td>
+<td>직접 픽셀·새 3D 참고·절차 렌더</td>
+<td>방향별 오류와 수정 비용</td>
+</tr>
+<tr>
+<td>움직임과 장비</td>
+<td>08–11·14–15</td>
+<td>프레임 시간·접지·레이어·비대칭</td>
+<td>동기 영상과 실패 사례</td>
+</tr>
+<tr>
+<td>배경과 사물</td>
+<td>12~13·17</td>
+<td>대비·가림·지형 의미</td>
+<td>인지와 행동 결과</td>
+</tr>
+<tr>
+<td>자산 공급과 표시</td>
+<td>07·16·18~21</td>
+<td>내보내기·피벗·배율·색 변형</td>
+<td>재현 명세와 실제 기기 비교</td>
+</tr>
+</tbody>
+</table>
+<p>자료의 상세 그림 분석은 해당 실험을 수행하면서 출처별로 추가한다. 이번 카드는 공개 원문 본문과 공식 설명의 검토이며, 유료 원본 파일을 확보하거나 모든 예제 애니메이션을 프레임별로 측정한 결과는 아니다.</p>
+</article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>

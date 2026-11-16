@@ -1,0 +1,31 @@
+{
+  "version": 10,
+  "checkedAt": "2026-11-15T17:26:55.930Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "중성 몸통·팔다리의 실제 연결성과 닫힌 표면",
+      "ok": true,
+      "detail": {
+        "cases": 3
+      }
+    },
+    {
+      "name": "남녀 2~4등신 기본형의 상하·좌우 64방향",
+      "ok": true,
+      "detail": {
+        "views": 384
+      }
+    },
+    {
+      "name": "작은 등신 얼굴의 후보와 남녀 시작형 구분",
+      "ok": true,
+      "detail": {
+        "cases": 18,
+        "note": "확대 얼굴의 차이 확인이며 작은 전신에서 성별이나 후보가 충분히 구분된다는 미적 판정은 아님"
+      }
+    }
+  ],
+  "passed": 3,
+  "total": 3
+}

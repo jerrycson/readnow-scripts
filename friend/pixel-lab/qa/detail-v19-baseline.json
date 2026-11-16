@@ -1,0 +1,257 @@
+{
+  "version": 18,
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 2,
+      "focus": false,
+      "sha256": "d2c4232a5204b94435ec3b811aea8a6d4e6e605032446012261924bdb26f6458"
+    },
+    {
+      "sex": "male",
+      "heads": 2,
+      "focus": "hand",
+      "sha256": "45157c62dd8a4c9534ff9efbc4255e0ec901bbc9479d066a8b991bf256273a84"
+    },
+    {
+      "sex": "male",
+      "heads": 2,
+      "focus": "foot",
+      "sha256": "fd8310efe0d547df7e790601916f1fc01e34a3c0a243bcc01da11883f93ca8a0"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "focus": false,
+      "sha256": "cdd52450e2f238b40ed75b6ab0d466dee50b1fc1bea23c0af9813f556f85dade"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "focus": "hand",
+      "sha256": "6c36d38f78240522199c857a44f4cbcbee780290f7165ec408893b87114a265a"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "focus": "foot",
+      "sha256": "12e3df066b05ce4f0f79a229f46d4f08be23d17fa1bf9bccef3ddf23123c8028"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "focus": false,
+      "sha256": "72cb603fb4df0ea2e7ef4ee89e8667872596b678b5b427db1afd9dbc290ddf24"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "focus": "hand",
+      "sha256": "04472e8cb1dadd981dda8c6fb7df0b55c3853f111e038bbb585f4490f7ec034f"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "focus": "foot",
+      "sha256": "82c540079607e58d575529503fe0b5f5a9e3a3a7134966fb0e17084925057b6c"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "focus": false,
+      "sha256": "f4074e1c447ce531864176e69bb616182defca91fd8562ab9fd079fe96b07fe7"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "focus": "hand",
+      "sha256": "9b7a22b49b6b46fd72695ad24afe3070d5fda110033d618c8a8f7c1412e5269d"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "focus": "foot",
+      "sha256": "da70402365fc7d8612a39fcd9563394704bc660b5beb9cf8c48566789b1e0cc6"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "focus": false,
+      "sha256": "649d3271fea21896c3c537af730f2859f8bc43ea6fe63738e1cdb69174084e74"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "focus": "hand",
+      "sha256": "91b79313f34919bb1a0ba69eb0a8bef27feeb57c4581986785da5a2a91ba9aed"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "focus": "foot",
+      "sha256": "bf87a6833b54df76f3f688009e631741b5893cc318b61ae59113d04c25f8eb6b"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "focus": false,
+      "sha256": "54c624b883501454a20e6b04441e3b18e84251aa1cf63a56614244ffc878cfac"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "focus": "hand",
+      "sha256": "edbd04c1ff8333d05d3ae186868604ce42d35bba1e34e0bf4b6743fcd9549321"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "focus": "foot",
+      "sha256": "7bfe7f76c46cce26a187e96c4b584482d4d2e8c4be7f0dc6cbf639532a44b130"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "focus": false,
+      "sha256": "70be5af94133ac3e5b96f00f5b01826ca6603b654c88dd273444195ccb140bd8"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "focus": "hand",
+      "sha256": "ff2a03456c0e98aee6f4fd10c8c0f25113ff2476d6159b1ee3fca8a080515e44"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "focus": "foot",
+      "sha256": "445a917b09ccb493f1dae7cab2b80d1eb57a4befcf577ce7e9ba05e3a8f24ebd"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "focus": false,
+      "sha256": "ec708bf863e3610de69e888145aff37a9e29a2d6831db22557be981c4567323f"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "focus": "hand",
+      "sha256": "45157c62dd8a4c9534ff9efbc4255e0ec901bbc9479d066a8b991bf256273a84"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "focus": "foot",
+      "sha256": "fd8310efe0d547df7e790601916f1fc01e34a3c0a243bcc01da11883f93ca8a0"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "focus": false,
+      "sha256": "5ee41f92ceb83f1ce35349c420431aedd1dd6c35e3d60cea11303ae49eb5f9e7"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "focus": "hand",
+      "sha256": "6c36d38f78240522199c857a44f4cbcbee780290f7165ec408893b87114a265a"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "focus": "foot",
+      "sha256": "12e3df066b05ce4f0f79a229f46d4f08be23d17fa1bf9bccef3ddf23123c8028"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "focus": false,
+      "sha256": "67ae42fd114741981e9ff385dda31a4baac074281557c3b46069cc7075c8f105"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "focus": "hand",
+      "sha256": "04472e8cb1dadd981dda8c6fb7df0b55c3853f111e038bbb585f4490f7ec034f"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "focus": "foot",
+      "sha256": "82c540079607e58d575529503fe0b5f5a9e3a3a7134966fb0e17084925057b6c"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "focus": false,
+      "sha256": "5a9ab4ff41048c4ee0b625dd78e3771400e9a425433e80c42154afc27e1ad68c"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "focus": "hand",
+      "sha256": "4db8038580df37f3512b832ecffc53557ee21c2255af337dab72623c71b2efcc"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "focus": "foot",
+      "sha256": "43e038214337bb4edcc644c52268f59ed6db32692f79b6a8671031663cb9d4d0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "focus": false,
+      "sha256": "ded1c6dd0fc777b2686246d3b06a528e068717bd117810e9a902ad33f426433d"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "focus": "hand",
+      "sha256": "70d1f52afffa1e54509e7bca9782f2dc2400bb49798325a737c3c232455bfe70"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "focus": "foot",
+      "sha256": "fe1ff8ad9961af50982ec3327545aa619ebf229154aedfbfa18549f5fea267eb"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "focus": false,
+      "sha256": "5dee98f21350adb2c95be3b433ba05a96079410df0b17e451d2a0dbf194a4d1f"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "focus": "hand",
+      "sha256": "758989d88b936710af6051a48961f23b2f049be441c7a8b334a6cd24e809387b"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "focus": "foot",
+      "sha256": "aa74f3f69d0cbe91fc2dd6bd77510dd5391173072872ca744583c834f5dbb387"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "focus": false,
+      "sha256": "2307962a0b094aab07becfa5994bc5b20c5917f69a2d1d889e80f9f82c3ed0d7"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "focus": "hand",
+      "sha256": "52f17532ed3a0d9548f04a7a65123a60e52da0628397b00c1f4617741b35c660"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "focus": "foot",
+      "sha256": "6563b37e6824bb2042648b369f4e4efc7787490f024fa57248aea7cf155108a7"
+    }
+  ]
+}
