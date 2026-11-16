@@ -154,13 +154,13 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
   /* 번외 결과 → 장부(웹앱 y24AutoApply와 같음 — 그 맡김 줄만 · 아직 'auto'인 줄만) */
   /* (r1116-y24) 번외가 멈춘 화면 원문 — 3,000자를 넘으면 앞쪽을 잘라 안에 글로 넣음(예전엔 글자 수로 자른 JSON을 다시 풀다 늘 실패해 null이 저장됐음) */
   const rawCut = (raw) => { let t; try { t = JSON.stringify(raw); } catch (e) { return null; } if (typeof t !== 'string') return null; if (t.length <= 3000) { try { return JSON.parse(t); } catch (e) { return null; } } return { cut: 1, len: t.length, txt: t.slice(0, 2900) }; };
-  async function apply(led, resMap) { const at = iso(); const r = {}; let stop = null, last = null;
+  async function apply(led, resMap, hv) { const at = iso(); const r = {}; let stop = null, last = null;
     for (const [jid, x] of Object.entries(resMap || {})) { last = { job: jid, state: x.state, msg: String(x.msg || '').slice(0, 200), at, n: (x.rows || []).length, ...(x.raw && typeof x.raw === 'object' ? { raw: rawCut(x.raw) } : {}) }; /* (headless1) 번외가 멈춘 화면 원문(앞 300자·단추 이름 — 우리 상품 글뿐) */
       for (const lid of x.rows || []) { const e = (led.r || {})[lid]; if (!e || e.job !== jid || e.st !== 'auto') continue; const g = x.gno && x.gno[lid];
         if (g) r[lid] = { st: 'sent', ok: 1, gno: String(g), how: '🤖 번외 자동 확인(자체코드)', okAt: at, okBy: '🤖 번외 수집기', unsure: null, why: null, todo: null };
         else if (x.state === 'fail') r[lid] = { st: 'autofail', why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null, failAt: at };
         else r[lid] = { st: 'sent', unsure: 1, why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null }; }
-      if (x.state !== 'done') stop = { why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null, at, job: jid, state: x.state }; }
+      if (x.state !== 'done') stop = { why: String(x.msg || '').slice(0, 200), todo: x.todo ? String(x.todo).slice(0, 200) : null, at, job: jid, state: x.state, ...(hv ? { hv: String(hv) } : {}) /* (y24reg3) 멈춘 번외 판 — 새 판이 오면 한 번 풂 */ }; }
     if (!last) return 0; await ref().set({ r, auto: { last, ...(stop ? { stop } : {}) } }, { merge: true }); for (const [k, v] of Object.entries(r)) led.r[k] = { ...led.r[k], ...v }; return Object.keys(r).length; }
   /* 다음 묶음 장부에 먼저(웹앱 y24AutoCommit과 같음 — 트랜잭션 안에서 장부를 다시 읽고 차례·되풀이를 다시 셈) */
   async function commit(m, cand, Cd, jid, by, pc, cfg) { let res = null;
@@ -291,12 +291,16 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
        *  · 그 밖의 되풀이(이미 올림·이미 함) = 번외 기록상 이미 처리됨 → 줄을 '올림(확인 필요)'으로 닫아 다시 맡기지 않음(두 번 올리는 것보다 사람 확인이 안전) */
       if (/되풀이/.test(err)) { if (!/맡김 줄에 있음/.test(err)) rm[x.id] = { state: 'done', rows: (x.rows || []).map(String), msg: '번외가 되풀이로 거절(이미 처리한 일) — 예스24 등록상품 목록에서 올라갔는지 확인 · ' + err.slice(0, 100), dup: 1 }; dupRej.push(x.id); continue; }
       rm[x.id] = { state: 'fail', pre: 1, rows: (x.rows || []).map(String), msg: '번외가 맡김을 거절 — ' + String(x.err || '').slice(0, 160), todo: '📤 장부에서 이 줄을 보고 「↩ 다시 올릴 수 있게」 뒤 「▶ 이어 가기」 또는 엑셀 길(손)로' }; }
-    if (Object.keys(rm).length) { await apply(led, rm); out.ack = Object.keys(res); }
+    if (Object.keys(rm).length) { await apply(led, rm, st.ver); out.ack = Object.keys(res); }
     const rejDone = rej.filter((x) => x && x.id && (!/되풀이/.test(String(x.err || '')) || dupRej.includes(x.id))).map((x) => x.id); if (rejDone.length) out.rejAck = rejDone;
     /* (y24first1 11/14 · HOME 20:50 첫 자동 올림) 번외 0.1.66까지는 미리보기 표(RealGrid — 그림으로 그리는 표)의 줄을 화면 글에서만 찾아 「미리보기 목록에 우리 줄이 안 보임」으로 늘 멈췄음([등록]은 안 누름 = 예스24에 아무것도 안 올라감)
      *  → 표 자료를 읽는 번외(0.1.68 뒤 · 멈춤 글에 '(표 …)'가 붙음)가 이 멈춤을 본 때 한 번 저절로 풂(사람 손 없이 · 같은 책은 장부에 실패로 남아 다시 고르지 않고 다음 책으로) · 새 판에서 또 멈추면 그대로 둠 */
-    { const sp = led.auto && led.auto.stop; const vn = (x) => String(x || '0').split('.').reduce((a, q) => a * 1000 + (+q || 0), 0);
-      if (sp && /미리보기 목록에 우리 줄이 안 보임/.test(String(sp.why || '')) && !/\(표 /.test(String(sp.why || '')) && vn(st.ver) >= vn('0.1.68')) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 미리보기 표 읽기 고침(아무것도 누르지 않은 멈춤을 풂)' } }, { merge: true }); led.auto.stop = null; log('🤖 예스24 자동 올림', pc, '미리보기 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {} } }
+    /*  (y24reg3 11/17) 넓힘 — 0.1.71도 '(표 0줄)'로 같은 자리에서 멈췄음(원인 = 웹앱 엑셀 27행 머리 칸 이름이 예스24 화면이 읽는 열쇠와 달라 모든 줄을 빈 줄로 버림 · 웹앱 1.78.675에서 고침)
+     *  → '아무것도 누르지 않은 멈춤'(미리보기·올리기 전 실패)은 번외 판이 멈춘 판보다 새로우면 번외 판마다 한 번만 저절로 풂(auto.resumeVer에 그 판을 적어 같은 판에서 되풀이 0 · 누른 뒤 '확실하지 않음' 멈춤은 그대로 둠) */
+    { const sp = led.auto && led.auto.stop; const vn = (x) => String(x || '0').split('.').reduce((a, q) => a * 1000 + (+q || 0), 0); const why0 = String((sp && sp.why) || '');
+      const preStop = !!sp && (!sp.state || sp.state === 'fail') && (/미리보기 목록에 우리 줄이 안 보임|예스24 엑셀 확인 결과/.test(why0)) /* 미리보기·엑셀 확인 단계 멈춤만(화면 모양이 다름 같은 멈춤은 사람이 봄) */;
+      const spVer = (sp && sp.hv) || (/\(표 /.test(why0) ? '0.1.71' : '0.1.66'); /* 판을 적지 않던 옛 멈춤: 표 줄 수가 붙으면 0.1.68~0.1.71 · 아니면 0.1.66까지 */
+      if (preStop && st.ver && vn(st.ver) > vn(spVer) && String((led.auto && led.auto.resumeVer) || '') !== String(st.ver)) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeVer: String(st.ver), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 새 판(멈춘 판 ' + spVer + ') · 아무것도 누르지 않은 멈춤을 판마다 한 번 풂' } }, { merge: true }); led.auto.stop = null; led.auto.resumeVer = String(st.ver); log('🤖 예스24 자동 올림', pc, '아무것도 안 누른 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {} } }
     if (led.auto && led.auto.stop && !Object.keys(rm).length) return say('⛔ 멈춤 — ' + led.auto.stop.why);
     if (st.en === false) return say('이 PC 번외 예스24 읽기가 꺼져 있음');
     const fly = Object.values(led.r).filter((e) => e && e.auto && e.st === 'auto'); const known = new Set([...(st.wait || []).map((w) => w.id), st.cur && st.cur.id].filter(Boolean)); const me = byOf(pc);

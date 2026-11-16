@@ -61,7 +61,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(r.adm === '9791133424672,true,상,02,3,PNKLUX', '관리자 응답 한 줄 풀기: ' + r.adm);
   ok(r.admN === 1 && r.adultIsbn === '9791133424672:true', '관리자 화면 자료로 19금 매물 ISBN·19금이 채워짐');
   ok(r.scr.title && r.scr.red && r.scr.test && r.scr.bulkOff && r.scr.adm, '연결 표 화면(🔴 · 시험 엑셀 · 일괄은 잠김): ' + JSON.stringify(r.scr));
-  ok(/^28\|바코드\/상품번호\|자체코드\|\d+\|PNKd3120EX\|/.test(r.aoa), '엑셀 양식 27행 머리 · 28행 자료: ' + r.aoa);
+  ok(/^28\|상품번호\|판매자 자체코드\|\d+\|PNKd3120EX\|/.test(r.aoa), '엑셀 양식 27행 머리 · 28행 자료: ' + r.aoa);
   ok(r.test && /:PNKd3120EX:/.test(r.test) && /:1$/.test(r.test), '1줄 시험 엑셀 내려받기 + 기록: ' + r.test);
   ok(r.j0 === 'wait' && r.j1 === 'fixed' && r.j2 === 'new', `판정 기다림→고쳐짐→새 매물: ${r.j0} ${r.j1} ${r.j2}`);
   ok(/^1:알라딘에서 팔림:true/.test(r.ed || '') && r.redAfter !== 'red', '✏ 판매종료 기록(누가·이유) → 🔴 사라짐: ' + r.ed + ' / ' + r.redAfter);

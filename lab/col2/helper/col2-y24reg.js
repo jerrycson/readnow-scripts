@@ -47,6 +47,53 @@ const JS_CLICK_REG = `(()=>{const vis=(b)=>{try{return b.offsetParent!==null}cat
 const JS_DONE = `(()=>{const P=[...document.querySelectorAll('.layerPop')].filter((x)=>getComputedStyle(x).display!=='none'&&/등록\\s*완료/.test(x.innerText||''));return P.length?{txt:P[0].innerText.replace(/\\s+/g,' ').slice(0,400)}:null})()`;
 const JS_CLOSE = `(()=>{const P=[...document.querySelectorAll('.layerPop')].find((x)=>getComputedStyle(x).display!=='none'&&/등록\\s*완료/.test(x.innerText||''));const c=P&&P.querySelector('button.close');if(c)c.click();return !!c})()`;
 
+/* (y24reg3 11/17 · 0.1.72) HOME 21:40Z 블루레이 묶음 — 엑셀을 넣었는데 미리보기 표 0줄(11/14 ISBN 책도 같은 자리) → 파일 넣기를 살핌(읽기·고르기만 · 누르는 단추는 그대로)
+ *  JS_MARK_FILE: 화면의 input[type=file]을 모두 적음(accept·숨김·곁 글) · [엑셀파일 업로드] 단추 곁 칸에 data-rn-up 표시(예스24 원문: b-button '엑셀파일 업로드' → $refs.excelUpload.click() · 바로 뒤 input ref=excelUpload hidden)
+ *   · 그 칸의 화면 부품(Vue · clickExcelImport가 있는 것)을 찾아 엑셀 읽기(getExcelDataToJson)를 '그대로 지나가게' 감싸 몇 줄 읽었는지·칸 이름·빈 칸 이름만 적음(값은 안 적음) · change가 몇 번 왔는지 셈 */
+const JS_MARK_FILE = `(()=>{const F=[...document.querySelectorAll('input[type=file]')];const tx=(e)=>e?String(e.innerText||e.value||e.textContent||'').replace(/\\s+/g,' ').trim():'';
+const B=[...document.querySelectorAll('button,a,label,input[type=button]')].find((b)=>/엑셀\\s*파일\\s*업로드/.test(tx(b))&&!/다운로드/.test(tx(b))&&tx(b).length<30);let pick=-1,how='';
+if(B&&B.tagName==='LABEL'&&B.htmlFor){const x=document.getElementById(B.htmlFor);if(x&&F.includes(x)){pick=F.indexOf(x);how='label'}}
+for(let e=B,d=0;e&&d<5&&pick<0;e=e.parentElement,d++){const c=[...e.querySelectorAll('input[type=file]')];if(c.length){const f=c.find((x)=>B.compareDocumentPosition(x)&Node.DOCUMENT_POSITION_FOLLOWING)||c[0];pick=F.indexOf(f);how='단추 곁'+d+(c.length>1?' 여럿':'')}}
+if(pick<0&&F.length===1){pick=0;how='하나뿐'}if(pick<0){pick=F.findIndex((x)=>/sheet|xls/i.test(x.accept||''));if(pick>=0)how='accept'}if(pick<0&&F.length){pick=0;how='첫 칸'}
+const L=F.slice(0,6).map((x,i)=>({i,id:(x.id||'').slice(0,20),acc:/sheet|xls/i.test(x.accept||'')?'xlsx':String(x.accept||'').slice(0,20),hid:!!(x.hidden||getComputedStyle(x).display==='none'),dis:!!x.disabled,pv:tx(x.previousElementSibling).slice(0,24),nx:tx(x.nextElementSibling).slice(0,24)}));
+F.forEach((x)=>x.removeAttribute('data-rn-up'));const el=pick>=0?F[pick]:null;if(el)el.setAttribute('data-rn-up','1');
+const isVm=(v)=>{try{return !!v&&typeof v.clickExcelImport==='function'}catch(e){return false}};let vm=null,vh='';
+for(let e=el;e&&!vm;e=e.parentElement){for(let v=e.__vue__,d=0;v&&!vm&&d<8;v=v.$parent,d++)if(isVm(v)){vm=v;vh='vue2'}const c=e.__vueParentComponent;for(let p=c,d=0;p&&!vm&&d<8;p=p.parent,d++)if(isVm(p.proxy)){vm=p.proxy;vh='vue3'}}
+if(!vm){const A=document.querySelectorAll('*');for(let i=0;i<A.length&&i<4000&&!vm;i++){const v=A[i].__vue__;if(isVm(v)){vm=v;vh='vue2 훑음'}}}
+window.__rnY24={t:Date.now(),ch:0,called:0,parsed:null,err:null};window.__rnVm=vm;
+if(el&&!el.__rnL){el.__rnL=1;el.addEventListener('change',()=>{const W=window.__rnY24;if(W)W.ch++},true)}
+if(vm&&!vm.__rnW&&typeof vm.getExcelDataToJson==='function'){vm.__rnW=1;const o0=vm.getExcelDataToJson;vm.getExcelDataToJson=function(){const W=window.__rnY24;if(W)W.called++;const p=o0.apply(this,arguments);try{if(p&&typeof p.then==='function')p.then((r)=>{const W=window.__rnY24;if(!W)return;const a=Array.isArray(r)?r:[];const k=a[0]&&typeof a[0]==='object'?Object.keys(a[0]).slice(0,16):[];W.parsed={n:a.length,keys:k,emp:k.filter((x)=>a[0][x]===''||a[0][x]==null)}},(e)=>{const W=window.__rnY24;if(W)W.err=String((e&&e.message)||e).slice(0,120)})}catch(e){}return p}}
+return{n:F.length,pick,how,btn:!!B,vm:!!vm,vh,L}})()`;
+/* 넣은 뒤 그 칸 상태 · 감싼 기록 */
+const JS_UPW = `(()=>{const W=window.__rnY24||{};const el=document.querySelector('input[type=file][data-rn-up]')||document.querySelector('input[type=file]');return{ch:W.ch||0,called:W.called||0,files:el&&el.files?el.files.length:null,parsed:W.parsed||null,err:W.err||null}})()`;
+/* 사이트가 change를 못 받았을 때만 한 번 보냄(이미 받았으면 두 번 읽지 않게) */
+const JS_FIRE = `(()=>{const el=document.querySelector('input[type=file][data-rn-up]')||document.querySelector('input[type=file]');if(!el||!el.files||!el.files.length)return{ok:false,why:'칸에 파일이 없음'};el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return{ok:true}})()`;
+/* 화면 부품의 자료(예스24 원문: rqData.EXCEL_DATA_LIST = 엑셀에서 읽어 바코드가 빈 줄을 뺀 것 · rsData.PRODUCT_CHECK_RESULT = 서버 확인 결과 · RESULT_LIST[].ERROR_CODE 0=등록 가능 · REG_COUNT) — 읽기만 */
+const JS_VM = `(()=>{const W=window.__rnY24||{};const vm=window.__rnVm||null;const tx=(x)=>(x&&x.innerText||'').replace(/\\s+/g,' ').trim();const out={w:{ch:W.ch||0,called:W.called||0,parsed:W.parsed||null,err:W.err||null},vm:!!vm};
+if(vm){try{out.type=String(vm.selectedType||'');const rq=vm.rqData||{};const L=Array.isArray(rq.EXCEL_DATA_LIST)?rq.EXCEL_DATA_LIST:[];out.nList=L.length;if(L[0]&&typeof L[0]==='object'){const k=Object.keys(L[0]).slice(0,16);out.l0e=k.filter((x)=>L[0][x]===''||L[0][x]==null)}
+const rs=vm.rsData||{};const R=rs.PRODUCT_CHECK_RESULT;out.res=!!R;if(R){out.rc=R.RESULT_CODE==null?null:String(R.RESULT_CODE);const RL=Array.isArray(R.RESULT_LIST)?R.RESULT_LIST:[];out.nRes=RL.length;out.rows=RL.slice(0,30).map((x)=>({bc:String(x.BARCODE==null?'':x.BARCODE),no:String(x.GOODS_NO==null?'':x.GOODS_NO),e:x.ERROR_CODE==null||x.ERROR_CODE===''?null:+x.ERROR_CODE}))}
+out.reg=rs.REG_COUNT==null?null:+rs.REG_COUNT;out.prog=Array.isArray(rs.PROGIBITION_PRODUCT_LIST)?rs.PROGIBITION_PRODUCT_LIST.length:null;out.ban=Array.isArray(rs.BANNED_WORD_USE_PRODUCT_LIST)?rs.BANNED_WORD_USE_PRODUCT_LIST.length:null}catch(e){out.verr=String(e.message||e).slice(0,80)}}
+out.guide=tx(document.querySelector('.yes24_guide_type2')).slice(0,160);out.mp=[...document.querySelectorAll('[role=dialog],[role=alertdialog],.modal.show')].filter((x)=>{try{const r=x.getBoundingClientRect();return r.width>0&&r.height>0}catch(e){return false}}).map((x)=>tx(x).slice(0,160)).filter(Boolean).slice(0,3);return out})()`;
+/* 예스24 오류 코드 뜻(원문 getErrorMessage 그대로 줄임) */
+const ERR_MSG = { '-1': '그 바코드로 등록된 상품이 2개 이상', '-2': '그 바코드로 등록된 상품이 없음', '-3': '출시 일주일 안 신간', '-4': '상태정보(품질등급 등) 칸이 비었거나 잘못', '-5': '사용흔적 칸', '-6': '손상여부 칸', '-7': '부속물여부 칸', '-8': '재고수량은 최소 1', '-9': '판매형태가 잘못', '-10': '판매가가 정가 50배·5천만원 넘음', '-11': '소장용 판매가는 정가보다 높아야', '-12': '판매가 100원 미만', '-13': '판매가가 잘못', '-14': '예스24에 없는 상품', '-15': '적립율 10% 이상 안 됨', '-16': '재고 0으로 판매중 안 됨', '-17': '중고 등록이 안 되는 상품', '-18': '금칙어가 들어 있음' };
+const PRE_HEAD = '예스24 엑셀 확인 결과(누르기 전 멈춤 · 아무것도 누르지 않음) — '; /* 클라우드 y24auto 이어 가기가 이 머리를 읽음(새 판마다 한 번 풂) */
+const dig = (v) => String(v == null ? '' : v).replace(/[^0-9Xx]/g, '');
+/* 순수 셈(시험이 직접 부름) — isb = 우리 줄 바코드·ISBN · vs = JS_VM 결과 → 멈출 까닭('' = 화면 부품을 못 찾았거나 결과가 아직 없음 → 예전 판단 그대로) */
+function judgePre(isb, vs) { if (!vs || !vs.vm) return ''; const w = vs.w || {};
+  if (w.called && w.parsed && vs.nList === 0 && (!vs.res || !(vs.rows && vs.rows.length))) return PRE_HEAD + `엑셀 ${w.parsed.n}줄을 읽었지만 '바코드' 칸이 비어 모두 버려짐(읽은 칸: ${(w.parsed.keys || []).slice(0, 12).join(',') || '없음'}${w.parsed.emp && w.parsed.emp.length ? ' · 빈 칸: ' + w.parsed.emp.slice(0, 8).join(',') : ''}) · 양식 머리글을 확인`;
+  if (!vs.res) return '';
+  const rows = vs.rows || []; const bad = [];
+  for (const i of isb) { const r = rows.find((x) => dig(x.bc) === dig(i) || (x.no && dig(x.no) === dig(i))); if (!r) { bad.push(`${i} 결과 표에 없음`); continue; } if (r.e != null && r.e < 0) bad.push(`${i} 오류코드 ${r.e} ${ERR_MSG[String(r.e)] || '(뜻 모름)'}`); }
+  if (bad.length) return PRE_HEAD + bad.slice(0, 4).join(' · ') + (bad.length > 4 ? ` 외 ${bad.length - 4}` : '') + ` (확인 ${rows.length}줄 · 등록 가능 ${vs.reg == null ? '?' : vs.reg})`;
+  if (vs.reg === 0) return PRE_HEAD + `등록 가능한 줄 0(확인 ${rows.length}줄)`;
+  return ''; }
+/* raw를 짧게(장부 칸 · 클라우드는 3000자 넘으면 잘라 둠) */
+function fitRaw(raw, lim) { lim = lim || 2800; const s = () => JSON.stringify(raw).length; if (s() <= lim) return raw;
+  if (Array.isArray(raw.net)) raw.net = raw.net.map((x) => ({ ...x, req: x.req ? String(x.req).slice(0, 120) : x.req, body: x.body ? String(x.body).slice(0, 160) : x.body })); if (s() <= lim) return raw;
+  if (raw.vs && Array.isArray(raw.vs.rows)) raw.vs.rows = raw.vs.rows.slice(0, 5); if (raw.fi && Array.isArray(raw.fi.L)) raw.fi.L = raw.fi.L.slice(0, 2); raw.btn = (raw.btn || []).slice(0, 6); raw.txt = String(raw.txt || '').slice(0, 120); if (s() <= lim) return raw;
+  if (Array.isArray(raw.net)) raw.net = raw.net.slice(0, 3).map((x) => ({ p: x.p, st: x.st, body: x.body ? String(x.body).slice(0, 80) : x.body })); if (s() <= lim) return raw;
+  return { cut: true, s: JSON.stringify(raw).slice(0, lim - 40) }; }
+
 function makeY24Reg(o) { const { HOME, note, TEST } = o; const now = () => Date.now(); const sleep = (ms) => new Promise((r) => setTimeout(r, ms)); const SC = o.SC || 1;
   const REC_F = path.join(HOME, 'y24-reg.json'), Q_F = path.join(HOME, 'y24-regq.json'), DIR = path.join(HOME, 'y24reg');
   const rd = (f, d) => { try { const v = JSON.parse(fs.readFileSync(f, 'utf8')); return v && typeof v === 'object' ? v : d; } catch (e) { return d; } }; const wr = (f, v) => { try { fs.writeFileSync(f, JSON.stringify(v)); } catch (e) { o.log && o.log('예스24 자동 올림 파일 저장 실패: ' + e.message); } };
@@ -70,7 +117,7 @@ function makeY24Reg(o) { const { HOME, note, TEST } = o; const now = () => Date.
   const active = () => !!(R.cur && R.cur.st === 'click');
   /* 확인 물음 — 이 일의 [등록] 뒤에만 '예'(글에 '등록'이 있고 위험 낱말이 없을 때) · 그 밖은 늘 '아니오' */
   function dialog(p) { const m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 160); R.dlg.push(m); if (p.type === 'alert') return true; return /등록/.test(m) && !BAD_DLG.test(m); }
-  function end(j, res) { j.st = 'end'; R.q.res[j.id] = { ...res, at: now(), rows: j.rows.map((r) => r.lid), dlg: R.dlg.slice(-4) }; R.q.jobs = R.q.jobs.filter((x) => x.id !== j.id); saveQ(); R.cur = null; R.msg = `${res.state === 'done' ? '✅' : res.state === 'unsure' ? '⚠' : '⛔'} 예스24 자동 올림 ${j.rows.length}건: ${res.msg || res.state}`; note(R.msg); try { fs.unlinkSync(path.join(DIR, j.id + '.xlsx')); } catch (e) {} return res; }
+  function end(j, res) { j.st = 'end'; try { if (o.Y) o.Y.upW = null; } catch (e) {} R.q.res[j.id] = { ...res, at: now(), rows: j.rows.map((r) => r.lid), dlg: R.dlg.slice(-4) }; R.q.jobs = R.q.jobs.filter((x) => x.id !== j.id); saveQ(); R.cur = null; R.msg = `${res.state === 'done' ? '✅' : res.state === 'unsure' ? '⚠' : '⛔'} 예스24 자동 올림 ${j.rows.length}건: ${res.msg || res.state}`; note(R.msg); try { fs.unlinkSync(path.join(DIR, j.id + '.xlsx')); } catch (e) {} return res; }
   const mark = (j, gno) => { for (const r of j.rows) { R.rec.lid[r.lid] = { at: now(), job: j.id, gno: (gno && gno[r.lid]) || null }; for (const s of r.self.split(',')) R.rec.sku[s] = r.lid; } wr(REC_F, R.rec); };
   /* 등록상품 관리 목록을 읽어 자체코드 짝 찾기(읽기만 · 조회 모양은 그 화면이 보낸 그대로) */
   async function verify(j) { if (!o.Y.tpl.ProductList) { const lr = await o.learn('/Product/ProductList', 'ProductList'); if (lr !== 'ok') return { err: '등록상품 조회 모양을 못 배움(' + lr + ')' }; }
@@ -85,11 +132,23 @@ function makeY24Reg(o) { const { HOME, note, TEST } = o; const now = () => Date.
     try { fs.mkdirSync(DIR, { recursive: true }); const F = path.join(DIR, j.id + '.xlsx'); if (j.xlsx) fs.writeFileSync(F, Buffer.from(j.xlsx, 'base64')); else if (!fs.existsSync(F)) return end(j, { state: 'fail', pre: true, msg: '도우미가 다시 켜진 뒤 엑셀 파일이 없음 — 아무것도 누르지 않음', todo: '📤 장부에서 이 줄을 「↩ 다시 올릴 수 있게」 뒤 「▶ 이어 가기」' }); /* (0.1.19) 다시 켜진 뒤엔 받을 때 둔 파일을 씀 */
       j.step = '대량 등록 화면 엶'; await o.nav(o.BASE + PG, 30); if (o.isLoginSt(await o.ev(o.JS_STATE))) { o.setLogin('need', '대량 등록 화면이 로그인 화면'); j.st = 'wait'; j.step = ''; R.cur = null; saveQ(); R.msg = '🔐 예스24 로그인이 풀려 자동 올림 기다림(아무것도 안 누름)'; return true; }
       await sleep(1500 * SC); const pb = await o.ev(JS_PICK_BARCODE); if (!pb || !pb.ok) return end(j, { state: 'fail', pre: true, msg: `대량 등록 화면 모양이 다름 — ${(pb && pb.why) || '바코드 칸 못 찾음'} · 아무것도 누르지 않음`, todo: '예스24 대량 등록 화면이 바뀌었을 수 있음 — 📤 엑셀 길(손)로 올리고 리드나우 방에 알려 주세요' });
-      j.step = '엑셀 넣음'; const b = o.Y.br; const doc = await b.cdp.send('DOM.getDocument', { depth: 0 }, b.sid); const q = await b.cdp.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: 'input[type=file]' }, b.sid);
-      if (!q || !q.nodeId) return end(j, { state: 'fail', pre: true, msg: '파일 넣는 칸(input[type=file])이 없음 — 아무것도 누르지 않음', todo: '예스24 대량 등록 화면이 바뀌었을 수 있음 — 📤 엑셀 길(손)로' });
+      j.step = '엑셀 넣음'; const b = o.Y.br; const fi = await o.ev(JS_MARK_FILE).catch((e) => ({ err: String(e.message || e).slice(0, 120) })); /* (0.1.72) 파일 칸 수·곁 글을 적고 [엑셀파일 업로드] 곁 칸을 고름 */
+      const doc = await b.cdp.send('DOM.getDocument', { depth: 0 }, b.sid); let q = await b.cdp.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: 'input[type=file][data-rn-up]' }, b.sid).catch(() => null);
+      if (!q || !q.nodeId) q = await b.cdp.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: 'input[type=file]' }, b.sid);
+      if (!q || !q.nodeId) return end(j, { state: 'fail', pre: true, raw: fitRaw({ fi }), msg: '파일 넣는 칸(input[type=file])이 없음 — 아무것도 누르지 않음', todo: '예스24 대량 등록 화면이 바뀌었을 수 있음 — 📤 엑셀 길(손)로' });
+      o.Y.upW = []; /* (0.1.72) 이 동안 예스24 상품 쪽 요청·응답 앞부분을 적음(col2-y24.js take) */
       await b.cdp.send('DOM.setFileInputFiles', { files: [F], nodeId: q.nodeId }, b.sid);
-      const isb = [...new Set(j.rows.map((r) => r.bc || r.isbn))]; /* (r1116-y24reg) 바코드 줄은 바코드로 찾음 */ let pv = null; for (let k = 0; k < 60; k++) { await sleep(500 * SC); pv = await o.ev(JS_PREVIEW(isb)); if (pv && (pv.seen >= Math.min(isb.length, 1) || (pv.pop && pv.pop.length))) break; }
-      if (!pv || !pv.seen) return end(j, { state: 'fail', raw: pv ? { txt: pv.txt || '', inv: pv.inv || 0, gid: !!pv.gid, fv: pv.fv || null, btn: pv.btn || [], pop: pv.pop || [], empty: !!pv.empty, dlg: R.dlg.slice(-4) } : null, pre: true, msg: `엑셀을 넣었지만 미리보기 목록에 우리 줄이 안 보임${pv ? ` (표 ${pv.grid ? (pv.n == null ? '?' : pv.n) + '줄' : '못 찾음'}${pv.err && pv.err.length ? ' · ' + pv.err.join(' · ') : ''}${pv.keys && pv.keys.length ? ' · 칸 ' + pv.keys.slice(0, 12).join(',') : ''})` : ''}${pv && pv.pop && pv.pop.length ? ' — 예스24 알림: ' + pv.pop[0] : ''}${R.dlg.length ? ' — ' + R.dlg.slice(-1)[0] : ''} · [등록]은 누르지 않음`, todo: '예스24 대량 등록 화면에서 같은 엑셀을 손으로 올려 보고 오류 글을 확인' });
+      await sleep(1500 * SC); let up = await o.ev(JS_UPW).catch(() => null); let fired = null;
+      if (up && !up.ch && !up.called && up.files) { fired = await o.ev(JS_FIRE).catch((e) => ({ ok: false, why: String(e.message || e).slice(0, 80) })); } /* 사이트가 change를 못 받았을 때만 한 번 보냄 */
+      const isb = [...new Set(j.rows.map((r) => r.bc || r.isbn))]; /* (r1116-y24reg) 바코드 줄은 바코드로 찾음 */ let pv = null, vs = null;
+      for (let k = 0; k < 60; k++) { await sleep(500 * SC); pv = await o.ev(JS_PREVIEW(isb)); vs = await o.ev(JS_VM).catch(() => null);
+        if (pv && pv.pop && pv.pop.length) break; if (vs && vs.vm) { if (vs.res || (k > 8 && vs.w && vs.w.parsed && vs.nList === 0)) break; } else if (pv && pv.seen >= Math.min(isb.length, 1)) break; }
+      if (vs && vs.vm && vs.res && !(pv && pv.seen)) { await sleep(800 * SC); pv = await o.ev(JS_PREVIEW(isb)).catch(() => pv); } /* 결과가 오고 표가 그려질 틈 */
+      up = await o.ev(JS_UPW).catch(() => up); const net = Array.isArray(o.Y.upW) ? o.Y.upW.slice(0, 12) : []; o.Y.upW = null;
+      const raw = () => fitRaw({ fi: fi ? { n: fi.n, pick: fi.pick, how: fi.how, btn: fi.btn, vm: fi.vm, vh: fi.vh, L: fi.L, err: fi.err } : null, up, fired, vs, net, txt: (pv && pv.txt) || '', inv: (pv && pv.inv) || 0, gid: !!(pv && pv.gid), fv: (pv && pv.fv) || null, btn: (pv && pv.btn) || [], pop: (pv && pv.pop) || [], empty: !!(pv && pv.empty), n: pv ? pv.n : null, dlg: R.dlg.slice(-4) });
+      const why = judgePre(isb, vs); if (why) return end(j, { state: 'fail', pre: true, raw: raw(), msg: why + ' · [등록]은 누르지 않음', todo: '예스24가 알려 준 오류를 고친 뒤(값·등급·바코드) 📤 장부에서 「↩ 다시 올릴 수 있게」 — 고칠 수 없는 상품이면 예스24 올림에서 뺌' });
+      const okVm = !!(vs && vs.vm && vs.res && isb.every((i) => (vs.rows || []).some((x) => dig(x.bc) === dig(i) && x.e === 0))); /* 서버 확인에서 우리 줄이 모두 오류 0이면 표 읽기가 빗나가도 지나감 */
+      if ((!pv || !pv.seen) && !okVm) return end(j, { state: 'fail', raw: raw(), pre: true, msg: `엑셀을 넣었지만 미리보기 목록에 우리 줄이 안 보임${pv ? ` (표 ${pv.grid ? (pv.n == null ? '?' : pv.n) + '줄' : '못 찾음'}${pv.err && pv.err.length ? ' · ' + pv.err.join(' · ') : ''}${pv.keys && pv.keys.length ? ' · 칸 ' + pv.keys.slice(0, 12).join(',') : ''})` : ''} · 파일 칸 ${fi && fi.n != null ? fi.n + '개(' + (fi.how || '?') + ')' : '?'} · change ${up ? up.ch : '?'}·읽기 ${up ? up.called : '?'}${fired ? ' · 다시 보냄' : ''}${vs && vs.vm ? ' · 읽은 줄 ' + (vs.nList == null ? '?' : vs.nList) + ' · 확인 ' + (vs.res ? '옴' : '안 옴') : ' · 화면 부품 못 찾음'}${pv && pv.pop && pv.pop.length ? ' — 예스24 알림: ' + pv.pop[0] : ''}${R.dlg.length ? ' — ' + R.dlg.slice(-1)[0] : ''} · [등록]은 누르지 않음`, todo: '예스24 대량 등록 화면에서 같은 엑셀을 손으로 올려 보고 오류 글을 확인' });
       await sleep(1500 * SC); j.st = 'click'; j.step = '[등록] 누름'; saveQ(); /* 이 줄 뒤로는 다시 누르지 않음(도우미가 꺼져도 '확실하지 않음') */
       const ck = await o.ev(JS_CLICK_REG); if (!ck || !ck.ok) { j.st = 'run'; return end(j, { state: 'fail', pre: true, msg: ((ck && ck.why) || '[등록] 단추 못 누름') + ' — 아무것도 올라가지 않음', todo: '📤 엑셀 길(손)로' }); }
       let dn = null; for (let k = 0; k < 120 && !dn; k++) { await sleep(500 * SC); dn = await o.ev(JS_DONE).catch(() => null); }
@@ -103,4 +162,4 @@ function makeY24Reg(o) { const { HOME, note, TEST } = o; const now = () => Date.
     catch (e) { const clicked = j.st === 'click'; return end(j, { state: clicked ? 'unsure' : 'fail', pre: !clicked, msg: (clicked ? '[등록] 뒤 오류 — ' : '올리기 전 오류(아무것도 안 누름) — ') + String(e.message || e).slice(0, 140), todo: clicked ? '예스24 등록상품 관리에서 올라갔는지 사람이 확인' : '잠시 뒤 웹앱 📤 화면에서 「▶ 자동 올림 이어 가기」' }); } }
   return { put, ack, state, pick, once, active, dialog, R };
 }
-module.exports = { makeY24Reg, checkJob, doneCounts, matchList, MAXN };
+module.exports = { makeY24Reg, checkJob, doneCounts, matchList, MAXN, judgePre, fitRaw, ERR_MSG, PRE_HEAD, _js: { JS_MARK_FILE, JS_UPW, JS_FIRE, JS_VM } };

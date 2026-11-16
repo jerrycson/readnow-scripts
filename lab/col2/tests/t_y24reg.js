@@ -9,7 +9,13 @@ const RG = require('../helper/col2-y24reg.js');
 const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 60); k++) { v = await f(); if (v) return v; await wait(ms || 250); } return v; };
 const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /^\d+$/.test(p))) { try { if (fs.readFileSync('/proc/' + p + '/cmdline', 'utf8').includes(D)) process.kill(+p, 'SIGKILL'); } catch (e) {} } };
 
-function fakeY24() { const S = { prods: [{ GOODS_NO: '100000001', EAN: '9788900000009', ENTR_GOODS_CD: 'OLD001' }], regs: [], log: [], noPreview: false, gridOnly: false, seq: 200000000 };
+/* (0.1.72 y24reg3) 예스24 원문과 같은 꼴의 화면 부품(Vue) 흉내 — input change → vm.clickExcelImport(e) → this.getExcelDataToJson(파일,27) → 바코드 빈 줄 뺌 → /api/Product/GetReadExcelFile → rsData.PRODUCT_CHECK_RESULT · 표는 글로 안 그림(RealGrid처럼) · 끝에 칸 값을 비움
+ *  mode 'ok' = 오류코드 0 · 'err' = 서버가 오류코드(S.vmErr) · 'empty' = 엑셀 머리글이 달라 '바코드' 칸이 빔 */
+const VMJS = (mode) => `<script>(function(){var MODE=${JSON.stringify(mode)};var vm={selectedType:'01',rqData:{EXCEL_DATA_LIST:[]},rsData:{PRODUCT_CHECK_RESULT:null,REG_COUNT:0,PROGIBITION_PRODUCT_LIST:[],BANNED_WORD_USE_PRODUCT_LIST:[]},
+getExcelDataToJson:function(f,h){return new Promise(function(res){var fr=new FileReader();fr.onload=function(){var A=String(fr.result).trim().split('\\n').filter(function(l){return l&&l[0]!=='#'});res(A.map(function(l){var a=l.split(',');return MODE==='empty'?{'상품번호':a[0],'판매자 자체코드':a[1]}:{'바코드':a[0],'판매자 자체코드':a[1]}}))};fr.readAsText(f)})},
+clickExcelImport:function(e){var self=this,f=e.target.files[0];if(!f)return;this.rqData.EXCEL_DATA_LIST=[];this.rsData.PRODUCT_CHECK_RESULT=null;this.getExcelDataToJson(f,27).then(function(rows){rows.forEach(function(r){if(r['바코드'])self.rqData.EXCEL_DATA_LIST.push({BARCODE:r['바코드'],MAN_NO:r['판매자 자체코드']})});if(!self.rqData.EXCEL_DATA_LIST.length)return;api('/api/Product/GetReadExcelFile',{PRODUCT_LIST:self.rqData.EXCEL_DATA_LIST,TYPE:'01'},function(t){var j=JSON.parse(t);self.rsData.REG_COUNT=0;j.RESULT_LIST.forEach(function(x){if(x.ERROR_CODE==0)self.rsData.REG_COUNT++});self.rsData.PRODUCT_CHECK_RESULT=j;LINES=j.RESULT_LIST.filter(function(x){return x.ERROR_CODE==0}).map(function(x){return x.BARCODE+','+x.MAN_NO})})});e.target.value=''}};
+var el=document.getElementById('f');el.onchange=function(e){return vm.clickExcelImport(e)};document.body.__vue__=vm})()</script>`;
+function fakeY24() { const S = { prods: [{ GOODS_NO: '100000001', EAN: '9788900000009', ENTR_GOODS_CD: 'OLD001' }], regs: [], log: [], noPreview: false, gridOnly: false, seq: 200000000, vm: '', vmErr: 0, chk: [] };
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title><script>function api(p,o,cb){var x=new XMLHttpRequest();x.open('POST',p);x.setRequestHeader('Content-Type','application/json');x.onload=function(){cb&&cb(x.responseText)};x.send(JSON.stringify(o))}</script></head><body>${b}</body></html>`;
   const bulk = () => page('대량등록', `<div><div class="custom-radio"><input type="radio" name="radio-inline" value="01" id="r1"><label for="r1"><span>바코드</span></label></div><div class="custom-radio"><input type="radio" name="radio-inline" value="02" id="r2"><label for="r2"><span>상품번호</span></label></div></div>
 <button type="button" class="btn btn-success" onclick="document.getElementById('f').click()"> 엑셀파일 업로드 </button><input type="file" id="f" hidden="hidden">
@@ -22,11 +28,12 @@ document.querySelector('#pop .close').onclick=function(){document.getElementById
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => { S.log.push({ m: q.method, p: u.pathname, body: b.slice(0, 300) });
       const H = (code, type, body) => { s.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); s.end(body); };
       if (u.pathname === '/api/Product/BulkReg') { const o = JSON.parse(b || '{}'); let n = 0; for (const ln of o.lines || []) { const [isbn, self] = ln.split(','); if (!isbn || !self) continue; S.prods.unshift({ GOODS_NO: String(++S.seq), EAN: isbn, ENTR_GOODS_CD: self }); n++; } S.regs.push(n); return H(200, 'application/json', JSON.stringify({ n, RESULT_CODE: 'S000' })); }
+      if (u.pathname === '/api/Product/GetReadExcelFile') { const o = JSON.parse(b || '{}'); S.chk.push((o.PRODUCT_LIST || []).length); return H(200, 'application/json', JSON.stringify({ RESULT_CODE: 'S000', RESULT_LIST: (o.PRODUCT_LIST || []).map((x) => ({ BARCODE: x.BARCODE, GOODS_NO: '', MAN_NO: x.MAN_NO, ERROR_CODE: S.vmErr || 0 })) })); }
       if (u.pathname === '/api/Product/ProductList') return H(200, 'application/json', JSON.stringify({ PRODUCT_LIST: S.prods, TOTAL_COUNT: S.prods.length, RESULT_CODE: 'S000' }));
       if (u.pathname === '/api/Product/DeleteAll') { S.prods = []; return H(200, 'application/json', '{}'); }
       if (u.pathname.startsWith('/api/')) return H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }));
       if (u.pathname === '/') return H(200, 'text/html', page('판매관리', '첫 화면'));
-      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : S.gridOnly ? '<body><script>window.GRIDONLY=1</script>' : '<body>'));
+      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : S.gridOnly ? '<body><script>window.GRIDONLY=1</script>' : '<body>').replace('</body>', S.vm ? VMJS(S.vm) + '</body>' : '</body>'));
       if (u.pathname === '/Product/ProductList') return H(200, 'text/html', page('등록상품', `<button type="button" onclick="api('/api/Product/ProductList',{SDATE:'2026-11-01',EDATE:'2026-11-10',goodsStatGb:'02',PAGE_NO:1,PAGE_SIZE:20})">조회</button>`));
       return H(200, 'text/html', page('기타', '없음')); }); });
   return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ srv, S, base: `http://127.0.0.1:${srv.address().port}` }))); }
@@ -46,6 +53,13 @@ const job = (id, rows) => ({ id, rows, xlsx: b64(rows), by: '시험 웹앱' });
     const A = mk('MJ-MAIN').put(job('job-m', [row(1)])), B = mk('LOGGER').put(job('job-l', [row(1)])), C0 = mk('HOME');
     ok(A.code === 409 && /MJ-MAIN/.test(A.body.err) && B.code === 409 && /로거/.test(B.body.err), 'MJ-MAIN·로거 PC는 맡김을 받지 않음(출고 보호 · 약속 0)', A.body.err + ' / ' + B.body.err);
     ok(C0.dialog({ type: 'confirm', message: '선택한 상품을 등록하시겠습니까?' }) === true && C0.dialog({ type: 'confirm', message: '상품을 삭제하시겠습니까?' }) === false && C0.dialog({ type: 'confirm', message: '등록 취소하시겠습니까?' }) === false, "확인 물음: '등록'만 예 · 삭제·취소 낱말이 있으면 아니오");
+    { const J = RG.judgePre; const V = (o) => ({ vm: true, w: { ch: 1, called: 1, parsed: { n: 1, keys: ['바코드'], emp: [] } }, nList: 1, res: true, rows: [{ bc: '8809866320756', no: '', e: 0 }], reg: 1, ...o });
+      ok(J(['8809866320756'], null) === '' && J(['8809866320756'], { vm: false }) === '' && J(['8809866320756'], V({ res: false })) === '' && J(['8809866320756'], V()) === '', '판단: 화면 부품이 없거나 결과 전·오류 0이면 멈추지 않음(예전 판단 그대로)');
+      const m1 = J(['8809866320756'], V({ rows: [{ bc: '8809866320756', e: -2 }], reg: 0 })), m2 = J(['8809866320756'], V({ rows: [{ bc: '1111111111111', e: 0 }] })), m3 = J(['8809866320756'], V({ nList: 0, res: true, rows: [], w: { ch: 1, called: 1, parsed: { n: 1, keys: ['상품번호', '판매가'], emp: ['판매가'] } } })), m4 = J(['8809866320756'], V({ reg: 0 }));
+      ok([m1, m2, m3, m4].every((m) => m.startsWith(RG.PRE_HEAD)) && /오류코드 -2 그 바코드로 등록된 상품이 없음/.test(m1) && /결과 표에 없음/.test(m2) && /상품번호,판매가/.test(m3) && /빈 칸: 판매가/.test(m3) && /등록 가능한 줄 0/.test(m4), '판단: 오류코드 뜻·결과에 없음·바코드 칸 빔·등록 가능 0 → 머리글 「예스24 엑셀 확인 결과(누르기 전 멈춤…)」', [m1, m2, m3, m4].join(' / '));
+      const big = RG.fitRaw({ net: Array.from({ length: 12 }, () => ({ p: '/api/Product/X', st: 200, req: 'r'.repeat(300), body: 'b'.repeat(300) })), vs: { rows: Array.from({ length: 30 }, () => ({ bc: '9788900000001', no: '', e: 0 })) }, btn: Array(20).fill('단추'), txt: 't'.repeat(300) });
+      ok(JSON.stringify(big).length <= 2800, 'raw 줄이기 2800자 안', JSON.stringify(big).length);
+      const H0 = '<div><button>엑셀파일 업로드</button><input type="file" id="a"></div><input type="file" id="b">'; ok(typeof RG._js.JS_MARK_FILE === 'string' && /data-rn-up/.test(RG._js.JS_MARK_FILE) && H0, '파일 칸 고르기 코드 있음'); }
     fs.rmSync(D0, { recursive: true, force: true }); }
 
   const Y = await fakeY24(); const repo = process.env.COL2_PROD_REPO || path.join(__dirname, '..', '..', '..');
@@ -74,6 +88,15 @@ const job = (id, rows) => ({ id, rows, xlsx: b64(rows), by: '시험 웹앱' });
     ok(x && x.state === 'fail' && x.pre && /미리보기/.test(x.msg) && x.todo && Y.S.regs.length === n2, '미리보기 목록에 우리 줄이 없으면 [등록]을 누르지 않고 멈춤 + 사람이 할 일', x && x.msg);
     ok(!Y.S.log.some((l) => /DeleteAll/.test(l.p)) && Y.S.prods.length >= 4, '상품삭제 같은 다른 단추는 끝까지 안 누름');
     ok(fs.readdirSync(path.join(D, 'home', 'y24reg')).length === 0, '올린 엑셀 임시 파일은 끝나면 지움(이 PC 안)');
+    console.log('⑤ (0.1.72 y24reg3 · HOME 11/16 표 0줄) 화면 부품(Vue)의 서버 확인 결과를 읽고 오류면 누르기 전에 멈춤');
+    Y.S.noPreview = false; Y.S.vm = 'ok'; Y.S.vmErr = 0; { const n5 = Y.S.regs.length, c5 = Y.S.chk.length; await H.api('POST', '/y24/reg/put', job('job-V1', [row(6)])); const xv = await resOf('job-V1');
+      ok(xv && xv.state === 'done' && Y.S.regs.length === n5 + 1 && Y.S.chk.length === c5 + 1, '서버 확인 오류코드 0 → 표 글이 없어도 [등록] → done', xv && xv.msg); }
+    Y.S.vm = 'err'; Y.S.vmErr = -4; { const n6 = Y.S.regs.length; await H.api('POST', '/y24/reg/put', job('job-V2', [row(7)])); const xe = await resOf('job-V2');
+      ok(xe && xe.state === 'fail' && xe.pre && xe.msg.startsWith(RG.PRE_HEAD) && /오류코드 -4/.test(xe.msg) && /상태정보/.test(xe.msg) && Y.S.regs.length === n6, "서버가 오류코드 -4 → '예스24 엑셀 확인 결과(누르기 전 멈춤…)'로 멈춤 · [등록] 안 누름", xe && xe.msg);
+      const rw = (xe && xe.raw) || {}; ok(rw.fi && rw.fi.n === 1 && rw.fi.pick === 0 && /단추 곁/.test(rw.fi.how) && rw.fi.vm && rw.up && rw.up.ch >= 1 && rw.up.called === 1 && rw.vs && rw.vs.rows && rw.vs.rows[0].e === -4 && (rw.net || []).some((q) => /GetReadExcelFile/.test(q.p) && /ERROR_CODE/.test(q.body || '')) && JSON.stringify(rw).length <= 3000, 'raw에 파일 칸·change·읽기 수·서버 결과·요청/응답 앞부분(3000자 안)', JSON.stringify(rw).slice(0, 400)); }
+    Y.S.vm = 'empty'; { const n7 = Y.S.regs.length, c7 = Y.S.chk.length; await H.api('POST', '/y24/reg/put', job('job-V3', [row(8)])); const xm = await resOf('job-V3');
+      ok(xm && xm.state === 'fail' && xm.pre && xm.msg.startsWith(RG.PRE_HEAD) && /'바코드' 칸이 비어/.test(xm.msg) && /상품번호/.test(xm.msg) && Y.S.regs.length === n7 && Y.S.chk.length === c7, "엑셀 머리글이 달라 '바코드' 칸이 비면 읽은 칸 이름과 함께 멈춤", xm && xm.msg); }
+    Y.S.vm = '';
   } finally { try { await H.stop(); } catch (e) {} killDir(D); }
   Y.srv.close(); L.done('t_y24reg');
 })();
