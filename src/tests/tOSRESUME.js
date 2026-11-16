@@ -9,7 +9,7 @@ let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } 
 require('./harness.js')(async (p) => {
   await p.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\//, (r) => r.fulfill({ body: require('fs').readFileSync(__dirname + '/xlsx.full.min.js'), contentType: 'application/javascript' }));
   /* 가짜 ALPS 도우미(127.0.0.1:8898) — 시작 → 2번 묻고 나면 종이 확인 물음(첫 출력 뒤 한 번) → 답하면 끝 · 운송장 = 받는 분마다 하나 */
-  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.6', hist: [], results: {} };
+  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.9' /* (11/16 #5) 웹앱 OS_ALPS_WANT 0.5.9와 같게 — 낮으면 출고 시작 때 '출고 관련 업데이트' 묻기 창이 떠 멈춤 · 0.5.9는 요청 번호(operationId)를 돌려줌 */, hist: [], results: {} };
   const step = (st) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? 'run' : 'todo', pct: 50, d: '' }));
   await p.route(/^http:\/\/127\.0\.0\.1:8898\//, async (r) => { const u = new URL(r.request().url()); const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(o) });
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
@@ -18,7 +18,7 @@ require('./harness.js')(async (p) => {
     if (u.pathname === '/alps/pcheck') return J(H.printerBad ? { ok: true, bad: H.printerBad } : { ok: true, state: '상태 3 · 오류 0 · 대기열 0' });
     if (u.pathname === '/alps/hist') return J({ ok: true, hist: H.hist });
     if (u.pathname === '/alps/run') { const b = JSON.parse(r.request().postData()); H.body = b; H.bodies.push(b); const id = 'r' + (++H.n); const box = {}; let k = 0; H.results[id] = [['운송장번호', '수하인명', '상품명', '상품상세내용', '관리번호', '출력여부', '집하일자', '합포장키'], ...b.rows.map((x, i) => { if (!box[x.name]) box[x.name] = String(240000000100 + H.n * 10 + (++k)); return [box[x.name], x.name, x.title, x.sku, 'M' + id + i, '출력', '', '']; })];
-      H.run = { id, fileName: b.fileName, status: 'run', steps: step(1), summary: {} }; return J({ ok: true, run: H.run }); }
+      H.run = { id, operationId: b.operationId || null, fileName: b.fileName, status: 'run', steps: step(1), summary: {} }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/input') { const a = JSON.parse(r.request().postData()); H.inputs.push(a); if (H.run && H.run.status === 'wait') H.run = { ...H.run, status: 'done', done: true, hasResult: true, need: null, steps: step(6), summary: { rows: H.body.rows.length, boxes: 2, printed: 2, waybills: H.body.rows.length, upload: { ok: H.body.rows.length } } }; return J({ ok: true }); }
     if (u.pathname === '/alps/result') { const id = u.searchParams.get('id'); return H.results[id] ? J({ ok: true, aoa: H.results[id] }) : J({ ok: false }); }
     if (u.pathname === '/alps/update') return J({ ok: true });
@@ -90,8 +90,10 @@ require('./harness.js')(async (p) => {
     o.v4 = await until(async () => { const r = runDoc(); if (r.need && r.need.k === 'alps' && r.status === 'wait' && S.alps.ansFor !== ((S.alps.st || {}).id + ':' + r.need.nid)) { if (!preMade) { preMade = true; await mkPre(); await W2(200); } /* 묶음이 정해진 뒤(ALPS 인쇄 중) 다른 길이 이 주문 송장 입력 맡김을 먼저 만들고 첫 건 검증 실패로 멈춤 — 11/05 14:23과 같은 모양 */ await osAct('alps:바르게 나왔음'); } return r.status === 'wait' && r.need && /자동 검증 실패/.test(r.need.msg || ''); }, 90000);
     o.log4 = (runDoc().log || []).map((x) => x.m).slice(-14); o.bt4 = runDoc().bt; o.v4need = runDoc().need; o.v4btn = ((runDoc().need || {}).btns || []).map((x) => x[0]); o.v4st = runDoc().status; o.v4ph = runDoc().ph;
     /* 그 맡김을 지운 것처럼 바로 END로 보내 보기 — 끝내기 전 확인이 INV로 되돌림 */
+    /* (11/16 #5) 담당권을 잃은 탭의 osTick·osAct는 오류로 멈춤 — ④가 앞에서 어긋나도 시험 전체(①~③ 항목)가 끊기지 않게 받아 둠 */
+    o.endGuard = {}; try {
     const bt4 = (runDoc().bt || [])[0] || {}; await db.collection('shp_runs').doc(S.os.id).set({ ph: 'END', status: 'run', need: null }, { merge: true }); await W2(200); S.os.busy = 0; await osTick(); await W2(300); o.endGuard = { ph: runDoc().ph, st: runDoc().status, line: (runDoc().log || []).some((x) => /끝내기 전 확인/.test(x.m)) };
-    await until(() => runDoc().need && /자동 검증 실패/.test(runDoc().need.msg || ''), 20000); await osAct('invcont'); o.done4 = await until(() => runDoc().status === 'done', 60000); o.inv4 = ((runDoc().bt || [])[0] || {}).inv || null; o.inv4doc = (FS.shp_invoices || {})[bt4.invDoc] || {};
+    await until(() => runDoc().need && /자동 검증 실패/.test(runDoc().need.msg || ''), 20000); await osAct('invcont'); o.done4 = await until(() => runDoc().status === 'done', 60000); o.inv4 = ((runDoc().bt || [])[0] || {}).inv || null; o.inv4doc = (FS.shp_invoices || {})[bt4.invDoc] || {}; } catch (e) { o.err4 = e.code || e.message; o.inv4doc = o.inv4doc || {}; }
     return o; });
   if (process.env.V) console.log(JSON.stringify(o, null, 1).slice(0, 5000));
   const dup = (L) => L.length !== new Set(L).size;

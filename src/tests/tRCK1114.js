@@ -8,6 +8,7 @@ const fs = require('fs'); const path = require('path'); const { JSDOM } = (() =>
 const pick = (...L) => L.find((p) => fs.existsSync(p));
 const SRC = pick(path.join(__dirname, '../readnow-collector.src.js'), path.join(__dirname, '../readnow-collector.user.js')); const src = fs.readFileSync(SRC, 'utf8');
 const SHIP = require(pick(path.join(__dirname, '../readnow-shipping-core.js'), path.join(__dirname, '../../readnow-shipping-core.js')));
+const EXEC_SRC = fs.readFileSync(pick(path.join(__dirname, '../readnow-exec-core.js'), path.join(__dirname, '../../readnow-exec-core.js')), 'utf8'); // (11/16 #5) 송장 입력은 실행 도구(exec-core)가 없으면 보류함 — 시험 페이지에도 실제처럼 실음
 let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
 const cut = (s, a, b) => { const i = s.indexOf(a); if (i < 0) throw new Error('못 찾음: ' + a); const j = s.indexOf(b, i); return s.slice(i, j + b.length); };
 const STEP_SRC = cut(src, '(function rnStepLog() {', '\n})();');
@@ -27,14 +28,14 @@ const REF = { O2: ['손님A', '서울특별시 서초구 서초대로 10 105동 
 const SEEN = [{ no: 'O2', name: '손님A', ad: '서울 서초구 서초대로 10, 105-1502', inv: '240000000012' }, { no: 'O3', name: '손님A', ad: '경기 시험시 시험구 시험로 5 101동 303호', inv: '240000000013' }, { no: 'O4', name: '손*B', ad: '서울 서초 서초 1234', inv: '240000000014' },
   { no: 'O5', name: '손님B', ad: '서울 서초구 서초대로 10 5동 1502', inv: '240000000015' }, { no: 'O6', name: '손님A', ad: '부산광역시 시험구 시험로 7', inv: '240000009999' }];
 async function run(hash) { const F = fakeFb(); const GM = new Map(); const id = 'inv_r'; const fetched = [];
-  F.store['shp_invoices/' + id] = { createdAt: new Date().toISOString(), status: 'running', from: 'oneshot', log: [], items: Object.entries(REF).map(([no, [nm, ad]], i) => ({ orderNo: no, invoice: '2400000000' + (12 + i), recipient: nm, to: { name: nm, zip: null, addr: ad, src: 'excel' }, state: 'sent' })) };
+  F.store['shp_invoices/' + id] = { createdAt: new Date().toISOString(), status: 'running', from: 'oneshot', log: [], items: Object.entries(REF).map(([no, [nm, ad]], i) => ({ orderNo: no, invoice: '2400000000' + (12 + i), recipient: nm, to: { name: nm, zip: null, addr: ad, src: 'excel' }, state: no === 'O6' ? 'done' : 'sent' /* (11/16 #5) 배송 화면 송장이 다르면 '끝남'으로 치지 않고 멈추는 새 규칙 — O6은 앞서 확인돼 끝난 주문으로 두고 재검토가 송장 🔴을 잡는지 봄 */ })) };
   GM.set('rn-inv-active', { id, at: Date.now() });
   const page = async (h) => { const dom = new JSDOM('<body></body>', { url: 'https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4' + (h || ''), runScripts: 'dangerously' }); const w = dom.window; w.close = () => { w.__closed = 1; };
     w.TextDecoder = TextDecoder; w.TextEncoder = TextEncoder; w.firebase = F.fb; w.__rnLog = () => {}; if (!h) w.sessionStorage.setItem('rn-inv-tab', id);
     w.GM_getValue = (k, d) => (GM.has(k) ? GM.get(k) : d); w.GM_setValue = (k, v) => GM.set(k, v); w.GM_deleteValue = (k) => GM.delete(k); w.GM_notification = () => {};
     w.fetch = async (u) => { u = String(u); fetched.push(u); if (/worder_delivery_complete/.test(u)) return { ok: true, status: 200, text: async () => shipped(SEEN) }; return { ok: true, status: 200, text: async () => '<html></html>' }; };
     w.ReadnowShipping = { ...SH, parseDeliveryPage: (d) => (d === w.document ? { orders: [], tabCounts: { '발송 요청': 0 } } : SH.parseDeliveryPage(d)) };
-    w.eval(STEP_SRC); w.eval(INV_SRC); return w; };
+    w.eval(EXEC_SRC); w.eval(STEP_SRC); w.eval(INV_SRC); return w; };
   return { F, GM, page, fetched, id, D: () => F.store['shp_invoices/' + id] }; }
 (async () => {
   console.log('■ ① 견주기 기준 — 정범님 예시');

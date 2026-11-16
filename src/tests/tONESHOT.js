@@ -12,7 +12,7 @@ require('./harness.js')(async (p) => {
   await p.route(/firestore\.googleapis\.com\//, (r) => r.abort());
   await p.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\//, (r) => r.fulfill({ body: require('fs').readFileSync(__dirname + '/xlsx.full.min.js'), contentType: 'application/javascript' }));
   /* 가짜 ALPS 도우미(127.0.0.1:8898) — 시작 → 2번 묻고 나면 종이 확인 물음(첫 출력 뒤 한 번) → 답하면 끝 · 운송장 = 받는 분마다 하나 */
-  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.6', hist: [], results: {} };
+  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.9' /* (11/16 #5) 웹앱 OS_ALPS_WANT 0.5.9와 같게 — 낮으면 출고 시작 때 '출고 관련 업데이트' 묻기 창이 떠 멈춤 · 0.5.9는 요청 번호(operationId)를 돌려줌 */, hist: [], results: {} };
   const step = (st) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? 'run' : 'todo', pct: 50, d: '' }));
   await p.route(/^http:\/\/127\.0\.0\.1:8898\//, async (r) => { const u = new URL(r.request().url()); const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(o) });
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
@@ -21,7 +21,7 @@ require('./harness.js')(async (p) => {
     if (u.pathname === '/alps/pcheck') return J(H.printerBad ? { ok: true, bad: H.printerBad } : { ok: true, state: '상태 3 · 오류 0 · 대기열 0' });
     if (u.pathname === '/alps/hist') return J({ ok: true, hist: H.hist });
     if (u.pathname === '/alps/run') { const b = JSON.parse(r.request().postData()); H.body = b; H.bodies.push(b); const id = 'r' + (++H.n); const box = {}; let k = 0; H.results[id] = [['운송장번호', '수하인명', '상품명', '상품상세내용', '관리번호', '출력여부', '집하일자', '합포장키'], ...b.rows.map((x, i) => { if (!box[x.name]) box[x.name] = String(240000000100 + H.n * 10 + (++k)); return [box[x.name], x.name, x.title, x.sku, 'M' + id + i, '출력', '', '']; })];
-      H.run = { id, fileName: b.fileName, status: 'run', steps: step(1), summary: {} }; return J({ ok: true, run: H.run }); }
+      H.run = { id, operationId: b.operationId || null, fileName: b.fileName, status: 'run', steps: step(1), summary: {} }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/input') { const a = JSON.parse(r.request().postData()); H.inputs.push(a); if (H.run && H.run.status === 'wait') H.run = { ...H.run, status: 'done', done: true, hasResult: true, need: null, steps: step(6), summary: { rows: H.body.rows.length, boxes: 2, printed: 2, waybills: H.body.rows.length, upload: { ok: H.body.rows.length } } }; return J({ ok: true }); }
     if (u.pathname === '/alps/result') { const id = u.searchParams.get('id'); return H.results[id] ? J({ ok: true, aoa: H.results[id] }) : J({ ok: false }); }
     if (u.pathname === '/alps/update') return J({ ok: true });
@@ -92,7 +92,10 @@ require('./harness.js')(async (p) => {
     /* ⑤ 탭 닫힘 — 맥박 끊긴 '하는 중' 맡김을 되돌림(웹앱 쪽 규칙 · 수집기와 같은 트랜잭션) */
     await db.collection('shp_invoices').doc('dead1').set({ createdAt: now(), status: 'running', beat: new Date(Date.now() - 15 * 60e3).toISOString(), claim: { pc: 'PC-T', at: new Date(Date.now() - 15 * 60e3).toISOString() }, items: [{ orderNo: 'Z1', invoice: '1', state: 'sent' }] });
     await db.collection('shp_invoices').doc('live1').set({ createdAt: now(), status: 'running', beat: now(), claim: { pc: 'PC-T', at: now() }, items: [] });
-    o.re1 = await osInvReclaim('dead1', 10); o.re2 = await osInvReclaim('live1', 10); o.reDoc = { st: FS.shp_invoices.dead1.status, n: FS.shp_invoices.dead1.reclaimN, item: FS.shp_invoices.dead1.items[0].state, claim: FS.shp_invoices.dead1.claim }; for (const k of ['dead1', 'live1']) await db.collection('shp_invoices').doc(k).set({ status: 'stopped' }, { merge: true }); await W(800);
+    /* (11/16 #5) 되돌림은 진행 중 실행의 담당 탭만 — 담당 없이 부르면 거절(맡김 그대로) · 그다음 이 탭이 담당한 실행 하나를 두고 확인 */
+    o.reNo = await osInvReclaim('dead1', 10).then(() => 'ok', (e) => e.code || e.message); o.reNoSt = FS.shp_invoices.dead1.status;
+    const rcPrev = { id: S.os.id, lease: S.os.lease, phaseLease: S.os.phaseLease }; await db.collection('shp_runs').doc('rc_t').set({ id: 'rc_t', day: '20261103', status: 'wait', ph: 'INV', bt: [], cur: 0, warn: [], log: [], owner: { tab: OS_TAB, dev: 'T', epoch: 1, beat: now() } }); S.os.id = 'rc_t'; S.os.lease = { id: 'rc_t', epoch: 1 }; S.os.phaseLease = null;
+    o.re1 = await osInvReclaim('dead1', 10); o.re2 = await osInvReclaim('live1', 10); await db.collection('shp_runs').doc('rc_t').set({ status: 'stopped' }, { merge: true }); Object.assign(S.os, rcPrev); o.reDoc = { st: FS.shp_invoices.dead1.status, n: FS.shp_invoices.dead1.reclaimN, item: FS.shp_invoices.dead1.items[0].state, claim: FS.shp_invoices.dead1.claim }; for (const k of ['dead1', 'live1']) await db.collection('shp_invoices').doc(k).set({ status: 'stopped' }, { merge: true }); await W(800);
     /* ⑤-2 진행 중 탭 닫힘을 원스톱이 알아채 다시 맡김 → 수집기가 다시 맡아 끝냄 */
     S.app.oneShot = { invStaleMin: 10, invFirstTest: true, paperTest: true }; await db.collection('app_settings').doc('main').set({ oneShot: S.app.oneShot }, { merge: true }); await setShip([ord('A-05', '손님I', [{ listingId: '95', title: '보라 책', price: 5000, qty: 1, sku: 'PRPAAA' }])], [row('A-05', 'PRPAAA', '보라 책', '손님I')]);
     FC.mode = 'die'; const id3 = await window.shipOneShot(); await until(() => runDoc().need && runDoc().need.k === 'alps', 40000); await osAct('alps:바르게 나왔음');
@@ -129,7 +132,7 @@ require('./harness.js')(async (p) => {
   ok(o.newId && o.vfail && !o.vfNeed.soft && o.vfNeed.btns.some((b) => b[0] === 'invcont') && o.vfInvPaused === 'paused' && o.vfBtnShip, '③ 첫 건 자동 검증 실패 → 멈추고 ⚠(사람 몫) · ③ 줄에도 「알라딘에서 확인했음 — 나머지 계속」');
   ok(o.login && o.loginNeed.btns.some((b) => b[0] === 'relogin') && !o.loginNeed.btns.some((b) => b[0] === 'invcont') && o.relogBtn && o.noContOnLogin, "④ 로그인 풀림 → '🔑 로그인했음 — 다시 맡기기'(「나머지 계속」 아님)");
   ok(o.done2 && o.d3.inv && o.d3.inv.done === 2, '③④ 사람이 누른 뒤 나머지를 끝까지 ' + JSON.stringify(o.d3));
-  ok(o.re1 === true && o.re2 === false && o.reDoc.st === 'queued' && o.reDoc.n === 1 && o.reDoc.item === 'sent' && o.reDoc.claim == null, "⑤ 맥박 끊긴 맡김만 '기다림'으로 되돌림(넣은 줄 sent는 그대로 — 새 탭이 다시 읽어 확인부터)");
+  ok(o.reNo === 'os-owner-changed' && o.reNoSt === 'running' && o.re1 === true && o.re2 === false && o.reDoc.st === 'queued' && o.reDoc.n === 1 && o.reDoc.item === 'sent' && o.reDoc.claim == null, "⑤ 맥박 끊긴 맡김만 '기다림'으로 되돌림(넣은 줄 sent는 그대로 — 새 탭이 다시 읽어 확인부터)");
   ok(o.done3 && o.d4.log.length >= 1 && o.d4.reN === 1 && o.d4.inv && o.d4.inv.done === 1, '⑤ 진행 중 송장 입력 탭이 닫히면 원스톱이 알아채 다시 맡김 → 끝까지 ' + JSON.stringify(o.d4));
   ok(o.mid.same && o.mid.done && o.mid.owner, '⑦ 자정 넘기기: 어제 날짜로 열린 실행을 날짜가 아니라 id로 찾아 이어받음(새로 만들지 않음)');
   ok(o.post, '⑧ 끝난 ALPS 일을 웹앱이 못 본 채 닫혔어도 다시 열면 알라딘 송장 맡김까지 이어서');
