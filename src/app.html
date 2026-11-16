@@ -40443,7 +40443,7 @@ function kmsYellowN(d) { let n = 0; for (const r of d.rows || []) { if (r.kind =
 /* 📷 사진 → (Storage) → 클라우드 글자 읽기 → 표 · 사진마다 끝나면 바로 저장 */
 async function kmsShrink(f) { const bmp = await createImageBitmap(f); const sc = Math.min(1, 2000 / Math.max(bmp.width, bmp.height)); const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); try { bmp.close(); } catch (e) {}
   const url = c.toDataURL('image/jpeg', 0.85); const blob = await new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.85)); c.width = c.height = 0; return { url, blob }; }
-function kmsProgDraw() { const el = document.getElementById('kms_prog'); if (!el) return; const B = KMS.busy; if (!B) { el.innerHTML = ''; clearInterval(KMS.progT); KMS.progT = null; return; }
+function kmsProgDraw() { const B = KMS.busy; if (!B) { clearInterval(KMS.progT); KMS.progT = null; } const el = document.getElementById('kms_prog'); if (!el) return; if (!B) { el.innerHTML = ''; return; }
   el.innerHTML = `<div class="card kms-prog"><b>⏳ ${esc(B.title)} — 사진 ${num(B.i + 1)}/${num(B.n)}</b> · ${esc(B.step)} · ${Math.round((Date.now() - B.t0) / 1000)}초째<div class="bar"><i style="width:${(((B.i + (B.part || 0)) / B.n) * 100).toFixed(0)}%"></i></div>${B.errs.length ? `<div class="kms-y">${B.errs.map(esc).join('<br>')}</div>` : ''}</div>`;
   if (!KMS.progT) KMS.progT = setInterval(kmsProgDraw, 1000); }
 async function kmsAdd(docId, files, title) { if (KMS.busy) return toast('앞 사진들을 읽는 중 — 끝난 뒤 다시', 1); if (!pptCloudUrl()) return toast('클라우드 주소가 없어 글자를 읽을 수 없음 (⚙ 설정 ☁)', 1);
@@ -41223,8 +41223,11 @@ function purBookFind(q) { const n = norm(q); if (n.length < 2) return []; const 
 // 알라딘 한 권 읽기(새상품 정보 + 온라인 중고 첫 페이지 + 알라딘 매입가): 클라우드 → 없으면 수집기 PC (사진 가격 매기기와 같은 길)
 async function purRemote(req, key) { if (pptCloudUrl()) { try { const j = await cloudCall('/lookup', req); const r = (j.items || {})[key]; if (r && r.title) return { ...r, src: '알라딘 (클라우드)' }; if ((j.errs || {})[key]) return { err: j.errs[key] }; } catch (e) {} }
   const ref = await db.collection('shp_cmds').add({ type: 'lookup', isbns: req.isbns || [], itemIds: req.itemIds || [], queries: [], status: 'queued', dev: (typeof deviceName === 'function' && deviceName()) || null, createdAt: new Date().toISOString(), by: S.user.email, from: 'purchase', uploadedAt: TS() });
-  return new Promise((res) => { let tm = null; const un = ref.onSnapshot((d) => { const v = d.data() || {}; if (v.status !== 'done') return; un(); clearTimeout(tm); const r = (v.items || {})[key]; res(r && r.title ? { ...r, src: '알라딘 (수집기 PC)' } : { err: (v.errs || {})[key] || '알라딘에서 못 찾음' }); }, () => res({ err: '읽기 실패' }));
-    tm = setTimeout(() => { un(); db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (['queued'].includes((sn.data() || {}).status)) tx.set(ref, { status: 'cancelled', cancelWhy: '웹앱이 60초 기다린 뒤 그만둠 — 늦게 깬 PC가 아무도 안 보는 조회를 하지 않게', doneAt: new Date().toISOString(), uploadedAt: TS() }, { merge: true }); }).catch(() => {}); /* (1.78.6) */ res({ err: '60초 안에 답이 없음 — 클라우드 주소가 없고 수집기 PC도 꺼져 있으면 제목만 적어 두세요' }); }, 60000); }); }
+  return new Promise((res) => { let tm = null, un = null, done = false;
+    const stop = () => { if (!un) return; const f = un; un = null; try { f(); } catch (e) {} };
+    const finish = (out) => { if (done) return false; done = true; clearTimeout(tm); stop(); res(out); return true; };
+    tm = setTimeout(() => { if (!finish({ err: '60초 안에 답이 없음 — 클라우드 주소가 없고 수집기 PC도 꺼져 있으면 제목만 적어 두세요' })) return; db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (['queued'].includes((sn.data() || {}).status)) tx.set(ref, { status: 'cancelled', cancelWhy: '웹앱이 60초 기다린 뒤 그만둠 — 늦게 깬 PC가 아무도 안 보는 조회를 하지 않게', doneAt: new Date().toISOString(), uploadedAt: TS() }, { merge: true }); }).catch(() => {}); }, 60000);
+    try { un = ref.onSnapshot((d) => { if (done) return; const v = d.data() || {}; if (v.status !== 'done') return; const r = (v.items || {})[key]; finish(r && r.title ? { ...r, src: '알라딘 (수집기 PC)' } : { err: (v.errs || {})[key] || '알라딘에서 못 찾음' }); }, () => finish({ err: '읽기 실패' })); if (done) stop(); } catch (e) { finish({ err: '읽기 실패' }); } }); }
 async function purIsbnLookup(isbn) { const loc = purBookIdx().find((x) => x.isbn === isbn); if (loc) return { title: loc.t, isbn13: isbn, bookId: loc.bookId, itemId: loc.itemId, src: loc.src };
   try { const r = (await pptRecent([isbn]))[isbn]; if (r && r.title) { S._pfMkt.set(isbn, r); return { title: r.title, isbn13: isbn, itemId: r.itemId || null, src: '24시간 안 조회 기록' }; } } catch (e) {}
   const r = await purRemote({ isbns: [isbn] }, isbn); if (r.err) return r; S._pfMkt.set(isbn, r); return { title: r.title, isbn13: isbn, itemId: r.itemId || r.aladinItemId || null, src: r.src }; }
@@ -41571,9 +41574,16 @@ firebase.auth().onAuthStateChanged(async (u) => { S._authFired = true;
   /* (1.24.1) 📦 출고 가벼운 모드 — 홈 화면에 설치한 출고 앱(?go=confirm): 출고 화면에 쓰는 것만 먼저(주문확인요청·발송 요청 실시간 · 화면에 나온 주문의 고객만 · 설정 문서 몇 개)
    *  기기 저장소의 주문 1만여 건·고객 수천 건 읽기, 서버 주문·고객 맞추기, 판매자·구매평·반품·매칭 같은 무거운 일은 출고 화면을 떠날 때(다른 탭·홈) 그때 시작
    *  → 핸드폰에서 첫 화면이 빨리 뜨고, 그 뒤 몇 초 동안 화면이 굳어 단추가 안 먹던 것(주문·고객 읽기가 화면을 붙잡음)이 없어짐 */
-  if (SHIP_LITE) { try { db.collection('crm_system').doc('jobs').get({ source: 'server' }).then(() => { S.fsOk = true; }).catch(() => {}); } catch (e) {} S._liteW = 1; S.shipLite = true; document.body.classList.add('shiplite'); watchConfig(); watchAcct(); watchAppSettings(); verifyDevice(); versionBanner(); fsWatchdog(); S._bootRest = () => bootRest(null); setInterval(() => { if (S._bootRest && !(S.detail && S.detail.ship) && !(S.detail && (S.navStack || []).some((f) => f && f.detail && f.detail.ship))) { /* (11/10) 출고 화면에서 상품명을 눌러 상품을 열었으면(뒤로 가면 출고) 가벼운 모드 그대로 */ const f = S._bootRest; S._bootRest = null; S.shipLite = false; document.body.classList.remove('shiplite'); renderMain(); toast('전체 기능을 불러옵니다 — 출고 화면 밖이라 주문·고객 기록을 이어서 받음'); f().catch((e) => console.warn('bootRest', e)); } }, 1000); return; }
+  if (SHIP_LITE) { try { db.collection('crm_system').doc('jobs').get({ source: 'server' }).then(() => { S.fsOk = true; }).catch(() => {}); } catch (e) {} S._liteW = 1; S.shipLite = true; document.body.classList.add('shiplite'); watchConfig(); watchAcct(); watchAppSettings(); verifyDevice(); versionBanner(); fsWatchdog(); S._bootRest = () => bootRest(null); shipLiteWatch(); return; }
   await bootRest(PLACE);
 });
+/* 출고 화면을 떠나 전체 받기를 시작하면 일회 감시를 정리. 뒤로 가기 경로는 유지. */
+function shipLiteWatch() { if (S._shipLiteTimer) return; S._shipLiteTimer = setInterval(() => {
+  const stop = () => { clearInterval(S._shipLiteTimer); S._shipLiteTimer = null; };
+  if (!S._bootRest) { stop(); return; }
+  if ((S.detail && S.detail.ship) || (S.detail && (S.navStack || []).some((f) => f && f.detail && f.detail.ship))) return;
+  const f = S._bootRest; S._bootRest = null; stop(); S.shipLite = false; document.body.classList.remove('shiplite'); renderMain(); toast('전체 기능을 불러옵니다 — 출고 화면 밖이라 주문·고객 기록을 이어서 받음'); f().catch((e) => console.warn('bootRest', e));
+}, 1000); }
 /* (1.24.1) 첫 화면 다음의 무거운 받기 — 보통은 바로, 출고 가벼운 모드는 출고 화면을 떠날 때 */
 async function bootRest(PLACE) {
   homeSumWatch(); /* (1.24.1) 가벼운 모드였으면 여기서 처음 */
