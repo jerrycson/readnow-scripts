@@ -24,6 +24,8 @@ const E2 = { iid: '5', title: '코스모스', authors: ['김철수'], publisher:
 ok(X.edSame(A, E2).kind === 'diff', '같은 제목 다른 지은이 → 다른 책');
 ok(X.edSame({ title: '토지 1권', authors: ['박경리'] }, { title: '토지 2권', authors: ['박경리'] }).kind === 'vol', '다른 권 → vol');
 ok(X.edSame({ title: '토지 1권', authors: ['박경리'] }, { title: '토지 세트 (전20권)', authors: ['박경리'] }).kind === 'set', '세트 → set');
+ok(X.edSame({ title: '마법천자문 11~20 세트 - 전10권', authors: ['스튜디오 시리얼'], publisher: '아울북' }, { title: '마법천자문 31~40 개정판 세트 - 전10권', authors: ['스튜디오 시리얼'], publisher: '아울북' }, { link: true }).kind === 'vol', '실제 잘못(11/14) — 11~20 세트 ↔ 31~40 세트는 다른 묶음(알라딘 링크라도)');
+ok(X.edSame({ title: '마법천자문 11~20 세트 - 전10권', authors: ['스튜디오 시리얼'], publisher: '아울북' }, { title: '마법천자문 11~20 개정판 세트 - 전10권', authors: ['스튜디오 시리얼'], publisher: '아울북' }, { link: true }).kind === 'edition', '같은 11~20 개정판 세트는 판본');
 ok(X.edSame(A, { ...B, isbn: A.isbn }).kind === 'self', '같은 ISBN → self');
 ok(X.edSame(A, { title: '코스모스 [전자책]', authors: ['칼 세이건'], cat: '전자책>과학' }).kind === 'format', '전자책 → format');
 const L1 = X.edSame(A, { iid: '9', title: '코스모스: 가능한 세계들', authors: ['앤 드루얀'], publisher: '사이언스북스' }, { link: true }); ok(L1.kind !== 'diff' || L1.s < 0.72, '알라딘 링크라도 지은이 다르면 근거 가산만(판정은 점수대로) ' + L1.kind);
