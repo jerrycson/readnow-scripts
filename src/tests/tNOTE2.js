@@ -127,5 +127,5 @@ function fakeC() { const D = {}; const L = {};
       clearInterval(relay); relayOn = false; N2.live.stop(); await b2.close();
     } catch (e) { ok(false, '④ 화면 시험 멈춤: ' + String(e && e.message || e).slice(0, 300)); } });
   }
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE2 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

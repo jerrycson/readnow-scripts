@@ -30,7 +30,7 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
   N.live.stop();
 
   let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!chromium) { console.log('… ② 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0); }
+  if (!chromium) { console.log('… ② 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE4 통과'); process.exit(bad ? 1 : 0); }
   const b = await chromium.launch(process.env.RN_BROWSER ? { executablePath: process.env.RN_BROWSER } : {}); const errs = [];
   // ── ② 화면 핵심(가짜 저장소) ──
   { const a = await b.newPage({ viewport: { width: 1000, height: 900 } }); a.on('pageerror', (e) => errs.push(e.message));
@@ -182,5 +182,5 @@ const JUMP = [['📓 정범 노트', 'VQdVQndKFHTTVhwmarrvko'], ['📋 작업판
   } else console.log('… ④ 웹앱 시험은 RN_PORT(+ harness.js)로(건너뜀)');
   ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
   await b.close();
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE4 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

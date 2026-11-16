@@ -11,7 +11,7 @@ function fakeC() { const D = {}; const L = {}; const col = (n) => { D[n] = D[n] 
 const S1 = '첫째 문장은 순이익 셈에 관한 것입니다', S2 = '둘째 문장은 출고 시각에 관한 것입니다', S3 = '셋째 문장은 매입가 나눔에 관한 것입니다', S4 = '넷째 문장은 끌올 주기에 관한 것입니다';
 (async () => {
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null; let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('통과'); process.exit(0); }
+  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('✓ tNOTE7 통과(화면 시험 건너뜀)'); process.exit(0); }
   const { makeNotes } = require(NOTESF); const b = await chromium.launch();
   const F = fakeC(); const KEY = 'k'.repeat(48); await F.C('app_secrets').doc('notes_mcp').set({ key: KEY }); const N = makeNotes({ C: F.C, log: () => {}, ver: 'T' });
   await N.write([{ op: 'set', id: 'c1', data: { kind: 'card', title: '문장 메모 시험 카드', body: `${S1}.\n\n${S2}.\n\n${S3}.\n\n${S4}.`, src: 'lead', readAt: 'x', state: 'open' } }], 'lead');
@@ -67,5 +67,5 @@ const S1 = '첫째 문장은 순이익 셈에 관한 것입니다', S2 = '둘째
   // 빼기는 기존 그대로(휴지통 · 지우지 않음)
   await a.evaluate(() => { const b = document.querySelector('#jbn-feed [data-act="memotrash"]'); b.click(); }); await a.waitForTimeout(400); ok((await feed()).length === 4, '통합 노트 [빼기]는 기존 그대로');
   ok(!dlg.length, '브라우저 팝업 없음'); ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
-  await b.close(); N.live && N.live.stop && N.live.stop(); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  await b.close(); N.live && N.live.stop && N.live.stop(); console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE7 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

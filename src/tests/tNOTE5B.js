@@ -26,7 +26,7 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
   { const F = fakeC(); const N = makeNotes({ C: F.C, log: () => {}, ver: 'T' }); await N.write([{ op: 'merge', id: '_meta', data: { uiDockH: 70, uiSlotSz: 'm', uiMineOpen: true } }, { op: 'merge', id: '_meta', data: { uiDockH: 3, uiSlotSz: 'x' } }], 't'); const m = F.D.jb_notes.get('_meta');
     ok(m.uiDockH === 70 && m.uiSlotSz === 'm' && m.uiMineOpen === true, '⑥ 클라우드가 노트 설정(_meta uiDockH·uiSlotSz·uiMineOpen)을 받음 · 틀린 값은 버림'); N.live.stop(); }
   let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!chromium) { console.log('… 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0); }
+  if (!chromium) { console.log('… 화면 시험은 playwright로(건너뜀)'); console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE5B 통과'); process.exit(bad ? 1 : 0); }
   const b = await chromium.launch(); const errs = [];
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null;
   if (!ART) console.log('… 아티팩트 화면 시험은 RN_JBNOTE로(건너뜀)');
@@ -133,5 +133,5 @@ const seedOps = () => { const ops = []; for (let i = 0; i < 12; i++) ops.push({ 
   } else console.log('… ⑦ 웹앱 시험은 RN_PORT(+ harness.js)로(건너뜀)');
   ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
   await b.close();
-  console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE5B 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });

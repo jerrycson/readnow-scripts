@@ -11,7 +11,7 @@ const URL = 'https://example.com/' + 'abcdefghij'.repeat(15);
 const BODY = `${LONG}\n\n${URL}\n\n\`${'a_b_c_d'.repeat(20)}\`\n\n\`\`\`\n${'x'.repeat(200)}\n\`\`\`\n\n| 칸 | 긴 칸 |\n|---|---|\n| 1 | ${LONG} |\n\n- ${LONG}\n\n> ${URL}\n\n**${LONG}**`;
 (async () => {
   const ART = process.env.RN_JBNOTE && fs.existsSync(process.env.RN_JBNOTE) ? fs.readFileSync(process.env.RN_JBNOTE, 'utf8') : null; let chromium = null; try { ({ chromium } = require('playwright')); } catch (e) {}
-  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('통과'); process.exit(0); }
+  if (!ART || !chromium) { console.log('… RN_JBNOTE·playwright로(건너뜀)'); console.log('✓ tNOTE6 통과(화면 시험 건너뜀)'); process.exit(0); }
   const { makeNotes } = require(NOTESF); const b = await chromium.launch();
   const F = fakeC(); const KEY = 'k'.repeat(48); await F.C('app_secrets').doc('notes_mcp').set({ key: KEY }); const N = makeNotes({ C: F.C, log: () => {}, ver: 'T' });
   await N.write([{ op: 'set', id: 'c1', data: { kind: 'card', title: '제목이아주길어서한줄에다들어가지않는카드제목입니다'.repeat(3), body: BODY, src: 'lead', readAt: 'x', state: 'open', ref: 'ref_' + 'z'.repeat(80) } }, { op: 'set', id: 'c2', data: { kind: 'card', title: '짧은 카드', body: LONG, src: 'lead', readAt: 'x', state: 'open' } }], 'lead');
@@ -70,5 +70,5 @@ const BODY = `${LONG}\n\n${URL}\n\n\`${'a_b_c_d'.repeat(20)}\`\n\n\`\`\`\n${'x'.
     } catch (e) { ok(false, '④ 웹앱 시험 멈춤: ' + String(e && e.message || e).slice(0, 200)); } }, { vp: { width: 390, height: 800 }, touch: true });
   } else console.log('… ④ 웹앱 시험은 RN_PORT(+ harness.js)로(건너뜀)');
   ok(!errs.length, '화면 오류 없음 ' + errs.join(' | ').slice(0, 200));
-  await b.close(); N.live && N.live.stop && N.live.stop(); console.log(bad ? `❌ ${bad}개 실패` : '통과'); process.exit(bad ? 1 : 0);
+  await b.close(); N.live && N.live.stop && N.live.stop(); console.log(bad ? `❌ ${bad}개 실패` : '✓ tNOTE6 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ ' + (e && e.stack || e)); process.exit(1); });
