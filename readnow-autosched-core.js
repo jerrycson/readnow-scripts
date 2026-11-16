@@ -396,12 +396,13 @@
      *  합쳐진 회차(밀려서 다음 회차와 한 번에 함)·건너뜀·멈춤(최대 시간·오류·PC 끊김) · 칸별 평균 · 고칠 곳 추천. 예측(주황 선)과 다름 — 실제 있었던 일
      *  '밀림' = 정한 시각보다 LATE분(3분) 넘게 늦게 시작 — 수집기는 1분마다 확인하므로 1~2분은 정상 */
     /* 회차 열쇠 → 정한 시각(ms) — 정한 시각·n분마다 칸만(조건 칸은 정한 때가 없음) */
-    const planOf = (k) => { const p = keyParts(k); const tag = p.tag.replace(/~r\d+$/, ''); if (/~r\d+$/.test(p.tag) || !p.day) return null; if (/^\d{2}:\d{2}$/.test(tag)) return dayStart(p.day) + tMin(tag) * 60e3; if (/^e\d{4}$/.test(tag)) { let v = dayStart(p.day) + (+tag.slice(1, 3) * 60 + +tag.slice(3, 5)) * 60e3; if (Date.now() - v > 20 * 3600e3) v += 864e5; return v; } return null; };
+    /* (박자 2차 · 11/16) 회차 기록에 bt(수집기 📦 사람다운 박자로 일부러 미룬 시각)가 있으면 그것이 정한 시각 — 없으면(옛 기록·다른 칸) 예전 그대로 */
+    const planOf = (k, r) => { if (r && r.bt && !/~r\d+$/.test(String(k))) { const b = toMs(r.bt); if (Number.isFinite(b)) return b; } const p = keyParts(k); const tag = p.tag.replace(/~r\d+$/, ''); if (/~r\d+$/.test(p.tag) || !p.day) return null; if (/^\d{2}:\d{2}$/.test(tag)) return dayStart(p.day) + tMin(tag) * 60e3; if (/^e\d{4}$/.test(tag)) { let v = dayStart(p.day) + (+tag.slice(1, 3) * 60 + +tag.slice(3, 5)) * 60e3; if (Date.now() - v > 20 * 3600e3) v += 864e5; return v; } return null; };
     function delayReport(doc, runs, o) { o = o || {}; const now = o.now || Date.now(); const days = Math.max(1, o.days || 7); const LATE = 3; const slots = slotsOf(doc); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
       const nm = (id, job) => { const s = byId[id]; return o.name ? o.name(s || { id, job: job || '' }) : (s && (s.name || s.job)) || id; }; const par = (job) => !!(o.par && o.par(job)); const cutDay = kst(now - (days - 1) * 864e5).day;
       const E = []; for (const [k, r] of Object.entries(runs || {})) { if (!r) continue; const p = keyParts(k); if (!p.day || p.day < cutDay) continue; const job = r.job || (byId[p.id] && byId[p.id].job) || ''; const retry = /~r\d+$/.test(p.tag); const tag = p.tag.replace(/~r\d+$/, '');
         let plan = null; if (!retry) { if (/^\d{2}:\d{2}$/.test(tag)) plan = dayStart(p.day) + tMin(tag) * 60e3; else if (/^e\d{4}$/.test(tag)) plan = dayStart(p.day) + (+tag.slice(1, 3) * 60 + +tag.slice(3, 5)) * 60e3; }
-        const st = r.st ? toMs(r.st) : null; const at = toMs(r.at); if (plan != null && st && st - plan > 20 * 3600e3) plan += 864e5; /* 자정 넘는 창의 자정 뒤 칸 */
+        const st = r.st ? toMs(r.st) : null; const at = toMs(r.at); if (plan != null && st && st - plan > 20 * 3600e3) plan += 864e5; /* 자정 넘는 창의 자정 뒤 칸 */ if (!retry && r.bt) { const b = toMs(r.bt); if (Number.isFinite(b)) plan = b; } /* (박자 2차) 일부러 미룬 회차는 미룬 시각부터 셈 */
         const state = r.state === 'running' && isLost(r, now) ? 'lost' : r.state; E.push({ k, id: p.id, day: p.day, tag, retry, r, job, name: nm(p.id, job), lane: !par(job), plan, st, at, end: state === 'running' ? now : at, state }); }
       const RAN = ['done', 'error', 'stop', 'timeout', 'lost', 'running']; const ran = E.filter((e) => RAN.includes(e.state) && e.st);
       const delays = []; for (const e of ran) { if (e.plan == null) continue; const dm = Math.round((e.st - e.plan) / 60e3); if (dm <= LATE) continue;
