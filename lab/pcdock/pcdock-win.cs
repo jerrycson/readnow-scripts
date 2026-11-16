@@ -130,7 +130,8 @@ public static class RnDock {
     System.Text.RegularExpressions.Regex kr = null; try { if (!string.IsNullOrEmpty(keepTitle)) kr = new System.Text.RegularExpressions.Regex(keepTitle, System.Text.RegularExpressions.RegexOptions.IgnoreCase); } catch (Exception) { kr = null; }
     if (string.Equals(w.Proc, "chrome", StringComparison.OrdinalIgnoreCase)) {
       if (w.Udd == null) return "크롬 프로필을 못 읽음(수집기 창일 수 있어 그대로)";
-      if (w.Udd.Length > 0) return "도우미·다른 프로필 크롬(수집기·번외·ALPS·PC 배치)"; }
+      if (w.Udd.Length > 0) return "도우미·다른 프로필 크롬(수집기·번외·ALPS·PC 배치)";
+      return "평소 프로필 크롬(뒤 탭에 수집기·알라딘 로그인이 있을 수 있어 그대로)"; } // (11/16 점검 ④-2 🔴) 앞 탭 제목만 보여 뒤 탭 수집기를 못 알아봄 → 평소 프로필 크롬도 언제나 지킴(apps.js closeProcs도 크롬을 빼 두 겹)
     if (kr != null && kr.IsMatch(w.Title ?? "")) return "수집기·도우미 창(제목)";
     return ""; }
 

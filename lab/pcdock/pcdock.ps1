@@ -218,7 +218,8 @@ switch ($Act) {
     foreach ($sp in $steps) { if ($sp.match.seq -and "$($sp.match.udd)") { $sp.match.udd = (Exp "$($sp.match.udd)").Trim('"').TrimEnd('\').ToLower() } }
     foreach ($sp in $steps) { if ($sp.folder) { $fp = FolderPath $sp.folder; $fl = Split-Path $fp -Leaf; if (-not $fl) { $fl = $fp }; $sp.launch.args = @($fp); $sp.match | Add-Member -Force -NotePropertyName folder -NotePropertyValue $fp; $sp.match | Add-Member -Force -NotePropertyName leaf -NotePropertyValue $fl } }
     # (0.1.6 · 정범님 11/14 15:46) 먼저 닫기 — 이번에 놓을 프로그램(크롬·Claude·카카오톡·폴더 창 등)의 창을 WM_CLOSE로 닫고(부탁만 · 강제 종료 없음) 새로 띄워 칸에 놓음
-    #  지킴(C# CloseWhy): 수집기·도우미 크롬(…\ReadNow\… 프로필 · 프로필을 못 읽은 창) · 제목이 수집기 창(알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치) · 탐색기 셸 · 목록 밖 프로그램은 손대지 않음
+    #  (11/16) 크롬은 어떤 프로필이든 닫지 않음(뒤 탭 수집기·알라딘 로그인) · 윈도우 시작 자동 실행 때는 Node가 closeFirst를 넘기지 않음
+    #  지킴(C# CloseWhy): 크롬 전부(평소 프로필·수집기·도우미 크롬 …\ReadNow\… 프로필 · 프로필을 못 읽은 창) · 제목이 수집기 창(알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치) · 탐색기 셸 · 목록 밖 프로그램은 손대지 않음
     $pre1Closed = New-Object System.Collections.ArrayList; $pre1Kept = New-Object System.Collections.ArrayList
     if ($In.closeFirst) { $cfProcs = [string[]]@(Arr $In.closeFirst.procs); $cfKeep = "$($In.closeFirst.keepTitle)"
       try { $cw0 = @([RnDock]::Windows()); UddFill $cw0

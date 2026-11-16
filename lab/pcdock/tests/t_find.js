@@ -90,7 +90,7 @@ async function layout(S, P) { const st = (await P('GET', '/api/state')).j; const
     const fj = JSON.parse(fs.readFileSync(path.join(S.D, 'found.json'), 'utf8')); ok(fj.found['KakaoTalk.exe'] === KP && fj.from['KakaoTalk.exe'] && !(KP in fj.icons), '찾은 경로·어디서를 found.json에 저장(후보 경로마다 아이콘을 쌓지 않음)', Object.keys(fj.icons));
     r = await layout(S, P); ok(r && r.ok, '카카오톡을 칸에 놓고 저장', r);
     r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop(); const kk = run.input.steps.find((s) => s.app === 'kakao'); const me = run.input.steps.find((s) => s.app === 'self');
-    ok(kk && kk.launch.file === KP && kk.match.slow === 30 && me && me.launch === null && !run.input.closeFirst.procs.includes('chrome'), '③ — 찾은 경로로 켬 · 30초까지 기다림 · 자기 창은 자리만 · 먼저 닫기에 크롬 없음(자기 창만 있을 때)', run.input);
+    ok(kk && kk.launch.file === KP && kk.match.slow === 30 && me && me.launch === null && !(run.input.closeFirst && run.input.closeFirst.procs.includes('chrome')), '③ — 찾은 경로로 켬 · 30초까지 기다림 · 자기 창은 자리만 · 먼저 닫기에 크롬 없음(자기 창만 있을 때)', run.input);
     r = await P('GET', '/api/diag', undefined, {}); const row = r.j.last.rows.find((x) => /카카오톡/.test(x.n));
     ok(row && /떠 있는 프로세스/.test(row.src) && /떠 있는 프로세스/.test(r.j.find.from['KakaoTalk.exe']), '진단 — 카카오톡 줄에 어디서 찾았나(src) · find.from', [row, r.j.find]); stop(S);
 

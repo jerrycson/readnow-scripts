@@ -112,7 +112,9 @@ async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok
     const need = needFind(cfg.apps); if (need.length && Date.now() - ST.foundAt > 60e3) await findAll(cfg.apps);
     const plan = A.buildPlan(cfg, ST.mons, ST.found, G, exeOk); stepSrc(plan); if (!plan.steps.length) { const r = { ok: false, err: cfg.place.length ? '놓을 수 있는 것이 없음' : '아직 아무것도 놓지 않았습니다 — ① 설정에서 프로그램을 칸에 끌어 놓아 주세요', skipped: plan.skipped }; setLast({ at: Date.now(), by, ...r, rows: [] }); return r; }
     const nTabs = plan.steps.reduce((x, st) => x + ((st.tabs || []).length), 0); const nSeq = plan.steps.filter((st) => st.match && st.match.seq).length; const slowMax = Math.max(0, ...plan.steps.map((st) => +(st.match && st.match.slow) || 0)); /* (0.1.7) 카카오톡처럼 늦게 뜨는 창은 더 기다림 */ /* (0.1.6) 크롬은 하나씩 · 단계마다 최대 15초 */ /* (0.1.5) 탭마다 최대 8초 — PowerShell 시간 상한과 맞춤(0.1.3은 탭 시간을 안 쳐서 중간에 끊겨 결과를 잃을 수 있었음) */
-    const closeFirst = cfg.run.closeFirst !== false ? { procs: A.closeProcs(plan.steps), keepTitle: A.KEEP_TITLE } : null; /* (0.1.6 · 정범님 11/14 15:46) 목록의 프로그램은 먼저 닫고 새로 · 수집기·도우미 창은 지킴 */
+    const autoRun = !!opts.auto || by === '윈도우 시작'; const closeFirst = A.closeFirstFor(cfg, plan.steps, { auto: autoRun }); /* (0.1.6 · 정범님 11/14 15:46) 목록의 프로그램은 먼저 닫고 새로 · 수집기·도우미 창은 지킴 */
+    /* (11/16 점검 ④-2 🔴) 윈도우 시작 자동 실행 때는 먼저 닫기를 하지 않음(크롬이 막 되살아나는 때 · 사람이 지켜보지 않음) · 크롬은 언제나 닫지 않음 · 기본 끔 */
+    if (autoRun && cfg.run.closeFirst === true) log('② 윈도우 시작 자동 실행 — 먼저 닫기는 켜져 있어도 하지 않음(남겨 둔 채 자리만)');
     const r = await ps('run', { steps: plan.steps, waitSec: cfg.run.waitSec, close, closeFirst }, null, (Math.max(cfg.run.waitSec, slowMax) + 60 + plan.steps.length * 3 + nTabs * 8 + nSeq * 15 + close.length) * 1000);
     if (+r.build) ST.build = +r.build;
     const res = (r.res || []).map((x) => { const f = A.friendly(x); return { ...x, msg: f.msg, raw: f.raw }; }); const fe = A.friendlyErr(r.err);
@@ -274,7 +276,7 @@ function post(port, p, body, ms) { return new Promise((res) => { const data = Bu
 function listen(port) { return new Promise((res, rej) => { server.once('error', rej); server.listen(port, '127.0.0.1', () => { server.removeListener('error', rej); res(server.address().port); }); }); }
 
 async function main() { const argv = process.argv.slice(2); const auto = argv.includes('--autorun');
-  if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep' }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패')); process.exit(0); }
+  if (auto) { const cfg = loadCfg(); const d = cfg.auto.delaySec; log(`② 윈도우 시작 — ${d}초 기다린 뒤 실행·배치`); await new Promise((r) => setTimeout(r, d * 1000)); const r = await runLayout('윈도우 시작', { mode: 'keep', auto: true }); /* 윈도우 시작 때는 묻지 않고 '남겨 둔 채' */ if (!r.ok) log('② ' + (r.err || '실패')); process.exit(0); }
   healLauncher();
   /* 이미 켜져 있으면 — (0.1.4) 그 서버에 창을 맡기고 바로 끝남 · 옛 판이면 끄고 넘겨받음 */
   const pf = path.join(HOME, 'port.txt'); let old = 0; try { old = +fs.readFileSync(pf, 'utf8'); } catch (e) {} let took = 0;

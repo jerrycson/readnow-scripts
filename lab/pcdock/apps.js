@@ -19,7 +19,10 @@
     col2: { url: 'http://127.0.0.1:8797/', prof: '%USERPROFILE%\\ReadNow\\col2\\col2-stat-chrome', title: '^(📊 )?번외 수집기$', extra: ['--disable-extensions'] },
     alps: { url: 'http://127.0.0.1:8898/alps', prof: '%USERPROFILE%\\ReadNow\\print\\chrome-alpswin', title: '^ALPS 도우미', extra: [] } };
   /* (0.1.6) ③ '목록의 프로그램은 먼저 닫고 새로' 때 닫지 않는 창 제목 — 리드나우 수집기(알라딘 수집 탭 · 🪟 리드나우 작업 창 · 🖐 리드나우 손발) · 번외 · ALPS · PC 배치 자신
-   *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy) */
+   *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy)
+   *  (11/16 점검 ④-2 🔴) 앞 탭 제목만으로는 뒤 탭의 샵매니저 수집기·알라딘 로그인 탭을 못 알아봄 → 크롬은 어떤 프로필이든 먼저 닫기에서 아예 뺌(NO_CLOSE_PROCS · C# CloseWhy도 평소 프로필 크롬을 지킴 — 두 겹)
+   *  · 먼저 닫기는 기본 끔 · 윈도우 시작 자동 실행 때는 켜 두었어도 하지 않음(closeFirstFor) */
+  const NO_CLOSE_PROCS = ['chrome'];
   const SELF_TITLE = '리드나우 PC 배치'; /* (0.1.7) 이 작은 창 제목(ui.html <title> · readnow-pcdock.js TITLE과 같음) */
   const KEEP_TITLE = '^🪟 리드나우 작업 창|리드나우 손발|알라딘|aladin|번외 수집|📊 번외|ALPS|리드나우 PC 배치';
   /* kind별 뼈대 — 목록에 처음 놓이는 열두 가지 */
@@ -134,7 +137,11 @@
       skip(a.name, '모르는 종류'); }
     return { steps: steps.filter(Boolean), skipped }; }
   /* (0.1.6) 먼저 닫을 프로그램 = 이번 단계들의 프로세스 이름(크롬·Claude·카카오톡·탐색기 폴더 창 등) · 번외·ALPS 도우미 창은 빼고(자리만) · 휴대폰과 연결은 이름 조건만이라 뺌 */
-  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p) S.add(p); } return [...S]; }
+  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p && !NO_CLOSE_PROCS.some((q) => q.toLowerCase() === String(p).toLowerCase())) S.add(p); } return [...S]; } /* (11/16) 크롬은 절대 넣지 않음 — 뒤 탭 수집기·로그인 탭 */
+  /* (11/16 점검 ④-2) PowerShell에 넘길 먼저 닫기 — null = 하지 않음
+   *  · 설정에서 사람이 켠 때만(cfg.run.closeFirst === true · 옛 기본값 켬은 settings.js가 끔으로 읽음) · 윈도우 시작 자동 실행(opts.auto)이면 언제나 하지 않음 · 닫을 프로그램이 없으면 하지 않음 */
+  function closeFirstFor(cfg, steps, opts) { if (!(cfg && cfg.run && cfg.run.closeFirst === true)) return null; if (opts && opts.auto) return null;
+    const procs = closeProcs(steps); return procs.length ? { procs, keepTitle: KEEP_TITLE } : null; }
   /* PowerShell이 돌려준 결과 한 줄 → 사람이 알아듣는 말 + 원문(접어 둠) */
   function friendly(r) { const how = String((r && r.how) || ''); const nm = (r && r.name) || '';
     if (r && r.ok) return { msg: how, raw: '' };
@@ -157,5 +164,5 @@
       for (let r = 0; r + h <= g.rows; r++) { let got = null; for (let c = g.cols - w; c >= 0; c--) { const p = { mon: m.id, c, r, w, h }; if (!(cfg.place || []).some((q) => hitP(p, q))) { got = p; break; } }
         if (got) { const area = cw * w * ch * h; const key = [area, m.primary ? 0 : 1, r]; if (!best || key[0] < best.key[0] - 1 || (Math.abs(key[0] - best.key[0]) <= 1 && (key[1] < best.key[1] || (key[1] === best.key[1] && key[2] < best.key[2])))) best = { p: got, key }; break; } } }
     return best ? best.p : null; }
-  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
+  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, NO_CLOSE_PROCS, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, closeFirstFor, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
 });

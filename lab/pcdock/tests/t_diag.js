@@ -27,9 +27,11 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     console.log('② 실행 결과가 단계마다 진단에 · 먼저 닫기');
     const st = (await P('GET', '/api/state')).j; const cfg = JSON.parse(JSON.stringify(st.cfg));
     cfg.place = [{ id: 'a1', app: 'chrome', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 2, h: 3, name: '웹앱', o: { urls: ['https://readnow.kr/app/'] } }, { id: 'a2', app: 'kakao', mon: '\\\\.\\DISPLAY2', c: 4, r: 2, w: 1, h: 1 }, { id: 'a3', app: 'col2', mon: '\\\\.\\DISPLAY2', c: 0, r: 0, w: 1, h: 1 }];
-    r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === true, '저장 — 먼저 닫기 기본 켬', r.j);
+    r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === false && r.j.cfg.run.closeFirstV === 2, '(11/16) 저장 — 먼저 닫기 기본 끔', r.j);
+    r = await P('POST', '/api/run', {}); const run0 = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(run0 && !run0.input.closeFirst, '(11/16) 기본(끔)이면 PowerShell에 먼저 닫기를 넘기지 않음', run0 && run0.input.closeFirst);
+    cfg.run.closeFirst = true; cfg.run.closeFirstV = 2; r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === true, '사람이 켜면(① 설정 체크) 켬으로 저장', r.j && r.j.cfg.run);
     r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop();
-    ok(run && run.input.closeFirst && run.input.closeFirst.procs.includes('chrome') && run.input.closeFirst.procs.includes('KakaoTalk') && /알라딘/.test(run.input.closeFirst.keepTitle) && /작업 창/.test(run.input.closeFirst.keepTitle), 'PowerShell에 닫을 프로그램(크롬·카카오톡)·지킬 제목(알라딘 수집 탭·작업 창)', run && run.input.closeFirst);
+    ok(run && run.input.closeFirst && !run.input.closeFirst.procs.includes('chrome') && run.input.closeFirst.procs.includes('KakaoTalk') && /알라딘/.test(run.input.closeFirst.keepTitle) && /작업 창/.test(run.input.closeFirst.keepTitle), 'PowerShell에 닫을 프로그램(카카오톡 · 크롬은 빠짐)·지킬 제목(알라딘 수집 탭·작업 창)', run && run.input.closeFirst);
     ok(run && !run.input.closeFirst.procs.some((p) => /node|powershell/i.test(p)), '도우미 프로세스는 닫을 목록에 없음');
     r = await P('GET', '/api/diag', undefined, {}); const L = r.j.last;
     ok(L && L.rows.length === 3 && L.rows.every((x) => x.n && typeof x.ok === 'boolean' && x.how && /^#\d /.test(x.at)), '진단 last.rows — 단계마다 이름·됨·어떻게·놓을 칸(모니터 #·칸)', L && L.rows);
