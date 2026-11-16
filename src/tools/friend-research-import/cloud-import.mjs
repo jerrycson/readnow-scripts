@@ -18,7 +18,7 @@ assert.match(uid,/^[a-zA-Z0-9_-]{1,128}$/);
 const token=execFileSync('gcloud',['auth','print-access-token'],{encoding:'utf8'}).trim();
 const hdr={Authorization:'Bearer '+token,'Content-Type':'application/json'};
 async function api(url,options={},allow=[]){
- const r=await fetch(url,{...options,headers:hdr});const data=await r.json();
+ const r=await fetch(url,{...options,headers:hdr});const raw=await r.text();let data={};try{data=raw?JSON.parse(raw):{};}catch{data={error:{message:raw.slice(0,240)}};}
  if(!r.ok&&!allow.includes(r.status))throw Error('Google API '+r.status+' '+(data.error?.status||'오류')+' '+(data.error?.message||'').slice(0,240));
  return {status:r.status,data};
 }
@@ -33,7 +33,7 @@ const rulesApi='https://firebaserules.googleapis.com/v1/';
 const releaseName='projects/'+project+'/releases/cloud.firestore/'+database;
 let ruleRelease=await api(rulesApi+releaseName,{},[404]);
 if(ruleRelease.status===404){
- const created=await api(rulesApi+'projects/'+project+'/rulesets',{method:'POST',body:JSON.stringify({source:{files:[{name:'firestore.rules',content:rules}]},attachmentPoint:'firestore.googleapis.com/projects/'+project+'/databases/'+database})});
+ const created=await api(rulesApi+'projects/'+project+'/rulesets',{method:'POST',body:JSON.stringify({source:{files:[{name:'firestore.rules',content:rules}]}})});
  await api(rulesApi+'projects/'+project+'/releases',{method:'POST',body:JSON.stringify({name:releaseName,rulesetName:created.data.name})},[409]);
  ruleRelease=await api(rulesApi+releaseName);
 }

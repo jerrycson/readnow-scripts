@@ -62,7 +62,7 @@ test('전용 DB·규칙 경로, 재실행, 충돌 보존을 외부 접속 없이
         return released ? response({rulesetName: ruleSet}) : response({}, 404);
       }
       if (method === 'POST' && url === rulesBase + '/rulesets') {
-        assert.equal(payload.attachmentPoint, 'firestore.googleapis.com/' + db);
+        assert.equal(payload.attachmentPoint, undefined); // Google 규칙 API가 이 칸을 받지 않음(11/16 1116d rc 1 → 빼고 1116e 성공)
         assert.deepEqual(payload.source.files, [{name: 'firestore.rules', content: reviewRules}]);
         deployedRules = reviewRules;
         rulesCreates++;
