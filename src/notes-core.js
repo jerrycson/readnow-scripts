@@ -578,6 +578,6 @@
     render();
     return { render, destroy() { flush(); U.dead = true; for (const [event, fn, options] of rootListeners) root.removeEventListener(event, fn, options); if (typeof offChange === 'function') offChange(); for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); clearTimeout(U.imeTo); clearTimeout(U.selT); clearTimeout(U.toastT); selBtn.remove(); jump.remove(); bub.remove(); fileIn.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
-  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, htmlToMd, tsvMd, richOf, isStoreImg, noImg, version: '6' };
+  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, htmlToMd, tsvMd, richOf, isStoreImg, noImg, version: '7' };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ⟦jbn core 끝⟧ */
