@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "results": [
+    {
+      "id": "doc-01",
+      "url": "https://www.derekyu.com/makegames/pixelart.html",
+      "ok": true,
+      "bytes": 27811,
+      "hash": "b1ecd589773f778c84e07abe149de2dc74d968b2dd4cd820eedbb54c5811fe9e",
+      "baselineHash": "b1ecd589773f778c84e07abe149de2dc74d968b2dd4cd820eedbb54c5811fe9e",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:39.294Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-02",
+      "url": "https://www.derekyu.com/makegames/pixelart2.html",
+      "ok": true,
+      "bytes": 11573,
+      "hash": "242be05cd16cc2d5cc3b950785fd379f60ac7a362256715f494c6b61e079e01e",
+      "baselineHash": "242be05cd16cc2d5cc3b950785fd379f60ac7a362256715f494c6b61e079e01e",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:39.299Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-03",
+      "url": "https://pixeljoint.com/forum/forum_posts.asp?TID=11299",
+      "ok": true,
+      "bytes": 65134,
+      "hash": "17b626ec0cd191557068886252203012197d40e9de26b71b5b71f9d16c802ba5",
+      "baselineHash": "17b626ec0cd191557068886252203012197d40e9de26b71b5b71f9d16c802ba5",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:40.558Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-04",
+      "url": "https://saint11.art/blog/thoughts_on_low_resolution/",
+      "ok": true,
+      "bytes": 12682,
+      "hash": "39ebf878f13f2cff7a26dac614c42223e1047f097daebfb32e4c27f6bf26bd7c",
+      "baselineHash": "39ebf878f13f2cff7a26dac614c42223e1047f097daebfb32e4c27f6bf26bd7c",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:39.605Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-05",
+      "url": "https://saint11.art/blog/consistency/",
+      "ok": true,
+      "bytes": 17411,
+      "hash": "6cf94fe994ea864aca803d2205dc728ddb76a3cd779807ab0b87e83fa15d8f8d",
+      "baselineHash": "6cf94fe994ea864aca803d2205dc728ddb76a3cd779807ab0b87e83fa15d8f8d",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:40.764Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-06",
+      "url": "https://saint11.art/blog/3d-ref/",
+      "ok": true,
+      "bytes": 5400,
+      "hash": "9275c6672e8fee45555c2a30a00ea8099c817dd0f772389877dc0284f5d2e659",
+      "baselineHash": "9275c6672e8fee45555c2a30a00ea8099c817dd0f772389877dc0284f5d2e659",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:40.773Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-07",
+      "url": "https://saint11.art/blog/scaling/",
+      "ok": true,
+      "bytes": 12625,
+      "hash": "bc381fe2a807ec471a6d0e6124127df75432e33630ecda4a11d59542cc26c443",
+      "baselineHash": "bc381fe2a807ec471a6d0e6124127df75432e33630ecda4a11d59542cc26c443",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:40.999Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-08",
+      "url": "https://www.slynyrd.com/blog/2025/3/24/pixelblog-55-top-down-character-animation",
+      "ok": true,
+      "bytes": 107284,
+      "hash": "b3f032a20241b29691ba9fade0c53b202b6e99963c3b8993c8b94b62fcd939d9",
+      "baselineHash": "b3f032a20241b29691ba9fade0c53b202b6e99963c3b8993c8b94b62fcd939d9",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:41.231Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-09",
+      "url": "https://www.slynyrd.com/blog/2025/5/23/pixelblog-56-top-down-character-attack-animation",
+      "ok": true,
+      "bytes": 98698,
+      "hash": "3b7294e897c268e337d84d383856295e54d4a834197d71dcbd5f95cb562c9b9a",
+      "baselineHash": "3b7294e897c268e337d84d383856295e54d4a834197d71dcbd5f95cb562c9b9a",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:41.351Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-10",
+      "url": "https://www.slynyrd.com/blog/2025/10/2/pixelblog-58-top-down-character-animation-part-3",
+      "ok": true,
+      "bytes": 99127,
+      "hash": "c5bd6fbc2c6cf8c3962dd6ca9a2e801a996a546a6892cf410cd829ad7e08249e",
+      "baselineHash": "c5bd6fbc2c6cf8c3962dd6ca9a2e801a996a546a6892cf410cd829ad7e08249e",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:41.709Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-11",
+      "url": "https://www.slynyrd.com/blog/2026/1/26/side-view-run-n-gun",
+      "ok": true,
+      "bytes": 130724,
+      "hash": "f12cbcca9633119f360930ecba530b04215b89c701da9238e3ca69e8a0232b6d",
+      "baselineHash": "f12cbcca9633119f360930ecba530b04215b89c701da9238e3ca69e8a0232b6d",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:41.830Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-12",
+      "url": "https://www.slynyrd.com/blog/2026/5/27/pixelblog-62-landscape-backgrounds",
+      "ok": true,
+      "bytes": 246787,
+      "hash": "e30156248fa2abb5b50d61344d935034e437783d4895bdd320006a1cbadf4110",
+      "baselineHash": "e30156248fa2abb5b50d61344d935034e437783d4895bdd320006a1cbadf4110",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:41.908Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-13",
+      "url": "https://www.slynyrd.com/blog/2026/4/1/pixelblog-61-isometric-mecha-tactics",
+      "ok": true,
+      "bytes": 118479,
+      "hash": "79d8c7d4e6c520c28bd6d33cb272e9474bc4b8e82eaafacb18e77bf0456c3e3f",
+      "baselineHash": "79d8c7d4e6c520c28bd6d33cb272e9474bc4b8e82eaafacb18e77bf0456c3e3f",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:42.027Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-14",
+      "url": "https://aseprite.org/docs/animation/",
+      "ok": true,
+      "bytes": 11429,
+      "hash": "0d0802946a16e4ca050d4f0ab3c9f35c6b47eca3b333a742aec5854f41a77c87",
+      "baselineHash": "0d0802946a16e4ca050d4f0ab3c9f35c6b47eca3b333a742aec5854f41a77c87",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:42.644Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-15",
+      "url": "https://aseprite.org/docs/onion-skinning/",
+      "ok": true,
+      "bytes": 9932,
+      "hash": "5d80b4b64b849c1afb0e97bbe5be0edd0e082adb835aa470554fca8a752f6ba8",
+      "baselineHash": "5d80b4b64b849c1afb0e97bbe5be0edd0e082adb835aa470554fca8a752f6ba8",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:42.828Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-16",
+      "url": "https://aseprite.org/docs/sprite-sheet/",
+      "ok": true,
+      "bytes": 11078,
+      "hash": "af5c8921ccd77fcf773414208e04eed57a3a78eb72ab6dff7f5aca1dec3cfda0",
+      "baselineHash": "af5c8921ccd77fcf773414208e04eed57a3a78eb72ab6dff7f5aca1dec3cfda0",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.173Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-17",
+      "url": "https://aseprite.org/docs/tilemap/",
+      "ok": true,
+      "bytes": 13133,
+      "hash": "b9dcac4acb42cc7d78d0f19979a3b41d1f0a7bd10715a837f45da3ec0c734797",
+      "baselineHash": "b9dcac4acb42cc7d78d0f19979a3b41d1f0a7bd10715a837f45da3ec0c734797",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.357Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-18",
+      "url": "https://aseprite.org/docs/color-mode/",
+      "ok": true,
+      "bytes": 10920,
+      "hash": "8e60577af1d10982fde757477fa6f2610e688f361cc8ffd5ba6ebeb71970a467",
+      "baselineHash": "8e60577af1d10982fde757477fa6f2610e688f361cc8ffd5ba6ebeb71970a467",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.352Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-19",
+      "url": "https://aseprite.org/docs/cli/",
+      "ok": true,
+      "bytes": 45428,
+      "hash": "cbc169c1a32a422c1b3647ea5e558dc62e7956560453ccdd64252e6ee92b9f1b",
+      "baselineHash": "cbc169c1a32a422c1b3647ea5e558dc62e7956560453ccdd64252e6ee92b9f1b",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.544Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-20",
+      "url": "https://aseprite.org/docs/slices/",
+      "ok": true,
+      "bytes": 11335,
+      "hash": "9e9c07b994dabc3500d0d2f93d9af8036c55a2958026ddfe719a95f6870f9f57",
+      "baselineHash": "9e9c07b994dabc3500d0d2f93d9af8036c55a2958026ddfe719a95f6870f9f57",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.535Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "doc-21",
+      "url": "https://developer.mozilla.org/en-US/docs/Games/Techniques/Crisp_pixel_art_look",
+      "ok": true,
+      "bytes": 163338,
+      "hash": "f98ef8c0c35e770fe649e072a3963b9f1c5a7c21fd14b639656dd67323e22023",
+      "baselineHash": "f98ef8c0c35e770fe649e072a3963b9f1c5a7c21fd14b639656dd67323e22023",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:43.640Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "site-01",
+      "url": "https://lospec.com/",
+      "ok": true,
+      "bytes": 866045,
+      "hash": "266da89c6155d06ff43cd08f312789954eaaf638ed8bf7a362c6d0577f0b4814",
+      "baselineHash": "266da89c6155d06ff43cd08f312789954eaaf638ed8bf7a362c6d0577f0b4814",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:44.872Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "site-02",
+      "url": "https://pixeljoint.com/",
+      "ok": true,
+      "bytes": 80356,
+      "hash": "1bd931ac42c1ed6ae7306ed4c24791e8c55900f3086db12fa615dbe619ee9b63",
+      "baselineHash": "1bd931ac42c1ed6ae7306ed4c24791e8c55900f3086db12fa615dbe619ee9b63",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:45.984Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "site-03",
+      "url": "https://aseprite.org/docs/",
+      "ok": true,
+      "bytes": 12038,
+      "hash": "163e39b964099a2f40d575f7e473a7daf2da09ce13bbc7da7d2ff58c3eafbac2",
+      "baselineHash": "163e39b964099a2f40d575f7e473a7daf2da09ce13bbc7da7d2ff58c3eafbac2",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:45.057Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "site-04",
+      "url": "https://www.slynyrd.com/pixelblog-catalogue",
+      "ok": true,
+      "bytes": 466826,
+      "hash": "b0112fb555e87220254373afd655222e54b13b580974740505ab181a4c477fec",
+      "baselineHash": "b0112fb555e87220254373afd655222e54b13b580974740505ab181a4c477fec",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:46.107Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "site-05",
+      "url": "https://www.pixilart.com/",
+      "ok": false,
+      "error": "HTTP 403",
+      "checkedAt": "2026-11-15T14:56:46.102Z"
+    },
+    {
+      "id": "anatomy-shoulder",
+      "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/8-1-the-pectoral-girdle",
+      "ok": true,
+      "bytes": 348934,
+      "hash": "f248fa1d0848aead70d501fdb23828b1dd66cfbb48ca8bd0728fd3f3ea823558",
+      "baselineHash": "f248fa1d0848aead70d501fdb23828b1dd66cfbb48ca8bd0728fd3f3ea823558",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:46.134Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "anatomy-pelvis",
+      "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/8-3-the-pelvic-girdle-and-pelvis",
+      "ok": true,
+      "bytes": 359950,
+      "hash": "fb755944f5f5b83a36010090ff541fcc7629cdd973cec7545a10063e9a3e9943",
+      "baselineHash": "fb755944f5f5b83a36010090ff541fcc7629cdd973cec7545a10063e9a3e9943",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:46.137Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "met-rodin",
+      "url": "https://www.metmuseum.org/art/collection/search/207693",
+      "ok": false,
+      "error": "HTTP 429",
+      "checkedAt": "2026-11-15T14:56:46.242Z"
+    },
+    {
+      "id": "met-coat",
+      "url": "https://www.metmuseum.org/art/collection/search/81262",
+      "ok": false,
+      "error": "HTTP 429",
+      "checkedAt": "2026-11-15T14:56:46.244Z"
+    },
+    {
+      "id": "met-dress",
+      "url": "https://www.metmuseum.org/art/collection/search/82007",
+      "ok": false,
+      "error": "HTTP 429",
+      "checkedAt": "2026-11-15T14:56:46.270Z"
+    },
+    {
+      "id": "loc-walk",
+      "url": "https://www.loc.gov/pictures/item/93503819/",
+      "ok": false,
+      "error": "HTTP 403",
+      "checkedAt": "2026-11-15T14:56:46.267Z"
+    },
+    {
+      "id": "smithsonian-fox",
+      "url": "https://www.nationalzoo.si.edu/animals/news/how-does-fennec-fox-survive-desert-and-other-questions-answered",
+      "ok": true,
+      "bytes": 114299,
+      "hash": "6a3722934d6e1be4384bfa3438949040b61e196aa66c9a7335e006510bbbfcfd",
+      "baselineHash": "6a3722934d6e1be4384bfa3438949040b61e196aa66c9a7335e006510bbbfcfd",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:46.451Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "cfa-cat",
+      "url": "https://cfa.org/breed/american-shorthair/",
+      "ok": true,
+      "bytes": 461708,
+      "hash": "a31d3f4b74720ea8ffd5ae4bbd30c0cab29a2081015166be9dccf58b2f726d44",
+      "baselineHash": "a31d3f4b74720ea8ffd5ae4bbd30c0cab29a2081015166be9dccf58b2f726d44",
+      "changed": null,
+      "checkedAt": "2026-11-15T14:56:47.141Z",
+      "note": "원문 바이트 변경 감지이며 의미 변화나 새 기법의 검증이 아님"
+    },
+    {
+      "id": "cornell-bird",
+      "url": "https://blog.allaboutbirds.org/guide/Black-capped_Chickadee/id",
+      "ok": false,
+      "error": "HTTP 403",
+      "checkedAt": "2026-11-15T14:56:47.174Z"
+    }
+  ]
+}

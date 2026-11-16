@@ -1,0 +1,210 @@
+{
+  "faces": [
+    {
+      "sex": "male",
+      "heads": 2,
+      "candidate": "A",
+      "hash": "933f10c6ad4fc0848dd3151a0a4a272a0c4c0c2d2ff147b2c80740fcdee7ef48"
+    },
+    {
+      "sex": "male",
+      "heads": 2,
+      "candidate": "B",
+      "hash": "853d9d46671bb0443f9a9a5c367c48648581260b1b8696e45e6a79fbd0cc090f"
+    },
+    {
+      "sex": "male",
+      "heads": 2,
+      "candidate": "C",
+      "hash": "8261c6e54d4393c7ffdab7290be13f613ccfacd48ce328bc8519da542fec6097"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "candidate": "A",
+      "hash": "a92b91304c6fbfce54ae0d57da1f4689b402b32b88c31400ea7c91afbfba1cfe"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "candidate": "B",
+      "hash": "03ba0a1850d6dce868f40987f287ca10d1f0c4a1cbd562aab9d779a708c90ff9"
+    },
+    {
+      "sex": "male",
+      "heads": 3,
+      "candidate": "C",
+      "hash": "aaeee828a3b0248bd9689fa6ae17b3f43de86a3a5bcd1c992364542616c0b39d"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "candidate": "A",
+      "hash": "d34d48979f33297b0c41ec4e7de61026538c1d7dd31b6f5ac5530294c34e0118"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "candidate": "B",
+      "hash": "fd04216f53eaec02e52488f3bdb1d09faa17f8fffe14db95c879f80948081145"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "candidate": "C",
+      "hash": "7933e262983ff69765d5f412b1b10e946e5e6f26bfbb14527cbb53e0ddb8cdcc"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "candidate": "A",
+      "hash": "697b4e09896ee5b742025737c025d75d6a6be7e052021b21cc46ab79ed285b3f"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "candidate": "B",
+      "hash": "cea423d2f73ae5bb903fe33d6d15a141d5d2981b5e59cd11dad3426ee366bb78"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "candidate": "C",
+      "hash": "07d968a6c2299e99fc5bf1d6ecaf69a74baf8bcd3bde21b074fb746589155cdd"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "candidate": "A",
+      "hash": "05ff1ab8ae02e8c334202a1c9617c9bc33246953c85b3df1d0cd5c18c806b6f2"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "candidate": "B",
+      "hash": "c7029f1530416791f73e30959c12cc857e728833c8d05868cf69cb39138cb628"
+    },
+    {
+      "sex": "female",
+      "heads": 3,
+      "candidate": "C",
+      "hash": "9b53e963de71ed4e4ac5c1c68e0ab3c53fcfaac4cce54a96be8b31600e9b34e0"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "candidate": "A",
+      "hash": "f7034bc9c663160eb9df54f016aaf98ed580f4482703d554d1e5eba886f96cf1"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "candidate": "B",
+      "hash": "44e4bf440e0bef1398cd439bf76014a2d41843d55f3e04ed0e54fbdc02be58e7"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "candidate": "C",
+      "hash": "39783e49b5fb95bed96fac02aa9d70de6fdcfb8cc6335899538628db6ec00b2c"
+    }
+  ],
+  "adults": [
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "natural",
+      "hash": "6bb445df4eef26b63a1afc99907a98d68f4fb3b6b02e3eee35048f35ee6bc2e1"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "manga",
+      "hash": "27b42ab7b0b6d37f00e4b702c035ca4c33c38353fbfc385fce40c8bcaa97a6a5"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "natural",
+      "hash": "f2884f13a0bc98ba74babb86e88de549afdcb60d81c1125b006deb04366660c4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "manga",
+      "hash": "17abe82e055360f93686b1215d7ea496fa5788a131855e4f98b5dd971dd49b79"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "natural",
+      "hash": "96b874970e0bbaf3e6081da5b90d2a97765a58cdefed73194d38ff7a15db11aa"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "manga",
+      "hash": "cf0b4a0312c6ab02d60b10f359a0cbd05decdff9c3b5e65228c35fb09707a477"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "natural",
+      "hash": "c1a1cb0fb1dedc97677b958bf7b86a233c68ea9951049209155317fac3867481"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "manga",
+      "hash": "2cab29f8e86e382cda1d82f5879eba757f3f2f6e5d6ab6ae8ba5622a7a80e517"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "natural",
+      "hash": "71a2a45b365e338c8e001503677c18fe6d6ebc6dde1d7746077bc4de5ca2e3b5"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "manga",
+      "hash": "eb69e43eff0ccac667f21b6fc2cc6c60690d1c7e829d7e106f5f60a6e1c423b7"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "natural",
+      "hash": "c144a6bc5aca659a4efdb5b19a2f1e4284383432d9512a8856e462608de935a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "manga",
+      "hash": "364ef4579572051568c66f9b73c292474d4bc86b4c4212cca8b7b242843eb066"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "natural",
+      "hash": "c97525eafa8be8116c341ffc90f266e7e5aeff5e5bbc480bc980be1db759110c"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "manga",
+      "hash": "d3c165b10eb46e0ee345dac5c1272f7b89e3ef18a5ca1f90173112c9b644e693"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "natural",
+      "hash": "e18ff7091b6667ab7e448ab08f20c2b04c6af89e2a79dc67653ec415125ed801"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "manga",
+      "hash": "7b07b610999f7ed9e0b16584fd10aea7140b53f69e85123a57a09ca11e26332d"
+    }
+  ]
+}

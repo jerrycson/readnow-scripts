@@ -1,0 +1,41 @@
+{
+  "version": 9,
+  "checkedAt": "2026-11-15T17:15:12.511Z",
+  "visualApproval": false,
+  "scope": "성인 남녀 5~8등신 연속 표면 비교 시안",
+  "results": [
+    {
+      "name": "출처·성인 범위·머리 단위·표면 좌표",
+      "ok": true,
+      "detail": {
+        "cases": 16,
+        "sourceVertices": 13380
+      }
+    },
+    {
+      "name": "16개 시안의 64방향 렌더 누락·잘림",
+      "ok": true,
+      "detail": {
+        "views": 1024
+      }
+    },
+    {
+      "name": "귀·손·발 확대가 실제 관절 위치에서 빈 그림 없이 표시됨",
+      "ok": true,
+      "detail": {
+        "cases": 64,
+        "note": "확대는 대상 외의 전신 부분이 잘리는 구도다. 전체 프레임 잘림 검사는 전신에서 수행했다."
+      }
+    },
+    {
+      "name": "방향 정규화와 기본형 구분",
+      "ok": true,
+      "detail": {
+        "cases": 4,
+        "note": "다른 그림인지를 확인하며 미적 평가가 아니다."
+      }
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

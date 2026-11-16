@@ -32,7 +32,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   /* 번외 올림 모듈(실제 파일) — 숨은 크롬은 띄우지 않음(put·state·ack만) */
   const HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'hl1-')); const st = { login: 'ok', hold: false, en: true, pc: 'HOME' }; const notes = [];
   const REG = makeY24Reg({ HOME, TEST: 1, note: (m) => notes.push(m), log: () => {}, pcName: () => st.pc, isLogger: () => /^LOGGER/.test(st.pc), enabled: () => st.en, login: () => st.login, holdOn: () => st.hold, kick: () => {} });
-  const gather = () => { const s = REG.state(); return { st: { ok1: s.ok1, done: s.done, wait: s.wait, cur: s.cur, why: s.why, login: s.login, hold: s.hold, ban: s.ban, en: s.en }, res: s.res, rej: [] }; };
+  const gather = () => { const s = REG.state(); return { st: { ok1: s.ok1, done: s.done, wait: s.wait, cur: s.cur, why: s.why, login: s.login, hold: s.hold, ban: s.ban, en: s.en, ver: st.ver }, res: s.res, rej: [] }; };
   const take = (y) => { if (y.ack && y.ack.length) REG.ack(y.ack); return (y.jobs || []).map((j) => REG.put(j)); };
   const led = () => (store.app_settings.y24_reg || {});
   /* ③ 로그인 기다림 · 출고 중 · 로거 · MJ-MAIN */
@@ -53,7 +53,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   /* ④ 성공 결과 */
   REG.R.q.res[J1.id] = { state: 'done', gno: { aladin_A4: '222222222' }, cnt: { sale: 1, unpub: 0 }, msg: '올라감', at: T, rows: ['aladin_A4'] }; REG.R.q.jobs = []; REG.R.rec.ok1 = T; REG.R.rec.lid.aladin_A4 = { at: T }; REG.R.rec.sku[J1.rows[0].self] = 'aladin_A4';
   put('prd_listings', 'aladin_A6', { listingId: 9006, usedCode: 'A6', title: '시험 책 A6', isbn13: '9788900000066', grade: '최상', price: 6000, qty: 1, sku: 'ABC_A6', active: true, status: '판매중' }); store.app_settings.sku_map_0.m.aladin_A6 = { c: ['ab006'] }; put('y24_mkt', '9788900000066', { none: true });
-  put('app_settings', 'platforms', { y24: { reg: { autoAll: 1 } } }); Y._M.dataAt = 0; /* 판매중 상품 전부(정범님이 켬)를 흉내 */
+  put('app_settings', 'platforms', { y24: { reg: { autoAll: 1 } } }); Y._M.dataAt = 0; Y._M.bigAt = 0; /* 판매중 상품 전부(정범님이 켬)를 흉내 */
   T += 61e3; y = await Y.step('HOME', gather()); const e2 = led().r.aladin_A4;
   ok(e2.ok === 1 && e2.gno === '222222222' && e2.st === 'sent' && y.ack.includes(J1.id), '④ 번외 결과 → 장부 ✅(ok · 예스24 번호) · 결과 받았음(ack)', { e2, ack: y.ack });
   take(y); ok(!Object.keys(REG.state().res).length, '④ ack 뒤 번외 결과가 비워짐');
@@ -65,6 +65,11 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   ok(e3.st === 'autofail' && led().auto && led().auto.stop && /모양이 다름/.test(led().auto.stop.why) && !y.jobs.length, '⑤ 실패 결과 → 장부 autofail · 멈춤(auto.stop) · 새 묶음 없음', { e3, auto: led().auto });
   ok(led().auto.last && led().auto.last.raw && /조회된 데이터/.test(led().auto.last.raw.txt) && led().auto.last.raw.btn.length === 2, '⑤ 번외가 멈춘 화면 원문(표 글·단추 이름)을 장부 auto.last.raw에 남김(제13조)', led().auto.last);
   T += 61e3; y = await Y.step('HOME', gather()); ok(!y.jobs.length && /멈춤/.test(y.why), '⑤ 멈춘 동안 새 묶음 없음(사람이 📤 화면 「▶ 이어 가기」)', y.why);
+  /* (y24first1 11/14) ⑤-2 옛 번외(표 자료를 못 읽던 판)의 「미리보기 목록에 우리 줄이 안 보임」 멈춤 — 고친 번외(0.1.67 뒤)가 오면 한 번 풂 · 옛 판이면 그대로 · 새 판의 같은 멈춤(글에 '(표 …)')은 그대로 */
+  { const A = store.app_settings.y24_reg.auto; const keep = A.stop; A.stop = { why: '엑셀을 넣었지만 미리보기 목록에 우리 줄이 안 보임 · [등록]은 누르지 않음', at: new Date(T).toISOString() };
+    st.ver = '0.1.66'; T += 61e3; y = await Y.step('HOME', gather()); ok(/멈춤/.test(y.why) && store.app_settings.y24_reg.auto.stop, '⑤-2 옛 번외(0.1.66)면 미리보기 멈춤 그대로', y.why);
+    st.ver = '0.1.68'; T += 61e3; y = await Y.step('HOME', gather()); ok(!store.app_settings.y24_reg.auto.stop && !/⛔ 멈춤/.test(y.why), '⑤-2 고친 번외(0.1.67)가 오면 아무것도 안 누른 미리보기 멈춤을 저절로 풂', { why: y.why, auto: store.app_settings.y24_reg.auto });
+    store.app_settings.y24_reg.auto.stop = { why: '엑셀을 넣었지만 미리보기 목록에 우리 줄이 안 보임 (표 0줄) · [등록]은 누르지 않음' }; T += 61e3; y = await Y.step('HOME', gather()); ok(store.app_settings.y24_reg.auto.stop && /멈춤/.test(y.why), '⑤-2 새 번외에서 또 멈춘 것(표 …)은 풀지 않음', y.why); A.stop = keep; store.app_settings.y24_reg.auto.stop = keep; delete st.ver; }
   /* ⑥ 번외가 모르는 묶음 다시 넘김 */
   store.app_settings.y24_reg.auto.stop = null; store.app_settings.y24_reg.r.aladin_A1 = { ...store.app_settings.y24_reg.r.aladin_A1, st: 'auto', job: 'y24aLOST1', at: new Date(T - 4 * 60e3).toISOString(), by: '🤖 자동 올림 · 클라우드(HOME)' };
   T += 61e3; y = await Y.step('HOME', gather()); ok(y.jobs.length === 1 && y.jobs[0].id === 'y24aLOST1' && y.jobs[0].again && /올리는 중/.test(y.why), '⑥ 장부엔 있는데 번외가 모르는 묶음 → 같은 이름으로 다시 넘김(새 묶음은 안 냄)', y);
