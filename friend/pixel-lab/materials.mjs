@@ -8,6 +8,9 @@ export const FABRIC_NAMES={cotton:'면 · 넓고 무광인 면',wool:'울 · 부
 export function materialLibrary(s){
  const cloth={moss:['#203934','#34584c','#528168','#84a17d','#c0c9a0'],navy:['#202a42','#35435d','#506984','#8598aa','#c4d0d1'],ochre:['#493730','#7f5738','#b38242','#d6ad64','#f0dba6']}[s.outfitColor];
  return {
+ 'complexion34':ramp(refinedSkin[s.palette],{skin:true,portrait:true,chin:s.heads-1}),
+ 'iris34':ramp(['#203138','#344b50','#56767b','#85a2a0','#b7c2b0']),
+ 'mouth-ink34':ramp(['#563336','#6f4240','#834d47','#925d51','#a66f61']),
  'study-upper-lip':ramp(refinedSkin[s.palette].map(c=>'#'+hex(c).map((v,k)=>Math.round(v*[.96,.85,.85][k]).toString(16).padStart(2,'0')).join('')),{skin:true}),
  'study-lower-lip':ramp(refinedSkin[s.palette].map(c=>'#'+hex(c).map((v,k)=>Math.round(v*[1,.93,.92][k]).toString(16).padStart(2,'0')).join('')),{skin:true}),
  'study-skin':ramp(refinedSkin[s.palette],{skin:true}),
@@ -38,7 +41,8 @@ export function materialLibrary(s){
 const light=norm([-.55,.8,1]),half=norm([light[0],light[1],light[2]+1]);
 export function shade(mat,normal,pos,resolution,visibility=1){
  const diffuse=dot(normal,light)*visibility,nh=Math.max(0,dot(normal,half))*visibility;
- if(mat.skin){const value=.27+.69*Math.max(0,diffuse);return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
+ if(mat.skin){const lit=Math.max(0,diffuse),fade=mat.portrait?Math.max(0,Math.min(1,(pos[1]-mat.chin-.02)/.20)):0;
+ const value=.27+.69*lit+fade*(.29-.29*lit);return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
  let value=(diffuse+.18)/1.15;
  const spec=Math.pow(nh,4+(1-mat.roughness)*65)*(mat.specular||0);
  if(mat.metal)value=.05+.60*Math.max(0,diffuse)+spec;else value+=spec;

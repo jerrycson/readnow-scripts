@@ -161,9 +161,9 @@ function action(id,angles,I,scene){
     return [pos,normal];
   };
 }
-export function articulate(scene,pose,motion=0){
+export function articulate(scene,pose,motion=0,tissueOffset=null){
   const I=info(scene),handles=Object.fromEntries(Object.entries(I.points).filter(([id])=>!id.includes('/'))),active=I.order.filter(id=>Object.values(pose[id.split('/')[0]]||{}).some(Boolean));
-  if(!active.length&&!motion)return {scene,handles};
+  if(!active.length&&!motion&&!tissueOffset)return {scene,handles};
   const ops=active.map(id=>action(id,pose[id.split('/')[0]],I,scene));
   for(const id of Object.keys(handles)){
     const chain=new Set([id]);for(let p=I.parents[id];p;p=I.parents[p])chain.add(p);
@@ -180,7 +180,7 @@ export function articulate(scene,pose,motion=0){
     });
     const chest=motion&&I.adult&&main?['left','right'].map(s=>weights(s+'.chest',mesh.vertices.length)):null;
     const vs=mesh.vertices.map((v,i)=>{
-      let p=v.p,n=v.n;
+      let p=main&&tissueOffset?tissueOffset(v.p,i):v.p,n=v.n;
       if(chest){
         const left=typeof motion==='number'?motion:motion.left,right=typeof motion==='number'?motion:motion.right;
         const displacement=(chest[0][i]*left+chest[1][i]*right)/255;
