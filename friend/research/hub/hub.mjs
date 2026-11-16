@@ -1,7 +1,11 @@
 import {readBlocks,mergeHistory} from './archives.mjs';
+import {additions} from './round32-cards.mjs';
+import {route,library,originals,initReader,showError} from './reader.mjs';
+const query=k=>new URL(location.href).searchParams.get(k)||'';
+const validTab=v=>['library','report','board','originals'].includes(v)?v:'library';
 const el=id=>document.getElementById(id);
 const releases=el('release'), output=el('cards'), frame=el('document');
-let history=[], selected='', dataset=[], limit=18, tab='library', key=null, archive=null, generation=0;
+let history=[], selected='', dataset=[], tab=validTab(query('tab')), key=null, archive=null, generation=0;
 let unsubscribe, authUnsub, busy=false, refreshAgain=false, latestHost=[], cloudRows=new Map(), blockReader=null, authGeneration=0;
 const hash=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
 async function get(path,expected){
@@ -14,30 +18,15 @@ async function get(path,expected){
 const decode=bytes=>JSON.parse(new TextDecoder().decode(bytes));
 const node=(name,value)=>Object.assign(document.createElement(name),{textContent:value});
 function draw(){
-  const q=el('search').value.trim().toLocaleLowerCase(),group=el('group').value;
-  const rows=dataset.filter(r=>(!group||r.group===group)&&(!q||[r.title,r.line,r.unit,r.detail].join(' ').toLocaleLowerCase().includes(q)));
-  el('count').textContent=rows.length+'개 자료 · '+Math.min(limit,rows.length)+'개 표시';
-  output.replaceChildren();
-  for(const r of rows.slice(0,limit)){
-    const article=node('article',''), details=node('details',''),summary=node('summary','');
-    summary.append(node('b',r.title),node('small',r.group+' · '+r.line));details.append(summary,node('h3','한 단원 요약'),node('p',r.unit),node('h3','상세 설명'),node('pre',r.detail));
-    for(const [label,href] of [['원전 열기',r.url],['연구 원문·비교 보기',r.local]]){
-      if(!href)continue;
-      const url=new URL(href,location.href);
-      if(url.protocol!=='https:'&&url.origin!==location.origin)continue;
-      const link=node('a',label);link.href=url.href;link.target='_blank';link.rel='noopener';details.append(link,document.createTextNode('　'));
-    }
-    article.append(details);output.append(article);
-  }
-  el('more').hidden=rows.length<=limit;
+  library(dataset,target=>{tab='originals';route({tab,doc:target.doc,chapter:target.chapter,dq:null},true);documentTab();});
 }
 function documentTab(){
-  el('library').hidden=tab!=='library';el('private').hidden=tab==='library';
+  el('library').hidden=tab!=='library';el('originals').hidden=tab!=='originals';el('private').hidden=!['report','board'].includes(tab);
   document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===tab)));
-  if(tab==='library')return;
+  if(tab==='originals'){originals().catch(showError);return;}if(tab==='library')return;
   el('privateTitle').textContent=tab==='board'?'공동 계획표':'밤샘 연구 보고서';
   el('access').hidden=!!archive;frame.hidden=!archive;
-  if(archive)frame.srcdoc=archive[tab];
+  if(archive && frame.srcdoc!==archive[tab])frame.srcdoc=archive[tab];
 }
 async function openPrivate(){
   if(!key||!selected)return;
@@ -46,23 +35,32 @@ async function openPrivate(){
     const authVersion=authGeneration;const original=await readBlocks(cloudRows.get(id).docBlocks,blockReader,hash,active.adminSha);
     if(authVersion===authGeneration && selected===id){archive=original;documentTab();}return;
   }
-  const bytes=new Uint8Array(await get('versions/'+id+'/admin.bin',active.sealedSha));
+  const hosted=active.hostSource?history.find(r=>r.id===active.hostSource):active;
+  const bytes=new Uint8Array(await get('versions/'+hosted.id+'/admin.bin',hosted.sealedSha));
   const cryptoKey=await crypto.subtle.importKey('raw',key,{name:'AES-GCM'},false,['decrypt']);
   const authVersion=authGeneration;
-  const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12),additionalData:new TextEncoder().encode(id)},cryptoKey,bytes.slice(12));
-  if(await hash(clear)!==active.adminSha)throw Error('원문 지문 불일치');
+  const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12),additionalData:new TextEncoder().encode(hosted.id)},cryptoKey,bytes.slice(12));
+  if(await hash(clear)!==hosted.adminSha)throw Error('원문 지문 불일치');
   if(authVersion===authGeneration&&selected===id){archive=decode(clear);documentTab();}
+}
+async function hostedCards(row){
+  const source=row.hostSource?history.find(r=>r.id===row.hostSource):row;
+  const data=decode(await get('versions/'+source.id+'/cards.json',source.cardsSha));
+  if(!row.hostSource)return data;
+  const full={...data,cards:[...data.cards,...additions]};
+  if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');
+  return full;
 }
 async function select(id){
   if(!/^[0-9a-f]{24}$/.test(id))throw Error('잘못된 회차 주소');
   const seq=++generation, row=history.find(r=>r.id===id);
-  const reply=blockReader && cloudRows.has(id) ? await readBlocks(cloudRows.get(id).cardBlocks,blockReader,hash,row.cardsSha) : decode(await get('versions/'+id+'/cards.json',row.cardsSha));
+  const reply=blockReader && cloudRows.has(id) ? await readBlocks(cloudRows.get(id).cardBlocks,blockReader,hash,row.cardsSha) : await hostedCards(row);
   if(seq!==generation)return;
   selected=id; releases.value=id;archive=null;frame.removeAttribute('srcdoc');dataset=reply.cards;
-  const previous=el('group').value;
+  const previous=query('group');
   el('group').replaceChildren(new Option('전체 분야',''),...[...new Set(dataset.map(x=>x.group))].map(x=>new Option(x,x)));
   if([...el('group').options].some(x=>x.value===previous))el('group').value=previous;
-  limit=18;draw();documentTab();await openPrivate();
+  el('editionInfo').textContent=row.round+'차 · '+dataset.length+'개 자료';draw();documentTab();await openPrivate();
 }
 async function refresh(){
   if(busy){refreshAgain=true;return;}busy=true;
@@ -73,8 +71,10 @@ async function refresh(){
     const follow=!selected||selected===history.at(-1)?.id;
     history=list;const latest=list.at(-1);
     releases.replaceChildren(...list.map((r,i)=>new Option((i+1)+' · '+r.label+' · '+r.at.slice(0,10),r.id)));
-    if((follow&&latest.id!==selected)||!list.some(v=>v.id===selected))await select(latest.id);else releases.value=selected;
-    el('connection').textContent=(blockReader?'Firestore 구독 · ':'Firebase Hosting · ')+(latest.sources?latest.sources+'개 출처 · ':'')+'마지막 확인 '+new Date().toLocaleTimeString('ko-KR');
+    const pinned=list.find(r=>r.id===query('rev'));
+    const desired=pinned?.id||((follow||!list.some(v=>v.id===selected))?latest.id:selected);
+    if(desired!==selected)await select(desired);else releases.value=selected;
+    el('connection').textContent=(blockReader?'Firestore 구독 · ':(['localhost','127.0.0.1'].includes(location.hostname)?'로컬 미리보기 · ':'웹 게시 자료 · '))+(latest.sources?latest.sources+'개 출처 · ':'')+'마지막 확인 '+new Date().toLocaleTimeString('ko-KR');
   }finally{busy=false;if(refreshAgain){refreshAgain=false;queueMicrotask(()=>refresh().catch(failure));}}
 }
 function failure(e){el('connection').textContent='갱신 확인 필요 · '+e.message;}
@@ -107,9 +107,17 @@ el('cloud').onclick=async()=>{
     }});
   }catch(e){el('feedback').textContent='연결 확인 · '+(e.code||e.message);}
 };
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;documentTab();});
-el('search').oninput=el('group').onchange=()=>{limit=18;draw();};
-el('more').onclick=()=>{limit+=18;draw();};releases.onchange=()=>select(releases.value).catch(failure);
+initReader();
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;route({tab},true);documentTab();});
+el('search').oninput=el('group').onchange=()=>{route({q:el('search').value,group:el('group').value,card:null});el('reading').closest('.split').classList.remove('inspecting');draw();};
+releases.onchange=()=>{route({rev:releases.value,card:null},true);select(releases.value).catch(failure);};
+window.addEventListener('popstate',async()=>{
+  tab=validTab(query('tab'));el('search').value=query('q');el('group').value=query('group');
+  el('reading').closest('.split').classList.toggle('inspecting',!!query('card'));el('originalBody').closest('.split').classList.toggle('inspecting',!!query('chapter'));
+  const id=query('rev')||history.at(-1)?.id;
+  if(id&&id!==selected&&history.some(r=>r.id===id))await select(id).catch(failure);else{draw();documentTab();}
+});
+documentTab();
 setInterval(()=>{if(!document.hidden)refresh().catch(failure);},15000);
 el('search').value=new URLSearchParams(location.search).get('q')||'';
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh().catch(failure);});
