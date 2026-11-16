@@ -1,0 +1,86 @@
+{
+  "unit": "머리 높이=1; 같은 머리 높이의 가로 단면 폭. 작은 얼굴 폭은 귀가 별도인 두상, 성인은 귀를 포함할 수 있는 몸 표면의 전체 단면. 서로 다른 모델의 참고값. 의학 기준 아님.",
+  "rows": [
+    {
+      "sex": "female",
+      "form": "4등신 · 30차 원형",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7682,
+      "widthAt35": 0.9549,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "female",
+      "form": "4등신 · A (6%)",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7353,
+      "widthAt35": 0.9415,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "female",
+      "form": "4등신 · B (12%)",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7025,
+      "widthAt35": 0.9281,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "female",
+      "form": "5등신 · 30차 원형",
+      "chinHeight": 3.999838801118117,
+      "centralNeckSectionMinus09": 0.4049,
+      "wholeBodySectionMinus09": 0.4049,
+      "widthAt18": 0.511,
+      "widthAt35": 0.7993,
+      "widthAt55": 0.6868
+    },
+    {
+      "sex": "male",
+      "form": "4등신 · 30차 원형",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7682,
+      "widthAt35": 0.9549,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "male",
+      "form": "4등신 · A (6%)",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7353,
+      "widthAt35": 0.9415,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "male",
+      "form": "4등신 · B (12%)",
+      "chinHeight": 3,
+      "centralNeckSectionMinus09": 0.455,
+      "wholeBodySectionMinus09": 0.9271,
+      "widthAt18": 0.7025,
+      "widthAt35": 0.9281,
+      "widthAt55": 0.9949
+    },
+    {
+      "sex": "male",
+      "form": "5등신 · 30차 원형",
+      "chinHeight": 3.9997741239925038,
+      "centralNeckSectionMinus09": 0.6625,
+      "wholeBodySectionMinus09": 0.6625,
+      "widthAt18": 0.4875,
+      "widthAt35": 0.7397,
+      "widthAt55": 0.7646
+    }
+  ],
+  "views": 24
+}

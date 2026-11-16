@@ -30,7 +30,8 @@
 <li data-card><a href="#section-30">31. 27차 — 눈 개구부와 눈꺼풀&#183;홍채 조화</a></li>
 <li data-card><a href="#section-31">32. 28차 — 허벅지&#183;종아리의 부피 분리와 큰 원본 관찰</a></li>
 <li data-card><a href="#section-32">33. 29차 — 2~4등신 전신의 길이&#183;폭&#183;손끝과 피부 명암</a></li>
-<li data-card><a href="#section-33">34. 30차 — 작은 등신마다 턱&#183;눈&#183;코&#183;귀 배치 분리</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
+<li data-card><a href="#section-33">34. 30차 — 작은 등신마다 턱&#183;눈&#183;코&#183;귀 배치 분리</a></li>
+<li data-card><a href="#section-34">35. 30차 마감 — 4→5등신 턱&#183;목 대조와 브라우저 실검</a></li></ul></nav></aside><main id="content"><div class="intro"><p>연구 문서, 제작 실험, 제품 반영의 상태를 각각 기록한다. 자료를 읽었다는 사실을 캐릭터 품질이나 엔진 성능의 검증 결과로 바꾸어 쓰지 않는다. 개인 노트와 작업판의 초기 데이터는 이 참고 일지와 별개다.</p>
 </div><p id="empty" class="empty" hidden>검색 결과가 없습니다. 다른 낱말로 찾아보세요.</p><article id="section-1" data-card><h2>01. 2026-11-15 — 원전 조사와 연구 페이지의 첫 검토본</h2>
 <p><strong>목적:</strong> 새로운 픽셀 캐릭터 제작의 판단 근거와 실험 순서를 준비한다.</p>
 <p><strong>수행:</strong> 제작자 원전 13개, Aseprite 공식 문서 7개, MDN 문서 1개를 확인했다. 각 문서에 1줄·1문장·검토 카드 분량의 1페이지 분석·주요 개념·적용 실험·채택 조건을 기록했다. 지속 관찰할 사이트 5곳은 공개 활동 근거와 자료 성격을 함께 기록했다. 전체 시장의 활동 순위를 측정한 것은 아니다.</p>
@@ -264,4 +265,8 @@
 <p>기본 인체는 아직 사용자 미승인이다. 얼굴 개성과 볼·코·입 연결, 성인 어깨·겨드랑이와 손의 조화는 남은 과제로 기록했다. 체형 30종 확대와 의상·생물·동작 작업은 계속 보류한다. 운영 배포는 하지 않았다.</p>
 <p>작은 기본형 6/6, 회전표 14/14·896방향, 얼굴 전용 2/2 통과. 얼굴 432시점과 뒷면 눈 가림 18종을 확인했다. 연구 엔진은 과거 기록을 포함한 58개 보고서 505/505, 자료 86개, 미해결 항목 7개다.</p>
 <p>남녀 14개 기본형의 정면·45도 전신과 얼굴 모아보기 2장을 추가해 직접 확인했다. 4→5등신 그림체 단절, 성인 어깨·겨드랑이와 손목, 여성 턱·입 주변, 작은 몸통의 단순함을 다음 수정 대상으로 구체화했다. 인체 연구 56절에 미완성 판정과 근거를 남겼다.</p>
+</article>
+<article id="section-34" data-card><h2>35. 30차 마감 — 4→5등신 턱·목 대조와 브라우저 실검</h2>
+<p>같은 머리 높이와 조명으로 남녀 정면·45도·측면 24칸을 렌더했다. 4등신 턱 너비를 좁힌 A/B는 정면 단면 차이를 줄였지만 측면의 입·턱과 목의 연결을 고치지 못해 기본값으로 채택하지 않았다. 기존 30차 기본형을 유지한다. 실물 기기나 운영 배포와 별도로 로컬 Edge에서 회전 왕복·한쪽 손 확대·PNG 파일과 오른쪽 캔버스 픽셀 일치·390px 폭·과거/현재 회전표 28장 로드를 확인했다. 30차 회차는 마감했으며 미적 판단은 정범님 승인 전이다.</p>
+<p><a href="../../pixel-lab/closeout-v30.html">비교판과 지표</a> · <a href="../../pixel-lab/qa/v30-closeout-browser.json">브라우저 검사</a></p>
 </article></main></div><footer>기록 기준 2026-11-16 · 실행한 검사와 미수행 항목은 실행 일지에 구분합니다.</footer><script>const input=document.querySelector('#query'),cards=[...document.querySelectorAll('article[data-card]')],links=[...document.querySelectorAll('.toc li[data-card]')],status=document.querySelector('#status');function filter(){const q=input.value.normalize('NFKC').toLocaleLowerCase().trim();let count=0;cards.forEach((card,i)=>{const visible=!q||card.textContent.normalize('NFKC').toLocaleLowerCase().includes(q);card.hidden=!visible;if(links[i])links[i].hidden=!visible;if(visible)count++});status.textContent=`${cards.length}개 중 ${count}개 표시`;document.querySelector('#empty').hidden=count!==0;}input.addEventListener('input',filter);document.querySelector('#reset').addEventListener('click',()=>{input.value='';filter();input.focus()});document.querySelector('#print').addEventListener('click',()=>window.print());filter();</script></body></html>
