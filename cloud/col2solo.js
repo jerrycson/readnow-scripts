@@ -59,7 +59,7 @@ const nbTrim = (v) => { if (!v || typeof v !== 'object') return null; const o = 
 const tsOf = (v) => (v && typeof v.toDate === 'function' ? v.toDate().toISOString() : v);
 const tsFix = (o) => { if (!o || typeof o !== 'object') return o; if (Array.isArray(o)) return o.map(tsFix); if (typeof o.toDate === 'function') return o.toDate().toISOString(); const r = {}; for (const [k, v] of Object.entries(o)) r[k] = tsFix(v); return r; };
 
-function makeSolo({ db, C, FV, log, mods, now }) {
+function makeSolo({ db, C, FV, log, mods, now, y24 }) { /* (headless1 11/14) y24 = cloud/y24auto.js — 예스24 자동 올림 판단(웹앱 없이) */
   now = now || Date.now; log = log || (() => {});
   const M = { seen: new Map(), pubs: null, pubAt: 0, stSig: new Map(), seenW: new Map(), nvSig: null, nvAt: 0, nvPub: null };
   const iso = () => new Date(now()).toISOString();
@@ -196,6 +196,7 @@ function makeSolo({ db, C, FV, log, mods, now }) {
     try { if (Array.isArray(b.lists) && b.lists.length) { const ls = await getLists(b.lists); if (ls) res.lists = ls; } } catch (e) { errs.push('판매자 목록: ' + (e.code || e.message)); } /* (11/12 handoff3) 홀로 연결로만 이어진 로거도 숍 요약 차례를 받게 */
     try { if (+b.pool > 0 && !lg && Object.prototype.hasOwnProperty.call(b, 'poolAfter')) Object.assign(res, await getPool(b, F)); } catch (e) { errs.push('표본: ' + (e.code || e.message)); } /* 로거에는 우리 도서 목록(표본)을 주지 않음(약속 0) */
     if (b.nv && typeof b.nv === 'object') { if (!lg) errs.push('네이버 일은 로거 PC만'); else { try { Object.assign(res, await nvStep(pc, b.nv)); } catch (e) { errs.push('네이버: ' + (e.code || e.message)); } } }
+    if (b.y24reg && typeof b.y24reg === 'object' && y24) { if (lg) res.y24reg = { v: 1, why: '로거 PC — 예스24 자동 올림 안 함(약속 0)', ack: [], jobs: [] }; else { try { res.y24reg = await y24.step(pc, b.y24reg); } catch (e) { errs.push('예스24 자동 올림: ' + (e.code || e.message)); } } } /* (headless1 11/14 · 정범님 '왜 웹앱을 키도록?') 🤖 예스24 자동 올림 — 결과를 장부에 · 다음 묶음을 장부에 먼저 적고 엑셀째 넘김(cloud/y24auto.js) */
     if (errs.length) { res.errs = errs.slice(0, 6); log('🔌 번외 홀로 연결', pc, errs[0]); }
     return [200, res]; }
   return { api, check, getLists, benchW, stSum, OUT_OK, NV_OUT_OK, READ_OK, LG_NO, alTrim, _M: M };

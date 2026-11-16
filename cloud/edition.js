@@ -11,7 +11,7 @@
  *  지키는 것: 관찰·기록만 — 값·등록·돈을 바꾸지 않음(제33조 무손해) · 알라딘은 클라우드 공개 화면만(로거·사무실 PC에 일 없음 · 제5조) · 사람처럼 쉬엄쉬엄(화면 사이 2.5~6초 · 하루 상한 · 막히면 쉼)
  *          사람이 넣은 설정(app_settings/ed_cfg)은 읽기만 · 지우지 않음(묶음이 바뀌면 hist에 남김) · 손님 정보 없음 */
 'use strict';
-const ED_V = '0.1.0';
+const ED_V = '0.1.1';
 const ED_DEF = {
   on: true, tickMs: 95e3, dayCap: 600, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 600쪽 · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
   maxEds: 24, maxLinkHops: 14, searchTop: 6, accept: 0.72, maybe: 0.52, // 받아들임 문턱 0.72 · 후보 0.52(첫 값 — 매일 스스로 맞춤 edTune)
@@ -70,7 +70,7 @@ function edSame(a, b, ev, o) { o = { accept: ED_DEF.accept, ...(o || {}) }; cons
 function edLinks(pg) { if (!pg || !pg.f) return []; const self = String(pg.f.iid || ''); const seg = Object.values(pg.segs || {}).join(' '); const out = new Map();
   for (const a of pg.anchors || []) { const iid = String(a.iid || ''); if (!iid || iid === self) continue; const inSeg = seg.includes('ItemId=' + iid); const ctx = `${a.ctx || ''} ${a.a || ''}`;
     if (!(inSeg || a.so || EDKW.test(ctx))) continue; if (/(전자책|eBook|오디오북|중고|굿즈|사은품|이벤트|함께\s*(산|구매)|같이\s*보|이\s*분야|베스트|신간)/.test(a.a || '') && !inSeg) continue;
-    const how = inSeg ? 'sec' : a.so ? 'soldout' : 'ctx'; const dir = NEWER.test(ctx) && !OLDER.test(a.a || '') ? 'newer' : OLDER.test(ctx) ? 'older' : 'other';
+    const how = inSeg ? 'sec' : a.so ? 'soldout' : 'ctx'; const dir = /의\s*개정판입니다|구판|이전\s*판|초판/.test(ctx) ? 'older' : NEWER.test(ctx) ? 'newer' : 'other'; /* (0.1.1) 알라딘 실제 꼴(11/14 진단): 옛 판 화면 '개정판이 새로 출간되었습니다. [개정판 보기]' · 새 판 화면 '<옛 제목>의 개정판입니다. [구판 종이책 보기]' — 한 걸음씩만 이음 */
     if (how === 'ctx' && !/(개정|구판|신판|판본|이전\s*판|최신\s*판|초판|증보)/.test(ctx)) continue; /* 둘레 글만으로는 판 낱말이 분명할 때만 */
     if (!out.has(iid)) out.set(iid, { iid, dir, how, why: String(ctx).replace(/\s+/g, ' ').trim().slice(0, 90) }); }
   return [...out.values()].slice(0, 20); }
@@ -155,9 +155,10 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     /* ① 링크 따라가기(양쪽 끝까지) */ const Q = me.lk.map((l) => ({ ...l, from: mk })); let hops = 0;
     while (Q.length && hops < c.maxLinkHops && F.size < c.maxEds && Date.now() - T0 < (o.budgetMs || 80e3)) { const l = Q.shift(); if ([...F.values()].some((x) => String(x.f.iid) === String(l.iid))) continue; hops++; const r = await fetchP({ iid: l.iid }); if (!r) continue; out.links++; const v = edSame(A, r.f, { link: true }, { accept: c.accept }); const k = keyOf(r.f); if (v.kind === 'self') continue;
       if (F.has(k)) { F.get(k).src.add('link'); continue; } F.set(k, { f: r.f, lk: r.lk, src: new Set(['link']), ev: { link: true, dir: l.dir, how: l.how }, v }); if (v.kind === 'edition' || v.kind === 'trans') for (const x of r.lk) Q.push({ ...x, from: k }); }
+    if (Q.some((l) => ![...F.values()].some((x) => String(x.f.iid) === String(l.iid)))) out.partial = 'link'; /* (0.1.1) 시간·걸음 상한으로 사슬 끝까지 못 감 → 곧 다시(이미 읽은 판본은 ed_info를 다시 써 쪽 수가 거의 안 듦) */
     /* ② 검색(제목 · 제목+지은이 · 원제) + 국립중앙도서관 */ const core = String(A.title || '').replace(/[[(（【][^\])）】]*[\])）】]/g, ' ').split(/\s[-–—:]\s|[:：]/)[0].replace(LABEL_RE, ' ').replace(/\s+/g, ' ').trim(); const au0 = (A.authors || [])[0] || '';
     const qs = [...new Set([core, au0 ? `${core} ${au0.replace(/\s+/g, ' ').split(' ').slice(-1)[0]}` : null, A.orig ? String(A.orig).replace(/\(.*?\)/g, '').trim() : null].filter((x) => x && x.length >= 2))].slice(0, 3);
-    for (const q of qs) { if (Date.now() - T0 > (o.budgetMs || 80e3)) break; let L = []; try { L = await search(q); out.pages++; } catch (e) { if (e.pause || e.cap) throw e; continue; } for (const x of L) { if (x.ebook) continue; const li = edLine(x.line); const g = { iid: x.iid, title: x.title, ...li }; const k = 'i' + x.iid; if ([...F.values()].some((y) => String(y.f.iid) === String(x.iid))) continue; const pre = edSame(A, { ...g, orig: null, pages: null }, {}, { accept: 0 }); pool.push({ g, pre: pre.s, q }); } }
+    for (const q of qs) { if (Date.now() - T0 > (o.budgetMs || 80e3)) { out.partial = out.partial || 'search'; break; } let L = []; try { L = await search(q); out.pages++; } catch (e) { if (e.pause || e.cap) throw e; continue; } for (const x of L) { if (x.ebook) continue; const li = edLine(x.line); const g = { iid: x.iid, title: x.title, ...li }; const k = 'i' + x.iid; if ([...F.values()].some((y) => String(y.f.iid) === String(x.iid))) continue; const pre = edSame(A, { ...g, orig: null, pages: null }, {}, { accept: 0 }); pool.push({ g, pre: pre.s, q }); } }
     if (c.nl && core) { const N = await nlSearch(core); out.nl = N.length; for (const n of N) { if ([...F.values()].some((y) => y.f.isbn === n.isbn)) continue; const v = edSame(A, n, {}, { accept: c.accept }); if (v.kind === 'self') continue; if (v.s >= c.maybe) pool.push({ g: { ...n, iid: null }, pre: v.s, q: 'nl', nl: true }); } }
     pool.sort((x, y) => y.pre - x.pre); const seenI = new Set(); const top = pool.filter((x) => { const k = x.g.iid || x.g.isbn; if (seenI.has(k)) return false; seenI.add(k); return x.pre >= 0.35; }).slice(0, c.searchTop + 4); out.cands = top.length;
     for (const x of top) { if (Date.now() - T0 > (o.budgetMs || 80e3) || F.size >= c.maxEds) break; let r = null; if (x.g.iid) r = await fetchP({ iid: x.g.iid }); else if (x.g.isbn && !F.has(x.g.isbn)) r = (await fetchP({ isbn: x.g.isbn })) || { f: { ...x.g, iid: null, edStmt: x.g.edStmt }, lk: [], nlOnly: true }; if (!r) continue; const k = keyOf(r.f); if (F.has(k)) { F.get(k).src.add(x.nl ? 'nl' : 'search'); continue; } const v = edSame(A, r.f, {}, { accept: c.accept }); if (v.kind === 'self') continue; F.set(k, { f: r.f, lk: r.lk, src: new Set([x.nl ? 'nl' : 'search']), ev: {}, v, nlOnly: r.nlOnly });
@@ -169,12 +170,12 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     /* 중복: 같은 ISBN 다른 상품 번호 · 같은 상품 번호 → 하나만(나머지는 dupOf) */ const byI = new Map(); for (const e of eds) { const kk = e.isbn || 'i' + e.iid; if (byI.has(kk)) { e.dupOf = byI.get(kk).k; } else byI.set(kk, e); }
     const ord = edOrder(eds.filter((e) => !e.dupOf), [mk]); out.eds = ord.list.length; out.newer = ord.list.filter((e) => e.rel === 'newer').length; out.older = ord.list.filter((e) => e.rel === 'older').length; out.trans = other.filter((e) => e.kind === 'trans').length; out.ms = Date.now() - T0; out.pos = pos; out.neg = neg; out.selfChk = edSelfCheck(eds);
     if (o.dry || o.probe) { out.list = ord.list.map(({ f, ...e }) => e); out.maybe = maybe.map(({ f, ...e }) => e); out.other = other.map(({ f, ...e }) => e); out.me = A; return out; }
-    await save(t, A, mk, ord, maybe, other, eds.filter((e) => e.dupOf)); return out; }
+    await save(t, A, mk, ord, maybe, other, eds.filter((e) => e.dupOf), out.partial); return out; }
 
   async function probeSave(r, why) { try { const id = `ed_${kDay().replace(/-/g, '')}_${String((r.f || {}).iid || 'x')}`; await C('ed_probe').doc(id).set(clean({ why, iid: (r.f || {}).iid || null, segs: r.segs || null, anchors: (r.anchors || []).slice(0, 20), at: nowIso(), v: ED_V })); } catch (e) {} }
 
   /* 남기기: 판본 정보 한 번만(우리 도서 기록에 있으면 중복 표시) · 묶음 · 책마다 가리킴 · 새 판 알림 거리 */
-  async function save(t, A, mk, ord, maybe, other, dups) { const c = ST.cfg || ED_DEF; const now = nowIso(); const all = [...ord.list, ...other];
+  async function save(t, A, mk, ord, maybe, other, dups, partial) { const c = ST.cfg || ED_DEF; const now = nowIso(); const all = [...ord.list, ...other];
     const isb = [...new Set(all.map((e) => e.isbn).filter(Boolean))]; const inBooks = new Map(); for (let i = 0; i < isb.length; i += 30) { try { (await C('prd_books').where('isbn13', 'in', isb.slice(i, i + 30)).select('isbn13').get()).forEach((d) => inBooks.set(String(d.data().isbn13), d.id)); } catch (e) {} }
     const wb = (await C('ed_book').doc(t.isbn).get().catch(() => null)); const wid = (wb && wb.exists && wb.data().w) || 'w' + t.isbn; const wref = C('ed_work').doc(wid); const prev = (await wref.get().catch(() => null)); const P = prev && prev.exists ? prev.data() : null;
     const B = ctx.db.batch(); let nInfo = 0, nDup = 0;
@@ -183,9 +184,9 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
       else { nInfo++; B.set(C('ed_info').doc(key), clean({ ...base, dupOf: null, f }), { merge: true }); } }
     const strip = (e) => { const { f, ...x } = e; return x; };
     const W0 = { v: ED_V, ours: [...new Set([...((P && P.ours) || []), t.isbn])], me: mk, eds: ord.list.map(strip), other: other.map(strip).slice(0, 12), maybe: maybe.map(strip).slice(0, 10), dups: dups.map((e) => ({ k: e.k, iid: e.iid || null, dupOf: e.dupOf })), latest: ord.latest, n: ord.list.length, newer: ord.list.filter((e) => e.rel === 'newer').length, older: ord.list.filter((e) => e.rel === 'older').length, checkedAt: now, firstAt: (P && P.firstAt) || now, runs: ((P && P.runs) || 0) + 1, av: t.av || null, th: c.accept };
-    /* 새로 나타난 새 판(지난 회차 묶음에 없던 newer) — 첫 회차는 기준선(알림 안 함) */ const had = new Set(((P && P.eds) || []).map((e) => e.k)); const fresh = P ? W0.eds.filter((e) => e.rel === 'newer' && !had.has(e.k)) : []; const gone = P ? (P.eds || []).filter((e) => !W0.eds.some((x) => x.k === e.k)).map((e) => e.k) : [];
+    /* 새로 나타난 새 판(지난 회차 묶음에 없던 newer) — 첫 회차는 기준선(알림 안 함) */ const had = new Set(((P && P.eds) || []).map((e) => e.k)); const fresh = P && !P.partial ? W0.eds.filter((e) => e.rel === 'newer' && !had.has(e.k)) : []; /* 지난 회차가 사슬을 다 못 본 것(partial)이면 이어 본 것 — 새로 나온 판이 아님 */ const gone = P ? (P.eds || []).filter((e) => !W0.eds.some((x) => x.k === e.k)).map((e) => e.k) : [];
     W0.hist = [...(((P && P.hist) || []).slice(-19)), { at: now, add: P ? W0.eds.filter((e) => !had.has(e.k)).map((e) => e.k).slice(0, 10) : W0.eds.map((e) => e.k).slice(0, 10), gone: gone.slice(0, 10), base: !P || undefined }];
-    const days = W0.newer ? c.recheckNewer : t.av && t.av !== 'S' ? c.recheckOop : c.recheckOn; W0.nextAt = new Date(Date.now() + days * 864e5).toISOString();
+    const days = W0.newer ? c.recheckNewer : t.av && t.av !== 'S' ? c.recheckOop : c.recheckOn; W0.partial = partial || null; W0.nextAt = new Date(Date.now() + (partial ? 25 * 60e3 : days * 864e5)).toISOString();
     const act = new Set((ST.tg || []).map((x) => x.isbn)); B.set(wref, clean(W0)); for (const e of W0.eds) if (e.isbn) { const mine = !!e.ours || act.has(e.isbn); B.set(C('ed_book').doc(e.isbn), clean({ w: wid, rel: e.rel, ours: mine, newer: W0.newer, older: W0.older, n: W0.n, latest: W0.latest, at: now, ...(e.ours ? { nextAt: W0.nextAt } : {}) }), { merge: true }); }
     if (!W0.eds.some((e) => e.isbn === t.isbn)) B.set(C('ed_book').doc(t.isbn), clean({ w: wid, rel: 'ours', ours: true, newer: W0.newer, older: W0.older, n: W0.n, latest: W0.latest, at: now, nextAt: W0.nextAt }), { merge: true });
     await B.commit(); if (fresh.length) ST.newEd.push(...fresh.map((e) => ({ our: t.isbn, ourT: t.t || A.title, k: e.k, t: e.t, d: e.d, pb: e.pb, iid: e.iid }))); return { wid, nInfo, nDup, fresh: fresh.length }; }
@@ -228,7 +229,10 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     if (q.edrun) { return await tick({ isbn: String(q.edrun), force: true }); }
     const d = await C('app_settings').doc('ed_study').get(); const L = await C('ed_ledger').orderBy('at', 'desc').limit(+q.n || 6).get().catch(() => null);
     return { v: ED_V, cfg: c, mem: { day: ST.day, used: ST.used, pause: ST.pauseUntil ? new Date(ST.pauseUntil).toISOString() : null, targets: ST.tg ? ST.tg.length : null, cur: ST.cur, busy: ST.busy, errs: ST.errs.slice(0, 6), tick: ST.tick }, study: d.exists ? { ...d.data(), tunePool: undefined } : null, ledger: L ? L.docs.map((x) => ({ id: x.id, ...x.data() })) : null }; }
-  return { tick, diag, runBook, cfg };
+  /* 정답 표본 넣기(/kp-in edtruth · 사람·Claude가 확인한 묶음) — [{ our: ISBN, same:[ISBN…], diff:[ISBN…], note }] · 덮지 않고 합침(같은 ISBN은 한 번) · 지우지 않음 */
+  async function truthPut(L, by) { const out = { n: 0, bad: [] }; for (const t of (Array.isArray(L) ? L : []).slice(0, 200)) { const our = String((t && t.our) || ''); if (!/^97[89]\d{10}$/.test(our)) { out.bad.push(our.slice(0, 16)); continue; } const ok = (a) => [...new Set((Array.isArray(a) ? a : []).map(String).filter((x) => /^97[89]\d{10}$/.test(x) && x !== our))].slice(0, 60); const ref = C('ed_truth').doc(our); const o = ((await ref.get().catch(() => null)) || {}); const v = o.exists ? o.data() || {} : {};
+      await ref.set(clean({ same: [...new Set([...(v.same || []), ...ok(t.same)])], diff: [...new Set([...(v.diff || []), ...ok(t.diff)])], note: t.note ? String(t.note).slice(0, 300) : v.note || null, by: String(by || 'claude').slice(0, 40), at: nowIso(), hist: [...((v.hist || []).slice(-9)), { at: nowIso(), by: String(by || '').slice(0, 40), same: ok(t.same).length, diff: ok(t.diff).length }] })); out.n++; } return out; }
+  return { tick, diag, runBook, cfg, truthPut };
 }
 
 module.exports = { makeEdition, ED_V, ED_DEF, _t: { edLabel, edVol, edCore, dice, nameOv, edSame, edLinks, edLine, edOrder, edTune, edScore, edSelfCheck, ymd, norm, IN_PAGE_PRODUCT, IN_PAGE_SEARCH } };

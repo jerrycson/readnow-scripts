@@ -52,7 +52,7 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
     o.feat = (typeof featIndex === 'function' ? featIndex() : FEAT).filter((f) => /오늘 출고 끝까지|사람이 볼 것|단계 칸/.test(f.t)).length;
     return o; }, seedAll.toString());
   console.log(JSON.stringify(R).slice(0, 2500));
-  ok(R.first === 'confirm' && R.noY24Tab && R.stgBtns === 'confirm,deliv,printed,sending,done,exc,all', '처음 보기 = 할 일이 있는 가장 앞 단계(🆕) · 🟦 예스24 탭 없음 · 단계 칸 5 + ⚠ + 전체: ' + R.first + ' ' + R.stgBtns);
+  ok(R.first === 'confirm' && R.noY24Tab && R.stgBtns === 'confirm,deliv,out,printed,sending,done,exc,all,sales', '[' + R.stgBtns + ' · ' + R.first + ' · y24없음=' + R.noY24Tab + '] 처음 보기 = 할 일이 있는 가장 앞 단계(🆕) · 🟦 예스24 탭 없음 · 단계 칸 5 + 🗂 뺀·미룬(출고 준비 옆) + ⚠ + 전체 + 💰 출고별 매출(11/15)');
   ok(/al:A-1:confirm!hold/.test(R.rows) && /al:D-1:deliv/.test(R.rows) && /al:D-2:printed!inv/.test(R.rows) && /y24:Y-NEW1:confirm/.test(R.rows) && /y24:Y-INV2:printed/.test(R.rows) && /cash:cash_u1:deliv/.test(R.rows), '판매처 어댑터 → 공통 단계: ' + R.rows);
   ok(R.c1.al === 2 && R.c1.y === 1 && R.c1.yBadge && R.c1.alBadge, '🆕 칸에 알라딘 2 + 예스24 1 카드(파란 배지): ' + JSON.stringify(R.c1));
   ok(R.all.al >= 4 && R.all.y === 2 && R.all.cash === 1 && /확인할 주문/.test(R.all.stg) && /송장 인쇄됨/.test(R.all.stg), '전체 보기: 세 판매처가 한 목록에 배지·단계로: ' + JSON.stringify(R.all));

@@ -392,6 +392,8 @@ body.shelf-mob .foot, body.shelf-mob .gobar { display: none; }
 html.bqs-lock { overflow: hidden; }
 .sp.pulled .sk, .sp.pulled .hb, .sp.pulled .rb, .cvb.pulled .cvf { visibility: hidden; } /* 뽑은 자리는 비어 보임(실제 책장처럼 틈) */
 .sp.pulled { cursor: default; }
+/* (shelfperf1) 뽑은 자리는 마우스 올림 확대·들기·기울임·돌아온 표시를 모두 끔 — 세트 권 크기를 잴 때 확대된 크기로 재지 않게(그 권만 크게 쌓이던 것) · 닫을 때 돌아갈 자리도 같은 크기 */
+.sp.pulled .sk, .cvb.pulled .cvf { transform: none !important; transition: none !important; animation: none !important; }
 .sp.back .sk, .cvb.back .cvf { animation: bqsBack 1.3s ease-in-out 2; } /* 상세에서 돌아온 책 — 금빛으로 두 번 */
 @keyframes bqsBack { 0%, 100% { box-shadow: 0 0 0 0 rgba(241, 212, 136, 0); transform: translateY(0); } 40% { box-shadow: 0 0 0 calc(3px * var(--z)) #f1d488, 0 0 22px 6px rgba(241, 212, 136, .85); transform: translateY(calc(-6px * var(--z))); } }
 .bqs-ob { position: fixed; inset: 0; z-index: 70; display: none; font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; color: #2a2117; }

@@ -446,3 +446,12 @@ html.rm *, html.rm *::before, html.rm *::after { animation: none !important; tra
 .aisum .aikw { display: flex; flex-wrap: wrap; gap: 6px; } .aisum .aikw span { font-size: .85em; opacity: .75; }
 /* (shopmisc1 2회) 🧩 세트 표 — 분야 목록에 섞여 나와도 한눈에(예스24·알라딘은 제목 '세트' · 우리는 표까지) */
 .card .im .cset { position: absolute; right: 6px; bottom: 6px; z-index: 2; font: 700 11px/1 system-ui, sans-serif; padding: 4px 7px; border-radius: 99px; background: var(--c-brand, #1d2b45); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+
+/* (임시 aisum-tmp · 11/14) ✍ 요약 있는 책 모아 보기 #/ai — 지울 때 이 블록째 */
+.aitmp-go { display: block; margin: var(--sp-3) 0; padding: 10px 14px; border-radius: 10px; border: 1px dashed currentColor; text-decoration: none; font-weight: 700; }
+.aitmp-bn { font-size: .85em; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, currentColor 7%, transparent); margin-bottom: var(--sp-3); }
+.aitmp input[type=search] { width: 100%; box-sizing: border-box; padding: 10px 12px; margin: var(--sp-2) 0; font-size: 1rem; }
+.aitmp-l { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; margin-top: var(--sp-3); }
+.aitmp-it { display: flex; gap: 12px; text-decoration: none; color: inherit; padding: 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+.aitmp-im { flex: 0 0 72px; height: 104px; display: flex; align-items: center; justify-content: center; overflow: hidden; } .aitmp-im img { width: 72px; height: 104px; object-fit: cover; border-radius: 4px; }
+.aitmp-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; } .aitmp-tx b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .aitmp-tx small { opacity: .7; } .aitmp-tx em { font-style: normal; line-height: 1.5; word-break: keep-all; } .aitmp-p { font-weight: 700; margin-top: auto; }

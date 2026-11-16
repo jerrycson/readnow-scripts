@@ -684,15 +684,26 @@ function soloAck(r) { const ks = new Set((r.keys || []).map(String)); const b = 
   for (const k of Object.keys(r.errs || {})) { const x = RL.out.find((y) => y.k === k); if (x) x.soloAt = 0; } /* 거절된 것은 웹앱 길로 다시 해 볼 수 있게 */
   if (errs.length) { RL.err = errs[0].slice(0, 200); RL.errAt = now(); note('🔌 홀로 연결 기록 거절: ' + RL.err, { k: 'sys', l: 'warn', m: '홀로 연결' }); } else if (done) RL.err = null;
   if (done) { RL.ackAt = now(); RL.ackN += done; saveOut(); note(`🔌 홀로 연결로 결과 ${done}건을 클라우드에 기록함(웹앱 없이)`, { k: 'sys', m: '홀로 연결' }); } return done; }
+/* (headless1 11/14 · 정범님 11/14 17:37 「왜 웹앱을 키도록 구성하고 있는 거야?」) 🤖 예스24 자동 올림 — 홀로 연결로 클라우드와 직접
+ *  보냄: 이 PC 올림 상태(로그인·출고 중·맡김·지금 하는 일)와 결과 · 받음: 결과 받았음(ack) · 새 맡김(장부에 먼저 적힌 줄 + 엑셀) → 예전과 같은 put()(같은 검사 checkJob)으로 받음
+ *  클라우드가 이 길을 아는 동안(3분 안에 답에 y24reg가 있었음) 이 PC 웹앱은 판단하지 않고 보기만(/y24/reg/state solo) — 한 일은 한 길로 */
+const Y24S = { at: 0, rej: [], why: '', jobs: 0 };
+const y24SoloLive = () => SOLO.live() && now() - Y24S.at < 3 * 60e3;
+function y24SoloGather() { try { if (isLoggerPc() || !Y24 || !Y24.reg) return null; const s = Y24.reg.state(); return { st: { ok1: s.ok1, done: s.done, wait: s.wait, cur: s.cur, why: s.why, login: s.login, hold: s.hold, ban: s.ban, en: s.en }, res: s.res || {}, rej: Y24S.rej.slice(0, 10) }; } catch (e) { return null; } }
+function y24SoloTake(y) { let more = false; Y24S.at = now(); Y24S.why = String(y.why || '').slice(0, 200);
+  if (Array.isArray(y.ack) && y.ack.length) Y24.reg.ack(y.ack); if (Array.isArray(y.rejAck)) Y24S.rej = Y24S.rej.filter((x) => !y.rejAck.includes(x.id));
+  for (const jb of Array.isArray(y.jobs) ? y.jobs.slice(0, 3) : []) { const r = Y24.reg.put(jb); Y24S.jobs++; if (r.code === 400) Y24S.rej.push({ id: String(jb.id), err: String((r.body && r.body.err) || '').slice(0, 200), rows: (jb.rows || []).map((x) => x.lid) }); more = true; }
+  if (Object.keys(Y24.reg.state().res || {}).length || Y24S.rej.length) more = true; return more; }
 const SOLO = require('./col2-solo.js').makeSolo({ HOME, TEST, ver: VERSION, cfg: () => CFG, pc: () => CFG.pc || os.hostname(), kind: () => (isLoggerPc() ? 'logger' : 'office'),
   note: (m, x) => note(m, { k: 'sys', m: '홀로 연결', ...(x || {}) }),
   gather: () => { const t = now(); const out = RL.out.filter((x) => !x.web && !(x.webAt && t - x.webAt < SOLO_GAP)).slice(0, 25); for (const x of out) x.soloAt = t;
     const want = [...RL.want.values()].filter(soloWant).slice(0, 40).map(({ c, id }) => ({ c, id }));
     const poolAsk = AU.poolAskAt && t - AU.poolAskAt < 10 * 60e3 ? 0 : isLoggerPc() ? 0 : poolNeed(); if (poolAsk) AU.poolAskAt = t;
     const lists = soloLists(); /* (11/12 handoff3) 판매자 목록(🗣 · 🏪 넘긴 숍 요약 차례)도 이 길로 — 웹앱 탭 없이 홀로 연결만 된 로거도 받음 */
-    return { st: soloStPick(), out, setPend: SET.pend(), sharedAt: SET.sharedAt(), handBeat: HO.beat, want, fields: PROD_FIELDS, ...(lists.length ? { lists } : {}), ...(poolAsk ? { pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n } : {}) }; },
+    const y24reg = y24SoloGather(); /* (headless1 11/14) 🤖 예스24 자동 올림 — 웹앱 탭 없이 클라우드가 판단(cloud/y24auto.js) */
+    return { st: soloStPick(), out, setPend: SET.pend(), sharedAt: SET.sharedAt(), handBeat: HO.beat, want, fields: PROD_FIELDS, ...(lists.length ? { lists } : {}), ...(poolAsk ? { pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n } : {}), ...(y24reg ? { y24reg } : {}) }; },
   apply: (j) => { let more = false; if (j.alDocs) SOLO_AL.at = now(); if (j.ack) { if (soloAck(j.ack) && RL.out.length) more = true; }
-    if (j.shared || j.sharedAck) SET.take(j.shared, j.sharedAck); if (j.handoff) hoTake(j.handoff);
+    if (j.shared || j.sharedAck) SET.take(j.shared, j.sharedAck); if (j.handoff) hoTake(j.handoff); if (j.y24reg && y24SoloTake(j.y24reg)) more = true;
     const a = {}; if (Array.isArray(j.docs) && j.docs.length) a.docs = j.docs; if (Array.isArray(j.pool)) { a.pool = j.pool; a.poolFor = j.poolFor; a.poolLap = j.poolLap; a.poolNext = j.poolNext; a.poolEnd = j.poolEnd; }
     if (j.lists && typeof j.lists === 'object' && Array.isArray(j.lists.sellers)) a.lists = { sellers: j.lists.sellers };
     if (a.docs || a.pool || a.lists) { const r = relayAnswer(a); if (AU.pool.length && r.n) autoKick(); } return more; },
@@ -718,7 +729,7 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/log/days' && req.method === 'GET') return J(200, { ok: true, days: JRN.days() });
   if (u.pathname === '/log/day' && req.method === 'GET') return J(200, { ok: true, lines: JRN.day(u.searchParams.get('d')) });
   if (u.pathname === '/log/all' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', ...H }); return res.end(JRN.allText()); }
-  if (u.pathname === '/y24/reg/state' && req.method === 'GET') return J(200, Y24.reg.state()); /* (11/10 y24auto) 🟦 예스24 자동 올림 — 맡김·결과(웹앱이 받아 장부에 적음) */
+  if (u.pathname === '/y24/reg/state' && req.method === 'GET') return J(200, { ...Y24.reg.state(), solo: y24SoloLive() ? { at: Y24S.at, why: Y24S.why } : null }); /* (headless1) solo = 클라우드가 판단 중 — 웹앱은 보기만 */ /* (11/10 y24auto) 🟦 예스24 자동 올림 — 맡김·결과(웹앱이 받아 장부에 적음) */
   if (u.pathname === '/y24/w/state' && req.method === 'GET') return J(200, Y24.w.state());
   if (u.pathname === '/y24/learn' && req.method === 'GET') return J(200, Y24.learn.state()); /* (11/11 y24ops3) 🎓 배우기 모드 — 받은 저장 요청 모양(값·손님 정보 없음) */ /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지) — 맡김·결과(웹앱 🛠 처리할 일이 받아 줄에 보임) */
   if (u.pathname === '/nv/st' && req.method === 'GET') return J(200, { ok: true, ver: VERSION, pc: CFG.pc || os.hostname(), nv: NV.sum(), solo: { live: SOLO.live(), reg: SOLO.sum().reg } }); /* (11/12 col2solo1) solo.live = 홀로 연결이 네이버를 맡음 — 웹앱·수집기 다리는 비킴 */

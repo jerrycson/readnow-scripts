@@ -39,6 +39,10 @@ const lk = X.edLinks(pg); const by = Object.fromEntries(lk.map((x) => [x.iid, x]
 ok(by['200'] && by['200'].dir === 'newer' && by['200'].how === 'sec', '개정판 안내 칸 → 새 판(sec)');
 ok(by['300'] && by['300'].dir === 'older', '구판 링크 → 옛 판');
 ok(!by['400'] && !by['500'] && !by['100'], '베스트·중고·자기 자신은 뺌');
+const real = X.edLinks({ f: { iid: '310909487' }, segs: { oldnew: '<a href="https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=19839787">' }, anchors: [{ iid: '19839787', a: '철학사전 (한정판)', ctx: '<철학사전 (한정판)>의 개정판입니다. 구판 종이책 보기' }, { iid: '19839787', a: '구판 종이책 보기', ctx: '구판 종이책 보기' }] });
+ok(real.length === 1 && real[0].dir === 'older' && real[0].how === 'sec', '알라딘 실제 꼴 — 새 판 화면의 「…의 개정판입니다 · 구판 종이책 보기」 → 옛 판');
+const real2 = X.edLinks({ f: { iid: '3745371' }, segs: { oldnew: 'ItemId=19839787' }, anchors: [{ iid: '19839787', a: '개정판 보기', ctx: '개정판 보기' }, { iid: '405346906', a: '', ctx: '' }] });
+ok(real2.length === 1 && real2[0].dir === 'newer', '알라딘 실제 꼴 — 옛 판 화면의 「개정판이 새로 출간되었습니다 · 개정판 보기」 → 새 판 · 둘레 글 없는 링크는 뺌');
 
 console.log('④ 검색 줄');
 const ln = X.edLine('칼 세이건 (지은이), 홍승수 (옮긴이) | 사이언스북스 | 2006년 12월');
@@ -95,5 +99,9 @@ console.log('⑦ 회차 전체(가짜 Firestore · 가짜 화면)');
   ok(w2.hist.length === 2 && w2.hist[1].add.includes('9788900000004'), '바뀜 기록(지우지 않음)');
   const L = [...store.keys()].filter((k) => k.startsWith('ed_ledger/')); ok(L.length >= 1, '장부 남김 ' + L.length);
   const st = getD('app_settings/ed_study'); ok(st && st.today && st.today.books >= 2 && st.cfg.accept, '연구 요약(오늘 셈)');
+  /* 사슬을 다 못 본 회차(partial) 뒤 이어 본 새 판은 알림 아님 */
+  store.set('ed_work/w9788900000002', { ...getD('ed_work/w9788900000002'), partial: 'link' }); P['1005'] = { f: { iid: '1005', isbn: '9788900000005', title: '바다의 책 (개정5판)', authors: ['한바다'], translators: [], publisher: '물결', pubDate: '2026-01-01', pages: 360 }, nx: [['1004', '구판 보기']] }; byIsbn['9788900000005'] = P['1005']; P['1004'].nx.push(['1005', '개정판이 출간되었습니다']);
+  store.set('ed_book/9788900000002', { ...getD('ed_book/9788900000002'), nextAt: '2000-01-01T00:00:00Z' }); for (const k of [...store.keys()]) if (k.startsWith('ed_info/')) store.set(k, { ...store.get(k), at: '2000-01-01T00:00:00Z' });
+  await ED.tick({ force: true }); ok(getD('ed_work/w9788900000002').eds.length === 5 && notes.length === 1, '이어 본 회차(앞 회차 partial)는 새 판 알림 안 함');
   console.log(bad ? `\n✗ ${bad}개 실패` : '\n✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('✗ 오류', e); process.exit(1); });
