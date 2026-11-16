@@ -1,0 +1,27 @@
+/* (note8 · 정범님 11/16 15:28) 노트 사진·표 붙이기 + 📮 도로명주소 찾기 — 순수 함수 시험(주소는 공공기관 예시 주소만 · 손님 정보 없음) */
+const fs = require('fs'), path = require('path'), vm = require('vm'), assert = require('assert');
+const A = fs.readFileSync(path.join(__dirname, '..', 'app.html'), 'utf8'); const N = fs.readFileSync(path.join(__dirname, '..', 'notes-core.js'), 'utf8');
+const ok = (m) => console.log('✓ ' + m);
+const cx = { window: {}, console }; vm.createContext(cx); vm.runInContext(N, cx); const J = cx.window.JBN;
+const t = J.htmlToMd('<script>alert(1)</script><table><tr><th>책</th><th>값</th></tr><tr><td onclick="x()">가 &amp; 나</td><td>1|2</td></tr></table>');
+assert(/\| 책 \| 값 \|/.test(t) && /가 & 나/.test(t) && !/script|onclick|alert/.test(t)); ok('HTML 표 → 마크다운 표 · 스크립트·이벤트 빠짐');
+assert(J.htmlToMd('<p>그냥 글</p>') === '' && J.htmlToMd('<table><tr><td>하나</td></tr></table>') === ''); ok('표가 없거나 한 칸뿐이면 그대로 둠');
+assert(/\| a \| b \|/.test(J.tsvMd('a\tb\n1\t2')) && !J.tsvMd('한 줄\t뿐')); ok('엑셀 칸 나눔 글 → 표');
+const img = 'https://firebasestorage.googleapis.com/v0/b/x/o/jb_notes_photos%2Fa.jpg?alt=media';
+assert(/<img /.test(J.md(`![사진](${img})`)) && !/<img /.test(J.md('![사진](https://example.com/a.jpg)'))); ok('우리 저장소 사진만 그림으로 · 바깥 그림은 링크');
+assert(!J.richOf('보통 메모') && J.richOf('| a | b |\n| --- | --- |\n| 1 | 2 |') && J.richOf(`![사진](${img})`)); ok('옛 메모는 예전 그대로(표·사진 있을 때만 새 꼴)');
+assert(!/firebasestorage/.test(J.noImg(`앞 ![사진](${img}) 뒤`))); ok('첫 줄 미리보기에 사진 주소 안 나옴');
+const fnOf = (name) => { const i = A.indexOf('function ' + name + '('); assert(i >= 0, name); let d = 0, k = A.indexOf('{', i); for (let j = k; j < A.length; j++) { if (A[j] === '{') d++; else if (A[j] === '}') { d--; if (!d) return A.slice(i, j + 1); } } };
+const cut = A.slice(A.indexOf('const JUSO_ERR = '), A.indexOf('\n', A.indexOf('const JUSO_ERR = ')));
+const F = new Function(cut + '\n' + fnOf('jusoQ') + '\n' + fnOf('jusoParse') + '\nreturn { jusoQ, jusoParse };')();
+assert.strictEqual(F.jusoQ(" 세종대로 209; DROP <b>'"), '세종대로 209 b'); ok('검색어에서 특수문자·SQL 낱말 뺌');
+const r = F.jusoParse({ results: { common: { errorCode: '0', totalCount: '1' }, juso: [{ roadAddr: '서울특별시 종로구 세종대로 209 (세종로)', jibunAddr: '서울특별시 종로구 세종로 77-6', zipNo: '03171', bdNm: '정부서울청사' }] } });
+assert(r.ok && r.total === 1 && r.list[0].zip === '03171' && /세종대로 209/.test(r.list[0].road)); ok('찾은 주소 → 도로명·우편번호');
+const e = F.jusoParse({ results: { common: { errorCode: 'E0001', errorMessage: '승인되지 않은 KEY 입니다.' } } }); assert(!e.ok && e.code === 'E0001' && /틀림/.test(e.why)); ok('틀린 승인키 → 까닭');
+assert(!F.jusoParse(null).ok); ok('읽지 못한 답 → 실패(멈추지 않음)');
+assert(/app_secrets'\)\.doc\('juso'\)/.test(A) && !/confmKey=[A-Za-z0-9]{12}/.test(A)); ok('승인키는 app_secrets에만 · 코드에 키 값 없음');
+assert(/data-juso="\$\{esc\(sel\)\}"/.test(A) && A.includes("jusoBtn('#cash_addr', 1)") && A.includes("jusoBtn('#pf_saddr')") && A.includes('jusoBtn(\'[data-bs="saddr"]\')')); ok('주소 칸 3곳에 🔎 주소 찾기');
+assert(A.includes('zip: D.zip || null, sameAsBuyer')); ok('현금 판매 받는 분 우편번호 저장');
+assert(!/\b(alert|confirm|prompt)\(/.test(A.slice(A.indexOf('◆juso 시작'), A.indexOf('◆juso 끝')))); ok('팝업 없음');
+const CL = fs.readFileSync(path.join(__dirname, '..', '..', 'cloud', 'index.js'), 'utf8'); assert(CL.includes("path === '/juso'") && CL.includes('async function jusoSearch(')); ok('클라우드 대신 부르기 길 /juso');
+console.log('통과');
