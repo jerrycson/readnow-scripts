@@ -16,6 +16,13 @@ export function selectAnatomyDetail(scene, focus) {
     const adult = mesh.name === 'continuous-CC0-derived-body';
     const neutral = mesh.name === 'continuous-neutral-chibi-body';
     if (!adult && !neutral && !/hand|palm|finger|thumb|forearm|wrist|foot|toe|ankle/.test(mesh.name || '')) continue;
+    const posed=scene.restScene;
+    const faceFlags=posed&&mesh.strain?new Map(mesh.faces.map((f,i)=>[f,mesh.strain[i]])):null;
+    if(posed){
+      const original=selectAnatomyDetail(posed,focus).parts.find(p=>p.name===mesh.name);
+      if(original)parts.push({...mesh,faces:original.faces,strain:mesh.strain?Uint8Array.from(original.faces,face=>faceFlags.get(face)):undefined});
+      continue;
+    }
     const selected = mesh.vertices.map(({p}, i) => {
       if (focus === 'hand' && adult) {
         return (handWeights.get(i) || 0) > .05 ||

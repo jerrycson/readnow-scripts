@@ -26,6 +26,20 @@
       "adminSha": "41fae9648e6d9baff4414ad07fddc785771377634d521432e148cc9e501279cd",
       "at": "2026-11-16T06:19:28.239Z",
       "label": "31차 · 31차 · 입술–턱끝–목 앞선의 깊이"
+    },
+    {
+      "id": "fe981579faac7d6eafd2b493",
+      "project": "bookfriend",
+      "round": 32,
+      "cards": 124,
+      "sources": 116,
+      "chapters": 8,
+      "cardsSha": "374a4f1a45ce9c6159946db925361083f95d777180678135f670f2ee1fb27399",
+      "sealedSha": "1aeb33721388082274f6423a2504f14412c3824591302c5a499c7d1e3f8cb7e7",
+      "adminSha": "5a2384ae78c50572a8705477340c15921b87c4f3bd653ab05ea2525d81df3649",
+      "at": "2026-11-16T12:29:36.097Z",
+      "label": "32차 · 얼굴 블라인드 비교와 관절 실험",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }
