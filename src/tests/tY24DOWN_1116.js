@@ -124,5 +124,32 @@ const Led = (lid, gno, x) => ({ [lid]: { lid, title: '시험 책 ' + lid, isbn: 
   const H = rd('src/app.html'); ok(/if \(src === 'alsold'\) return 'wait';/.test(H), "④ 웹앱 y24PFind — src 'alsold'는 'wait'(웹앱이 보내지도 닫지도 않음 · 클라우드가 맡음)");
   ok(/autoSt\) \|\| \{\}\)\._ALSOLD/.test(H) && /팔린 책 예스24 내림/.test(H), '⑥ 웹앱 y24AutoLine — 클라우드 상태 한 줄을 보임');
   const src = rd('cloud/y24auto.js'); const blk = src.slice(src.indexOf('const msOf = (v)'), src.indexOf('/* 한 차례 — pc =')); ok(blk.length > 5000 && !/fetch\(|getUrl|getText|https?:\/\/[^'"]*yes24/i.test(src.slice(src.indexOf('const msOf = (v)'), src.indexOf('/* 한 차례 — pc ='))), '지킴 — 팔린 책 내림 코드는 예스24에 직접 요청하지 않음(번외 실행 주체만)');
+  /* 7 — (합동 검토 「고친 뒤 내기」) 큰 켜 캐시(판매중 상품 45분)가 묵어도 주문 신호 없이 알라딘에서 방금 팔린 책은 10분 안에 판매중지 후보가 되고 맡겨짐 — 판매 상태만 작은 켜(바뀐 줄만)로 */
+  { const W7 = world('2026-11-16T03:00:00Z'); const S = W7.store; Lst(W7, 'S1'); Lst(W7, 'S2'); Lst(W7, 'S3'); Lst(W7, 'K0');
+    W7.put('app_settings', 'y24_reg', { r: { ...Led('aladin_S1', '600000001'), ...Led('aladin_S2', '600000002'), ...Led('aladin_S3', '600000003') } });
+    const stamp = (id) => { S.prd_listings[id].uploadedAt = new Date(W7.now()); }; /* 운영 = 서버 시각(serverTimestamp) */
+    let y = await W7.Y.step('HOME', { st: ST() }); const big0 = W7.Y._M.bigAt; ok(big0 > 0 && !W7.cmds().length, '7 첫 차례 — 큰 켜를 읽어 둠 · 팔린 책 없음', y.down);
+    W7.adv(20 * 60e3); y = await W7.Y.step('HOME', { st: ST() }); ok(!W7.cmds().length && y.down && y.down.fresh && y.down.fresh.via === 'delta', '7 20분 뒤 — 작은 켜(바뀐 줄만)를 읽음 · 아직 팔린 책 없음', y.down);
+    const tSold = W7.now(); Object.assign(S.prd_listings.aladin_S1, { status: '판매완료', qty: 0, active: false }); stamp('aladin_S1'); /* 작은 켜를 읽은 바로 뒤 알라딘에서만 팔림(주문 신호 없음) — 가장 나쁜 때 */
+    Object.assign(S.prd_listings.aladin_S2, { price: 5500 }); stamp('aladin_S2'); /* 값만 바뀜 — 판매중 그대로 */
+    let tSent = 0; for (let k = 0; k < 10 && !tSent; k++) { W7.adv(121e3); y = await W7.Y.step('HOME', { st: ST() }); if (W7.led().r.aladin_S1.down && W7.led().r.aladin_S1.down.st === 'sent') tSent = W7.now(); }
+    ok(tSent && tSent - tSold <= 10 * 60e3, '7 알라딘에서 방금 팔린 S1 → 10분 안에 판매중지 맡김(큰 켜 45분을 기다리지 않음)', { 분: tSent ? (tSent - tSold) / 60e3 : null, down: y.down });
+    ok(W7.Y._M.bigAt === big0 && tSent - big0 < 45 * 60e3, '7 그동안 큰 켜는 다시 읽지 않음(묵은 채) — 작은 켜가 잡음', { big0, bigAt: W7.Y._M.bigAt });
+    const j1 = tSent ? S.col2_y24_cmd[W7.led().r.aladin_S1.down.job] : null; ok(j1 && j1.job.rows[0].no === '600000001' && /판매완료/.test(JSON.stringify(j1)), '7 맡김은 맡기기 전 새로 읽은 판매완료 근거로', j1);
+    ok(!W7.led().r.aladin_S2.down && !W7.led().r.aladin_S3.down, '7 값만 바뀐 S2 · 그대로인 S3는 내리지 않음(판매중)', { s2: W7.led().r.aladin_S2.down, s3: W7.led().r.aladin_S3.down });
+    ok(W7.Y._M.big.idx.get('aladin_S1').status === '판매완료' && +W7.Y._M.big.idx.get('aladin_S2').price === 5500, '7 큰 켜의 그 줄도 새 값으로 바뀜(자동 올림 차례도 같은 값)');
+    /* 7-b 바뀐 줄 읽기가 실패하면(색인 없음 등) → 올린 책 중 판매중으로 보이는 것만 한 권씩 */
+    const orig = W7.F.db.collection; W7.F.db.collection = (c) => { const r = orig(c); if (c !== 'prd_listings') return r; return { ...r, where: (k, ...a) => { if (k === 'uploadedAt') throw new Error('시험 — 바뀐 줄 읽기 실패'); return r.where(k, ...a); } }; };
+    Object.assign(S.prd_listings.aladin_S3, { qty: 0, status: '판매완료' }); /* uploadedAt도 안 찍힘 */
+    let tS3 = 0; const t3 = W7.now(); for (let k = 0; k < 10 && !tS3; k++) { W7.adv(121e3); y = await W7.Y.step('HOME', { st: ST() }); if (W7.led().r.aladin_S3.down && W7.led().r.aladin_S3.down.st === 'sent') tS3 = W7.now(); }
+    ok(tS3 && tS3 - t3 <= 10 * 60e3 && y.down.fresh && /^doc/.test(y.down.fresh.via), '7-b 바뀐 줄 읽기 실패 → 올린 책을 한 권씩 다시 읽어 S3도 10분 안에 맡김', { 분: tS3 ? (tS3 - t3) / 60e3 : null, fresh: y.down && y.down.fresh });
+    ok(!W7.led().r.aladin_S2.down, '7-b 한 권씩 다시 읽어도 판매중인 S2는 그대로');
+    W7.F.db.collection = orig;
+    /* 7-c 바뀐 줄이 너무 많으면(수집기 몰아 쓰기 · 상한 = max(100, 올린 책)) → 올린 책을 콕 집어 읽음 */
+    for (let i = 0; i < 120; i++) { Lst(W7, 'Z' + String(i).padStart(3, '0')); stamp('aladin_Z' + String(i).padStart(3, '0')); }
+    W7.adv(121e3); await W7.Y.step('HOME', { st: ST() }); /* 몰아 쓴 줄을 한 번 지나 보냄 */
+    Object.assign(S.prd_listings.aladin_S2, { qty: 0, status: '판매완료' }); for (let i = 0; i < 120; i++) stamp('aladin_Z' + String(i).padStart(3, '0'));
+    let tS2 = 0; const t2 = W7.now(); for (let k = 0; k < 10 && !tS2; k++) { W7.adv(121e3); y = await W7.Y.step('HOME', { st: ST() }); if (W7.led().r.aladin_S2.down && W7.led().r.aladin_S2.down.st === 'sent') tS2 = W7.now(); }
+    ok(tS2 && tS2 - t2 <= 10 * 60e3 && y.down.fresh && /바뀐 줄 \d+\+/.test(y.down.fresh.via) && y.down.fresh.reads <= 100 + 3, '7-c 바뀐 줄이 상한(100)을 넘으면 올린 책만 콕 집어 읽어 S2도 10분 안에 맡김 · 한 차례 읽기 ≤ 상한 + 올린 책', { 분: tS2 ? (tS2 - t2) / 60e3 : null, fresh: y.down && y.down.fresh }); }
   console.log(bad ? `\n❌ ${bad}개 실패` : '\n✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e && e.stack); process.exit(1); });

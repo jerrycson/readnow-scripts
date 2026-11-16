@@ -19,6 +19,11 @@ const WEB_URL = 'https://readnow.kr/app/readnow-webapp.js'; /* 저장소에서 �
 const MKT_MAX = 120; /* 한 번에 시장 지표를 받는 책 수(웹앱 Y24E_MAX 400보다 작게 — 1분마다 불리므로) · 근거: 없음 */
 const BIG_MS = 45 * 60e3; /* 큰 자료(판매중 상품·예스24 목록·관리자 원문·등록·SKU 짝) 다시 읽기 — 근거: 없음(하루 읽기를 ≈1/4.5로 · 판매 놓침은 보내기 직전 한 권 재확인이 막음) */
 const DATA_MS = 10 * 60e3; /* 상품·주문·예스24 목록 다시 읽기(웹앱은 실시간 듣기 · 클라우드는 10분) · 근거: 없음 — 웹앱 y24AdmLoad 10분과 같게 */
+/* (r1116-y24 · 합동 검토 「고친 뒤 내기」) 🛑 팔린 책 내림이 쓰는 알라딘 판매 상태만 작은 켜로 — 큰 켜(BIG_MS 45분)를 그대로 쓰면 주문 신호 없이 알라딘에서만 팔린 책의 예스24 판매중지가 최대 45분 늦었음(이중 판매 창)
+ *  FRESH_MS마다 '지난번 뒤 바뀐 상품 줄'만 읽음(prd_listings.uploadedAt > 지난번 − FRESH_LAP · 클라우드 SKU·조회수 실험과 같은 길 · 칸은 L_FIELDS로 좁힘) → 큰 켜의 그 줄을 새 값으로 바꿈
+ *  바뀐 줄이 FRESH_LIM 이상(수집기 몰아 쓰기)이거나 읽기가 실패하면 → 예스24에 올린(장부 sent) 책 중 판매중으로 보이는 것만 한 권씩 새로 읽음
+ *  판단은 그대로 엄격: 여기서는 '후보가 됨'까지만 · 맡기기 전 한 권 새로 읽기(판매완료·수량 0·재고에서 뺀 까닭 · 그 밖엔 holdMin분)가 그대로 막음 · 근거: 없음 — 판매중지 지연 ≤ FRESH_MS + everyS(2분) ≈ 7분 */
+const FRESH_MS = 5 * 60e3, FRESH_LAP = 5 * 60e3, FRESH_LIM = 1500; /* 한 차례 바뀐 줄 상한(올린 책 수에 맞춰 더 작게 — freshLoad lim) */
 /* (r1116-y24 · 정밀 점검 11/14 ④·⑦ '위험 2 이중 판매') 🛑 알라딘에서 팔린 책 → 예스24 매물 판매중지 맡김 — 자동 올림이 기본 켬·상한 없음인데 내리는 쪽이 없었음
  *  on = 켬(기본) · day = 하루 맡김 상한 · run = 한 차례 상한 · gapMin = 실패 뒤 다시 맡기기까지 분 · tries = 몇 번 실패하면 사람에게 · everyS = 몇 초마다 · holdMin = 팔림 표시 없이 '판매중 아님'만이면 몇 분 이어 본 뒤
  *  trip = 한 차례 후보가 이 수를 넘고 올린 줄의 절반을 넘으면 멈춤(자료가 덜 온 때 한꺼번에 내리지 않게) · ⚙ app_settings/platforms.y24.down 으로 바꿈({ on: 0 } = 끔) · 근거: 없음 — 웹앱 자동 내림 예스24 한도(OMNI_LIM 10)보다 작게 시작 */
@@ -76,7 +81,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
   const R_FIELDS = ['bump', 'mock', 'test', 'y24Reg', 'result', 'stage', 'createdAt']; /* 등록 기록에서 쓰는 칸 */
   const sel = (q, f) => (q && typeof q.select === 'function' ? q.select(...f) : q);
   const RAW_SIG = 'POST /api/Product/ProductList'; const RAW_N = 120; /* 웹앱 y24AdmLoad는 60문서 — 그 두 배(쪽 나뉨 여유) */
-  async function bigLoad() { const B = { at: now() };
+  async function bigLoad() { const B = { at: now() }; B.fAt = B.at; B.fresh = new Map(); /* fAt = 판매 상태 작은 켜가 마지막으로 본 때(큰 켜를 읽기 시작한 때부터) · fresh = 그 뒤 바뀐 줄(큰 켜에 없던 새 판매중 줄도) */
     const seq = await doc('app_settings', 'sku_seq');
     B.sku = new Map(); for (let i = 0; i <= +((seq && seq.mapN) || 0); i++) { const d = await doc('app_settings', 'sku_map_' + i); for (const [k, v] of Object.entries((d && d.m) || {})) B.sku.set(k, v); } /* 웹앱 skuWatch */
     B.list = []; B.idx = new Map(); (await sel(C('prd_listings').where('status', '==', '판매중'), L_FIELDS).get()).forEach((d) => { const v = { ...(d.data() || {}), id: d.id }; B.list.push(v); B.idx.set(d.id, v); }); /* 웹앱 S.plist 중 판매중(aladinLive가 다시 거름) */
@@ -97,6 +102,19 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     D.held = new Map(); D.heldAt = new Map(); const cut = new Date(now() - 14 * 864e5).toISOString(); /* 웹앱 y24HeldMap(MC_DAYS 14일) — 주문에 들어온 상품은 실물이 묶임 · (r1116-y24) heldAt = 그 상품의 가장 늦은 주문 시각(팔린 책 내림이 '올린 뒤 팔림'을 가림) */
     (await sel(C('crm_orders').where('orderedAt', '>=', cut), O_FIELDS).get()).forEach((d) => { const v = d.data() || {}; if (v.kind !== 'sale') return; for (const it of v.items || []) { if (it.lineStatus && it.lineStatus !== 'normal') continue; const lid = it.listingKey || (it.aladinUsedCode ? 'aladin_' + it.aladinUsedCode : it.listingId != null ? D.byLid.get(String(it.listingId)) : null); if (!lid) continue; if (!D.held.has(lid)) D.held.set(lid, (v.platform === 'cash' ? '현금 ' : '주문 ') + String(v.orderNo || d.id || '').slice(-8)); const t = String(v.orderedAt || ''); if (t > ((D.heldAt.get(lid) || {}).t || '')) D.heldAt.set(lid, { t, ch: String(v.platform || '') }); } });
     M.data = D; M.dataAt = now(); return D; }
+  /* (r1116-y24 · 합동 검토) 판매 상태 작은 켜 — 팔린 책 내림(downStep)만 부름 · sent = 장부에 예스24로 올린(sent) 상품 열쇠들 → { via, n, reads } */
+  async function freshLoad(sent) { const B = M.big; if (!B || !B.idx) return null; if (now() - (B.fAt || 0) < FRESH_MS) return M.fLast || null; const t0 = now(); let via = 'delta', n = 0, reads = 0;
+    const put = (id, v) => { B.fresh.set(id, v); const b = B.idx.get(id); if (b) { for (const k of L_FIELDS) { if (v[k] === undefined) delete b[k]; else b[k] = v[k]; } } }; /* 큰 켜의 그 줄도 새 값으로(자동 올림 차례도 같은 값을 봄) */
+    const liveNow = (id) => { const f = B.fresh.get(id); return f ? aladinLive(f) : aladinLive(B.idx.get(id)); }; const ids0 = [...new Set(sent)].filter(liveNow); /* 올린 책 중 지금 판매중으로 보이는 것(판매중 아님은 이미 후보 → 맡기기 전 한 권 새로 읽음) */
+    if (!ids0.length) { M.fLast = { via: '없음(올린 책 중 판매중 0)', n: 0, reads: 0 }; return M.fLast; } /* 읽을 까닭 없음 · fAt는 그대로(다음에 그 뒤 바뀐 줄을 다 봄) */
+    const lim = Math.min(FRESH_LIM, Math.max(100, ids0.length)); /* 바뀐 줄이 올린 책 수보다 많으면 올린 책을 콕 집어 읽는 쪽이 쌈 → 한 차례 읽기 ≤ 2 × max(100, 올린 책) */
+    let qs = null; try { qs = await sel(C('prd_listings').where('uploadedAt', '>', new Date((B.fAt || t0) - FRESH_LAP)), L_FIELDS).limit(lim).get(); } catch (e) { qs = null; }
+    const seen = new Set(); if (qs) { reads += Math.max(1, qs.size); qs.forEach((d) => { seen.add(d.id); if (!/^_perm/.test(d.id)) { put(d.id, d.data() || {}); n++; } }); }
+    if (!qs || qs.size >= lim) { via = qs ? 'doc(바뀐 줄 ' + qs.size + '+)' : 'doc(바뀐 줄 읽기 실패)'; /* 다 못 봄 → 올린 책 중 판매중으로 보이는 것만 콕 집어 */
+      const ids = ids0.filter((id) => !seen.has(id));
+      for (let k = 0; k < ids.length; k += 100) { const part = ids.slice(k, k + 100); const got = await Promise.all(part.map((id) => C('prd_listings').doc(id).get().catch(() => null))); reads += part.length;
+        got.forEach((d, i) => { if (d && d.exists) { put(part[i], d.data() || {}); n++; } }); } }
+    B.fAt = t0; M.fLast = { via, n, reads }; if (via !== 'delta') log('🛑 팔린 책 내림 — 판매 상태를 한 권씩 다시 읽음', via, reads + '읽기'); return M.fLast; }
   /* 웹앱 y24SkuSelf(skuFullOf + skuCoresL) */
   const skuSelf = (R, D, l) => { R.skuSupSet((D.main.reg || {}).srcX || []); const v = D.sku.get(l.id); const cores = v ? (v.c || []).map((c) => String(c).replace(/^RN(?=[a-z0-9]{5}$)/, '')) : []; const mg = String(l.sku || '').replace(/\s+/g, ''); return cores.map((c) => R.skuFull(mg, c)).filter(Boolean); };
   /* 웹앱 y24WantLids — 사람이 누른 기록(w.on) → 넣을 때 적힌 값(y24Reg) · 기기 🚦 토글은 기기에만 있어 모름 → 끔(기본값과 같음 · 모르면 안 올리는 쪽) */
@@ -215,12 +233,13 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     if (P !== holder) return { why: `맡은 PC(${holder})가 아님 — 팔린 책 내림은 그 PC 차례에만` };
     if (!cfg.on) { await dSave({ why: '🛑 팔린 책 예스24 내림 꺼 둠(⚙ platforms.y24.down.on)', pc: P }); return { why: '꺼 둠' }; }
     if (now() - M.dLast < cfg.everyS * 1e3) return { why: M.dWhy || '다음 차례 기다림', skip: 1 }; M.dLast = now();
-    const led = await ledGet(); const R = led.r || {}; const today = kstDay(now()); const upd = {}; const cnt = { sent: 0, wait: 0, fail: 0, human: 0, done: 0, cancel: 0, resend: 0, dup: 0, unk: 0, nogno: 0, hold: 0, already: 0 }; const jobs = [];
+    const led = await ledGet(); const R = led.r || {}; const today = kstDay(now()); const upd = {}; const cnt = { sent: 0, wait: 0, fail: 0, human: 0, done: 0, cancel: 0, resend: 0, dup: 0, unk: 0, nogno: 0, hold: 0, already: 0 }; const jobs = []; let fr = null; /* fr = 판매 상태 작은 켜 결과(돌려주는 값에만 — 상태 한 줄 dSave엔 안 넣음: 같은 글이면 쓰지 않는 막이를 깨지 않게) */
     const fin = async (why, more) => { if (Object.keys(upd).length) { try { await ref().set({ r: upd }, { merge: true }); } catch (e) {} } const dayN = led.downDay && led.downDay.day === today ? +led.downDay.n || 0 : 0; M.dWhy = why;
-      await dSave({ why, pc: P, day: today, dayN: dayN + cnt.sent, dayMax: cfg.day, sent: cnt.sent, wait: cnt.wait + cnt.hold, fail: cnt.fail, human: Object.values(R).filter((e) => e && e.down && e.down.st === 'human').length + cnt.human, ...(more || {}) }); return { why, sent: cnt.sent, jobs, cnt }; };
+      await dSave({ why, pc: P, day: today, dayN: dayN + cnt.sent, dayMax: cfg.day, sent: cnt.sent, wait: cnt.wait + cnt.hold, fail: cnt.fail, human: Object.values(R).filter((e) => e && e.down && e.down.st === 'human').length + cnt.human, ...(more || {}) }); return { why, sent: cnt.sent, jobs, cnt, ...(fr ? { fresh: fr } : {}) }; };
     await dPoll(P, plat, cfg, R, upd, cnt);
     if (!Object.values(R).some((e) => e && e.st === 'sent')) return fin('예스24에 올린 책이 장부에 없음 — 내릴 것 0'); /* 읽기 줄이기 — 올린 책이 없으면 큰 자료(판매중 목록 등)를 읽지 않음 */
-    const D = await data(); const liveIds = new Set(D.list.filter(aladinLive).map((l) => l.id)); const Y = new Map(D.y24.map((x) => [String(x.goodsNo), x]));
+    const D = await data(); try { fr = await freshLoad(Object.keys(R).filter((k) => R[k] && R[k].st === 'sent')); } catch (e) { fr = { via: '오류 ' + String((e && e.message) || e).slice(0, 60), n: 0 }; } /* (r1116-y24 · 합동 검토) 판매 상태만 FRESH_MS마다 새로 — 큰 켜(45분)를 기다리지 않음 */
+    const liveIds = new Set(D.list.filter(aladinLive).map((l) => l.id)); for (const [id, v] of (D.fresh || new Map())) { if (aladinLive(v)) liveIds.add(id); else liveIds.delete(id); } const Y = new Map(D.y24.map((x) => [String(x.goodsNo), x]));
     if (!D.list.length) return fin('⛔ 알라딘 판매중 목록이 비어 있음 — 자료가 덜 온 듯해 예스24를 내리지 않음');
     const C0 = []; let nLed = 0, reset = 0;
     for (const [lid, e] of Object.entries(R)) { if (!e || e.st !== 'sent') continue; nLed++; const gno = gnoOf(e, D); const dn = e.down && (!e.down.gno || !gno || e.down.gno === gno) ? e.down : {}; const live = liveIds.has(lid);
