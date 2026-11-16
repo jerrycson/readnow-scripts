@@ -1,0 +1,240 @@
+# 🐾 책방 친구 연구 자동 반영 길 (지피티 · Codex) — 정범님 11/16 22:25 「앞으로 지피티가 스스로 진행해도 문제 없게 · 매번 너한테 전달하면서 진행할 수 없잖아」
+#  · 대상: 이 저장소 안의 `codex/friend-…` 가지에서 main으로 연 PR(초안 아님)만 — 다른 PR은 조용히 넘김
+#  · 차례: ① 검사(PR 코드는 실행하지 않음 · 검사기는 main 것만 씀 → PR이 검사를 고쳐도 안 먹힘)
+#          ② 지피티 시험(바뀐 qa/test-*·qa/verify-*·*.test.mjs · 쓰기 권한 없이)
+#          ③ 순서표(worklock · 이름표 gpt) 잡고 → 머리 커밋이 검사한 것과 같을 때만 squash 합침 → 순서표 놓음
+#          ④ Hosting 배포를 불러 readnow.kr에서 바뀐 파일이 실제로 새 것인지 확인(최대 15분)
+#          ⑤ PR에 결과 댓글 하나(고쳐 씀) — 통과면 「✅ 저절로 반영됨」 · 막히면 까닭과 「리드 검토로 넘어감」
+#  · 자동 반영 땅: friend/research/ · friend/pixel-lab/ 만 (그 밖 · 관리자·열쇠·압축 꼴 · 개인 정보 꼴은 리드 검토)
+#  · 다시 돌리기: 같은 가지에 push · 또는 Actions › 이 작업 › Run workflow › PR 번호 · 「⏳ 순서표 대기」는 30분마다 순찰이 저절로
+name: 🐾 책방 친구 연구 자동 반영 (지피티)
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  schedule:
+    - cron: '17,47 * * * *'   # 30분마다 순찰 — 「⏳ 순서표 대기」로 멈춘 PR을 저절로 다시 돌림
+  workflow_dispatch:
+    inputs:
+      pr: { description: 'PR 번호', required: true }
+concurrency: { group: 'friend-autoship-${{ github.event.pull_request.number || inputs.pr }}', cancel-in-progress: true }
+permissions: {}
+env:
+  PRN: '${{ github.event.pull_request.number || inputs.pr }}'
+jobs:
+  sweep:
+    name: ⓪ 순찰 (순서표 대기 PR 다시 돌리기)
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { actions: write, pull-requests: read }
+    steps:
+      - env: { GH_TOKEN: '${{ github.token }}', R: '${{ github.repository }}' }
+        run: |
+          for n in $(gh api "repos/$R/pulls?state=open&per_page=100" --jq '.[] | select(.draft|not) | select(.head.ref|startswith("codex/friend-")) | .number'); do
+            b=$(gh api "repos/$R/issues/$n/comments" --paginate --jq '.[] | select(.user.login=="github-actions[bot]" and (.body|startswith("<!-- friend-autoship -->"))) | .body' | tail -c 4000)
+            case "$b" in *'⏳ **순서표'*) echo "PR #$n 다시 돌림"; gh workflow run friend-autoship.yml -R "$R" --ref main -f pr="$n";; esac
+          done
+  gate:
+    name: ① 검사
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, pull-requests: read }
+    outputs:
+      eligible: '${{ steps.pr.outputs.eligible }}'
+      ok: '${{ steps.check.outputs.ok }}'
+      sha: '${{ steps.pr.outputs.sha }}'
+      tests: '${{ steps.check.outputs.tests }}'
+      live: '${{ steps.check.outputs.live }}'
+      md: '${{ steps.check.outputs.md }}'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { ref: main, fetch-depth: 0, persist-credentials: false }
+      - id: pr
+        name: PR 읽기 (대상인지)
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          case "$PRN" in ''|*[!0-9]*) echo "::error::PR 번호가 숫자가 아님"; exit 1;; esac
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PRN" > "$RUNNER_TEMP/pr.json"
+          python3 -I - "$RUNNER_TEMP/pr.json" "$GITHUB_REPOSITORY" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          p = json.load(open(sys.argv[1])); repo = sys.argv[2]
+          why = []
+          if p['state'] != 'open': why.append('닫힌 PR')
+          if p.get('draft'): why.append('초안')
+          if not p['head']['ref'].startswith('codex/friend-'): why.append('가지 이름이 codex/friend-… 아님')
+          if (p['head'].get('repo') or {}).get('full_name') != repo: why.append('다른 저장소에서 온 PR')
+          if p['base']['ref'] != 'main': why.append('main으로 가는 PR 아님')
+          print('eligible=' + ('true' if not why else 'false'))
+          print('sha=' + p['head']['sha'])
+          print('why=' + ' · '.join(why))
+          PY
+      - name: 대상 아님 — 조용히 넘김
+        if: steps.pr.outputs.eligible != 'true'
+        run: echo "### 자동 반영 대상 아님 — ${{ steps.pr.outputs.why }}" >> "$GITHUB_STEP_SUMMARY"
+      - id: check
+        name: 바뀐 파일 검사 (경로·이름·크기·개인 정보·열쇠·JSON·빠진 파일)
+        if: steps.pr.outputs.eligible == 'true'
+        env: { SHA: '${{ steps.pr.outputs.sha }}' }
+        run: |
+          git fetch -q origin "+refs/pull/$PRN/head:refs/remotes/pr/head"
+          [ "$(git rev-parse refs/remotes/pr/head)" = "$SHA" ] || { echo "::error::검사 도중 PR에 새 커밋이 옴 — 새 실행이 이어 감"; exit 1; }
+          python3 -I .github/scripts/friend-autoship-check.py origin/main "$SHA" "$RUNNER_TEMP/gate"
+          G="$RUNNER_TEMP/gate/gate.json"
+          { echo "ok=$(python3 -I -c 'import json,sys;print(str(json.load(open(sys.argv[1]))["ok"]).lower())' "$G")"
+            echo "tests=$(python3 -I -c 'import json,sys;print(json.dumps(json.load(open(sys.argv[1]))["tests"]))' "$G")"
+            echo "live=$(python3 -I -c 'import json,sys;print(json.dumps(json.load(open(sys.argv[1]))["live"]))' "$G")"
+            echo "md<<RN_GATE_EOF"; cat "$RUNNER_TEMP/gate/gate.md"; echo "RN_GATE_EOF"; } >> "$GITHUB_OUTPUT"
+          { echo "### ① 검사"; cat "$RUNNER_TEMP/gate/gate.md"; } >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: ② 지피티 시험
+    needs: gate
+    if: needs.gate.outputs.ok == 'true' && needs.gate.outputs.tests != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { ref: '${{ needs.gate.outputs.sha }}', fetch-depth: 1, persist-credentials: false }
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - name: 바뀐 시험 돌리기 (하나 10분까지)
+        env: { TESTS: '${{ needs.gate.outputs.tests }}' }
+        run: |
+          python3 -I -c 'import json,os;[print(t) for t in json.loads(os.environ["TESTS"])]' > "$RUNNER_TEMP/tests.txt"
+          bad=0
+          while IFS= read -r t; do
+            echo "::group::$t"
+            if timeout 600 node "$t"; then echo "✅ $t" >> "$GITHUB_STEP_SUMMARY"; else echo "❌ $t (끝 코드 $?)" >> "$GITHUB_STEP_SUMMARY"; bad=1; fi
+            echo "::endgroup::"
+          done < "$RUNNER_TEMP/tests.txt"
+          exit $bad
+
+  ship:
+    name: ③ 합치기 · ④ readnow.kr 확인
+    needs: [gate, test]
+    if: always() && needs.gate.outputs.ok == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions: { contents: write, pull-requests: write, actions: write }
+    outputs:
+      merged: '${{ steps.merge.outputs.merged }}'
+      why: '${{ steps.merge.outputs.why }}'
+      locked: '${{ steps.lock.outputs.locked }}'
+      live: '${{ steps.live.outputs.live }}'
+      livemd: '${{ steps.live.outputs.md }}'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { ref: main, fetch-depth: 0 }
+      - name: git 이름 정하기 (순서표 커밋용)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - id: lock
+        name: 순서표 잡기 (worklock · 이름표 gpt · 25분까지 기다림)
+        env: { RN_LOCK_HOST: 'actions-${{ github.run_id }}' }
+        run: |
+          if bash src/tools/worklock.sh wait gpt "책방 친구 연구 PR #$PRN 자동 반영" 25; then echo "locked=true" >> "$GITHUB_OUTPUT"; else echo "locked=false" >> "$GITHUB_OUTPUT"; exit 1; fi
+      - id: merge
+        name: 머리 커밋이 검사한 것과 같을 때만 squash 합침
+        env: { GH_TOKEN: '${{ github.token }}', SHA: '${{ needs.gate.outputs.sha }}' }
+        run: |
+          NOW=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PRN" --jq .head.sha)
+          if [ "$NOW" != "$SHA" ]; then echo "merged=false" >> "$GITHUB_OUTPUT"; echo "why=검사 뒤 새 커밋이 옴 — 새 실행이 이어 감" >> "$GITHUB_OUTPUT"; exit 1; fi
+          if gh pr merge "$PRN" -R "$GITHUB_REPOSITORY" --squash --match-head-commit "$SHA" 2> "$RUNNER_TEMP/merge.err"; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            echo "why=main과 부딪히거나 합치기가 거절됨 — main 최신을 가지에 합쳐 다시 push" >> "$GITHUB_OUTPUT"
+            cat "$RUNNER_TEMP/merge.err"; exit 1
+          fi
+      - name: 순서표 놓기
+        if: always() && steps.lock.outputs.locked == 'true'
+        env: { RN_LOCK_HOST: 'actions-${{ github.run_id }}', MERGED: '${{ steps.merge.outputs.merged }}' }
+        run: |
+          if [ "$MERGED" = true ]; then R=합침; else R='못 합침'; fi
+          bash src/tools/worklock.sh release gpt "책방 친구 연구 PR #$PRN 자동 반영 — $R"
+      - name: Hosting 배포 부르기 (GITHUB_TOKEN 합치기는 push 작업을 깨우지 않아서)
+        if: steps.merge.outputs.merged == 'true'
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh workflow run deploy-hosting.yml --ref main -R "$GITHUB_REPOSITORY"
+      - id: live
+        name: readnow.kr에서 새 파일 확인 (최대 15분)
+        if: steps.merge.outputs.merged == 'true'
+        env: { LIVE: '${{ needs.gate.outputs.live }}' }
+        run: |
+          git fetch -q origin main
+          python3 -I - <<'PY' >> "$GITHUB_OUTPUT"
+          import hashlib, json, os, subprocess, time, urllib.request
+          paths = json.loads(os.environ['LIVE']); want = {}
+          for p in paths:
+              want[p] = hashlib.sha256(subprocess.run(['git', 'show', f'origin/main:{p}'], check=True, capture_output=True).stdout).hexdigest()
+          got = {}; end = time.time() + 900
+          while want and time.time() < end and len(got) < len(want):
+              for p in want:
+                  if p in got: continue
+                  try:
+                      with urllib.request.urlopen(f'https://readnow.kr/{p}?t={int(time.time())}', timeout=20) as r:
+                          if hashlib.sha256(r.read()).hexdigest() == want[p]: got[p] = True
+                  except Exception: pass
+              if len(got) < len(want): time.sleep(20)
+          ok = bool(want) and len(got) == len(want)
+          print('live=' + ('true' if ok else 'false'))
+          print('md<<RN_LIVE_EOF')
+          for p in want: print(f'- {"✅" if p in got else "⏳"} https://readnow.kr/{p}')
+          print('RN_LIVE_EOF')
+          PY
+
+  report:
+    name: ⑤ PR에 결과 댓글
+    needs: [gate, test, ship]
+    if: always() && needs.gate.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { pull-requests: write }
+    steps:
+      - name: 댓글 쓰기(하나를 고쳐 씀)
+        env:
+          GH_TOKEN: '${{ github.token }}'
+          OK: '${{ needs.gate.outputs.ok }}'
+          GATE_MD: '${{ needs.gate.outputs.md }}'
+          GATE_RES: '${{ needs.gate.result }}'
+          TEST: '${{ needs.test.result }}'
+          SHIP: '${{ needs.ship.result }}'
+          LOCKED: '${{ needs.ship.outputs.locked }}'
+          MERGED: '${{ needs.ship.outputs.merged }}'
+          WHY: '${{ needs.ship.outputs.why }}'
+          LIVE: '${{ needs.ship.outputs.live }}'
+          LIVE_MD: '${{ needs.ship.outputs.livemd }}'
+          SHA: '${{ needs.gate.outputs.sha }}'
+          RUN: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        run: |
+          python3 -I - > "$RUNNER_TEMP/body.md" <<'PY'
+          import os
+          e = os.environ.get
+          head = f"<!-- friend-autoship -->\n## 🐾 자동 반영 길 결과 — 커밋 `{e('SHA','')[:7]}`\n"
+          if e('GATE_RES') != 'success':
+              s = '❌ **검사를 끝내지 못함** — 실행 기록을 보고 같은 가지에 다시 push하거나 Run workflow로 다시 돌림'
+          elif e('OK') != 'true':
+              s = '❌ **자동 반영 안 됨 — 아래 까닭** · 고쳐서 같은 가지에 push하면 저절로 다시 검사 · 허용 밖 경로(friend/research/·friend/pixel-lab/ 밖)나 관리자 파일이면 **리드 검토로 넘어감**(쪽지에 한 줄)'
+          elif e('TEST') == 'failure':
+              s = '❌ **지피티 시험 실패** — 실행 기록의 ② 단계에서 실패한 시험을 고쳐 다시 push'
+          elif e('LOCKED') != 'true':
+              s = '⏳ **순서표를 25분 안에 못 잡음**(다른 쪽이 판을 내는 중) — 할 일 없음 · 30분마다 순찰이 저절로 다시 돌림'
+          elif e('MERGED') != 'true':
+              s = f"❌ **합치지 못함** — {e('WHY') or '실행 기록 확인'}"
+          elif e('LIVE') == 'true':
+              s = '✅ **저절로 반영됨** — main에 합치고 readnow.kr에서 새 파일을 확인함 · 다음 일은 main 최신에서 새 `codex/friend-…` 가지로'
+          else:
+              s = '⚠ **main에 합쳤으나 readnow.kr 확인이 15분 안에 끝나지 않음** — Hosting 배포 기록 확인(리드가 이어서 봄)'
+          body = head + s + '\n\n### 검사\n' + (e('GATE_MD') or '- (없음)\n')
+          if e('LIVE_MD'): body += '\n### readnow.kr\n' + e('LIVE_MD') + '\n'
+          body += f"\n[실행 기록]({e('RUN')}) · 규칙: AI_COLLAB/PROTOCOL 13장 · .github/scripts/friend-autoship-check.py\n\n---\n_리드나우 자동 반영 길(GitHub Actions)_\n"
+          print(body)
+          PY
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PRN/comments" --paginate --jq '.[] | select(.user.login=="github-actions[bot]" and (.body|startswith("<!-- friend-autoship -->"))) | .id' | tail -1)
+          if [ -n "$ID" ]; then gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -F body=@"$RUNNER_TEMP/body.md" >/dev/null
+          else gh api "repos/$GITHUB_REPOSITORY/issues/$PRN/comments" -F body=@"$RUNNER_TEMP/body.md" >/dev/null; fi
+          cat "$RUNNER_TEMP/body.md" >> "$GITHUB_STEP_SUMMARY"
