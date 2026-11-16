@@ -53,7 +53,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   /* ④ 성공 결과 */
   REG.R.q.res[J1.id] = { state: 'done', gno: { aladin_A4: '222222222' }, cnt: { sale: 1, unpub: 0 }, msg: '올라감', at: T, rows: ['aladin_A4'] }; REG.R.q.jobs = []; REG.R.rec.ok1 = T; REG.R.rec.lid.aladin_A4 = { at: T }; REG.R.rec.sku[J1.rows[0].self] = 'aladin_A4';
   put('prd_listings', 'aladin_A6', { listingId: 9006, usedCode: 'A6', title: '시험 책 A6', isbn13: '9788900000066', grade: '최상', price: 6000, qty: 1, sku: 'ABC_A6', active: true, status: '판매중' }); store.app_settings.sku_map_0.m.aladin_A6 = { c: ['ab006'] }; put('y24_mkt', '9788900000066', { none: true });
-  put('app_settings', 'platforms', { y24: { reg: { autoAll: 1 } } }); Y._M.dataAt = 0; /* 판매중 상품 전부(정범님이 켬)를 흉내 */
+  put('app_settings', 'platforms', { y24: { reg: { autoAll: 1 } } }); Y._M.dataAt = 0; Y._M.bigAt = 0; /* 판매중 상품 전부(정범님이 켬)를 흉내 */
   T += 61e3; y = await Y.step('HOME', gather()); const e2 = led().r.aladin_A4;
   ok(e2.ok === 1 && e2.gno === '222222222' && e2.st === 'sent' && y.ack.includes(J1.id), '④ 번외 결과 → 장부 ✅(ok · 예스24 번호) · 결과 받았음(ack)', { e2, ack: y.ack });
   take(y); ok(!Object.keys(REG.state().res).length, '④ ack 뒤 번외 결과가 비워짐');
