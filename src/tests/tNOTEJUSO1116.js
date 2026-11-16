@@ -24,4 +24,4 @@ assert(/data-juso="\$\{esc\(sel\)\}"/.test(A) && A.includes("jusoBtn('#cash_addr
 assert(A.includes('zip: D.zip || null, sameAsBuyer')); ok('현금 판매 받는 분 우편번호 저장');
 assert(!/\b(alert|confirm|prompt)\(/.test(A.slice(A.indexOf('◆juso 시작'), A.indexOf('◆juso 끝')))); ok('팝업 없음');
 const CL = fs.readFileSync(path.join(__dirname, '..', '..', 'cloud', 'index.js'), 'utf8'); assert(CL.includes("path === '/juso'") && CL.includes('async function jusoSearch(')); ok('클라우드 대신 부르기 길 /juso');
-console.log('통과');
+console.log('✅ tNOTEJUSO1116 통과');
