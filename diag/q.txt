@@ -1,2 +1,2 @@
-recentUp=px_views&mins=40000
-# 248378706
+col2=1&doc=app_settings/y24_reg
+# 2979826020
