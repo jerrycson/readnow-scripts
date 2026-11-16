@@ -7885,7 +7885,9 @@ function osHelperDays(h) { const D = []; const d = String((h && h.day) || ''); i
 /* 오늘 것이 아닌 도우미 일 — 아는 날짜가 모두 오늘보다 앞일 때만(하나라도 오늘이거나 날짜를 모르면 오늘 것으로 봄 = 막음 · 안전 쪽) */
 const OS_PRE_UPLOAD = ['login', 'check', '로그인', '오늘 목록 겹침 검사'];
 function osHelperPreUpload(h) { if (!h || h.gone) return false; let s = ''; if (Array.isArray(h.steps)) { if (h.steps.some((x) => x && ['upload', 'print', 'verify', 'send'].includes(x.k) && x.st && x.st !== 'todo')) return false; if (h.summary && (h.summary.upload || h.summary.uploadSkip)) return false; const x = h.steps.find((y) => y && ['run', 'wait', 'err'].includes(y.st)); s = x ? x.k || x.l || '' : ''; } else s = String(h.step || ''); return OS_PRE_UPLOAD.includes(s); } /* (staleerr1 검토 고침) 접수(일괄주문접수) 앞에서 멈춘 일만 — 접수·출력·확인·넘김 단계·단계 모름·도우미가 꺼져 사라진 일(gone)은 접수됐을 수 있어 막음(같은 송장 두 번 금지) */
-function osHelperStale(h, now) { const D = osHelperDays(h); if (!D.length) return false; const t = osKDay(now); return D.every((x) => x < t) && osHelperPreUpload(h); } /* 어제(그 전)이고 접수 앞에서 멈춘 일만 '막지 않음' — 접수 뒤 어제 일은 지금처럼 막고 [▶ 이어서 진행](도우미가 그 날짜 목록으로 이어 감)으로 끝냄 */
+function osHelperResumed(x) { return !!(x && (x.resume || (x.log || []).slice(0, 6).some((y) => /^이어서 /.test(String((y && (y.d || y.m)) || ''))))); } /* (staleerr1 다시 검토) 이어서 진행·보류 다시 실행은 도우미가 실행을 새로 만들어 앞 실행의 접수 표시가 사라짐 — 첫 기록 줄 '이어서 …'로 알아봄 */
+function osHelperPre(x) { if (!x || x.gone) return false; if (x.pre != null) return x.pre === true; return Array.isArray(x.steps) ? osHelperPreUpload(x) && !osHelperResumed(x) : false; } /* 접수 앞이고 이어서 실행도 아님 — 저장된 기록(bl.helper)은 pre:true가 있어야만, 도우미 실행 그대로(R)는 단계·기록으로 셈. 모르면 막음 */
+function osHelperStale(h, now) { const D = osHelperDays(h); if (!D.length) return false; const t = osKDay(now); return D.every((x) => x < t) && osHelperPre(h); } /* 어제(그 전)이고 접수 앞에서 멈춘 일만 '막지 않음' — 접수 뒤 어제 일은 지금처럼 막고 [▶ 이어서 진행](도우미가 그 날짜 목록으로 이어 감)으로 끝냄 */
 /* 🕘 어제 멈춘 도우미 일(막지 않음 · 보이기만) — 사람이 닫았거나 보류 상자 일이면 없음 */
 function osHelperStaleOf(bl, now) { bl = bl || {}; const h = bl.helper; if (!h || !h.id || h.status !== 'error' || h.hold || new Set(bl.closedIds || []).has(h.id)) return null; return osHelperStale(h, now) ? h : null; }
 const osBlock = () => osBlockOf(S.os.doc, S.os.bl);
@@ -7898,10 +7900,10 @@ async function osCanRunNow() { if (osCanRun()) return true; if (PHONE_THIN) retu
 const OS_NOT_HERE = '출고 실행은 MJ-MAIN(ALPS 도우미가 있는 PC)에서만 — 이 기기는 보기만 합니다(다른 기기에서 시작은 ⚙ 원스톱 설정 「원격 시작」을 켤 때만)';
 /* MJ-MAIN 웹앱 — 도우미 상태를 물을 때마다(alpsFetch) 공유 칸에 비춤 */
 function osBlHelperSeen(st) { try { if (!st || !st.ok || PHONE_THIN || !(st.cred && st.cred.saved) || !(st.cfg && st.cfg.printer)) return; S.os.hOkAt = Date.now(); if (!db || !S.user) return; const R = st.run || null; const prev = (S.os.bl || {}).helper || {}; const now = new Date().toISOString();
-    let h; if (R && R.id) h = { id: R.id, status: R.status || '', error: R.error ? String(R.error).slice(0, 240) : null, file: R.fileName || '', step: ((R.steps || []).find((x) => ['run', 'wait', 'err'].includes(x.st)) || {}).l || '', at: R.at || null, day: R.day || null, hold: (R.log || []).slice(0, 6).some((x) => /보류 상자/.test(String((x && (x.d || x.m)) || ''))), gone: false };
-    else if (prev.id && ['run', 'wait'].includes(prev.status)) h = { ...prev, status: 'error', error: '도우미가 다시 켜져 하던 일이 멈춤 — ▶ 이어서 진행이면 같은 파일·같은 줄로 이어서', gone: true };
-    else if (prev.id && prev.status === 'error') h = { ...prev, gone: true };
-    else h = { id: null, status: 'none', error: null, file: '', step: '', at: null, day: null, hold: false, gone: false };
+    let h; if (R && R.id) h = { id: R.id, status: R.status || '', error: R.error ? String(R.error).slice(0, 240) : null, file: R.fileName || '', step: ((R.steps || []).find((x) => ['run', 'wait', 'err'].includes(x.st)) || {}).l || '', at: R.at || null, day: R.day || null, hold: (R.log || []).slice(0, 6).some((x) => /보류 상자/.test(String((x && (x.d || x.m)) || ''))), gone: false, pre: osHelperPreUpload(R) && !osHelperResumed(R) };
+    else if (prev.id && ['run', 'wait'].includes(prev.status)) h = { ...prev, status: 'error', error: '도우미가 다시 켜져 하던 일이 멈춤 — ▶ 이어서 진행이면 같은 파일·같은 줄로 이어서', gone: true, pre: false };
+    else if (prev.id && prev.status === 'error') h = { ...prev, gone: true, pre: false };
+    else h = { id: null, status: 'none', error: null, file: '', step: '', at: null, day: null, hold: false, gone: false, pre: false };
     if (R && R.status === 'done' && R.hasResult && h.hold) osHoldResult(R).catch(() => {}); /* 🧭 풀린 보류 상자 다시 출력 → 송장 입력 */
     h.holds = ((R && R.holds) || []).slice(0, 5).map((x) => ({ day: x.day || null, boxes: +x.boxes || 0, released: +x.released || 0, why: (x.why || []).slice(0, 2), areas: (x.areas || []).slice(0, 3), checkedAt: x.checkedAt || null }));
     const sig = [h.id, h.status, h.step, h.error, h.hold, h.gone, JSON.stringify(h.holds)].join('|'); if (sig === S.os.hSig && Date.now() - (S.os.hPutAt || 0) < 5 * 60e3) return; S.os.hSig = sig; S.os.hPutAt = Date.now();

@@ -11,11 +11,11 @@ const APP = cands.find((p) => { try { return fs.statSync(p).isFile() && /functio
 if (!APP) { console.log('❌ app.html(osBlockOf 있는 것)을 못 찾음', cands); process.exit(1); }
 const T = fs.readFileSync(APP, 'utf8');
 const grab = (head) => { const a = T.indexOf(head); if (a < 0) throw new Error('못 찾음: ' + head); let i = T.indexOf('{', a), d = 0; for (; i < T.length; i++) { const c = T[i]; if (c === '{') d++; else if (c === '}') { d--; if (!d) break; } } return T.slice(a, i + 1); };
-const src = [`const OS_BL_FIN = ['NEXT', 'END'];`, `const OS_PRE_UPLOAD = ['login', 'check', '로그인', '오늘 목록 겹침 검사'];`, ...['function osBatchOpenOf(', 'function osBlockOf(', 'function osKDay(', 'function osHelperDays(', 'function osHelperPreUpload(', 'function osHelperStale(', 'function osHelperStaleOf('].map(grab), 'return { osBlockOf, osHelperStale, osHelperStaleOf, osKDay };'].join('\n');
+const src = [`const OS_BL_FIN = ['NEXT', 'END'];`, `const OS_PRE_UPLOAD = ['login', 'check', '로그인', '오늘 목록 겹침 검사'];`, ...['function osBatchOpenOf(', 'function osBlockOf(', 'function osKDay(', 'function osHelperDays(', 'function osHelperPreUpload(', 'function osHelperResumed(', 'function osHelperPre(', 'function osHelperStale(', 'function osHelperStaleOf('].map(grab), 'return { osBlockOf, osHelperStale, osHelperStaleOf, osKDay };'].join('\n');
 const F = new Function(src)();
 // 2026-11-16 10:00 한국 시각 = 01:00Z
 const NOW = Date.parse('2026-11-16T01:00:00Z');
-const H = (o) => ({ helper: { id: 'h1', status: 'error', file: '판매완료20261116.xlsx', step: '오늘 목록 겹침 검사', hold: false, ...o } });
+const H = (o) => ({ helper: { id: 'h1', status: 'error', file: '판매완료20261116.xlsx', step: '오늘 목록 겹침 검사', hold: false, pre: true, ...o } }); // pre = 웹앱이 도우미 기록을 받을 때 셈(접수 앞 · 이어서 실행 아님)
 const B = (bl, r) => F.osBlockOf(r || null, bl, NOW);
 console.log('한국 날짜(시험 시각):', F.osKDay(NOW));
 ok(F.osKDay(NOW) === '2026-11-16', '한국 날짜 = 2026-11-16');
@@ -46,9 +46,17 @@ ok(F.osKDay(Date.parse('2026-11-15T15:30:00Z')) === '2026-11-16', '한국 날짜
 { const bl = { ...H({ day: '20261116' }), closedIds: ['h1'] }; ok(B(bl) === null, '⑦ 사람이 닫은 오늘 일 → 안 막음(지금처럼)'); ok(F.osHelperStaleOf({ ...H({ day: '20261115' }), closedIds: ['h1'] }, NOW) === null, '⑦ 숨긴(닫은) 어제 일 → 🕘 줄 없음'); }
 { ok(B(H({ day: '20261116', hold: true })) === null, '⑦ 보류 상자 일 → 안 막음(지금처럼)'); }
 // ⑧ (검토 고침) 어제 일이라도 접수(일괄주문접수)와 그 뒤에서 멈췄거나 단계를 모르면 막음 — 같은 송장 두 번 금지
-{ for (const st of ['접수(일괄주문접수)', '출력(운송장)', '운송장번호 확인', '웹앱으로 넘김', '']) { const bl = H({ day: '20261115', step: st }); const x = B(bl); ok(x && x.k === 'open', `⑧ 어제 error · 단계 「${st || '모름'}」 → 막음`, x); ok(F.osHelperStaleOf(bl, NOW) === null, `⑧ 어제 error · 단계 「${st || '모름'}」 → 🕘 줄 없음(막음 줄로)`); } }
+{ for (const st of ['접수(일괄주문접수)', '출력(운송장)', '운송장번호 확인', '웹앱으로 넘김', '']) { const bl = H({ day: '20261115', step: st, pre: false }); const x = B(bl); ok(x && x.k === 'open', `⑧ 어제 error · 단계 「${st || '모름'}」 → 막음`, x); ok(F.osHelperStaleOf(bl, NOW) === null, `⑧ 어제 error · 단계 「${st || '모름'}」 → 🕘 줄 없음(막음 줄로)`); } }
 { const x = B(H({ day: '20261115', step: '로그인' })); ok(x === null, '⑧ 어제 error · 단계 로그인 → 안 막음', x); }
 { const x = B(H({ day: '20261115', gone: true })); ok(x && x.k === 'open', '⑧ 어제 · 도우미가 꺼져 사라진 일(gone) → 막음', x); }
+// ⑩ (다시 검토 고침) 이어서 진행·보류 다시 실행은 실행을 새로 만듦(단계 모두 처음·summary 빔) — 접수 앞에서 멈춰도 어제 일로 풀지 않음
+{ const R = { status: 'error', day: '20261115', summary: {}, steps: [{ k: 'login', st: 'ok' }, { k: 'check', st: 'err' }, { k: 'upload', st: 'todo' }], log: [{ t: '09:01:00', st: 'i', k: 'log', d: '이어서 판매완료20261115.xlsx · 3줄' }] }; ok(!F.osHelperStale(R, NOW), '⑩ 어제 이어서 실행이 겹침 검사(OZ 실패)에서 멈춤 → 풀지 않음(같은 송장 두 번 금지)'); }
+{ const R = { status: 'error', day: '20261115', summary: {}, steps: [{ k: 'login', st: 'err' }], log: [{ d: '날짜 고정: 이 일은 20261115 일로 이어서 함(자정을 넘김)' }, { d: '이어서 판매완료20261115.xlsx · 3줄' }] }; ok(!F.osHelperStale(R, NOW), '⑩ 날짜 고정 줄 뒤 이어서 실행 · 로그인에서 멈춤 → 풀지 않음'); }
+{ const R = { status: 'error', day: '20261115', summary: {}, steps: [{ k: 'login', st: 'err' }], log: [{ d: '시작 판매완료20261115.xlsx · 3줄' }] }; ok(F.osHelperStale(R, NOW), '⑩ 처음 실행 · 로그인에서 멈춤 → 어제 일(안 막음)'); }
+{ const R = { status: 'error', day: '20261115', resume: true, steps: [{ k: 'check', st: 'err' }] }; ok(!F.osHelperStale(R, NOW), '⑩ resume 표시 있는 실행 → 풀지 않음'); }
+{ const bl = H({ day: '20261115', step: '로그인', pre: undefined }); const x = B(bl); ok(x && x.k === 'open', '⑩ 저장된 기록에 접수 앞 표시(pre) 없음 → 막음(옛 기록·모름)', x); }
+{ const bl = H({ day: '20261115', step: '로그인', pre: false }); const x = B(bl); ok(x && x.k === 'open', '⑩ 저장된 기록 pre:false(이어서 실행) · 단계 로그인 → 막음', x); }
+{ const bl = H({ day: '20261115', gone: true, pre: true }); const x = B(bl); ok(x && x.k === 'open', '⑩ gone이면 pre가 있어도 막음', x); }
 // ⑨ 도우미 상태 그대로(steps 배열 · 📦 ALPS 칸)
 { const R = { status: 'error', day: '20261115', steps: [{ k: 'login', st: 'ok' }, { k: 'check', st: 'ok' }, { k: 'upload', st: 'ok' }, { k: 'print', st: 'err' }, { k: 'verify', st: 'todo' }, { k: 'send', st: 'todo' }] }; ok(!F.osHelperStale(R, NOW), '⑨ 어제 · 접수 끝내고 출력에서 멈춤(steps) → 어제 일로 풀지 않음 = [▶ 이어서 진행]'); }
 { const R = { status: 'error', day: '20261115', steps: [{ k: 'login', st: 'ok' }, { k: 'check', st: 'err' }, { k: 'upload', st: 'todo' }] }; ok(F.osHelperStale(R, NOW), '⑨ 어제 · 겹침 검사에서 멈춤(steps) → 어제 일(안 막음)'); }
