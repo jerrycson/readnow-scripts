@@ -689,7 +689,7 @@ function soloAck(r) { const ks = new Set((r.keys || []).map(String)); const b = 
  *  클라우드가 이 길을 아는 동안(3분 안에 답에 y24reg가 있었음) 이 PC 웹앱은 판단하지 않고 보기만(/y24/reg/state solo) — 한 일은 한 길로 */
 const Y24S = { at: 0, rej: [], why: '', jobs: 0 };
 const y24SoloLive = () => SOLO.live() && now() - Y24S.at < 3 * 60e3;
-function y24SoloGather() { try { if (isLoggerPc() || !Y24 || !Y24.reg) return null; const s = Y24.reg.state(); return { st: { ok1: s.ok1, done: s.done, wait: s.wait, cur: s.cur, why: s.why, login: s.login, hold: s.hold, ban: s.ban, en: s.en }, res: s.res || {}, rej: Y24S.rej.slice(0, 10) }; } catch (e) { return null; } }
+function y24SoloGather() { try { if (isLoggerPc() || !Y24 || !Y24.reg) return null; const s = Y24.reg.state(); return { st: { ok1: s.ok1, done: s.done, wait: s.wait, cur: s.cur, why: s.why, login: s.login, hold: s.hold, ban: s.ban, en: s.en, ver: VERSION /* (y24first1 11/14) 클라우드가 고친 판인지 보고 '아무것도 안 누른 멈춤'을 풂 */ }, res: s.res || {}, rej: Y24S.rej.slice(0, 10) }; } catch (e) { return null; } }
 function y24SoloTake(y) { let more = false; Y24S.at = now(); Y24S.why = String(y.why || '').slice(0, 200);
   if (Array.isArray(y.ack) && y.ack.length) Y24.reg.ack(y.ack); if (Array.isArray(y.rejAck)) Y24S.rej = Y24S.rej.filter((x) => !y.rejAck.includes(x.id));
   for (const jb of Array.isArray(y.jobs) ? y.jobs.slice(0, 3) : []) { const r = Y24.reg.put(jb); Y24S.jobs++; if (r.code === 400) Y24S.rej.push({ id: String(jb.id), err: String((r.body && r.body.err) || '').slice(0, 200), rows: (jb.rows || []).map((x) => x.lid) }); more = true; }
