@@ -7,7 +7,7 @@
  * 쓰는 곳: PC 수집기 · 가격 감시기(브라우저 Firebase) · 클라우드(firebase-admin) — 둘 다 db.collection().doc() · db.runTransaction(tx.get/tx.set) 만 씀.
  * 기록은 지우지 않음. 실패 뒤 다시 하면 tries가 늘고 지난 결과는 hist에 쌓임. */
 (function (root) {
-  const VERSION = '0.1.1';
+  const VERSION = '0.1.2';
   const COL = 'exec_log';
   const KINDS = { price: '가격 반영', hold: '판매보류풀로', unhold: '판매보류풀 해제', startDelivery: '발송준비시작', invoice: '송장 입력', c2bAdd: '팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지' };
   const safeId = (s) => String(s).replace(/[\/#?\[\]*.]/g, '_').slice(0, 300);

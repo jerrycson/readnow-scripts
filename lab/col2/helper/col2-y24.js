@@ -267,7 +267,7 @@ function makeY24(o) { let REG = null, W = null;
       Y.tourCur = m.path.toLowerCase(); Y.tourResp = null; const r = await learn(m.path, null).catch((e) => 'err:' + e.message); Y.tourCur = null;
       if (r === 'login') { put('fail', null, '로그인 화면이 열림'); T.stop = 'login'; setLogin('need', '둘러보기 중 로그인 화면'); break; }
       await sleepR(1500, 2500); const cnt = Y.tourResp ? Y.tourResp.cnt : null; put(r === 'nobtn' ? 'nobtn' : Y.tourResp ? (cnt === 0 ? 'empty' : 'ok') : 'fail', cnt, r === 'nobtn' ? '조회 단추 없음(화면 문서만)' : Y.tourResp ? '' : '조회 응답을 못 봄');
-      if (m.k === 'qa' && r !== 'login') await qaJsGrab().catch((e) => { Y.qaJs = { ...(Y.qaJs || {}), at: now(), err: String(e.message).slice(0, 120) }; }); /* (11/16 y24qa1) */
+      if ((m.k === 'qa' || /\/CustomerService\/QAList/i.test(m.path || '')) && r !== 'login') await qaJsGrab().catch((e) => { Y.qaJs = { ...(Y.qaJs || {}), at: now(), err: String(e.message).slice(0, 120) }; }); /* (11/16 y24qa1) */
       await sleepR(8000, 20000); }
     T.end = now(); sum(); note(`🛰 예스24 둘러보기 ${T.stop ? '멈춤(' + T.stop + ')' : '끝'} — 받음 ${T.sum.ok || 0} · 빈 목록 ${T.sum.empty || 0} · 못 받은 곳 ${T.sum.fail || 0}`); }
   /* ── 맡긴 일(주문접수확인·발송처리) ── */
@@ -358,6 +358,7 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
       Y.tourCur = m.p.toLowerCase(); Y.tourResp = null; const r = await learn(m.p, null).catch((e) => 'err:' + e.message); Y.tourCur = null;
       if (r === 'login') { T.res[m.k] = { st: 'fail', msg: '로그인 화면', at: now() }; T.stop = 'login'; setLogin('need', '운영 화면 읽기 중 로그인 화면'); break; }
       await sleepR(1500, 2500); T.res[m.k] = { st: r === 'nobtn' ? 'nobtn' : Y.tourResp ? 'ok' : 'fail', cnt: Y.tourResp ? Y.tourResp.cnt : null, at: now() };
+      if (m.k === 'qa') await qaJsGrab().catch((e) => { Y.qaJs = { ...(Y.qaJs || {}), at: now(), err: String(e.message).slice(0, 120) }; }); /* (11/17 y24qa2) 운영 화면 읽기에서도 */
       await sleepR(8000, 20000); }
     T.end = now(); const ok = Object.values(T.res).filter((x) => x.st === 'ok').length; note(`🧰 예스24 운영 화면 ${T.stop ? '멈춤(' + T.stop + ')' : '읽음'} — 받음 ${ok}/${OPS_PAGES.length}${Y.opsNum.qaNo != null ? ' · 미답변 문의 ' + Y.opsNum.qaNo : ''}${Y.opsNum.retReq != null ? ' · 반품 요청 ' + Y.opsNum.retReq : ''}`); }
   /* (11/11 y24ops3) 🎓 배우기 켜기·끄기 — 웹앱 🧰 예스24 운영(두 번 누름) → POST /y24/learn · 맡은 PC·로그인된 세션·출고 중 아님·다른 일 없음일 때만 */
