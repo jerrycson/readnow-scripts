@@ -37,4 +37,13 @@ console.log('⑤ 🔁 재고 돌아오면 예스24 판매재개');
   const rk = L[0].rk; ok(F.y24UpPlan({ log: [e], rows: [row()], now, done: new Set([rk]) }).length === 0, '같은 내림 기록은 한 번만(되풀이 0)'); }
 console.log('⑥ ❓ 문의·반품 알림');
 { const A = F.y24QaAlertOf({ qa: 2, ret: 1 }); ok(A.length === 2 && A[0].k === 'qa' && /미답변 문의 2건/.test(A[0].t) && A[1].lv === 'red', '미답변 문의·반품 요청 → 홈 알림'); ok(F.y24QaAlertOf({ qa: 0, ret: null }).length === 0 && F.y24QaAlertOf(null).length === 0, '없으면 알림 없음'); }
+// (11/16 y24qa1) ❓ 문의 한 줄 — 새 칸(ay·no·gb·pr·rpt·ord·ansDt) · 옛 줄(답 여부가 ans 'N' · 본문 칸에 문의 번호 숫자)
+{ const R = new Function('const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", \'"\': "&quot;" })[c]); const num = (n) => Number(n).toLocaleString("ko-KR");\n' + fnOf('y24QaRow') + '\nreturn y24QaRow;')();
+  const a = R({ no: '900001', ttl: '시험 제목', gnm: '시험 상품', pr: '12000', dt: '2026-11-01', ay: 0, gb: '01' });
+  ok(/🟠 <b>미답변/.test(a) && /상품 문의/.test(a) && /12,000원/.test(a) && /문의 번호 900001/.test(a) && /본문은 예스24 목록에/.test(a), '새 줄 — 미답변·상품 문의·값·문의 번호 · 본문 없음 안내', a);
+  const b = R({ ttl: '배송', ay: 1, ans: '내일 보냅니다', ansDt: '2026-11-03', rpt: 1, ord: 1, gb: '02', q: '언제 와요 <x>' });
+  ok(/⚪ 답함/.test(b) && /🚩신고/.test(b) && /주문 문의/.test(b) && /↪ 답 2026-11-03: 내일 보냅니다/.test(b) && /언제 와요 &lt;x&gt;/.test(b), '새 줄 — 답함·신고·주문 문의·답 글 · 글은 가려 씀', b);
+  const c = R({ ttl: '옛 줄', ans: 'N', q: '278453', gnm: '옛 상품' });
+  ok(/🟠/.test(c) && !/278453/.test(c) && !/↪ 답/.test(c), '옛 줄(0.1.68) — 답 칸 N은 미답변으로 · 숫자뿐인 본문(문의 번호)은 감춤', c);
+  ok(/⚪ 답함/.test(R({ ttl: 'x', ans: 'Y' })) && /⚪ 답함/.test(R({ ttl: 'x', ans: '감사합니다' })), '옛 줄 — Y·답 글이면 답함'); }
 console.log(bad ? `❌ tY24PW1114 실패 ${bad}` : '✓ tY24PW1114 모두 통과'); process.exit(bad ? 1 : 0);
