@@ -53,12 +53,13 @@
     return out;
   }
 
-  /* ── 마크다운(바깥 그림은 그리지 않음 · 링크는 https만) ── */
+  /* ── 마크다운(바깥 그림은 그리지 않음 · 링크는 https만 · 우리 Firebase Storage에 올린 사진만 그림으로 — note8 정범님 11/16) ── */
   const safeUrl = (u) => (/^(https?:|mailto:)/i.test(u) ? u : null);
+  const isStoreImg = (u) => /^https:\/\/(firebasestorage\.googleapis\.com|storage\.googleapis\.com|[a-z0-9-]+\.firebasestorage\.app)\/[^\s"'<>]+$/i.test(String(u || '').replace(/&amp;/g, '&'));
   function emph(s) { return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/~~(.+?)~~/g, '<del>$1</del>').replace(/==(.+?)==/g, '<mark>$1</mark>').replace(/(^|[^*\w])\*([^*\s](?:[^*]*?[^*\s])?)\*(?!\*)/g, '$1<em>$2</em>'); }
   function inl(s) { const st = []; const keep = (h) => { st.push(h); return '\u0001' + (st.length - 1) + '\u0001'; };
     s = String(s).replace(/`([^`]+)`/g, (_, c) => keep(`<code>${esc(c)}</code>`)); s = esc(s);
-    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, (_, a, u) => { const ok = safeUrl(u); return keep(ok ? `<a href="${ok}" target="_blank" rel="noopener noreferrer">그림: ${a || '열기'}</a>` : `[그림: ${a}]`); });
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, (_, a, u) => { const ok = safeUrl(u); return keep(ok && isStoreImg(ok) ? `<a class="jbn-img" href="${ok}" target="_blank" rel="noopener noreferrer" title="크게 보기(새 탭)"><img src="${ok}" alt="${a || '사진'}" loading="lazy" decoding="async"></a>` : ok ? `<a href="${ok}" target="_blank" rel="noopener noreferrer">그림: ${a || '열기'}</a>` : `[그림: ${a}]`); });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => { const ok = safeUrl(u.replace(/&amp;/g, '&')); return keep(ok ? `<a href="${esc(ok)}" target="_blank" rel="noopener noreferrer">${emph(t)}</a>` : emph(t)); });
     s = s.replace(/(^|[\s(])(https?:\/\/[^\s<\u0001]+[^\s<.,;:!?)\]'"\u0001])/g, (_, p, u) => p + keep(`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`));
     s = s.replace(BRE, (_, p, id) => p + keep(`<a class="jbn-bd" href="${BOARD}#${id}" target="_blank" rel="noopener noreferrer" title="작업판 카드 ${id} 열기(새 탭)">📋 ${id}</a>`));
@@ -66,6 +67,31 @@
   const LI = /^(\s*)([-*+]|\d{1,3}[.)])\s+(.*)$/;
   const isSep = (t) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(t) && t.includes('-');
   function row(t) { let s = t.trim(); if (s.startsWith('|')) s = s.slice(1); if (s.endsWith('|')) s = s.slice(0, -1); return s.split('|').map((c) => c.trim()); }
+  /* (note8 · 정범님 11/16 15:28) 붙여넣은 표 모양 지키기 — 클립보드 HTML 표·스프레드시트 칸(탭)을 마크다운 표 글로 바꿈
+   *  HTML은 실행하지 않고 글자만 뽑음(태그·스크립트·이벤트 속성은 통째로 버림) · 저장은 예전과 같은 글(text) — 옛 메모·옛 판도 그대로 읽힘 */
+  const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  const deEnt = (s) => String(s).replace(/&(#x[0-9a-f]{1,6}|#\d{1,7}|[a-z]{2,8});/gi, (m, k) => { if (k[0] === '#') { const n = /x/i.test(k[1]) ? parseInt(k.slice(2), 16) : +k.slice(1); return n > 31 && n < 0x110000 ? String.fromCodePoint(n) : ' '; } const v = ENT[k.toLowerCase()]; return v == null ? m : v; });
+  const cellTx = (h) => deEnt(String(h).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '')).replace(/[\s\u00a0]+/g, ' ').trim().replace(/\|/g, '¦');
+  function mdTable(R) { R = R.filter((r) => r.some((c) => c !== '')).slice(0, 300).map((r) => r.slice(0, 30)); const n = R.length ? Math.max(...R.map((r) => r.length)) : 0; if (!n || (R.length === 1 && n === 1)) return ''; /* 칸 하나만 복사한 것은 그냥 글로 */ const line = (r) => '| ' + Array.from({ length: n }, (_, k) => r[k] || ' ').join(' | ') + ' |';
+    return [line(R[0]), '|' + ' --- |'.repeat(n)].concat(R.slice(1).map(line)).join('\n'); }
+  function tableMd(h) { const R = [];
+    for (const tr of String(h).split(/<tr\b[^>]*>/i).slice(1)) { const cells = []; const re = /<(td|th)\b([^>]*)>([\s\S]*?)(?=<t[dh]\b|<\/tr\s*>|$)/gi; let m;
+      while ((m = re.exec(tr))) { cells.push(cellTx(m[3])); const sp = Math.min(20, +((m[2].match(/colspan\s*=\s*["']?(\d+)/i) || [])[1] || 1)); for (let k = 1; k < sp; k++) cells.push(''); }
+      if (cells.length) R.push(cells); if (R.length > 300) break; }
+    return mdTable(R); }
+  function htmlToMd(html) { let h = String(html || ''); if (!/<table\b/i.test(h)) return '';
+    h = h.replace(/<!--[\s\S]*?-->/g, '').replace(/<(script|style|head|title|template|noscript|iframe|object|svg)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<(script|style|iframe|object)\b[^>]*>/gi, '');
+    const txt = (x) => deEnt(x.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h[1-6])\s*>/gi, '\n').replace(/<[^>]*>/g, '')).replace(/[ \t\u00a0]+/g, ' ').replace(/ *\n[\s]*/g, '\n').trim();
+    const out = []; const re = /<table\b[^>]*>([\s\S]*?)<\/table\s*>/gi; let last = 0, m, nt = 0;
+    while ((m = re.exec(h))) { const a = txt(h.slice(last, m.index)); if (a) out.push(a); const t = tableMd(m[1]); if (t) { out.push(t); nt++; } else { const b = txt(m[1]); if (b) out.push(b); } last = re.lastIndex; }
+    if (!last) return tableMd(h); const z = txt(h.slice(last)); if (z) out.push(z); return nt ? out.join('\n\n').slice(0, 200000) : ''; }
+  function tsvMd(text) { const L = String(text || '').replace(/\r\n?/g, '\n').replace(/\n+$/, '').split('\n'); if (L.length < 2 || L.length > 300) return ''; const R = L.map((l) => l.split('\t')); const n = R[0].length; if (n < 2 || R.some((r) => r.length !== n)) return ''; return mdTable(R.map((r) => r.map((c) => c.trim().replace(/\|/g, '¦')))); }
+  /* 메모 보이기 — 표·사진이 든 메모만 마크다운으로 그림 · 그 밖의 메모(예전 메모 모두)는 예전 그대로 글자 그대로(줄바꿈 지킴) */
+  const hasTbl = (t) => { const L = String(t || '').split('\n'); for (let k = 0; k + 1 < L.length; k++) if (L[k].includes('|') && isSep(L[k + 1])) return true; return false; };
+  const IMGRE = /!\[[^\]\n]*\]\((https:[^)\s]+)\)/;
+  const richOf = (t) => hasTbl(t) || (IMGRE.test(String(t || '')) && isStoreImg(String(t).match(IMGRE)[1]));
+  const txHtml = (t, tag) => (richOf(t) ? `<div class="tx jbn-rich">${md(t)}</div>` : `<${tag} class="tx">${esc(t)}</${tag}>`);
+  const noImg = (t) => String(t || '').replace(/!\[([^\]\n]*)\]\([^)\s]+\)/g, (_, a) => '📷' + (a && a !== '사진' ? a : ''));
   function md(src) {
     const L = String(src || '').replace(/\r\n?/g, '\n').split('\n'); let out = '', i = 0, m;
     const blank = (t) => /^\s*$/.test(t);
@@ -140,6 +166,8 @@
 .jbn-cfg{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:8px 12px;margin-block:4px 8px;display:grid;gap:6px;font-size:13.5px}.jbn-cfg .r{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.jbn-cfg .r>b{font-weight:600;min-width:9em}.jbn-cfg .jbn-b[aria-pressed="true"]{background:var(--a);color:var(--ai);border-color:var(--a)}
 .jbn-mchips{display:flex;gap:6px;flex-wrap:wrap}.jbn-mchips .jbn-b[aria-pressed="true"]{background:var(--a);color:var(--ai);border-color:var(--a)}.jbn-mi .mh{display:flex;gap:6px;align-items:flex-start}.jbn-mi .mt{flex:1;min-width:0;border:0;background:none;padding:2px 0;text-align:left;font-weight:600;font-size:14.5px;overflow-wrap:anywhere;color:inherit}.jbn-mi .ms{font-size:12.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jbn-mi[data-arch="1"]{border-left-color:var(--fa)}.jbn-slot{border:1px solid var(--ln);background:var(--s2);border-radius:9px;padding:4px 6px;min-height:40px;display:grid;line-height:1.25;text-align:center;font-size:13.5px;font-weight:600}.jbn-slot .jsn{font-size:11px;font-weight:500;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jbn-slot[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:var(--ai)}.jbn-slot[aria-pressed="true"] .jsn{color:var(--ai);opacity:.9}.jbn-dock .sv{font-size:11.5px;color:var(--fa)}
 .jbn-mine{display:grid;gap:8px}.jbn-mw{display:grid;gap:6px;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px}.jbn-mw textarea,.jbn-mi textarea{width:100%;min-height:72px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:8px;padding:8px 10px;font:inherit;resize:vertical}.jbn-mi{background:var(--sf);border:1px solid var(--ln);border-left:4px solid var(--a);border-radius:4px 10px 10px 4px;padding:8px 12px}.jbn-mi .tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}.jbn-mi .ft{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--fa);margin-top:6px}.jbn-mi .ft .jbn-sp{flex:1}
+.jbn-rich{white-space:normal}.jbn-rich p{margin-block:.25em}.jbn-rich ul,.jbn-rich ol{padding-inline-start:1.3em;margin-block:.3em}.jbn-rich .jbn-tbl{background:var(--sf);color:var(--tx);font-family:system-ui,sans-serif}.jbn-img{display:inline-block;margin:4px 4px 0 0;vertical-align:top}.jbn-img img{display:block;max-width:min(100%,420px);max-height:320px;border-radius:8px;border:1px solid var(--ln);background:var(--s2);object-fit:contain}.jbn-body .jbn-img img{max-width:100%}
+.jbn-drop{outline:2px dashed var(--a);outline-offset:2px}.jbn-pic{font-size:12px;color:var(--fa)}textarea.jbn-grow{resize:vertical;overflow-y:hidden}
 @media (max-width:520px){.jbn-dock .dr{flex-wrap:wrap}.jbn-dock textarea{flex-basis:100%}.jbn-acts .jbn-b{padding:4px 8px}.jbn-cat>summary{font-size:15.5px}}`;
 
   function mount(root, store, opt) {
@@ -163,6 +191,7 @@
       return Promise.resolve().then(() => store.write(ops)).then(() => { U.lastW = Date.now() - t0; for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); renderSoon(); })
         .catch((e) => { for (const [id, ent] of mine) if (U.ov.get(id) === ent) U.ov.delete(id); render(); toast('저장 못 함 — 되돌렸습니다 · ' + (e && (e.message || e.code) || '연결 확인')); }); };
 
+    const picB = () => (store.upload ? '<button class="jbn-b" type="button" data-act="pic" title="사진 넣기 — 여러 장 고를 수 있음 · 메모 칸에 끌어 놓거나 붙여넣기(Ctrl+V)도 됨 · 큰 사진은 줄여서 올림">📷 사진</button>' : '');
     function cardHtml(c, M, tab, showPath) {
       const open = U.open.has(c.id); const ms = M.byCard.get(c.id) || []; const nw = isNew(c); const imp = impOf(c);
       const st = stateOf(c); const acts = st === 'open' ? `<button class="jbn-b" data-act="done">✅ 완료</button><button class="jbn-b" data-act="hold">⏸ 보류</button><button class="jbn-b" data-act="archive">🗄 보관</button><button class="jbn-b dn" data-act="trash">🗑 휴지통</button>${nw ? '<button class="jbn-b" data-act="read">👁 읽음</button>' : ''}`
@@ -176,14 +205,14 @@
         ${ms.map((m) => memoHtml(m, false)).join('')}
         <div class="jbn-compose" data-comp="${esc(c.id)}">${(U.sd.get(c.id) || []).map((x, k) => `<div class="qt" data-sdraft="${k}">✎ 아직 안 쌓은 문장 메모 — “${esc(String(x.quote).slice(0, 200))}” · <span style="font-style:normal;color:var(--memo-tx)">${esc(x.text.slice(0, 300))}</span> <button class="jbn-b" data-act="sdx" data-k="${k}" style="min-height:24px;padding:0 6px">빼기</button></div>`).join('')}${comp && U.comp.quote ? `<div class="qt">고른 글: “${esc(U.comp.quote.slice(0, 300))}” <button class="jbn-b" data-act="unquote" style="min-height:24px;padding:0 6px">고른 글 빼기</button></div>` : ''}
           <label class="sr-only" for="jbn-ta-${esc(c.id)}" style="position:absolute;left:-9999px">이 카드에 메모</label><textarea id="jbn-ta-${esc(c.id)}" data-ta="${esc(c.id)}" placeholder="${comp && U.comp.quote ? '고른 글에 대한 메모' : '이 카드 전체에 대한 메모 — 본문에서 글을 고르면 그 문장에 대한 메모'}">${comp ? esc(U.draft) : ''}</textarea>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="jbn-b pri" data-act="memo">💬 메모 달기</button><span style="font-size:12px;color:var(--fa);align-self:center">카드 전체 메모 · 본문 글을 고르면 그 자리 버블로 · 칸이 비어도 고른 글에 쓴 메모가 있으면 이 단추로 함께 · 아래 🧾 통합 노트에 쌓입니다</span></div></div>`; }
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="jbn-b pri" data-act="memo">💬 메모 달기</button>${picB()}<span style="font-size:12px;color:var(--fa);align-self:center">카드 전체 메모 · 본문 글을 고르면 그 자리 버블로 · 칸이 비어도 고른 글에 쓴 메모가 있으면 이 단추로 함께 · 아래 🧾 통합 노트에 쌓입니다</span></div></div>`; }
       return `<article class="jbn-card" data-card="${esc(c.id)}" data-new="${nw ? 1 : 0}" data-moved="${tab === 'new' && !nw && U.seen.has(c.id) ? 1 : 0}"><div class="jbn-ch"><span class="jbn-imp" title="중요도 ${imp}/3">${'●'.repeat(imp)}<i>${'●'.repeat(3 - imp)}</i></span><div style="flex:1;min-width:0"><button class="jbn-tt" data-act="toggle" aria-expanded="${open}">${esc(c.title || '제목 없음')}</button><div class="jbn-meta">${meta}</div>${open ? '' : `<div class="jbn-snip">${esc(plain(c.body).slice(0, 220))}</div>`}</div><button class="jbn-star" type="button" data-act="fav" aria-pressed="${c.pinned ? 'true' : 'false'}" title="${c.pinned ? '즐겨찾기에서 빼기' : '⭐ 즐겨찾기에 넣기'}" aria-label="${c.pinned ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}">${c.pinned ? '★' : '☆'}</button></div><div class="jbn-acts">${acts}${bdl}</div>${body}</article>`;
     }
     function memoHtml(m, inFeed, cardsById) {
       const c = inFeed && m.cardId ? cardsById.get(m.cardId) : null;
       const ref = inFeed ? `<div class="ref">${m.cardId ? `카드 <button data-goto="${esc(m.cardId)}">「${esc((c && c.title) || m.cardTitle || '카드')}」</button>${m.quote ? ' › 고른 글' : ' 전체'}` : '통합 노트에 바로 씀'}</div>` : '';
-      if (inFeed && U.edit === m.id) return `<div class="jbn-memo" data-memo="${esc(m.id)}">${ref}${m.quote ? `<span class="qt">“${esc(String(m.quote).slice(0, 400))}”</span>` : ''}<label for="jbn-ed" style="position:absolute;left:-9999px">메모 고치기</label><div class="jbn-compose" style="margin-top:4px"><textarea id="jbn-ed" data-edta="1">${esc(U.editDraft != null ? U.editDraft : m.text)}</textarea><div style="display:flex;gap:6px"><button class="jbn-b pri" data-act="qsave" data-mid="${esc(m.id)}">저장</button><button class="jbn-b" data-act="qcancel">그만두기</button></div></div></div>`;
-      return `<div class="jbn-memo" data-memo="${esc(m.id)}">${ref}${m.quote ? `<span class="qt">“${esc(String(m.quote).slice(0, 400))}”</span>` : ''}<span class="who">정범</span><span class="tx">${esc(m.text)}</span><div class="ft"><span>${kst(m.at)}</span>${m.batchId ? '<span>💬 보냄</span>' : '<span>아직 안 보냄</span>'}${!m.batchId && inFeed ? `<button data-act="qup" data-mid="${esc(m.id)}" title="위로">↑ 위로</button><button data-act="qdown" data-mid="${esc(m.id)}" title="아래로">↓ 아래로</button><button data-act="qedit" data-mid="${esc(m.id)}">✏ 고치기</button>` : ''}${!m.batchId ? `<button data-act="memotrash" data-mid="${esc(m.id)}">빼기</button>` : ''}</div></div>`;
+      if (inFeed && U.edit === m.id) return `<div class="jbn-memo" data-memo="${esc(m.id)}">${ref}${m.quote ? `<span class="qt">“${esc(String(m.quote).slice(0, 400))}”</span>` : ''}<label for="jbn-ed" style="position:absolute;left:-9999px">메모 고치기</label><div class="jbn-compose" style="margin-top:4px"><textarea id="jbn-ed" data-edta="1">${esc(U.editDraft != null ? U.editDraft : m.text)}</textarea><div style="display:flex;gap:6px"><button class="jbn-b pri" data-act="qsave" data-mid="${esc(m.id)}">저장</button><button class="jbn-b" data-act="qcancel">그만두기</button>${picB()}</div></div></div>`;
+      return `<div class="jbn-memo" data-memo="${esc(m.id)}">${ref}${m.quote ? `<span class="qt">“${esc(String(m.quote).slice(0, 400))}”</span>` : ''}<span class="who">정범</span>${txHtml(m.text, 'span')}<div class="ft"><span>${kst(m.at)}</span>${m.batchId ? '<span>💬 보냄</span>' : '<span>아직 안 보냄</span>'}${!m.batchId && inFeed ? `<button data-act="qup" data-mid="${esc(m.id)}" title="위로">↑ 위로</button><button data-act="qdown" data-mid="${esc(m.id)}" title="아래로">↓ 아래로</button><button data-act="qedit" data-mid="${esc(m.id)}">✏ 고치기</button>` : ''}${!m.batchId ? `<button data-act="memotrash" data-mid="${esc(m.id)}">빼기</button>` : ''}</div></div>`;
     }
     /* (note4 · 정범님 11/13 15:06) 화면 아래 붙은 통합 입력칸 — 쌓인 메모·인용 수 · 바로 쓰기(Enter 적기 · Shift+Enter 줄바꿈) · 모두 보내기 · 목록으로 */
     function slotsHtml(M) {
@@ -216,19 +245,19 @@
       const n = {}; for (const k of Object.keys(V)) n[k] = M.mine.filter(V[k]).length;
       const v = V[U.mview] ? U.mview : 'all';
       const L = M.mine.filter((d) => V[v](d) && (!q || String(d.text || '').toLowerCase().includes(q))).sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || ord(y).localeCompare(ord(x)));
-      const first = (t) => { const ln = String(t || '').split('\n').map((x) => x.trim()).filter(Boolean); return [ln[0] || '(빈 메모)', ln.slice(1).join(' ')]; };
+      const first = (t) => { const ln = noImg(t).split('\n').map((x) => x.trim()).filter(Boolean); return [ln[0] || '(빈 메모)', ln.slice(1).join(' ')]; };
       const item = (d) => { const sd = st(d); const op = mOpenOf(M, d.id); const [t1, rest] = first(d.text);
         const star = sd === 'trashed' ? '' : `<button class="jbn-star" type="button" data-act="mfav" data-mid="${esc(d.id)}" aria-pressed="${d.pinned ? 'true' : 'false'}" aria-label="${d.pinned ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${d.pinned ? '즐겨찾기에서 빼기' : '⭐ 즐겨찾기'}">${d.pinned ? '★' : '☆'}</button>`;
         const head = `<div class="mh"><button class="mt" type="button" data-act="mtoggle" data-mid="${esc(d.id)}" aria-expanded="${op}">${op ? '▾' : '▸'} ${esc(t1.slice(0, 120))}</button>${star}</div>`;
-        if (U.medit === d.id && sd !== 'trashed') return `<div class="jbn-mi" data-mine="${esc(d.id)}" data-fold="1">${head}<label for="jbn-med" style="position:absolute;left:-9999px">내 메모 고치기</label><textarea id="jbn-med">${esc(U.meditDraft != null ? U.meditDraft : d.text)}</textarea><div class="ft"><button class="jbn-b pri" data-act="msave" data-mid="${esc(d.id)}">저장</button><button class="jbn-b" data-act="mcancel">그만두기</button></div></div>`;
+        if (U.medit === d.id && sd !== 'trashed') return `<div class="jbn-mi" data-mine="${esc(d.id)}" data-fold="1">${head}<label for="jbn-med" style="position:absolute;left:-9999px">내 메모 고치기</label><textarea id="jbn-med">${esc(U.meditDraft != null ? U.meditDraft : d.text)}</textarea><div class="ft"><button class="jbn-b pri" data-act="msave" data-mid="${esc(d.id)}">저장</button><button class="jbn-b" data-act="mcancel">그만두기</button>${picB()}</div></div>`;
         if (!op) return `<div class="jbn-mi" data-mine="${esc(d.id)}" data-fold="0" data-arch="${sd === 'archived' ? 1 : 0}">${head}<div class="ms">${esc(rest.slice(0, 140))}${rest ? ' · ' : ''}${kst(d.editedAt || d.at || d.createdAt)}${sd === 'archived' && v !== 'arch' ? ' · 🗄 보관' : ''}</div></div>`;
         const acts = sd === 'trashed' ? `<button class="jbn-b pri" data-act="mrestore" data-mid="${esc(d.id)}">↩ 되살리기</button>`
           : `<button class="jbn-b" data-act="medit" data-mid="${esc(d.id)}">✏ 고치기</button>${sd === 'archived' ? `<button class="jbn-b" data-act="mrestore" data-mid="${esc(d.id)}">↩ 보관에서 꺼내기</button>` : `<button class="jbn-b" data-act="march" data-mid="${esc(d.id)}">🗄 보관</button>`}<button class="jbn-b dn" data-act="mtrash" data-mid="${esc(d.id)}">🗑 휴지통</button>`;
-        return `<div class="jbn-mi" data-mine="${esc(d.id)}" data-fold="1" data-arch="${sd === 'archived' ? 1 : 0}">${head}<div class="tx">${esc(d.text)}</div><div class="ft"><span>${kst(d.at || d.createdAt)}${d.editedAt ? ' · 고침 ' + kst(d.editedAt) : ''}${sd === 'archived' ? ' · 🗄 보관' : ''}</span><span class="jbn-sp"></span>${acts}</div></div>`; };
+        return `<div class="jbn-mi" data-mine="${esc(d.id)}" data-fold="1" data-arch="${sd === 'archived' ? 1 : 0}">${head}${txHtml(d.text, 'div')}<div class="ft"><span>${kst(d.at || d.createdAt)}${d.editedAt ? ' · 고침 ' + kst(d.editedAt) : ''}${sd === 'archived' ? ' · 🗄 보관' : ''}</span><span class="jbn-sp"></span>${acts}</div></div>`; };
       const chip = (k, l) => `<button class="jbn-b" type="button" data-mview="${k}" aria-pressed="${v === k}">${l}${n[k] ? ` ${n[k]}` : ''}</button>`;
       const empty = q ? `'${esc(U.q)}'에 맞는 내 메모가 없습니다.` : { all: '아직 내 메모가 없습니다. 위 칸에 적어 보세요.', fav: '⭐ 즐겨찾기한 내 메모가 없습니다. 메모 오른쪽 ☆를 누르면 여기 모입니다.', arch: '🗄 보관한 내 메모가 없습니다. 메모를 펼쳐 [🗄 보관]을 누르면 여기 모입니다(지우지 않음).', trash: '🗑 휴지통이 비었습니다. 휴지통 메모는 지워지지 않고 되살릴 수 있습니다.' }[v];
       return `<section class="jbn-mine" aria-label="내 메모"><div class="jbn-banner">📝 정범님만 보는 메모입니다 — Claude(리드)에게 보내지 않고 받은 편지에도 잡히지 않습니다. 웹앱 📓과 아티팩트 어디서 열어도 같습니다. 제목 줄을 누르면 펼치고 접힙니다.</div>
-        <div class="jbn-mw"><label for="jbn-mine-ta" style="position:absolute;left:-9999px">새 내 메모</label><textarea id="jbn-mine-ta" data-mineta="1" placeholder="나만 볼 메모 — [📝 적기] 또는 Ctrl+Enter">${esc(U.mineDraft)}</textarea><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="jbn-b pri" data-act="mineadd">📝 적기</button><span style="font-size:12px;color:var(--fa)">첫 줄이 제목 · 고치기·⭐·보관·휴지통(지우지 않음)</span></div></div>
+        <div class="jbn-mw"><label for="jbn-mine-ta" style="position:absolute;left:-9999px">새 내 메모</label><textarea id="jbn-mine-ta" data-mineta="1" placeholder="나만 볼 메모 — [📝 적기] 또는 Ctrl+Enter">${esc(U.mineDraft)}</textarea><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="jbn-b pri" data-act="mineadd">📝 적기</button>${picB()}<span style="font-size:12px;color:var(--fa)">첫 줄이 제목 · 고치기·⭐·보관·휴지통(지우지 않음)</span></div></div>
         <div class="jbn-mchips" role="group" aria-label="내 메모 보기">${chip('all', '전체')}${chip('fav', '⭐ 즐겨찾기')}${chip('arch', '🗄 보관함')}${chip('trash', '🗑 휴지통')}</div>
         ${L.length ? L.map(item).join('') : `<div class="jbn-empty">${empty}</div>`}</section>`;
     }
@@ -304,6 +333,50 @@
     root.addEventListener('compositionend', (e) => { U.ime = false; U.imeAt = 0; const t = e.target; if (t && t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); U.qT = setTimeout(render, 120); } else if (U.pend) renderSoon(); });
     root.addEventListener('focusout', () => { if (U.ime) { U.ime = false; } });
     root.addEventListener('input', (e) => { const t = e.target; if (e.isComposing && U.ime) U.imeAt = Date.now(); if (t.id === 'jbn-q') { U.q = t.value; clearTimeout(U.qT); if (!(e.isComposing || imeOn())) U.qT = setTimeout(render, 200); /* (note6) 칸은 그대로 두고 목록만 다시 그림 · 조합 중이면 조합이 끝날 때 그림 · 포커스·글자 자리를 코드로 옮기지 않음 */ } else if (t.dataset.ta) { U.comp = U.comp && U.comp.cardId === t.dataset.ta ? U.comp : { cardId: t.dataset.ta, quote: null }; U.draft = t.value; } else if (t.dataset.feedta) { U.feedDraft = t.value; U.dDirty = true; setSv('✎ 저장 중…'); saveDraft(false); const sb = root.querySelector('[data-act="send"]'); const dn = root.querySelector('[data-dockn]'); if (sb && !U.busy) sb.disabled = !(+((dn && dn.dataset.dockn) || 0) || t.value.trim()); } else if (t.dataset.mineta) U.mineDraft = t.value; else if (t.id === 'jbn-med') U.meditDraft = t.value; else if (t.id === 'jbn-ed') U.editDraft = t.value; });
+    /* (note8 · 정범님 11/16 15:28) 📷 사진·📋 표 붙여넣기·자라는 칸
+     *  사진: 메모 칸에 끌어 놓기·붙여넣기·[📷 사진](여러 장) → store.upload(웹앱 = 줄여서 Firebase Storage)가 준 주소를 칸에 ![사진](주소) 한 줄로 · 올리는 동안 ⏳ 표시 · 올릴 곳이 없으면(아티팩트) 알림만
+     *  표: 클립보드 HTML 표·스프레드시트 칸(탭) → 마크다운 표 글(htmlToMd·tsvMd — 글자만 뽑음) · 저장 꼴은 예전과 같은 글
+     *  자라는 칸: 새 메모·메모 고치기 칸은 쓰는 대로 화면 높이(85%)까지 커지고, 칸을 떠나면 다시 작아짐(통합 입력칸은 예전처럼 설정 높이) */
+    const MEMO_TA = (t) => !!(t && t.tagName === 'TEXTAREA' && t.dataset && (t.dataset.ta || t.dataset.mineta || t.dataset.feedta || t.dataset.edta || t.id === 'jbn-med' || t.id === 'jbn-bub-ta'));
+    const taOf = (el) => { if (!el || !el.closest) return null; if (MEMO_TA(el)) return el; const box = el.closest('.jbn-compose,.jbn-mw,.jbn-mi,.jbn-dock,.jbn-bub'); const t = box && box.querySelector('textarea'); return MEMO_TA(t) ? t : null; };
+    const selOf = (ta) => (ta.dataset.ta ? `[data-ta="${CSS.escape(ta.dataset.ta)}"]` : ta.id ? '#' + ta.id : null);
+    const findTa = (sel) => (sel === '#jbn-bub-ta' ? document.getElementById('jbn-bub-ta') : sel ? root.querySelector(sel) : null);
+    const scr = () => (opt.scroller ? opt.scroller() : document.scrollingElement || document.documentElement);
+    function grow(ta) { if (!MEMO_TA(ta) || ta.dataset.feedta) return; const sc = scr(); const y = sc.scrollTop; ta.classList.add('jbn-grow'); const max = Math.round((window.innerHeight || 800) * (ta.id === 'jbn-bub-ta' ? 0.5 : 0.85)); ta.style.height = 'auto'; const h = ta.scrollHeight + 2; ta.style.height = Math.min(h, max) + 'px'; ta.style.overflowY = h > max ? 'auto' : 'hidden'; if (sc.scrollTop !== y) sc.scrollTop = y; }
+    function shrink(ta) { if (!MEMO_TA(ta) || ta.dataset.feedta) return; ta.style.height = ''; ta.style.overflowY = ''; }
+    function putText(ta, txt) { const here = document.activeElement === ta; const a = here && ta.selectionStart != null ? ta.selectionStart : ta.value.length; const z = here && ta.selectionEnd != null ? ta.selectionEnd : a;
+      const pre = ta.value.slice(0, a), post = ta.value.slice(z); const multi = /\n/.test(txt) || /^!\[/.test(txt); const s0 = (pre && !/\n$/.test(pre) && multi ? '\n' : '') + txt + (multi && post && !/^\n/.test(post) ? '\n' : '');
+      ta.value = pre + s0 + post; const c = (pre + s0).length; try { ta.setSelectionRange(c, c); } catch (e) {} ta.dispatchEvent(new Event('input', { bubbles: true })); if (here) grow(ta); }
+    U.upN = 0;
+    function swapTok(sel, ta, tok, v) { const t = ta && ta.isConnected ? ta : findTa(sel);
+      const cut = (x) => (v ? x.replace(tok, v) : x.includes(tok + '\n') ? x.replace(tok + '\n', '') : x.replace(tok, ''));
+      if (t && t.value.includes(tok)) { const here = document.activeElement === t; const p = t.selectionStart, k = t.value.indexOf(tok); const nv = cut(t.value); const d = nv.length - t.value.length; t.value = nv; if (here && p != null) { const q = p > k ? Math.max(k, p + d) : p; try { t.setSelectionRange(q, q); } catch (e) {} } if (t.id === 'jbn-bub-ta') { if (here) grow(t); return; } t.dispatchEvent(new Event('input', { bubbles: true })); if (here) grow(t); return; }
+      let hit = false; for (const k of ['draft', 'feedDraft', 'mineDraft', 'meditDraft', 'editDraft']) if (typeof U[k] === 'string' && U[k].includes(tok)) { U[k] = cut(U[k]); hit = true; if (k === 'feedDraft') { U.dDirty = true; saveDraft(false); } } if (hit) renderSoon(); }
+    async function addPics(ta, files) { const L = [...(files || [])].filter((f) => f && /^image\//.test(f.type || '')).slice(0, 20); const more = [...(files || [])].filter((f) => f && /^image\//.test(f.type || '')).length - L.length;
+      if (!L.length) return false; if (!store.upload) { toast('📷 사진 넣기는 웹앱 📓 노트에서 됩니다 — 여기서는 글만'); return true; } if (!ta) return true;
+      const sel = selOf(ta); const toks = L.map((_, i) => `⏳[사진 올리는 중 ${i + 1}/${L.length} · ${rid('p').slice(-5)}]`);
+      putText(ta, toks.join('\n')); U.upN++; toast(`📷 사진 ${L.length}장 올리는 중…${more > 0 ? ` (한 번에 20장까지 — ${more}장은 빼 둠)` : ''}`); let okN = 0; const bad = []; let k = 0;
+      const one = async () => { while (k < L.length) { const i = k++; try { const url = String((await store.upload(L[i])) || ''); if (!/^https:\/\//.test(url)) throw new Error('주소를 못 받음'); swapTok(sel, ta, toks[i], `![사진](${url.replace(/[()\s]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))})`); okN++; } catch (e) { swapTok(sel, ta, toks[i], ''); bad.push(String((e && (e.message || e.code)) || e).slice(0, 80)); } } };
+      try { await Promise.all([one(), one(), one()]); } finally { U.upN--; }
+      toast(bad.length ? `📷 ${okN}장 넣음 · ${bad.length}장 못 올림 — ${bad[0]}` : `📷 사진 ${okN}장을 칸에 넣었습니다 — [저장]·[적기]를 눌러야 메모에 남습니다`); return true; }
+    function onPaste(e) { const ta = e.target; if (!MEMO_TA(ta)) return; const cd = e.clipboardData; if (!cd) return;
+      const html = cd.getData('text/html') || ''; const tm = /<table\b/i.test(html) ? htmlToMd(html) : '';
+      if (tm) { e.preventDefault(); putText(ta, tm); toast('📋 표 모양 그대로 붙였습니다(표 글) — 저장하면 표로 보입니다'); return; } /* 엑셀은 표와 함께 칸 그림도 넣어 줌 — 표를 먼저 */
+      let fs = [...(cd.files || [])]; if (!fs.length && cd.items) for (const it of cd.items) if (it.kind === 'file') { const f = it.getAsFile(); if (f) fs.push(f); }
+      if (fs.some((f) => /^image\//.test(f.type || ''))) { e.preventDefault(); addPics(ta, fs); return; }
+      const tx = cd.getData('text/plain') || ''; const tv = /\t/.test(tx) ? tsvMd(tx) : ''; if (tv) { e.preventDefault(); putText(ta, tv); toast('📋 표 모양 그대로 붙였습니다(표 글)'); } }
+    const dragFiles = (e) => { const t = e.dataTransfer && e.dataTransfer.types; return !!t && [...t].includes('Files'); };
+    const dropOff = () => { if (U.dropEl) U.dropEl.classList.remove('jbn-drop'); U.dropEl = null; };
+    function onDragOver(e) { if (!dragFiles(e)) return; e.preventDefault(); /* 칸 밖에 놓아도 브라우저가 사진을 열어 노트를 떠나지 않게 */ const ta = taOf(e.target); try { e.dataTransfer.dropEffect = ta ? 'copy' : 'none'; } catch (x) {} if (U.dropEl !== ta) { dropOff(); if (ta) { U.dropEl = ta; ta.classList.add('jbn-drop'); } } }
+    function onDrop(e) { const ta = taOf(e.target); dropOff(); if (!e.dataTransfer) return; const fs = [...(e.dataTransfer.files || [])];
+      if (fs.length) { e.preventDefault(); if (!ta) { toast('📷 사진은 메모 칸 위에 놓아 주세요'); return; } if (!fs.some((f) => /^image\//.test(f.type || ''))) { toast('사진(그림 파일)만 넣을 수 있습니다'); return; } addPics(ta, fs); return; }
+      if (!ta) return; const h = e.dataTransfer.getData('text/html') || ''; const tm = /<table\b/i.test(h) ? htmlToMd(h) : ''; if (tm) { e.preventDefault(); ta.focus(); putText(ta, tm); } }
+    const fileIn = document.createElement('input'); fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.multiple = true; fileIn.hidden = true; fileIn.setAttribute('aria-hidden', 'true'); document.body.appendChild(fileIn);
+    fileIn.addEventListener('change', () => { const fs = [...(fileIn.files || [])]; fileIn.value = ''; const t = findTa(U.picSel); if (fs.length) addPics(t, fs); });
+    for (const el of [root]) { el.addEventListener('paste', onPaste); el.addEventListener('dragover', onDragOver); el.addEventListener('dragleave', (e) => { if (e.target === U.dropEl) dropOff(); }); el.addEventListener('drop', onDrop); }
+    root.addEventListener('input', (e) => grow(e.target)); root.addEventListener('focusin', (e) => { if (MEMO_TA(e.target) && e.target.value) grow(e.target); });
+    root.addEventListener('focusout', (e) => { const t = e.target; if (!MEMO_TA(t) || t.dataset.feedta) return; const chk = () => { if (U.dead || document.activeElement === t) return; if (U.ptr) { setTimeout(chk, 120); return; } shrink(t); }; setTimeout(chk, 150); }); /* 단추를 누르는 동안 칸이 줄어 단추가 움직이지 않게 — 손을 뗀 뒤에 줄임 */
+    const UPWAIT = { memo: 1, feedmemo: 1, mineadd: 1, msave: 1, qsave: 1, send: 1 };
     const docOf = (id) => view().get(id);
     root.addEventListener('click', async (e) => {
       U.act = Date.now(); /* (note5 둘째) 사람이 누른 동작은 글칸에 손이 있어도 바로 그림 — 휴대폰에서 글칸이 손을 쥔 채라 [✏ 고치기]가 미뤄져 '안 됨'으로 보였음 */
@@ -314,6 +387,8 @@
       const gt = e.target.closest('[data-goto]'); if (gt) { const id = gt.dataset.goto; const d = docOf(id); if (d) { U.tab = tabOf({ id, ...d }); U.open.add(id); render(); const el = root.querySelector(`[data-card="${CSS.escape(id)}"]`); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
       const b = e.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
       const cardEl = b.closest('[data-card]'); const id = cardEl && cardEl.dataset.card; const at = nowIso(); const a = b.dataset.act;
+      if (UPWAIT[a] && U.upN > 0) { toast('📷 사진을 올리는 중입니다 — ⏳ 표시가 사라진 뒤 눌러 주세요'); return; }
+      if (a === 'pic') { const t = taOf(b); if (!t) return; U.picSel = selOf(t); fileIn.click(); return; }
       if (a === 'toggle') { if (U.open.has(id)) { U.open.delete(id); U.seen.delete(id); /* 접을 때 새로 온 것 목록에서 빠짐(펼친 동안은 그 자리 — 읽던 카드가 튀지 않게) */ } else { U.open.add(id); const d = docOf(id); if (d && isNew({ id, ...d })) U.seen.add(id); if (d && isNew({ id, ...d })) W([{ op: 'merge', id, data: { readAt: at } }]); } render(); return; }
       if (a === 'fav') { const on = !(docOf(id) || {}).pinned; return W([{ op: 'merge', id, data: { pinned: on } }], on ? '⭐ 즐겨찾기에 넣었습니다' : '즐겨찾기에서 뺐습니다'); }
       if (a === 'done') return W([{ op: 'merge', id, data: { state: 'done', stateAt: at, readAt: (docOf(id) || {}).readAt || at } }], '✅ 완료로 옮겼습니다');
@@ -372,24 +447,26 @@
     const bub = document.createElement('div'); bub.className = 'jbn jbn-bub'; bub.hidden = true; bub.setAttribute('role', 'dialog'); bub.setAttribute('aria-label', '고른 글에 메모');
     bub.innerHTML = '<div class="qt" data-bq></div><label for="jbn-bub-ta" style="position:absolute;left:-9999px">고른 글에 대한 메모</label><textarea id="jbn-bub-ta" rows="2" placeholder="메모 — Enter 쌓기 · Shift+Enter 줄바꿈 · Esc 닫기"></textarea><div class="bf"><span>인용과 함께 아래 통합 노트에 쌓입니다</span><span class="jbn-sp"></span><button type="button" class="jbn-b" data-bub="x">닫기</button><button type="button" class="jbn-b pri" data-bub="ok">💬 쌓기</button></div>';
     document.body.appendChild(bub); const bta = bub.querySelector('textarea');
-    const bubClose = () => { bub.hidden = true; U.bub = null; bta.value = ''; };
+    const bubClose = () => { bub.hidden = true; U.bub = null; bta.value = ''; shrink(bta); };
     function bubOpen(id, q, r) { const keep = U.bub && bta.value.trim(); if (keep) { const L = U.sd.get(U.bub.cardId) || []; L.push({ quote: U.bub.quote, text: keep }); U.sd.set(U.bub.cardId, L); } /* (note7) 버블에 적은 채 다른 문장을 고르면 앞 메모는 카드 안 초안으로(예전엔 지워짐) */ U.bub = { cardId: id, quote: q }; bub.querySelector('[data-bq]').textContent = '“' + q.slice(0, 240) + (q.length > 240 ? '…' : '') + '”'; bta.value = ''; bub.hidden = false;
       const W0 = window.innerWidth, H0 = window.innerHeight, w = Math.min(380, W0 - 24); bub.style.width = w + 'px';
       if (W0 <= 520) { bub.style.left = '12px'; bub.style.top = 'calc(8px + env(safe-area-inset-top, 0px))'; } /* 휴대폰: 자판이 아래에서 올라오므로 화면 위에 */
       else { const h = bub.offsetHeight || 150; const below = r.bottom + 8 + h < H0 - 8; bub.style.left = Math.max(12, Math.min(W0 - w - 12, r.left)) + 'px'; bub.style.top = (below ? r.bottom + 8 : Math.max(8, r.top - h - 8)) + 'px'; }
       try { bta.focus({ preventScroll: true }); } catch (e) { bta.focus(); } if (keep) { render(); toast('앞 문장 메모는 카드 안에 남겨 두었습니다 — [💬 메모 달기]로 함께 쌓입니다'); } }
     async function bubSave() { const b0 = U.bub; const txt = bta.value.trim(); if (!b0) return; if (!txt) { toast('메모 글을 적어 주세요'); bta.focus({ preventScroll: true }); return; }
+      if (U.upN > 0) { toast('📷 사진을 올리는 중입니다 — ⏳ 표시가 사라진 뒤 눌러 주세요'); return; }
       const d = docOf(b0.cardId) || {}; const at = nowIso(); bubClose(); try { const s0 = window.getSelection(); if (s0) s0.removeAllRanges(); } catch (e) {}
       const ops = [{ op: 'set', id: rid('m'), data: { kind: 'memo', cardId: b0.cardId, cardTitle: String(d.title || '').slice(0, 300), quote: b0.quote, text: txt, by: 'jb', at, state: 'open', slot: U.slot } }]; if (isNew({ id: b0.cardId, ...d })) ops.push({ op: 'merge', id: b0.cardId, data: { readAt: at } });
       await W(ops, '💬 인용과 메모를 아래 통합 노트에 쌓았습니다'); }
+    bub.addEventListener('paste', onPaste); bub.addEventListener('dragover', onDragOver); bub.addEventListener('drop', onDrop); bta.addEventListener('input', () => grow(bta));
     bta.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); bubClose(); return; } if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); bubSave(); } });
     bub.addEventListener('click', (e) => { const t = e.target.closest('[data-bub]'); if (!t) return; if (t.dataset.bub === 'x') bubClose(); else bubSave(); });
     const onDown = (e) => { if (U.dead) return; if (!bub.hidden && !bub.contains(e.target) && !bta.value.trim()) bubClose(); }; document.addEventListener('mousedown', onDown);
     selBtn.addEventListener('click', () => { const id = selBtn._card, q = selBtn._q, r = selBtn._r || { left: 20, top: 20, bottom: 40 }; selBtn.hidden = true; if (!id) return; bubOpen(id, q, r); });
     jump.addEventListener('click', () => { const f = root.querySelector('#jbn-feed'); if (f) f.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
     render();
-    return { render, destroy() { U.dead = true; for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
+    return { render, destroy() { U.dead = true; for (const [t, f, c] of U.docL || []) document.removeEventListener(t, f, c); document.removeEventListener('selectionchange', onSel); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide); document.removeEventListener('mousedown', onDown); clearTimeout(rT); clearTimeout(U.dT); clearTimeout(U.qT); selBtn.remove(); jump.remove(); bub.remove(); fileIn.remove(); if (U.toastEl) U.toastEl.remove(); root.innerHTML = ''; }, U };
   }
-  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, version: '5' };
+  G.JBN = { mount, model, tree, md, compose, queueOf, isNew, tabOf, stateOf, isFav, slotOf, SLOTS, STYLE, htmlToMd, tsvMd, richOf, isStoreImg, noImg, version: '6' };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ⟦jbn core 끝⟧ */
