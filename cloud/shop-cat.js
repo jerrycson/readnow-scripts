@@ -32,6 +32,7 @@
     [/^건강\/취미$/, '건강·취미'],
     [/^여행$/, '여행'],
     [/^만화$/, '만화'],
+    [/^만화\/라이트노벨$/, '만화'], /* (11/14 실제 우리숍 16,185쪽 훑음 — 2,104권) 알라딘 새 이름 · 예스24·교보 '만화' · 라이트노벨은 아래 칸 그대로 */
     [/^컴퓨터\/모바일$/, '컴퓨터·IT'], /* 교보 '컴퓨터/IT' · 예스24 'IT 모바일' */
     [/^외국어$/, '외국어'],
     [/^수험서\/자격증$/, '수험서·자격증'],
@@ -49,6 +50,8 @@
   /* 국내도서 나머지 칸(알라딘 1단계부터) → 우리 칸 · 모르는 1단계는 그대로(새 분류가 생겨도 빠지지 않게) */
   function mapDomestic(rest) { const R = (rest || []).slice(); if (!R.length) return R; const top = String(R[0] || '').trim();
     for (const [re, nm, sub] of DOM) if (re.test(top)) { const tail = R.slice(1); return sub ? [nm, sub, ...tail.filter((x, i) => !(i === 0 && x === sub))] : [nm, ...tail]; }
+    /* (11/14) 알라딘 기획 분류 '청소년_추천도서' 꼴 — 밑줄 앞 이름이 우리 이름이거나 바꿈표에 있으면 그 아래 칸(밑줄 뒤)으로 */
+    { const m = /^([^_]+)_(.+)$/.exec(top); if (m) { const base = m[1].trim(); const hit = OURS.includes(base) || DOM.some(([re]) => re.test(base)); if (hit) { const B = mapDomestic([base]); return [...B, m[2].replace(/_/g, ' ').trim(), ...R.slice(1)]; } } }
     return R; }
   /* ── 세트 — readnow-products-core.js setInfo의 '강한 신호'와 같음(약한 신호 '세트' 낱말만·전집 낱말만은 세트로 보지 않음) + 영문 세트 꼴(shelf-core setOf와 같은 꼴) */
   function setStrong(title) { const t0 = String(title || '').replace(/^\[중고[^\]]*\]\s*/, ''); const t = t0.split(/\s\/\s?|\/\s/)[0]; const L = t.length;
@@ -68,6 +71,13 @@
   /* 책 종류(국내도서·외국도서·잡지)만 세트가 됨 — 음반·영상 박스는 그 종류 그대로 */
   function isSet(k, rest, title, id, fix) { if (k !== '국내도서' && k !== '외국도서') return false; const f = id != null && fix ? fixOf(fix)[String(id)] : undefined;
     if (f != null) return f >= 2; if (k === '국내도서' && SET_ALL.test(String((rest || [])[0] || ''))) return true; return !!setStrong(title); }
+  /* (shopmisc1 2회 · 정범님 11/14 20:00 「세트는 그 책이 속한 분야에도 함께 보이게」) 세트 한 상품 = 경로 둘
+   *  subjPath = 분야 경로(세트도 그 분야 목록·책장에 나옴) · setPath = '세트>분야' 경로(세트 모음에도 나옴) — 알라딘·예스24 분야 목록·아마존 Boxed Sets 꼴
+   *  알라딘 '전집/중고전집'은 분야 경로가 없어 아래 칸 낱말로 유아·어린이를 고르고, 못 고르면 세트에만 */
+  function subjPath(P) { let k = P.k, rest = (P.rest || []).slice(); if (k !== '국내도서') return { k, rest: rest.slice(0, 6) };
+    if (SET_ALL.test(String(rest[0] || ''))) { const t = rest.slice(1).join(' '); const kid = /유아|영유아|그림책|0~7|아기/.test(t) ? '유아' : /어린이|초등|아동|동화|학습/.test(t) ? '어린이' : null; return kid ? { k, rest: [kid, '전집', ...rest.slice(1)].slice(0, 6) } : { k: SET_K, rest: (rest[1] ? [rest[1]] : ['전집']) }; }
+    return { k, rest: mapDomestic(rest).slice(0, 6) }; }
+  function setPath(P, title, id, fix) { const r = ourPath(P, title, id, fix); return r.k === SET_K ? r : null; }
   /* 종류·나머지(cloud/shop.js kindPath 결과) → 우리숍 경로 { k, rest } */
   function ourPath(P, title, id, fix) { let k = P.k, rest = (P.rest || []).slice();
     if (isSet(k, rest, title, id, fix)) { const sub = k === '외국도서' ? ['외국도서'] : SET_ALL.test(String(rest[0] || '')) ? (rest[1] ? [rest[1]] : ['전집']) : mapDomestic(rest).slice(0, 1); return { k: SET_K, rest: sub.filter(Boolean).slice(0, 2) }; }
@@ -83,5 +93,5 @@
   const unitOf = (k, title) => UNIT[unitKind(k, title)];
   /* 바꿈표 통째(보고서·시험·관리 화면 안내용) */
   const TABLE = () => DOM.map(([re, nm, sub]) => ({ al: String(re.source).replace(/^\^|\$$/g, '').replace(/\\\//g, '/').replace(/\\s\*/g, ' '), ours: sub ? nm + ' › ' + sub : nm }));
-  return { DOM, OURS, SET_K, mapDomestic, setStrong, fixOf, isSet, ourPath, legacyCp, UNIT, unitKind, unitOf, TABLE };
+  return { subjPath, setPath, DOM, OURS, SET_K, mapDomestic, setStrong, fixOf, isSet, ourPath, legacyCp, UNIT, unitKind, unitOf, TABLE };
 });

@@ -2,7 +2,7 @@
 //  ① 상품 카드 「🔎 소재불명」 두 번 누르기(0.4초 안 두 번째는 무시 · 무장된 단추 글에 대상 · 다시 그려도 무장 그대로) → 🔎 소재불명 페이지(lostAdd 그대로 · 출처 ship) · 출고 단계는 그대로 · 수색중 띠
 //  ② 소재불명 페이지 '＋ 직접 넣기'가 판매완료 상품도 찾음(✅ 판매완료 표시)
 //  ③ 정렬 「📚 상품명 순」(가나다 · 한 번 더 = 거꾸로 · '그다음' 고르기에도)
-//  ④ 검색창: 낱말 그대로·순서대로(부분 낱말·순서 바뀜 안 맞음 · 빈칸 여러 칸 = 하나 · 영문 대소문자 무시) · 숨은 ISBN·저자·SKU도 · 맞는 카드만 · 칠함 · Enter 다음 · Shift+Enter 앞 · Esc 지움
+//  ④ 검색창(11/15 느슨하게): 낱말 조각이 모두 들어 있으면 맞음(순서·띄어쓰기 상관없이 · 빈칸 여러 칸 = 하나 · 영문 대소문자 무시) · '정확히 ›'를 누르면 그 검색어만 낱말 그대로·순서대로 · 숨은 ISBN·저자·SKU도 · 맞는 카드만 · 칠함 · Enter 다음 · Shift+Enter 앞 · Esc 지움
 //     · 출고 단축키·스캐너와 안 겹침(칸 밖 글자는 칸에 안 들어감 · 칸 안 Enter는 다른 처리로 안 넘김 · '?' 도움말 안 뜸) · 다시 그려도 글·커서 그대로
 // 시험 자료 손님은 '손님A'·'손님B'… (공개 저장소) · 쓰는 법: RN_PORT=<포트> node tSHIP1110.js
 let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
@@ -37,6 +37,10 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     await typeQ('harry POTTER'); o.q3 = vis();
     await typeQ('해리 포'); o.q4 = { v: vis(), n: (sh().querySelector('#shp_qn') || {}).textContent };
     await typeQ('포터 해리'); o.q5 = vis();
+    /* 정확히 › — 그 검색어만 낱말 그대로·순서대로 · 느슨하게 ›로 돌아감 */
+    const preBtn = async (v) => { const b = sh().querySelector('#shp_qn [data-shqpre="' + v + '"]'); if (b) { b.click(); await W(300); } return !!b; };
+    await typeQ('해리 포터'); o.ex1 = { btn: await preBtn('1'), v: vis(), o: ords() }; o.ex1b = { btn: await preBtn('0'), v: vis() };
+    await typeQ('해리 포'); o.ex2 = { btn: await preBtn('1'), v: vis(), n: (sh().querySelector('#shp_qn') || {}).textContent }; await typeQ('해리 포터'); o.ex2b = vis(); /* 글을 바꾸면 다시 느슨하게 */
     await typeQ('9788900011111'); o.q6 = { v: vis(), o: ords() }; /* ISBN은 카드에 안 보임 — 숨은 찾기 글 */
     await typeQ('조앤 롤링'); o.q7 = vis(); await typeQ('문학수첩'); o.q7b = vis();
     await typeQ('손님C'); o.q8 = { o: ords(), v: vis() }; /* 주문 머리가 맞으면 그 주문 통째(두 상품) */
@@ -88,17 +92,21 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(R.nameBtn && R.nameOn && R.byName.join() === 'D-5,D-1,D-3,D-2,D-4' && R.byNameRev.join() === 'D-4,D-2,D-3,D-1,D-5', '📚 상품명 순 = 가나다(한국어 → 영문 뒤) · 한 번 더 = 거꾸로: ' + R.byName.join() + ' / ' + R.byNameRev.join());
   ok(R.sk2 && R.ss4, "'그다음' 고르기·④ 출고 탭 정렬에도 상품명 가나다");
   ok(R.qBar && R.qNoFocus, '검색칸은 머리 칸 안 · 열 때 포커스를 가져가지 않음(스캐너·단축키 그대로)');
-  ok(R.q1.v.length === 1 && /^해리 포터와/.test(R.q1.v[0]) && R.q1.o.join() === 'D-2' && R.q1.hl >= 1 && /1곳|곳/.test(R.q1.n || ''), "'해리 포터' = 그 순서로 이어진 글만(순서 바뀜·붙여 쓴 것 안 맞음) · 칠함 · 수: " + JSON.stringify(R.q1));
+  const HP = ['해리 포터와', '포터 해리', '해리포터 사전']; const has3 = (v) => v.length === 3 && HP.every((h) => v.some((x) => x.indexOf(h) === 0));
+  ok(has3(R.q1.v) && [...R.q1.o].sort().join() === 'D-2,D-3' && R.q1.hl >= 1 && /곳/.test(R.q1.n || ''), "(느슨하게) '해리 포터' = 두 조각이 다 든 글 — 순서 바뀐 것·붙여 쓴 것도 · 칠함 · 수: " + JSON.stringify({ o: R.q1.o, hl: R.q1.hl, n: R.q1.n, v: R.q1.v }));
   ok(tt(R.q2) === tt(R.q1.v), '빈칸 여러 칸·앞뒤 빈칸 = 하나로: ' + tt(R.q2));
   ok(R.q3.length === 1 && /^Harry/.test(R.q3[0]), '영문 대소문자 무시: ' + tt(R.q3));
-  ok(!R.q4.v.length && /없음/.test(R.q4.n || ''), "부분 낱말('해리 포') 안 맞음 → 없음: " + JSON.stringify(R.q4));
-  ok(R.q5.length === 1 && /^포터 해리/.test(R.q5[0]), "'포터 해리'는 그 순서 글만: " + tt(R.q5));
+  ok(has3(R.q4.v), "(느슨하게) 낱말 조각('해리 포')도 맞음: " + JSON.stringify(R.q4));
+  ok(has3(R.q5), "(느슨하게) '포터 해리'도 순서 상관없이: " + tt(R.q5));
+  ok(R.ex1.btn && R.ex1.v.length === 1 && /^해리 포터와/.test(R.ex1.v[0]) && R.ex1.o.join() === 'D-2', "'정확히 ›' = 낱말 그대로·순서대로(옛 동작): " + JSON.stringify(R.ex1));
+  ok(R.ex1b.btn && has3(R.ex1b.v), "'느슨하게 ›'로 돌아감: " + JSON.stringify(R.ex1b));
+  ok(R.ex2.btn && !R.ex2.v.length && /없음/.test(R.ex2.n || '') && has3(R.ex2b), "정확히면 '해리 포' 없음 · 글을 바꾸면 다시 느슨하게: " + JSON.stringify(R.ex2) + ' / ' + tt(R.ex2b));
   ok(R.q6.o.join() === 'D-1' && R.q6.v.length === 1, '카드에 안 보이는 ISBN으로도 찾음: ' + JSON.stringify(R.q6));
   ok(R.q7.length === 1 && R.q7b.length === 1, '저자·출판사로 찾음');
   ok(R.q8.o.join() === 'D-3' && R.q8.v.length === 2, '주문자(주문 머리)가 맞으면 그 주문 통째: ' + JSON.stringify(R.q8));
   ok(R.q9.join() === 'D-4' && R.q10.join() === 'D-1', '주문 번호·관리코드로 찾음: ' + R.q9.join() + ' / ' + R.q10.join());
   ok(R.nav.T0 >= 2 && R.nav.i1 === 0 && R.nav.i2 === 1 && R.nav.i3 === 0 && R.nav.i4 === R.nav.T0 - 1 && R.nav.cur === 1 && R.nav.curHl === 1, 'Enter 다음 · Shift+Enter 앞(처음에서 앞 = 맨 끝) · 지금 자리 칠함: ' + JSON.stringify(R.nav));
-  ok(R.redraw.v === '해리' && R.redraw.foc && R.redraw.sel === 1 && R.redraw.vis === 2, '다시 그려도 검색어·커서 자리·거르기 그대로: ' + JSON.stringify(R.redraw));
+  ok(R.redraw.v === '해리' && R.redraw.foc && R.redraw.sel === 1 && R.redraw.vis === 3, '다시 그려도 검색어·커서 자리·거르기 그대로: ' + JSON.stringify(R.redraw));
   ok(R.defer, '검색칸에 쓰는 동안은 출고 화면 다시 그리기를 미룸');
   ok(!R.keys.K1.help && R.keys.K1.v === '해리 포터?' && R.keys.K1.one === 0 && R.keys.K1.sheet, "칸 안 '?'는 글자로(도움말 안 뜸) · Enter는 다음 찾기만(다른 단추·한 단추 안 누름): " + JSON.stringify(R.keys.K1));
   ok(R.keys.K2.v === '해리 포터?' && R.keys.K2.sheet && R.keys.K2.one === 0, '칸 밖 스캐너 입력(숫자 + Enter)은 검색칸에 안 들어감 · 출고 화면 그대로: ' + JSON.stringify(R.keys.K2));
