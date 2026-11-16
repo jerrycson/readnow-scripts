@@ -1,0 +1,725 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-11-15T20:55:07.439Z",
+  "fingerprint": "c0291731b8b3857df01f15ed3813c1705585a84c6087c043788af42ff04f5d44",
+  "sourceSummary": {
+    "total": 86,
+    "uniqueUrls": 86,
+    "duplicates": []
+  },
+  "collection": {
+    "checked": 35,
+    "available": 29
+  },
+  "memory": [
+    {
+      "id": "anatomy-review:foundation-pending",
+      "scope": "anatomy-review",
+      "severity": 3,
+      "title": "기본 전신·얼굴의 완성도 미달 · 사용자 승인 전",
+      "evidence": "30차 · 기본형의 품질 검토 중 · 사용자 미승인",
+      "next": "같은 등신과 시점의 원전 이미지와 비교해 부위별 결함을 수정한다. 수량·콘텐츠 확장은 보류한다.",
+      "state": "open",
+      "evidenceTokens": [
+        "{\"version\":7,\"confidence\":\"not-ready\"}",
+        "\"7차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"8차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"9차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"10차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"11차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"12차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"14차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"15차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"16차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"17차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"18차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"19차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"20차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"21차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"22차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"23차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"24차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"25차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"26차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"27차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"28차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"29차 · 기본형의 품질 검토 중 · 사용자 미승인\"",
+        "\"30차 · 기본형의 품질 검토 중 · 사용자 미승인\""
+      ],
+      "observations": 24,
+      "priority": 380
+    },
+    {
+      "id": "v2-tests:warning:울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
+      "scope": "v2-tests",
+      "severity": 2,
+      "title": "울 코트와 가방 · sleep · 64px 옆모습에서 프레임 변화가 읽히지 않음",
+      "evidence": "지원 동작의 8프레임·네 방향 누락과 잘림",
+      "next": "해당 크기·방향·동작을 고정하고 프레임의 차이가 읽히는 후보를 비교한다.",
+      "state": "resolved",
+      "evidenceTokens": [
+        "\"지원 동작의 8프레임·네 방향 누락과 잘림\""
+      ],
+      "observations": 1,
+      "priority": 204
+    },
+    {
+      "id": "source:cornell-bird:unavailable",
+      "scope": "source:cornell-bird",
+      "severity": 1,
+      "title": "출처 재확인 · cornell-bird",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:loc-walk:unavailable",
+      "scope": "source:loc-walk",
+      "severity": 1,
+      "title": "출처 재확인 · loc-walk",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-coat:unavailable",
+      "scope": "source:met-coat",
+      "severity": 1,
+      "title": "출처 재확인 · met-coat",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-dress:unavailable",
+      "scope": "source:met-dress",
+      "severity": 1,
+      "title": "출처 재확인 · met-dress",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:met-rodin:unavailable",
+      "scope": "source:met-rodin",
+      "severity": 1,
+      "title": "출처 재확인 · met-rodin",
+      "evidence": "HTTP 429",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 429\""
+      ],
+      "observations": 1,
+      "priority": 104
+    },
+    {
+      "id": "source:site-05:unavailable",
+      "scope": "source:site-05",
+      "severity": 1,
+      "title": "출처 재확인 · site-05",
+      "evidence": "HTTP 403",
+      "next": "공식 원문에서 상태를 다시 확인한다. 기존 분석을 지우지 않는다.",
+      "state": "open",
+      "evidenceTokens": [
+        "\"HTTP 403\""
+      ],
+      "observations": 1,
+      "priority": 104
+    }
+  ],
+  "reports": [
+    {
+      "id": "pure-tests",
+      "path": "../pixel-lab/qa/pure-tests.json",
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "id": "v2-tests",
+      "path": "../pixel-lab/qa/v2-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "v2-browser-tests",
+      "path": "../pixel-lab/qa/v2-browser-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "world-tests",
+      "path": "../pixel-lab/qa/world-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "motion-tests",
+      "path": "../pixel-lab/qa/motion-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "animal-tests",
+      "path": "../pixel-lab/qa/animal-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "sleep-tests",
+      "path": "../pixel-lab/qa/sleep-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "body-design-tests",
+      "path": "../pixel-lab/qa/body-design-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "hair-design-tests",
+      "path": "../pixel-lab/qa/hair-design-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "anatomy-v7-tests",
+      "path": "../pixel-lab/qa/anatomy-v7-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "anatomy-v8-tests",
+      "path": "../pixel-lab/qa/anatomy-v8-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "rotation-v8-tests",
+      "path": "../pixel-lab/qa/rotation-v8-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "continuous-v9-tests",
+      "path": "../pixel-lab/qa/continuous-v9-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "chibi-v10-tests",
+      "path": "../pixel-lab/qa/chibi-v10-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "rotation-v10-tests",
+      "path": "../pixel-lab/qa/rotation-v10-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "anatomy-v11-tests",
+      "path": "../pixel-lab/qa/anatomy-v11-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v11-tests",
+      "path": "../pixel-lab/qa/rotation-v11-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "anatomy-v12-tests",
+      "path": "../pixel-lab/qa/anatomy-v12-tests.json",
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "id": "rotation-v12-tests",
+      "path": "../pixel-lab/qa/rotation-v12-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "chibi-v13-tests",
+      "path": "../pixel-lab/qa/chibi-v13-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "rotation-v13-tests",
+      "path": "../pixel-lab/qa/rotation-v13-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "anatomy-v14-tests",
+      "path": "../pixel-lab/qa/anatomy-v14-tests.json",
+      "passed": 8,
+      "total": 8
+    },
+    {
+      "id": "rotation-v14-tests",
+      "path": "../pixel-lab/qa/rotation-v14-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "lighting-v15-tests",
+      "path": "../pixel-lab/qa/lighting-v15-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "anatomy-v16-tests",
+      "path": "../pixel-lab/qa/anatomy-v16-tests.json",
+      "passed": 11,
+      "total": 11
+    },
+    {
+      "id": "rotation-v16-tests",
+      "path": "../pixel-lab/qa/rotation-v16-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "chibi-v17-tests",
+      "path": "../pixel-lab/qa/chibi-v17-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v17-tests",
+      "path": "../pixel-lab/qa/rotation-v17-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "anatomy-v18-tests",
+      "path": "../pixel-lab/qa/anatomy-v18-tests.json",
+      "passed": 11,
+      "total": 11
+    },
+    {
+      "id": "rotation-v18-tests",
+      "path": "../pixel-lab/qa/rotation-v18-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v19-tests",
+      "path": "../pixel-lab/qa/detail-v19-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "anatomy-v20-tests",
+      "path": "../pixel-lab/qa/anatomy-v20-tests.json",
+      "passed": 13,
+      "total": 13
+    },
+    {
+      "id": "rotation-v20-tests",
+      "path": "../pixel-lab/qa/rotation-v20-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v20-tests",
+      "path": "../pixel-lab/qa/detail-v20-tests.json",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "id": "anatomy-v21-tests",
+      "path": "../pixel-lab/qa/anatomy-v21-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "rotation-v21-tests",
+      "path": "../pixel-lab/qa/rotation-v21-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "anatomy-v22-tests",
+      "path": "../pixel-lab/qa/anatomy-v22-tests.json",
+      "passed": 15,
+      "total": 15
+    },
+    {
+      "id": "rotation-v22-tests",
+      "path": "../pixel-lab/qa/rotation-v22-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "chibi-v23-tests",
+      "path": "../pixel-lab/qa/chibi-v23-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v23-tests",
+      "path": "../pixel-lab/qa/rotation-v23-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v23-tests",
+      "path": "../pixel-lab/qa/detail-v23-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "anatomy-v24-tests",
+      "path": "../pixel-lab/qa/anatomy-v24-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v24-tests",
+      "path": "../pixel-lab/qa/rotation-v24-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "detail-v24-tests",
+      "path": "../pixel-lab/qa/detail-v24-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "lighting-v25-tests",
+      "path": "../pixel-lab/qa/lighting-v25-tests.json",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "id": "rotation-v25-tests",
+      "path": "../pixel-lab/qa/rotation-v25-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "lips-v26-tests",
+      "path": "../pixel-lab/qa/lips-v26-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v26-tests",
+      "path": "../pixel-lab/qa/rotation-v26-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "eyes-v27-tests",
+      "path": "../pixel-lab/qa/eyes-v27-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v27-tests",
+      "path": "../pixel-lab/qa/rotation-v27-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "legs-v28-tests",
+      "path": "../pixel-lab/qa/legs-v28-tests.json",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "id": "rotation-v28-tests",
+      "path": "../pixel-lab/qa/rotation-v28-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "chibi-v29-tests",
+      "path": "../pixel-lab/qa/chibi-v29-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v29-tests",
+      "path": "../pixel-lab/qa/rotation-v29-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "chibi-v30-tests",
+      "path": "../pixel-lab/qa/chibi-v30-tests.json",
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "id": "rotation-v30-tests",
+      "path": "../pixel-lab/qa/rotation-v30-tests.json",
+      "passed": 14,
+      "total": 14
+    },
+    {
+      "id": "portraits-v30-tests",
+      "path": "../pixel-lab/qa/portraits-v30-tests.json",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "id": "engine-tests",
+      "path": "./tests.json",
+      "passed": 7,
+      "total": 7
+    }
+  ],
+  "runs": [
+    {
+      "at": "2026-11-15T14:57:14.624Z",
+      "fingerprint": "b6e4012693eee1f69c683ecb7b186d924932e07a56b85c2acc5e529322682f04",
+      "suites": 7,
+      "passed": 38,
+      "total": 38,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T15:09:05.066Z",
+      "fingerprint": "49a298959dfefa58d07620f7554df6637d5511af9e975fb2854eb1c9aceac0c2",
+      "suites": 8,
+      "passed": 42,
+      "total": 42,
+      "openIssues": 6
+    },
+    {
+      "at": "2026-11-15T16:09:13.276Z",
+      "fingerprint": "d71c736970e3ea80358cd943f382a393f0063c3bfed770693d36348fa79163bb",
+      "suites": 11,
+      "passed": 56,
+      "total": 56,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T16:12:28.557Z",
+      "fingerprint": "18031fc7c1339a6079af13949bf12c119f256cdcfe1924f0d8fe382b9643a18c",
+      "suites": 11,
+      "passed": 56,
+      "total": 56,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T16:38:59.077Z",
+      "fingerprint": "b89eef14966e7d548715fd7e1e5f888b4cde7c77b48cc9f2a25bf196bd44e95f",
+      "suites": 13,
+      "passed": 74,
+      "total": 74,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T17:15:51.989Z",
+      "fingerprint": "8fd371af969cb570c513218b3651f08efe61ec4a5a0d4a31e5ed69e928f27782",
+      "suites": 14,
+      "passed": 78,
+      "total": 78,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T17:27:41.897Z",
+      "fingerprint": "2e65c517dff0c92649242de0423d2552edb5938a699c7f793198aaf67ef15936",
+      "suites": 16,
+      "passed": 95,
+      "total": 95,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T17:45:19.171Z",
+      "fingerprint": "ac856e874a4bf7bf613854f8787e449b6d957dd74a895ed15292291a6c6b85a7",
+      "suites": 18,
+      "passed": 115,
+      "total": 115,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T17:57:31.597Z",
+      "fingerprint": "5316291b093da36ba35a5f68b6ed680794a089345618806ede1f068af2fcf480",
+      "suites": 20,
+      "passed": 136,
+      "total": 136,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:10:27.443Z",
+      "fingerprint": "3dde98dd031c0109f0d6a1ddd48d68d58125d2b11bf734376409a1ad459756c5",
+      "suites": 24,
+      "passed": 176,
+      "total": 176,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:17:58.504Z",
+      "fingerprint": "9863e63a5c2540967431cd31fae41410d2ca96889b4c0387d9052d13ffb0b7e6",
+      "suites": 25,
+      "passed": 180,
+      "total": 180,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:28:30.700Z",
+      "fingerprint": "4b78689d2fd30b852e93e9872efb1680206ba11f856b56e11512c4fd78635cbc",
+      "suites": 27,
+      "passed": 205,
+      "total": 205,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:38:04.999Z",
+      "fingerprint": "45d36bc25d6a7b4b32d9012c01aa2ac6500fb4c67768b2c699e1cca9d80fa1e0",
+      "suites": 29,
+      "passed": 224,
+      "total": 224,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:46:34.912Z",
+      "fingerprint": "7be7a970165aef7a3f7ecd934e8b007140db855e10f50f86f85684f7bb10707a",
+      "suites": 31,
+      "passed": 249,
+      "total": 249,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T18:56:04.816Z",
+      "fingerprint": "ddd16cfaeb4fcab8f13b2d4fbc8d5df52116589c3d622fa0c1a7f347ba881ba2",
+      "suites": 32,
+      "passed": 253,
+      "total": 253,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:03:25.164Z",
+      "fingerprint": "76c952d955c93b1500267dc29f2c6827685df6eec2edcab9601bcf7aa27d72eb",
+      "suites": 35,
+      "passed": 283,
+      "total": 283,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:16:50.700Z",
+      "fingerprint": "17bf2943910dbd1dfcbf5989786e321dfb22d846bd7b258b7d0748b34a69a9d0",
+      "suites": 37,
+      "passed": 311,
+      "total": 311,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:27:54.313Z",
+      "fingerprint": "936d2de991d970762300427fa6e20429f2198bc220a86a854fda9cf51e745cb3",
+      "suites": 39,
+      "passed": 340,
+      "total": 340,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:41:37.414Z",
+      "fingerprint": "2efd8b44450ecd79d334988a69a3f072f013036d17ad90dcc5342dd94586d4e9",
+      "suites": 42,
+      "passed": 364,
+      "total": 364,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:54:13.998Z",
+      "fingerprint": "cf7c85d284806c9529c9f7f307e3993f288e630d264288ac2345e37af68bb11f",
+      "suites": 44,
+      "passed": 384,
+      "total": 384,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T19:55:08.772Z",
+      "fingerprint": "b6722c9a5e258248d2b4a071cd552e50ba3a8102043c9724ba8314ea0d0178a4",
+      "suites": 45,
+      "passed": 388,
+      "total": 388,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:05:32.374Z",
+      "fingerprint": "c18ce6b066142f831a1572f16e50180ca270ef9ec48df03add6c23fe6bbadbc7",
+      "suites": 47,
+      "passed": 406,
+      "total": 406,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:18:13.807Z",
+      "fingerprint": "0427ef157757bbad9304eada1d0526062f8e2b8002fff7b63f724dfe8088c977",
+      "suites": 49,
+      "passed": 425,
+      "total": 425,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:26:57.646Z",
+      "fingerprint": "3711a30fc1df58628f8d01501004fd8a94ff5b3eb379f201b62c22d88318981c",
+      "suites": 51,
+      "passed": 444,
+      "total": 444,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:37:13.353Z",
+      "fingerprint": "8d9b4de40812eebcaf39dddb65f34d5a187f5513028f3d74bb2f4cc6b3080d43",
+      "suites": 53,
+      "passed": 463,
+      "total": 463,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:48:25.948Z",
+      "fingerprint": "48f492c7461c82ffc01e5d8990e074524b0684313c69f3a142cc5653343fd30e",
+      "suites": 55,
+      "passed": 483,
+      "total": 483,
+      "openIssues": 7
+    },
+    {
+      "at": "2026-11-15T20:55:07.439Z",
+      "fingerprint": "c0291731b8b3857df01f15ed3813c1705585a84c6087c043788af42ff04f5d44",
+      "suites": 58,
+      "passed": 505,
+      "total": 505,
+      "openIssues": 7
+    }
+  ],
+  "limits": [
+    "등록한 공개 출처를 다시 확인하는 수집기이며 전 인터넷을 탐색하지 않음",
+    "원문의 요약·해석은 검토된 연구 카드이며 자동 생성하지 않음",
+    "반복 실패의 우선순위를 누적하지만 신경망 학습이나 스스로 코드 수정은 하지 않음",
+    "후보 채택에는 분리된 평가 사례와 시각 검토 기록이 필요하며 운영 배포는 하지 않음"
+  ]
+}

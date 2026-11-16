@@ -1,0 +1,102 @@
+{
+  "baselineVersion": 14,
+  "note": "15차 선택형 그림자 추가 전의 기본 렌더 이미지 해시. 시안의 미적 승인 값이 아님.",
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 2,
+      "yaw": 0,
+      "sha256": "d5cc7ebd1882e811944e25ca896161019c808805acd15e369838c343844dd7ae"
+    },
+    {
+      "sex": "male",
+      "heads": 2,
+      "yaw": 90,
+      "sha256": "7d323194769a72c5863d347761c4bbc75cad148d49b7d32272077b6d2467c982"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "yaw": 0,
+      "sha256": "296b061ce92a999ef2d338a36d4c0487e4d54b3a9d47cec9da9c102a4fb72953"
+    },
+    {
+      "sex": "male",
+      "heads": 4,
+      "yaw": 90,
+      "sha256": "400f6676d0dbb7c07b0a2cd98f6e9a222362c0795384e8dcbced3c189f21a572"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "yaw": 0,
+      "sha256": "0af7719247194510fa1296bab98dc9af7458f31598c22465d952e6784dfe435c"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "yaw": 90,
+      "sha256": "b14e9d53dce2f8190b11d982856e657d91bd3beb580869d56da5aecb11514c9f"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "yaw": 0,
+      "sha256": "b237f9427c561260ecb9859cc391e88aed0e9a8448a64f736d344a6ca6c77553"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "yaw": 90,
+      "sha256": "1aa1d7c0bdef3ff5a5c747d449932f0e3448d1875938971b12528aa10f5f984d"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "yaw": 0,
+      "sha256": "bee1c91fea15adfad2936e414db58353c685bae563375f2f59159edccff2b4ae"
+    },
+    {
+      "sex": "female",
+      "heads": 2,
+      "yaw": 90,
+      "sha256": "5798b8490ae05546965093cc8786608748f48594f04828f7af38b684d974f701"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "yaw": 0,
+      "sha256": "0df61007d36116e2a90b0ed8971a8714db9291c4961c269c90eedafe33647c1e"
+    },
+    {
+      "sex": "female",
+      "heads": 4,
+      "yaw": 90,
+      "sha256": "f6211a791e0386c0d4d1910341334de107694f2613fa55fff5873a8573d7cbf4"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "yaw": 0,
+      "sha256": "0fc8662ab982f59ba997c858e0f2bcee41b6c06e046795b07edc2379317de5a3"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "yaw": 90,
+      "sha256": "de80f4b0d759f50cfc87820f0329480efe6ce7ad6e93ed6adf806710db5cb25c"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "yaw": 0,
+      "sha256": "b0dd343bcbcdc31a715466c9decb7d168597906e96afbb38b3db89a07de76e45"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "yaw": 90,
+      "sha256": "a650d0f0036a30e3a12a06418d485ab30acc55224ac261f1132fe36112ff68db"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "version": 27,
+  "checkedAt": "2026-11-15T20:24:48.114Z",
+  "visualApproval": false,
+  "results": [
+    {
+      "name": "눈 주변 외 표면·전체 면 보존과 방향 역전 검사",
+      "ok": true,
+      "detail": {
+        "cases": 8,
+        "triangles": 214048,
+        "minDot": 0.9816622478165025,
+        "note": "양의 방향 검사는 모든 자기 교차를 증명하지 않는다."
+      }
+    },
+    {
+      "name": "자연형·작은 기본형 표시 보존",
+      "ok": true,
+      "detail": {
+        "cases": 14
+      }
+    },
+    {
+      "name": "안구 위치 유지와 눈썹 표면 조각의 유효성",
+      "ok": true,
+      "detail": {
+        "cases": 8
+      }
+    },
+    {
+      "name": "눈의 앞·옆 노출과 뒷머리 가림",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "sex": "female",
+            "yaw": 0,
+            "differences": 742
+          },
+          {
+            "sex": "female",
+            "yaw": 45,
+            "differences": 439
+          },
+          {
+            "sex": "female",
+            "yaw": 90,
+            "differences": 13
+          },
+          {
+            "sex": "female",
+            "yaw": 180,
+            "differences": 0
+          },
+          {
+            "sex": "female",
+            "yaw": 270,
+            "differences": 13
+          },
+          {
+            "sex": "female",
+            "yaw": 315,
+            "differences": 439
+          },
+          {
+            "sex": "male",
+            "yaw": 0,
+            "differences": 298
+          },
+          {
+            "sex": "male",
+            "yaw": 45,
+            "differences": 192
+          },
+          {
+            "sex": "male",
+            "yaw": 90,
+            "differences": 22
+          },
+          {
+            "sex": "male",
+            "yaw": 180,
+            "differences": 0
+          },
+          {
+            "sex": "male",
+            "yaw": 270,
+            "differences": 22
+          },
+          {
+            "sex": "male",
+            "yaw": 315,
+            "differences": 192
+          }
+        ]
+      }
+    },
+    {
+      "name": "성인 얼굴 위·아래 시점의 머리 경계",
+      "ok": true,
+      "detail": {
+        "views": 288
+      }
+    }
+  ],
+  "passed": 5,
+  "total": 5
+}

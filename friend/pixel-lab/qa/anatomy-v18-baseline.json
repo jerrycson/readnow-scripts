@@ -1,0 +1,110 @@
+{
+  "version": 17,
+  "note": "18차 교정 전 복원본에서 기록한 성인 표면 좌표와 자연형 렌더",
+  "cases": [
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "natural",
+      "positionHash": "0ea3cdecb2a9fcbb8bb4576191d8d500c3b1e29fcce3c58631e6354b90d83fb4",
+      "imageHash": "6bb445df4eef26b63a1afc99907a98d68f4fb3b6b02e3eee35048f35ee6bc2e1"
+    },
+    {
+      "sex": "male",
+      "heads": 5,
+      "designStyle": "manga",
+      "positionHash": "217ca86bf6a935790a64b05e8cbf3963d237eb18603cc685d696dd73f6137e1d"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "natural",
+      "positionHash": "f2c19906f2012a964264b29ae2680fc8e6bddf5a64369670eb986072897d1fd4",
+      "imageHash": "f2884f13a0bc98ba74babb86e88de549afdcb60d81c1125b006deb04366660c4"
+    },
+    {
+      "sex": "male",
+      "heads": 6,
+      "designStyle": "manga",
+      "positionHash": "5516ee841641410812ac09bf9ab2d4a62b69dd4a624c0c2a54eeeac9112bc8a9"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "natural",
+      "positionHash": "30a7cba7f1bd48f74a9e0eb00a27a9a5139af5e3770d85aec945ec7e72f0abf9",
+      "imageHash": "96b874970e0bbaf3e6081da5b90d2a97765a58cdefed73194d38ff7a15db11aa"
+    },
+    {
+      "sex": "male",
+      "heads": 7,
+      "designStyle": "manga",
+      "positionHash": "8286bb2c35b6860107cac82046cbd958b3a756ea7b252d72392770d873014760"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "natural",
+      "positionHash": "b195648db1e30fc791f3caeb6b370bc13d1a5aa37f904961f379a6c65b165322",
+      "imageHash": "c1a1cb0fb1dedc97677b958bf7b86a233c68ea9951049209155317fac3867481"
+    },
+    {
+      "sex": "male",
+      "heads": 8,
+      "designStyle": "manga",
+      "positionHash": "09880963bde10e954e2dbb0978ec7ac9a798984f6c918e0e5c8a79b4553141c0"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "natural",
+      "positionHash": "b469d3625fc4393fe827c490816d22629d8bf123bcb059e4a83882e6f5badc52",
+      "imageHash": "71a2a45b365e338c8e001503677c18fe6d6ebc6dde1d7746077bc4de5ca2e3b5"
+    },
+    {
+      "sex": "female",
+      "heads": 5,
+      "designStyle": "manga",
+      "positionHash": "eb60c4164f2a4b9a048bc6f7525681d70522bdd97c768aaf3c6f2603a4b134a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "natural",
+      "positionHash": "90348d82f0c47424df8634f9093341718045805383af392f14c52c07bd3eccce",
+      "imageHash": "c144a6bc5aca659a4efdb5b19a2f1e4284383432d9512a8856e462608de935a0"
+    },
+    {
+      "sex": "female",
+      "heads": 6,
+      "designStyle": "manga",
+      "positionHash": "a7f02ef00d1905419e387cb488817151c078480bc9ecaddbe4da3d4be8373f39"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "natural",
+      "positionHash": "9d7ea27d9a2dfd50c52f2abbb694ba6092385195088c378fa197ec16ac3e96f9",
+      "imageHash": "c97525eafa8be8116c341ffc90f266e7e5aeff5e5bbc480bc980be1db759110c"
+    },
+    {
+      "sex": "female",
+      "heads": 7,
+      "designStyle": "manga",
+      "positionHash": "567a264b1ec1b794f1ddd48edfd77afa01285efd769a3b3b4bce3878cf9e7957"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "natural",
+      "positionHash": "97750a9e3de8359e21853c7fa5d20e8e54cf200a48ada5153e11b3a0e5ecd16c",
+      "imageHash": "e18ff7091b6667ab7e448ab08f20c2b04c6af89e2a79dc67653ec415125ed801"
+    },
+    {
+      "sex": "female",
+      "heads": 8,
+      "designStyle": "manga",
+      "positionHash": "98180d9456f02c5b6261af63a962b9f9e12c74361a3e891675a0e1297606c3ba"
+    }
+  ]
+}

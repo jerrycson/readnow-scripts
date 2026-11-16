@@ -1,0 +1,133 @@
+{
+  "version": 7,
+  "checkedAt": "2026-11-15T16:04:28.040Z",
+  "results": [
+    {
+      "name": "고정한 5차 모델에서 당시 경고와 호흡 선택을 재현",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "amplitude": 0,
+            "unique": 1
+          },
+          {
+            "amplitude": 0.025,
+            "unique": 2
+          },
+          {
+            "amplitude": 0.05,
+            "unique": 2
+          },
+          {
+            "amplitude": 0.08,
+            "unique": 4
+          },
+          {
+            "amplitude": 0.12,
+            "unique": 5
+          }
+        ],
+        "selected": 0.08,
+        "criterion": "64px, coat, yaw90에서 최소 4개의 구분되는 프레임; 시각 비교에서 더 큰 .12를 채택할 필요 없음"
+      }
+    },
+    {
+      "name": "분리한 각도·크기의 후보 평가",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "yaw": 135,
+            "resolution": 48,
+            "before": 3,
+            "after": 7
+          },
+          {
+            "yaw": 135,
+            "resolution": 96,
+            "before": 5,
+            "after": 8
+          },
+          {
+            "yaw": 135,
+            "resolution": 128,
+            "before": 5,
+            "after": 8
+          },
+          {
+            "yaw": 225,
+            "resolution": 48,
+            "before": 3,
+            "after": 6
+          },
+          {
+            "yaw": 225,
+            "resolution": 96,
+            "before": 5,
+            "after": 8
+          },
+          {
+            "yaw": 225,
+            "resolution": 128,
+            "before": 5,
+            "after": 8
+          }
+        ],
+        "contract": {
+          "baseline": {
+            "unique": 26
+          },
+          "candidate": {
+            "unique": 45,
+            "missing": 0,
+            "clipped": 0,
+            "invalid": 0
+          },
+          "objective": {
+            "metric": "unique",
+            "direction": "max"
+          },
+          "tuningCases": [
+            "coat64-yaw0",
+            "coat64-yaw90",
+            "coat64-yaw45-visual"
+          ],
+          "evaluationCases": [
+            "coat48-yaw135",
+            "coat96-yaw135",
+            "coat128-yaw135",
+            "coat48-yaw225",
+            "coat96-yaw225",
+            "coat128-yaw225"
+          ],
+          "visualReview": "pending"
+        },
+        "decision": {
+          "decision": "hold",
+          "reasons": [
+            "수치 검사 뒤 시각 비교 판단을 기록해야 합니다."
+          ],
+          "gain": 19
+        },
+        "note": "현재 인체로 다시 검사한 회귀 사례. 시각 검토는 보류하며 과거 5차 시각 판정을 승계하지 않는다."
+      }
+    },
+    {
+      "name": "옷 6종·14비율·회전에서 수면 누락과 잘림 없음",
+      "ok": true,
+      "detail": {
+        "count": 2240
+      }
+    },
+    {
+      "name": "호흡의 반복 연결·접지·다른 동작 보존",
+      "ok": true,
+      "detail": {
+        "checked": 112
+      }
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

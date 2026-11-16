@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-16",
+  "tool": "image_gen.imagegen built-in",
+  "mode": "generate",
+  "useCase": "stylized-concept",
+  "output": "adult-face-target-v1.png",
+  "transparentBackground": false,
+  "referenceInputs": [
+    {
+      "role": "current imperfect 3D face critique reference",
+      "file": "continuous-v9-face.png",
+      "note": "Earlier local iteration before the subsequent eye depth and nose/lip corrections; not a claim that the target is rendered by this code."
+    },
+    {
+      "role": "skull construction and orientation reference",
+      "url": "https://www.clipstudio.net/oekaki/archives/176083",
+      "note": "Source diagram observed locally; original source diagram is not redistributed."
+    }
+  ],
+  "prompt": "Create a NEW original head-only visual development board for an adult character anatomy study. Six head portraits: top row the SAME adult male age 30 at front, 45-degree three-quarter, and exact side profile; bottom row the SAME adult female age 30 at the same three angles. Heads and upper neck ONLY, no shoulders or torso. Both are bald so that skull proportion and ear placement can be studied. Reference image 1 is the current imperfect 3D pixel render being critiqued: its face looks rigid and its feature hierarchy lacks an appealing manga/anime design. Reference image 2 is a drawing-construction reference for skull volume and facial orientation; create original identities, not copies of its characters. Aim for mature Japanese manga/anime-inspired facial design grounded in real anatomy: expressive almond-shaped eyes seated inside lids, coherent brow/eye plane, believable human auricles, a restrained integrated nose, understated lips with a clear mouth line, graceful jaw and chin, sufficient volume behind the ears, and a natural jaw-to-neck transition. Distinct mature masculine and feminine faces, neither chibi nor childlike. Maintain exact identity and cranial volume between angles. Render as carefully authored high-resolution PIXEL ART with visibly deliberate clean pixel clusters, around 160 pixels per head before enlargement, 12-16 harmonious warm skin colours, larger unified light/shadow areas, restrained highlights, no random dithering, no thick waxy rings around eyes, no metallic shine. Simple pale ivory background and balanced spacing. Orthographic study views with consistent lighting and scale. This board is an art-direction reference, not a labelled scientific diagram. No text, letters, measurements, arrows, watermarks or decorative elements.",
+  "status": "unapproved art direction only; six 2D images do not establish consistent 3D identity"
+}
