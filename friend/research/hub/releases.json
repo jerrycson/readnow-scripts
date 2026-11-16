@@ -54,6 +54,20 @@
       "at": "2026-11-16T14:05:00.000Z",
       "label": "33차 · 얼굴과 가슴 형태, 극단 자세 대조",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "8aac177875d40bddf7ad803f",
+      "project": "bookfriend",
+      "round": 34,
+      "cards": 154,
+      "sources": 144,
+      "chapters": 11,
+      "cardsSha": "4a17d6d56d40d949b5272d917bc223a2c7ca35499338f8edd3c4307832aa4615",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "38677be9d3cd03cc967ef6ded51eb65f9dc114223916e09019dff2996816381d",
+      "at": "2026-11-16T15:17:00.000Z",
+      "label": "34차 · 48px 얼굴과 가슴 기본형·바스트 모핑",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }

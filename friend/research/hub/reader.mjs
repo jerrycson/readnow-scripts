@@ -130,7 +130,7 @@ export async function originals(){
     const res=await fetch(url);if(!res.ok)throw Error('원문을 읽을 수 없습니다 '+res.status);
     const html=new DOMParser().parseFromString(await res.text(),'text/html');
     const nodes=[...html.querySelectorAll('article[id]')];
-    if(key==='journal')nodes.sort((a,b)=>(b.id==='round33')-(a.id==='round33'));
+    if(key==='journal')nodes.sort((a,b)=>(['round33','round34'].indexOf(b.id)-['round33','round34'].indexOf(a.id)));
     docCache.set(key,nodes.map(n=>({title:n.querySelector('h2')?.textContent||n.id,key:n.id,body:n.textContent,source:n})));
   }
   if(token!==loadId)return;

@@ -1,3 +1,4 @@
+import {records34} from './round34.mjs';
 import {readBlocks,mergeHistory} from './archives.mjs';
 import {choices} from '../../pixel-lab/choice33.mjs';
 import {records33} from './round33.mjs';
@@ -51,7 +52,7 @@ async function hostedCards(row){
   const source=row.hostSource?history.find(r=>r.id===row.hostSource):row;
   const data=decode(await get('versions/'+source.id+'/cards.json',source.cardsSha));
   if(!row.hostSource)return data;
-  const full={...data,cards:[...data.cards,...additions,...(row.round===33?records33:[])]};
+  const full={...data,cards:[...data.cards,...additions,...(row.round>=33?records33:[]),...(row.round===34?records34:[])]};
   if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');
   return full;
 }
