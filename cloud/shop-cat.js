@@ -74,16 +74,22 @@
   /* (shopmisc1 2회 · 정범님 11/14 20:00 「세트는 그 책이 속한 분야에도 함께 보이게」) 세트 한 상품 = 경로 둘
    *  subjPath = 분야 경로(세트도 그 분야 목록·책장에 나옴) · setPath = '세트>분야' 경로(세트 모음에도 나옴) — 알라딘·예스24 분야 목록·아마존 Boxed Sets 꼴
    *  알라딘 '전집/중고전집'은 분야 경로가 없어 아래 칸 낱말로 유아·어린이를 고르고, 못 고르면 세트에만 */
-  function subjPath(P) { let k = P.k, rest = (P.rest || []).slice(); if (k !== '국내도서') return { k, rest: rest.slice(0, 6) };
+  /* (shopfix1 11/17) 손님에게 보이는 칸 이름 — 알라딘 기획·전집 칸의 앞 밑줄(예 '_나라별 그림책' · '_초등(1-3)저학년')을 걷음 · 자료(prd_books 경로)는 그대로 · 밑줄뿐인 칸은 그대로 */
+  const nice = (x) => { const v = String(x == null ? '' : x); const t = v.replace(/^[_\s]+/, '').trim(); return t || v; };
+  const tidy = (r) => ({ k: r.k, rest: (r.rest || []).map(nice) });
+  function subjPath(P) { return tidy(subjPath0(P)); }
+  function subjPath0(P) { let k = P.k, rest = (P.rest || []).slice(); if (k !== '국내도서') return { k, rest: rest.slice(0, 6) };
     if (SET_ALL.test(String(rest[0] || ''))) { const t = rest.slice(1).join(' '); const kid = /유아|영유아|그림책|0~7|아기/.test(t) ? '유아' : /어린이|초등|아동|동화|학습/.test(t) ? '어린이' : null; return kid ? { k, rest: [kid, '전집', ...rest.slice(1)].slice(0, 6) } : { k: SET_K, rest: (rest[1] ? [rest[1]] : ['전집']) }; }
     return { k, rest: mapDomestic(rest).slice(0, 6) }; }
   function setPath(P, title, id, fix) { const r = ourPath(P, title, id, fix); return r.k === SET_K ? r : null; }
   /* 종류·나머지(cloud/shop.js kindPath 결과) → 우리숍 경로 { k, rest } */
-  function ourPath(P, title, id, fix) { let k = P.k, rest = (P.rest || []).slice();
+  function ourPath(P, title, id, fix) { return tidy(ourPath0(P, title, id, fix)); }
+  function ourPath0(P, title, id, fix) { let k = P.k, rest = (P.rest || []).slice();
     if (isSet(k, rest, title, id, fix)) { const sub = k === '외국도서' ? ['외국도서'] : SET_ALL.test(String(rest[0] || '')) ? (rest[1] ? [rest[1]] : ['전집']) : mapDomestic(rest).slice(0, 1); return { k: SET_K, rest: sub.filter(Boolean).slice(0, 2) }; }
     if (k === '국내도서') rest = mapDomestic(rest); return { k, rest: rest.slice(0, 6) }; }
   /* 옛 주소의 알라딘 경로 → 우리 경로(국내도서 둘째 칸만 바꿈 · 이미 우리 경로면 그대로) */
-  function legacyCp(cp) { const seg = String(cp || '').split('>'); if (seg[0] !== '국내도서' || seg.length < 2) return String(cp || ''); if (SET_ALL.test(seg[1])) return [SET_K, ...seg.slice(2)].join('>') || SET_K; const m = mapDomestic(seg.slice(1)); return ['국내도서', ...m].join('>'); }
+  function legacyCp(cp) { const v = legacyCp0(cp); return v ? v.split('>').map((x, i) => (i ? nice(x) : x)).join('>') : v; } /* (shopfix1) 옛 주소의 앞 밑줄 칸('…>_나라별 그림책')도 새 이름으로 */
+  function legacyCp0(cp) { const seg = String(cp || '').split('>'); if (seg[0] !== '국내도서' || seg.length < 2) return String(cp || ''); if (SET_ALL.test(seg[1])) return [SET_K, ...seg.slice(2)].join('>') || SET_K; const m = mapDomestic(seg.slice(1)); return ['국내도서', ...m].join('>'); }
   /* 📏 상품 단위 — readnow-products-core.js UNIT과 같은 말 · 종류(cp 첫 칸)로 */
   const UNIT = { book: '권', set: '세트', disc: '장', item: '개' };
   function unitKind(k, title) { k = String(k || '').split('>')[0]; const t = String(title || '');
@@ -93,5 +99,5 @@
   const unitOf = (k, title) => UNIT[unitKind(k, title)];
   /* 바꿈표 통째(보고서·시험·관리 화면 안내용) */
   const TABLE = () => DOM.map(([re, nm, sub]) => ({ al: String(re.source).replace(/^\^|\$$/g, '').replace(/\\\//g, '/').replace(/\\s\*/g, ' '), ours: sub ? nm + ' › ' + sub : nm }));
-  return { subjPath, setPath, DOM, OURS, SET_K, mapDomestic, setStrong, fixOf, isSet, ourPath, legacyCp, UNIT, unitKind, unitOf, TABLE };
+  return { subjPath, setPath, nice, DOM, OURS, SET_K, mapDomestic, setStrong, fixOf, isSet, ourPath, legacyCp, UNIT, unitKind, unitOf, TABLE };
 });

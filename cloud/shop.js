@@ -122,7 +122,7 @@ function listItems(all, o, held, sold, now) {
   L = L.slice().sort(srt); const p = Math.max(0, Math.min(500, parseInt(o.p, 10) || 0)); const H = held || new Set();
   const t0 = now || Date.now(); const today = kstDay(new Date(t0).toISOString()); const wk0 = kstDay(new Date(t0 - 6 * 864e5).toISOString()); let nT = 0, nW = 0;
   for (const x of L) { const d = kstDay(x.at); if (!d) continue; if (d === today) nT++; if (d >= wk0) nW++; }
-  return { total: L.length, p, more: (p + 1) * PAGE < L.length, today: nT, wk: nW, day: today, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, d: kstDay(x.at), st: H.has(x.id) ? 'o' : 's', ...(x.p0 ? { p0: x.p0 } : {}), ...(x.bd ? { bd: x.bd } : {}), ...(x.pe ? { pe: x.pe } : {}) })) };
+  return { total: L.length, p, more: (p + 1) * PAGE < L.length, today: nT, wk: nW, day: today, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, d: kstDay(x.at), st: H.has(x.id) ? 'o' : 's', ...(x.p0 ? { p0: x.p0 } : {}), ...(x.bd ? { bd: x.bd } : {}), ...(x.pe ? { pe: x.pe } : {}), ...(x.cs ? { cs: x.cs } : {}) })) }; /* (shopfix1 11/17) cs = 세트 길(세트일 때만) — 손님 화면 카드 「세트」 표 */
 }
 /* 손님 주문 입력 검사 — 순수 셈 · 돌려줌 { ok, err, v } */
 const PHONE = /^01[016789]\d{7,8}$/;
@@ -193,6 +193,10 @@ function bookLd(it, st, base, rv) { base = base || BASE; const url = base + '/b/
     offers: { '@type': 'Offer', price: it.p, priceCurrency: 'KRW', availability: av, itemCondition: 'https://schema.org/UsedCondition', url, seller: { '@type': 'Organization', name: '북스퀸' }, ...(it.g ? { description: `중고 등급 ${it.g}` } : {}) },
     ...(rv && rv.n ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: rv.avg, reviewCount: rv.n, bestRating: 5, worstRating: 0.5 }, review: (rv.top || []).map((r) => ({ '@type': 'Review', reviewRating: { '@type': 'Rating', ratingValue: r.st / 2, bestRating: 5 }, author: { '@type': 'Person', name: r.nick }, reviewBody: r.s100, ...(r.at ? { datePublished: String(r.at).slice(0, 10) } : {}) })) } : {}) }; /* (shop9 2회) 리뷰가 화면에 있을 때만 별점(구글 리뷰 구조화 자료 규칙) */
   return JSON.stringify(ld).replace(/</g, '\\u003c'); }
+/* (shopfix1 11/17) 책 페이지 분류 길 — 분야 길(cp · 없으면 예전 c) + 세트면 세트 길(cs)도 · 손님 화면 상품 화면(shop/shop.js crumbs)과 같은 꼴(칸마다 그 칸 목록으로) */
+const cpLinks = (cp) => String(cp).split('>').map((nm, i, A) => `<a href="/#/list?cp=${encodeURIComponent(A.slice(0, i + 1).join('>'))}">${hx(nm)}</a>`).join(' › ');
+function crumbH(it) { const a = it.cp ? cpLinks(it.cp) : it.c ? `<a href="/#/list?c=${encodeURIComponent(it.c)}">${hx(it.c)}</a>` : '';
+  return `<nav class="hint"><a href="/#/">첫 화면</a>${a ? ' › ' + a : ''}</nav>${it.cs ? `<nav class="hint cset-path">${cpLinks(it.cs)}</nav>` : ''}`; }
 function bookPage(it, o) { o = o || {}; const st = o.st || 's'; const base = o.base || BASE; const c = o.cfg || {}; const bz = c.biz || {}; const nm = s(c.name, 20) || '북스퀸'; const url = base + '/b/' + encodeURIComponent(it.id);
   const title = `${it.t}${it.a ? ' — ' + it.a : ''} · 중고 ${it.g || ''} ${wonK(it.p)}${st === 'x' ? ' (품절)' : ''} | ${nm}`; const off = it.lp > 0 && it.p < it.lp ? Math.round((1 - it.p / it.lp) * 100) : 0;
   const desc = `${it.t}${it.a ? ' · ' + it.a : ''}${it.pb ? ' · ' + it.pb : ''} 중고 헌책 — 등급 ${it.g || '확인'}(${GR_TXT[it.g] || '사진으로 확인'}) · ${wonK(it.p)}${off ? `(정가보다 ${off}% 쌈)` : ''} · 실물 사진 그대로 보내 드리는 ${nm} 헌책방`.slice(0, 160);
@@ -205,7 +209,7 @@ function bookPage(it, o) { o = o || {}; const st = o.st || 's'; const base = o.b
 <meta property="product:price:amount" content="${it.p}"><meta property="product:price:currency" content="KRW"><meta property="product:condition" content="used"><meta property="product:availability" content="${st === 'x' ? 'out of stock' : 'in stock'}">
 <link rel="stylesheet" href="/shop.css?v=0.1.3"><script type="application/ld+json">${bookLd(it, st, base, o.rv)}</script></head>
 <body><header class="top"><a class="logo" href="/#/"><span class="crown">♛</span>${hx(nm)}<small>헌책방</small></a><nav class="nav"><a href="/#/list?s=new">책 찾기</a><a href="/#/cart">🛒</a></nav></header>
-<main class="wrap bp"><nav class="hint"><a href="/#/">첫 화면</a>${it.c ? ` › <a href="/#/list?c=${encodeURIComponent(it.c)}">${hx(it.c)}</a>` : ''}</nav>
+<main class="wrap bp">${crumbH(it)}
 <article class="bk${st === 'x' ? ' sold' : ''}"><div class="bp-ph">${pics.length ? pics.map((u, i) => `<img src="${hx(u)}" alt="${hx(it.t)} ${i ? '실물 사진 ' + i : '표지'}" loading="${i ? 'lazy' : 'eager'}" width="320">`).join('') : '<div class="noimg">사진 준비 중</div>'}</div>
 <div class="bp-tx"><h1>${hx(it.t)}</h1><p>${[it.a, it.pb, it.pd].filter(Boolean).map(hx).join(' · ')}</p>
 <p class="gr"><b>등급 ${hx(it.g || '-')}</b> — ${hx(GR_TXT[it.g] || '사진으로 상태를 확인해 주세요')}</p>
@@ -484,4 +488,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { unregOf, SC, shopPath, setPathOf, quoteQ, pickMap, PICK_SRC, multiOf, KINDS, kindPath, catTree, soldLike, shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { unregOf, crumbH, SC, shopPath, setPathOf, quoteQ, pickMap, PICK_SRC, multiOf, KINDS, kindPath, catTree, soldLike, shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
