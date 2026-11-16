@@ -304,7 +304,8 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
         /* (y24reg3 11/17 고침 2) 같은 때 그 멈춤으로 실패한 줄도 판마다 한 번 「↩ 다시 올릴 수 있게」(사람 단추 y24RegMark와 같은 모양 · 예전 상태는 hist · 지우지 않음)
          *  — 우리 엑셀 탓(머리글·칸 값)으로 예스24가 줄을 못 읽은 것이라 상품 탓이 아님 · 예스24가 오류 코드(-N)를 알려 준 줄은 그대로 사람에게 · 한 번에 최대 5줄 */
         const rv = {}; for (const [lid, e] of Object.entries(led.r || {})) { if (Object.keys(rv).length >= 5) break; const w = String((e && e.why) || '');
-          if (!e || e.st !== 'autofail' || /오류코드 -?\d/.test(w) || !/미리보기 목록에 우리 줄이 안 보임|결과 표에 없음|모두 버려짐/.test(w) || String(e.revVer || '') === String(st.ver)) continue;
+          const ours = /오류코드 -(?:4|5|6|7|9|13)\b/.test(w) && !/오류코드 -(?:1|2|3|8|10|11|12|14|15|16|17|18)\b/.test(w); /* (y24reg4 11/17) -4~-7 상태정보·사용흔적·손상여부·부속물(품질등급 칸에서 나옴)·-9 판매형태·-13 판매가 입력값 = 우리 엑셀 칸 값 탓 · 상품 탓(바코드·신간·재고·값 범위·미등록·금지어)이 하나라도 섞이면 그대로 사람에게 */
+          if (!e || e.st !== 'autofail' || (/오류코드 -?\d/.test(w) && !ours) || !(ours || /미리보기 목록에 우리 줄이 안 보임|결과 표에 없음|모두 버려짐/.test(w)) || String(e.revVer || '') === String(st.ver)) continue;
           rv[lid] = { st: 'retry', ok: null, revVer: String(st.ver), markAt: iso(), markBy: '🤖 클라우드 — 번외 ' + st.ver + ' 새 판 · 아무것도 안 누른 실패 한 번 풂', hist: [...(e.hist || []), { st: e.st, ok: e.ok || null, at: e.markAt || e.failAt || e.at, by: e.markBy || e.by }].slice(-10) }; }
         if (Object.keys(rv).length) { try { await ref().set({ r: rv }, { merge: true }); for (const [lid, p] of Object.entries(rv)) Object.assign(led.r[lid], p); log('🤖 예스24 자동 올림', pc, '안 누른 실패 줄 다시 후보 ' + Object.keys(rv).join(',')); } catch (e) {} } } }
     if (led.auto && led.auto.stop && !Object.keys(rm).length) return say('⛔ 멈춤 — ' + led.auto.stop.why);

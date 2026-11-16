@@ -25,7 +25,7 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
   ok(/주문 진행 중/.test(why({ held: '주문 12345678' })), '(y24ui) 최근 주문에 들어온 상품(실물이 묶임)은 올리지 않음');
   ok(F.y24RegJudge(L({ unpub: { until: '2027-01-01' } }), X0()).row.unpub.until === '2027-01-01', '(y24ui) 미출간 표시가 올릴 줄에 따라감(막지는 않음)'); }
 { const aoa = F.y24RegAoa([{ isbn: '9788900000001', qty: 1, grade: '상', price: 8000, title: '시험 책(새책급)', self: 'A01BC123PK' }]);
-  ok(aoa.length === 28 && aoa[26].slice(1).join('|') === F.Y24R_HEAD.join('|') && aoa[27][1] === '9788900000001' && aoa[27][7] === 'A01BC123PK' && aoa[27][4] === 8000 && !/새책/.test(aoa[27][5]) && aoa[27][3] === '02' && aoa[27][10] === '02' && aoa[27][11] === '01', '엑셀: 27행 머리 B~L · 28행 바코드·재고·등급(코드 02=상)·판매가·상품명(금지 낱말 지움)·자체코드·판매상태(02 판매중)·판매형태(01 일반)');
+  ok(aoa.length === 28 && aoa[26].slice(1).join('|') === F.Y24R_HEAD.join('|') && aoa[27][1] === '9788900000001' && aoa[27][7] === 'A01BC123PK' && aoa[27][4] === 8000 && !/새책/.test(aoa[27][5]) && aoa[27][3] === '상' && aoa[27][10] === '1' && aoa[27][11] === '1', '엑셀: 27행 머리 B~L · 28행 바코드·재고·등급(코드 02=상)·판매가·상품명(금지 낱말 지움)·자체코드·판매상태(02 판매중)·판매형태(01 일반)');
   const head = (T.match(/const Y24_XH = (\[[^\]]+\])/) || [])[1]; ok(head && JSON.stringify(eval(head)) === JSON.stringify(F.Y24R_HEAD), '🔗 연결 표 1줄 시험 엑셀과 같은 머리 칸'); }
 { const R = [{ lid: 'a', skus: ['S1'] }, { lid: 'b', skus: ['S2'] }, { lid: 'c', skus: ['S1'] }, { lid: 'd', skus: ['S3'] }]; const f = F.y24RegFilter(R, { b: { st: 'sent', skus: ['S2'] }, x: { st: 'retry', skus: ['S3'] } });
   ok(f.ok.map((r) => r.lid).join() === 'a,d' && f.skip.map((r) => r.lid).join() === 'b,c', '확정 직전 다시 보기: 장부 상품(b)·같은 묶음 안 같은 SKU(c) 뺌 · 풀린 줄의 SKU(d)는 됨'); }
