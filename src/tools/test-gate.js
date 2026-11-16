@@ -24,7 +24,7 @@ const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // �
 const show = (rev, f) => gitOk('show', `${rev}:${f}`);
 const readJ = (rev, f, d) => { const t = show(rev, f); if (t == null) return d; try { return JSON.parse(t); } catch (e) { no(`${f} JSON을 못 읽음: ${e.message}`); return d; } };
 const changed = (gitOk('diff', '--name-only', BASE, TARGET) || '').split('\n').filter(Boolean);
-const CODE_RE = /^(src\/app\.html|app\/|src\/readnow-collector\.src\.js|readnow-[a-z0-9-]+\.js$|cloud\/|local\/|src\/tests\/|src\/tools\/test-gate\.js)/;
+const policyText = show(TARGET, 'src/tools/test-policy.cjs'); if (!policyText) throw new Error('시험 대상 커밋의 test-policy.cjs 없음'); const policyModule = { exports: {} }; require('vm').runInNewContext(policyText, { module: policyModule }); const { CODE_RE, requiredTests } = policyModule.exports;
 
 /* ⑩ ❓ 업데이트 기록(CHANGELOG) — 웹앱 원본이 바뀔 때 */
 function changelogCheck() {
@@ -97,7 +97,7 @@ function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + 
   const P = path.join(W, 'pw'); fs.mkdirSync(P); cp.execSync(`cp -r ${JSON.stringify(kit)}/. ${JSON.stringify(P)}/ && cp -r ${JSON.stringify(path.join(Q, 'src', 'tests'))}/. ${JSON.stringify(P)}/`, { shell: '/bin/bash' });
   const xl = findXlsx(); if (xl) fs.copyFileSync(xl, path.join(P, 'xlsx.full.min.js'));
   const S = path.join(W, 'srv'); fs.mkdirSync(S); for (const d of ['app', 'friend']) ln(path.join(W, 'out', d), path.join(S, d)); for (const f of fs.readdirSync(W).filter((x) => /^readnow-.*\.js$/.test(x))) ln(path.join(W, f), path.join(S, f));
-  ln(path.join(Q, 'shop'), path.join(S, 'shop')); /* (11/13 shopux1) 손님 화면 시험(tSHOP1111·tSHOPC1111 첫 화면)이 RN_PORT/shop/index.html을 엶 — 전엔 이 폴더가 없어 404로 '첫 화면' 실패(코드 탓 아님) */
+  ln(path.join(Q, 'shop'), path.join(S, 'shop')); ln(path.join(Q, 'cloud'), path.join(S, 'cloud')); /* (11/13 shopux1) 손님 화면 시험(tSHOP1111·tSHOPC1111 첫 화면)이 RN_PORT/shop/index.html을 엶 — 전엔 이 폴더가 없어 404로 '첫 화면' 실패(코드 탓 아님) */
   ln(path.join(W, 'research'), path.join(S, 'research')); ln(path.join(W, 'facts-docs'), path.join(S, 'facts-docs')); if (fs.existsSync(path.join(P, 'r15'))) ln(path.join(P, 'r15'), path.join(S, 'r15'));
   return { Q, W, P, S, xl };
 }
@@ -127,7 +127,7 @@ async function runAll(B, list, tmo, par) {
 }
 function knownCheck(K) { // 장부 꼴: { "items": [ { "test", "items"?: [항목 글 일부], "why", "owner", "until": "YYYY-MM-DD", "since" } ] }
   const L = (K && K.items) || []; const max = new Date(Date.now() + 9 * 3600e3 + 14 * 864e5).toISOString().slice(0, 10);
-  for (const e of L) { const miss = ['test', 'why', 'owner', 'until'].filter((k) => !e[k]); if (miss.length) no(`KNOWN_FAIL 줄(${e.test || '?'})에 ${miss.join('·')} 없음 — 까닭·담당·기한을 모두 적을 것`); else if (!/^\d{4}-\d\d-\d\d$/.test(e.until)) no(`KNOWN_FAIL ${e.test} 기한 꼴이 YYYY-MM-DD가 아님(${e.until})`); else if (e.until > max) no(`KNOWN_FAIL ${e.test} 기한 ${e.until}이 14일보다 멂 — 오래 묵히지 않게 14일 안으로(그때 다시 판단해 늘림)`); }
+  for (const e of L) { if (e.until && e.until < today) no('KNOWN_FAIL ' + e.test + ' 기한이 지남: ' + e.until); const miss = ['test', 'why', 'owner', 'until'].filter((k) => !e[k]); if (miss.length) no(`KNOWN_FAIL 줄(${e.test || '?'})에 ${miss.join('·')} 없음 — 까닭·담당·기한을 모두 적을 것`); else if (!/^\d{4}-\d\d-\d\d$/.test(e.until)) no(`KNOWN_FAIL ${e.test} 기한 꼴이 YYYY-MM-DD가 아님(${e.until})`); else if (e.until > max) no(`KNOWN_FAIL ${e.test} 기한 ${e.until}이 14일보다 멂 — 오래 묵히지 않게 14일 안으로(그때 다시 판단해 늘림)`); }
   return L;
 }
 (async () => {
@@ -141,17 +141,17 @@ function knownCheck(K) { // 장부 꼴: { "items": [ { "test", "items"?: [항목
   if (!QJ || !Array.isArray(QJ.tests) || !QJ.tests.length) { no('src/tests/QUICK.json(빠른 시험 묶음)이 없거나 비었음'); process.exit(1); }
   const follow = followCheck();
   /* 같은 내용(진단·백업 기록만 다름)으로 이미 통과했으면 다시 돌리지 않음 — 시험 3분 사이 진단 묻기 커밋이 main에 올라와 ②에 걸린 뒤 합쳐 다시 push할 때 */
-  const ck = require('crypto').createHash('sha256').update((gitOk('ls-tree', '-r', TARGET) || '').split('\n').filter((l) => !/\t(diag|backups)\//.test(l)).join('\n')).digest('hex').slice(0, 20);
+  const ck = require('crypto').createHash('sha256').update(today + '\n' + (gitOk('ls-tree', '-r', TARGET) || '').split('\n').filter((l) => !/\t(diag|backups)\//.test(l)).join('\n')).digest('hex').slice(0, 20);
   const CD = path.join(path.resolve(TOP, git('rev-parse', '--git-common-dir').trim()), 'rn-gate-pass'); const CF = path.join(CD, ck);
   if (!has('--only') && !has('--fresh') && fs.existsSync(CF) && Date.now() - fs.statSync(CF).mtimeMs < 6 * 3600e3) { say(`✓ ⑧ 빠른 시험: 같은 내용(진단·백업만 다름)으로 ${Math.round((Date.now() - fs.statSync(CF).mtimeMs) / 60e3)}분 전 통과 — 다시 돌리지 않음 (${fs.readFileSync(CF, 'utf8').trim().slice(0, 80)})`); process.exit(bad); }
-  const quick = has('--only') ? arg('--only').split(',') : QJ.tests.map((x) => x.t);
+  const quick = has('--only') ? arg('--only').split(',') : [...new Set([...QJ.tests.map((x) => x.t), ...requiredTests(changed)])];
   const extra = has('--only') || process.env.RN_QUICK_FOLLOW === '0' ? [] : follow.filter((t) => !quick.includes(t)).slice(0, QJ.follow_max == null ? 3 : QJ.follow_max);
   const B = bed(); if (B.err) { console.log('❌ ⑧ 빠른 시험 자리를 못 꾸림: ' + B.err + ' — 급하면 RN_QUICK_SKIP=1(까닭을 커밋 글에)'); process.exit(2); }
   if (!B.xl) warn('xlsx.full.min.js를 못 찾음 — 예스24 등록 시험(tY24REG·tY24AREG)이 거짓으로 실패할 수 있음(RN_XLSX=<파일>로 알려 줄 것)');
   const t0 = Date.now(); const R = await runAll(B, [...quick, ...extra], QJ.timeout || 240, Math.max(1, +(process.env.RN_QUICK_PAR || QJ.parallel || 3)));
   const sec = Math.round((Date.now() - t0) / 1000);
   const blocked = [], known = [], flaky = [], passed = [];
-  for (const t of quick) { const r = R[t]; if (r.ok) { passed.push(t); if (r.flaky) flaky.push(t); const e = K.find((x) => x.test === t); if (e) warn(`KNOWN_FAIL ${t}가 이제 통과 — 장부에서 그 줄을 빼 주세요(담당 ${e.owner})`); continue; }
+  for (const t of [...quick, ...extra]) { const r = R[t]; if (r.ok) { passed.push(t); if (r.flaky) flaky.push(t); const e = K.find((x) => x.test === t); if (e) warn(`KNOWN_FAIL ${t}가 이제 통과 — 장부에서 그 줄을 빼 주세요(담당 ${e.owner})`); continue; }
     const e = K.find((x) => x.test === t); const its = r.items.length ? r.items : ['(항목 밖 실패: ' + (r.why || '요약 줄 ❌') + ')'];
     const cover = e && (!e.items || !e.items.length || (r.items.length && r.items.every((it) => e.items.some((s) => it.includes(s)))));
     if (e && cover && e.until >= today) known.push(`${t}(까닭: ${e.why} · 담당 ${e.owner} · 기한 ${e.until})`);
