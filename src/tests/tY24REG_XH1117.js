@@ -25,12 +25,20 @@ console.log('① 웹앱 자동 올림 엑셀(y24RegAoa) — 화면 셈 그대로
   ok(r.n === 2 && r.list.length === 2, '두 줄 모두 살아남음(바코드 칸이 안 빔)', r);
   const a = r.list[0], b = r.list[1];
   ok(String(a.BARCODE) === BC && String(b.BARCODE) === '9788900000011', '바코드 = 블루레이 바코드 · 책 ISBN', [a.BARCODE, b.BARCODE]);
-  ok(a.MAN_NO === 'KHKd0000EX' && b.MAN_NO === 'A01SKU2' && +a.REM_CNT === 1 && a.GOODS_LEVEL_GB === '최상' && +a.USED_SALE_PR === 298000 && a.GOODS_NM === '시험 블루레이' && +a.SALE_TYPE_GB === 1 && +a.GOODS_STAT_GB === 1 && +a.POINT_RT === 0, '자체코드·재고수량·품질등급·판매가·상품명·판매형태·판매상태·적립율 칸이 화면 열쇠로 읽힘', a); }
+  ok(a.MAN_NO === 'KHKd0000EX' && b.MAN_NO === 'A01SKU2' && +a.REM_CNT === 1 && a.GOODS_LEVEL_GB === '01' && b.GOODS_LEVEL_GB === '02' && +a.USED_SALE_PR === 298000 && a.GOODS_NM === '시험 블루레이' && a.SALE_TYPE_GB === '01' && a.GOODS_STAT_GB === '02' && +a.POINT_RT === 0, '자체코드·재고수량·품질등급·판매가·상품명·판매형태·판매상태·적립율 칸이 화면 열쇠로 읽힘', a); }
 console.log('② 손 길 엑셀(y24XlsxAoa)');
 { const r0 = { v: { isbn: '9788900000011', stock: 1, grade: '상', title: '시험 책' }, x: { goodsNo: '150000001', price: 9000 }, skus: ['A01SKU2'] };
   const ri = pageRead(M.y24XlsxAoa([r0], 'isbn'), '01'), rn = pageRead(M.y24XlsxAoa([r0], 'no'), '02');
   ok(ri.list.length === 1 && String(ri.list[0].BARCODE) === '9788900000011' && ri.list[0].MAN_NO === 'A01SKU2', '바코드용: 바코드·자체코드가 읽힘', ri);
   ok(rn.list.length === 1 && String(rn.list[0].GOODS_NO) === '150000001' && rn.list[0].MAN_NO === 'A01SKU2' && +rn.list[0].USED_SALE_PR === 9000, '상품번호용: 상품번호·자체코드·판매가가 읽힘', rn); }
+console.log('⑤ (고침 2) 품질등급·판매상태·판매형태 = 예스24 코드 글자(화면 코드 예시 응답 ReadExcelFile·결과 표 셈과 같음)');
+{ const g = (x) => pageRead(F.y24RegAoa([{ lid: 'aladin_U9', isbn: '9788900000011', grade: x, qty: 1, price: 9000, self: 'A01SKU9', title: '시험' }]), '01').list[0].GOODS_LEVEL_GB;
+  ok(g('최상') === '01' && g('상') === '02' && g('중') === '03' && g('하') === '04' && g('') === '' && g('새것') === '', '등급 01~04 · 모르면 빈 칸(짐작 안 함)', [g('최상'), g('상'), g('중'), g('하'), g('')]);
+  const LV = { '01': '최상', '02': '상', '03': '중', '04': '하' }; ok(['최상', '상', '중', '하'].every((x) => LV[g(x)] === x), '예스24 결과 표 셈(01 최상·02 상·03 중·04 하)으로 되읽으면 같은 등급');
+  const r0 = { v: { isbn: '9788900000011', stock: 1, grade: '중', title: '시험 책' }, x: { goodsNo: '150000001', price: 9000, collect: 1 }, skus: ['A01SKU2'] }; const q = pageRead(M.y24XlsxAoa([r0], 'no'), '02').list[0];
+  ok(q.GOODS_LEVEL_GB === '03' && q.GOODS_STAT_GB === '02' && q.SALE_TYPE_GB === '02', '손 길 엑셀도 코드(중 03 · 판매중 02 · 소장용 02)', q);
+  const H = rd('lab/col2/helper/col2-y24reg.js'); ok(/한 줄도 돌려주지 않음/.test(H), '번외: 확인 결과 0줄이면 칸 값 문제라고 알려 줌');
+  const C = rd('cloud/y24auto.js'); ok(/revVer/.test(C) && C.includes('오류코드 -?\\d'), '클라우드: 안 누른 실패 줄을 번외 판마다 한 번 다시 후보로(예스24 오류 코드가 있는 줄은 사람에게)'); }
 console.log('③ 옛 머리글이면 모두 버려짐(원인 재현)');
 { const old = F.y24RegAoa([{ lid: 'aladin_U1', isbn: BC, bc: BC, grade: '최상', qty: 1, price: 298000, self: 'KHKd0000EX', title: '시험 블루레이' }]); old[26] = ['', '바코드/상품번호', '재고', '등급', '판매가', '상품명', '적립율', '자체코드', '홍보문구', '상품설명', '판매상태', '판매형태'];
   const r = pageRead(old, '01'); ok(r.n === 1 && r.list.length === 0, '옛 머리글 = 엑셀 1줄을 읽어도 바코드 칸이 비어 0줄(HOME 표 0줄과 같음)', r); }

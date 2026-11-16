@@ -84,7 +84,7 @@ function judgePre(isb, vs) { if (!vs || !vs.vm) return ''; const w = vs.w || {};
   if (!vs.res) return '';
   const rows = vs.rows || []; const bad = [];
   for (const i of isb) { const r = rows.find((x) => dig(x.bc) === dig(i) || (x.no && dig(x.no) === dig(i))); if (!r) { bad.push(`${i} 결과 표에 없음`); continue; } if (r.e != null && r.e < 0) bad.push(`${i} 오류코드 ${r.e} ${ERR_MSG[String(r.e)] || '(뜻 모름)'}`); }
-  if (bad.length) return PRE_HEAD + bad.slice(0, 4).join(' · ') + (bad.length > 4 ? ` 외 ${bad.length - 4}` : '') + ` (확인 ${rows.length}줄 · 등록 가능 ${vs.reg == null ? '?' : vs.reg})`;
+  if (bad.length) return PRE_HEAD + bad.slice(0, 4).join(' · ') + (bad.length > 4 ? ` 외 ${bad.length - 4}` : '') + ` (확인 ${rows.length}줄 · 등록 가능 ${vs.reg == null ? '?' : vs.reg})` + (!rows.length && w.called ? ' · 예스24가 확인 결과를 한 줄도 돌려주지 않음 — 엑셀 칸 값(품질등급 01~04·판매상태 02·판매형태 01 코드) 확인' : ''); /* (y24reg3 11/17 고침 2) 0줄 = 칸 값을 못 알아들음(11/17 07:41 '상'·1·1) */
   if (vs.reg === 0) return PRE_HEAD + `등록 가능한 줄 0(확인 ${rows.length}줄)`;
   return ''; }
 /* raw를 짧게(장부 칸 · 클라우드는 3000자 넘으면 잘라 둠) */
