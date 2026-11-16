@@ -51,12 +51,17 @@
     SSs('bq-sat', String(now)); var vid = LSg('bq-vid'); if (!/^[0-9a-f]{16}$/.test(vid || '')) { vid = hex(8); LSs('bq-vid', vid); } if (LSg('bq-vday') !== kday()) { LSs('bq-vday', kday()); S.nv = 1; } return { sid: sid, vid: vid }; }
   function ev(k, a, x) { if (off()) return; BQT.q.push([k, a == null ? '' : String(a), x == null ? '' : String(x), Date.now()]); if (BQT.q.length >= 20) send(); }
   function step(k) { var f = SSg('bq-sf') || ''; if (f.indexOf(k) >= 0) return; SSs('bq-sf', f + k); ev('f', k); }
-  function accountToken() { if (!W.BQA || typeof W.BQA.authToken !== 'function') throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요'); return W.BQA.authToken(); }
-  function send(beacon) { if (off()) { BQT.q = []; return; } var ss = sess(); if (!BQT.q.length && !S.ns) return; var tk; try { tk = accountToken(); } catch (e) { return; }
-    var body = JSON.stringify({ v: 1, vid: ss.vid, sid: ss.sid, nv: S.nv, ns: S.ns, ref: S.ns ? S.ref : '', utm: S.ns ? S.utm : null, sw: W.innerWidth || 0, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '', E: BQT.q.splice(0, 60) });
-    S.nv = 0; S.ns = 0; S.sent++; var url = getBase() + '/shop/t';
-    try { if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return; } catch (e) {}
-    try { fetch(url, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, mode: 'cors', credentials: 'omit' }).catch(function () {}); } catch (e) {} }
+  function accountToken() { if (!W.BQA || W.BQA.SESSION_PROTOCOL !== 2 || typeof W.BQA.authorize !== 'function' || typeof W.BQA.authToken !== 'function') throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요'); return W.BQA.authToken(); }
+  var sending = false;
+  function send(beacon) { if (off()) { BQT.q = []; return; } if (sending) return; var ss = sess(); if (!BQT.q.length && !S.ns) return; var tk; try { tk = accountToken(); } catch (e) { return; }
+    var events = BQT.q.slice(0, 60), body = JSON.stringify({ v: 1, vid: ss.vid, sid: ss.sid, nv: S.nv, ns: S.ns, ref: S.ns ? S.ref : '', utm: S.ns ? S.utm : null, sw: W.innerWidth || 0, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '', E: events }), url = getBase() + '/shop/t';
+    sending = true;
+    W.BQA.authorize(tk, function () {
+      if (off()) return; BQT.q.splice(0, events.length); S.nv = 0; S.ns = 0; S.sent++;
+      try { if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return; } catch (e) {}
+      try { fetch(url, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, mode: 'cors', credentials: 'omit' }).catch(function () {}); } catch (e) {}
+    }).catch(function () {}).finally(function () { sending = false; });
+  }
   BQT.send = send; BQT.ev = ev;
   var NAMES = { home: 1, list: 1, b: 1, cart: 1, order: 1, done: 1, shelf: 1, me: 1, wish: 1, login: 1, p: 1, my: 1, pf: 1, bl: 1, feed: 1, lib: 1, al: 1 };
   function route() { var h = String(location.hash || '').replace(/^#/, '') || '/'; var i = h.indexOf('?'); var p = i < 0 ? h : h.slice(0, i), qs = i < 0 ? '' : h.slice(i + 1); var q = {}; qs.split('&').forEach(function (kv) { if (!kv) return; var j = kv.indexOf('='); try { q[decodeURIComponent(j < 0 ? kv : kv.slice(0, j))] = decodeURIComponent(j < 0 ? '' : kv.slice(j + 1).replace(/\+/g, ' ')); } catch (e) {} });
@@ -102,7 +107,7 @@
     D.body.appendChild(ov); var close = function () { ov.remove(); D.removeEventListener('keydown', k); }; var k = function (e) { if (e.key === 'Escape') close(); }; D.addEventListener('keydown', k);
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); }); ov.querySelector('#bqtX').onclick = close; if (bk) ov.querySelector('#bqtK').value = 'book';
     var go = ov.querySelector('#bqtGo'); go.onclick = function () { var tx = ov.querySelector('#bqtTx').value.trim(); var msg = ov.querySelector('#bqtMsg'); if (tx.length < 5) { msg.textContent = '⚠ 문의 글을 5자 넘게 적어 주세요'; return; } if (PV) { msg.textContent = '👀 미리 보기라 보내지 않습니다'; return; } go.disabled = true; msg.textContent = '보내는 중…';
-      var tk; try { tk = accountToken(); } catch (e) { go.disabled = false; msg.textContent = '⚠ ' + e.message; return; } fetch(getBase() + '/shop/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx: tx, kind: ov.querySelector('#bqtK').value, ct: ov.querySelector('#bqtCt').value.trim(), no: ov.querySelector('#bqtNo').value.trim(), id: bk ? bk.id : '', t: bk ? bk.t : '', hp: ov.querySelector('#bqtHp').value, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '' }) })
+      var tk; try { tk = accountToken(); } catch (e) { go.disabled = false; msg.textContent = '⚠ ' + e.message; return; } var askBody = JSON.stringify({ tx: tx, kind: ov.querySelector('#bqtK').value, ct: ov.querySelector('#bqtCt').value.trim(), no: ov.querySelector('#bqtNo').value.trim(), id: bk ? bk.id : '', t: bk ? bk.t : '', hp: ov.querySelector('#bqtHp').value, tk: /^u_[0-9a-f]{16}\.[0-9a-f]{32}$/.test(tk) ? tk : '' }); W.BQA.authorize(tk, function () { if (!ov.isConnected) throw new Error('문의 화면을 다시 열어 주세요'); return fetch(getBase() + '/shop/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: askBody }); }).then(function (packet) { return packet.value; })
         .then(function (r) { return r.json(); }).then(function (j) { if (!j || !j.ok) throw new Error((j && j.err) || '보내지 못했습니다'); var L = myAsks(); L.unshift({ aid: j.aid, t: j.t, at: new Date().toISOString(), tx: tx.slice(0, 60) }); LSs('bq-asks', JSON.stringify(L.slice(0, 30))); msg.textContent = '✓ 문의를 받았습니다(번호 ' + j.aid + ') — 답이 오면 아래 「내 문의」에 나옵니다'; ov.querySelector('#bqtTx').value = ''; go.disabled = false; mine(); })
         .catch(function (e) { go.disabled = false; msg.textContent = '⚠ ' + (e.message || '보내지 못했습니다 — 잠시 뒤 다시'); }); };
     function mine() { var L = myAsks(); var box = ov.querySelector('#bqtMy'); if (!L.length) { box.innerHTML = ''; return; } box.innerHTML = '<b>내 문의</b> <small>(이 기기에서 남긴 것)</small>' + L.slice(0, 10).map(function (x) { return '<div data-aid="' + esc(x.aid) + '"><small>' + esc(String(x.at).slice(0, 10)) + ' · ' + esc(x.aid) + '</small><div>' + esc(x.tx) + '</div><div class="ans"><small>답 확인 중…</small></div></div>'; }).join('');
