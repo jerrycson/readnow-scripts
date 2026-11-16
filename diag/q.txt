@@ -1,4 +1,2 @@
-recentUp=ext_used&mins=1440
-recentUp=sellers&mins=600
-recentUp=ext_pool&mins=600
-# 243735651
+doc=app_settings/bi_x
+# 6375990
