@@ -1,0 +1,6 @@
+rules_version = '2';
+service cloud.firestore { match /databases/{db}/documents {
+ match /readers/{uid} { allow get: if request.auth != null && request.auth.uid == uid; }
+ match /releases/{id} { allow read: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
+ match /blobs/{id} { allow get: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
+} }
