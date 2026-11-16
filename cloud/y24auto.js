@@ -13,7 +13,10 @@
 'use strict';
 const ISBN_RE = /^(97[89]\d{10}|\d{9}[\dXx])$/;
 const BLOCK_A = '/* ◆y24reg 시작', BLOCK_B = '/* ◆y24reg 끝 */';
-const BLOCK_NAMES = ['Y24R_DEF', 'y24RegCfg', 'y24RegPrice', 'y24RegState', 'y24RegJudge', 'y24RegAoa', 'y24RegFilter', 'y24AutoHuman', 'y24AutoPlan', 'y24AutoCand'];
+const BLOCK_NAMES = ['Y24R_DEF', 'y24RegCfg', 'y24RegPrice', 'y24RegState', 'y24RegJudge', 'y24RegAoa', 'y24RegFilter', 'y24AutoHuman', 'y24AutoPlan', 'y24AutoCand', 'y24RegDead', 'y24RegNLed', 'y24RegEan'];
+/* (r1116-y24reg) 바코드 한 번 심기 — ISBN이 없는 상품(알라딘 isbn13 없음)의 EAN-13 바코드를 장부 app_settings/y24_reg.bc[상품]에 없을 때 한 번만 넣음(bcSeed에 적어 사람이 지운 뒤 다시 넣지 않음 · 지우지 않음)
+ *  aladin_U495184596 = 블루레이(「🟦 예스24도」 켬 · 11/15) · 근거: 예스24 공개 상품 150109556의 바코드 8809866320756(검사 숫자 6 맞음 · resume y24reg 11/16) */
+const BC_SEED = { aladin_U495184596: { bc: '8809866320756', why: '블루레이 — 알라딘 ISBN 없음 · 예스24 공개 상품 150109556 바코드' } };
 const xlsxPkg = () => { try { return require('xlsx'); } catch (e) { return null; } }; /* SheetJS 0.18.5(cloud/package.json 의존 · 웹앱 needXLSX·수집기 @require와 같은 판) — 예전엔 실행 때 cdnjs에서 받아 new Function으로 돌렸음 */
 const WEB_URL = 'https://readnow.kr/app/readnow-webapp.js'; /* 저장소에서 못 받을 때(비공개 뒤) — 같은 덩어리가 든 지금 웹앱 본문 */
 const MKT_MAX = 120; /* 한 번에 시장 지표를 받는 책 수(웹앱 Y24E_MAX 400보다 작게 — 1분마다 불리므로) · 근거: 없음 */
@@ -145,7 +148,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
         M.mkt.set(i, x); if (y24eNd(x)) { if (!M.nd.has(i)) M.nd.set(i, t); } else M.nd.delete(i); }); } }
   /* 웹앱 y24MktGo — 시장 지표를 mktWaitH시간 기다렸거나 클라우드가 못 읽음 → 알라딘 값(F45 ②) */
   const mktGo = (i, cfg) => { const d = M.mkt.get(String(i)); if (d && !y24eNd(d)) return false; if (d && d.err) return true; const t0 = Math.min(M.nd.get(String(i)) || Infinity, (d && d.reqAt && Date.parse(d.reqAt)) || Infinity); return isFinite(t0) && now() - t0 >= (cfg && cfg.mktWaitH != null ? +cfg.mktWaitH : 6) * 3600e3; };
-  const rowsOf = (E) => E.map((e) => ({ lid: e.lid, isbn: e.isbn, grade: e.grade, price: +e.price, qty: 1, self: (e.skus || []).join(','), title: String(e.title || '').slice(0, 60) })); /* 웹앱 y24AutoRowsOf */
+  const rowsOf = (E) => E.map((e) => ({ lid: e.lid, isbn: e.isbn, ...(e.bc ? { bc: e.bc } : {}), grade: e.grade, price: +e.price, qty: 1, self: (e.skus || []).join(','), title: String(e.title || '').slice(0, 60) })); /* 웹앱 y24AutoRowsOf */
   const xlsxOf = (m, rows) => { const X = m.XL; const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(m.B.y24RegAoa(rows)), 'Sheet1'); return X.write(wb, { type: 'base64', bookType: 'xlsx' }); }; /* 웹앱 y24AutoXlsx */
   const ref = () => C('app_settings').doc('y24_reg');
   /* 번외 결과 → 장부(웹앱 y24AutoApply와 같음 — 그 맡김 줄만 · 아직 'auto'인 줄만) */
@@ -164,7 +167,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     await db.runTransaction(async (tx) => { const cur = (await tx.get(ref())).data() || {}; if (cur.auto && cur.auto.stop) { res = { ok: [], stop: cur.auto.stop }; return; } const led = cur.r || {}; const at = iso();
       const P = m.B.y24AutoPlan(cand, led, Cd, at, cfg, kstDay(now())); const R = m.B.y24RegFilter(P.pick, led); res = { ...R, plan: P }; if (!R.ok.length) return; const r = {};
       R.ok.forEach((x) => { const before = Cd.pub.filter((q) => q.isbn === x.isbn).map((q) => q.no).concat(Cd.adm.filter((a) => a.ean === x.isbn).map((a) => a.no)); const prev = led[x.lid];
-        r[x.lid] = { lid: x.lid, title: x.title.slice(0, 60), isbn: x.isbn, grade: x.grade, qty: 1, price: x.price, alPrice: x.alPrice, val: x.val ? { mode: x.val.mode, t: x.val.t } : null, skus: x.skus, at, day: kstDay(now()), by, batch: jid, job: jid, auto: 1, st: 'auto', before: [...new Set(before)].slice(0, 30), hist: prev ? [...(prev.hist || []), { st: prev.st, at: prev.at, by: prev.by, gno: prev.gno || null }].slice(-10) : [] }; });
+        r[x.lid] = { lid: x.lid, title: x.title.slice(0, 60), isbn: x.isbn, ...(x.bc ? { bc: x.bc } : {}), grade: x.grade, qty: 1, price: x.price, alPrice: x.alPrice, val: x.val ? { mode: x.val.mode, t: x.val.t } : null, skus: x.skus, at, day: kstDay(now()), by, batch: jid, job: jid, auto: 1, st: 'auto', before: [...new Set(before)].slice(0, 30), hist: prev ? [...(prev.hist || []), { st: prev.st, at: prev.at, by: prev.by, gno: prev.gno || null }].slice(-10) : [] }; });
       tx.set(ref(), { r, batches: FV.arrayUnion({ batch: jid, at, by, n: R.ok.length, auto: 1, lids: R.ok.map((x) => x.lid).slice(0, 60) }), auto: { lastJob: jid, lastAt: at, dev: 'cloud:' + pc } }, { merge: true }); });
     return res; }
   const byOf = (pc) => '🤖 자동 올림 · 클라우드(' + pc + ')';
@@ -279,6 +282,8 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const m = await mods(); if (!M.mods) return say('클라우드가 공용 셈을 못 받음 — ' + (m.err || []).join(' · ').slice(0, 160));
     const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
     const led = await ledGet();
+    { const add = {}, mark = {}; for (const [lid, x] of Object.entries(BC_SEED)) if (!(led.bc || {})[lid] && !(led.bcSeed || {})[lid] && m.B.y24RegEan(x.bc)) { add[lid] = x.bc; mark[lid] = { at: iso(), why: x.why, by: 'cloud y24auto' }; }
+      if (Object.keys(add).length) { try { await ref().set({ bc: add, bcSeed: mark }, { merge: true }); led.bc = { ...(led.bc || {}), ...add }; led.bcSeed = { ...(led.bcSeed || {}), ...mark }; log('🟦 예스24 바코드 심음', Object.keys(add).join(',')); } catch (e) {} } } /* (r1116-y24reg) BC_SEED */
     const res = (y && y.res) || {}; const rej = Array.isArray(y && y.rej) ? y.rej.slice(0, 10) : []; const rm = { ...res }; const dupRej = [];
     for (const x of rej) { if (!x || !x.id) continue; const err = String(x.err || '');
       /* (r1116-y24) '되풀이 0' 거절 — 번외가 이미 한 일(또는 이미 줄에 있는 일)이라 다시 받지 않음. 예전엔 장부에 안 적어 그 줄이 영영 '올리는 중'으로 남고 3분마다 다시 맡겨졌음(거절 기록도 안 지워져 번외가 계속 빠른 차례로 돎)
@@ -302,13 +307,14 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     if (st.login !== 'ok') return say('🔐 이 PC 번외 예스24 로그인 기다림'); if (st.hold) return say('🚚 출고 중 — 끝나면 이어감');
     const last = M.last.get(pc) || 0; if (now() - last < (y && y.fast ? 15e3 : 60e3)) return say(M.why.get(pc) || '다음 차례 기다림'); M.last.set(pc, now());
     const D = await data(); const W = wantLids(D, led); const X0 = regX(D, led, cfg, null);
-    const L0 = D.list.filter(aladinLive).map((l) => ({ l, L: { id: l.id, title: l.title, isbn: y24Isbn(l.isbn13), grade: y24G(l.grade), price: +l.price || 0, qty: l.qty == null ? 1 : +l.qty, live: aladinLive(l), skus: isDupes(l) ? [] : skuSelf(m.R, D, l), dupes: isDupes(l), adult: !!l.adult, held: D.held.get(l.id) || null, unpub: null } })); /* 웹앱 y24RegL */
-    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const nLed = Object.values(led.r).filter((e) => e && e.st !== 'retry').length; /* 「↩ 다시 올릴 수 있게」로 푼 줄은 세지 않음(웹앱과 같음) — 첫 시도가 실패해 풀면 첫 1건 고르기가 다시 열림 */
+    const bcOf = (l) => (y24Isbn(l.isbn13) ? null : m.B.y24RegEan((led.bc || {})[l.id]) || null); /* (r1116-y24reg) 웹앱 y24RegBc — ISBN이 없는 상품만 장부 바코드 */
+    const L0 = D.list.filter(aladinLive).map((l) => ({ l, L: { id: l.id, title: l.title, isbn: y24Isbn(l.isbn13), bc: bcOf(l), grade: y24G(l.grade), price: +l.price || 0, qty: l.qty == null ? 1 : +l.qty, live: aladinLive(l), skus: isDupes(l) ? [] : skuSelf(m.R, D, l), dupes: isDupes(l), adult: !!l.adult, held: D.held.get(l.id) || null, unpub: null } })); /* 웹앱 y24RegL */
+    const ok0 = L0.filter((x) => m.B.y24RegJudge(x.L, X0).ok); const Cd = regC(D); const nLed = m.B.y24RegNLed(led.r, Cd, iso(), cfg); /* 「↩ 다시 올릴 수 있게」로 푼 줄은 세지 않음(웹앱과 같음) · (r1116-y24reg) 자동 올림 실패·며칠째 안 보임 줄도 세지 않음 — 끝난 첫 시도 뒤 첫 1건 고르기가 다시 열림 */
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });
-    const cand = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has); const Cd = regC(D);
-    const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length };
+    const bcOk = !!st.bc; const cand0 = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has); const cand = cand0.filter((r) => !r.bc || bcOk); /* (r1116-y24reg) 바코드 줄은 바코드를 아는 번외(state bc:1 · 0.1.71 뒤)에만 — 옛 번외는 ISBN 검사로 거절 → 멈춤이 되므로 */
+    const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length, ...(cand0.length > cand.length ? { bcWait: cand0.length - cand.length } : {}) };
     for (const h of P.human.filter((x) => x.mkt).slice(0, 10)) { const i = String(h.row.isbn); const d = M.mkt.get(i); if ((d && d.reqAt && now() - Date.parse(d.reqAt) < 6 * 3600e3) || now() - (M.reqd.get(i) || 0) < 6 * 3600e3) continue; M.reqd.set(i, now());
       try { const at = iso(); await C('y24_mkt').doc(i).set({ isbn: i, req: { at, by: 'cloud y24auto', dev: pc, auto: true } }, { merge: true }); if (d) d.reqAt = at; } catch (e) {} } /* 웹앱 y24mReq(auto) — 클라우드 시장 읽기에 맡김 */
     /* (r1116-y24) 보내기 직전 재확인 — 큰 자료가 최대 BIG_MS 묵었으므로 올릴 책(한 차례 25권 이하)을 한 권씩 새로 읽음: 알라딘에서 팔렸거나(판매중 아님·수량 0) 값·등급이 바뀌었으면 이번엔 빼고(자료 개체도 새 값으로 바꿈 → 다음 차례엔 새 값으로 다시 셈) 다시 고름 */
@@ -320,6 +326,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
         if (!aladinLive(l) || chg) bad.add(x.lid); }
       if (!bad.size) break; drop += bad.size; cand2 = cand2.filter((c) => !bad.has(c.lid)); P2 = m.B.y24AutoPlan(cand2, led.r, Cd, iso(), cfg, kstDay(now())); }
     if (drop) { out.plan = { ...out.plan, drop }; log('🔁 예스24 올리기 직전 재확인에서 뺌', pc, drop + '권'); }
+    if (!P2.pick.length && cand0.length > cand.length && !cand.length) return say(`🟦 바코드 상품 ${cand0.length - cand.length}건 — 이 PC 번외가 바코드를 아는 새 판(0.1.71 뒤)을 받으면 올림`);
     if (!P2.pick.length) return say(drop ? `재확인에서 ${drop}권을 뺌(알라딘에서 팔렸거나 값이 바뀜) — 다음 차례에 새 값으로 다시 고름` : P.t);
     const jid = 'y24a' + iso().replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const r = await commit(m, cand2, Cd, jid, me, pc, cfg);
     if (!r || !r.ok.length) return say(r && r.stop ? '⛔ 멈춤 — ' + r.stop.why : (r && r.plan && r.plan.t) || P.t);
