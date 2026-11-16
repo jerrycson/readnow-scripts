@@ -51,7 +51,10 @@ function references(){
   host.append(row,node('p',(female?'프리렌':'힘멜')+' · 정면에 가까운 컷, 사선, 측면. 그림을 누르면 두 관찰창이 그 방향으로 회전합니다.'),safeLink('제작위원회 원본 열기',official));
  }else if(st.ref==='photo'){
   const doc='https://www.indeedmodels.com/system/files/models/'+(female?'susanna-giaroli/polaroidcard/susannagiaroli-polas_1.pdf':'giovanni/polaroidcard/giovanni-polas_3.pdf');
-  const frame=node('iframe','');frame.className='refdoc';frame.title='성인 모델 동일 촬영 시트';frame.src=doc+'#page=1&view=FitH';host.append(node('p',(female?'수산나 자롤리':'조반니')+' · 같은 촬영의 얼굴 정면과 옆얼굴, 비스듬한 포즈를 함께 봅니다.'),safeLink('모델 에이전시의 사진 원본',doc),frame);
+  const photos=female?["https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/susanna-giaroli/polas/susanna_01.jpg?itok=bit93PST","https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/susanna-giaroli/polas/susanna_03.jpg?itok=WWMRhgP2","https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/susanna-giaroli/polas/susanna_04.jpg?itok=EEFZ7Eqj"]:["https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/giovanni/polas/giovanni_01_1.jpg?itok=MpdnIFTJ","https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/giovanni/polas/giovanni_02_1.jpg?itok=TXuLbedh","https://www.indeedmodels.com/system/files/styles/model_gallery/private/models/giovanni/polas/giovanni_04_1.jpg?itok=CA3o0U6r"];
+  const row=node('div','');row.className='refs';
+  photos.forEach((url,i)=>{const b=node('button',''),img=node('img',''),label=['정면','약한 사선','측면'][i];b.type='button';img.src=url;img.alt=label;img.referrerPolicy='no-referrer';b.append(img,node('span',label));b.onclick=()=>{st.yaw=[0,female?345:15,270][i];st.pitch=0;sync();drawSoon();};row.append(b);});
+  host.append(row,node('p',(female?'수산나 자롤리':'조반니')+' · 같은 촬영의 세 컷입니다. 가운데 사진은 고개를 살짝 돌린 자세입니다. 45° 작화와는 별도로 비교하세요.'),safeLink('모델 에이전시의 촬영 시트 전체',doc));
  }else{
   const input=node('input','');input.type='file';input.accept='image/*';input.setAttribute('aria-label','이 기기의 참고 그림');const img=node('img','');img.style.maxWidth='100%';img.alt='선택한 참고 그림';img.hidden=!localURL;if(localURL)img.src=localURL;
   input.onchange=()=>{if(!input.files.length)return;if(localURL)URL.revokeObjectURL(localURL);localURL=URL.createObjectURL(input.files[0]);img.src=localURL;img.hidden=false;};host.append(input,img);
