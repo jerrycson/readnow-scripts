@@ -1,3 +1,5 @@
+import {paperShape} from './paper-shape35.mjs';
+import {bindSurface,surfaceParts} from './surface35.mjs';
 import {validateSettings} from './model.mjs';
 import {bodyStyle} from './body-design.mjs';
 import {makeFace} from './facial.mjs';
@@ -46,6 +48,11 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
   [sy+.15,mix(.11,.17,t),depth*.50,-.015]
  ];
  torsoSurface(torsoParts,rings,s,p,py,sy);
+ if(s.showNac&&s.top==='none'){
+   const fit=f&&!cute&&s.paperForm!=='legacy'?paperShape(s,chest,py,sy):null;
+   const bind=bindSurface({parts:torsoParts,surfaceAnchors:fit?[-1,1].map(side=>fit.marker(side)):undefined,joints:{right:{shoulder:[shoulder,sy,0],hip:[hip,py,0]}}},s);
+   torsoParts.push(...surfaceParts(bind,torsoParts[0]));
+ }
  if(cute)E(torsoParts,[0,sy+.15,0],[.12,.14,.13],'skin',null,'neck');
  else {
   const neck=loft(torsoParts,[[sy+.02,.20,depth*.58,-.025],[sy+.16,.145,depth*.48,-.015],[sy+.34,.16,depth*.50,-.005]],'skin','neck',24);

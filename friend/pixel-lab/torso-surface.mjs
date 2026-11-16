@@ -1,3 +1,4 @@
+import {paperShape} from './paper-shape35.mjs';
 import {norm,cross,sub} from './geometry.mjs';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=(a,b,t)=>{t=clamp((t-a)/(b-a),0,1);return t*t*(3-2*t);};
@@ -5,18 +6,19 @@ const mound=(x,y,cx,cy,rx,ry,power=2)=>Math.exp(-(Math.abs((x-cx)/rx)**power+Mat
 function catmull(a,b,c,d,t){return .5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t);}
 export function torsoSurface(parts,rings,s,p,py,sy){
  const {chest,waist,hip,depth}=p,torso=sy-py,low=rings[0][0],high=rings.at(-1)[0],muscle=s.muscularity**1.25*(1-s.adiposity*.88)**2;
+ const paper=s.sex==='female'&&!p.cute&&s.paperForm!=='legacy'?paperShape(s,chest,py,sy):null;
  function section(y){let i=0;while(i<rings.length-2&&y>rings[i+1][0])i++;const t=clamp((y-rings[i][0])/(rings[i+1][0]-rings[i][0]),0,1);return [1,2,3].map(k=>catmull(rings[Math.max(0,i-1)][k]||0,rings[i][k]||0,rings[i+1][k]||0,rings[Math.min(rings.length-1,i+2)][k]||0,t));}
  function point(a,y){const [rx,rz,zc]=section(y),sn=Math.sin(a),x=Math.cos(a)*rx;let z=zc+rz*sn;
   const front=Math.max(0,sn)**2,back=Math.max(0,-sn)**2;
   if(front>0&&!p.cute){
    let relief=0;
    for(const side of [-1,1]){
-    if(s.sex==='female'){
+    if(s.sex==='female'&&!paper){
      const asym=side*s.breastAsymmetry,volume=(.35+s.chestVolume*1.10)*(1+asym*.07);
      const cy=py+torso*(.80-s.breastDrop*.15-asym*.009),ry=y>cy?torso*(.13+s.breastUpperFullness*.10+s.breastDrop*.035):torso*(.10+s.chestVolume*.035);
      const rx=chest*(.28+s.breastRootWidth*.22),cx=side*chest*(.36+s.breastSeparation*.26+s.breastSplay*.10*(cy-y)/torso);
      relief+=depth*(.25+s.breastProjection*.75)*volume*mound(x,y,cx,cy,rx,ry);
-    }else{
+    }else if(s.sex==='male'){
      relief+=(.035+.18*s.muscularity)*mound(x,y,side*chest*.45,py+torso*.78,chest*.48,torso*.125,4)*(1-s.adiposity*.55);
     }
     // Broad rectus planes with shallow tendon grooves; no separate spheres on the skin.
@@ -38,9 +40,10 @@ export function torsoSurface(parts,rings,s,p,py,sy){
   // The groin edge rises toward the side of the pelvis. A level cut across
   // both upper legs reads as a separate belt even with identical materials.
   const joinWeight=1-smooth(low,py+.13,y),edgeLift=(p.cute?.10:.29)*Math.abs(Math.cos(a))**1.7;
-  return [x,y+joinWeight*edgeLift,z];
+  const baseY=y+joinWeight*edgeLift;
+  return paper&&sn>0?paper.point(x,baseY,z,smooth(.04,.46,sn)):[x,baseY,z];
  }
- const mesh={name:'ribcage-waist-pelvis',mat:'skin',vertices:[],faces:[]},rows=52,segments=40,eps=.0005;
+ const mesh={name:'ribcage-waist-pelvis',mat:'skin',vertices:[],faces:[]},rows=paper?86:52,segments=paper?70:40,eps=.0005;
  for(let j=0;j<=rows;j++)for(let i=0;i<=segments;i++){
   const y=low+(high-low)*j/rows,a=i/segments*Math.PI*2,position=point(a,y),da=sub(point(a+eps,y),point(a-eps,y)),dy=sub(point(a,Math.min(high,y+eps)),point(a,Math.max(low,y-eps)));
   mesh.vertices.push({p:position,n:norm(cross(dy,da))});

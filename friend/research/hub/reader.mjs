@@ -103,8 +103,9 @@ export function library(rows,goDoc){
     setList(rail,filtered,r.key,n=>draw(n,true));
     const title=text('h2',r.title),lead=text('p',r.line||'','lead');
     const short=text('section',''),detail=text('section','');short.id='section-unit';detail.id='section-detail';
-    short.append(text('h3','한 단원 요약'),paragraphs(r.unit));detail.append(text('h3','상세 설명'),paragraphs(r.detail));
+    short.append(text('h3','한 문단 요약'),paragraphs(r.unit));detail.append(text('h3','상세 설명'),paragraphs(r.detail));
     const links=text('div','','links');
+    if(r.noteId)links.append(link('A4 상세 연구 노트','../../pixel-lab/study-note35.html?id='+encodeURIComponent(r.noteId)));
     const orig=link('출처 열기 ↗',r.url),local=link('연구 원문·결과 보기',r.local);
     if(orig){orig.target='_blank';orig.rel='noopener';links.append(orig);}
     if(local){const target=studyTarget(new URL(local.href));if(target)local.onclick=e=>{if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey){e.preventDefault();goDoc(target);}};links.append(local);}
@@ -130,7 +131,7 @@ export async function originals(){
     const res=await fetch(url);if(!res.ok)throw Error('원문을 읽을 수 없습니다 '+res.status);
     const html=new DOMParser().parseFromString(await res.text(),'text/html');
     const nodes=[...html.querySelectorAll('article[id]')];
-    if(key==='journal')nodes.sort((a,b)=>(['round33','round34'].indexOf(b.id)-['round33','round34'].indexOf(a.id)));
+    if(key==='journal')nodes.sort((a,b)=>(['round33','round34','round35'].indexOf(b.id)-['round33','round34','round35'].indexOf(a.id)));
     docCache.set(key,nodes.map(n=>({title:n.querySelector('h2')?.textContent||n.id,key:n.id,body:n.textContent,source:n})));
   }
   if(token!==loadId)return;

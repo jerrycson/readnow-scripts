@@ -1,3 +1,5 @@
+import {paperForms} from './paperforms35.mjs';
+import {surfaceAxes,tipShapes} from './surface-settings35.mjs';
 import {ANGLES,HEADS,CANDIDATES,SPECIES,ACTIONS,APPEARANCE,createProfile,validateSettings,validName,recordExperience,experienceText,baseSamples,rotationStates,normalizeAngle,walkPosition,groundHeight} from './model.mjs';
 import {BODY_AXES,BODY_PRESETS,bodyPreset} from './body-design.mjs';
 import {HAIR_DESIGNS} from './hair-design.mjs';
@@ -39,8 +41,14 @@ for(const [key,title]of Object.entries(BODY_AXES)){const label=document.createEl
 const faceLabels={faceShape:'얼굴형',eyeShape:'눈',noseShape:'코',mouthShape:'입',earShape:'귀'};
 for(const [key,items]of Object.entries(FACIAL_OPTIONS))addSelect(key,faceLabels[key],items.map(x=>[x.id,(x.id+1)+'. '+x.name]));
 
-function readForm(){const s={};for(const key of ['sex','candidate','palette',...Object.keys(APPEARANCE)])s[key]=form.elements[key].value;for(const key of ['heads','resolution','scale','speed',...Object.keys(BODY_AXES),...Object.keys(FACIAL_OPTIONS)])s[key]=Number(form.elements[key].value);for(const key of ['motion','grid'])s[key]=form.elements[key].checked;return {name:validName(form.elements.name.value),settings:validateSettings(s)};}
-function previewForm(){try{const draft=readForm();$('#settings-error').textContent='';paint($('#settings-canvas'),draft.settings,{yaw,pitch},2);}catch(e){$('#settings-error').textContent=e.message;}}
+const formList=document.querySelector('#forms35');
+for(const variant of [...paperForms,{id:'legacy',name:'종전 형상'}]){
+ const button=document.createElement('button');button.type='button';button.dataset.form=variant.id;button.textContent=variant.name;
+ button.onclick=()=>{form.elements.paperForm.value=variant.id;previewForm();};formList.append(button);
+}
+function readForm(){const s={paperForm:form.elements.paperForm.value,showNac:form.elements.showNac.checked,nippleShape:form.elements.nippleShape.value};for(const [key] of surfaceAxes)s[key]=Number(form.elements[key].value);for(const key of ['sex','candidate','palette',...Object.keys(APPEARANCE)])s[key]=form.elements[key].value;for(const key of ['heads','resolution','scale','speed',...Object.keys(BODY_AXES),...Object.keys(FACIAL_OPTIONS)])s[key]=Number(form.elements[key].value);for(const key of ['motion','grid'])s[key]=form.elements[key].checked;return {name:validName(form.elements.name.value),settings:validateSettings(s)};}
+function showSurfaceAxes(){ document.querySelector('#form35').hidden=form.elements.sex.value!=='female'||Number(form.elements.heads.value)<5||form.elements.species.value!=='human';for(const b of formList.children)b.setAttribute('aria-pressed',String(b.dataset.form===form.elements.paperForm.value));form.querySelector('[data-nac-options]').hidden=!form.elements.showNac.checked||form.elements.sex.value!=='female';}
+function previewForm(){showSurfaceAxes();try{const draft=readForm();$('#settings-error').textContent='';paint($('#settings-canvas'),draft.settings,{yaw,pitch},2);}catch(e){$('#settings-error').textContent=e.message;}}
 function fillForm(value){bodySelect.value='custom';form.elements.name.value=value.name;for(const [key,v]of Object.entries(validateSettings(value.settings))){const el=form.elements[key];if(el.type==='checkbox')el.checked=v;else el.value=v;}}
 function openSettings(){fillForm(profile);$('#settings-error').textContent='';$('#latest').hidden=true;$('#draft-restore').hidden=!sessionStorage.getItem('readnow-pixel-draft-'+profile.id);dialog.showModal();previewForm();form.elements.name.focus();}
 function stopAuto(){clearInterval(autoTimer);autoTimer=null;$('#auto').textContent='자동 회전';}
