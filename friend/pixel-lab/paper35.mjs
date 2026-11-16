@@ -50,7 +50,7 @@ if(/^[ABS][1-5]$/.test(q.get('cell')||'')){group=q.get('cell')[0];level=Number(q
 function syncUrl(){const u=new URL(location.href);u.searchParams.set('form',id);u.searchParams.set('cell',group+level);history.replaceState(null,'',u);}
 function menu(){
  const form=paperForms.find(r=>r.id===id);el('current35').textContent=form.name;
- el('which35').textContent=form.id+' · '+form.observed+'. '+form.note;el('cite35').href=form.url;
+ el('which35').textContent=form.id+' · '+form.observed+'. '+form.note;el('cite35').href=form.url;el('motionLink').href='motion35.html?form='+encodeURIComponent(id);
  buttons(el('views35'),[['A','A · 상하 비율 사선'],['B','B · 상부 돌출 사선'],['S','B · 같은 칸 측면']],group,k=>{group=k;menu();drawSoon();});
  buttons(el('levels35'),reference.cells.filter(c=>c.id[0]===group).map(c=>[Number(c.id[1]),c.level]),level,k=>{level=k;menu();drawSoon();});
  buttons(el('variants35'),paperForms.map(r=>[r.id,r.id==='W'?'기본형':r.id+' '+r.name]),id,k=>{id=k;selectedView=0;clearPhoto();menu();drawSoon();});caseMenu();syncUrl();
