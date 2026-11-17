@@ -8,6 +8,7 @@ const round = await read('round46.html');
 const page = await read('studio-sculpt.html');
 const module = await read('studio-sculpt.mjs');
 assert(round.includes('data-round="46"') && round.includes('zone=lower'));
+for (const subject of ['F02','M01','W']) assert(round.includes('contour36.html?round=46&amp;case='+subject));
 for (const id of ['shapePad','widthGauge','triptych','poseDial46']) assert(page.includes('id="'+id+'"'));
 assert(module.includes('compareAngles.update(model,left.display,right.display'));
 assert.equal(typeof mountAngleComparison,'function');
