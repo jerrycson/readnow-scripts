@@ -59,7 +59,9 @@ async function hostedCards(row){
   if(row.round>=36){for(const name of ['notes36','engine-notes36'])full.cards.push(...decode(await get('../../pixel-lab/'+name+'.json')));}
   if(row.round>=37){full.cards=full.cards.map(correctCitation);full.cards.push(...decode(await get('../../pixel-lab/notes37.json')));}
   if(row.round>=38){
-    const studies=await Promise.all(['face-note38','chest-note38'].map(name=>get('../../pixel-lab/'+name+'.json')));
+    const names=['face-note38','chest-note38',...(row.extraHostedNotes||[])];
+    if(!names.every(name=>/^[a-z][a-z0-9-]+$/.test(name)))throw Error('연구 원고 경로가 올바르지 않습니다.');
+    const studies=await Promise.all(names.map(name=>get('../../pixel-lab/'+name+'.json')));
     for(const study of studies)full.cards.push(...decode(study));
   }
   if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');

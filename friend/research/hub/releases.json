@@ -124,6 +124,24 @@
       "at": "2026-11-17T02:13:00.000Z",
       "label": "38차 · 턱과 목, 가슴 밑선 같은 구도 비교",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "1ae74c029c9b02a64e012237",
+      "project": "bookfriend",
+      "round": 39,
+      "cards": 318,
+      "sources": 307,
+      "chapters": 14,
+      "cardsSha": "91cb5f088c43487bb12defe209280fbe071b600adfdcbf954c37dad5dc8d8244",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "0fa3d3f11420c972df342f97e97d4b2b187b0b9a0799dd5e13fe4ba5e81bf42a",
+      "at": "2026-11-17T02:30:00.000Z",
+      "label": "39차 · 턱밑 명암과 가슴 밑바닥",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39"
+      ]
     }
   ]
 }

@@ -1,4 +1,4 @@
-const names={round38:'38차 원본 겹침 연구',profile37:'37차 사선·턱끝 검토',contour36:'36차 원본 윤곽 관찰창',motion35:'밑선·움직임 비교',paper35:'가슴 기본형과 원전',atlas35:'원형 대조실',study34:'34차 얼굴과 바스트 모핑',study33:'33차 대조 도판',blind32:'31차 C 블라인드 비교','continuous-review':'형태 관찰창','rig-study32':'32차 연구 기록'};
+const names={round39:'39차 명암과 밑면 비교',round38:'38차 원본 겹침 연구',profile37:'37차 사선·턱끝 검토',contour36:'36차 원본 윤곽 관찰창',motion35:'밑선·움직임 비교',paper35:'가슴 기본형과 원전',atlas35:'원형 대조실',study34:'34차 얼굴과 바스트 모핑',study33:'33차 대조 도판',blind32:'31차 C 블라인드 비교','continuous-review':'형태 관찰창','rig-study32':'32차 연구 기록'};
 const dialog=document.querySelector('#experiment'),frame=document.querySelector('#experimentView');
 const query=()=>new URL(location.href);
 function sync(){
