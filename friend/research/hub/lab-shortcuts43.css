@@ -1,0 +1,26 @@
+.studio-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0 0 1rem;
+}
+.studio-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.55rem;
+  padding: .35rem .85rem;
+  border: 1px solid #b2bfb1;
+  border-radius: .4rem;
+  color: #233e30;
+  background: #fffef9;
+  font-weight: 650;
+  text-decoration: none;
+}
+.studio-shortcuts a:first-child {
+  color: #fff;
+  background: #2c513d;
+  border-color: #2c513d;
+}
+.studio-shortcuts a:hover { text-decoration: underline; }
+.studio-shortcuts a:focus-visible { outline: 3px solid #bc7923; outline-offset: 2px; }
+
