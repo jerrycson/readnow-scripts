@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-fbrev1",
-   "why": "판 내기 기다림: fbrev1 앞 페이지 올리기",
-   "first": "2026-11-17T22:39:54Z",
-   "at": "2026-11-17T22:39:54Z"
-  },
-  {
-   "who": "lead",
    "host": "bunoe4",
    "why": "판 내기 기다림: bunoe4 번외 판",
    "first": "2026-11-17T22:39:59Z",
@@ -87,16 +80,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-fbrev1",
-  "why": "판 내기 기다림: fbrev1 앞 페이지 올리기",
-  "at": "2026-11-17T22:39:54Z",
-  "first": "2026-11-17T22:39:54Z"
+  "host": "bunoe4",
+  "why": "판 내기 기다림: bunoe4 번외 판",
+  "at": "2026-11-17T22:44:07Z",
+  "first": "2026-11-17T22:39:59Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-fbrev1",
+ "what": "fbrev1 앞 페이지 올리기",
+ "since": "2026-11-17T22:44:13Z",
+ "beat": "2026-11-17T22:44:13Z",
  "last": {
   "who": "lead",
   "done": "리드: 시험 대본(wake1 worklock.test.sh)이 22:39:49Z 덮은 가짜 칸 h5·h6을 비움 — 진짜 줄 차례는 그대로",
