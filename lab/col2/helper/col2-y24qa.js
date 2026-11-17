@@ -38,7 +38,10 @@ function makeY24QA(o) { const { HOME, note } = o; const now = () => Date.now(); 
   /* 다시 켜짐 — 보내기 전(읽기 단계)이면 줄 맨 앞으로 되돌림(아무것도 안 보냄) · 보내는 단계였으면 다시 보내지 않고 확인만(vfy) */
   if (R.cur) { if (R.cur.step === 'send' || R.cur.vfy) { R.cur.vfy = true; R.cur.step = 'send'; } else { const { step, ...c } = R.cur; R.wait.unshift(c); R.cur = null; } save(); }
   const pc = () => String(o.pcName() || ''); const banPc = () => (o.isLogger() ? '로거 PC — 예스24 일 안 함(약속 0)' : /^MJ-MAIN/i.test(pc()) ? 'MJ-MAIN(등록·출고 PC) — 예스24 일 안 함(출고 보호)' : '');
-  const why0 = (vfy) => banPc() || (!o.enabled() ? '예스24 읽기 꺼짐' : !vfy && R.stop ? '⛔ 문의 답 멈춤 — ' + R.stop.why : o.login() !== 'ok' ? '예스24 로그인 기다림(보내기 전)' : o.holdOn() ? '🚚 출고 중 — 끝나면 이어감(약속 0-1)' : '');
+  /* (bunoe1 11/17 · F02) 로그인이 풀려 있으면 사람 손을 청하지 않음 — 저장된 계정으로 번외가 스스로 다시 로그인(col2-y24 autoRe · 답이 기다리면 서두름)한 뒤 이어 보냄 · 스스로 못 하는 까닭이 있으면 그 까닭을 함께 */
+  const loginWait = () => { let w = ''; try { w = o.reWhy ? String(o.reWhy() || '') : ''; } catch (e) {} return '🔐 예스24 로그인 기다림(보내기 전) — 저장된 계정으로 번외가 스스로 다시 로그인한 뒤 보냄(사람 손 필요 없음)' + (w ? ' · 지금 스스로 못 하는 까닭: ' + w.slice(0, 160) : ''); };
+  const wants = () => !!(R.cur || R.wait.length) && !banPc() && o.enabled() && !(R.stop && !(R.cur && R.cur.vfy)) && !o.holdOn(); /* 답이 기다리고 로그인만 막는가 — 스스로 다시 로그인을 서두를 때 */
+  const why0 = (vfy) => banPc() || (!o.enabled() ? '예스24 읽기 꺼짐' : !vfy && R.stop ? '⛔ 문의 답 멈춤 — ' + R.stop.why : o.login() !== 'ok' ? loginWait() : o.holdOn() ? '🚚 출고 중 — 끝나면 이어감(약속 0-1)' : '');
   const addHist = (h) => { R.hist.unshift({ at: now(), ...h }); R.hist = R.hist.slice(0, 40); };
   function put(b) { const ban = banPc(); if (ban) return { code: 409, body: { ok: false, err: ban } }; if (!o.enabled()) return { code: 409, body: { ok: false, err: '번외 예스24 판매관리 읽기가 꺼져 있음 — 옆 창에서 켜기' } };
     const id = String((b && b.id) || ''); if (!ID_RE.test(id)) return { code: 400, body: { ok: false, err: '맡김 번호 꼴이 틀림' } };
@@ -87,6 +90,6 @@ function makeY24QA(o) { const { HOME, note } = o; const now = () => Date.now(); 
       R.stop = { at: now(), why: `문의 ${c.qno} 답을 보낸 뒤 확인 읽기를 못 함(${v1.why})` }; return fin(c, { state: 'unsure', stop: true, msg: `보냈는지 확실하지 않음(${code === 'S000' ? '예스24는 됨이라고 답함' : '응답 ' + (code || (r && r.st) || '없음')}) — 다시 보내지 않고 멈춤`, todo: '웹앱 🧰 예스24 운영에서 그 문의가 답함인지 본 뒤 「▶ 예스24 쓰기 이어 가기」' }, 'sending'); }
     catch (e) { if (R.cur && R.cur.step !== 'send') { const { step, ...x } = R.cur; R.wait.unshift(x); R.cur = null; save(); } R.msg = '문의 답 오류: ' + String(e.message).slice(0, 100); throw e; } }
   function sum() { return { wait: R.wait.length, cur: R.cur ? { qno: R.cur.qno, step: R.cur.step || '' } : null, stop: R.stop ? { at: R.stop.at, why: String(R.stop.why).slice(0, 160) } : null, why: why(), hist: R.hist.slice(0, 10).map((h) => ({ at: h.at, qno: h.qno, st: h.st, msg: h.msg })), sent: Object.fromEntries(Object.entries(R.sent).filter(([, v]) => now() - +v.at < 30 * 86400e3).slice(-30).map(([k, v]) => [k, { st: v.st, at: v.at }])) }; }
-  return { put, ack, resume, state, merge, pick, cur, once, detail, sum, isQa, R };
+  return { put, ack, resume, state, merge, pick, cur, once, detail, sum, isQa, wants, R };
 }
 module.exports = { makeY24QA, isQa, txtWhy, initOf };

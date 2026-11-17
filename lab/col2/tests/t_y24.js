@@ -52,7 +52,8 @@ async function attach(home) { const pf = path.join(home, 'col2-y24-chrome', 'Dev
     let r = await H.api('POST', '/y24/login', { why: '시험' }); ok(r.j.ok && /앞으로/.test(r.j.msg) && H.T.win().acts.includes('show:col2-y24-chrome'), '단추 → 예스24 창을 앞으로 꺼냄(로그인 화면)', r.j.msg);
     s = await y(); ok(s.login === 'wait', "로그인 기다리는 중 표시", s.login);
     const A = await attach(HOME); await A.pg.waitForSelector('input[type=password]'); await A.pg.fill('input[name=id]', 'seller'); await A.pg.fill('input[type=password]', PW_SECRET); await A.pg.click('button'); await A.br.close().catch(() => {});
-    s = await until(async () => { const v = await y(); return v.login === 'ok' ? v : null; }, 60);
+    /* (11/17 bunoe2) 로그인 ok가 먼저 서고 숨김(창 찾기 → 숨기기)은 그 뒤에 끝남 — 숨김이 끝날 때까지 기다린 뒤 견줌(시험 다툼 고침 · 확인 줄은 그대로) */
+    s = await until(async () => { const v = await y(); return v.login === 'ok' && H.T.win().acts.includes('hide:col2-y24-chrome') ? v : null; }, 60);
     ok(s && s.login === 'ok' && H.T.win().acts.filter((a) => a === 'hide:col2-y24-chrome').length >= 1, '로그인하면 저절로 다시 숨김 · 로그인 살아 있음', s && s.login);
     const leak = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); let st0; try { st0 = fs.lstatSync(p); } catch (e) { continue; } if (st0.isSymbolicLink()) continue; if (st0.isDirectory()) { if (!/-chrome$/.test(p)) walk(p); } else if (fs.readFileSync(p, 'utf8').includes(PW_SECRET)) leak.push(f); } }; walk(HOME);
     const pref = JSON.parse(fs.readFileSync(path.join(HOME, 'col2-y24-chrome', 'Default', 'Preferences'), 'utf8'));
