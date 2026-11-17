@@ -1,3 +1,6 @@
+import {correctCitation} from './citation37.mjs';
+import {resolutionControl,portraitAtResolution} from './render-resolution.mjs';
+import {correctFernChin,underside} from './chin37.mjs';
 import {readApplied,reshapeHead} from './photo-apply36.mjs';
 import {DEFAULTS} from './model.mjs';
 import {loadRig} from './rig32.mjs';
@@ -10,6 +13,7 @@ import {bindSurface,surfaceParts} from './surface35.mjs';
 import {surfaceDefaults} from './surface-settings35.mjs';
 import {scanImage,silhouette} from './scan-view36.mjs';
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
+const resolution=resolutionControl($('resolution36'),queue);
 const el=(tag,txt)=>Object.assign(document.createElement(tag),{textContent:txt});
 const svg=(tag,props)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(props))e.setAttribute(k,v);return e;};
 function buttons(id,opts,selected,fn){$(id).replaceChildren(...opts.map(([key,title])=>{const b=el('button',title);b.type='button';b.setAttribute('aria-pressed',key===selected);b.onclick=()=>fn(key);return b;}));}
@@ -28,10 +32,11 @@ function go(next,sub){
  $('sourceTitle').textContent=id==='scan'?'실측 두상과 두 모델의 윤곽':'원본과 윤곽';
  $('modelTitle').textContent=id==='scan'?'같은 인물의 회전 모델':'교정한 모델';
  buttons('subjects',Object.entries(names),id,k=>go(k));
- buttons('versions',[['before',id==='scan'?'거친 메시':'35차'],['after',id==='scan'?'정밀 메시':'36차']],rev,version);
+ versions();
  changeView(view);
 }
-function version(k){rev=k;buttons('versions',[['before',id==='scan'?'거친 메시':'35차'],['after',id==='scan'?'정밀 메시':'36차']],rev,version);queue();}
+function versions(){const options=[['before',id==='scan'?'거친 메시':'35차'],['after',id==='scan'?'정밀 메시':'36차']];if(id==='F02')options.push(['chin37','37차 턱 후보']);buttons('versions',options,rev,version);}
+function version(k){rev=k;if(k==='chin37'&&!model.chin37)model.chin37=correctFernChin(model.after,id,model,ref.faces[id],.75);versions();queue();}
 function views(){return face()?[['front','정면'],['side','측면'],['other','별도 작화']]:id==='W'?Object.keys(ref.paper).map(k=>[k,k.replace('S','측면 ').replace('B','사선 B').replace('A','사선 A')]):[['scan','실측 원형']];}
 function changeView(v){
  view=views().some(a=>a[0]===v)?v:views()[0][0];aligning=null;
@@ -72,7 +77,8 @@ function plate(){
  else for(const k of ['before','after'])sets[k]=fit.paper[view][k].lines;
  if($('trace').checked){addLine(p,source,'#007b8c');if(!faceMode)for(const q of ref.paper[view].marks)p.append(svg('circle',{cx:q[0],cy:q[1],r:2.2,stroke:'#007b8c',fill:'none'}));}
  if($('prior').checked)addLine(p,sets.before,'#79549b','4 2');
- if($('next').checked)addLine(p,sets.after,'#b34419','2 1');
+ if($('next').checked){if(rev==='chin37'&&view==='side'){const q=faceLines(model.chin37,model).side;addLine(p,q,'#b34419','2 1');addLine(p,[underside(model.chin37,model,ref.faces[id])],'#b34419');}
+ else if(rev==='chin37'){addLine(p,view==='other'?unseenJaw(model.chin37,rec,model.before):faceLines(model.chin37,model).front,'#b34419','2 1');}else addLine(p,sets.after,'#b34419','2 1');}
  $('gap').textContent=faceMode?'248px 원화의 가시선 → 모델 평균 거리 · 35차 '+fit.faces[id][view][0].toFixed(2)+'px → 36차 '+fit.faces[id][view][1].toFixed(2)+'px':('대각선 대비 평균제곱근 거리 · 35차 '+fit.paper[view].before.errors.map(v=>(100*v).toFixed(2)+'%').join(' / ')+' → 36차 '+fit.paper[view].after.errors.map(v=>(100*v).toFixed(2)+'%').join(' / '));
 }
 let applied=null,modified=null,readCount=0;
@@ -83,18 +89,20 @@ $('engineFold').ontoggle=()=>{if($('engineFold').open&&!$('engineFrame').getAttr
 window.addEventListener('storage',e=>{if(e.key==='bookfriend-face-enabled36'&&applied){$('userModel').checked=e.newValue!=='0';queue();}});
 let plateKey='';
 function draw(){
- const c=$('orbit'),rawKey=[id,view,...['photo','trace','prior','next'].map(k=>$(k).checked),$('opacity').value,local.get(key())?.url,local.get(key())?.transform,aligning?.points.length,id==='scan'?[yaw,pitch,zoom].join('/'):''].join('|');
+ const c=$('orbit'),rawKey=[id,view,rev,...['photo','trace','prior','next'].map(k=>$(k).checked),$('opacity').value,local.get(key())?.url,local.get(key())?.transform,aligning?.points.length,id==='scan'?[yaw,pitch,zoom].join('/'):''].join('|');
  if(plateKey!==rawKey){plate();plateKey=rawKey;}
  let pixels;
- if(id==='scan')pixels=scanImage(head.meshes[rev==='after'?2:1],yaw,pitch,256,zoom);
+ const size=resolution.sync(id==='scan'?256:192);
+ if(id==='scan')pixels=scanImage(head.meshes[rev==='after'?2:1],yaw,pitch,size,zoom);
  else{let sc=model[rev];if(id==='W'){
   const a=Number($('arm').value),k=[rev,a,$('marker').checked].join('/');
   if(!poses.has(k)){const posed=a?pose34(sc,raisedPose(a)).scene:sc;poses.set(k,{...posed,parts:[...posed.parts,...($('marker').checked?surfaceParts(bindings[rev],posed.parts[0]):[])]});}
   sc=poses.get(k);$('armOut').value=a+'°';}
-  if(face()&&rev==='after'&&applied&&$('userModel').checked){if(modified?.base!==sc)modified={base:sc,result:reshapeHead(sc,applied)};sc=modified.result;}
-  const image=portraitPixels(settings(),{...studyView(sc,face()),yaw,pitch,freeOrbit:true,cameraZoom:zoom,studyResolution:192});pixels=new ImageData(image.data,image.width,image.height);
+  if(face()&&rev!=='before'&&applied&&$('userModel').checked){if(modified?.base!==sc)modified={base:sc,result:reshapeHead(sc,applied)};sc=modified.result;}
+  const image=portraitAtResolution(portraitPixels,settings(),{...studyView(sc,face()),yaw,pitch,freeOrbit:true,cameraZoom:zoom},size);pixels=new ImageData(image.data,image.width,image.height);
  }
  c.width=pixels.width;c.height=pixels.height;c.getContext('2d').putImageData(pixels,0,0);
+ $('extra37').hidden=rev!=='chin37';if(rev==='chin37')$('extra37').textContent='37차 페른의 턱 후보 · 측면 실선은 턱밑의 가시 경계입니다. 35→36차 수치는 기존 판 사이의 거리입니다.';
  $('camera').textContent='좌우 '+yaw.toFixed(1)+'° · 상하 '+pitch.toFixed(1)+'°';
  $('credit').href=id==='scan'?head.source:face()?rec.source:'https://doi.org/10.1007/s00266-021-02753-y';
  $('notice').textContent=id==='scan'?'실제 한 인물의 스캔을 같은 카메라에서 돌립니다. 목 아래 절단면·표면으로 가려진 안쪽은 원자료의 범위 밖입니다.':face()?'왼쪽은 선택한 원화 시점에 고정됩니다. 오른쪽은 같은 교정 메시를 자유롭게 돌린 모습입니다. 정면·측면은 교정에 썼고 별도 작화는 검증에만 썼습니다.':'왼쪽은 도판의 정지 자세입니다. 15칸은 사선과 측면의 형태 변주이며 정면·뒤·밑면은 같은 인물의 실측 원본이 없습니다. 양팔을 들면 오른쪽 모델에만 적용됩니다.';
@@ -119,5 +127,5 @@ orbit.onkeydown=e=>{const d={ArrowLeft:[-5,0],ArrowRight:[5,0],ArrowUp:[0,5],Arr
 buttons('angles',[[0,'정면'],[-45,'사선'],[-90,'측면'],[180,'뒤'],[91,'밑면']],null,k=>{yaw=k===91?0:k;pitch=k===91?-90:0;queue();});
 try{[atlas,ref,fit,head,notes]=await Promise.all(['atlas35.json','traces36.json','fit36.json','head36.json','notes36.json'].map(fetchJSON));await loadRig();
  const docs=el('p','원자료와 이용 조건 · ');for(const [name,url] of [['두상 이용 조건','https://creativecommons.org/licenses/by/3.0/'],['도판 이용 조건','https://creativecommons.org/licenses/by/4.0/'],['체표 원 연구','https://doi.org/10.1002/btm2.70044'],['인체 유선 발달','https://pmc.ncbi.nlm.nih.gov/articles/PMC3706056/'],['유두·유륜 영상해부','https://doi.org/10.1186/s13244-020-00896-1']]){const a=el('a',name);a.href=url;docs.append(a,'　');}$('notes').append(docs);
- for(const n of notes){const d=el('details',''),s=el('summary',n.title);d.append(s,el('p',n.line),el('p',n.unit));for(const p of n.detail.split('\n\n'))d.append(el('p',p));const a=el('a','원전 열기');a.href=n.url;d.append(a);$('notes').append(d);}
- go(id,params.get('cell'));await refreshApplied();if(location.hash==='#photoEngine')$('engineFold').open=true;}catch(e){$('notice').textContent='자료를 열 수 없습니다. '+e.message;}
+ for(const n of notes.map(correctCitation)){const d=el('details',''),s=el('summary',n.title);d.append(s,el('p',n.line),el('p',n.unit));for(const p of n.detail.split('\n\n'))d.append(el('p',p));const a=el('a','원전 열기');a.href=n.url;d.append(a);$('notes').append(d);}
+ go(id,params.get('cell'));if(id==='F02'&&params.get('variant')==='chin37')version('chin37');await refreshApplied();if(location.hash==='#photoEngine')$('engineFold').open=true;}catch(e){$('notice').textContent='자료를 열 수 없습니다. '+e.message;}

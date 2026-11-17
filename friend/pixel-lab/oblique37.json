@@ -1,0 +1,711 @@
+{
+  "method": "같은 35차 메시의 홍채 2개·코끝·입 중앙을 원화 4점에 직교투영으로 정합한다. 자세와 2차원 위치·배율·롤만 추정하며 턱 점을 목적함수로 사용하지 않는다. 두 판은 같은 카메라에서 비교한다. 거리는 원본 점에서 가시 피부 윤곽까지의 단방향 평균 픽셀이다.",
+  "sources": {
+    "M01": {
+      "name": "힘멜",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "images": [
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face1.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face2.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face3.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face4.jpg"
+      ]
+    },
+    "F02": {
+      "name": "페른",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "images": [
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face1.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face2.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face3.jpg",
+        "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face4.jpg"
+      ]
+    }
+  },
+  "rows": [
+    {
+      "id": "M01",
+      "index": 1,
+      "anchors": [
+        [
+          60,
+          108
+        ],
+        [
+          101,
+          129
+        ],
+        [
+          45,
+          130
+        ],
+        [
+          69,
+          159
+        ]
+      ],
+      "jaw": [
+        [
+          [
+            45,
+            130
+          ],
+          [
+            46,
+            136
+          ],
+          [
+            48,
+            144
+          ],
+          [
+            49,
+            153
+          ],
+          [
+            51,
+            162
+          ],
+          [
+            52,
+            169
+          ],
+          [
+            54,
+            178
+          ],
+          [
+            55,
+            183
+          ],
+          [
+            57,
+            187
+          ],
+          [
+            61,
+            189
+          ],
+          [
+            70,
+            190
+          ],
+          [
+            80,
+            190
+          ],
+          [
+            91,
+            189
+          ],
+          [
+            99,
+            189
+          ]
+        ],
+        [
+          [
+            115,
+            185
+          ],
+          [
+            122,
+            182
+          ],
+          [
+            130,
+            177
+          ]
+        ]
+      ],
+      "cover": 130,
+      "pose": {
+        "yaw": -41,
+        "pitch": 6.5,
+        "roll": 21.406,
+        "scale": 168.067,
+        "rms": 5.221,
+        "error": [
+          3.399,
+          5.127,
+          5.984,
+          5.949
+        ]
+      },
+      "rawVisible": [
+        6.483,
+        7.55
+      ],
+      "leaveAnchorOut": [
+        {
+          "missing": 0,
+          "yaw": -56.75,
+          "pitch": 31.5,
+          "miss": 26.219
+        },
+        {
+          "missing": 1,
+          "yaw": -54.25,
+          "pitch": -6.25,
+          "miss": 22.813
+        },
+        {
+          "missing": 2,
+          "yaw": 21,
+          "pitch": -21.75,
+          "miss": 36.907
+        },
+        {
+          "missing": 3,
+          "yaw": -39.25,
+          "pitch": -4,
+          "miss": 17.457
+        }
+      ],
+      "formerPose": {
+        "yaw": -48,
+        "pitch": 0,
+        "roll": 23.543,
+        "scale": 201.334,
+        "rms": 0,
+        "error": [
+          0,
+          0
+        ]
+      },
+      "formerMetric": [
+        23.109,
+        28.373
+      ],
+      "handToFormerProxy": [
+        19.342,
+        24.412
+      ],
+      "handToOldCameraVisible": [
+        11.29,
+        13.779
+      ],
+      "traceToHand": 3.959,
+      "traceToHandMax": 10.091,
+      "traceToNewCameraVisible": [
+        8.904,
+        10.73
+      ]
+    },
+    {
+      "id": "M01",
+      "index": 3,
+      "anchors": [
+        [
+          182,
+          101
+        ],
+        [
+          212,
+          122
+        ],
+        [
+          219,
+          139
+        ],
+        [
+          188,
+          155
+        ]
+      ],
+      "jaw": [
+        [
+          [
+            137,
+            170
+          ],
+          [
+            145,
+            177
+          ],
+          [
+            155,
+            183
+          ],
+          [
+            166,
+            190
+          ],
+          [
+            178,
+            197
+          ],
+          [
+            183,
+            198
+          ],
+          [
+            187,
+            196
+          ],
+          [
+            191,
+            189
+          ],
+          [
+            197,
+            180
+          ],
+          [
+            202,
+            171
+          ],
+          [
+            209,
+            159
+          ],
+          [
+            214,
+            149
+          ],
+          [
+            219,
+            139
+          ]
+        ]
+      ],
+      "cover": 132,
+      "pose": {
+        "yaw": 56.5,
+        "pitch": -17,
+        "roll": 14.597,
+        "scale": 175.414,
+        "rms": 3.58,
+        "error": [
+          3.454,
+          1.223,
+          4.518,
+          4.174
+        ]
+      },
+      "rawVisible": [
+        8.755,
+        5.428
+      ],
+      "leaveAnchorOut": [
+        {
+          "missing": 0,
+          "yaw": 64.5,
+          "pitch": -18.25,
+          "miss": 15.167
+        },
+        {
+          "missing": 1,
+          "yaw": 64.5,
+          "pitch": 13.25,
+          "miss": 28.758
+        },
+        {
+          "missing": 2,
+          "yaw": -48.25,
+          "pitch": 23,
+          "miss": 51.379
+        },
+        {
+          "missing": 3,
+          "yaw": 57.75,
+          "pitch": -17.25,
+          "miss": 12.284
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "index": 1,
+      "anchors": [
+        [
+          96,
+          119
+        ],
+        [
+          162,
+          128
+        ],
+        [
+          137,
+          146
+        ],
+        [
+          120,
+          170
+        ]
+      ],
+      "jaw": [
+        [
+          [
+            73,
+            166
+          ],
+          [
+            76,
+            173
+          ],
+          [
+            82,
+            180
+          ],
+          [
+            90,
+            186
+          ],
+          [
+            101,
+            193
+          ],
+          [
+            111,
+            199
+          ],
+          [
+            120,
+            203
+          ],
+          [
+            130,
+            203
+          ],
+          [
+            139,
+            201
+          ],
+          [
+            151,
+            196
+          ],
+          [
+            163,
+            188
+          ],
+          [
+            173,
+            179
+          ],
+          [
+            181,
+            168
+          ]
+        ]
+      ],
+      "cover": 141,
+      "pose": {
+        "yaw": 22.25,
+        "pitch": -11,
+        "roll": 7.318,
+        "scale": 201.758,
+        "rms": 5.178,
+        "error": [
+          5.253,
+          3.629,
+          4.785,
+          6.602
+        ]
+      },
+      "rawVisible": [
+        8.762,
+        9.183
+      ],
+      "leaveAnchorOut": [
+        {
+          "missing": 0,
+          "yaw": 30.75,
+          "pitch": -4,
+          "miss": 19.894
+        },
+        {
+          "missing": 1,
+          "yaw": 60,
+          "pitch": 9.5,
+          "miss": 38.389
+        },
+        {
+          "missing": 2,
+          "yaw": 5,
+          "pitch": 44.5,
+          "miss": 28.691
+        },
+        {
+          "missing": 3,
+          "yaw": 24.25,
+          "pitch": -15,
+          "miss": 16.241
+        }
+      ],
+      "formerPose": {
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 11.093,
+        "scale": 194.312,
+        "rms": 0,
+        "error": [
+          0,
+          0
+        ]
+      },
+      "formerMetric": [
+        11.034,
+        8.485
+      ],
+      "handToFormerProxy": [
+        11.395,
+        8.606
+      ],
+      "handToOldCameraVisible": [
+        4.184,
+        3.245
+      ],
+      "traceToHand": 1.327,
+      "traceToHandMax": 4.146,
+      "traceToNewCameraVisible": [
+        8.427,
+        9.425
+      ]
+    },
+    {
+      "id": "F02",
+      "index": 3,
+      "anchors": [
+        [
+          160,
+          137
+        ],
+        [
+          204,
+          132
+        ],
+        [
+          209,
+          149
+        ],
+        [
+          184,
+          174
+        ]
+      ],
+      "jaw": [
+        [
+          [
+            135,
+            190
+          ],
+          [
+            144,
+            193
+          ],
+          [
+            153,
+            196
+          ],
+          [
+            163,
+            198
+          ],
+          [
+            173,
+            198
+          ],
+          [
+            179,
+            195
+          ],
+          [
+            185,
+            185
+          ],
+          [
+            191,
+            175
+          ],
+          [
+            198,
+            167
+          ],
+          [
+            203,
+            157
+          ],
+          [
+            209,
+            149
+          ]
+        ]
+      ],
+      "cover": 106,
+      "pose": {
+        "yaw": 47,
+        "pitch": -5.25,
+        "roll": -6.06,
+        "scale": 170.071,
+        "rms": 7.164,
+        "error": [
+          6.695,
+          2.983,
+          8.995,
+          8.407
+        ]
+      },
+      "rawVisible": [
+        8.909,
+        8.26
+      ],
+      "leaveAnchorOut": [
+        {
+          "missing": 0,
+          "yaw": 61,
+          "pitch": -15,
+          "miss": 32.623
+        },
+        {
+          "missing": 1,
+          "yaw": 78,
+          "pitch": 33.75,
+          "miss": 52.473
+        },
+        {
+          "missing": 2,
+          "yaw": 17,
+          "pitch": 19.5,
+          "miss": 27.144
+        },
+        {
+          "missing": 3,
+          "yaw": 49,
+          "pitch": -12.25,
+          "miss": 24.191
+        }
+      ]
+    }
+  ],
+  "side": {
+    "M01": {
+      "frame": {
+        "x": 69,
+        "y": 184.18,
+        "scale": 163.12633832976445
+      },
+      "bottomThreePixelsExcludedSamples": 30,
+      "bottomThreePixelsGap": [
+        6.214,
+        1.895
+      ],
+      "maxRetreatInOnePx": {
+        "fromY": 183,
+        "toY": 184,
+        "horizontalPx": 6.268
+      },
+      "rowCoordinates": [
+        [
+          58.013,
+          177
+        ],
+        [
+          58.183,
+          178
+        ],
+        [
+          58.353,
+          179
+        ],
+        [
+          58.548,
+          180
+        ],
+        [
+          58.815,
+          181
+        ],
+        [
+          59.639,
+          182
+        ],
+        [
+          62.568,
+          183
+        ],
+        [
+          68.836,
+          184
+        ],
+        [
+          74.225,
+          185
+        ],
+        [
+          84.947,
+          186
+        ],
+        [
+          93.991,
+          187
+        ]
+      ]
+    },
+    "F02": {
+      "frame": {
+        "x": 67,
+        "y": 178.1,
+        "scale": 147.96573875802997
+      },
+      "bottomThreePixelsExcludedSamples": 40,
+      "bottomThreePixelsGap": [
+        3.422,
+        3.538
+      ],
+      "maxRetreatInOnePx": {
+        "fromY": 175,
+        "toY": 176,
+        "horizontalPx": 10.712
+      },
+      "rowCoordinates": [
+        [
+          56.095,
+          171
+        ],
+        [
+          56.394,
+          172
+        ],
+        [
+          55.946,
+          173
+        ],
+        [
+          55.976,
+          174
+        ],
+        [
+          56.535,
+          175
+        ],
+        [
+          67.246,
+          176
+        ],
+        [
+          71.196,
+          177
+        ],
+        [
+          75.145,
+          178
+        ],
+        [
+          79.094,
+          179
+        ],
+        [
+          81.715,
+          180
+        ],
+        [
+          83.404,
+          181
+        ]
+      ]
+    }
+  }
+}
