@@ -340,7 +340,10 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   async function order(req, body) {
     const attempt = ATTEMPT.parse(body && body.attempt); if (attempt && attempt.error) return [400, { ok: false, err: '주문 요청 번호를 다시 확인해 주세요' }];
     const chk = checkOrder(body, { ...DEF, maxItems: Number.MAX_SAFE_INTEGER }); if (!chk.ok) return [400, chk]; const v = chk.v;
-    const au = await ACCT.authOf(req).catch(() => null); const hash = attempt ? ATTEMPT.requestHash(v, au && au.uid) : null;
+    let au; try { au = await ACCT.authOf(req); } catch (e) { return [503, { ok: false, authPending: 1, err: '로그인 상태를 확인하지 못했습니다 — 잠시 뒤 다시 확인해 주세요' }]; }
+    // 로그인 열쇠가 있는 요청을 인증 실패 때문에 비회원 구매로 바꾸지 않는다.
+    if (String((req.headers && req.headers.authorization) || '') && !au) return [401, { ok: false, login: 1, err: '로그인 상태가 바뀌었습니다 — 다시 확인한 뒤 주문해 주세요' }];
+    const hash = attempt ? ATTEMPT.requestHash(v, au && au.uid) : null;
     if (attempt) { const prior = await ATTEMPT.read(C, attempt, hash); if (prior) return prior; }
     const c = await cfg(); if (c.quantityReservations === true && !attempt) return [409, { ok: false, upgrade: 1, err: '주문 화면을 새로 고친 뒤 다시 진행해 주세요' }];
     const ik = ipKey(req); if (limited('o' + ik, 5, 3600e3)) return [429, { ok: false, err: '잠시 뒤 다시 해 주세요(짧은 시간에 주문이 많음)' }];
@@ -354,7 +357,7 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
       if (refusal) { finish(refusal); return; }
       if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) { finish([400, { ok: false, err: f.why, cp: 1 }]); return; } }
       const account = au ? await ACCOUNT_ORDERS.read(tx, C, au.uid) : null;
-      if (account && !ACCOUNT_ORDERS.active(account.user)) { finish([403, { ok: false, login: 1, err: '계정 상태가 바뀌었습니다 — 로그인 상태를 확인한 뒤 다시 주문해 주세요' }]); return; }
+      if (account && (!ACCOUNT_ORDERS.active(account.user) || !ACCT.liveSession(account.user, au))) { finish([403, { ok: false, login: 1, err: '계정 상태가 바뀌었습니다 — 로그인 상태를 확인한 뒤 다시 주문해 주세요' }]); return; }
       const ls = await tx.getAll(...refs); const hs = await tx.getAll(...v.ids.map((id) => C('shop_holds').doc(id))); const rs = await Promise.all(hs.map((h, i) => h.exists && h.data().schema === 2 ? tx.get(C('shop_reservations').doc(STOCK.id(v.ids[i], no))) : Promise.resolve({ exists: false })));
       const priorOrder = await tx.get(C('shop_orders').doc(no)); if (priorOrder.exists) { finish([409, { ok: false, err: '주문 번호를 다시 준비해야 합니다 — 잠시 뒤 다시 주문해 주세요' }]); return; }
       const bad = []; const lines = [];
