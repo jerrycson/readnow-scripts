@@ -78,6 +78,14 @@
    "owner": "lead",
    "since": "2026-11-17",
    "until": "2026-11-24"
+  },
+  {
+   "test": "tA2",
+   "items": [],
+   "why": "main(bca96fd26)에서도 같은 실패 — 시험이 자동 발송요청 설정의 옛 칸 data-sau=\"minQty\"를 찾는데, 그 칸이 지금 웹앱에 없음(자동 발송요청 설정이 권수·묶음 평균 bundleSize·bundleWon 쪽으로 바뀜 · 언제 빠졌는지 까닭 조사 전) → null에 값 넣기 오류 · 이번 고침(wguard2 쓰기 지킴이)과 무관(bizAlerts에 딸려 돎) · 시험 기대값을 새 칸으로 고칠 일 · 11/18 wguard2가 올림",
+   "owner": "lead",
+   "since": "2026-11-18",
+   "until": "2026-11-30"
   }
  ]
 }
