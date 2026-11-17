@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>가슴 밑면 · 40차와 42차 비교 | 책방 친구</title>
+  <link rel="stylesheet" href="chest-review42.css">
+</head>
+<body>
+<header><a href="../research/hub/">책방 친구 연구실</a><a href="contour36.html?round=41&amp;case=W&amp;cell=B3">41차 후보 보기</a></header>
+<main>
+  <h1>같은 자세에서 본 가슴 밑면</h1>
+  <p>40차는 현재 권고 기본형입니다. 42차는 흉벽과 겨드랑이로 이어지는 피부를 두고 앞쪽 밑면의 굽이를 옮긴 후보입니다.</p>
+  <section aria-labelledby="modelHeading">
+    <h2 id="modelHeading">두 모델 돌려 보기</h2>
+    <div class="pair">
+      <figure><figcaption>40차 <span>권고 기본형</span></figcaption><canvas id="old" tabindex="0" width="192" height="192" aria-label="40차 기본형 회전"></canvas></figure>
+      <figure><figcaption>42차 <span>밑면 후보</span></figcaption><canvas id="new" tabindex="0" width="192" height="192" aria-label="42차 후보 회전"></canvas></figure>
+    </div>
+    <p id="position" aria-live="off">모델을 읽고 있습니다.</p>
+    <div id="angles" class="buttons" role="group" aria-label="공통 시점"></div>
+    <div class="settings">
+      <div><label for="arm">양팔 높이 <output id="armValue" for="arm">0°</output></label>
+        <input type="range" id="arm" min="0" max="178" step="1" value="0">
+        <div id="poses" class="buttons" role="group" aria-label="팔 자세"></div>
+      </div>
+      <div><div class="label">원본 해상도</div><div id="sizes" class="buttons" role="group" aria-label="원본 해상도"></div>
+        <label class="check"><input id="localSkin" type="checkbox"> 밑면 국소 피부만 보기</label>
+      </div>
+    </div>
+    <div class="tools"><button id="reset" type="button">도판 시점으로 복원</button><span>그림을 끌거나 방향키로 돌리고, 휠로 확대합니다.</span></div>
+    <p id="skinInfo" hidden>국소 피부의 파란 선은 잘라 낸 경계입니다. 두 모델에서 같은 피부 정점만 표시합니다.</p>
+  </section>
+  <section aria-labelledby="plateHeading">
+    <h2 id="plateHeading">원도판 위의 밑선</h2>
+    <div class="plate">
+      <svg id="plate" viewBox="0 0 248 248" role="img" aria-label="원도판과 두 모델의 고정 카메라 밑선"></svg>
+      <div>
+        <label for="cell">도판 위치</label> <select id="cell" aria-label="도판 위치"></select>
+        <div class="layers"><label><input type="checkbox" id="source" checked> 원도판</label>
+          <label class="sourceInk"><input type="checkbox" id="trace" checked> 원도판 관측선</label>
+          <label class="oldInk"><input type="checkbox" id="oldLine" checked> 40차 점선</label>
+          <label class="newInk"><input type="checkbox" id="newLine" checked> 42차 실선</label></div>
+        <p id="metric"></p><p id="boundary"></p>
+        <p class="muted">도판은 팔을 내린 고정 시점입니다. 위 모델은 뒷면과 밑면까지 자유롭게 돌릴 수 있습니다.</p>
+        <a href="https://doi.org/10.1007/s00266-021-02753-y" target="_blank" rel="noopener">Wallner 등, 그림 1 (2022)</a> ·
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>
+      </div>
+    </div>
+  </section>
+  <section aria-labelledby="evidenceHeading">
+    <h2 id="evidenceHeading">시안과 연구 원고</h2>
+    <p id="summary"></p>
+    <div class="links"><a href="chest-plate42.png">원도판과 40·41·42차 확대 비교</a>
+      <a href="chest-poses42.png">10개 자세의 48·192픽셀 실화면</a>
+      <a href="chest-attachment42-A4.png">밑면과 흉벽 · A4 원고</a>
+      <a href="chest-pose42-A4.png">자세와 반례 · A4 원고</a>
+      <a href="chest-note42.json">원고 본문과 출처</a><a href="chest-eval42.json">윤곽 좌표와 실측 자료</a>
+    </div>
+  </section>
+  <p id="status" role="status">42차 연구 자료를 불러오고 있습니다.</p>
+</main>
+<script type="module" src="chest-review42.mjs"></script>
+</body></html>

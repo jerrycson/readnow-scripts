@@ -187,6 +187,32 @@
         "chest-note41",
         "iris-note41"
       ]
+    },
+    {
+      "id": "fd0348382ede4edac97aa71c",
+      "project": "bookfriend",
+      "round": 42,
+      "cards": 332,
+      "sources": 321,
+      "chapters": 14,
+      "cardsSha": "6cef4a2301e63133110829591a8c75e64b6ea471c5fa5de45a300e0e42e7c08f",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "55b07d404fbda2534fa6a6638ab7a291cc1cabab0cf7a530ddd4ca889b737882",
+      "at": "2026-11-17T04:51:30.109Z",
+      "label": "42차 · 턱에서 목으로 이어지는 선과 가슴의 아랫면",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42"
+      ]
     }
   ]
 }
