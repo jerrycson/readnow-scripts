@@ -11,10 +11,14 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
     const idle = async () => { await W(80); for (let i = 0; i < 200 && S._fbBusy; i++) await W(30); };
     const reset = async () => { await W(380); await idle(); plW += (window.__FSW || []).filter((w) => w.n === 'prd_listings').length; COLS.forEach((c) => { window.__FS[c] = {}; });
       window.__FS.app_settings = window.__FS.app_settings || {}; window.__FS.app_settings.front_bump_cfg = { ab: false, noPhoto: true, dayCap: 500, auto: false };
-      S.user = S.user || { email: 'test@x' }; S.leader = true; S.fbTestRun = true; S.devOk = true; S.plist.clear(); S.fbH.clear(); S._fbLateAt = 0; S._fbPosC = null; S.prodLoaded = true; S.regCmds = new Map(); S.regItems = new Map(); S.orders.delete('fbrev_o1'); S._saleIdx = null; S._cashIdx = null; window.__failHist = false;
+      S.user = S.user || { email: 'test@x' }; S.leader = true; S.fbTestRun = true; S.devOk = true; S.plist.clear(); S.fbH.clear(); S._fbLateAt = 0; S._fbPosC = null; pl(true); S.regCmds = new Map(); S.regItems = new Map(); S.orders.delete('fbrev_o1'); S._saleIdx = null; S._cashIdx = null; window.__failHist = false;
       fbWatch(); fbCfg(); await db.collection('zz_fbrev').doc('kick').set({ at: Date.now() }); await W(80); S.fb.jobs.clear(); fbLinks().clear(); S._fbOv = null; window.__FSW = []; };
     const mk = (n, o) => ({ id: 'aladin_U' + n, usedCode: 'U' + n, listingId: String(900000 + n), title: '시험 책 ' + n, isbn13: String(9788900000000 + n), price: 8000, qty: 1, grade: '상', status: '판매중', active: true, sku: 'PNK_' + n, registeredAt: '2026-05-02T10:00:00', firstSeenAt: '2026-05-02T10:20:00', bookId: 'bk' + n, publisher: '출판사', ...(o || {}) });
     const put = (l, note, srv) => { S.plist.set(l.id, l); F('prd_listings')[l.id] = { ...l, ...(srv || {}) }; F('prd_used_info')[l.listingId] = { note: note || '' }; return l; };
+    /* '상품 목록을 아직 못 받음' 흉내 — 가짜 Firestore가 쓰기 때마다 듣기를 다시 돌려 표시가 켜지므로 잠가 둠 */
+    const pl = (on) => { delete S.prodLoaded; if (on) S.prodLoaded = true; else Object.defineProperty(S, 'prodLoaded', { get: () => false, set: () => {}, configurable: true, enumerable: true }); };
+    /* 상품 값 바꿈(화면 목록·서버 흉내 둘 다) · v가 null이면 뺌 */
+    const mod = (n, v) => { const k = 'aladin_U' + n; if (v === null) { S.plist.delete(k); delete F('prd_listings')[k]; return; } if (S.plist.get(k)) Object.assign(S.plist.get(k), v); if (F('prd_listings')[k]) Object.assign(F('prd_listings')[k], v); };
     const seed = async (c, id, v) => { await db.collection(c).doc(id).set(v); };
     const q = async (ls, meta) => { const r = await fbQueue(ls.map((l) => ({ l, x: fbX(l), score: 0.1, pred: 0.1 })), { ab: false, ...(meta || {}) }); await W(80); return r; };
     const tick = async () => { await idle(); await fbTick(); await W(160); };
@@ -28,7 +32,7 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
     const live = (row, n, o) => { const now = new Date().toISOString(); const l = mk(n, { isbn13: String(row.isbn), price: row.price, qty: row.qty, sku: row.code || '', title: row.title, registeredAt: now, firstSeenAt: now, ...(o || {}) }); put(l, row.desc || ''); return { state: 'live', usedCode: l.usedCode, listingId: l.listingId }; };
     /* 맡김 → 지움 → 다시 등록 명령까지 */
     const toReg = async (ls) => { const r = await q(ls); await tick(); await delDone('deleted'); await tick(); return r; };
-    window.TB = { W, F, D, reset, mk, put, seed, q, tick, cmds, jobs, job, delDone, regDone, live, toReg, idle, plW: () => plW + (window.__FSW || []).filter((w) => w.n === 'prd_listings').length }; });
+    window.TB = { W, F, D, reset, mk, put, pl, mod, seed, q, tick, cmds, jobs, job, delDone, regDone, live, toReg, idle, plW: () => plW + (window.__FSW || []).filter((w) => w.n === 'prd_listings').length }; });
 
   /* A. 60일이 지난 뒤의 두 번째 끌올 — 처음 등록일은 평생 장부·고리에서 · 알라딘의 새 날짜를 처음 값으로 삼지 않음 · 실행 날짜는 덧붙음(덮지 않음) */
   const A = await p.evaluate(async () => { const T = window.TB; await T.reset(); const F0 = '2025-03-02T10:00:00', S0 = '2025-03-02T10:20:00', d70 = T.D(70);
@@ -82,10 +86,10 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
   ok(C.j2.state === 'reg_wait' && C.j2.goneOk === true && C.n2 === 1 && C.row && C.row.code === 'PNK_250', 'C 사람이 ♻로 맡기면 그때만 다시 등록', [C.j2, C.n2]);
 
   /* D. 맡긴 뒤 바뀐 상품은 지우지 않음 */
-  const Dd = await p.evaluate(async () => { const T = window.TB; await T.reset(); const L = [T.put(T.mk(261)), T.put(T.mk(262, { qty: 3 })), T.put(T.mk(263)), T.put(T.mk(264)), T.put(T.mk(265)), T.put(T.mk(266)), T.put(T.mk(267))]; S.prodLoaded = false; const r = await T.q(L); await T.W(400); await T.tick();
+  const Dd = await p.evaluate(async () => { const T = window.TB; await T.reset(); const L = [T.put(T.mk(261)), T.put(T.mk(262, { qty: 3 })), T.put(T.mk(263)), T.put(T.mk(264)), T.put(T.mk(265)), T.put(T.mk(266)), T.put(T.mk(267))]; T.pl(false); const r = await T.q(L); await T.W(400); await T.tick();
     const w0 = T.jobs().map((j) => [j.state, j.wait]); const n0 = T.cmds('regDel').length;
-    S.plist.get('aladin_U261').price = 7500; S.plist.get('aladin_U262').qty = 2; S.plist.get('aladin_U263').status = '판매중지'; S.plist.delete('aladin_U264'); S.plist.get('aladin_U267').sku = 'PNK_999';
-    S.orders.set('fbrev_o1', { id: 'fbrev_o1', kind: 'sale', orderNo: 'ORD-1', orderedAt: new Date().toISOString(), items: [{ lineStatus: 'normal', aladinUsedCode: 'U265', qty: 1, price: 8000 }] }); S._saleIdx = null; S.prodLoaded = true; await T.tick();
+    T.mod(261, { price: 7500 }); T.mod(262, { qty: 2 }); T.mod(263, { status: '판매중지' }); T.mod(264, null); T.mod(267, { sku: 'PNK_999' });
+    S.orders.set('fbrev_o1', { id: 'fbrev_o1', kind: 'sale', orderNo: 'ORD-1', orderedAt: new Date().toISOString(), items: [{ lineStatus: 'normal', aladinUsedCode: 'U265', qty: 1, price: 8000 }] }); S._saleIdx = null; T.pl(true); await T.tick();
     const o = {}; for (const n of [261, 262, 263, 264, 265, 266, 267]) { const j = T.job('aladin_U' + n); o[n] = [j.state, j.why || '']; } const del = T.cmds('regDel'); S.orders.delete('fbrev_o1'); S._saleIdx = null; return { r, w0, n0, o, items: del.flatMap((c) => c.items.map((x) => x.usedCode)) }; });
   ok(Dd.r.n === 7 && Dd.n0 === 0 && Dd.w0.every(([s, w]) => s === 'queued' && /상품 목록을 아직 다 못 받음/.test(w || '')), 'D 상품 목록을 다 받기 전엔 지우기를 맡기지 않음', [Dd.r, Dd.w0]);
   ok(Dd.o[261][0] === 'del_fail' && /판매가 8000→7500/.test(Dd.o[261][1]) && Dd.o[262][0] === 'del_fail' && /수량 3→2/.test(Dd.o[262][1]) && Dd.o[263][0] === 'del_fail' && /판매중이 아님/.test(Dd.o[263][1]) && Dd.o[264][0] === 'del_fail' && /목록에 없음/.test(Dd.o[264][1]) && Dd.o[267][0] === 'del_fail' && /관리 코드/.test(Dd.o[267][1]), 'D 맡긴 뒤 판매가·수량(팔림)·판매 상태·관리 코드가 바뀌었거나 목록에서 빠진 상품은 지우지 않음', Dd.o);
@@ -117,8 +121,8 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
   ok(Ff.r1.n === 1 && Ff.r2.n === 0 && Ff.r2.skip.some((s) => /이미 올리는 중/.test(s)) && Ff.n === 1 && Ff.ev === 1, 'F 같은 상품을 또 맡기면(다른 기기·다른 탭) 건너뜀 — 일도 회차 줄도 하나', Ff);
 
   /* G. 옮긴 뒤 다시 읽어 대조 — 어긋나면 알리고, 사람이 확인할 때까지 새로 올리지도 지우지도 않음 */
-  const G = await p.evaluate(async () => { const T = window.TB; await T.reset(); const a = T.put(T.mk(281)), b = T.put(T.mk(282)), c = T.put(T.mk(283)); await T.toReg([a]); S.prodLoaded = false; await T.q([c]); await T.W(400);
-    await T.regDone((row) => T.live(row, 381, { price: 7000 })); await T.tick(); await T.tick(); const ja = T.job('aladin_U281'); S.prodLoaded = true; await T.tick(); const jc1 = T.job('aladin_U283'); const r = await T.q([b]); const nDel1 = T.cmds('regDel').length;
+  const G = await p.evaluate(async () => { const T = window.TB; await T.reset(); const a = T.put(T.mk(281)), b = T.put(T.mk(282)), c = T.put(T.mk(283)); await T.toReg([a]); T.pl(false); await T.q([c]); await T.W(400);
+    await T.regDone((row) => T.live(row, 381, { price: 7000 })); await T.tick(); await T.tick(); const ja = T.job('aladin_U281'); T.pl(true); await T.tick(); const jc1 = T.job('aladin_U283'); const r = await T.q([b]); const nDel1 = T.cmds('regDel').length;
     await db.collection('prd_bump').doc(ja.id).set({ verify: { ...ja.verify, ack: new Date().toISOString(), ackBy: 'test' } }, { merge: true }); await T.tick(); const jc2 = T.job('aladin_U283'); const r2 = await T.q([b]); return { ja, jc1: [jc1.state, jc1.wait], r, nDel1, jc2: jc2.state, r2n: r2.n, H: T.F('prd_bump_hist').aladin_U281 }; });
   ok(G.ja.state === 'done' && G.ja.verify && G.ja.verify.ok === false && G.ja.verify.diff.some((d) => /판매가 8000→7000/.test(d)) && G.H.ev[0].vOk === false, 'G 옮긴 뒤 다시 읽어 대조 — 판매가가 다르면 어긋남으로 적음(평생 장부 줄에도)', [G.ja.verify, G.H.ev]);
   ok(G.jc1[0] === 'queued' && /대조가 어긋남/.test(G.jc1[1] || '') && G.nDel1 === 1 && G.r.n === 0 && /대조가 어긋남/.test(G.r.why || ''), 'G 어긋남을 사람이 확인하기 전엔 — 기다리던 일은 지우지 않고 · 새로 맡기지도 않음', [G.jc1, G.nDel1, G.r]);
