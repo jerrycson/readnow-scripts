@@ -1895,7 +1895,7 @@ async function kpinApply(items, by) { let n = 0; const bad = []; for (const it o
  *  다시 알림은 출고 일이 기다리는 동안만(출고 PC 기다림 표시가 있는 맡긴 일 · 대기 송장 입력) remindMin분(60)마다 remindMax번(3)까지 · 돌아오면 「다시 켜짐」 한 번(알림을 보낸 때만)
  *  알림 종류 'shippc'(기기마다 웹앱 ⚙ 휴대폰 알림 칩 「🚚 출고 PC 꺼짐」으로 끔 · 기본 켬) · 설정 app_settings/ship_pc_watch { on:false 끔 · downMin · remindMin · remindMax · onlyWork 기본 true = 출고 일이 있을 때만 · false면 출고 일이 없어도 첫 알림 한 번 }
  *  읽기만 — MJ-MAIN에 명령·맡김을 보내지 않음 · 🔕 PC 부재 알림(logger_watch.absAlert)에서 그 PC를 이미 켜 두었으면 겹치지 않게 이것은 안 보냄 · 근거: 없음(10분은 카드 기본안 · 되돌릴 수 있는 기준값) */
-const SPW_DEF = { on: true, downMin: 10, remindMin: 60, remindMax: 3, onlyWork: true }; /* (11/18 리드 결정 F57 (나)) 기본 onlyWork:true — 출고 일이 기다릴 때만 알림(정범님 11/04 「MJ-MAIN 부재 알림은 그만」·11/05 「PC 상태 등은 기본 끔」과 맞춤 · 할 일 없는 꺼짐은 조용 · 되돌림 app_settings/ship_pc_watch.onlyWork=false) */
+const SPW_DEF = { on: true, downMin: 10, remindMin: 60, remindMax: 3, onlyWork: true }; /* (11/18 리드 결정 F57 (나)) 기본 onlyWork:true — 출고 일이 기다릴 때만 알림(정범님 11/04 「MJ-MAIN 부재 알림은 그만」·11/05 「PC 상태 등은 모든 기기 기본 끔」과 맞춤 · 할 일 없는 꺼짐은 조용 · 되돌림 app_settings/ship_pc_watch.cfg.onlyWork=false) */
 function spwDecide(o) { const c = { ...SPW_DEF, ...(o.cfg || {}) }; const now = +o.now; const name = o.name || 'MJ-MAIN'; const st = { ...(o.st || {}) }; const at = +o.beatAt || 0; const work = Math.max(0, +o.work || 0); const hm = (t) => new Date(t + 9 * 3600e3).toISOString().slice(11, 16);
   if (c.on === false) return { st: { ...st, off: true }, push: null, why: '끔(app_settings/ship_pc_watch.on)' }; if (!at) return { st, push: null, why: '출고 PC 신호 기록 없음' };
   const age = now - at; const down = age > c.downMin * 60e3; const wTxt = work ? ` · 지금 출고 PC를 기다리는 출고 일 ${work}건` : '';
