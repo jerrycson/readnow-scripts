@@ -44,7 +44,8 @@ const pre = (L) => L.map(([o, v]) => `<input id="deliveryNo.${o}"${v ? ` value="
     ok(!w.__clicked.length && x.state === 'has' && /다른 송장/.test(x.err) && /240000009999/.test(x.err), '다른 송장이 칸에 있음 → 넣지 않고 건너뜀 ' + x.err); w.close(); }
   { const T = await run('mix', { limit: 0, verify: false, items: [it2('O1', '240000000011'), it2('O2', '240000000012')] }); const w = await T.page(['O1', 'O2'], [], { html: pre([['O1', '240000009999'], ['O2', '']]) }); await sleep(2600); const d = T.D();
     ok(w.__clicked.join() === 'O2' && d.items[0].state === 'has' && d.items[1].state === 'sent', '섞여 있으면 빈 칸 주문(O2)만 넣음 ' + w.__clicked + ' ' + d.items.map((y) => y.state)); w.close(); }
-  const hd = (s) => (s.match(/\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==/) || [''])[0]; let base = ''; try { base = cpx.execSync('git show origin/main:src/readnow-collector.src.js', { cwd: path.join(__dirname, '..'), stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64e6 }).toString(); } catch (e) {}
+  /* (11/17 idea2) 머리는 split.js headSig와 같은 거름으로 견줌 — @version·우리 파일 @require ?v= 판 고정 줄은 판마다 바뀌어도 운영 PC 영향 없음(머리 서명 그대로) */
+  const hd = (s) => (s.match(/\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==/) || [''])[0].split('\n').filter((l) => /^\/\/ @/.test(l) && !/^\/\/ @(version|updateURL|downloadURL)\b/.test(l) && !/raw\.githubusercontent\.com\/jerrycson\/readnow-scripts/.test(l) && !/^\/\/ @require\s+https:\/\/readnow\.kr\//.test(l)).map((l) => l.replace(/\s+/g, ' ').trim()).join('|'); let base = ''; try { base = cpx.execSync('git show origin/main:src/readnow-collector.src.js', { cwd: path.join(__dirname, '..'), stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64e6 }).toString(); } catch (e) {}
   if (base) ok(hd(base) === hd(src), '수집기 머리(==UserScript==) 그대로');
   console.log(bad ? `❌ tINVHAS 실패 ${bad}` : '✓ tINVHAS 통과'); process.exit(bad ? 1 : 0);
 })();
