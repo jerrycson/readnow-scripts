@@ -11,7 +11,9 @@ const hash=data=>createHash('sha256').update(data).digest('hex');
 const report=read('face-eval51.json'),notes=read('face-note51.json');
 assert.equal(Object.keys(orbitCases51).length,8);assert.equal(notes.length,2);assert.equal(report.views.length,15);
 assert.equal(report.views.filter(v=>v.priorUse==='이전 연구 검색 일치 없음').length,4);
-for(const[f,h]of Object.entries(report.files))assert.equal(hash(fs.readFileSync(new URL(f,root))),h,f);
+// 측정 JSON은 불변. 기록 당시 바이트 지문과 별도의 LF 배포 지문을 연결한다.
+const canonical=read('qa/face-source51.json');
+for(const[f,h]of Object.entries(report.files)){const bytes=fs.readFileSync(new URL(f,root));if(/\.(?:mjs|js|json|html|css|md)$/.test(f)){assert.equal(canonical.files[f]?.recorded,h,f+' 원본 기록 연결');assert.equal(hash(bytes.toString('utf8').replaceAll('\r\n','\n')),canonical.files[f]?.lf,f+' LF 배포 지문');}else assert.equal(hash(bytes),h,f);}
 const assets={atlas:read('atlas35.json'),traces:read('traces36.json'),fit:read('fit36.json')};
 function delta(a,b){let changed=0,alpha=0;for(let i=0;i<a.data.length;i+=4){if(a.data[i+3]!==b.data[i+3])alpha++;if([0,1,2].some(k=>Math.abs(a.data[i+k]-b.data[i+k])>=8))changed++;}return{changed,alpha};}
 await loadRig();

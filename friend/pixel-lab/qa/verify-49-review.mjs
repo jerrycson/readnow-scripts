@@ -12,5 +12,6 @@ assert.equal(original.cardsSha,'ab28028d9240c30b391bbe62305cdd94caae943cdbdb3946
 assert.equal(original.sealedSha,'45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d');
 assert.equal(original.hostSource,'81f099cf091d319f86602e22');
 const studio=await readFile(new URL('studio.html',lab),'utf8');
-assert(studio.includes('49-review-4c7e86d4')&&studio.includes('buildReview'));
+// 새 UI 회차에도 49차 자료는 보존한다. 현재 UI 지문을 과거 UI 한 개로 고정하지 않는다.
+assert(/data-ui-build="[a-zA-Z0-9-]+"/.test(studio)&&studio.includes('buildReview'));
 console.log('49차 자료 id·카드·암호문 지문 보존과 별도 UI 보완 표시 확인');
