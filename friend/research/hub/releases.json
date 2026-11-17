@@ -274,6 +274,78 @@
         "file": "studio-training44.json",
         "sha256": "6ca169e3f617a904e9bd7375720e31f186beda1ef5994bdafb537c0aecaed96e"
       }
+    },
+    {
+      "id": "2dee3f0da258ce80cd658038",
+      "project": "bookfriend",
+      "round": 44,
+      "cards": 340,
+      "sources": 329,
+      "chapters": 14,
+      "cardsSha": "6dbf26c72377971173385e3c2cc5b9e240b60bc66ec99fd5e71f9db1cff597a9",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "1c07015e7998999dfbc85996162697cd4bacdd4d399349fadc937b0d94816b7f",
+      "at": "2026-11-17T06:49:45.272Z",
+      "label": "44차 보완 · 두상 교차검증과 두 엔진의 일지",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44"
+      ],
+      "learningEvidence": {
+        "file": "studio-training44-r2.json",
+        "sha256": "2936d63ac07b34a518beb8d80691aaa54a36e34cd96426147e7af330c96b881a"
+      },
+      "supersedes": "966056ebda914daa089f72af"
+    },
+    {
+      "id": "b58c89cd7277a43a45256b65",
+      "project": "bookfriend",
+      "round": 44,
+      "cards": 340,
+      "sources": 329,
+      "chapters": 14,
+      "cardsSha": "6dbf26c72377971173385e3c2cc5b9e240b60bc66ec99fd5e71f9db1cff597a9",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "f8ce1d8a99e8da40a5686a4dc1115c00375142a0ac0c586ddcb0a5612e4dc50f",
+      "at": "2026-11-17T06:51:34.684Z",
+      "label": "44차 보완 · 두상 교차검증과 두 엔진의 일지",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44"
+      ],
+      "learningEvidence": {
+        "file": "studio-training44-r2.json",
+        "sha256": "2936d63ac07b34a518beb8d80691aaa54a36e34cd96426147e7af330c96b881a"
+      },
+      "supersedes": "2dee3f0da258ce80cd658038"
     }
   ]
 }
