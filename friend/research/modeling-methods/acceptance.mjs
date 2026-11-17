@@ -1,5 +1,15 @@
 import {reviewDrawingCandidate} from '../../pixel-lab/drawing-review.mjs';
 
+const printLips = document.getElementById('print-lip-study');
+if (printLips) {
+  printLips.hidden = false;
+  printLips.addEventListener('click', () => {
+    document.body.classList.add('print-lip-study');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => document.body.classList.remove('print-lip-study'));
+}
+
 const choices = document.getElementById('trialChoices');
 const output = document.getElementById('trialOutput');
 const names = {F02:'페른', M01:'힘멜', W:'성인 몸통'};
