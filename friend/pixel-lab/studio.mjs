@@ -1,4 +1,5 @@
-import {studioTools,studioGroups} from './studio-catalog.mjs?ui=49-review-4c7e86d4';
+import {mountStudioPanes} from './studio-panes50.mjs';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=50-panes';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -6,7 +7,7 @@ const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([
-  ['definition','고해상도 원형 · 픽셀판'],
+  ['workbench','다중 시점 작업대'],['definition','고해상도 원형 · 픽셀판'],
   ['latest-fern','최신 페른'],['latest-himmel','최신 힘멜'],['latest-chest','최신 몸통'],
   ['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
   ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
@@ -45,6 +46,7 @@ function pathFor(t){
   if(['sculpt','all-around','definition'].includes(t.id)&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
   return u.href;
 }
+const workspace=mountStudioPanes({host:$('stages'),tools,urlFor:pathFor,onNotice:say});
 function signal(f,on){f.contentWindow?.postMessage({type:'bookfriend:studio-active',active:on},location.origin);}
 const observeTool=startStudioRecord(()=>tools.find(t=>t.id===current));
 mountCaseSync(document.querySelector('.workhead + details'));
@@ -62,11 +64,11 @@ function routeFromChild(e){
   e.preventDefault();open(next,q.has('case')?{case:q.get('case'),zone:q.get('zone')}:undefined);
 }
 function open(id,context){
-  const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='definition');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
-  let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);$('stages').append(f);f.onload=()=>{signal(f,!f.hidden);try{f.contentDocument?.addEventListener('click',routeFromChild);}catch{}};}
+  const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='workbench');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
+  let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);workspace.main.append(f);f.onload=()=>{signal(f,!f.hidden);try{f.contentDocument?.addEventListener('click',routeFromChild);}catch{}};}
   else if(context&&['sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
   for(const [key,other] of frames){other.hidden=key!==current;signal(other,!other.hidden);}
-  $('title').textContent=(t.case?(edition?.round||studioRound)+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();observeTool();
+  workspace.setPrimary(t,f);$('title').textContent=(t.case?(edition?.round||studioRound)+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();observeTool();
 }
 for(const [id,label] of defaults){const b=button(label,()=>open(id));b.dataset.id=id;$('quick').append(b);}
 $('onlyFav').onclick=()=>{onlyFav=!onlyFav;$('onlyFav').setAttribute('aria-pressed',String(onlyFav));paintList();};
@@ -100,5 +102,6 @@ async function refresh(){
     if(tools.find(t=>t.id===current)?.case)open(current);
   }catch{if(!edition)say('회차 목록을 다시 확인합니다. 보존 관찰창을 열었습니다.');}finally{refreshing=false;}
 }
-document.getElementById('buildReview').onclick=()=>open('acceptance');
 open(new URL(location.href).searchParams.get('tool'));refresh();document.addEventListener('visibilitychange',refresh);addEventListener('online',refresh);setInterval(refresh,15000);
+
+document.getElementById('buildReview').onclick=()=>open('acceptance');
