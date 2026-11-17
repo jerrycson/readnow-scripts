@@ -4,12 +4,13 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   const r = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const out = {}; const FS = window.__FS; const BB = () => ((FS.prd_system || {}).buyback || {}); const cmds = (t) => Object.entries(FS.shp_cmds || {}).filter(([, v]) => v.type === t).map(([id, v]) => ({ id, ...v }));
     window.ask = async () => true; S.user = S.user || { email: 'tester@x' };
     const A = [...S.plist.values()].filter((l) => l.active && l.isbn13); const [a0, a1, a2, a3] = A; // a0 a1 a2 = 매입가 하한 · a3 = 같은 SKU 시험
+    [a0, a1, a2].forEach((l) => { if (!['최상', '상'].includes(l.grade)) l.grade = '상'; }); const aG = A[4]; if (aG) aG.grade = '중'; /* aG = '중' 상태 — 매입가 하한 판정 안이어도 카드에서 빠져야 함 · (정범님 11/12 밤 '중 상태는 알라딘이 매입하지 않으니 빼라' · 7e8bf4733 1.78.658부터 bbNearJ가 PR.bbGradeOut으로 '중'·'하'를 매입 후보에서 뺌) 매입가 하한 카드 셋은 알라딘이 사는 등급으로 */
     S.sku.map.set(a3.id, { c: ['k0001'] }); S.sku.seqUn = S.sku.seqUn || (() => {}); S.sku.at = Date.now();
     // ── ① 수동 일괄 '알라딘 매입가 하한' 탭: 장바구니 단추 없이 보내기만
     const sh = document.getElementById('sheet'); sh.classList.add('on'); sh.innerHTML = '<div id="b_res"></div>'; S.detail = { batch: 1 };
-    S.batchRes = A.map((l, j) => ({ l, target: l.price - 500, reasons: ['시험'], page1: [], at: '2026-11-01', bbHit: j < 3 ? { buy: l.price - 600 + j, floor: l.price + 400 } : null /* (11/05) 알라딘 매입 근삿값 판정(시장 맞춤가 ≤ 매입가×1.15) 안에 들게 */ })); S.batchSt = { picks: {}, decided: {} }; S.batchMeta = {}; S.batchT = 'bb'; S.batchEdit = {};
+    S.batchRes = A.map((l, j) => ({ l, target: l.price - 500, reasons: ['시험'], page1: [], at: '2026-11-01', bbHit: j < 3 || l === aG ? { buy: l.price - 600 + j, floor: l.price + 400 } : null /* (11/05) 알라딘 매입 근삿값 판정(시장 맞춤가 ≤ 매입가×1.15) 안에 들게 */ })); S.batchSt = { picks: {}, decided: {} }; S.batchMeta = {}; S.batchT = 'bb'; S.batchEdit = {};
     const c = { ...JSON.parse(JSON.stringify(BATCH_DEF)), name: '시험 그룹' }; drawBatchRes(sh, c, 'g1'); await W(300);
-    out.bbCards = sh.querySelectorAll('.card.pq.bq[data-mk]').length; out.cartBtnBatch = sh.querySelectorAll('[data-bbcart],[data-rgbbcart]').length; out.sendBtns = sh.querySelectorAll('[data-bhsend]').length; out.hasAll = !!sh.querySelector('#b_bhall'); out.hasOpen = !!sh.querySelector('#b_tobbuy');
+    out.bbCards = sh.querySelectorAll('.card.pq.bq[data-mk]').length; out.gOut = !!aG && ![...sh.querySelectorAll('.card.pq.bq[data-mk]')].some((el) => el.dataset.mk === 'aladin_' + aG.usedCode); out.cartBtnBatch = sh.querySelectorAll('[data-bbcart],[data-rgbbcart]').length; out.sendBtns = sh.querySelectorAll('[data-bhsend]').length; out.hasAll = !!sh.querySelector('#b_bhall'); out.hasOpen = !!sh.querySelector('#b_tobbuy');
     sh.querySelector(`[data-bhsend="${a0.usedCode}"]`).click(); await W(500);
     out.m1 = Object.keys(BB().moved || {}); out.src1 = Object.values(((BB().moved || {})[a0.usedCode] || {}).src || {}).map((x) => x.k + ':' + x.n);
     drawBatchRes(sh, c, 'g1'); await W(200); const card0 = [...sh.querySelectorAll('.card.pq.bq[data-mk]')].find((el) => el.dataset.mk === 'aladin_' + a0.usedCode); const fold0 = sh.querySelector('.bdfold'); out.in0 = !card0 && !!fold0 && /처리함 1개/.test(fold0.innerText) && !!fold0.querySelector(`[data-bhopen="${a0.usedCode}"]`); /* (11/02) 이 그룹에서 보낸 카드는 ✓ 처리함으로 접힘 */
@@ -65,6 +66,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     // 이 페이지 밖에는 장바구니 담기 단추 없음 (앱 코드 전체에서 data-bbcart를 쓰는 곳 = 이 페이지 카드뿐)
     return out; });
   console.log(JSON.stringify(r, null, 0).slice(0, 4000));
+  ok(r.gOut, "'중' 상태 상품은 매입가 하한 판정 안이어도 매입가 하한 카드에서 빠짐(정범님 11/12 밤 · 알라딘은 중 상태를 매입하지 않음)");
   ok(r.bbCards === 3 && r.cartBtnBatch === 0 && r.sendBtns === 3, `수동 일괄 매입가 하한 탭: 카드 ${r.bbCards}개 · 🛒 장바구니 단추 ${r.cartBtnBatch}개 · 보내기 단추 ${r.sendBtns}개`);
   ok(r.hasAll && r.hasOpen, "탭 위 '이 탭 모두 알라딘 매입으로 보내기' · '알라딘 매입 페이지 열기'");
   ok(r.m1.length === 1 && r.src1.join() === 'batch:시험 그룹', '카드 하나 보내기 → 보낸 상품 1개 (출처 수동 일괄 · 그룹 이름)');
