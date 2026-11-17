@@ -26,7 +26,7 @@ function world(extra) { let T = Date.parse('2026-11-16T10:00:00Z'); const now = 
   return { Y, F, store, put, reads, now, adv: (ms) => { T += ms; }, led: () => store.app_settings.y24_reg || {}, reset: () => { for (const k of Object.keys(reads)) delete reads[k]; } }; }
 const G = (x) => ({ st: { login: 'ok', hold: false, en: true, wait: [], cur: null }, res: {}, rej: [], ...(x || {}) });
 (async () => {
-  /* ① 큰 자료는 45분마다 */
+  /* ① 큰 자료는 6시간마다 통째 · 그 사이는 바뀐 줄만(headless2 11/17 · 예전 45분마다 통째) */
   { const W = world(); const { Y } = W;
     let y = await Y.step('HOME', G()); const r1 = { ...W.reads };
     ok((r1.prd_listings || 0) >= 43 && y.jobs.length === 1 && y.jobs[0].rows.length === 1, '① 첫 차례 — 큰 자료를 읽고(판매중 상품 43권 전부) 1건 맡김', { r1, jobs: y.jobs.length });
@@ -34,7 +34,8 @@ const G = (x) => ({ st: { login: 'ok', hold: false, en: true, wait: [], cur: nul
     W.reset(); W.adv(11 * 60e3); y = await Y.step('HOME', G({ st: { login: 'ok', hold: false, en: true, wait: [{ id: y.jobs[0].id }], cur: null } }));
     ok(!W.reads.prd_listings && !W.reads.y24_listings && !W.reads.reg_items && !W.reads.crm_y24_raw, '① 11분 뒤 차례 — 상품·예스24 목록·등록·관리자 원문 읽기 0(작은 자료만)', W.reads);
     ok((W.reads.app_settings || 0) <= 5, '① 작은 자료 = 설정 문서 몇 개뿐', W.reads);
-    W.reset(); W.adv(40 * 60e3); await Y.data(); ok((W.reads.prd_listings || 0) >= 43, '① 45분이 지나면 큰 자료를 다시 읽음(data)', W.reads); }
+    W.reset(); W.adv(40 * 60e3); await Y.data(); ok((W.reads.prd_listings || 0) < 43, '① (headless2 11/17) 51분 뒤에도 통째로 다시 읽지 않음 — 바뀐 줄만(예전 45분마다 통째)', W.reads);
+    W.reset(); W.adv(6 * 3600e3); await Y.data(); ok((W.reads.prd_listings || 0) >= 43, '① 6시간이 지나면 큰 자료를 통째로 다시 읽음(지운 줄·손으로 고친 값까지 맞춤)', W.reads); }
   /* ② 묵힌 사이 팔린 책 — 보내기 직전 재확인이 뺌 */
   { const W = world(); const { Y } = W;
     await Y.data(); ok(Y._M.bigAt > 0 && W.reads.prd_listings >= 43, '② 큰 자료를 먼저 읽어 둠(묵히기 시작)', W.reads); let y;
@@ -68,5 +69,5 @@ const G = (x) => ({ st: { login: 'ok', hold: false, en: true, wait: [], cur: nul
   { const pk = JSON.parse(rd('cloud/package.json')); ok(pk.dependencies && pk.dependencies.xlsx === '0.18.5', '⑥ cloud/package.json 의존에 xlsx 0.18.5(고정)', pk.dependencies);
     const lk = JSON.parse(rd('cloud/package-lock.json')); ok(lk.packages && lk.packages['node_modules/xlsx'] && lk.packages['node_modules/xlsx'].version === '0.18.5', '⑥ package-lock에 xlsx 0.18.5', lk.packages && lk.packages['node_modules/xlsx'] && lk.packages['node_modules/xlsx'].version);
     const src = rd('cloud/y24auto.js'); ok(!/cdnjs|XLSX_URL|new Function\(/.test(src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').split('\n').filter((l) => !/예전엔/.test(l)).join('\n')) || !/XLSX_URL/.test(src), '⑥ 실행 때 cdnjs에서 받아 new Function으로 돌리는 길 없음', (src.match(/cdnjs|XLSX_URL/g) || [])); }
-  console.log(bad ? `\n실패 ${bad}` : '\n전부 통과'); process.exit(bad ? 1 : 0);
+  console.log(bad ? `\n❌ 실패 ${bad}` : '\n✓ 전부 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('  ❌ 예외', e && e.stack || e); process.exit(1); });
