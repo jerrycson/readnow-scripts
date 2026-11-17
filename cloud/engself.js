@@ -199,6 +199,12 @@ function makeEngSelf(D) { const now = D.now || (() => Date.now()); let busy = fa
     /* 재료가 36시간 멈췄으면 스스로 다시 셈(가벼운 연구만 · D.redo) → 다시 읽어 판정 · 그래도 ❌면 🚨 */ for (const f of fresh.filter((x) => x.s === '❌' && D.redo && D.redo[x.k])) { let r = null; try { r = await D.redo[f.k](); } catch (e) { r = { err: String(e.message || e).slice(0, 120) }; } docs[f.k] = await get(f.k); redone.push({ k: f.k, id: f.id, r: r && r.err ? r.err : r && r.skip ? 'skip' : 'ok' }); }
     if (redone.length) fresh = esFresh(docs, today, now(), cfg);
     const frMap = Object.fromEntries(fresh.map((f) => [f.k, f.s])); for (const f of fresh) if (f.s === '❌') { const rd = redone.find((x) => x.k === f.k); alerts.push({ lv: rd ? '🚨' : '⚠', k: 'fresh_' + f.id, t: `${f.id} ${f.k} ${f.w}` + (rd ? ` — 스스로 다시 셈(${rd.r})해도 그대로` : ' — 다시 셈할 길이 엔진에 없음(깃발만)'), now: !!rd }); }
+    /* 책방 친구는 이미 돌고 있는 일일 회차를 사용하고, 별도 연구 DB에 요약만 기록한다. */
+    try {
+      const friendRun = await (await import('./friend-research-daily.mjs')).inCloud();
+      if (friendRun.status === 'source_error' || Object.values(friendRun.studies || {}).includes('stalled'))
+        alerts.push({ lv: '⚠', k: 'bookfriend', t: '책방 친구 학습 원전 재확인 필요', why: friendRun.status });
+    } catch (e) { D.log('책방 친구 연구 회차 실패', e.message); alerts.push({ lv: '⚠', k: 'bookfriend', t: '책방 친구 연구 회차 기록 실패' }); }
     /* ③④ 가설 다시 셈 → 상태 */ const hs0 = prev.hs || {}; const hs = {}; let J = { hyp: [] }; const lines = []; if (insp.use) for (const m of L.months) for (const r of m.rows) lines.push(r);
     const dataDay = insp.last ? insp.last.slice(0, 10) : null; const newData = insp.use && (!prev.dataDay || (dataDay && dataDay > prev.dataDay));
     if (insp.use) { let wx = {}; try { wx = D.wxDays ? (await D.wxDays()) || {} : {}; } catch (e) { wx = {}; } J = esJudge(lines, D.hol, wx, cfg, Array.isArray(cfg0.hyp) ? cfg0.hyp : ES_HYP); }

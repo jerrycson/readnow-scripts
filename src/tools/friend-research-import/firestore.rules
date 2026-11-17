@@ -1,5 +1,8 @@
 rules_version = '2';
 service cloud.firestore { match /databases/{db}/documents {
+ // 운영 일일 회차가 작성한 비개인 집계 8칸. 정확한 날짜 1건 조회만 허용한다.
+ match /friend_engine_public/{day} { allow get: if db == 'readnow-research' && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+   && resource.data.keys().hasOnly(['at','day','studioState','photoState','studioCount','photoCount','studioHumanPairs','photoHumanPairs']); }
  match /readers/{uid} { allow get: if request.auth != null && request.auth.uid == uid; }
  match /releases/{id} { allow read: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
  match /blobs/{id} { allow get: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
