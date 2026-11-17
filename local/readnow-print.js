@@ -20,7 +20,7 @@
  *   (정범님 11/05) /work… · /render — 🪟 수집 작업 창(같은 폴더 readnow-work.js · 없으면 GitHub에서 받음 · 웹앱 관리도구에서 PC별로 켤 때만 창을 다룸) · GET /work = 📊 수집 상태 창
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.2.5'; // (1.2.5) 🔕 출고 시간 방해 금지 /alps/quiet(shipq1) // (1.2.4) 🪫 번외 상태 전달에 부하(load) 칸(verify2) // (1.2.3) 🌐 readnow.kr 새 주소 먼저 · 안 되면 옛 주소(새 판 4종·출처·번외 묶음) // (1.2.2) 🔄 새 판 바꾸기 '옛 판 그대로 또는 새 판 완전히'(옛 판 보관·3번 죽으면 되돌림) · 출고 단추 누른 순간부터 바꾸기 멈춤(/alps/shippre) · 🛡 추적 차단(Clarity hosts) · (1.2.1) (1.2.1) 🚚 출고 중엔 스스로 새 판 받기·ALPS 도우미·작업 창 새 판을 미룸(정범님 11/09 약속 0-1) // (1.2.0 정범님 11/06 약속 20 '로거 혼자 맡는 일을 만들지 않음') 💾 로거 대신 보관 길 — 로거 도우미(readnow-local.js 1.8.17)의 사진 /img-stat·/img-have·/img-put · 자료 /bk-stat·/bk-put·/bk-state를 그대로(D:\ReadNow\images·backup · D:가 없으면 C:\ReadNow · 지우는 길 없음 · 127.0.0.1만) · (1.2.0 정범님 11/06 HOME '외부 수집기가 밤새 옛 판·숨은 크롬이 켜자마자 꺼짐') 외부 수집기 판 확인을 6시간 → 1시간마다(켜진 뒤 2분 안에 한 번 · 웹앱이 없어도) · 돌던 판과 받아 둔 판이 다르면 다시 켬 · 끌 때 번외 크롬을 먼저 닫음(/quit — 옛 크롬이 프로필을 쥔 채 남지 않게) · 묶음 바꿔 끼우기가 막히면 몇 번 다시·덮어쓰기 · 상태에 크롬 원인·표본 바퀴 // (1.1.9 정범님 11/05 HOME '외부 수집기가 필요') 🧪 외부 수집기(lab/col2) 다리 /col2/ensure·/col2/stop·/col2/status — 묶음을 받아 검사 뒤 따로 된 프로세스(127.0.0.1:8797)로 켜고 끔 · 켠 PC는 로그온 때 다시 켬 · 운영 일과 따로 // (1.1.8 정범님 11/05 HOME '왜 ALPS 도우미가 떠?') ALPS 로그인 정보(cred.dat)가 없는 PC는 윈도우 시작 때 ALPS 창을 열지 않음 — 시작 프로그램 바로가기를 .off로 이름만 바꿔 둠(지우지 않음 · 로그인 정보를 넣으면 다시 켬) // (1.1.7 정범님 11/05 수집 작업 창) readnow-work.js(작업 창·수집 상태 창·바깥 읽기 따로)를 불러 씀 · /work·/render // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
+const VERSION = '1.2.6'; // (1.2.6 bkimmut1) 🔏 로거 대신 보관한 백업도 같은 봉인(읽기 전용·해시 장부·검증·덮지 않음) // (1.2.5) 🔕 출고 시간 방해 금지 /alps/quiet(shipq1) // (1.2.4) 🪫 번외 상태 전달에 부하(load) 칸(verify2) // (1.2.3) 🌐 readnow.kr 새 주소 먼저 · 안 되면 옛 주소(새 판 4종·출처·번외 묶음) // (1.2.2) 🔄 새 판 바꾸기 '옛 판 그대로 또는 새 판 완전히'(옛 판 보관·3번 죽으면 되돌림) · 출고 단추 누른 순간부터 바꾸기 멈춤(/alps/shippre) · 🛡 추적 차단(Clarity hosts) · (1.2.1) (1.2.1) 🚚 출고 중엔 스스로 새 판 받기·ALPS 도우미·작업 창 새 판을 미룸(정범님 11/09 약속 0-1) // (1.2.0 정범님 11/06 약속 20 '로거 혼자 맡는 일을 만들지 않음') 💾 로거 대신 보관 길 — 로거 도우미(readnow-local.js 1.8.17)의 사진 /img-stat·/img-have·/img-put · 자료 /bk-stat·/bk-put·/bk-state를 그대로(D:\ReadNow\images·backup · D:가 없으면 C:\ReadNow · 지우는 길 없음 · 127.0.0.1만) · (1.2.0 정범님 11/06 HOME '외부 수집기가 밤새 옛 판·숨은 크롬이 켜자마자 꺼짐') 외부 수집기 판 확인을 6시간 → 1시간마다(켜진 뒤 2분 안에 한 번 · 웹앱이 없어도) · 돌던 판과 받아 둔 판이 다르면 다시 켬 · 끌 때 번외 크롬을 먼저 닫음(/quit — 옛 크롬이 프로필을 쥔 채 남지 않게) · 묶음 바꿔 끼우기가 막히면 몇 번 다시·덮어쓰기 · 상태에 크롬 원인·표본 바퀴 // (1.1.9 정범님 11/05 HOME '외부 수집기가 필요') 🧪 외부 수집기(lab/col2) 다리 /col2/ensure·/col2/stop·/col2/status — 묶음을 받아 검사 뒤 따로 된 프로세스(127.0.0.1:8797)로 켜고 끔 · 켠 PC는 로그온 때 다시 켬 · 운영 일과 따로 // (1.1.8 정범님 11/05 HOME '왜 ALPS 도우미가 떠?') ALPS 로그인 정보(cred.dat)가 없는 PC는 윈도우 시작 때 ALPS 창을 열지 않음 — 시작 프로그램 바로가기를 .off로 이름만 바꿔 둠(지우지 않음 · 로그인 정보를 넣으면 다시 켬) // (1.1.7 정범님 11/05 수집 작업 창) readnow-work.js(작업 창·수집 상태 창·바깥 읽기 따로)를 불러 씀 · /work·/render // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 /* (11/10 big1) 🌐 새 판은 새 주소(readnow.kr)와 옛 주소(GitHub)에서 함께 받아 판 번호가 높은 것(같으면 새 주소) — 새 주소가 아직 안 열렸거나 늦게 올라와도 지금처럼 돎 */
@@ -220,6 +220,81 @@ function dirBytes(d) { let n = 0, f = 0; const walk = (x) => { let L = []; try {
 function bkSizes() { if (BKSZ && Date.now() - BKSZ_AT < 30 * 60e3) return BKSZ; const out = { at: bkKst(), root: BK_ROOT, firestore: {}, fsTotal: 0, fsFiles: 0, github: 0, other: 0, backupTotal: 0, images: 0, imagesN: 0, secure: 0 }; const fd = path.join(BK_DIR, 'firestore'); let cols = []; try { cols = fs.readdirSync(fd, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name); } catch (e) {}
   for (const c of cols) { const r = dirBytes(path.join(fd, c)); out.firestore[c] = r.b; out.fsTotal += r.b; out.fsFiles += r.f; } out.github = dirBytes(path.join(BK_DIR, 'github')).b; out.backupTotal = dirBytes(BK_DIR).b; out.other = Math.max(0, out.backupTotal - out.fsTotal - out.github);
   try { for (const v of imgIndex().values()) { out.images += v; out.imagesN++; } } catch (e) {} out.secure = dirBytes(path.join(BK_ROOT, 'secure')).b; BKSZ = out; BKSZ_AT = Date.now(); return out; }
+/* ══ 🔏 백업 봉인 시작 (bkimmut1 · 정범님 11/17 16:16 「이미 백업한 파일들을 절대 수정하지 못하도록」) — readnow-local.js·readnow-print.js 두 곳에 글자 하나 다르지 않은 같은 덩어리(시험 tBKSEAL1117이 같은지 봄)
+ *  · 모든 백업 쓰기는 bkWrite 하나로: backup\firestore\<칸>\<날짜>-<full|inc>.jsonl에 덧붙임. 그 이름이 봉인됐으면 -2, -3 … 봉인 안 된 첫 이름으로 씀(덮지 않음 · 지우지 않음 · 이름 바꾸지 않음)
+ *  · 봉인 = 날짜가 오늘(한국)보다 앞이고 2시간 넘게 그대로인 파일 → SHA-256·크기·줄 수를 backup\_seal\<칸>.jsonl에 덧붙임(덧붙이기만) → 읽기 전용 속성 → Windows면 icacls로 '모두: 지우기·쓰기 거부'(읽기·복사·열어 보기는 그대로)
+ *  · 봉인 판단은 셋 중 하나라도: 봉인 중 표시 · 장부(_seal)에 있음 · 읽기 전용 — 사람이 읽기 전용을 풀어도 장부에 있으면 코드는 쓰지 않음
+ *  · 하루 한 번 검증: 장부의 해시를 다시 셈 → 다르거나 없어지면 🚨 로그 · /bk-stat seal.verify.bad(웹앱 ⑪ 백업 줄) — 파일은 손대지 않음
+ *  · 디스크 여유: 5GB 아래면 알림만(지우지 않고 계속 씀) · 0.5GB 아래면 그 쓰기만 거절하고 알림(반쪽 줄이 생기지 않게)
+ *  · 봉인 풀기(사람 손 · 꼭 필요할 때만): icacls "D:\ReadNow\backup\firestore" /remove:d *S-1-1-0 /T 다음 attrib -R "D:\ReadNow\backup\firestore\*" /S — 장부는 그대로 둠(그래도 도우미는 그 파일에 쓰지 않음)
+ *  · icacls를 끄려면 backup\_seal\NO_ACL 빈 파일을 둠(읽기 전용·장부·검증은 그대로)
+ *  · (listfix1 함께) backup\listfix\<회차>\ 의 복구 파일도 같은 봉인(장부 _seal\listfix~<회차>.jsonl · 2시간 그대로면) — 단 그 회차의 SHA256.txt 는 listfix 가 이어 쓰므로 잠그지 않음(덧붙이기만 되게) */
+const SEAL_RE = /^(\d{4}-\d\d-\d\d)-(full|inc)(?:-(\d+))?\.jsonl$/;
+const SEAL = { idleMs: 2 * 3600e3, lowGB: 5, stopGB: 0.5, sealing: new Set(), led: new Map(), sealed: 0, sweptAt: null, verify: null, vday: null, low: null, refused: 0, alt: 0, altLast: null, relock: 0, acl: { ok: 0, fail: 0, last: null }, err: null, run: false, vrun: false, busy: () => false, now: () => Date.now(), win: process.platform === 'win32' };
+const sealDir = () => path.join(BK_DIR, '_seal');
+const SEAL_LF = 'listfix~'; /* 장부 이름 앞머리 — backup\listfix\<회차> */
+const sealPath = (col, name) => (col.startsWith(SEAL_LF) ? path.join(BK_DIR, 'listfix', col.slice(SEAL_LF.length), name) : path.join(BK_DIR, 'firestore', col, name));
+const sealName = (col, name) => (col.startsWith(SEAL_LF) ? (name !== 'SHA256.txt' && !name.startsWith('.') && !/\.tmp$/i.test(name) ? [name, null, null] : null) : name.match(SEAL_RE)); /* listfix: SHA256.txt(이어 쓰는 지문 목록)·숨김·임시 파일은 봉인하지 않음 */
+const sealAt = () => new Date(SEAL.now() + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
+const sealDay = () => sealAt().slice(0, 10);
+/* 장부 읽기 — 같은 파일 줄이 또 있어도 처음 줄(처음 봉인한 해시)이 기준 · {file, acl} 줄은 그 파일에 icacls를 걸었다는 표시 */
+function sealLed(col) { if (SEAL.led.has(col)) return SEAL.led.get(col); const M = new Map(); let t = ''; try { t = fs.readFileSync(path.join(sealDir(), col + '.jsonl'), 'utf8'); } catch (e) {}
+  for (const ln of t.split('\n')) { if (!ln) continue; let x; try { x = JSON.parse(ln); } catch (e) { continue; } if (!x || !x.file) continue; if (x.sha256 && !M.has(x.file)) M.set(x.file, x); else if (x.acl && M.has(x.file)) M.get(x.file).acl = x.acl; }
+  SEAL.led.set(col, M); return M; }
+function sealRo(fp) { try { return (fs.statSync(fp).mode & 0o200) === 0; } catch (e) { return false; } }
+function sealIs(col, name, fp) { return SEAL.sealing.has(col + '/' + name) || sealLed(col).has(name) || sealRo(fp); }
+/* 이미 있는 이름이면 새 이름(-2, -3 …) — 일지 보관함·보안 사본·거울 이력도 이걸로(덮지 않음) */
+function bkUniq(fp) { if (!fs.existsSync(fp)) return fp; const ext = path.extname(fp), base = fp.slice(0, fp.length - ext.length); for (let i = 2; i < 100000; i++) { const q = `${base}-${i}${ext}`; if (!fs.existsSync(q)) return q; } throw new Error('새 이름을 못 찾음: ' + fp); }
+function bkWrite(col, d, kind, lines) { col = bkName(col); kind = kind === 'full' ? 'full' : 'inc'; d = String(d || '');
+  if (!col || !/^\d{4}-\d\d-\d\d$/.test(d)) { const e = new Error('칸·날짜가 이상함'); e.http = 400; throw e; }
+  if (!lines || !lines.length) return { n: 0, file: null };
+  const fr = bkFree(); if (fr != null && fr < SEAL.lowGB) { if (!SEAL.low) log(`💾⚠ 백업 디스크 여유 ${fr}GB — ${SEAL.lowGB}GB 아래 · 아무것도 지우지 않고 계속 씀(디스크를 늘려 주세요)`); SEAL.low = { gb: fr, at: sealAt() }; } else if (fr != null) SEAL.low = null;
+  if (fr != null && fr < SEAL.stopGB) { SEAL.refused++; const e = new Error(`백업 디스크 여유 ${fr}GB — ${SEAL.stopGB}GB 아래라 이번 쓰기만 못 함(아무것도 지우지 않음 · 디스크를 늘리면 다음 백업이 이어 씀)`); e.http = 507; log('💾🚨 ' + e.message); throw e; }
+  const dir = path.join(BK_DIR, 'firestore', col); fs.mkdirSync(dir, { recursive: true }); const text = lines.map((x) => JSON.stringify(x)).join('\n') + '\n';
+  for (let i = 1; i < 100000; i++) { const name = i === 1 ? `${d}-${kind}.jsonl` : `${d}-${kind}-${i}.jsonl`; const fp = path.join(dir, name); if (sealIs(col, name, fp)) continue;
+    try { fs.appendFileSync(fp, text); } catch (e) { if (e.code === 'EPERM' || e.code === 'EACCES' || e.code === 'EBUSY') continue; throw e; }
+    if (i > 1) { SEAL.alt++; if (!SEAL.altLast || SEAL.altLast.file !== col + '/' + name) log(`🔏 ${col}/${d}-${kind}.jsonl 은 봉인됨 — 덮지 않고 새 이름 ${name}에 씀`); SEAL.altLast = { file: col + '/' + name, at: sealAt() }; }
+    return { n: lines.length, file: name }; }
+  throw new Error('쓸 이름을 못 찾음'); }
+function sealHash(fp) { return new Promise((ok, no) => { const h = require('crypto').createHash('sha256'); let bytes = 0, lines = 0; const s = fs.createReadStream(fp, { highWaterMark: 1 << 20 }); s.on('data', (b) => { h.update(b); bytes += b.length; for (let i = b.indexOf(10); i !== -1; i = b.indexOf(10, i + 1)) lines++; }); s.on('error', no); s.on('end', () => ok({ sha256: h.digest('hex'), bytes, lines })); }); }
+function sealIcacls(args) { return new Promise((ok) => { try { require('child_process').execFile('icacls', args, { windowsHide: true, timeout: 60e3 }, (e, so, se) => ok(e ? String(se || so || e.message).replace(/\s+/g, ' ').slice(0, 200) : null)); } catch (e) { ok(e.message); } }); }
+/* 잠그기 — 읽기 전용 속성(풀렸으면 다시) + Windows면 파일: 모두(S-1-1-0) 지우기·쓰기·덧붙이기·속성 바꾸기 거부 · 폴더: 안의 파일 지우기(DC) 거부 — 읽기 권한은 건드리지 않음 */
+async function sealLock(col, name, fp, rec) { if (!sealRo(fp)) { try { fs.chmodSync(fp, 0o444); if (rec && rec.at) { SEAL.relock++; log(`🔏 ${col}/${name} 읽기 전용이 풀려 있어 다시 걺(내용은 손대지 않음)`); } } catch (e) { SEAL.err = name + ' 읽기 전용: ' + e.message; } }
+  if (!SEAL.win || (rec && rec.acl) || fs.existsSync(path.join(sealDir(), 'NO_ACL'))) return; const led = sealLed(col);
+  if (!led.has('<dir>')) { const er = await sealIcacls([path.dirname(fp), '/deny', '*S-1-1-0:(DC)']); if (!er) { led.set('<dir>', { file: '<dir>', sha256: '-', acl: 1 }); fs.appendFileSync(path.join(sealDir(), col + '.jsonl'), JSON.stringify({ file: '<dir>', sha256: '-', acl: 1, at: sealAt() }) + '\n'); } }
+  const er = await sealIcacls([fp, '/deny', '*S-1-1-0:(DE,WD,AD,WA,WEA)']); if (er) { SEAL.acl.fail++; SEAL.acl.last = name + ': ' + er; return; }
+  SEAL.acl.ok++; { const r0 = rec || led.get(name); if (r0) r0.acl = 1; } fs.appendFileSync(path.join(sealDir(), col + '.jsonl'), JSON.stringify({ file: name, acl: 1, at: sealAt() }) + '\n'); }
+function sealCols() { const rd = (p) => { try { return fs.readdirSync(p, { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => x.name).sort(); } catch (e) { return []; } }; return [...rd(path.join(BK_DIR, 'firestore')), ...rd(path.join(BK_DIR, 'listfix')).map((r) => SEAL_LF + r)]; }
+async function sealSweep() { if (SEAL.run || SEAL.busy()) return { skip: true }; SEAL.run = true; let n = 0; const today = sealDay();
+  try { for (const col of sealCols()) { const dir = path.dirname(sealPath(col, 'x')); const lf = col.startsWith(SEAL_LF); let L = []; try { L = fs.readdirSync(dir).sort(); } catch (e) { continue; } const led = sealLed(col);
+      for (const name of L) { const m = sealName(col, name); if (!m) continue; const fp = path.join(dir, name); const key = col + '/' + name;
+        if (led.has(name)) { await sealLock(col, name, fp, led.get(name)); continue; }
+        if (!lf && m[1] >= today) continue; let st; try { st = fs.statSync(fp); } catch (e) { continue; } if (!st.isFile() || SEAL.now() - st.mtimeMs < SEAL.idleMs) continue;
+        SEAL.sealing.add(key); /* 이 순간부터 쓰기는 -2 … 로 감 — 해시를 세는 사이에 바뀌는 일이 없게 */
+        try { const h = await sealHash(fp); const st2 = fs.statSync(fp); if (st2.size !== st.size || st2.mtimeMs !== st.mtimeMs || h.bytes !== st.size) { SEAL.sealing.delete(key); continue; }
+          const rec = { file: name, col, day: m[1], kind: m[2], sha256: h.sha256, bytes: h.bytes, lines: h.lines, mtime: new Date(st.mtimeMs).toISOString(), at: sealAt() };
+          fs.mkdirSync(sealDir(), { recursive: true }); fs.appendFileSync(path.join(sealDir(), col + '.jsonl'), JSON.stringify(rec) + '\n'); led.set(name, rec); SEAL.sealing.delete(key); n++; SEAL.sealed++;
+          await sealLock(col, name, fp, null); } catch (e) { SEAL.sealing.delete(key); SEAL.err = key + ': ' + e.message; } } }
+    SEAL.sweptAt = sealAt(); if (n) log(`🔏 백업 봉인 ${n}개(읽기 전용·해시 장부 backup\\_seal)`); return { n }; } finally { SEAL.run = false; } }
+/* 하루 한 번 검증 — 장부에 적은 SHA-256·크기와 지금 파일을 맞춰 봄 · 어긋나면 크게 알림(파일은 고치지도 지우지도 않음) */
+async function sealVerify() { if (SEAL.vrun) return SEAL.verify; SEAL.vrun = true; const t0 = SEAL.now(); const bad = []; let n = 0, okN = 0, bytes = 0;
+  try { let cols = []; try { cols = fs.readdirSync(sealDir()).filter((x) => /\.jsonl$/.test(x) && x !== 'verify.jsonl').map((x) => x.slice(0, -6)).sort(); } catch (e) {}
+    for (const col of cols) { SEAL.led.delete(col); const led = sealLed(col); for (const [name, rec] of led) { if (name === '<dir>') continue; n++; const fp = sealPath(col, name); let st = null; try { st = fs.statSync(fp); } catch (e) {}
+        if (!st) { bad.push({ col, file: name, why: '파일이 없어짐', want: rec.sha256.slice(0, 12) }); continue; }
+        if (st.size !== rec.bytes) { bad.push({ col, file: name, why: `크기가 다름(${rec.bytes} → ${st.size})`, want: rec.sha256.slice(0, 12) }); continue; }
+        let h; try { h = await sealHash(fp); } catch (e) { bad.push({ col, file: name, why: '읽지 못함: ' + e.message }); continue; }
+        if (h.sha256 !== rec.sha256) { bad.push({ col, file: name, why: '내용(SHA-256)이 다름', want: rec.sha256.slice(0, 12), got: h.sha256.slice(0, 12) }); continue; }
+        okN++; bytes += h.bytes; if (!sealRo(fp)) await sealLock(col, name, fp, rec); } }
+    const v = { at: sealAt(), day: sealDay(), n, ok: okN, badN: bad.length, bad: bad.slice(0, 50), bytes, ms: SEAL.now() - t0 }; SEAL.verify = v; SEAL.vday = v.day;
+    try { fs.mkdirSync(sealDir(), { recursive: true }); fs.appendFileSync(path.join(sealDir(), 'verify.jsonl'), JSON.stringify(v) + '\n'); } catch (e) {}
+    if (bad.length) log(`🚨🚨 백업 봉인 검증: ${bad.length}개 파일이 봉인 때와 다름 — 파일은 손대지 않음 · 정범님 확인 필요 · ${bad.slice(0, 5).map((x) => x.col + '/' + x.file + ' ' + x.why).join(' | ')}`); else if (n) log(`🔏 백업 봉인 검증: ${n}개 모두 같음`);
+    return v; } finally { SEAL.vrun = false; } }
+function sealStat() { let n = 0; for (const M of SEAL.led.values()) for (const k of M.keys()) if (k !== '<dir>') n++; const v = SEAL.verify;
+  return { n, sealing: SEAL.sealing.size, sweptAt: SEAL.sweptAt, verify: v ? { at: v.at, n: v.n, ok: v.ok, badN: v.badN, bad: v.bad.slice(0, 20) } : null, low: SEAL.low, refused: SEAL.refused, alt: SEAL.alt, altLast: SEAL.altLast, relock: SEAL.relock, acl: SEAL.win ? SEAL.acl : 'Windows 아님', err: SEAL.err }; }
+function sealStart() { const tick = () => { sealSweep().then(() => { if (SEAL.vday === sealDay() || +sealAt().slice(11, 13) < 4 || SEAL.busy()) return; return sealVerify(); }).catch((e) => { SEAL.err = e.message; }); };
+  try { const L = fs.readFileSync(path.join(sealDir(), 'verify.jsonl'), 'utf8').trim().split('\n'); const v = JSON.parse(L[L.length - 1]); SEAL.verify = v; SEAL.vday = v.day; } catch (e) {}
+  const a = setTimeout(tick, 3 * 60e3), b = setInterval(tick, 30 * 60e3); try { a.unref(); b.unref(); } catch (e) {} }
+/* ══ 🔏 백업 봉인 끝 */
 function imgApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
   if (u.pathname === '/img-stat') { const M = imgIndex(); let b = 0; for (const v of M.values()) b += v; return J(200, { ok: true, dir: IMG_DIR, count: M.size, bytes: b, run: IMGST, freeGB: bkFree(), ...bkWhere() }); }
   if (req.method === 'OPTIONS' || req.headers['x-rn-img'] !== '1' || req.method !== 'POST') return J(403, { ok: false, err: '수집기만 쓸 수 있음' });
@@ -229,11 +304,11 @@ function imgApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'C
       const M = imgIndex(); M.set(k, b.length); IMGST.put++; IMGST.bytes += b.length; IMGST.last = { name: k, at: bkKst() }; J(200, { ok: true, size: b.length }); }); }
   return J(404, { ok: false }); }
 function bkApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
-  if (u.pathname === '/bk-stat') { let st = null; try { st = JSON.parse(fs.readFileSync(path.join(BK_DIR, 'state-' + bkName(u.searchParams.get('pc') || 'PC') + '.json'), 'utf8')); } catch (e) {} return J(200, { ok: true, dir: BK_DIR, freeGB: bkFree(), state: st, gh: null, helper: 'print ' + VERSION, ...bkWhere(), ...(u.searchParams.get('sizes') === '1' ? { sizes: bkSizes() } : {}) }); } /* gh: GitHub 거울은 로거 도우미만 함(여기선 없음) */
+  if (u.pathname === '/bk-stat') { let st = null; try { st = JSON.parse(fs.readFileSync(path.join(BK_DIR, 'state-' + bkName(u.searchParams.get('pc') || 'PC') + '.json'), 'utf8')); } catch (e) {} return J(200, { ok: true, dir: BK_DIR, freeGB: bkFree(), seal: sealStat(), state: st, gh: null, helper: 'print ' + VERSION, ...bkWhere(), ...(u.searchParams.get('sizes') === '1' ? { sizes: bkSizes() } : {}) }); } /* gh: GitHub 거울은 로거 도우미만 함(여기선 없음) */
   if (req.method === 'OPTIONS' || req.headers['x-rn-bk'] !== '1' || req.method !== 'POST') return J(403, { ok: false, err: '수집기만 쓸 수 있음' });
   if (u.pathname === '/bk-put') { const col = bkName(u.searchParams.get('col')); const kind = u.searchParams.get('kind') === 'full' ? 'full' : 'inc'; const d = String(u.searchParams.get('day') || ''); if (!col || !/^\d{4}-\d\d-\d\d$/.test(d)) return J(400, { ok: false, err: '칸·날짜가 이상함' });
     return readBody(req, 60 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let L = []; try { L = JSON.parse(b.toString('utf8')).lines || []; } catch (x) { return J(400, { ok: false, err: 'bad json' }); }
-      try { const dir = path.join(BK_DIR, 'firestore', col); fs.mkdirSync(dir, { recursive: true }); if (L.length) fs.appendFileSync(path.join(dir, `${d}-${kind}.jsonl`), L.map((x) => JSON.stringify(x)).join('\n') + '\n'); return J(200, { ok: true, n: L.length }); } catch (er) { return J(500, { ok: false, err: er.message }); } }); }
+      try { const w = bkWrite(col, d, kind, L); return J(200, { ok: true, n: w.n, file: w.file }); } catch (er) { return J(er.http || 500, { ok: false, err: er.message, low: SEAL.low }); } /* (bkimmut1) 🔏 쓰기는 bkWrite 하나로 — 봉인된 파일이면 -2 … 새 이름(덮지 않음) */ }); }
   if (u.pathname === '/bk-state') return readBody(req, 4 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); try { fs.mkdirSync(BK_DIR, { recursive: true }); const f = path.join(BK_DIR, 'state-' + bkName(u.searchParams.get('pc') || 'PC') + '.json'); fs.writeFileSync(f + '.tmp', b); fs.renameSync(f + '.tmp', f); return J(200, { ok: true }); } catch (er) { return J(500, { ok: false, err: er.message }); } });
   return J(404, { ok: false }); }
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); req.on('error', cb); }
@@ -421,4 +496,5 @@ function blkUpdate() { bestGet(RAW_BLK, /const BLK_VER = '([\d.]+)'/, (b) => { c
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(blkUpdate, BLK ? 150e3 : 10e3); setInterval(blkUpdate, 6 * 3600e3); }
 setTimeout(() => blkAuto('도우미 시작'), +process.env.RN_BLK_AUTO_MS || 180e3); setInterval(() => blkAuto('6시간마다'), 6 * 3600e3);
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(workUpdate, WORK ? 120e3 : 8e3); setInterval(workUpdate, 6 * 3600e3); }
+if (!process.env.RN_SEAL_OFF) { SEAL.busy = () => { try { return alpsBusy() || shipHold(); } catch (e) { return false; } }; sealStart(); } /* (1.2.6 bkimmut1) 🔏 로거 대신 보관한 백업도 같은 봉인 · 출고·ALPS 처리 중엔 쉼 */
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3); setTimeout(alpsUpdate, ALPS ? 90e3 : 5e3); setInterval(alpsUpdate, 6 * 3600e3); }
