@@ -6,7 +6,7 @@
  *  웹앱: window.ReadnowCutout · 클라우드(노드): module.exports — 화면·Firestore·저장소를 모름(순수 셈 · 시험 tCUT1114) */
 (function (root, factory) { const m = factory(); if (typeof module === 'object' && module.exports) module.exports = m; else root.ReadnowCutout = m; })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.1.1';
+  const VERSION = '0.1.2';
   /* 설정 기본값 — 근거: 시험 그림(tCUT1114)과 휴대폰 사진 크기에서 정한 첫 값 · 근거 없는 값은 '첫 값'이라 적고 웹앱 설정·배우기로 바꿈 */
   const DEF = {
     side: 640,          // 가르기는 긴 변 640화소로 줄여서(휴대폰 4000화소 그대로 셈하면 느림 · 자르기는 원본에서)
@@ -22,6 +22,10 @@
     junk: 0,            // 네모 채움이 이보다 낮은 덩어리는 물건 아님(0 = 끔 · 켜도 잰 값 같음)
     merge: false,       // 기대 수보다 많으면 이웃 조각 합침(켜면 앞면 권수 앎 74%→66%)
     lineT: 0,           // 곧은 경계로 나누는 문턱(권수 모를 때만 · 0 = 끔 · 0.65로 켜면 앞면 개발 권수 모름 28%→25%)
+    /* (0.1.2 · 일꾼 spine3 11/17 잰 값 — research/ENGINES/CUTOUT_LOG.md 11/17 spine3) 앞면이 나쁜 까닭은 지나친 쪼갬이 아니라 덜 쪼갬: 빛 번짐·그림자로 책 사이 바탕이 가장자리 바탕 색과 달라져 그림 전체가 한 덩어리
+     *  → 바코드 자리(seeds)가 없을 때(앞면)만 front를, 거기에 권수도 모를 때만 unk를 얹음 · 뒷면(바코드 자리 있음)은 0.1.1 그대로 */
+    front: { flood: 16, floodA: 0.1, close: 0 },  // flood = 바탕 번져 찾기 문턱(따라온 길의 바탕 색과 RGB 거리) · floodA = 길 바탕 색을 따라가는 빠르기 · close 0 = 책 사이 좁은 틈을 메우지 않음
+    unk: { lineT: 0.8 },                           // 권수 모를 때 곧은 경계로 나눔
     maxTilt: 0.12,      // 섞인 덩어리의 기울기가 이보다 크면 바로 세워 나눔(라디안 ≈ 7°) — 바코드 자리(seeds)가 있을 때(뒷면)만 · 앞면은 예전 그대로(켜면 앞면 검증 권수 앎 54%→48%)
     edgeT: 16,          // 경계(세로·가로 줄)를 셀 때 밝기 차 문턱
     splitWin: 0.35,     // 나눌 자리를 같은 몫 자리에서 ±35% 안에서 찾음
@@ -64,7 +68,17 @@
     const t = Math.max(C.minDist, bg.s * C.spreadK); const m = new Uint8Array(im.w * im.h); const CL = C.bgK > 1 && bg.cl && bg.cl.length > 1 ? bg.cl.map((c) => ({ ...c, t: Math.max(C.minDist * 0.8, c.s * C.spreadK) })) : null;
     if (CL) { for (let j = 0, i = 0; j < m.length; j++, i += 4) { let fg = 1; for (const c of CL) if (Math.hypot(im.d[i] - c.r, im.d[i + 1] - c.g, im.d[i + 2] - c.b) <= c.t) { fg = 0; break; } m[j] = fg; } return { m, t: Math.round(Math.max(...CL.map((c) => c.t))) }; }
     for (let j = 0, i = 0; j < m.length; j++, i += 4) if (Math.hypot(im.d[i] - bg.r, im.d[i + 1] - bg.g, im.d[i + 2] - bg.b) > t) m[j] = 1;
+    if (C.flood) floodBg(im, m, C);
     return { m, t };
+  }
+  /* (0.1.2) 바탕 번져 찾기 — 가장자리의 바탕 화소에서 이웃(상하좌우)으로 번지며, 따라온 길의 바탕 색(천천히 바뀌는 평균 · floodA)과 C.flood 안이면 바탕으로 고침
+   *  빛 번짐·그림자처럼 바탕 밝기가 천천히 바뀌어도 따라가고 · 물건 가장자리는 색이 뚝 바뀌어 멈춤 · 화소 배열은 그대로 읽음(흐리기 없음 — 잰 값이 같고 메모리 덜 씀) */
+  function floodBg(im, m, C) {
+    const w = im.w, h = im.h, N = w * h, d = im.d, al = C.floodA == null ? 0.1 : C.floodA, T2 = C.flood * C.flood; const e = new Float32Array(N * 3), seen = new Uint8Array(N), q = new Int32Array(N); let qh = 0, qt = 0;
+    const start = (j) => { if (seen[j] || m[j]) return; seen[j] = 1; e[j * 3] = d[j * 4]; e[j * 3 + 1] = d[j * 4 + 1]; e[j * 3 + 2] = d[j * 4 + 2]; q[qt++] = j; };
+    for (let x = 0; x < w; x++) { start(x); start((h - 1) * w + x); } for (let y = 0; y < h; y++) { start(y * w); start(y * w + w - 1); }
+    const go = (p, j) => { if (seen[j]) return; const r = d[j * 4], g = d[j * 4 + 1], b = d[j * 4 + 2], er = e[p * 3], eg = e[p * 3 + 1], eb = e[p * 3 + 2]; const dr = r - er, dg = g - eg, db = b - eb; if (dr * dr + dg * dg + db * db > T2) return; seen[j] = 1; m[j] = 0; e[j * 3] = er + dr * al; e[j * 3 + 1] = eg + dg * al; e[j * 3 + 2] = eb + db * al; q[qt++] = j; };
+    while (qh < qt) { const p = q[qh++]; const x = p % w; if (x > 0) go(p, p - 1); if (x < w - 1) go(p, p + 1); if (p >= w) go(p, p - w); if (p < N - w) go(p, p + w); }
   }
   /* 늘리기(dil=1)·줄이기(dil=0) — 네모 반지름 r · 가로 세로 두 번 */
   function morph(m, w, h, r, dil) {
@@ -168,7 +182,8 @@
    *  opt.seeds = [{x, y}] 바코드 가운데(받은 그림 화소) · opt.expect = 기대 물건 수(사람이 적으면) · opt.grid = {r, c}
    *  결과 { items:[{cx,cy,w,h,a, conf, why[]}], bg, note } — 좌표는 받은 그림 화소 */
   function segment(img, opt) {
-    const C = cfgOf(opt && opt.cfg); const D = down(img, C.side); const k = D.k; const g = grayOf(D); const bg = bgOf(D, C.band);
+    const sd = !!(opt && opt.seeds && opt.seeds.length), ex = !!(opt && (opt.expect || opt.grid)); /* (0.1.2) 앞면(바코드 자리 없음)만 front · 거기에 권수 모름이면 unk */
+    const C = cfgOf({ ...(sd ? {} : DEF.front), ...(sd || ex ? {} : DEF.unk), ...((opt && opt.cfg) || {}) }); const D = down(img, C.side); const k = D.k; const g = grayOf(D); const bg = bgOf(D, C.band);
     let { m, t } = maskOf(D, bg, C); m = morph(morph(m, D.w, D.h, C.open, 0), D.w, D.h, C.open, 1); m = morph(morph(m, D.w, D.h, C.close, 1), D.w, D.h, C.close, 0); m = fillHoles(m, D.w, D.h);
     const minA = C.minArea * D.w * D.h; let B = comps(m, D.w, D.h, minA); const why0 = []; if (C.valley) B = B.flatMap((b) => splitValley(b, D.w, D.h, minA, 0));
     if (C.junk) { const nB = B.length; const keepSeed = (b) => ((opt && opt.seeds) || []).some((p) => inBox(b, p.x * k, p.y * k, 0.02)); const big = med(B.map((b) => b.w * b.h)); B = B.filter((b) => b.fill >= C.junk || keepSeed(b) || (b.w * b.h > big * 0.5 && b.fill >= C.junk * 0.8)); if (B.length < nB) why0.push(`물건 아닌 얼룩 ${nB - B.length}개 뺌`); }
