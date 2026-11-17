@@ -4,3 +4,11 @@
 
 /* 도구 줄이 작은 화면에서 늘어나도 작업 영역은 남은 높이를 사용한다. */
 body{height:100dvh;display:flex;flex-direction:column}.mast,#quick{flex:none}.layout{flex:1;min-height:0;height:auto}#quick{max-height:28dvh;overflow:auto}#quick button{white-space:nowrap}
+@media(max-width:760px){
+  #quick,.pane-tools{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;max-height:none}
+  #quick>*,.pane-tools>*{flex:none;white-space:nowrap}
+  .pane-tools strong,.pane-heading strong{width:auto}
+  .pane-size{flex-wrap:nowrap}
+  .pane-heading strong{margin-right:auto}
+  .pane-heading select{width:auto;max-width:45%}
+}
