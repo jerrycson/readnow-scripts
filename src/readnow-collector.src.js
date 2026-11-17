@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.351
+// @version      1.89.352
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -21,11 +21,11 @@
 // @downloadURL  https://readnow.kr/readnow-collector.user.js
 // @require      https://readnow.kr/readnow-orders-core.js?v=0.3.0
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
-// @require      https://readnow.kr/readnow-products-core.js?v=0.19.9
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.10
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.16
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.18
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.198
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.199
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.24
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.12
@@ -8180,6 +8180,21 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    * 저장: prd_market_nobook/{상품} — src 'usedSearch' · rows(상품마다 번호·이름·일치·우리 여부·판매자/알라딘/매장 최저가·개수) · 시세(marketNoBook) · 후보가 바뀔 때만 판(v)을 통째로 보관 · 시세가 바뀔 때만 history
    *       기본 7일에 한 번 다시 봄 (설정 nbDays) — 웹앱 시장 블록·관찰 도구·수동 일괄 처리가 이 rows로 '첫 페이지' 대신 비교 */
   async function nbMarketJob() {
+    /* (edkw1 · 정범님 11/17 14:00 I-1117-1400-12) 🔖 판본 검색 대조 — 판본 의심 상품은 검색 후보 가운데 판본 낱말(리커버·한정 …)이 같은 상품만 같은 상품(match) · 어느 시장을 쓸지(ed.use)와 두 시장 최저가를 함께 남김
+     *  판단은 공용 상품 파일 edDecide 한 곳(웹앱·클라우드 진단과 같은 셈) · 스위치 app_settings/main.edSearch(기본 켬 · 끄면 예전과 같음) */
+    const NBED = { at: 0, on: true }; /* 함수 안에 둠 — 번외 수집기가 이 함수를 글자 그대로 떼어 쓸 때도 그대로 돎 */
+    async function nbEdOn() { if (Date.now() - NBED.at > 10 * 60e3) { try { const d = (await C('app_settings').doc('main').get()).data() || {}; NBED.on = d.edSearch !== false; } catch (e) {} NBED.at = Date.now(); } return NBED.on; }
+    const edKwN = (l) => { try { return P.edKwOf ? P.edKwOf(l.title).length : 0; } catch (e) { return 0; } };
+    const nbLowOf = (c) => { const ch = (c && c.channels) || {}; const v = [ch.seller && ch.seller.min, ch.aladin && ch.aladin.min, ch.store && ch.store.min].filter((x) => +x > 0); return v.length ? Math.min(...v) : null; };
+    async function nbEdJudge(l, cands, th) {
+      let bt = null, autoLow = null; if (l.bookId) { try { bt = ((await C('prd_books').doc(String(l.bookId)).get()).data() || {}).title || null; } catch (e) {} try { const r = (((await C('prd_book_metrics').doc(String(l.bookId)).get()).data() || {}).usedFirstPage || []).filter((x) => x && +x.price > 0 && !x.soldOut && String(x.usedCode || '') !== String(l.usedCode)); if (r.length) autoLow = Math.min(...r.map((x) => +x.price)); } catch (e) {} }
+      const d = P.edDecide({ title: l.title, bookId: l.bookId || null, bookTitle: bt, unreg: P.isUnregistered(l), set: !!P.setInfo(l.title).set }, { src: 'usedSearch', cands, at: nowIso() }, { th });
+      const ids = new Set(d.ids || []); const E = new Map((d.cands || []).map((e) => [e.itemId, e]));
+      const multi = !!d.multi; for (const c of cands) { const e = E.get(String(c.itemId)); c.match = multi || d.use === 'srch' ? ids.has(String(c.itemId)) : !!(c.match && (!e || e.ok)); /* 미등록·세트·srch = 판단이 고른 것만 · 그 밖(자동 지표 그대로·사람 확인) = 예전 같은 상품 가운데 판본 낱말이 같은 것만(참고 시세) */ if (e) { c.edOk = e.ok; c.edSim = e.sim; if (e.miss.length) c.edMiss = e.miss; if (e.extra.length) c.edExtra = e.extra; if (e.self) c.self = true; } }
+      const lows = cands.filter((c) => c.match && !c.ours && !c.self).map(nbLowOf).filter((x) => x != null); const srchLow = lows.length ? Math.min(...lows) : null;
+      return { use: d.use, hold: !!d.hold, why: d.why || null, kw: d.kw, br: d.br, book: d.book, multi: d.multi, good: d.good ?? 0, cut: d.cut ?? 0, pick: d.pick, alt: d.alt, n: ids.size, autoLow, srchLow, diff: autoLow != null && srchLow != null ? srchLow - autoLow : null, our: l.price ?? null, at: nowIso() }; }
+    const nbAU = (x) => (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue ? firebase.firestore.FieldValue.arrayUnion(x) : [x]);
+    const nbEdTally = (t, ed) => { const o = { ...(t || { n: 0 }) }; o.n++; o[ed.use] = (o[ed.use] || 0) + 1; if (ed.hold) o.hold = (o.hold || 0) + 1; if (ed.use === 'srch' && ed.diff != null) { o.dN = (o.dN || 0) + 1; o.dSum = (o.dSum || 0) + ed.diff; } return o; };
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
       await loadListings();
@@ -8187,9 +8202,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (!prog || !prog.list) {
         const have = new Map(); (await C('prd_market_nobook').get()).forEach((d) => have.set(d.id, d.data().at || ''));
         const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.nbDays || 7) * 864e5).toISOString();
-        const want = (l) => l.usedCode && l.title && !['video', 'music'].includes(l.mediaType) && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set); /* 영상·음반은 빼고 (1.38.0) */ const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
+        const edOn = await nbEdOn(); const edS = (l) => !!(edOn && P.edSuspect && P.edSuspect(l.title).on); /* (edkw1 · 정범님 11/17 14:00) 🔖 판본 의심(리커버·한정판 등 낱말 16개 · 괄호) 상품도 자동 시장 지표와 함께 검색 대조 — ⚙ 판본 검색 대조(app_settings/main.edSearch · 기본 켬) */
+        const want = (l) => l.usedCode && l.title && !['video', 'music'].includes(l.mediaType) && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set || edS(l)); /* 영상·음반은 빼고 (1.38.0) */ const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
         const hoNb = typeof c2HoLive === 'function' ? await c2HoLive('nbMarket', 48) : null; /* 번외가 이 함수를 글자 그대로 떼어 쓸 때(c2HoLive 없음)도 그대로 돎 */ if (hoNb) log(`검색 시세: 이미 본 상품 다시 보기는 번외 수집기(${hoNb})로 넘김 — 운영은 처음 보는 상품만 · 되돌리기는 ⚙ › 🔀 번외로 넘기기`); /* (11/11 col2rep3 · 약속 38·48) */
-        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (hoNb ? !have.get(k) : (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch'))).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시
+        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (hoNb ? !have.get(k) : (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch'))).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0) || (edKwN(b[1]) - edKwN(a[1]))).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시 · (edkw1) 같은 판매 중이면 판본 낱말 있는 상품 먼저
         prog = { list, i: 0, ok: 0, none: 0, startedAt: nowIso() }; await saveProgress('nbMarket', prog);
         log(`검색 시세(미등록·세트·새상품 없음): ${list.length.toLocaleString()}개 (판매 중 먼저, ${SET.nbDays || 7}일 안에 본 것은 건너뜀)`);
       }
@@ -8202,17 +8218,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);
           const th = SET.photoMatch ?? 0.9; const all = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(qy, r.title) }));
           const cands = all.filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ ...r, match: r.cov >= th && r.vol && !(l.bookId && String(r.itemId) === String(l.bookId)) })); // 같은 상품 = 이름 일치 + 권 번호 같음 (세트의 새책 상세 = 첫 페이지에 이미 있으니 뺌)
-          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price });
-          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const sig = `${M.median}|${M.low}|${M.n}`;
+          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const ed = edOn && P.edDecide && P.edSuspect(l.title).on ? await nbEdJudge(l, cands, th) : null; if (ed) prog.ed = nbEdTally(prog.ed, ed);
+          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price }); const sig = `${M.median}|${M.low}|${M.n}`;
+          const edHist = ed && (!old || !old.ed || old.ed.use !== ed.use || ((old.ed.pick || {}).itemId || null) !== ((ed.pick || {}).itemId || null)) ? { edHist: nbAU({ at: nowIso(), use: ed.use, pick: (ed.pick || {}).itemId || null, autoLow: ed.autoLow, srchLow: ed.srchLow, our: l.price ?? null }) } : {}; /* 어느 시장을 쓸지가 바뀐 때만 기록 */
           const cSig = JSON.stringify(cands.map((x) => [x.itemId, x.price, x.title])); if (!old || old.candSig !== cSig) await ref.collection('v').doc(nowIso().replace(/[:.]/g, '-')).set({ at: nowIso(), query: qy, cands, market: { median: M.median, low: M.low, n: M.n }, ...W() }); // 후보 목록이 바뀌면 그 판을 통째로 보관
-          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
+          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, ed: ed || null, ...edHist, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
             ...(old && old.sig === sig ? {} : { sig, history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), median: M.median, low: M.low, n: M.n, our: l.price ?? null }) }), ...W() }, { merge: true });
           M.n ? prog.ok++ : prog.none++;
           ui('검색 시세 (미등록·세트)', prog.i + 1, prog.list.length, `${l.title} · ${M.n ? `시세 ${M.median.toLocaleString()}원 (${M.n}개, 신뢰도 ${M.conf})` : '비교할 상품 없음'}`);
         } catch (e) { prog.none++; if (prog.none < 20) log(`시세 ${l.title}: ${e.message}`, 1); }
         if (prog.i % 5 === 0) await saveProgress('nbMarket', prog);
       }
-      await finishJob('nbMarket', { ok: prog.ok, none: prog.none }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}`);
+      await finishJob('nbMarket', { ok: prog.ok, none: prog.none, ...(prog.ed ? { ed: prog.ed } : {}) }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}${prog.ed ? ` · 🔖 판본 대조 ${prog.ed.n}개(검색 우선 ${prog.ed.srch || 0} · 사람 확인 ${prog.ed.check || 0} · 자동 지표 그대로 ${prog.ed.auto || 0})` : ''}`);
     } finally { await releaseLane('aladin'); }
   }
 
