@@ -7,6 +7,7 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
+ tool('acceptance','general','기본형 완성 기준과 결함','49차와 원본에서 확인한 결함, 14개 기본형과 체형 변형의 검토 순서·승인 조건을 봅니다.','../research/modeling-methods/acceptance.html',['기본형','완성','부족','결함','승인','계획','검수']),
  tool('all-around','sculpt','전방위 동시 교정','40차와 49차 연구형을 한 메시마다 10·26방향에서 동시에 비교하고 부위별로 교정합니다.','../research/modeling-methods/compare.html',['전방위','정면','양사선','교정','조작기','동시','49']),
  tool('learning','general','실험실 학습 기록','실험에 쓴 자료와 결과, 채택 또는 보류한 근거를 확인합니다.','../research/studio-engine/index.html',['학습','검증','일지','자기학습']),
  tool('photo-research','photo','내 참고그림 연구','사진 입력부터 윤곽 복원·학습까지 연구 내용과 적용 범위를 봅니다.','../research/photo-model/index.html',['사진','참고그림','원문','엔진']),

@@ -1,0 +1,1720 @@
+{
+  "basis": "49차 중립",
+  "interpretation": "기록된 차이의 부호. 판독 불확실성과 인간 선호는 별도로 확인한다. 자동 기본형 채택 없음.",
+  "analysis": {
+    "F02": [
+      {
+        "name": "눈만",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 1.778,
+            "candidate": 1.778,
+            "delta": 0,
+            "view": "설정4",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.543,
+            "candidate": 0.859,
+            "delta": 0.316,
+            "view": "19화_01_04-2",
+            "independent": true,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 10.049,
+            "candidate": 10.049,
+            "delta": 0,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 5.795,
+            "candidate": 5.795,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 2,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.698,
+              "candidate": 0.671,
+              "delta": -0.027,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.527,
+              "candidate": 0.032,
+              "delta": -0.495,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 10.049,
+              "candidate": 10.049,
+              "delta": 0,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.314,
+              "candidate": 1.237,
+              "delta": -0.077,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.594,
+              "candidate": 0.636,
+              "delta": 0.042,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.778,
+              "candidate": 1.778,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.449,
+              "candidate": 1.449,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.604,
+              "candidate": 0.604,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.347,
+              "candidate": 0.347,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.694,
+              "candidate": 0.694,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.899,
+              "candidate": 0.899,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.616,
+              "candidate": 0.593,
+              "delta": -0.023,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.543,
+              "candidate": 0.859,
+              "delta": 0.316,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 32.479,
+              "candidate": 32.479,
+              "delta": 0,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.795,
+              "candidate": 5.795,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 15.858,
+              "candidate": 15.858,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.808,
+              "candidate": 4.808,
+              "delta": 0,
+              "view": "9-10",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.012,
+              "candidate": 4.012,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": true,
+          "comparisonViews": 11
+        }
+      },
+      {
+        "name": "턱만",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 0.698,
+            "candidate": 0.698,
+            "delta": 0,
+            "view": "설정1",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.527,
+            "candidate": 0.527,
+            "delta": 0,
+            "view": "설정1",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 10.049,
+            "candidate": 8.783,
+            "delta": -1.266,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 5.795,
+            "candidate": 5.795,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 0,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.698,
+              "candidate": 0.698,
+              "delta": 0,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.527,
+              "candidate": 0.527,
+              "delta": 0,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 10.049,
+              "candidate": 8.783,
+              "delta": -1.266,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.314,
+              "candidate": 1.314,
+              "delta": 0,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.594,
+              "candidate": 0.594,
+              "delta": 0,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.778,
+              "candidate": 1.778,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.449,
+              "candidate": 1.449,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.604,
+              "candidate": 0.604,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.347,
+              "candidate": 0.347,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.694,
+              "candidate": 0.694,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.899,
+              "candidate": 0.899,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.616,
+              "candidate": 0.616,
+              "delta": 0,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.543,
+              "candidate": 0.543,
+              "delta": 0,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 32.479,
+              "candidate": 29.917,
+              "delta": -2.562,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.795,
+              "candidate": 5.795,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 15.858,
+              "candidate": 15.858,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.808,
+              "candidate": 4.788,
+              "delta": -0.02,
+              "view": "9-10",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.012,
+              "candidate": 3.725,
+              "delta": -0.287,
+              "view": "2-2",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": true,
+          "comparisonViews": 11
+        }
+      },
+      {
+        "name": "반강도",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 0.604,
+            "candidate": 0.604,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.543,
+            "candidate": 0.807,
+            "delta": 0.264,
+            "view": "19화_01_04-2",
+            "independent": true,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 10.049,
+            "candidate": 9.3,
+            "delta": -0.749,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 4.808,
+            "candidate": 4.871,
+            "delta": 0.063,
+            "view": "9-10",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 3,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.698,
+              "candidate": 0.589,
+              "delta": -0.109,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.527,
+              "candidate": 0.036,
+              "delta": -0.491,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 10.049,
+              "candidate": 9.3,
+              "delta": -0.749,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.314,
+              "candidate": 1.157,
+              "delta": -0.157,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.594,
+              "candidate": 0.636,
+              "delta": 0.042,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.778,
+              "candidate": 1.677,
+              "delta": -0.101,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.449,
+              "candidate": 0.951,
+              "delta": -0.498,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.604,
+              "candidate": 0.604,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.347,
+              "candidate": 0.347,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.694,
+              "candidate": 0.694,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.899,
+              "candidate": 0.899,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.616,
+              "candidate": 0.545,
+              "delta": -0.071,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.543,
+              "candidate": 0.807,
+              "delta": 0.264,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 32.479,
+              "candidate": 31.223,
+              "delta": -1.256,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.795,
+              "candidate": 5.795,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 15.858,
+              "candidate": 15.858,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.808,
+              "candidate": 4.871,
+              "delta": 0.063,
+              "view": "9-10",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.012,
+              "candidate": 3.881,
+              "delta": -0.131,
+              "view": "2-2",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": true,
+          "comparisonViews": 11
+        }
+      },
+      {
+        "name": "전강도",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 1.778,
+            "candidate": 1.778,
+            "delta": 0,
+            "view": "설정4",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.543,
+            "candidate": 0.859,
+            "delta": 0.316,
+            "view": "19화_01_04-2",
+            "independent": true,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 10.049,
+            "candidate": 8.783,
+            "delta": -1.266,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 5.795,
+            "candidate": 5.795,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 2,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.698,
+              "candidate": 0.671,
+              "delta": -0.027,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.527,
+              "candidate": 0.032,
+              "delta": -0.495,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 10.049,
+              "candidate": 8.783,
+              "delta": -1.266,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.314,
+              "candidate": 1.237,
+              "delta": -0.077,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.594,
+              "candidate": 0.636,
+              "delta": 0.042,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.778,
+              "candidate": 1.778,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.449,
+              "candidate": 1.449,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.604,
+              "candidate": 0.604,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.347,
+              "candidate": 0.347,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.694,
+              "candidate": 0.694,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.899,
+              "candidate": 0.899,
+              "delta": 0,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.616,
+              "candidate": 0.593,
+              "delta": -0.023,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.543,
+              "candidate": 0.859,
+              "delta": 0.316,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 32.479,
+              "candidate": 29.917,
+              "delta": -2.562,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.795,
+              "candidate": 5.795,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 15.858,
+              "candidate": 15.858,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.808,
+              "candidate": 4.788,
+              "delta": -0.02,
+              "view": "9-10",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.012,
+              "candidate": 3.725,
+              "delta": -0.287,
+              "view": "2-2",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": true,
+          "comparisonViews": 11
+        }
+      },
+      {
+        "name": "강한대조",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 0.694,
+            "candidate": 0.786,
+            "delta": 0.092,
+            "view": "2-2",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.594,
+            "candidate": 1.591,
+            "delta": 0.997,
+            "view": "설정2",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 32.479,
+            "candidate": 27.734,
+            "delta": -4.745,
+            "view": "19화_01_04-2",
+            "independent": true,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 4.012,
+            "candidate": 4.273,
+            "delta": 0.261,
+            "view": "2-2",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 6,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.698,
+              "candidate": 0.588,
+              "delta": -0.11,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.527,
+              "candidate": 0.027,
+              "delta": -0.5,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 10.049,
+              "candidate": 4.061,
+              "delta": -5.988,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.314,
+              "candidate": 1.383,
+              "delta": 0.069,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.594,
+              "candidate": 1.591,
+              "delta": 0.997,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.778,
+              "candidate": 1.778,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.449,
+              "candidate": 1.449,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.604,
+              "candidate": 0.604,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.347,
+              "candidate": 0.347,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.694,
+              "candidate": 0.786,
+              "delta": 0.092,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.899,
+              "candidate": 1.403,
+              "delta": 0.504,
+              "view": "2-2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.616,
+              "candidate": 0.515,
+              "delta": -0.101,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.543,
+              "candidate": 0.912,
+              "delta": 0.369,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 32.479,
+              "candidate": 27.734,
+              "delta": -4.745,
+              "view": "19화_01_04-2",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.795,
+              "candidate": 5.795,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 15.858,
+              "candidate": 15.858,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.808,
+              "candidate": 4.598,
+              "delta": -0.21,
+              "view": "9-10",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 4.012,
+              "candidate": 4.273,
+              "delta": 0.261,
+              "view": "2-2",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": true,
+          "comparisonViews": 11
+        }
+      }
+    ],
+    "M01": [
+      {
+        "name": "반강도",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 1.336,
+            "candidate": 1.748,
+            "delta": 0.412,
+            "view": "설정2",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.034,
+            "candidate": 0.954,
+            "delta": 0.92,
+            "view": "2-9",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 4.522,
+            "candidate": 4.522,
+            "delta": 0,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 13.446,
+            "candidate": 13.446,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 5,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.546,
+              "candidate": 0.539,
+              "delta": -0.007,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.499,
+              "candidate": 0.488,
+              "delta": -0.011,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 4.522,
+              "candidate": 4.522,
+              "delta": 0,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.336,
+              "candidate": 1.748,
+              "delta": 0.412,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.597,
+              "candidate": 0.849,
+              "delta": -0.748,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.578,
+              "candidate": 1.474,
+              "delta": -0.104,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.799,
+              "candidate": 1.315,
+              "delta": -0.484,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 3.017,
+              "candidate": 2.859,
+              "delta": -0.158,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.133,
+              "candidate": 0.54,
+              "delta": 0.407,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.054,
+              "candidate": 0.978,
+              "delta": -0.076,
+              "view": "2-9",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.034,
+              "candidate": 0.954,
+              "delta": 0.92,
+              "view": "2-9",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.69,
+              "candidate": 0.853,
+              "delta": 0.163,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.772,
+              "candidate": 0.452,
+              "delta": -0.32,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 12.711,
+              "candidate": 12.711,
+              "delta": 0,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.692,
+              "candidate": 0.77,
+              "delta": 0.078,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.973,
+              "candidate": 0.972,
+              "delta": -0.001,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 13.168,
+              "candidate": 13.168,
+              "delta": 0,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 13.446,
+              "candidate": 13.446,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.106,
+              "candidate": 5.106,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 6.279,
+              "candidate": 6.279,
+              "delta": 0,
+              "view": "6-6",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 28.861,
+              "candidate": 28.861,
+              "delta": 0,
+              "view": "2-9",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": false,
+          "comparisonViews": 11
+        }
+      },
+      {
+        "name": "전강도",
+        "worst": {
+          "lid": {
+            "metric": "lid",
+            "baseline": 1.336,
+            "candidate": 1.687,
+            "delta": 0.351,
+            "view": "설정2",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "width": {
+            "metric": "width",
+            "baseline": 0.034,
+            "candidate": 0.954,
+            "delta": 0.92,
+            "view": "2-9",
+            "independent": false,
+            "units": "렌더 48px"
+          },
+          "rowEnds": {
+            "metric": "rowEnds",
+            "baseline": 4.522,
+            "candidate": 4.522,
+            "delta": 0,
+            "view": "설정1",
+            "independent": false,
+            "units": "원화 248px"
+          },
+          "jaw": {
+            "metric": "jaw",
+            "baseline": 13.446,
+            "candidate": 13.446,
+            "delta": 0,
+            "view": "설정3",
+            "independent": false,
+            "units": "원화 248px"
+          }
+        },
+        "meshFlips": 0,
+        "renderDirections": 11,
+        "lostConditions": 6,
+        "unmeasured": "뒤·바로 위와 아래의 해부학적 원본과 사람의 선호",
+        "reviewInput": {
+          "observations": [
+            {
+              "metric": "lid",
+              "baseline": 0.546,
+              "candidate": 0.405,
+              "delta": -0.141,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.499,
+              "candidate": 0.252,
+              "delta": -0.247,
+              "view": "설정1",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 4.522,
+              "candidate": 4.522,
+              "delta": 0,
+              "view": "설정1",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.336,
+              "candidate": 1.687,
+              "delta": 0.351,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.597,
+              "candidate": 0.484,
+              "delta": -1.113,
+              "view": "설정2",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.578,
+              "candidate": 1.784,
+              "delta": 0.206,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 1.799,
+              "candidate": 1.673,
+              "delta": -0.126,
+              "view": "설정4",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 3.017,
+              "candidate": 2.859,
+              "delta": -0.158,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.133,
+              "candidate": 0.54,
+              "delta": 0.407,
+              "view": "설정3",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 1.054,
+              "candidate": 1.053,
+              "delta": -0.001,
+              "view": "2-9",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.034,
+              "candidate": 0.954,
+              "delta": 0.92,
+              "view": "2-9",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.69,
+              "candidate": 0.64,
+              "delta": -0.05,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.772,
+              "candidate": 0.948,
+              "delta": 0.176,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 12.711,
+              "candidate": 12.711,
+              "delta": 0,
+              "view": "1화_01_02",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "lid",
+              "baseline": 0.692,
+              "candidate": 0.688,
+              "delta": -0.004,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "width",
+              "baseline": 0.973,
+              "candidate": 1.473,
+              "delta": 0.5,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "렌더 48px"
+            },
+            {
+              "metric": "rowEnds",
+              "baseline": 13.168,
+              "candidate": 13.168,
+              "delta": 0,
+              "view": "1화_01_04",
+              "independent": true,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 13.446,
+              "candidate": 13.446,
+              "delta": 0,
+              "view": "설정3",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 5.106,
+              "candidate": 5.106,
+              "delta": 0,
+              "view": "설정4",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 6.279,
+              "candidate": 6.279,
+              "delta": 0,
+              "view": "6-6",
+              "independent": false,
+              "units": "원화 248px"
+            },
+            {
+              "metric": "jaw",
+              "baseline": 28.861,
+              "candidate": 28.861,
+              "delta": 0,
+              "view": "2-9",
+              "independent": false,
+              "units": "원화 248px"
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": false,
+          "comparisonViews": 11
+        }
+      }
+    ],
+    "W": [
+      {
+        "name": "restore40",
+        "lostConditions": 4,
+        "meshFlips": 0,
+        "renderDirectionsAndPoses": 16,
+        "unmeasured": "도판과 같은 인물의 후면·극단 자세 및 사진의 정확한 조명",
+        "reviewInput": {
+          "observations": [
+            {
+              "view": "정면",
+              "metric": "40차 하부 명암차 기준과의 거리",
+              "baseline": 4.768754161899293,
+              "candidate": 0,
+              "units": "휘도",
+              "delta": -4.768754161899293
+            },
+            {
+              "view": "B3",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 7.72093023255814,
+              "candidate": 7.744186046511628,
+              "units": "도판 px",
+              "delta": 0.023255813953488413
+            },
+            {
+              "view": "S3",
+              "metric": "실제 피부 바깥선",
+              "baseline": 2.25,
+              "candidate": 2.09375,
+              "units": "도판 px",
+              "delta": -0.15625
+            },
+            {
+              "view": "S3",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 1.8421052631578947,
+              "candidate": 2,
+              "units": "도판 px",
+              "delta": 0.1578947368421053
+            },
+            {
+              "view": "A2",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 13.333333333333334,
+              "candidate": 13.36111111111111,
+              "units": "도판 px",
+              "delta": 0.02777777777777679
+            },
+            {
+              "view": "B5",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 8.25,
+              "candidate": 8.222222222222221,
+              "units": "도판 px",
+              "delta": -0.027777777777778567
+            },
+            {
+              "view": "A5",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 1.1538461538461537,
+              "candidate": 1.1794871794871795,
+              "units": "도판 px",
+              "delta": 0.025641025641025772
+            },
+            {
+              "view": "팔 68°",
+              "metric": "가장 크게 꺾인 밑면",
+              "baseline": 58.93087347854972,
+              "candidate": 29.883469492497927,
+              "units": "각도",
+              "delta": -29.047403986051794
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": false,
+          "comparisonViews": 12
+        }
+      },
+      {
+        "name": "regional",
+        "lostConditions": 4,
+        "meshFlips": 0,
+        "renderDirectionsAndPoses": 16,
+        "unmeasured": "도판과 같은 인물의 후면·극단 자세 및 사진의 정확한 조명",
+        "reviewInput": {
+          "observations": [
+            {
+              "view": "정면",
+              "metric": "40차 하부 명암차 기준과의 거리",
+              "baseline": 4.768754161899293,
+              "candidate": 1.993859425057215,
+              "units": "휘도",
+              "delta": -2.7748947368420778
+            },
+            {
+              "view": "B3",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 7.72093023255814,
+              "candidate": 7.767441860465116,
+              "units": "도판 px",
+              "delta": 0.04651162790697594
+            },
+            {
+              "view": "S3",
+              "metric": "실제 피부 바깥선",
+              "baseline": 2.25,
+              "candidate": 1.8125,
+              "units": "도판 px",
+              "delta": -0.4375
+            },
+            {
+              "view": "S3",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 1.8421052631578947,
+              "candidate": 2.1052631578947367,
+              "units": "도판 px",
+              "delta": 0.26315789473684204
+            },
+            {
+              "view": "A2",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 13.333333333333334,
+              "candidate": 13.444444444444445,
+              "units": "도판 px",
+              "delta": 0.11111111111111072
+            },
+            {
+              "view": "B5",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 8.25,
+              "candidate": 8.25,
+              "units": "도판 px",
+              "delta": 0
+            },
+            {
+              "view": "A5",
+              "metric": "피부 안쪽의 명암 경계",
+              "baseline": 1.1538461538461537,
+              "candidate": 1.2564102564102564,
+              "units": "도판 px",
+              "delta": 0.10256410256410264
+            },
+            {
+              "view": "팔 68°",
+              "metric": "가장 크게 꺾인 밑면",
+              "baseline": 58.93087347854972,
+              "candidate": 29.560229523230014,
+              "units": "각도",
+              "delta": -29.370643955319707
+            }
+          ],
+          "meshFlips": 0,
+          "unseen": false,
+          "comparisonViews": 12
+        }
+      }
+    ]
+  }
+}
