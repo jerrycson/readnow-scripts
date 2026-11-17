@@ -360,7 +360,7 @@
     try { if (!orderJournal || !window.BQOrderJournal || window.BQOrderJournal.OWNER_VERSION !== 1 || typeof orderJournal.owns !== 'function' || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); formToken = accountToken(); journal = await orderJournal.read(); }
     catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
     if (!current()) return;
-    const resuming = journal.active && journal.active.state === 'pending' && options && options.resumeId === journal.active.id;
+    let resuming = journal.active && journal.active.state === 'pending' && options && options.resumeId === journal.active.id; /* (ord6) 확정 거절을 이 화면에서 받으면 다시 새 요청으로 */
     if (resuming) { try { if (!await orderJournal.owns(journal.active, formToken)) { if (current()) await orderRecovery(journal, current); return; } }
       catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
     }
@@ -402,9 +402,9 @@
     form.onsubmit = async (e) => { e.preventDefault(); if (!current()) return; if (typeof B.cartAfterOrder !== 'function') { const err = $('#oerr', form); err.hidden = false; err.textContent = '주문 화면을 새로 고친 뒤 다시 진행해 주세요'; return; } if (orderInFlight) { toast('앞선 주문을 처리하고 있습니다 — 결과를 받은 뒤 진행해 주세요'); return; } const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
       const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
-      let request = null;
+      let request = null, submitted = null;
       try { if (!window.BQOrderJournal.sameOwner(formToken, accountToken())) throw orderOwnerChanged();
-        const submitted = cartEntries(cart()); setCart(submitted); const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted);
+        submitted = cartEntries(cart()); setCart(submitted); const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted);
         if (resuming) {
           const latest = await orderJournal.read();
           if (!latest.active || latest.active.id !== journal.active.id || latest.active.state !== 'pending') { if (current()) await orderRecovery(latest, current); return; }
@@ -424,12 +424,18 @@
         else { const nextForm = $('#of'); if (nextForm && nextForm !== form) nextForm.dispatchEvent(new Event('bq-order-settled')); toast('주문을 받았습니다 — 내 주문에서 확인할 수 있습니다'); }
       } catch (er) {
         if (request) {
-          try { if (window.BQOrderJournal.outcome(request, er.status, er.j)) await orderJournal.settle(request.id, er.status, er.j); } catch (e2) {}
-          if (current()) { try { await orderRecovery(await orderJournal.read(), current); } catch (e2) { go.disabled = true; oerr.hidden = false; oerr.textContent = '앞선 주문의 처리 결과를 확인해야 합니다 — 새로 고치거나 가게로 문의해 주세요'; } }
-          else toast('앞선 주문의 처리 결과를 주문서에서 확인해 주세요');
-          return;
+          let live = null; try { live = window.BQOrderJournal.outcome(request, er.status, er.j); if (live) await orderJournal.settle(request.id, er.status, er.j); } catch (e2) { live = null; }
+          /* (ord6) 이 주문서에서 서버의 확정 거절(값 바뀜·쿠폰·팔린 책·문 닫힘)을 바로 받았으면 주문이 생기지 않은 것이 확실함 → 장부에서 확인 처리하고 main처럼 주문서에 남아 까닭·새 값을 보여 줌(쿠폰·동의·입력 그대로) · 응답 유실·불명은 그대로 복구 화면 */
+          if (live && live.state === 'rejected' && current() && form.isConnected) { try { const snap = await orderJournal.read(); if (!snap.active || snap.active.id !== request.id) throw new Error('앞선 주문'); journal = await orderJournal.acknowledge(request.id, snap.revision); resuming = false; } catch (e2) { live = null; } }
+          if (!live || live.state !== 'rejected' || !current() || !form.isConnected) {
+            if (current()) { try { await orderRecovery(await orderJournal.read(), current); } catch (e2) { go.disabled = true; oerr.hidden = false; oerr.textContent = '앞선 주문의 처리 결과를 확인해야 합니다 — 새로 고치거나 가게로 문의해 주세요'; } }
+            else toast('앞선 주문의 처리 결과를 주문서에서 확인해 주세요');
+            return;
+          }
         }
-        if (!current()) return; go.disabled = false; go.textContent = won(Q.total) + ' 주문하기'; oerr.hidden = false; oerr.textContent = er.message;
+        if (!current()) return; go.disabled = false; go.textContent = `${won(Q.total)} 주문하기`; const bad = er.j && er.j.bad;
+        if (er.j && er.j.price) { await reQ(cpOk); if (!current()) return; go.textContent = `${won(Q.total)} 주문하기`; } if (er.j && er.j.cp) { cpOk = ''; const box = $('[data-f="cp"]'); if (box) { box.classList.add('bad'); $('em', box).textContent = er.message; } } if (bad && bad.length && submitted) { const ids = new Set(bad.map((x) => x.id)); setCart(cart().filter((x) => !ids.has(x.id) || !submitted.some(y => y.id === x.id && y._entry === x._entry))); if (cart().length) { await reQ(cpOk); if (!current()) return; go.textContent = `${won(Q.total)} 주문하기`; } else go.disabled = true; } /* (shelf2) 뺀 뒤 줄·합계·단추 값도 새로 */
+        oerr.hidden = false; oerr.innerHTML = `<b>⚠ ${esc(er.message)}</b>${bad && bad.length ? `<ul>${bad.map((x) => `<li>${esc(x.t || (L.find((y) => y.id === x.id) || {}).t || x.id)} — ${esc(x.why)}</li>`).join('')}</ul><small>그 책은 장바구니에서 뺐습니다 — 나머지로 다시 주문해 주세요</small> <a href="#/cart">장바구니 보기</a>` : ''}`;
       } finally { orderInFlight = false; } };
     if (isTest()) testPayWire(L, () => Q, val); /* (shopux1) 🧪 시험 계정 — 마지막 단추만 바꿔 끼움(실제 주문 넣기 줄은 그대로 · 시험 계정은 거기까지 가지 않음) */ }
 
