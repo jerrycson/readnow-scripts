@@ -7,6 +7,16 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),regions={jaw:'턱',cheek:'볼',no
 const shots=Array(5).fill(null),demonstrations=[],edits=()=>Object.fromEntries(Object.keys(regions).map(k=>[k,[0,0]]));let tuning=edits();
 let pos=0,tool='align',region='jaw',yaw=0,pitch=0,zoom=1,mesh=null,fitted=null,drag=null,painting=null,serial=0,frame=0,candidates=[],db,applying=false;
 const send=m=>$('msg').textContent=m;
+const alpha=document.createElement('input'),alphaOut=document.createElement('output'),alphaLabel=document.createElement('label');
+alpha.type='range';alpha.min='0';alpha.max='100';alpha.value='100';alpha.id='photoBlend';
+alphaLabel.append(document.createTextNode('사진 투영 농도 '),alpha,alphaOut);$('texture').closest('label').after(alphaLabel);
+alpha.oninput=()=>{alphaOut.value=alpha.value+'%';update();};alphaOut.value='100%';
+const sculptLinks=document.createElement('p');
+sculptLinks.innerHTML='<a href="studio-sculpt.html?case=F02#localReference" target="_blank" rel="noopener">페른 정밀조형에서 사진 외형 비교</a> · <a href="studio-sculpt.html?case=M01#localReference" target="_blank" rel="noopener">힘멜 정밀조형에서 비교</a>';
+$('msg').after(sculptLinks);
+const limits=document.createElement('small');
+limits.textContent='다섯 방향 전경에서 얼굴의 바깥 부피를 근사합니다. 임의 사진의 가려진 눈·입 깊이, 상체·하체·전신의 자동 복원은 지원하지 않습니다. 입력 사진은 이 기기 브라우저에 저장합니다.';
+sculptLinks.after(limits);
 const update=()=>{if(!frame)frame=requestAnimationFrame(()=>{frame=0;draw();});};
 const partLabel=button('얼굴',()=>{});partLabel.setAttribute('aria-pressed','true');$('parts').append(partLabel);
 for(const text of ['상체','하체','전신']){const b=button(text+' · 연구 예정',()=>{});b.disabled=true;$('parts').append(b);}
@@ -38,8 +48,8 @@ function draw(){
  $('acceptYaw').disabled=!ranks.length;
  if(fitted){
   const near=shots.filter(Boolean).sort((a,b)=>visibleWeight(yaw,pitch,b.yaw)-visibleWeight(yaw,pitch,a.yaw))[0];const w=visibleWeight(yaw,pitch,near.yaw);
-  out.putImageData(preview(fitted,yaw,pitch,224,zoom,$('texture').checked?shots:null),0,0);
-  $('angles').textContent='좌우 '+Math.round(yaw)+'° · 상하 '+Math.round(pitch)+'° · '+(w>0.005?'사진 '+near.yaw+'° · 농도 '+Math.round(w*100)+'%':'해당 방향의 사진 없음');
+  out.putImageData(preview(fitted,yaw,pitch,224,zoom,$('texture').checked?shots:null,Number(alpha.value)/100),0,0);
+  $('angles').textContent='좌우 '+Math.round(yaw)+'° · 상하 '+Math.round(pitch)+'° · '+(w>0.005?'사진 '+near.yaw+'° · 농도 '+Math.round(w*($('texture').checked?Number(alpha.value):0))+'%':'해당 방향의 사진 없음');
  }else $('angles').textContent='서로 다른 축의 사진이 두 장 이상 있으면 복원 결과가 나타납니다.';
  const [x,y]=tuning[region];$('dot').style.left=50+47*x+'%';$('dot').style.top=50-47*y+'%';$('value').textContent=regions[region]+' 폭 '+Math.round(x*100)+' · 깊이 '+Math.round(y*100);
  $('info').textContent='얼굴 · 사진 '+shots.filter(Boolean).length+'/5장 · '+(fitted?fitted.f.length/3+'개 삼각형 · 전경 마스크의 공통 부피':'입력 대기');
@@ -88,6 +98,6 @@ $('save').onclick=async()=>{try{await save();send('이 기기에 새 판으로 �
 $('load').onclick=async()=>{try{const v=await request(db.transaction('versions').objectStore('versions').get($('saved').value));if(!v)return;serial++;v.shots.forEach((s,i)=>shots[i]=s);tuning=v.tuning;select(v.pos);rebuild();send('선택한 보존판을 복원했습니다.');}catch(e){send(e.message);}};
 $('apply').onclick=async()=>{if(!fitted||applying)return;applying=true;try{const id=await save();localStorage.setItem('bookfriend-face-fit36',id);localStorage.setItem('bookfriend-face-enabled36','1');channel?.postMessage({kind:'apply',id});
  if(parent!==window)parent.postMessage({type:'bookfriend-face-fit36',id},location.origin);
- send('현재 얼굴을 관찰창에 적용했습니다. 기본형과 적용형은 관찰창에서 전환할 수 있습니다.');}catch(e){send(e.message);}finally{applying=false;}};
+ send('이 기기에 얼굴 판을 저장했습니다. 정밀조형에서 같은 판을 고르고 오른쪽에 사진 외형 적용을 켜면 두 모델을 대조할 수 있습니다.');}catch(e){send(e.message);}finally{applying=false;}};
 try{db=await openDB();if('BroadcastChannel'in window){channel=new BroadcastChannel('bookfriend-photo-model36');channel.onmessage=()=>versions().catch(e=>send(e.message));}await versions();}catch(e){send('이 기기 보존함을 사용할 수 없습니다. '+e.message);}
 select(0);initial().catch(e=>send(e.message));

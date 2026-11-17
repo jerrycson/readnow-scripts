@@ -213,6 +213,33 @@
         "face-note42",
         "chest-note42"
       ]
+    },
+    {
+      "id": "005adb2055019852f3d918ac",
+      "project": "bookfriend",
+      "round": 43,
+      "cards": 336,
+      "sources": 325,
+      "chapters": 14,
+      "cardsSha": "2c3ccf2c6edd6c544e5e56ee7da23ac864f158bf0d55ffdfdd9b63c14c2a1714",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "0787b3f3bfbfa50eec36c2283d7487cd6e07fe3630fce0117d85864a5a94b620",
+      "at": "2026-11-17T06:14:32.078Z",
+      "label": "43차 · 내 실험실, 전체 판본과 세부 조형",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43"
+      ]
     }
   ]
 }
