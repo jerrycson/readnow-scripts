@@ -17,11 +17,14 @@ concurrency:
   cancel-in-progress: true
 jobs:
   standalone:
-    runs-on: ubuntu-latest
-    container: node:22-bookworm
+    # (privzero1 11/17) 💸 가벼운 기계(ubuntu-slim · 분당 값 1/3) + Node 22 그대로(예전 container node:22-bookworm과 같은 판 · 가벼운 기계는 container를 못 씀)
+    #  · 브라우저 시험(shop-browser·account-browser)은 숍 파일이 바뀐 PR에서만 — stability-shop.yml
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
       - name: 고객 정보와 운영 연결 없는 안전성 시험
         run: |
           node src/tests/standalone/run.cjs
@@ -30,35 +33,3 @@ jobs:
           node src/tests/tLIFECYCLE.js
           node src/tests/tSHOP9_1112.js
           node src/tests/tSHOPVIEW2_1114.js
-
-  shop-browser:
-    runs-on: ubuntu-latest
-    container: node:22-bookworm
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: 고정된 브라우저 시험 도구 준비
-        run: |
-          npm install --prefix "$RUNNER_TEMP/rn-browser" --no-save --ignore-scripts --package-lock=false playwright@1.62.1
-          node "$RUNNER_TEMP/rn-browser/node_modules/playwright/cli.js" install --with-deps chromium
-      - name: 가짜 자료로 손님 화면 전환 검사
-        run: |
-          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
-          RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
-          node src/tests/standalone/shelf-browser.cjs
-
-  account-browser:
-    runs-on: ubuntu-latest
-    container: node:22-bookworm
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: 고정된 브라우저 시험 도구 준비
-        run: |
-          npm install --prefix "$RUNNER_TEMP/rn-browser" --no-save --ignore-scripts --package-lock=false playwright@1.62.1
-          node "$RUNNER_TEMP/rn-browser/node_modules/playwright/cli.js" install --with-deps chromium
-      - name: 계정 목록 보존과 복구 화면 검사
-        run: |
-          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
-          RN_ACCOUNT_UI=1 node src/tests/tACCOUNTORDERS.js
-          RN_UI=1 node src/tests/tSHOP9_1112.js

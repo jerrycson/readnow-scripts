@@ -15,7 +15,7 @@ env:
   SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
 jobs:
   shop:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim  # (privzero1 11/17) 💸 1-core 가벼운 기계 — 분당 값 1/3(공개→비공개 뒤 Actions 무료 몫 지킴 · 최대 15분)
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
