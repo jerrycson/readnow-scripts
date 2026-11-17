@@ -1,4 +1,5 @@
 // 두 연구의 결정·결과 서식을 묶는다. 입력은 수치와 공개 연구 식별자만 받는다.
+import {isWorkbenchSubject} from '../../pixel-lab/workbench-subjects50.mjs';
 export const definitions=Object.freeze({
  'friend-studio':{title:'정밀 조형',purpose:'얼굴·몸통 표점이 사용자가 찍은 화면 좌표에 닿도록 두 교정값을 제안한다.',
   metric:'목표 정점까지 거리 · 192px 환산, 작을수록 좋음',next:'같은 중립 표점·목표·시점을 고정하고 추천을 보기 전 사람의 직접 조작 결과를 별도로 잰다.',
@@ -31,7 +32,7 @@ export function toFramework(row,{origin,at}){
  const t=iso(origin==='device'?row.at:at);
  if((row.metricBefore!=null||row.metricAfter!=null)&&(!finite(row.metricBefore)||!finite(row.metricAfter)))fail('전후 측정값 쌍이 불완전합니다.');
  if(row.outcome==='measured'&&(row.metricBefore==null||row.unit==='none'))fail('측정 기록에는 단위와 실제 수치가 필요합니다.');
- if(!['F02','M01','W','studio','world'].includes(row.subject))fail('등록되지 않은 대상입니다.');
+ if(!['F02','M01','W','studio','world'].includes(row.subject)&&!(origin==='release'&&isWorkbenchSubject(row.subject)))fail('등록되지 않은 대상입니다.');
  const engine=studyOf(row),type=evidenceType(row,origin),decisionId=engine+'/'+origin+'/'+row.id,entityId=engine+'/'+row.subject;
  const allowReview=origin==='device'&&['accepted','rejected','deferred','reverted'].includes(row.outcome);
  const src=origin==='release'?'release:'+String(row.source||'연구 공개본'):'device';

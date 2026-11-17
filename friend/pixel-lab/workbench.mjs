@@ -38,6 +38,10 @@ const queue=createRenderQueue({requestFor(index){
   ready[index]=job.version;
   if(job.id===id){
     edits.zones(data.zones);
+    if(isChestSubject(id)){
+      const rebound=el('markerVersion').querySelector('[data-key="rebound"]');
+      rebound.disabled=!data.markerLevel;rebound.textContent=data.markerLevel?'피부에 다시 밀착':'재밀착 보류';
+    }
     if(data.source?.startsWith('https://')&&!el('modelNotes').querySelector('a')){
       const source=document.createElement('a');source.href=data.source;source.target='_blank';source.rel='noopener';source.textContent='공식 원화 열기 ↗';el('modelNotes').append(' ',source);
     }
@@ -66,7 +70,7 @@ function showModelStatus(){
   const key=canvas.dataset.case;
   const label=modelNames[key]||((key.startsWith('female')?'여성':'남성')+' '+key.split('-')[1]+'등신');
   const kind=canvas.dataset.version;
-  const trial={height:'턱 높이 시험',candidate:'50차 시험',C:'입술 C · 보류',D:'입술 D · 보류',E:'입술 E · 보류'};
+  const trial={height:'턱 높이 시험',candidate:'50차 시험',smooth:'깊이선 시험',half:'깊이선 절반',ablation:'깊이항 제외',C:'입술 C · 보류',D:'입술 D · 보류',E:'입술 E · 보류'};
   el('subjectLabel').textContent=label+(trial[kind]?' · '+trial[kind]:isWorkbenchSubject(key)&&!key.includes('-')?' · 보존 원형':'');
 }
 function refreshViews(){
@@ -202,6 +206,7 @@ function selectModel(key){
   if(id==='F02')el('modelNotes').textContent='50차 볼·턱선 교정 시험. 부위 → 비교 원형에서 49차로 돌아갈 수 있습니다. 정면과 측면, 별도 원화에서 대조 중입니다.';
   if(face&&!face.preserved)el('modelNotes').textContent='50차 · '+libraryChecks50[id].state+' · '+libraryChecks50[id].why+'. '+face.limits;
   if(id==='M04')el('modelNotes').textContent='턱 높이 시험에서 정면과 양 측면의 피부선 오차가 줄었습니다. 눈을 감은 사선은 같은 구도인지 확인하지 못했습니다. 부위 탭에서 보존 원형과 볼 폭 시험도 비교할 수 있습니다.';
+  if(id==='M03'||id==='F05')el('modelNotes').textContent='50차 깊이선 시험 · 코와 입 사이 피부의 톱니를 줄였습니다. '+(id==='M03'?'측면 코~턱 오차는 3.142 → 3.337px로 커졌습니다.':'측면 코~턱 오차가 1.614 → 1.472px로 줄었습니다.')+' 부위 탭에서 보존 원형과 비교하세요.';
   const chest=chestOptions50.find(item=>item.id===id);
   if(chest){
     group=chest.group;el('modelNotes').textContent=chest.group+' · '+chest.coverage;

@@ -5,6 +5,7 @@ import {surfaceDefaults,surfaceAxes,tipShapes} from './surface-settings35.mjs';
 import {isChestSubject} from './workbench-subjects50.mjs';
 import {libraryChecks50} from './face-library-cheek50.mjs';
 import {libraryHeightChecks50} from './face-library-height50.mjs';
+import {markerLevels50} from './chest-marker-levels50.mjs';
 const el=id=>document.getElementById(id);
 export function buttons(host,entries,choose){
   host.replaceChildren();
@@ -41,6 +42,8 @@ export function editor(onEdit){
     mark(el('versions'),edit.version);
     if(isChestSubject(id)){
       el('showNac').checked=edit.surface.showNac;
+      const shot=edit.pose&&edit.pose!=='neutral'?edit.pose:edit.angle===0?'neutral':edit.pivot==='arms.raise'?String(edit.angle):'';
+      mark(el('poseShots'),shot);
       mark(el('markerVersion'),edit.markerVersion||'source');
       el('markerControls').hidden=!edit.surface.showNac;
       for(const n of el('markerAxes').querySelectorAll('input')){
@@ -71,7 +74,9 @@ export function editor(onEdit){
     edit={...edit,surface:{...edit.surface,...changes}};drawControls();onEdit();if(done)commit();
   }
   function selectVersion(version){
-    edit={...edit,version};commit();drawControls();onEdit();
+    edit={...edit,version};
+    if(isChestSubject(id))edit.markerVersion=version==='candidate'&&markerLevels50[id]?'rebound':'source';
+    commit();drawControls();onEdit();
   }
   el('showNac').onchange=()=>marker({showNac:el('showNac').checked});
   buttons(el('markerVersion'),[['source','기존 부착'],['rebound','피부에 다시 밀착']],markerVersion=>{
@@ -85,7 +90,7 @@ export function editor(onEdit){
   }
   buttons(el('tipShapes'),tipShapes,nippleShape=>marker({nippleShape}));
   dial=mountAngle46({host:el('jointDial'),range:el('angle'),number:el('angleNumber')});
-  el('angle').oninput=()=>{edit={...edit,angle:el('angle').valueAsNumber};drawControls();onEdit();};
+  el('angle').oninput=()=>{edit={...edit,pose:'neutral',angle:el('angle').valueAsNumber};drawControls();onEdit();};
   for(const type of ['change','pointerup','keyup','focusout'])el('poseTab').addEventListener(type,commit);
   function restore(from,to){
     commit();if(!from.length)return;
@@ -99,18 +104,32 @@ export function editor(onEdit){
       id=key;resolved=[];
       const saved=records.get(id);
       edit=saved?.edit||{values:editable?zero(kind()):{},pivot:editable?defaultView(kind()).pivot:null,angle:0};
-      if(isChestSubject(id)&&!saved){edit.version='source';edit.surface={...surfaceDefaults,showNac:true};}
+      if(isChestSubject(id)&&!saved){
+        edit.version='candidate';edit.markerVersion=markerLevels50[id]?'rebound':'source';
+        edit.surface={...surfaceDefaults,showNac:true};
+      }
       if(!saved&&(id==='F02'||Object.hasOwn(libraryChecks50,id)))edit.version=['F02','F03','F05'].includes(id)?'candidate':'source';
       if(id==='M04'&&!saved)edit.version='height';
+      if(['M03','F05'].includes(id)&&!saved)edit.version='smooth';
       const options=[['source','보존 원형']];
       if(id!=='M01')options.push(['candidate',isChestSubject(id)?'교정 시험':'볼 폭 시험']);
       if(Object.hasOwn(libraryHeightChecks50,id))options.push(['height','턱 높이 시험']);
+      if(['F01','F05','M03'].includes(id))options.push(['smooth','깊이선 다듬기'],['half','깊이선 절반'],['ablation','깊이항 제외']);
       if(id==='F02'||id==='M01')options.push(['C','입술 C'],['D','입술 D'],['E','입술 E']);
       buttons(el('versions'),options,selectVersion);
       el('versionsBox').hidden=!editable;el('surfaceOptions').hidden=!isChestSubject(id);
+      el('posePresets').hidden=!isChestSubject(id);
+      if(isChestSubject(id)){
+        const poses=[['neutral','중립'],['90','팔 90°'],['113','팔 113°'],['178','팔 178°']];
+        if(!id.startsWith('design:'))poses.push(['waist','허리에 손'],['behindHead','머리 뒤에 손']);
+        buttons(el('poseShots'),poses,shot=>{
+          const angle=Number(shot)||0;
+          edit={...edit,pivot:'arms.raise',angle,pose:angle?'neutral':shot};commit();drawControls();onEdit();
+        });
+      }
       last=clone(edit);back=saved?.back||[];forward=saved?.forward||[];zoneKey=saved?.zoneKey||null;
       buttons(el('joints'),editable?pivotChoices(kind()).map(p=>[p,pivotSpec(p).label]):[],pivot=>{
-        commit();edit={...edit,pivot,angle:0};commit();drawControls();onEdit();
+        commit();edit={...edit,pivot,angle:0,pose:'neutral'};commit();drawControls();onEdit();
       });
       el('zones').replaceChildren();drawControls();
     },

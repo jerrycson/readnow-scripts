@@ -1,6 +1,8 @@
 import {chestOptions50} from './chest-options50.mjs';
 import {shapeBody50,poseBody50,poseFit50,rotateNormals50,material50} from './body-multiview50.mjs';
 import {typeFits50} from './chest-fit-types50.mjs';
+import {refineMarkerSkin50} from './chest-markers50.mjs';
+import {markerLevels50,markerFront50} from './chest-marker-levels50.mjs';
 export {chestOptions50};
 const imports=new Map();
 async function modules(root){
@@ -54,7 +56,7 @@ export async function createChestStudy50(id,assets={}){
  }
  raw=materialMap(raw,id);
  const camera=api.studyView(raw,false).sceneOverride;
- const study={id,entry,settings,raw,base40,scene:raw,portrait:false,camera,api,marksCache:new WeakMap()};
+ const study={id,entry,settings,raw,base40,scene:raw,portrait:false,camera,api,marksCache:new WeakMap(),reboundCache:new WeakMap(),markerLevel:markerLevels50[id]||0};
  study.candidate=id==='W'?shapeBody50(raw,base40,raw,'weighted'):typeNeutral50(study,typeFits50[id]?.pair);
  study.scene=editChestStudy50(study,{version:'source'});return study;
 }
@@ -100,6 +102,13 @@ export function editChestStudy50(study,edit={}){
  if(refs===undefined){
   refs=api.bindSurface(rest.surfaceFrame50?{...rest,joints:rest.surfaceFrame50}:rest,{...settings,...edit.surface});
   if(!edit.surface)study.marksCache.set(rest,refs);
+ }
+ if(edit.markerVersion==='rebound'&&study.markerLevel&&refs){
+  if(!study.reboundCache.has(refs)){
+   const front=markerFront50[id]||0;
+   study.reboundCache.set(refs,refineMarkerSkin50(refs,rest.parts[0],study.markerLevel,front>0,front));
+  }
+  refs=study.reboundCache.get(refs);
  }
  return {...posed,parts:[...posed.parts,...api.surfaceParts(refs,posed.parts[0])],frame:camera.frame,cameraCenter:camera.cameraCenter};
 }

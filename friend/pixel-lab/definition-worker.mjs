@@ -1,6 +1,6 @@
-import {prepareDefinition,definitionScene,renderDefinitionPair,renderDefinitionView} from './definition-model.mjs';
+import {prepareDefinition,definitionScene,renderDefinitionPair,renderDefinitionView} from './definition-model.mjs?v=50-multiview';
 import {loadRig} from './rig32.mjs';
-import {surfaceZones} from './studio-sculpt-model.mjs';
+import {surfaceZones} from './studio-sculpt-model.mjs?v=50-zones';
 import {createFaceStudy50,faceOptions50} from './face-library50.mjs';
 import {isChestSubject} from './workbench-subjects50.mjs';
 import {createChestStudy50,editChestStudy50} from './chest-types50.mjs';
@@ -8,6 +8,7 @@ import {cheekEnvelope50} from './face-envelope50.mjs';
 import {candidateLibraryFace50,libraryChecks50} from './face-library-cheek50.mjs';
 import {candidateLibraryHeight50,libraryHeightChecks50} from './face-library-height50.mjs';
 import {candidateFaceSurface50,variants50} from './face-surface50.mjs';
+import {candidateLibraryProfile50} from './face-library-profile50.mjs';
 async function load(name){
   const response=await fetch(new URL(name+'.json',import.meta.url));
   if(!response.ok)throw new Error(name+' 자료 '+response.status);
@@ -32,6 +33,14 @@ self.onmessage=async ({data})=>{
     const key=JSON.stringify(edit||{});
     if(key!==editKey){
       if(loaded.entry)shape=editChestStudy50(loaded,edit);
+      else if(['F01','F05','M03'].includes(id)&&['smooth','half','ablation'].includes(edit?.version)){
+        loaded.depthShapes??=new Map();
+        if(!loaded.depthShapes.has(edit.version)){
+          const record=atlas.faces.find(r=>r.id===id);
+          loaded.depthShapes.set(edit.version,candidateLibraryProfile50(loaded,record,edit.version));
+        }
+        shape=definitionScene({...loaded,model:{...loaded.model,round49:loaded.depthShapes.get(edit.version)}},edit);
+      }
       else if(['F02','M01'].includes(id)&&variants50.includes(edit?.version)){
         const base=candidateFaceSurface50(loaded.model.round49,id,edit.version);
         shape=definitionScene({...loaded,model:{...loaded.model,round49:base}},edit);
@@ -52,7 +61,7 @@ self.onmessage=async ({data})=>{
       const frame=renderDefinitionView(loaded,shape,view);
       const raw=loaded.raw||loaded.model?.round49;
       zones??=raw?surfaceZones(raw,loaded.entry?'W':id).map(({key,label,xAxis,yAxis})=>({key,label,xAxis,yAxis})):[];
-      self.postMessage({serial,id,size:view.size,zones,source:loaded.entry?.source||loaded.evidence?.page||loaded.model?.record?.source,buffer:frame.data.buffer},[frame.data.buffer]);
+      self.postMessage({serial,id,size:view.size,zones,markerLevel:loaded.markerLevel,source:loaded.entry?.source||loaded.evidence?.page||loaded.model?.record?.source,buffer:frame.data.buffer},[frame.data.buffer]);
       return;
     }
     const {high,pixel,highMs,pixelMs}=renderDefinitionPair(loaded,shape,view);
