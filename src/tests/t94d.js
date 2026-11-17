@@ -1,7 +1,7 @@
 // 🔬 클라우드 pxExpRun — 개수 제한 없음 · 회차 시간이 다 되면 한 것까지 적고 '대기'로 · 다음 회차가 이어 함(한 것은 건너뜀)
 const fs = require('fs'); const src = fs.readFileSync(__dirname + '/../cloud/index.js', 'utf8'); const a = src.indexOf('async function pxExpRun('); const b = src.indexOf('\n    if (J.retain', a) > 0 ? src.indexOf("log('🔬 조회수 실험', v.op || 'add', JSON.stringify(res).slice(0, 300)); }", a) : -1; const code = src.slice(a, b + "log('🔬 조회수 실험', v.op || 'add', JSON.stringify(res).slice(0, 300)); }".length);
 const store = { px_exp: {} }; let clock = 0; const notes = {};
-const C = (n) => ({ doc: (id) => ({ get: async () => ({ data: () => (n === 'app_settings' ? { cloudUrl: 'https://cloud.test' } : store[n] && store[n][id]) }), set: async (o) => { store[n] = store[n] || {}; store[n][id] = { ...(store[n][id] || {}), ...o }; } }) });
+const C = (n) => ({ where: () => ({ get: async () => ({ docs: [] }) }) /* (plock1 11/17) pxExpRun이 🔒 잠긴 상품 목록을 먼저 읽음 — 이 시험은 잠긴 상품 없음 */, doc: (id) => ({ get: async () => ({ data: () => (n === 'app_settings' ? { cloudUrl: 'https://cloud.test' } : store[n] && store[n][id]) }), set: async (o) => { store[n] = store[n] || {}; store[n][id] = { ...(store[n][id] || {}), ...o }; } }) });
 const peRead = async (p, lid) => { clock += 3000; return { ok: true, uid: lid, noteHtml: notes[lid] || '<p>글 ' + lid + '</p>' }; };
 const peFormSubmit = async (lid, w) => { clock += 2000; notes[lid] = w.noteHtml; return {}; };
 const curPage = () => ({ evaluate: async () => ({ http: 200, kept: true }) });

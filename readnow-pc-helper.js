@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.353의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.354의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.353' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.353', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.354' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.354', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -283,12 +283,17 @@
   function peFrameSweep(now) { let n = 0; document.querySelectorAll('iframe[id^="rnPrdEdit_"]').forEach((f) => { const t = parseInt(String(f.id).split('_').pop(), 36); if (f.__rnLive || f.__rnGone || !(now - t > 2 * 60e3)) return; n++; peFrameDispose(f); }); return n; } /* ⟦peFrameSweep 끝⟧ */
   setInterval(() => { try { const n = peFrameSweep(Date.now()); if (n) window.__rnLog && window.__rnLog('수집기', 'warn', `🧹 쓰고 남은 숨은 수정 틀 ${n}개를 비우고 뗌(메모리)`); } catch (e) {} }, 120e3);
   const peDownPc = (c, b, t) => (c == null || !isFinite(+c) ? 'unk' : +c <= +t ? 'done' : b != null && isFinite(+b) && +c > +b ? 'human' : 'send'); /* (1.89.349 F-1) 클라우드 peDown과 글자 그대로 같은 셈(시험 tOMNIAUTO1117이 견줌) */
+  /* (plock1 · 정범님 11/17) 🔒 상품 잠금 — 잠긴 상품(prd_locks/{키}.on)은 판매 상태(·팔려서 줄어드는 수량) 말고 아무것도 안 바꿈 · 알라딘을 고치기 직전 다시 읽음 · 웹앱·클라우드·가격 감시기와 같은 plkBlock */
+  const plkBlock = (lk, ks, down) => { ks = (ks || []).slice(); if (!lk || lk.on !== true) return { keep: ks, drop: [] }; const keep = ks.filter((k) => k === 'state' || (k === 'qty' && !!down)); return { keep, drop: ks.filter((k) => !keep.includes(k)) }; };
+  async function plkReadPc(v) { try { const k = v.listingKey ? String(v.listingKey) : ''; if (k) { const d = await C('prd_locks').doc(k).get(); if (d.exists) return d.data() || null; } const lid = String(v.listingId || ''); if (lid) { const q = await C('prd_locks').where('lid', '==', lid).limit(1).get(); if (!q.empty) return q.docs[0].data() || null; } return null; } catch (e) { return undefined; } } /* undefined = 못 읽음 → 잠긴 것으로(안전 쪽) */
   async function prdEditPc(ref, v, id) { const lid = String(v.listingId || ''); const ch = v.ch || {}; const at = () => nowIso();
     if (v.op === 'read') { let c0 = lid ? await peReadPc(lid) : { ok: false, why: '상품 번호 없음' }; await ref.set({ status: c0.ok && c0.uid === lid ? 'done' : 'fail', cur: c0.ok ? c0 : null, msg: c0.ok ? (c0.uid === lid ? null : '다른 상품 화면') : c0.login === false ? '로그인 풀림' : c0.why || '못 읽음', doneAt: at(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; }
-    const keys = Object.keys(ch).filter((k) => ['price', 'qty', 'code', 'state', 'grade', 'note', 'subtitle', 'imgs'].includes(k)); const F = { ...(v.f || {}) }; const trail = [];
+    let keys = Object.keys(ch).filter((k) => ['price', 'qty', 'code', 'state', 'grade', 'note', 'subtitle', 'imgs'].includes(k)); const F = { ...(v.f || {}) }; const trail = [];
     const mark = (k, st, m) => { F[k] = { ...(F[k] || {}), st, at: at(), by: PC_NAME, ...(m ? { msg: String(m).slice(0, 200) } : {}) }; trail.push({ at: at(), k, st, m: m ? String(m).slice(0, 160) : null, pc: PC_NAME }); };
     const save = (extra) => { const t0 = trail.splice(0); return ref.set({ f: F, beatAt: at(), ...(t0.length ? { trail: firebase.firestore.FieldValue.arrayUnion(...t0), stepNow: peStepNow(t0[t0.length - 1]) } : {}), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); };
     if (!lid || !keys.length) { keys.forEach((k) => mark(k, 'fail', '상품 번호 없음')); return save({ status: 'fail', msg: '상품 번호나 바꿀 칸이 없음', doneAt: at() }); }
+    { const lk = await plkReadPc(v); const down = (!!v.downOnly && v.qtyAdd == null) || +v.qtyAdd < 0; const B = plkBlock(lk === undefined ? { on: true } : lk, keys, down); /* (plock1) 알라딘을 고치기 직전 · 못 읽으면 잠긴 것으로 */
+      if (B.drop.length) { const m = lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽)' : '🔒 잠김 — 건너뜀'; B.drop.forEach((k) => mark(k, 'fail', m)); keys = B.keep; if (!keys.length) return save({ status: 'fail', msg: lk === undefined ? m : '🔒 잠금이라 건너뜀 (판매 상태 말고는 바꾸지 않음)', doneAt: at() }); } }
     keys.forEach((k) => mark(k, 'claim')); await save(); const X = XC(); let g = { ok: true }; if (X) { try { g = await X.begin(db, { kind: 'prdEdit', key: id, by: PC_NAME, detail: { lid, ch: keys } }); } catch (e) { g = { ok: false, why: e.message }; } }
     if (!g.ok) { if (g.state === 'done' || g.state === 'busy') return ref.set({ status: 'verify', pubNext: new Date(Date.now() + 5000).toISOString(), uploadedAt: TS() }, { merge: true }).catch(() => {}); keys.forEach((k) => mark(k, 'fail', '실행 문: ' + g.why)); return save({ status: 'fail', msg: '실행 문: ' + g.why, doneAt: at() }); }
     const fin = async (st, msg) => { if (X) await X.finish(db, { kind: 'prdEdit', key: id }, st, { msg }).catch(() => {}); };
