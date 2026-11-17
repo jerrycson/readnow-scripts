@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto
-# 1029014592
+doc=app_settings/main
+# 148315626
