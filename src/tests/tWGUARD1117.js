@@ -6,6 +6,7 @@
 //  ③ 서버 답이 PC 안 사본이면 아무것도 올리지 않음 · ④ 합치기 없는 통째 쓰기가 이미 있는 문서면 합치기로 바꿔 다른 칸을 지우지 않음
 //  ⑤ 1시간 누적 문턱(30+30 → 두 번째에서 멈춤) · ⑥ 허락(allowUntil)이면 멈추지 않고 처음 값만 뺌 · ⑦ 처음 값이 없는 쓰기는 서버를 읽지 않음
 //  ⑧ 사라짐 표시 — 서버에서 다시 봄(이미 꺼짐·이번 회차에 보임·없음 뺌) · 한 번에 max(300, 판매 중 5%) 넘으면 표시 안 함 · 허락이면 표시
+//  ⑩ 웹앱 폐기·반품 가져오기 — 서버 답만(기기 기억이면 멈춤) · 합치기로 적음
 //  ⑨ 원본 자리 — commitBatches가 지킴이를 거침 · 사라짐 표시가 30% 안전장치 뒤에 지킴이를 부름 · 예치금·매입 기록 읽기가 서버 답만
 // 실행: node src/tests/tWGUARD1117.js · 시험 자료는 모두 지어낸 값
 const fs = require('fs'); const path = require('path'); const vm = require('vm');
@@ -108,6 +109,12 @@ const storeOf = (n, from = 0) => Object.fromEntries(Array.from({ length: n }, (_
     ok(i30 > 0 && iw > i30 && ic > iw, '사라짐 표시: 30% 안전장치 → 지킴이 → 올리기 차례', { i30, iw, ic });
     ok(/C\('acc_deposit'\)\.doc\(id\)\.get\(\{ source: 'server' \}\)/.test(SRC) && !/C\('acc_deposit'\)\.doc\(id\)\.get\(\)\.then\(\(d\) => d\.exists\)\.catch\(\(\) => false\)/.test(SRC), '예치금: 서버 답만 · 읽기 실패를 「없음」으로 보지 않음');
     ok(/C\('pur_buyback'\)\.get\(\{ source: 'server' \}\)/.test(SRC), '매입 기록: 서버 답만'); }
+  console.log('⑩ 웹앱 가져오기(폐기·반품) — 서버 답만 · 합치기');
+  { const APPF = [path.join(ROOT, 'src/app.html'), path.join(ROOT, 'app.html')].find((f) => fs.existsSync(f)); const APP = fs.readFileSync(APPF, 'utf8');
+    ok(/parseDisposalSheet\(wb\); const ss = await db\.collection\('pur_disposals'\)\.get\(\{ source: 'server' \}\); if \(ss\.metadata && ss\.metadata\.fromCache\) throw/.test(APP), '폐기 기록 가져오기: 기기 기억이면 멈춤');
+    ok(/b\.set\(db\.collection\('pur_disposals'\)\.doc\(d\.id\), \{ \.\.\.d, \.\.\.who \}, \{ merge: true \}\)/.test(APP), '폐기 기록 가져오기: 합치기(지움 표시를 덮지 않음)');
+    ok(/collection\('crm_returns'\)\.get\(\{ source: 'server' \}\); if \(ss\.metadata && ss\.metadata\.fromCache\) return/.test(APP), '반품 기록 가져오기: 기기 기억이면 멈춤');
+    ok(/b\.set\(db\.collection\('crm_returns'\)\.doc\(r\.id\), \{ \.\.\.r, importedBy: S\.user\.email, importedAt: TS\(\), fileName: file\.name \}, \{ merge: true \}\)/.test(APP), '반품 기록 가져오기: 합치기'); }
 
   console.log(bad ? `\n❌ ${bad}개 실패` : '\n✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e); process.exit(1); });
