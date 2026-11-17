@@ -90,6 +90,9 @@
      *  가장 작은 글자(minFs · 화면 px)로도 안 들어가면 그때만 앞부분 + 「…」 — 글이 글 자리 밖으로 나가는 일은 없음 */
     const FIT = { z: 0, fk: 0 }; const OVL = { n: 0 }; /* (shelf6) 여러 줄 겹침을 찾아 한 줄로 바꾼 수(시험·진단용 sec.dataset.ovl) */
     function fitSpines(list) { if (st.dead) return; const t0 = performance.now(); const sps = [...list].filter((b) => b.isConnected && !(b.classList.contains('img') && b.classList.contains('ok'))); if (!sps.length) return;
+      /* (shelfload2 11/17) 화면 밖 책등은 content-visibility:auto라 글을 잴 때마다 책등 하나씩 따로 배치함(휴대폰 첫 책장 맞추기 약 3배 느림) — 맞추는 동안만 모두 펼쳐 한 번에 배치 · 끝나면 되돌림(칠하기 전이라 화면은 그대로) */
+      for (const b of sps) b.classList.add('fitn'); try { fitIn(sps, t0); } finally { for (const b of sps) b.classList.remove('fitn'); } }
+    function fitIn(sps, t0) {
       const minF = C.minFs, J = [];
       for (const b of sps) { const tx = b.querySelector('.tx'); if (!tx) continue; const tt = tx.querySelector('.tt'), au = tx.querySelector('.au'); const x0 = byId.get(b.dataset.id); const x = x0 && b.dataset.v != null && x0._st ? { ...x0, t: x0._st.base } : x0 || { t: tt.textContent, a: au ? au.textContent : '' }; /* (shelfset1) 권 책등 글 = 세트 이름 */
         J.push({ b, tx, tt, au, t: x.t || '', a: (au && (x.a != null ? auOf(x) : au.textContent)) || '', W: 0, H: 0 }); }
