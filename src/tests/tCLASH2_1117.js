@@ -26,9 +26,12 @@ const fnOf = (name, pre) => { const i = T.indexOf((pre || 'function ') + name + 
     ok(ks(L.omniPick(TD, { from, bl: 1 })).indexOf('S4') < 0, '밀린 일 고르기(o.bl)에서도 뺌'); }
   console.log('② F-4 — 알라딘 앞선 수정·삭제가 진행 중이면 안 고름(맡겼다가 \'이미 맡김\'으로 닫히지 않게)');
   { const TD = L.ledTodo(L.ledBuild(I)); const P = L.omniPick(TD, { from, busy: (T0, a) => a.ch === 'aladin' && a.id === 'aladin_U1' }); ok(ks(P) === 'S4:yes24,S5:yes24', 'busy가 참인 알라딘 일만 뺌', ks(P));
-    const mk = (pend, plist, del) => new Function('ledAlPend', 'S', 'prdDelOf', 'CMD_ACTIVE', fnOf('omniBusy') + '\nreturn omniBusy;')(pend, { plist }, del, ['queued', 'running', 'held', 'verify', 'stuck', 'delcheck', 'paused']);
+    const mk = (pend, plist, del, log) => new Function('ledAlPend', 'S', 'prdDelOf', 'CMD_ACTIVE', fnOf('omniBusy') + '\nreturn omniBusy;')(pend, { plist, omni: { log: log || {} } }, del, ['queued', 'running', 'held', 'verify', 'stuck', 'delcheck', 'paused']);
     const T1 = { key: 'S1', last: '2026-11-17T04:00:00Z' }; const a1 = { ch: 'aladin', id: 'aladin_U1' }; const pl = new Map([['aladin_U1', { id: 'aladin_U1' }]]);
     ok(mk(() => ({ st: 'queued' }), pl, () => null)(T1, a1) === true, '판매상태·수량 수정 맡김 진행 중 → 바쁨');
+    ok(mk(() => ({ st: 'queued' }), pl, () => null, { 'S1|aladin|down|0|x': { key: 'S1', id: 'aladin_U1', st: 'claim' } })(T1, a1) === false, '앞선 명령이 엔진 자신의 것(맡기다 끊김) → 골라서 \'이미 맡김\'으로 닫음(새 명령 0 · tLED3 그대로)');
+    ok(mk(() => ({ st: 'queued' }), pl, () => null, { 'S9|aladin|down|0|x': { key: 'S9', id: 'aladin_U1', st: 'sent' } })(T1, a1) === true, '다른 할 일의 엔진 기록은 내 것이 아님 → 바쁨');
+    ok(mk(() => ({ done: 1 }), pl, () => null)(T1, a1) === false, '이미 반영됨(done · 목록 다시 읽기 기다림) → 예전처럼 \'이미 맡김\'으로 닫힘');
     ok(mk(() => ({ fail: 1 }), pl, () => null)(T1, a1) === false, '앞선 맡김이 실패로 끝남 → 바쁘지 않음(다시 고름)');
     ok(mk(() => null, pl, () => ({ c: { status: 'delcheck' } }))(T1, a1) === true && mk(() => null, pl, () => ({ c: { status: 'done' } }))(T1, a1) === false, '삭제 요청 진행 중 → 바쁨 · 삭제 끝남 → 바쁘지 않음');
     ok(mk(() => ({ st: 'queued' }), pl, () => null)(T1, { ch: 'yes24', no: '900' }) === false && mk(() => { throw new Error('x'); }, pl, () => null)(T1, a1) === false, '예스24·네이버는 이 셈 밖 · 셈 오류는 막지 않음(예전 그대로 — 뒤 omniDo \'이미 맡김\' 막이가 남음)'); }

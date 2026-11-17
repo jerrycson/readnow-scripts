@@ -10638,8 +10638,9 @@ function omniCur(T, a) { try { if (a.ch === 'aladin') { const l = S.plist.get(a.
     if (a.ch === 'yes24') { const r = y24LinkAll().find((x) => !x.x._x && String(x.x.goodsNo) === String(a.no || '')); return r ? { live: !!r.live, qty: +r.v.stock || 0, alq: alq() } : null; }
     if (a.ch === 'naver') { const x = ledAdLst().find((z) => z.ch === 'naver' && String(z.no || '') === String(a.no || '')); return x ? { live: !!x.live, qty: +x.qty || 0 } : null; } } catch (e) {} return null; }
 /* (clash2 F-4 · 규칙 4) 앞선 명령이 아직 끝나지 않은 할 일 — 알라딘: 판매상태·수량 수정(ledAlPend · ledAlGo가 '이미 맡김'으로 돌려보내는 것과 같은 셈 · 실패 기록은 빼고) · 상품 삭제(regDel) 진행 중
- *  이런 일을 고르면 맡김이 '이미 맡김'으로 닫혀(dup = 끝남으로 셈) 같은 할 일 열쇠로 다시 고르지 않았음 → 고르지 않고 다음 셈에서 다시 봄 */
-function omniBusy(T, a) { try { if (!a || a.ch !== 'aladin' || !a.id) return false; const P = ledAlPend(a.id, T && T.last); if (P && !P.fail) return true; const l = S.plist && S.plist.get(a.id); const D = l && typeof prdDelOf === 'function' ? prdDelOf(l) : null; return !!(D && CMD_ACTIVE.includes(D.c.status)); } catch (e) { return false; } }
+ *  이런 일을 고르면 맡김이 '이미 맡김'으로 닫혀(dup = 끝남으로 셈) 같은 할 일 열쇠로 다시 고르지 않았음 → 고르지 않고 다음 셈에서 다시 봄
+ *  단 그 앞선 명령이 엔진 자신의 것(같은 할 일·같은 상품의 자동 내림 기록이 있음 — 맡기다 끊김 등)이거나 이미 반영됨(done)이면 예전처럼 골라 '이미 맡김'으로 닫음(새 명령 0 · ⚠ 끊김 셈에서 빠짐 · tLED3_1112) */
+function omniBusy(T, a) { try { if (!a || a.ch !== 'aladin' || !a.id) return false; const P = ledAlPend(a.id, T && T.last); const mine = Object.values((S.omni && S.omni.log) || {}).some((e) => e && e.id === a.id && e.key === (T && T.key)); if (P && !P.fail && !P.done && !mine) return true; const l = S.plist && S.plist.get(a.id); const D = l && typeof prdDelOf === 'function' ? prdDelOf(l) : null; return !!(D && CMD_ACTIVE.includes(D.c.status)); } catch (e) { return false; } }
 /* (clash2 F-8 · 규칙 6) 보내기 직전 다시 셈 — 순수 셈 · P = 고른 일 { T, a, rk } · TD2 = 지금 장부 할 일(ledTodoNow) · cur = 그 판매처 지금 값(omniCur)
  *  할 일이 없어짐(주문 취소·이미 반영) · 예스24로 옮기는 중 · 주문·남은 권수가 바뀜(할 일 열쇠가 다름) → { wait }(이번엔 안 보냄 · 기록 없음 — 다음 셈이 새 값으로 다시 고름)
  *  그 밖 → omniStill(판매처 지금 값이 이미 맞으면 { shut } · 아니면 { go }) */
