@@ -4,11 +4,11 @@ import {orientedSkin} from './skin-normals35.mjs';
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
-export function paperRig(settings){
+export function paperRig(settings,makeShape=paperShape){
   const scene=form34(settings,'shallow'),torso=scene.parts[0],tissue=scene.tissue34;
   if(!tissue)return scene;
   const hip=scene.joints.right.hip[1],sh=scene.joints.right.shoulder[1],w=tissue.width;
-  const shape=paperShape(settings,w,hip,sh),responses=tissue.responses.slice(),old=torso.vertices;
+  const shape=makeShape(settings,w,hip,sh),responses=tissue.responses.slice(),old=torso.vertices;
   const y0=hip+(sh-hip)*.30,range=(sh-hip)*.75;
   const ridge=Array.from({length:49},(_,i)=>{
     const y=y0+range*i/48;

@@ -63,8 +63,8 @@ export function bindSurface(rest,settings){
     }
     const measured=rest.surfaceAnchors?.[side>0?1:0];
     const baseCenter=[width*side*cx,yAt(cy)];
-    const center=measured?[baseCenter[0]+.72*(measured.x-baseCenter[0]),baseCenter[1]+.65*(measured.y-baseCenter[1])]:baseCenter;
-    for(const t of [1,.8,.6,.4,.2,0]){
+    const center=measured?.observed?[measured.x,measured.y]:measured?[baseCenter[0]+.72*(measured.x-baseCenter[0]),baseCenter[1]+.65*(measured.y-baseCenter[1])]:baseCenter;
+    for(const t of (measured?.observed?[1]:[1,.8,.6,.4,.2,0])){
       const at=center.map((p,i)=>baseCenter[i]+t*(p-baseCenter[i]));
       const outer=patch(side,at,'areola'),inner=outer&&patch(side,at,'papilla');
       if(outer&&inner){bindings.push(outer,inner);break;}

@@ -18,7 +18,7 @@ export function paperShape(settings,chest,hipY,shoulderY){
   const radius=calibration.width*scale*form.width*(.84+.32*settings.breastRootWidth);
   const center=chest*(calibration.center+.16*(settings.breastSeparation-.5));
   const top=hipY+.934*torso+scale*.09-.12*torso*(settings.breastDrop-.30);
-  const profile=form.side,rim=form.rim,end=profile.at(-1)[0];
+  const profile=settings.contourProfile||form.side,rim=form.rim,end=profile.at(-1)[0];
   const projection=calibration.depth*(.63+.74*settings.breastProjection);
   const topVolume=settings.breastUpperFullness-.35;
   const apex=profile.reduce((a,p)=>p[1]>a[1]?p:a);

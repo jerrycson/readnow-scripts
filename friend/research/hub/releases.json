@@ -82,6 +82,20 @@
       "at": "2026-11-16T17:55:00.000Z",
       "label": "35차 · 지정 도판 공통형과 20종 · 얼굴·체표 원전 대조",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "7e4538f98f966f211b62b63e",
+      "project": "bookfriend",
+      "round": 36,
+      "cards": 307,
+      "sources": 296,
+      "chapters": 14,
+      "cardsSha": "36e42bdb00654fa42ed7a95c45513a0694b0593068f4afc34ac50c5546be2505",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "65b80eb841bc42f902d523212454b44edfd53c21807e01f1e06643c2b7b81c7d",
+      "at": "2026-11-17T01:03:00.000Z",
+      "label": "36차 · 얼굴·가슴 가시선과 다섯 사진 기반 얼굴 모델링",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }

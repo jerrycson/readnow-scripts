@@ -37,7 +37,7 @@ export function paperCompare(scene,img,cell){
   else {
     const landmarks=[1,-1].map(hand=>{
       const {c,top,foot}=scene.paperShape.frame(hand),marker=scene.paperShape.marker(hand);
-      const strip=sliceThroughSurface(scene,c,top,foot,101);
+      const strip=sliceThroughSurface(scene,marker.observed?marker.x:c,top,foot,101);
       const front=strip.filter(v=>v[1]>=marker.y-.08*scene.paperShape.scale);
       const material=front.reduce((a,b)=>Math.abs(a[1]-marker.y)<Math.abs(b[1]-marker.y)?a:b);
       return projectPoint(img,material);

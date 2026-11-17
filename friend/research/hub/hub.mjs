@@ -55,6 +55,7 @@ async function hostedCards(row){
   if(!row.hostSource)return data;
   const full={...data,cards:[...data.cards,...additions,...(row.round>=33?records33:[]),...(row.round>=34?records34:[])]};
   if(row.round>=35){const notes=decode(await get('../../pixel-lab/notes35.json'));full.cards=mergeNotes35(full.cards,notes);}
+  if(row.round>=36){for(const name of ['notes36','engine-notes36'])full.cards.push(...decode(await get('../../pixel-lab/'+name+'.json')));}
   if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');
   return full;
 }
