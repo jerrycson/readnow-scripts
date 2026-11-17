@@ -110,6 +110,20 @@
       "at": "2026-11-17T01:25:00.000Z",
       "label": "37차 · 사선 원화 네 컷과 페른 턱밑 후보",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "55309a1a03b5b3d2ac0290b6",
+      "project": "bookfriend",
+      "round": 38,
+      "cards": 314,
+      "sources": 303,
+      "chapters": 14,
+      "cardsSha": "76e3eabd04fb27cd2f300aced1f9f131d356b511162a76f9fbadd80b1da35e2b",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "2b23cd6431e76a19676b4a648e55065efa31cebfa57fdb6e68403b4fb977d873",
+      "at": "2026-11-17T02:13:00.000Z",
+      "label": "38차 · 턱과 목, 가슴 밑선 같은 구도 비교",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }
