@@ -1,3 +1,4 @@
+import {addRound47,displayedBase} from './studio-bases47.mjs';
 import {mountAngle46} from './studio-angle46.mjs';
 import {mountSurfaceControls} from './studio-surface-controls46.mjs';
 import {mountAngleComparison} from './studio-three-views46.mjs';
@@ -16,8 +17,11 @@ const options=(node,entries)=>node.replaceChildren(...entries.map(([key,name])=>
 let localPhoto;
 const models=new Map(),sessions=new Map(),cache=new Map();
 let learning44, surfaceControls, angleDial, compareAngles;
+const sourceParams=new URL(location.href).searchParams;
+const inRound47=sourceParams.get('round')==='47';
+const savedCells=new Map();
 let id,session,model,assets,zones=[],selected,active=true,scheduled=false,dirty=false,sourceDirty=true;
-let raw,edited,baseKey,valueKey,plate,plateKey,plateLeft,plateRight,plateTimer;
+let raw,comparison,edited,valueKey,plate,plateKey,plateLeft,plateRight,plateTimer;
 const status=s=>{el('status').textContent=s;};
 function schedule(reference=false){
   dirty=true;sourceDirty ||= reference;
@@ -32,7 +36,7 @@ function projection(){
   sourceDirty=false;
   const key=id+'/'+el('plateSelect').value;
   if(key!==plateKey){
-    plateKey=key;plate=plateInfo(model,el('plateSelect').value,assets);plateLeft=null;plateRight=null;
+    plateKey=key;plate=plateInfo(model,el('plateSelect').value,assets,inRound47);plateLeft=null;plateRight=null;
     const node=el('plate'),[x,y,w,h]=plate.bounds;
     node.setAttribute('viewBox','0 0 '+plate.width+' '+plate.height);
     const img=svg('image',{x,y,width:w,height:h,preserveAspectRatio:'none'});
@@ -42,8 +46,8 @@ function projection(){
     img.setAttribute('href',plate.image);node.replaceChildren(img);
     el('source').href=plate.page;el('credit').textContent=plate.credit+' 형상선은 중립 자세의 고정 투영입니다.';
   }
-  if(plateLeft?.scene!==raw)plateLeft={scene:raw,lines:plate.lines(raw)};
-  if(plateRight?.scene!==edited)plateRight={scene:edited,lines:edited===raw?plateLeft.lines:plate.lines(edited)};
+  if(plateLeft?.scene!==comparison)plateLeft={scene:comparison,lines:plate.lines(comparison)};
+  if(plateRight?.scene!==edited)plateRight={scene:edited,lines:edited===comparison?plateLeft.lines:plate.lines(edited)};
   const node=el('plate');
   for(const group of node.querySelectorAll('g'))group.remove();
   for(const [key,lines,color,dash] of [['trace',plate.observed,'#00737a',''],['priorLine',plateLeft.lines,'#8054a0','3 2'],['newLine',plateRight.lines,'#d74924','']]){
@@ -119,21 +123,25 @@ function draw(){
     const p=session.current,photo44=localPhoto.key(id)!=='original';
     const values44=learning44?.values(p,selected?.key,photo44)||p.values;
     const shapeKey=JSON.stringify(values44)+localPhoto.key(id);
-    if(raw!==model[p.base==='candidate'?'next':'prior']){
-      raw=model[p.base==='candidate'?'next':'prior'];zones=surfaceZones(raw,id);setupPins();valueKey=null;cache.clear();
+    const leftChoice=!inRound47||el('leftBase47').value==='same' ? p.base :
+      el('leftBase47').value==='history37' ? 'history37' : id==='F02'?'candidate':'prior';
+    comparison=displayedBase(model,leftChoice);
+    const shape=displayedBase(model,p.base);
+    if(raw!==shape){
+      raw=shape;zones=surfaceZones(raw,id);setupPins();valueKey=null;cache.clear();
     }
     if(valueKey!==shapeKey){edited=sculpt(localPhoto.shape(raw,id),id,values44);valueKey=shapeKey;cache.delete('edited');}
     const poseKey=p.view.pivot+':'+p.view.angle;
-    function displayed(key,src){
+    function displayed(key,src,sourceBase){
       let c=cache.get(key);
       if(!c||c.src!==src||c.pose!==poseKey){
-        c={src,pose:poseKey,display:displayScene(model,p.base,posed(src,id,p.view))};cache.set(key,c);
+        c={src,pose:poseKey,display:displayScene(model,sourceBase,posed(src,id,p.view))};cache.set(key,c);
       }
       const camera=JSON.stringify(p.view);
       if(c.camera!==camera){c.frame=renderSculpt(model,c.display,p.view);c.camera=camera;}
       return c;
     }
-    const left=displayed('start',raw),right=edited===raw?left:displayed('edited',edited);
+    const left=displayed('start',comparison,leftChoice),right=edited===comparison?left:displayed('edited',edited,p.base);
     bitmap(el('before'),left.frame);bitmap(el('after'),right.frame);
     compareAngles.update(model,left.display,right.display,p.view,()=>active);
     localPhoto.draw(id,raw,right.frame,right.display,model,p.view);
@@ -144,22 +152,50 @@ function draw(){
       n.style.left=(g.point[0]/p.view.size*100)+'%';n.style.top=(g.point[1]/p.view.size*100)+'%';
       n.hidden=g.point.some(q=>q<0||q>=p.view.size);
     }
-    el('leftTitle').textContent=baseLabel(id,p.base);el('camera').textContent='좌우 '+p.view.yaw.toFixed(1)+'° · 상하 '+p.view.pitch.toFixed(1)+'° · '+p.view.zoom.toFixed(2)+'배 · '+p.view.size+' × '+p.view.size;
+    el('leftTitle').textContent=baseLabel(id,leftChoice);
+    if(inRound47)el('rightTitle').textContent=baseLabel(id,p.base)+' · 교정';el('camera').textContent='좌우 '+p.view.yaw.toFixed(1)+'° · 상하 '+p.view.pitch.toFixed(1)+'° · '+p.view.zoom.toFixed(2)+'배 · '+p.view.size+' × '+p.view.size;
     if(edited.sculptGain<.9999)el('camera').textContent+=' · 얇은 면의 접힘을 제한해 변위 '+(edited.sculptGain*100).toFixed(1)+'% 적용';
     const main=document.querySelector('main');main.dataset.case=id;main.dataset.render=String((+main.dataset.render||0)+1);main.dataset.ready='true';
     if(sourceDirty){clearTimeout(plateTimer);plateTimer=setTimeout(()=>{try{projection();}catch(e){status('원본 대조 오류 · '+e.message);console.error(e);}},90);}
   }catch(e){status('조형 화면 오류 · '+e.message);console.error(e);}
 }
 function view(delta){session.current={...session.current,view:{...session.current.view,...delta}};updateValues();schedule();}
+function sourceViews(){
+  if(!inRound47)return assets.face.cases[id].views;
+  return assets.face47.cases[id].views.map(item=>({...item,pose:item.registrations[0],
+    role:item.newAfterFreeze?'후보 동결 뒤 첫 원화':item.used?'교정에 사용한 원화':'형상 대조 원화'}));
+}
+function registeredCamera() {
+  const key=el('plateSelect').value;
+  if(id==='W')return {yaw:assets.chest.paper[key].yaw,pitch:0};
+  if(key==='side'||key==='front')return {yaw:key==='side'?-90:0,pitch:0};
+  const pose=sourceViews().find(v=>v.key===key).pose;
+  return {yaw:pose.yaw,pitch:pose.pitch};
+}
+function matchPlate() {
+  const pose=registeredCamera();
+  view({...pose,zoom:1});
+}
 function changeCase(next){
   clearTimeout(plateTimer);session?.commit();id=next;
-  if(!sessions.has(id))sessions.set(id,new SculptSession(id));
-  if(!models.has(id))models.set(id,buildSculptBase(id,assets));
+  const freshSession=!sessions.has(id);
+  if(freshSession){
+    const fresh=new SculptSession(id);
+    if(inRound47){fresh.current.base='round47';fresh.current.view.size=48;}
+    sessions.set(id,fresh);
+  }
+  if(!models.has(id))models.set(id,addRound47(buildSculptBase(id,assets),assets));
   session=sessions.get(id);model=models.get(id);raw=null;valueKey=null;plateKey=null;cache.clear();
-  el('subject').value=id;options(el('basis'),['prior','candidate'].map(k=>[k,baseLabel(id,k)]));
+  el('subject').value=id;options(el('basis'),['prior','candidate','round47'].map(k=>[k,baseLabel(id,k)]));
   options(el('preset'),presets(id).map(([label],i)=>[String(i),label]));
   options(el('pivot'),pivotChoices(id).map(k=>[k,pivotSpec(k).label]));
-  options(el('plateSelect'),id==='W'?[['B3','B3 · 사선'],['S3','S3 · 측면'],['A5','A5 · 사선']]:[['side','설정화 3 · 측면'],['front','설정화 1 · 정면'],...assets.face.cases[id].views.map(v=>[v.key,v.key+' · '+v.role])]);
+  options(el('plateSelect'),id==='W'?[['B3','B3 · 사선'],['S3','S3 · 측면'],['A5','A5 · 사선']]:[['side','설정화 3 · 측면'],['front','설정화 1 · 정면'],...sourceViews().map(v=>[v.key,v.key+' · '+v.role])]);
+  if(inRound47){
+    const cells=el('plateSelect');
+    const wanted=savedCells.get(id)||sourceParams.get('cell')||(id==='F02'?'설정4':id==='M01'?'설정2':'B3');
+    if([...cells.options].some(o=>o.value===wanted))cells.value=wanted;
+    if(freshSession)Object.assign(session.current.view,registeredCamera());
+  }
   el('axes').replaceChildren();
   for(const [key,label] of Object.entries(axes(id))){
     const row=document.createElement('div');row.className='axis';row.dataset.axis=key;
@@ -172,16 +208,29 @@ function changeCase(next){
     }
     el('axes').append(row);
   }
-  const url=new URL(location.href);url.searchParams.set('case',id);history.replaceState(null,'',url);if(parent!==self)parent.postMessage({type:'bookfriend:sculpt-case',case:id},location.origin);
+  const url=new URL(location.href);url.searchParams.set('case',id);if(inRound47)url.searchParams.set('cell',el('plateSelect').value);history.replaceState(null,'',url);if(parent!==self)parent.postMessage({type:'bookfriend:sculpt-case',case:id},location.origin);
   updateValues();schedule(true);status(subjects[id]+' · 조형 준비됨');
 }
-const storeKey=()=>['bookfriend.sculpt.v1',id,el('slot').value].join('.');
+const storeKey=()=>[inRound47?'bookfriend.sculpt.47':'bookfriend.sculpt.v1',id,el('slot').value].join('.');
 function put(p){const v=validatePreset(p);if(v.subject!==id)changeCase(v.subject);session.apply(v);updateValues();schedule(true);}
 function hook(){
   surfaceControls=mountSurfaceControls({zone:()=>selected,labels:()=>axes(id),values:()=>session.current.values,preview:updateShape,commit});
   angleDial=mountAngle46({host:el('poseDial46'),range:el('poseRange'),number:el('poseNum'),joint:el('pivot')});
   compareAngles=mountAngleComparison(el('triptych'),renderSculpt,bitmap);
   learning44=mountSculptLearning44({redraw:()=>schedule(true),apply:values=>put({...session.current,values})});
+  el('compare47').hidden=!inRound47;
+  if(inRound47){
+    const reference=document.querySelector('section.reference');
+    el('angleComparison').after(reference);
+    const snap=button('원본 촬영각으로',matchPlate);
+    snap.id='sourceView47';reference.querySelector('.refHead').append(snap);
+    document.title='47차 원형 대조 · 책방 친구';
+    document.querySelector('h1').textContent='47차 · 원형 대조와 정밀 교정';
+
+    el('priorLine').parentElement.lastChild.textContent=' 왼쪽 대조선';
+  }
+  el('leftBase47').value=sourceParams.get('compare')==='37'?'history37':'current';
+  el('leftBase47').onchange=()=>{const url=new URL(location.href);url.searchParams.set('compare',el('leftBase47').value==='history37'?'37':el('leftBase47').value);history.replaceState(null,'',url);schedule(true);};
   el('subject').onchange=e=>changeCase(e.target.value);el('region').onchange=e=>selectZone(e.target.value);
   el('allAxes').onchange=()=>selectZone(selected.key);
   el('showHandles').onchange=()=>{el('handles').hidden=!el('showHandles').checked;};
@@ -191,7 +240,7 @@ function hook(){
   el('apply').onclick=()=>put({...session.current,values:{...zero(id),...presets(id)[+el('preset').value][1]}});
   el('pivot').onchange=e=>view({pivot:e.target.value,angle:0});
   for(const n of [el('poseRange'),el('poseNum')])n.oninput=()=>{if(n.value!==''&&n.validity.valid)view({angle:+n.value});};el('poseNum').onblur=updateValues;el('neutral').onclick=()=>view({angle:0});
-  el('plateSelect').onchange=()=>schedule(true);
+  el('plateSelect').onchange=()=>{if(inRound47){const cell=el('plateSelect').value;savedCells.set(id,cell);const u=new URL(location.href);u.searchParams.set('cell',cell);history.replaceState(null,'',u);matchPlate();}schedule(true);};
   for(const key of ['photo','trace','priorLine','newLine'])el(key).onchange=layers;
   for(const [label,y,p] of [['정면',0,0],['왼쪽 사선',-45,0],['오른쪽 사선',45,0],['측면',90,0],['뒷면',180,0],['위',0,55],['아래',0,-55]]){
     el('angles').append(button(label,()=>view({yaw:y,pitch:p})));
@@ -220,6 +269,7 @@ window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.
   active=e.data.active;if(active)schedule();else clearTimeout(plateTimer);});
 async function init(){
   const files={atlas:'atlas35',traces:'traces36',fit:'fit36',face:'face-eval42',chest:'chest-eval42'};
+  if(inRound47){files.face47='face-eval47';files.faceOverlay47='face-overlay47';}
   const [pairs]=await Promise.all([Promise.all(Object.entries(files).map(async([k,n])=>{const r=await fetch(n+'.json');if(!r.ok)throw Error(n+' 자료 없음');return [k,await r.json()];})),loadRig()]);
   assets=Object.fromEntries(pairs);localPhoto=photoControls(()=>schedule(true),view);hook();
   const key=new URL(location.href).searchParams.get('case');changeCase(Object.hasOwn(subjects,key)?key:'F02');mountMethodChoice();

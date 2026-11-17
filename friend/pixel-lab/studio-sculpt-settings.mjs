@@ -5,7 +5,7 @@ function keys(value,fields){
   return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===fields.length&&fields.every(k=>Object.hasOwn(value,k));
 }
 export function validatePreset(p){
-  if(!keys(p,['format','subject','base','values','view'])||p.format!==format||typeof p.subject!=='string'||!Object.hasOwn(subjects,p.subject)||!['prior','candidate'].includes(p.base))throw Error('지원하는 조형 설정 형식·인물·기준을 확인해 주세요.');
+  if(!keys(p,['format','subject','base','values','view'])||p.format!==format||typeof p.subject!=='string'||!Object.hasOwn(subjects,p.subject)||!['prior','candidate','round47'].includes(p.base))throw Error('지원하는 조형 설정 형식·인물·기준을 확인해 주세요.');
   if(!keys(p.values,Object.keys(axes(p.subject)))||Object.values(p.values).some(v=>!Number.isInteger(v)||Math.abs(v)>100))throw Error('조절값은 이 모델의 축마다 −100~100 사이 정수여야 합니다.');
   if(!keys(p.view,['yaw','pitch','zoom','size','pivot','angle']))throw Error('시점과 피봇 설정이 완전하지 않습니다.');
   const {yaw,pitch,zoom,size,pivot,angle}=p.view;

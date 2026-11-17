@@ -22,7 +22,7 @@ const bodyAxes={ribWidth:'흉곽 폭',ribDepth:'흉곽 두께',breastWidth:'가�
 export const axes=id=>id==='W'?bodyAxes:faceAxes;
 export const zero=id=>Object.fromEntries(Object.keys(axes(id)).map(k=>[k,0]));
 export const defaultBase=id=>id==='F02'?'candidate':'prior';
-export const baseLabel=(id,key)=>key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
+export const baseLabel=(id,key)=>key==='round47'?'47차 원본 대조 후보':key==='history37'?(id==='F02'?'37차 페른 턱 .75':'37차 당시 기본') : key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
 export const presets=id=>id==='W'?[
   ['얕고 넓게',{ribWidth:22,breastWidth:50,projection:-50}],['하부를 낮게',{lower:-50,projection:20}]
 ]:[['턱밑 올림',{throat:55,chin:-15}],['볼 폭 줄임',{cheek:-52,jaw:-20}]];
@@ -183,20 +183,24 @@ export function screenAnchors(frame,model,scene,view,zones){
     return {...zone,index,point,front:depth(v.n)>-.05};
   });
 }
-export function plateInfo(model,key,assets){
+export function plateInfo(model,key,assets,study47=false){
   if(model.id==='W'){
     const c=assets.traces.paper[key],rec=assets.chest.paper[key];
     return {image:'wallner-fig1-crop35.webp',width:c.size[0],height:c.size[1],bounds:[-c.box[0],-c.box[1],1137,1143],
       page:'https://doi.org/10.1007/s00266-021-02753-y',observed:c.lines,
       lines:sc=>chestOutline(sc,model.neutral,rec),credit:'Wallner 등 · 그림 1 · CC BY 4.0. 관측선과 가시 피부 하부를 고정 구도에 투영합니다.'};
   }
-  const record=assets.face.cases[model.id],oblique=record.views.find(v=>v.key===key);
+  const record=assets.face.cases[model.id], newView=study47?assets.face47.cases[model.id].views.find(v=>v.key===key):null;
+  const oblique=newView?{...newView,pose:newView.registrations[0]}:record.views.find(v=>v.key===key);
   if(oblique){
     const [x,y,w,h]=oblique.crop,[iw,ih]=oblique.size;
-    const anchorScene=key.startsWith('설정')?model.reg.before:model.prior;
+    const anchorScene=key.startsWith('설정')?model.reg.before:(study47&&model.id==='F02'?model.next:model.prior);
     const cam=cameraAt(oblique.pose.yaw,oblique.pose.pitch,landmarks(anchorScene),oblique.anchors);
+    const stored=newView&&assets.faceOverlay47.cases[model.id].views.find(v=>v.key===key);
+    const initial=model.id==='F02'?model.next:model.prior;
+    const lines=scene=>stored&&scene===model.round47?stored.after:stored&&scene===initial?stored.before:visibleEdges(scene,cam);
     return {image:oblique.source,page:oblique.page,width:248,height:248,bounds:[-x*248/w,-y*248/h,iw*248/w,ih*248/h],
-      observed:oblique.jaw,pointCloud:true,lines:scene=>visibleEdges(scene,cam),credit:oblique.role+' · '+oblique.registration+' · '+oblique.limits};
+      observed:oblique.jaw,pointCloud:true,lines,credit:newView?('47차 '+(newView.newAfterFreeze?'동결 뒤 처음 연 원화':'고정 정합 원화')+' · 눈·코·입 정합 잔차 '+oblique.pose.rms.toFixed(2)+'px · '+newView.limits):oblique.role+' · '+oblique.registration+' · '+oblique.limits};
   }
   const side=key==='side',ref=assets.traces.faces[model.id],range=record.sideRange;
   const crop=ps=>ps.filter(([x])=>x>=range[0]&&x<=range[1]);

@@ -485,6 +485,48 @@
         "precedent-note46"
       ],
       "supersedes": "e4df31995457cadc7bcbe843"
+    },
+    {
+      "id": "406caf8c0722abd651c5aa47",
+      "project": "bookfriend",
+      "round": 47,
+      "cards": 347,
+      "sources": 336,
+      "chapters": 14,
+      "cardsSha": "72ab99e710db2350befb59420efda3141185ed6e3d54542328a9802ea080520a",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "d407557243d34d396edb26c2409e71478d1118ec04af5ffd996c1421851efbcc",
+      "at": "2026-11-17T08:05:18.128Z",
+      "label": "47차 · 페른·힘멜 턱밑과 성인 몸통 하부 원본 대조",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45",
+        "controller-note46",
+        "precedent-note46",
+        "face-note47",
+        "chest-note47"
+      ],
+      "supersedes": "2d82ad13f9d8ccadd3492869",
+      "learningEvidence": {
+        "file": "studio-training47.json",
+        "sha256": "d0caa740a97158294b365f2b8b21fc2f4a99597933287a4cc4810f177b4d958b"
+      }
     }
   ]
 }

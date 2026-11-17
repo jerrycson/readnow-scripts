@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([['latest-fern','최신 모델'],['history','판본 비교'],['sculpt','정밀 조형'],['photo-engine36','내 참고그림'],['world','환경 실험']]);
-const studioRound=46;
+const studioRound=47;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
