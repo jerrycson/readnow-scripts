@@ -7,7 +7,7 @@ function harness(root) {
   const source = fs.readFileSync(path.join(root, 'shop/shop.js'), 'utf8');
   const file = defer(), cfg = defer(), mounts = [], errors = [], body = { innerHTML: '', insertAdjacentHTML() {} };
   const noop = () => {}, classList = { add: noop, remove: noop, toggle: noop };
-  const ctx = { console, location: { hash: '#/wish' }, document: { body: { classList } }, main: () => body, $$: () => [],
+  const ctx = { console, pageEpoch: 0, location: { hash: '#/wish' }, document: { body: { classList } }, main: () => body, $$: () => [],
     B: { route: (hash) => ({ name: hash.slice(2).split('?')[0] || 'home', q: Object.fromEntries(new URLSearchParams(hash.split('?')[1] || '')) }) },
     window: { scrollTo: noop, BQS: { cfgOf: x => ({ on: true, ...x }), previewCfg: () => ({}), demoItems: () => [] }, BQShelf: { mount: (el, options) => { const h = { options, destroyed: 0, destroy() { this.destroyed++; } }; mounts.push(h); el.innerHTML = '서가 화면'; return h; } } },
     shelfJs: () => file.promise, cfg: () => cfg.promise, api: () => Promise.resolve({ ok: true }), shopOpen: () => true,

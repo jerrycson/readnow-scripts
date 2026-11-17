@@ -43,6 +43,8 @@
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
   /* 같은 책 권 수 바꾸기(장바구니 −·+) — 1이면 n을 뺌(한 권 줄과 같은 꼴) */
   const cartSetN = (cart, id, n, lim) => (cart || []).map((x) => { if (!x || x.id !== id) return x; const k = Math.max(1, Math.min(Math.round(+n) || 1, lim || 9999, +x.q > 1 ? +x.q : 1)); const o = { ...x }; if (k > 1) o.n = k; else delete o.n; return o; });
+  /* 접수한 줄의 수량만 정리. 삭제 뒤 다시 담은 같은 상품은 다른 _entry라 보존한다. */
+  function cartAfterOrder(current, submitted) { const sent = new Map((submitted || []).filter(x => x && x._entry).map(x => [x._entry, x])); return (current || []).flatMap(x => { const old = x && sent.get(x._entry); if (!old || old.id !== x.id) return [x]; const n = (x.n > 1 ? x.n : 1) - (old.n > 1 ? old.n : 1); if (n <= 0) return []; const next = { ...x }; delete next._entry; if (n > 1) next.n = n; else delete next.n; return [next]; }); }
   const shipFee = (sum, cfg) => { const f = Math.max(0, +((cfg || {}).shipFee) || 0); const fo = Math.max(0, +((cfg || {}).freeOver) || 0); return sum <= 0 ? 0 : fo && sum >= fo ? 0 : f; };
   const cartSum = (cart, cfg) => { const sum = (cart || []).reduce((a, x) => a + (+x.p || 0) * (x.n > 1 ? x.n : 1), 0); const fee = shipFee(sum, cfg); return { n: units(cart), sum, fee, total: sum + fee }; };
   /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 클라우드 /shop/check 결과(st: 상품 → s 판매중·o 주문 중·x 팔림/내림 · p: 지금 값)로 고침 → { cart, gone:[{…, why}], moved:[{t, a, b}] }
@@ -87,5 +89,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { DKN, discKind, discH, discSw, UNIT, unitKind, unitOf, unitsTxt, kindUnit, units, cartSetN, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { DKN, discKind, discH, discSw, UNIT, unitKind, unitOf, unitsTxt, kindUnit, units, cartSetN, cartAfterOrder, qtyOf, BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
