@@ -30,4 +30,18 @@ const { chromium } = require('playwright');
     const o3 = T.listingOps({ usedCode: 'U2', listingId: '7002', qty: 6, status: '판매중', price: 8000 }, 'scm', nowIso());
     return { r1, ret, L: Object.fromEntries([...LISTINGS].map(([k, v]) => [k, { qty: v.qty, qtyList: v.qtyList, status: v.status, price: v.price, active: v.active }])), Q: [...T.QCHK_Q], changes: writes.filter((w) => w[0] === 'prd_listing_changes').map((w) => JSON.stringify(w[2].changes)), last: JSON.stringify(writes.filter((w) => w[0] === 'cmd').pop()[2]), logs, o: [o1.slim, o2.isNew, o3.slim] };
   }, { fnRead, fnCmd, fnOps, decl });
-  console.log(JSON.stringify(out, null, 1)); await b.close(); })().catch((e) => { console.error(e); process.exit(1); });
+  console.log(JSON.stringify(out, null, 1)); await b.close();
+  // (kfail2 11/17) 전엔 결과를 찍기만 하고 통과 줄이 없어 시험 문지기가 늘 '통과 줄 없음'으로 막음 — 위 주석의 규칙대로 확인 줄을 둠
+  const L = out.L, ok = (n, c) => { console.log((c ? '✓ ' : '  ❌ ') + n); return c; };
+  const R = [
+    ok('정보수정 읽기 — 수량 1·가격 9000·자체코드 BLKCMN·판매중', out.r1 && out.r1.ok && out.r1.qty === 1 && out.r1.price === 9000 && out.r1.code === 'BLKCMN' && out.r1.state === 1),
+    ok('수량 확인 — U1 우리 3→알라딘 1로 고침', L.aladin_U1.qty === 1 && out.changes.includes('{"qty":{"from":3,"to":1}}')),
+    ok('수량 확인 — U3 판매중→판매중지로 고침', L.aladin_U3.status === '판매중지' && out.changes.includes('{"status":{"from":"판매중","to":"판매중지"}}')),
+    ok('수량 확인 — U2 같으면 안 고침(바뀜 기록 2건뿐)', L.aladin_U2.qty === 6 && out.changes.length === 2),
+    ok('수량 확인 — U4 양식 없으면 못 읽음으로 남기고 우리 기록 그대로', L.aladin_U4.qty === 1 && /"aladin_U4":\{"e":/.test(out.last) && /"status":"done"/.test(out.last)),
+    ok('목록 수량 5(우리 1) — qty 안 덮고 qtyList 5 · 확인 차례에 넣음', L.aladin_U1.qty === 1 && L.aladin_U1.qtyList === 5 && out.Q.some((q) => q[0] === 'aladin_U1')),
+    ok('새 상품 U9 — 새로 들이고 확인 차례에 넣음', out.o[1] === true && L.aladin_U9 && L.aladin_U9.qty === 2 && out.Q.some((q) => q[0] === 'aladin_U9')),
+    ok('같은 U2 — 차례에 안 넣음', !out.Q.some((q) => q[0] === 'aladin_U2')),
+    ok('기록 — 3/4개 읽음 · 고친 2개 · 못 읽음 1개', /3\/4개 읽음/.test(out.logs.join()) && /고친 상품 2개/.test(out.logs.join()) && /못 읽음 1개/.test(out.logs.join())),
+  ];
+  console.log(R.every(Boolean) ? '✓ t72 통과' : '❌ t72 실패'); process.exit(R.every(Boolean) ? 0 : 1); })().catch((e) => { console.error(e); process.exit(1); });
