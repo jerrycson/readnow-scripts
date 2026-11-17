@@ -18,8 +18,14 @@ export function mark(host,key){
   for(const b of host.querySelectorAll('button[data-key]'))b.setAttribute('aria-pressed',String(b.dataset.key===String(key)));
 }
 import {chestFits51} from './chest-fits51.mjs';
+import {mountAppearance52} from './appearance-panel52.mjs';
 export function editor(onEdit,edition=50){
   const records=new Map();
+  const appearanceBox=document.createElement('section');appearanceBox.id='appearance52';appearanceBox.hidden=true;
+  el('modelTab').append(appearanceBox);
+  const drawAppearance=edition>=52?mountAppearance52(appearanceBox,(appearance,done)=>{
+    edit={...edit,appearance:{...appearance}};if(done)commit();onEdit();
+  }):()=>{};
   let id, resolved=[], zoneKey=null, edit, last, back=[],forward=[], panel, dial;
   const kind=()=>isChestSubject(id)?'W':id;
   const region=()=>resolved.find(z=>z.key===zoneKey);
@@ -76,7 +82,7 @@ export function editor(onEdit,edition=50){
   }
   function selectVersion(version){
     edit={...edit,version};
-    if(isChestSubject(id))edit.markerVersion=['candidate','lower51'].includes(version)&&markerLevels50[id]?'rebound':'source';
+    if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52'].includes(version)&&markerLevels50[id]?'rebound':'source';
     commit();drawControls();onEdit();
   }
   el('showNac').onchange=()=>marker({showNac:el('showNac').checked});
@@ -95,12 +101,12 @@ export function editor(onEdit,edition=50){
   for(const type of ['change','pointerup','keyup','focusout'])el('poseTab').addEventListener(type,commit);
   function restore(from,to){
     commit();if(!from.length)return;
-    to.push(clone(edit));edit=from.pop();last=clone(edit);drawControls();onEdit();
+    to.push(clone(edit));edit=from.pop();last=clone(edit);drawControls();drawAppearance(id,edit.appearance);onEdit();
   }
   el('undo').onclick=()=>restore(back,forward);el('redo').onclick=()=>restore(forward,back);
   return {
     current:()=>edit,
-    switchModel(key,editable){
+    switchModel(key,editable,trial){
       if(id){commit();records.set(id,{edit,back,forward,zoneKey});}
       id=key;resolved=[];
       const saved=records.get(id);
@@ -129,6 +135,12 @@ export function editor(onEdit,edition=50){
           if(!saved&&id==='F02')edit.version='orbit51';
         }
       }
+      if(edition>=52&&id==='F02')options.push(['jawNormal52','52차 H2 턱 음영'],['jawBoth52','H2 턱 형상·음영 · 보류']);
+      if(edition>=52&&id==='W')options.push(['lowerContact52','52차 안·바깥 접선'],['floor52','하부 낮추기 · 보류']);
+      if(!saved&&editable&&options.some(([key])=>key===trial)){
+        edit.version=trial;
+        if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52'].includes(trial)&&markerLevels50[id]?'rebound':'source';
+      }
       buttons(el('versions'),options,selectVersion);
       el('versionsBox').hidden=!editable;el('surfaceOptions').hidden=!isChestSubject(id);
       el('posePresets').hidden=!isChestSubject(id);
@@ -144,7 +156,7 @@ export function editor(onEdit,edition=50){
       buttons(el('joints'),editable?pivotChoices(kind()).map(p=>[p,pivotSpec(p).label]):[],pivot=>{
         commit();edit={...edit,pivot,angle:0,pose:'neutral'};commit();drawControls();onEdit();
       });
-      el('zones').replaceChildren();drawControls();
+      el('zones').replaceChildren();drawControls();drawAppearance(id,edit.appearance);
     },
     zones(items){
       if(resolved.length||!items.length)return;

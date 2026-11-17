@@ -1,0 +1,1428 @@
+{
+  "inputHashes": {
+    "headFit": "8447f5c2ba2057ba6dcf48138740a0918d0ef908ae5e1be231c6f6d5ebc8e859",
+    "hairSheet": "ace03d809f87a1a0a142e6aedaa845817bb6d35fc7c672e8ee3189cffcf0fe91",
+    "hairAnchor": "0852ce0374370f194e392f3a9e7663987bd71c01e5d05baca06c9646dd106296",
+    "scalpClearance": "f9c3c22676f386cc3e2fdc43c95bff77ec3c7e10f253b37c67158887469ff4eb"
+  },
+  "round": 52,
+  "scope": "중립 14몸체 × 같은 성별 4얼굴. 최초 전신 머리 접합. 51/52 얼굴 보정 미적용.",
+  "angles": [
+    [
+      0,
+      0
+    ],
+    [
+      45,
+      0
+    ],
+    [
+      90,
+      0
+    ],
+    [
+      160,
+      -12
+    ]
+  ],
+  "rows": [
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "female-2",
+      "face": "F02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000023302918075134305,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 112,
+      "pixel48": [
+        715,
+        645,
+        505,
+        646
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "female-2",
+      "face": "F01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003281682310327975,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 122,
+      "pixel48": [
+        697,
+        627,
+        481,
+        647
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "female-2",
+      "face": "F03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003376426741332434,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 111,
+      "pixel48": [
+        720,
+        638,
+        516,
+        653
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "female-2",
+      "face": "F05",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000033586107822323064,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 109,
+      "pixel48": [
+        707,
+        633,
+        496,
+        636
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "female-3",
+      "face": "F02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000023302918075134732,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 112,
+      "pixel48": [
+        687,
+        638,
+        509,
+        631
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "female-3",
+      "face": "F01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003281682310327797,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 122,
+      "pixel48": [
+        670,
+        619,
+        484,
+        631
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "female-3",
+      "face": "F03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000033764267413323944,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 111,
+      "pixel48": [
+        696,
+        633,
+        519,
+        638
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "female-3",
+      "face": "F05",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003358610782232276,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 109,
+      "pixel48": [
+        682,
+        626,
+        500,
+        620
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "female-4",
+      "face": "F02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000023302918075134732,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 112,
+      "pixel48": [
+        692,
+        631,
+        504,
+        641
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "female-4",
+      "face": "F01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003281682310327797,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 122,
+      "pixel48": [
+        674,
+        612,
+        479,
+        642
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "female-4",
+      "face": "F03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000033764267413323944,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 111,
+      "pixel48": [
+        701,
+        627,
+        517,
+        649
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "female-4",
+      "face": "F05",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003358610782232276,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 109,
+      "pixel48": [
+        686,
+        621,
+        497,
+        629
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1643,
+      "lowerPixelsChanged": 0,
+      "body": "female-5",
+      "face": "F02",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00006525697228862846,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 5,
+      "pixel48": [
+        496,
+        445,
+        471,
+        492
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1643,
+      "lowerPixelsChanged": 0,
+      "body": "female-5",
+      "face": "F01",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00011830211420355921,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        488,
+        422,
+        446,
+        487
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1643,
+      "lowerPixelsChanged": 0,
+      "body": "female-5",
+      "face": "F03",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00011665895674974218,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        498,
+        477,
+        497,
+        509
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1643,
+      "lowerPixelsChanged": 0,
+      "body": "female-5",
+      "face": "F05",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00012078149399986126,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 1,
+      "pixel48": [
+        496,
+        462,
+        474,
+        492
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1692,
+      "lowerPixelsChanged": 0,
+      "body": "female-6",
+      "face": "F02",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00007294993811271412,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 5,
+      "pixel48": [
+        490,
+        456,
+        470,
+        484
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1692,
+      "lowerPixelsChanged": 0,
+      "body": "female-6",
+      "face": "F01",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00012600965706637934,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        482,
+        432,
+        445,
+        481
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1692,
+      "lowerPixelsChanged": 0,
+      "body": "female-6",
+      "face": "F03",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.0001250591436477023,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        494,
+        488,
+        495,
+        503
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1692,
+      "lowerPixelsChanged": 0,
+      "body": "female-6",
+      "face": "F05",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00012960492487765018,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 1,
+      "pixel48": [
+        489,
+        472,
+        473,
+        486
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1690,
+      "lowerPixelsChanged": 0,
+      "body": "female-7",
+      "face": "F02",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00008081815100061763,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 4,
+      "pixel48": [
+        497,
+        453,
+        479,
+        469
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1690,
+      "lowerPixelsChanged": 0,
+      "body": "female-7",
+      "face": "F01",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00013439191612456104,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        486,
+        432,
+        449,
+        468
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1690,
+      "lowerPixelsChanged": 0,
+      "body": "female-7",
+      "face": "F03",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00013379349920450914,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        500,
+        488,
+        498,
+        491
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1690,
+      "lowerPixelsChanged": 0,
+      "body": "female-7",
+      "face": "F05",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00013868991746850937,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 1,
+      "pixel48": [
+        495,
+        471,
+        479,
+        474
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1726,
+      "lowerPixelsChanged": 0,
+      "body": "female-8",
+      "face": "F02",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00008880797149517663,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 4,
+      "pixel48": [
+        495,
+        468,
+        476,
+        466
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1726,
+      "lowerPixelsChanged": 0,
+      "body": "female-8",
+      "face": "F01",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00014327863987732332,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 1,
+      "pixel48": [
+        484,
+        447,
+        447,
+        463
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1726,
+      "lowerPixelsChanged": 0,
+      "body": "female-8",
+      "face": "F03",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00014278997369169188,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        498,
+        501,
+        498,
+        487
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1726,
+      "lowerPixelsChanged": 0,
+      "body": "female-8",
+      "face": "F05",
+      "nativeTrianglesPreserved": 28972,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.0001480555258781432,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8278,
+      "donorNormalTurnsOver90": 1,
+      "pixel48": [
+        492,
+        483,
+        478,
+        469
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "male-2",
+      "face": "M01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00002355359589951922,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 121,
+      "pixel48": [
+        720,
+        647,
+        486,
+        583
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "male-2",
+      "face": "M02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000037549479490101286,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 128,
+      "pixel48": [
+        707,
+        645,
+        481,
+        568
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "male-2",
+      "face": "M03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.0000196123335479194,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 126,
+      "pixel48": [
+        736,
+        631,
+        480,
+        578
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1004,
+      "lowerPixelsChanged": 0,
+      "body": "male-2",
+      "face": "M04",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00001645502558195248,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 137,
+      "pixel48": [
+        710,
+        629,
+        480,
+        569
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "male-3",
+      "face": "M01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000023553595899519585,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 121,
+      "pixel48": [
+        692,
+        639,
+        490,
+        565
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "male-3",
+      "face": "M02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003754947949010088,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 128,
+      "pixel48": [
+        682,
+        638,
+        486,
+        553
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "male-3",
+      "face": "M03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000019612333547918958,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 126,
+      "pixel48": [
+        708,
+        622,
+        484,
+        561
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1366,
+      "lowerPixelsChanged": 0,
+      "body": "male-3",
+      "face": "M04",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000016455025581952315,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 137,
+      "pixel48": [
+        685,
+        623,
+        484,
+        556
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "male-4",
+      "face": "M01",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000023553595899519585,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 121,
+      "pixel48": [
+        697,
+        633,
+        486,
+        574
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "male-4",
+      "face": "M02",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.00003754947949010088,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 128,
+      "pixel48": [
+        687,
+        635,
+        482,
+        565
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "male-4",
+      "face": "M03",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000019612333547918958,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 126,
+      "pixel48": [
+        712,
+        617,
+        480,
+        570
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1544,
+      "lowerPixelsChanged": 0,
+      "body": "male-4",
+      "face": "M04",
+      "nativeTrianglesPreserved": 7528,
+      "lowerClosed": 12,
+      "upperClosed": 46,
+      "connectorTriangles": 242,
+      "connectorAreaMin": 0.000016455025581952315,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 137,
+      "pixel48": [
+        691,
+        618,
+        482,
+        567
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1712,
+      "lowerPixelsChanged": 0,
+      "body": "male-5",
+      "face": "M01",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00006335141982802221,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        480,
+        465,
+        452,
+        492
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1712,
+      "lowerPixelsChanged": 0,
+      "body": "male-5",
+      "face": "M02",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00011895063340490572,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        513,
+        500,
+        453,
+        497
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1712,
+      "lowerPixelsChanged": 0,
+      "body": "male-5",
+      "face": "M03",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00005297654508557732,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        499,
+        449,
+        433,
+        485
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1712,
+      "lowerPixelsChanged": 0,
+      "body": "male-5",
+      "face": "M04",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.0000770665348407735,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        507,
+        475,
+        446,
+        498
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1728,
+      "lowerPixelsChanged": 0,
+      "body": "male-6",
+      "face": "M01",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00006451542876424235,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        485,
+        468,
+        455,
+        490
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1728,
+      "lowerPixelsChanged": 0,
+      "body": "male-6",
+      "face": "M02",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00012405910394068094,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        518,
+        503,
+        459,
+        498
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1728,
+      "lowerPixelsChanged": 0,
+      "body": "male-6",
+      "face": "M03",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00005215218908844376,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        502,
+        456,
+        439,
+        485
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1728,
+      "lowerPixelsChanged": 0,
+      "body": "male-6",
+      "face": "M04",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00008405805933549389,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        514,
+        478,
+        451,
+        499
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1731,
+      "lowerPixelsChanged": 0,
+      "body": "male-7",
+      "face": "M01",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00006568043495561336,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        484,
+        466,
+        459,
+        483
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1731,
+      "lowerPixelsChanged": 0,
+      "body": "male-7",
+      "face": "M02",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00012941356940867843,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        520,
+        505,
+        461,
+        490
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1731,
+      "lowerPixelsChanged": 0,
+      "body": "male-7",
+      "face": "M03",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.000051366617254300735,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        504,
+        458,
+        441,
+        477
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1731,
+      "lowerPixelsChanged": 0,
+      "body": "male-7",
+      "face": "M04",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00009113546635532793,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        515,
+        478,
+        454,
+        492
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1716,
+      "lowerPixelsChanged": 0,
+      "body": "male-8",
+      "face": "M01",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00006685850688787391,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        487,
+        475,
+        459,
+        483
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1716,
+      "lowerPixelsChanged": 0,
+      "body": "male-8",
+      "face": "M02",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00013499092181045816,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        525,
+        517,
+        462,
+        491
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1716,
+      "lowerPixelsChanged": 0,
+      "body": "male-8",
+      "face": "M03",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.000050171258761401254,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        507,
+        468,
+        445,
+        477
+      ]
+    },
+    {
+      "lowerPixelsCompared": 1716,
+      "lowerPixelsChanged": 0,
+      "body": "male-8",
+      "face": "M04",
+      "nativeTrianglesPreserved": 21032,
+      "lowerClosed": 24,
+      "upperClosed": 46,
+      "connectorTriangles": 254,
+      "connectorAreaMin": 0.00009828286968757238,
+      "connectorOpposed": 0,
+      "donorFacesCompared": 8318,
+      "donorNormalTurnsOver90": 0,
+      "pixel48": [
+        521,
+        489,
+        458,
+        493
+      ]
+    }
+  ],
+  "hair": [
+    {
+      "n": 2,
+      "id": "f15",
+      "generator": "기존 33파트",
+      "parts": 33,
+      "triangles": 2064,
+      "sourceMin": -0.23084502980260435,
+      "lowestY": 0.02499999999999991,
+      "changed": 351,
+      "rootOrXZChanged": 0,
+      "pixel48": 35
+    },
+    {
+      "n": 8,
+      "id": "f15",
+      "generator": "기존 33파트",
+      "parts": 33,
+      "triangles": 2064,
+      "sourceMin": 5.769154970197396,
+      "lowestY": 5.769154970197396,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 2,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 1.082090576,
+      "lowestY": 1.082090576,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 2,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": -0.12919476590878087,
+      "lowestY": 0.025000000000000022,
+      "changed": 774,
+      "rootOrXZChanged": 0,
+      "pixel48": 48
+    },
+    {
+      "n": 2,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": -0.7348016398697919,
+      "lowestY": 0.025000000000000022,
+      "changed": 920,
+      "rootOrXZChanged": 0,
+      "pixel48": 152
+    },
+    {
+      "n": 3,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 2.0820905759999997,
+      "lowestY": 2.0820905759999997,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 3,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 0.8708052340912191,
+      "lowestY": 0.8708052340912191,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 3,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 0.26519836013020814,
+      "lowestY": 0.26519836013020814,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 4,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 3.0820905759999997,
+      "lowestY": 3.0820905759999997,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 4,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 1.8708052340912191,
+      "lowestY": 1.8708052340912191,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 4,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 1.2651983601302081,
+      "lowestY": 1.2651983601302081,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 5,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 4.1262,
+      "lowestY": 4.1262,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 5,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 2.870805234091219,
+      "lowestY": 2.870805234091219,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 5,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 2.265198360130208,
+      "lowestY": 2.265198360130208,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 6,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 5.1262,
+      "lowestY": 5.1262,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 6,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 3.870805234091219,
+      "lowestY": 3.870805234091219,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 6,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 3.265198360130208,
+      "lowestY": 3.265198360130208,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 7,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 6.1262,
+      "lowestY": 6.1262,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 7,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 4.870805234091219,
+      "lowestY": 4.870805234091219,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 7,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 4.265198360130208,
+      "lowestY": 4.265198360130208,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 8,
+      "id": "f01",
+      "generator": "52 연속면",
+      "parts": 1,
+      "triangles": 6960,
+      "sourceMin": 7.1262,
+      "lowestY": 7.1262,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 8,
+      "id": "f11",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 5.870805234091219,
+      "lowestY": 5.870805234091219,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    },
+    {
+      "n": 8,
+      "id": "f15",
+      "generator": "52 연속면",
+      "parts": 9,
+      "triangles": 10032,
+      "sourceMin": 5.265198360130208,
+      "lowestY": 5.265198360130208,
+      "changed": 0,
+      "rootOrXZChanged": 0,
+      "pixel48": 0
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
-import {studioTools,studioGroups} from './studio-catalog.mjs?ui=51';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=52';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -15,7 +15,7 @@ const defaults=new Map([
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함'],['round-plan','회차별 계획']
 ]);
-const studioRound=51;
+const studioRound=52;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -68,7 +68,7 @@ function routeFromChild(e){
 function open(id,context){
   const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='workbench');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
   let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);workspace.main.append(f);f.onload=()=>{signal(f,!f.hidden);try{f.contentDocument?.addEventListener('click',routeFromChild);}catch{}};}
-  else if(context&&['sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
+  else if(context&&['workbench','sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
   for(const [key,other] of frames){other.hidden=key!==current;signal(other,!other.hidden);}
   workspace.setPrimary(t,f);$('title').textContent=(t.case?(edition?.round||studioRound)+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();observeTool();
 }

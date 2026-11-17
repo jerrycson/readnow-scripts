@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {checked} from '../studio-evidence44.mjs';
+const lab=new URL('../',import.meta.url);
+const read=name=>fs.readFileSync(new URL(name,lab));
+const json=name=>JSON.parse(read(name+'.json'));
+const face=json('face-eval52'),chest=json('chest-eval52'),body=json('body-eval52'),hair=json('hair-eval52');
+assert.equal(face.normalOnlyH2.moved,0);
+assert(face.normalOnlyH2.all.every(v=>v[1024].alpha===0&&v[48].alpha===0));
+assert.equal(chest.versions.length,3);
+assert(chest.metrics.lowerContact52.figure1.B3.darkBoundary.mae<chest.metrics.lower51.figure1.B3.darkBoundary.mae);
+assert(chest.metrics.lowerContact52.figure1.S3.darkBoundary.mae>chest.metrics.lower51.figure1.S3.darkBoundary.mae);
+assert.deepEqual(body.counts,{renders:1400,geometryCases:196});
+assert.equal(body.contact.reduce((a,r)=>a+r.previousBoth.newHits,0),1351);
+assert.equal(body.contact.reduce((a,r)=>a+r.cases.both.newHits,0),25);
+assert.equal(hair.native.length,14);assert(hair.native.every(v=>v.reset&&v.changed48>0));
+assert.equal(hair.counts.hair,100);assert.equal(Object.values(hair.families).reduce((sum,r)=>sum+r.continuous,0),45);
+for(const [file,sha] of Object.entries(hair.files))assert.equal(createHash('sha256').update(read(file)).digest('hex'),sha);
+const notes=['face-note52','chest-note52','body-note52','workspace-note52','head-fit-note52'].flatMap(json);
+assert.equal(new Set(notes.map(n=>n.noteId)).size,6);
+for(const n of notes){assert(n.unit.length>100&&!n.unit.includes('\n'));assert(n.detail.length>900&&n.sources.length>=2);}
+const rows=json('studio-training52');assert.equal(rows.length,55);assert.equal(new Set(rows.map(r=>r.id)).size,55);
+rows.forEach(checked);
+const journal=read('round52.html').toString();
+for(const match of journal.matchAll(/(?:href|src)="([^"?#]+)(?:[?#][^"]*)?"/g))assert(fs.existsSync(new URL(match[1],lab)),match[1]);
+console.log('52차 6개 원고, 55개 학습 기록, 14개 기본체와 귀·목·흉벽의 교정 및 반례 확인');

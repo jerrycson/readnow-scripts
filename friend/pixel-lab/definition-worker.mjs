@@ -11,6 +11,10 @@ import {candidateFaceSurface50,variants50} from './face-surface50.mjs';
 import {candidateLibraryProfile50} from './face-library-profile50.mjs';
 import {candidateOrbit51} from './face51.mjs';
 import {editChest51} from './chest51.mjs';
+import {appearanceScene52} from './appearance52.mjs';
+import {bodyStudy52} from './chest52.mjs';
+import {candidateJawBand52} from './face-jaw52.mjs';
+import {fitResearchHead52} from './head-fit52.mjs';
 async function load(name){
   const response=await fetch(new URL(name+'.json',import.meta.url));
   if(!response.ok)throw new Error(name+' 자료 '+response.status);
@@ -34,7 +38,17 @@ self.onmessage=async ({data})=>{
     }
     const key=JSON.stringify(edit||{});
     if(key!==editKey){
-      if(loaded.entry)shape=edit?.version==='lower51'?editChest51(loaded,edit,editChestStudy50):editChestStudy50(loaded,edit);
+      if(loaded.entry){
+        if(edit?.version==='lower51')shape=editChest51(loaded,edit,editChestStudy50);
+        else if(id==='W'&&['floor52','lowerContact52'].includes(edit?.version)){
+          shape=editChestStudy50(bodyStudy52(loaded,edit.version),{...edit,version:'candidate'});
+        }else shape=editChestStudy50(loaded,edit);
+      }else if(id==='F02'&&['jawNormal52','jawBoth52'].includes(edit?.version)){
+        loaded.cheek50??=cheekEnvelope50(loaded.model.round49,id,loaded.model.reg.before,.85,true);
+        loaded.jaws52??=new Map();
+        if(!loaded.jaws52.has(edit.version))loaded.jaws52.set(edit.version,candidateJawBand52(loaded.cheek50,id,edit.version==='jawNormal52'?'normals':'combined'));
+        shape=definitionScene({...loaded,model:{...loaded.model,round49:loaded.jaws52.get(edit.version)}},edit);
+      }
       else if(['orbit51','contact51'].includes(edit?.version)){
         const base=candidateOrbit51(loaded.model.round49,id,loaded.settings,edit.version==='contact51'?'contact':'study');
         shape=definitionScene({...loaded,model:{...loaded.model,round49:base}},edit);
@@ -61,6 +75,18 @@ self.onmessage=async ({data})=>{
         loaded.height50??=candidateLibraryHeight50(loaded.scene,id);
         shape=definitionScene({...loaded,model:{...loaded.model,round49:loaded.height50}},edit);
       }else shape=definitionScene(loaded,edit);
+      if(edit?.appearance){
+        const appearance=edit.appearance;
+        const donor=faceOptions50.find(o=>o.id===appearance.researchFace&&id.startsWith(o.sex+'-'));
+        if(donor){
+          loaded.researchHeads??=new Map();
+          if(!loaded.researchHeads.has(donor.id))loaded.researchHeads.set(donor.id,createFaceStudy50(donor.id,{atlas,traces,fit}));
+          const head=loaded.researchHeads.get(donor.id);
+          const hair=appearanceScene52(head,head.scene,{hair:appearance.hair});
+          const body=appearanceScene52(loaded,shape,{muscularity:appearance.muscularity,adiposity:appearance.adiposity});
+          shape=fitResearchHead52(loaded,body,head,hair);
+        }else shape=appearanceScene52(loaded,shape,appearance);
+      }
       editKey=key;
     }
     if(data.single){

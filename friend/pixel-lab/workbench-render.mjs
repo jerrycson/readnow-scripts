@@ -13,7 +13,7 @@ export function createRenderQueue({requestFor,receive,fail}) {
       const request=requestFor(index);
       if(!request)continue;
       if(!slot.worker){
-        slot.worker=new Worker(new URL('./definition-worker.mjs?v=51',import.meta.url),{type:'module'});
+        slot.worker=new Worker(new URL('./definition-worker.mjs?v=52',import.meta.url),{type:'module'});
         slot.worker.onmessage=({data})=>{
           const job=slot.job;
           slot.job=null;

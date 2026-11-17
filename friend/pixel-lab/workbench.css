@@ -11,3 +11,8 @@ main{min-height:0;display:flex;overflow:hidden}#stage{flex:1;min-width:0;min-hei
 #models .choices:has(.faceChoice){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}#models .faceChoice{min-width:0;padding:2px;font-size:10px;text-align:center}.faceChoice::before{content:"";display:block;aspect-ratio:1;background:#e9eae3 url(workbench-faces50.png) var(--portrait) center / 800% 100% no-repeat;border-radius:3px}
 #chestLibrary{padding-top:8px}#chestLibrary label{font-size:12px}#findChest{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:4px}#chestGroups{margin:7px 0;border-block:1px solid var(--line);padding-block:5px}#chestGroups button{font-size:11px;min-height:24px;padding:2px 4px}#chestList button{text-align:left;width:100%}#markerAxes label{display:grid;grid-template-columns:55px 1fr 32px;align-items:center;font-size:11px;gap:4px;margin:3px 0}#markerAxes input{width:100%}
 #chestList button{display:flex;align-items:center;gap:6px;padding:2px 5px}#chestList button::before{content:"";flex:0 0 38px;height:38px;border-radius:3px;background:#e9eae3 url(workbench-chests50.png) var(--column) var(--row) / 1000% 900% no-repeat}
+#appearance52{border-top:1px solid #b7c8be;margin-top:14px;padding-top:7px}
+#appearance52 input[type=search]{box-sizing:border-box;width:100%;margin:7px 0}
+.appearanceTabs{position:sticky;top:0;background:#f7f7f1;padding:4px 0}
+.appearanceChoices{max-height:15rem;overflow:auto;align-content:start;margin:7px 0;scrollbar-gutter:stable}
+.compositionAxes label{display:flex;gap:6px;align-items:center;margin:7px 0}.compositionAxes input{min-width:40px;flex:1}.compositionAxes output{font-variant-numeric:tabular-nums}

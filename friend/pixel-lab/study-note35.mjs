@@ -1,14 +1,23 @@
+import {latestPublished} from '../research/hub/published-state.mjs';
 const el=id=>document.getElementById(id),node=(tag,text,cl)=>Object.assign(document.createElement(tag),{textContent:text,...(cl?{className:cl}:{})});
 const qs=new URLSearchParams(location.search),initial=qs.get('id')||'shape-W';
 const split=[['전체',()=>true],['얼굴',r=>/얼굴|눈꺼풀|턱|입술/.test(r.group+r.title)],['가슴',r=>/가슴|체표|기본형|중력|선호|유방/.test(r.group+r.title)],['자세 실측',r=>r.noteId.startsWith('scan-')],['이전 연구',r=>r.noteId.startsWith('prior-')]];
 let data=[],active='',filter='전체',geometry;
 function bodyFor(r){
- const sheet=node('article','', 'studySheet');sheet.append(node('p',r.group+' · '+r.state,'meta'),node('h2',r.title));
+ const sheet=node('article','', 'studySheet');sheet.append(node('p',[r.group,r.state].filter(Boolean).join(' · '),'meta'),node('h2',r.title));
  for(const block of r.detail.split(/\n\s*\n/)){const lines=block.split('\n');for(const line of lines){if(!line.trim())continue;sheet.append(node(line.startsWith('### ')?'h3':'p',line.replace(/^### /,'')));}}
  const asset=geometry.get(r.noteId);
  if(asset){const fig=node('figure','','tracefigure'),svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('role','img');svg.setAttribute('aria-label','이 자료에서 추적한 윤곽');
  const all=asset.lines.flat(),xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),x=Math.min(...xs)-2,y=Math.min(...ys)-2;svg.setAttribute('viewBox',[x,y,Math.max(...xs)-x+2,Math.max(...ys)-y+2].join(' '));for(const points of asset.lines){const l=document.createElementNS(svg.namespaceURI,'polyline');l.setAttribute('points',points.map(p=>p.join(',')).join(' '));l.setAttribute('fill','none');l.setAttribute('stroke','#226b5a');l.setAttribute('stroke-width','1.4');svg.append(l);}fig.append(svg,node('figcaption',asset.label));sheet.append(fig);}
- const provenance=node('p','','source');provenance.append('35차 · '+r.noteId+'　');if(r.url){const a=node('a','원전 열기');a.href=r.url;a.target='_blank';a.rel='noopener';provenance.append(a);}sheet.append(provenance);return sheet;
+ const provenance=node('p','','source');
+ provenance.append((r.noteRound||35)+'차 · '+r.noteId+'　');
+ for(const src of r.sources?.length?r.sources:[{title:'원전 열기',url:r.url}]){
+   if(!src.url)continue;
+   let url;try{url=new URL(src.url,new URL('../research/hub/',location.href));}catch{continue;}
+   if(url.protocol!=='https:'&&!(url.origin===location.origin&&url.protocol==='http:'))continue;
+   const a=node('a',src.title||'원전 열기');a.href=url.href;a.target='_blank';a.rel='noopener';provenance.append(a,'　');
+ }
+ sheet.append(provenance);return sheet;
 }
 function select(id,update=true){
  const r=data.find(x=>x.noteId===id);if(!r)return;active=id;const overview=el('overview');overview.replaceChildren(node('p',r.state,'meta'),node('h2',r.title),node('h3','한 줄 요약'),node('p',r.line),node('h3','한 문단 요약'),node('p',r.unit));
@@ -26,6 +35,16 @@ async function start(){
  for(const r of [...atlas.faces,...atlas.bodies])geometry.set(r.id,{lines:r.lines.map(l=>l.points),label:r.name+'의 원자료에서 직접 딴 가시선. 회전 창에서 실제 캐릭터와 겹쳐 비교할 수 있습니다.'});
  for(const r of controls)geometry.set(r.id,{lines:[r.points],label:r.note});
  for(const k of ['shape-W','wallner'])geometry.set(k,{lines:ref.cells[12].lines.map(ps=>ps.map(([x,y])=>[x*82,y*125])),label:'지정 도판 B의 가운데 측면에서 따낸 상부 경사·돌출·하부 반환선.'});
+ if(!data.some(r=>r.noteId===initial)||qs.has('rev')){
+  const manifest=await json('../research/hub/releases.json');
+  const release=qs.has('rev')?manifest.releases.find(r=>r.id===qs.get('rev')):latestPublished(manifest.releases);
+  if(!release)throw Error('공개 회차를 확인할 수 없습니다.');
+  const names=[...(release.round>=36?['notes36','engine-notes36']:[]),...(release.round>=37?['notes37']:[]),
+    ...(release.round>=38?['face-note38','chest-note38']:[]),...(release.extraHostedNotes||[])];
+  for(const name of names)if(!/^[a-z][a-z0-9-]+$/.test(name))throw Error('연구 원고 주소를 확인하세요.');
+  const rows=await Promise.all(names.map(async name=>(await json(name+'.json')).map(r=>({...r,noteRound:Number(name.match(/\d+$/)?.[0])||release.round}))));
+  data=[...new Map([...data,...rows.flat()].filter(r=>r.noteId).map(r=>[r.noteId,r])).values()];
+ }
  if(qs.has('proof')){document.body.classList.add('proof');const report=node('div','','report');for(const r of data)report.append(bodyFor(r));document.body.append(report);}
- el('find').oninput=draw;el('print').onclick=()=>window.print();select(data.some(r=>r.noteId===initial)?initial:data[0].noteId,false);draw();document.body.dataset.ready=data.length;
+ el('find').oninput=draw;el('print').onclick=()=>window.print();if(!data.some(r=>r.noteId===initial))throw Error('지정한 자료를 선택한 공개 회차에서 찾을 수 없습니다.');select(initial,false);draw();document.body.dataset.ready=data.length;
 }start().catch(e=>{el('reader').textContent='연구 노트를 열 수 없습니다 · '+e.message;});
