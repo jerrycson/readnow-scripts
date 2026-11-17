@@ -4,6 +4,7 @@
 //   ① 자체코드 없는 예스24 주문 + 장부가 이은 예스24 상품(ISBN+등급 하나 · 🔗 사람 짝) → 알라딘 할 일(1권 = 판매중지 · 3권 = 수량 2) · 자동 내림이 고름
 //   ② 같은 ISBN 알라딘 상품이 여럿(짝 못 정함) · 짝 없는 예스24 상품 · 예스24 목록에 없는 번호 → 잇지 않음(사람 손 · 엉뚱한 상품을 내리지 않음)
 //   ③ 자체코드 = SKU 주문은 예전 그대로 · 사람이 이미 알라딘을 줄였으면 다시 줄이지 않음(같은 일 두 번 0) · 취소 주문은 셈에서 빠짐
+//   ④ ☁ 클라우드 대신 길(PC가 다 꺼졌을 때) — 자체코드 없는 예스24 줄도 🔗 사람 짝이 꼭 하나면 그 한 권짜리 알라딘 판매중지 · 짝 없음·여럿은 넘긴 까닭만 남김 · 두 번 0
 // 실행: node tY24ALL1117.js (순수 셈만 · 시험 자료에 손님 정보 없음)
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
@@ -42,4 +43,26 @@ console.log('③ 예전 길·두 번 막기·취소');
   const { TD: T2 } = run([yo('yx', '7007', 'PNKLUX')]); const b = alAct(T2, 'PNKs1'); ok(b && b.k === 'down', '자체코드가 실물 SKU가 아닌 값(PNKLUX)이어도 상품 번호로 이음', b);
   const al2 = AL.map((l) => (l.id === 'aladin_A3' ? { ...l, qty: 2 } : l)); const { TD: T3 } = run([yo('y3', '7003')], al2); ok(!alAct(T3, 'PNKa3a'), '사람이 이미 알라딘을 2권으로 줄였으면 할 일 없음(두 번 줄이지 않음)', T3.map((t) => [t.key, t.acts]));
   const { TD: T4 } = run([yo('y1', '7001', null, null, { cancel: true })]); ok(!alAct(T4, 'PNKa1'), '취소 주문은 셈에서 빠짐'); }
-console.log(bad ? `❌ tY24ALL1117 ${bad}개 실패` : '✓ tY24ALL1117 통과'); process.exit(bad ? 1 : 0);
+console.log('④ ☁ 클라우드 대신 길 — 자체코드 없는 예스24 줄');
+const CL = fs.readFileSync([path.resolve(__dirname, '..', '..', 'cloud', 'index.js'), path.resolve(__dirname, '..', 'cloud', 'index.js')].find((x) => fs.existsSync(x)), 'utf8');
+(async () => { const a = CL.indexOf('/* ══ (11/11 omni2 · 통합 솔루션) 🤖 자동 내림 — 웹앱 열린 PC가'), b = CL.indexOf('async function stratTick(force) {'); ok(a > 0 && b > a, '클라우드 덩어리 찾음');
+  const D = new Map(); const cpj = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+  const put = (cur, v) => { for (const [k, x] of Object.entries(v)) { if (x && x.__fv === 'ts') cur[k] = new Date().toISOString(); else if (x && x.__fv === 'au') cur[k] = [...(Array.isArray(cur[k]) ? cur[k] : []), ...x.v]; else if (x && typeof x === 'object' && !Array.isArray(x) && cur[k] && typeof cur[k] === 'object' && !Array.isArray(cur[k])) put(cur[k], x); else cur[k] = cpj(x); } return cur; };
+  let auto = 0; const ref = (c, id) => ({ id, get: async () => { const d = D.get(c + '/' + id); return { exists: !!d, id, data: () => cpj(d), ref: ref(c, id) }; }, set: async (v, o) => { const cur = D.get(c + '/' + id); D.set(c + '/' + id, put(o && o.merge && cur ? cur : {}, v)); } });
+  const C = (c) => ({ doc: (id) => ref(c, id || 'auto' + ++auto), where: (f, op, v) => ({ get: async () => { const docs = [...D.entries()].filter(([k]) => k.split('/')[0] === c).map(([k, d]) => ({ id: k.split('/')[1], data: () => cpj(d), ref: ref(c, k.split('/')[1]) })).filter((d) => { const x = d.data()[f]; return op === '>=' ? String(x || '') >= v : x === v; }); return { docs, forEach: (fn) => docs.forEach(fn) }; } }) });
+  const db = { runTransaction: async (fn) => fn({ get: (r) => r.get(), set: (r, v, o) => r.set(v, o) }) }; const FV = { serverTimestamp: () => ({ __fv: 'ts' }), arrayUnion: (...v) => ({ __fv: 'au', v }) };
+  const G = new Function('C', 'db', 'FV', 'nowIso', 'VER', 'log', CL.slice(a, b) + '\nreturn { omniCloudTick, OMNI_C };')(C, db, FV, () => new Date().toISOString(), 'test', () => {});
+  const T0 = Date.now(); const iso = (m) => new Date(T0 + m * 60e3).toISOString(); const set = (k, v) => D.set(k, cpj(v)); const cmds = () => [...D.entries()].filter(([k]) => k.startsWith('shp_cmds/')).map(([, v]) => v);
+  set('app_settings/sku_seq', { mapN: 0 }); set('app_settings/sku_map_0', { m: {} });
+  for (const id of ['aladin_M', 'aladin_N', 'aladin_Q']) set('prd_listings/' + id, { status: '판매중', active: true, qty: 1, listingId: id.slice(-1), title: '시험 책 ' + id.slice(-1) });
+  set('app_settings/y24_link', { m: { 8001: { al: ['aladin_M'] }, 8002: { al: ['aladin_N', 'aladin_Q'] } } });
+  set('app_settings/platforms', { omni: { autoDown: { on: 1, from: iso(-60) } } }); set('app_settings/omni_auto', { hb: {} });
+  set('crm_y24_orders/Z1', { orderNo: 'Z1', lastSeenAt: iso(-1), orderedAt: iso(-10), items: [{ self: '', goodsNo: 8001, qty: 1, title: '짝 하나' }] });
+  set('crm_y24_orders/Z2', { orderNo: 'Z2', lastSeenAt: iso(-1), orderedAt: iso(-9), items: [{ goodsNo: '8002', qty: 1, title: '짝 둘' }] });
+  set('crm_y24_orders/Z3', { orderNo: 'Z3', lastSeenAt: iso(-1), orderedAt: iso(-8), items: [{ goodsNo: '8003', qty: 1, title: '짝 없음' }] });
+  const r1 = await G.omniCloudTick(); const L = cmds(); const cx = Object.values((D.get('app_settings/omni_auto') || {}).c || {}); const n1 = (D.get('app_settings/omni_auto') || {}).cloud || {};
+  ok(r1 && r1.n === 1 && L.length === 1 && L[0].listingKey === 'aladin_M' && L[0].ch.state === '판매중지' && cx.length === 1 && cx[0].st === 'sent' && cx[0].from === 'yes24', 'PC 없음 → 자체코드 없는 예스24 주문의 🔗 사람 짝(하나) 알라딘 판매중지 1건', { r1, L: L.map((c) => c.listingKey), cx });
+  ok(r1.skip === 2 && (n1.ex || []).some((x) => x.no === 'Z2' && /2개/.test(x.why)) && (n1.ex || []).some((x) => x.no === 'Z3' && /사람 짝 없음/.test(x.why)), '짝 여럿·짝 없음은 안 건드리고 넘긴 까닭만(웹앱 🙋 카드)', n1.ex);
+  G.OMNI_C.at = 0; const r2 = await G.omniCloudTick(); ok(cmds().length === 1 && !(r2 && r2.n > 0), '다시 돌아도 되풀이 0(이미 판매중지 맡김)', r2);
+  ok(!/\b(alert|confirm|prompt)\s*\(/.test(CL.slice(a, b)) && !/buyer|rcv|phone|addr/.test(CL.slice(a, b)), '클라우드 덩어리 — 브라우저 창·손님 정보 칸 없음');
+})().catch((e) => ok(false, '클라우드 시험 오류', e.stack)).then(() => { console.log(bad ? `❌ tY24ALL1117 ${bad}개 실패` : '✓ tY24ALL1117 통과'); process.exit(bad ? 1 : 0); });
