@@ -12,7 +12,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); c
     const sh = document.querySelector('#sheet'); const secs = [...sh.querySelectorAll('section.shp-o')]; const s1 = secs.find((x) => x.dataset.anc === 'o:A-001'), s2 = secs.find((x) => x.dataset.anc === 'o:A-002');
     const out = { n: secs.length, h1: s1 && s1.querySelector('.shp-rcv').textContent, r1: s1 && (s1.querySelector('.shp-oh .shp-rcv2') || {}).textContent, r2: s2 && !!s2.querySelector('.shp-oh .shp-rcv2'), sci1: s1 && (s1.querySelector('.sci') || {}).outerHTML, sau1: s1 && (s1.querySelector('.sau') || {}).textContent, sau2: s2 && (s2.querySelector('.sau') || {}).textContent, set: !!sh.querySelector('#sau_set'), meta1: s1 && s1.querySelector('.shp-meta').textContent };
     // 설정 바꾸기 → 저장 + 토스트
-    window.__FSW = []; const box = sh.querySelector('#sau_set'); box.open = true; const mq = box.querySelector('[data-sau="minQty"]'); mq.value = '0'; mq.dispatchEvent(new Event('change')); const on = box.querySelector('[data-sau="on"]'); on.checked = false; on.dispatchEvent(new Event('change')); await new Promise((r) => setTimeout(r, 300));
+    window.__FSW = []; const box = sh.querySelector('#sau_set'); box.open = true; const mq = box.querySelector('[data-sau="qtyMax"]'); mq.value = '0'; mq.dispatchEvent(new Event('change')); const on = box.querySelector('[data-sau="on"]'); on.checked = false; on.dispatchEvent(new Event('change')); await new Promise((r) => setTimeout(r, 300));
     out.saved = (window.__FSW || []).filter((w) => w.n === 'app_settings' && w.id === 'ship_auto').map((w) => JSON.stringify(Object.keys(w.v).filter((k) => !/edited/.test(k)).reduce((a, k) => ({ ...a, [k]: w.v[k] }), {})));
     out.toast = (document.querySelector('#toast') || {}).textContent || '';
     // 서가별 보기
@@ -25,7 +25,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); c
     return out; });
   console.log(JSON.stringify(r, null, 1));
   const ok = r.n === 2 && r.h1 === '홍주문' && /받는 분 김수령/.test(r.r1 || '') && r.r2 === false && /sci-rc/.test(r.sci1 || '') && / bad/.test(r.sci1 || '') && /관리자 검토 필요/.test(r.sau1 || '') && /블랙리스트/.test(r.sau1 || '') && /24,000/.test(r.sau1 || '') && /자동 발송요청 완료/.test(r.sau2 || '') && r.set && !/주문인/.test(r.meta1 || '')
-    && r.saved.some((x) => /"minQty":1/.test(x)) && r.saved.some((x) => /"on":false/.test(x)) && /자동 발송요청 끔/.test(r.toast) && r.who.some((x) => /홍주문/.test(x) && /받는 분 김수령/.test(x)) && /홍주문/.test(r.deliv || '') && /받는 분 김수령/.test(r.deliv || '')
+    && r.saved.some((x) => /"qtyMax":1/.test(x)) && r.saved.some((x) => /"on":false/.test(x)) && /자동 발송요청 끔/.test(r.toast) && r.who.some((x) => /홍주문/.test(x) && /받는 분 김수령/.test(x)) && /홍주문/.test(r.deliv || '') && /받는 분 김수령/.test(r.deliv || '')
     && r.alerts.some((a) => a.key === 'autorev' && a.lv === 'top' && /24,000/.test(a.t) && /비싼 책/.test(a.t)) && r.alerts.some((a) => a.key === 'autodone' && /8,000/.test(a.t) && /보통 책/.test(a.t)) && r.biz >= 2 && /수령인/.test(r.pop || '') && !pe.length;
   console.log(pe.join('|')); console.log(ok ? '✓ tA2 통과' : '❌ tA2 실패');
 });
