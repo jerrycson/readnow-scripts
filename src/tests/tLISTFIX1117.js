@@ -36,7 +36,9 @@ function mk(opt) {
       return snap(ids.slice(s0, s0 + q._lim).map(D), false); } }; return q; };
   const firebase = { firestore: { Timestamp: { fromMillis: (x) => ({ ms: x }) }, FieldPath: { documentId: () => '__id__' }, FieldValue: { increment: (n) => ({ inc: n }) } } };
   const LCACHE = { get: async () => opt.cache || null, put: async (v) => { st.puts.push(v); } };
-  const sb = { C, firebase, LCACHE, log: (m, lv) => st.logs.push(String(m)), ui: () => {}, markReady: async () => {}, lcMs: (v) => (v && v.up) || 0, lcRevive: (v) => v, sleep: async () => {}, nowIso: () => new Date().toISOString(), PC_NAME: 'TESTPC', W: () => ({ writer: 'TESTPC' }), Date, JSON, console };
+  /* 1.89.351(lfcount1): 운영은 바탕 모듈의 공용 건수 세기(globalThis.__rnSrvCount · count() 없으면 REST 집계)를 부름 — 여기선 가짜 count() 길 */
+  const __rnSrvCount = async (c) => (await C(c).count().get()).data().count;
+  const sb = { __rnSrvCount, C, firebase, LCACHE, log: (m, lv) => st.logs.push(String(m)), ui: () => {}, markReady: async () => {}, lcMs: (v) => (v && v.up) || 0, lcRevive: (v) => v, sleep: async () => {}, nowIso: () => new Date().toISOString(), PC_NAME: 'TESTPC', W: () => ({ writer: 'TESTPC' }), Date, JSON, console };
   vm.createContext(sb);
   vm.runInContext(`let LISTINGS = null;\n${BLK}\n;this.api = { loadListings, lcPut, lfShort, lfTrip, lfStop, LMap, get L() { return LISTINGS; }, set L(v) { LISTINGS = v; }, get v() { return { LF_SRVN, LF_SRVN_AT, LF_STALE, LIST_LAST, LIST_FULL }; }, set srvAt(x) { LF_SRVN_AT = x; }, set full(x) { LIST_FULL = x; }, set last(x) { LIST_LAST = x; } };`, sb);
   return { A: sb.api, st, ids };
@@ -86,6 +88,19 @@ const rows = (ids) => ids.map((id) => [id, { listingId: id.slice(7), up: 1000 }]
   { const full = Array.from({ length: 26700 }, (_, i) => 'aladin_' + String(i + 1).padStart(6, '0'));
     const { A, st } = mk({ cache: { rows: rows(full), last: Date.now() - 3600e3, fullAt: Date.now() - 7200e3, mark: 0 }, countFail: true, shortPage: 99 }); const m = await A.loadListings();
     ok(m.size === 26710 && st.pages === 14, '건수를 못 세면 보관본을 믿지 않고 통째로(통째 읽기는 지난번 기준으로 검사)', { n: m.size, pages: st.pages }); }
+  /* (lfcount1 · 리드 11/17 h4 소견 ③) 세는 길이 다 막혀도 서버가 센 적 있는 건수(보관본에 적힌 그때 서버 건수 srvN)가 있으면 그것과 3% 대조해 보관본을 씀 — 켤 때마다 통째 읽기(하루 약 170만 읽기)로 빠지지 않게 */
+  { const full = Array.from({ length: 26700 }, (_, i) => 'aladin_' + String(i + 1).padStart(6, '0'));
+    const { A, st } = mk({ cache: { rows: rows(full), last: Date.now() - 3600e3, fullAt: Date.now() - 7200e3, mark: 0, srvN: 26710 }, countFail: true, delta: ['aladin_026705'] }); const m = await A.loadListings();
+    ok(m.size === 26701 && st.pages === 0, '건수를 못 세도 보관본에 서버가 센 건수(26,710)가 있으면 3% 대조 뒤 보관본 그대로(통째 읽기 없음)', { n: m.size, pages: st.pages });
+    ok(st.logs.some((l) => /아는 기준 26,710건\(서버 건수를 못 셈: unavailable\)/.test(l)), '아는 기준을 썼다는 것과 못 센 까닭을 기록 줄에', st.logs.slice(-2)); }
+  { const short = Array.from({ length: 10023 }, (_, i) => 'aladin_' + String(i + 1).padStart(6, '0'));
+    const { A, st } = mk({ cache: { rows: rows(short), last: Date.now() - 3600e3, fullAt: Date.now() - 7200e3, mark: 0, srvN: 26710 }, countFail: true }); const m = await A.loadListings();
+    ok(st.pages === 14 && st.logs.some((l) => /보관본이 모자람\(서버 26,710건 중 10,023건\)/.test(l)), '아는 기준(26,710)보다 3% 넘게 모자란 보관본(10,023) → 통째로', { pages: st.pages, logs: st.logs.slice(-3) }); }
+  { const full = Array.from({ length: 26700 }, (_, i) => 'aladin_' + String(i + 1).padStart(6, '0'));
+    const { A, st } = mk({ cache: { rows: rows(full), last: Date.now() - 3600e3, fullAt: Date.now() - 7200e3, mark: 0, srvN: 1500 }, countFail: true }); await A.loadListings();
+    ok(st.pages === 14, '아는 기준이 2천 건 이하(믿을 수 없음)면 쓰지 않고 통째로', { pages: st.pages }); }
+  { const { A, st } = mk({}); await A.loadListings(true); A.lcPut(A.L, Date.now(), Date.now(), true); const v = st.puts[st.puts.length - 1] || {};
+    ok(v.srvN === 26710, '보관본에 그때 서버가 센 건수(srvN)를 함께 둠', { srvN: v.srvN, puts: st.puts.length }); }
 
   console.log('⑤ 겹친 통째 읽기는 하나만(11/08 16:19 두 읽기가 겹쳐 21,999·5,999건)');
   { const { A, st } = mk({}); const [a, b, c] = await Promise.all([A.loadListings(), A.loadListings(), A.loadListings('inc')]);

@@ -819,6 +819,33 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const cur = keys(); if (cur) setAll(cur); // 한 곳에만 있어도 모두 맞춤
   window.__rnPcName = { get: keys, set: setAll, ask: (why) => { const v = keys(); if (v) return v; if (!window.__rnHuman(8000)) { window.__rnNote('이 PC의 이름이 아직 없습니다 — 수집기 개요에서 PC 이름을 정해 주세요 (사람이 없을 때는 묻지 않고 넘어감)', 'warn'); return null; } const n = prompt(`이 PC의 이름을 정해 주세요 (예: JS-MAIN, HOME). ${why || ''}\n한 번만 정하면 됩니다 — 새로고침·스크립트 교체 뒤에도 기억합니다.`); if (n && n.trim()) { setAll(n.trim()); return n.trim(); } return null; } };
 })();
+/* (lfcount1 11/17 · 🚨 자료) 🔢 서버 건수 세기 — 수집기 Firebase는 compat 10.12.2라 compat Query에 count()가 없음(firestore-compat 0.3.32 · where·orderBy·limit·get·onSnapshot뿐)
+ *  → 예전 `C(x).count().get()`은 늘 TypeError였고 부르는 곳이 삼켜 0·null로 여김: 저절로 되돌리기(prd_system/listfix_auto)가 「서버 건수를 못 셈」으로 매번 멈춤 · listfix1 덜 받음 지킴이가 사실상 꺼짐 · 고객 연결이 crm_orders를 늘 통째로 받음
+ *  ① count()가 함수면 그것 ② 아니면 웹앱 fsRestCount(1.78.113)와 같은 공식 REST 집계(documents:runAggregationQuery · 로그인 토큰 · 문서를 읽지 않고 수만 · 1천 건에 읽기 1번) — 페이지 fetch, 막히면 GM_xmlhttpRequest(@connect googleapis.com 그대로 · 머리 그대로)
+ *  ③ 둘 다 안 되면 0·null로 삼키지 않고 까닭(어느 길이 왜)을 담은 오류를 던짐 → 부르는 곳이 기록에 남김 */
+(function rnSrvCountInit() { const G = globalThis;
+  const fbOf = (fb) => fb || (typeof firebase !== 'undefined' ? firebase : null) || G.firebase || null;
+  const gmPost = (url, headers, data) => new Promise((res, rej) => { try { GM_xmlhttpRequest({ method: 'POST', url, headers, data, anonymous: true, timeout: 60000, onload: (r) => res({ status: r.status, text: r.responseText || '' }), onerror: () => rej(new Error('연결 실패')), ontimeout: () => rej(new Error('시간 초과')) }); } catch (e) { rej(e); } });
+  async function restCount(coll, fb) { const F = fbOf(fb); if (!F || !F.apps || !F.apps.length) throw new Error('Firebase 준비 전'); const u = F.auth().currentUser; if (!u) throw new Error('Firebase 로그인 전(로그인한 사용자 없음)');
+    const tok = await u.getIdToken(); const pid = F.app().options.projectId; if (!pid) throw new Error('projectId 없음');
+    const url = `https://firestore.googleapis.com/v1/projects/${pid}/databases/(default)/documents:runAggregationQuery`; const headers = { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' };
+    const body = JSON.stringify({ structuredAggregationQuery: { structuredQuery: { from: [{ collectionId: coll }] }, aggregations: [{ alias: 'n', count: {} }] } });
+    let st = 0, text = '', via = 'fetch'; try { const r = await fetch(url, { method: 'POST', headers, body }); st = r.status; text = await r.text(); } catch (e) { if (typeof GM_xmlhttpRequest !== 'function') throw new Error('fetch 실패(' + (e.message || e) + ')'); via = 'gm'; try { const r = await gmPost(url, headers, body); st = r.status; text = r.text; } catch (e2) { throw new Error(`fetch 실패(${e.message || e}) · GM 요청 실패(${e2.message || e2})`); } }
+    let j = null; try { j = JSON.parse(text); } catch (e) {}
+    if (st !== 200) { const m = j && (Array.isArray(j) ? j[0] : j); const em = m && m.error ? `${m.error.status || ''} ${m.error.message || ''}`.trim() : String(text || '').slice(0, 120); throw Object.assign(new Error(`HTTP ${st}${em ? ' ' + em.slice(0, 160) : ''} (${via})`), { st, via, status: (m && m.error && m.error.status) || '' }); }
+    const v = Array.isArray(j) && j[0] && j[0].result && j[0].result.aggregateFields && j[0].result.aggregateFields.n; const n = v && v.integerValue != null ? +v.integerValue : NaN; if (!Number.isFinite(n)) throw new Error('답에 건수가 없음 (' + via + ')'); return n; }
+  /* srvCount(이름 · fb?) → 건수(숫자) · 못 세면 오류(message = '<길> 까닭 · <길> 까닭') */
+  /* (리드 11/17 h4 소견) 실제 까닭을 판 뒤에 확인하게 — 모음마다 세션 첫 실패·첫 성공을 한 번씩 prd_system/srvcount_diag.<PC>.<모음>에 남김(count() 있었는지·code·글 · REST 상태·code·길) · 기록 실패는 건수 세기를 막지 않음 */
+  const seen = new Set();
+  const note = (coll, ok, d) => { const k = coll + (ok ? ':ok' : ':err'); if (seen.has(k)) return; seen.add(k); try { const F = fbOf(); if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return; const W = typeof window !== 'undefined' ? window : G; const pc = String((W.__rnPcName && W.__rnPcName.get()) || 'PC').replace(/[^\w가-힣-]/g, '_').slice(0, 40) || 'PC';
+    F.firestore().collection('prd_system').doc('srvcount_diag').set({ [pc]: { [String(coll).replace(/\W/g, '_')]: { [ok ? 'ok' : 'err']: { at: new Date().toISOString(), ...d } } } }, { merge: true }).catch(() => {}); } catch (e) {} };
+  async function srvCount(coll, fb) { const F = fbOf(fb); const why = []; const d = { cnt: { has: false } };
+    try { const q = F && F.firestore ? F.firestore().collection(coll) : null; d.cnt.has = !!(q && typeof q.count === 'function'); if (d.cnt.has) { const s = await q.count().get(); const n = +((s.data() || {}).count); if (Number.isFinite(n)) { note(coll, true, { via: 'count()', n, ...d }); return n; } why.push('count() 답에 건수 없음'); } else why.push('count() 없음(compat)'); } catch (e) { d.cnt.code = String(e.code || ''); d.cnt.msg = String(e.message || e).slice(0, 200); why.push('count() 실패(' + String(e.code || e.message || e).slice(0, 80) + ')'); }
+    try { const n = await restCount(coll, F); note(coll, true, { via: 'rest', n, ...d }); return n; } catch (e) { d.rest = { st: e.st || 0, via: e.via || '', code: e.status || '', msg: String(e.message || e).slice(0, 300) }; why.push('REST 집계 ' + String(e.message || e).slice(0, 200)); }
+    note(coll, false, { ...d, why: why.join(' · ').slice(0, 500) });
+    throw Object.assign(new Error(why.join(' · ')), { detail: d }); }
+  G.__rnSrvCount = srvCount; G.__rnRestCount = restCount;
+})();
 /* ═════════════ 작업 기록 (두 모듈 공통) ═════════════
  * 모든 진행(단계 시작·끝, 쪽·항목마다의 진행, 양보·기다림·오류)을 초 단위로 남김.
  * 이 PC: 날짜별로 브라우저에 보관(최근 7일) — 새로고침·멈춤 뒤에도 남음.  Firebase: rn_logs/{PC}_{날짜시각10분} 에 1분마다 묶어서 올림 → 웹앱이나 다른 PC에서도 확인.
@@ -2494,7 +2521,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!fdb || !fbUser) return;
     try {
       const localN = new Set((await dbAll('orderLines')).map((l) => l.orderNo)).size;
-      let serverN; try { serverN = (await fdb.collection('crm_orders').count().get()).data().count; } catch (e) { serverN = null; }
+      let serverN; try { serverN = await globalThis.__rnSrvCount('crm_orders', FB); } catch (e) { serverN = null; console.warn('[리드나우] crm_orders 서버 건수를 못 셈 — 통째로 받음:', e.message); } /* (lfcount1) compat에 count()가 없어 늘 null → 늘 통째로 받던 것 */
       if (serverN != null && serverN <= localN + 50) return;
       setNow('고객 연결을 위해 Firebase의 주문을 내려받는 중'); const snap = await fdb.collection('crm_orders').get();
       serverOrdersCache = []; snap.forEach((d) => serverOrdersCache.push({ _id: d.id, ...d.data() })); await markCrmDirty('serverOrders'); /* (1.89.140) buildDocs가 고객 연결에 씀 */
@@ -3147,8 +3174,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     let bad = 0; const cols = Object.keys(byCol);
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i]; let remote;
-      try { remote = (await fdb.collection(col).count().get()).data().count; }
-      catch (e) { remote = (await fdb.collection(col).get()).size; }
+      try { remote = await globalThis.__rnSrvCount(col, FB); } /* (lfcount1) compat에 count()가 없어 늘 통째로 받아 셌음 */
+      catch (e) { log(`${col}: 서버 건수를 못 셈(${String(e.message || e).slice(0, 160)}) — 문서를 통째로 받아 셈`); remote = (await fdb.collection(col).get()).size; }
       const local = byCol[col].length; const ok = remote >= local;
       log(`${col}: 이 PC ${local.toLocaleString()}개 / Firebase ${remote.toLocaleString()}개 ${ok ? '일치' : '부족'}`, ok ? 'ok' : 'err'); if (!ok) bad++;
       progress('Firebase 대조', i + 1, cols.length + 1);
@@ -5219,14 +5246,20 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const LF_MIN = 0.97, LF_OLDNEW_MAX = 50; let LF_SRVN = 0, LF_SRVN_AT = 0, LF_STALE = false, LF_INF = null;
   const lfShort = (n, srv, prev) => (srv > 2000 ? (n < srv * LF_MIN ? `서버 ${srv.toLocaleString()}건 중 ${n.toLocaleString()}건` : '') : prev > 2000 && n < prev * 0.8 ? `지난번 ${prev.toLocaleString()}건 중 ${n.toLocaleString()}건` : '');
   const lfTrip = (sofar, page) => (+sofar || 0) + (+page || 0) > LF_OLDNEW_MAX;
-  async function lfSrvCount() { try { const s = await C('prd_listings').count().get(); const n = +((s.data() || {}).count) || 0; if (n) { LF_SRVN = n; LF_SRVN_AT = Date.now(); } return n; } catch (e) { return 0; } }
+  const srvCount = (c) => (globalThis.__rnSrvCount ? globalThis.__rnSrvCount(c) : Promise.reject(new Error('건수 세기 함수 없음(바탕 모듈 옛 판)'))); /* (lfcount1) compat에 count()가 없어 REST 집계로 — 바탕 구역 rnSrvCountInit */
+  async function lfSrvCount(fresh) { /* 못 세면 0 · 까닭은 lfSrvCount.err(부르는 곳이 기록에 남김) · 실패는 5분 동안 다시 묻지 않음(바뀐 것만 받는 읽기마다 REST를 부르지 않게 · fresh면 늘 다시) */
+    if (!fresh && lfSrvCount.err && Date.now() - (lfSrvCount.errAt || 0) < 5 * 60e3) return 0;
+    try { const n = +(await srvCount('prd_listings')) || 0; if (n) { LF_SRVN = n; LF_SRVN_AT = Date.now(); lfSrvCount.err = ''; } else { lfSrvCount.err = '서버가 0건이라 답함'; lfSrvCount.errAt = Date.now(); } return n; }
+    catch (e) { lfSrvCount.err = String(e.message || e).slice(0, 300); lfSrvCount.errAt = Date.now(); if (!lfSrvCount.logged) { lfSrvCount.logged = 1; try { log('상품 서버 건수를 못 셈(이 세션 첫 오류 · 자세히 prd_system/srvcount_diag): ' + lfSrvCount.err, 1); } catch (e2) {} } return 0; } }
+  const lfSrvWhy = () => '서버 건수를 못 셈' + (lfSrvCount.err ? ': ' + lfSrvCount.err : '');
+  const lfKnownN = (c) => { const k = Math.max(LF_SRVN_AT && Date.now() - LF_SRVN_AT < 24 * 3600e3 ? LF_SRVN : 0, +(c && c.srvN) || 0); return k > 2000 ? k : 0; }; /* 서버가 센 적 있는 건수만(되돌리기에는 안 씀) */
   async function lfSrvGet(q) { const ss = await q.get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('상품 기록을 서버에서 받지 못함(PC 안 사본만 옴)'); return ss; }
   async function lfStop(info) { /* 멈춘 까닭을 prd_system/listfix에 남김(진단·웹앱이 봄) · 사람이 확인하고 allowUntil(ISO 시각)을 적어 두면 그때까지는 멈추지 않음(정말 처음 보는 상품이 많은 날) */
     let al = null; try { al = (await C('prd_system').doc('listfix').get({ source: 'server' })).data() || {}; } catch (e) { al = {}; } if (al.allowUntil && Date.parse(al.allowUntil) > Date.now()) { log(`🛡 처음 보는 옛 번호 상품 ${info.n}개 — prd_system/listfix 허락(${al.allowUntil}까지)이 있어 그대로 적음`, 1); return false; }
     const fresh = Date.now() - LIST_FULL < 30 * 60e3 && LF_SRVN > 0 && LISTINGS && LISTINGS.size >= LF_SRVN * LF_MIN; /* 방금 서버에서 통째로 읽어 건수까지 맞는데도 그렇다 = 정말 처음 보는 상품 → 다시 읽기를 되풀이하지 않고(읽기 2.6만 번씩) 사람 확인을 기다림 */ if (!fresh) LF_STALE = true;
     try { await C('prd_system').doc('listfix').set({ last: { at: nowIso(), pc: PC_NAME || '', ...info, fresh, known: LISTINGS ? LISTINGS.size : 0, srvN: LF_SRVN }, trips: firebase.firestore.FieldValue.increment(1), ...W() }, { merge: true }); } catch (e) {}
     log(`🛡 상품 조회 멈춤: ${info.status} ${info.page}쪽 — 이미 지난 번호(${info.maxKnown} 아래)인데 처음 보는 상품이 ${(info.sofar + info.n).toLocaleString()}개(문턱 ${LF_OLDNEW_MAX}) · 상품 기록을 덜 받았을 수 있어 적지 않음 · ${fresh ? '방금 서버와 건수가 맞음 — 사람이 확인하고 prd_system/listfix allowUntil을 적어야 이어 적음' : '다음 회차에 서버에서 통째로 다시 읽음'} · 예: ${(info.sample || []).join(', ')}`, 1); return true; }
-  const lcPut = (m, last, fullAt, now) => { if (LF_SRVN > 2000 && m && m.size < LF_SRVN * LF_MIN) return; /* (listfix1) 서버 건수보다 3% 넘게 모자란 지도는 보관본으로 두지 않음(11/08 보관본 10,023건) */ const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 240 : 30) * 60e3) return; /* (1.89.83 자동 점검 · 🔬 매일 정밀 점검 · 🪶) 로거 보관본은 240분에 한 번 — 1.89.76 계측으로 10/25 하루 LOGGER 'rn-*' 약 1GB·24번의 주인이 rn-lcache(한 번에 약 44MB 글자 · 상품 2.58만 건 전체 문서)임을 확인(21~24시 3번 131MB ≈ 44MB×3 · 24시 뒤 rn-lcache 44,442KB 1번) → 하루 약 6번 260MB. 다시 열 때 보관본 뒤 바뀐 것만 받으므로 기능 같음(4시간 묵은 보관본 = 새로고침 때 서버에서 수백~2천 건 더 받음 · 메모리 정리 새로고침 하루 23번) */ /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: LCACHE.atGet ? [...m].map(([k, v]) => [k, lcSlim(v)]) : [...m], last, fullAt, mark: LIST_MARK }).catch(() => {}); /* (W2) rows는 이미 칸만(lcKeep) — 보관본도 그만큼 작아짐 · mark = 표시 받은 자리 */ };
+  const lcPut = (m, last, fullAt, now) => { if (LF_SRVN > 2000 && m && m.size < LF_SRVN * LF_MIN) return; /* (listfix1) 서버 건수보다 3% 넘게 모자란 지도는 보관본으로 두지 않음(11/08 보관본 10,023건) */ const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 240 : 30) * 60e3) return; /* (1.89.83 자동 점검 · 🔬 매일 정밀 점검 · 🪶) 로거 보관본은 240분에 한 번 — 1.89.76 계측으로 10/25 하루 LOGGER 'rn-*' 약 1GB·24번의 주인이 rn-lcache(한 번에 약 44MB 글자 · 상품 2.58만 건 전체 문서)임을 확인(21~24시 3번 131MB ≈ 44MB×3 · 24시 뒤 rn-lcache 44,442KB 1번) → 하루 약 6번 260MB. 다시 열 때 보관본 뒤 바뀐 것만 받으므로 기능 같음(4시간 묵은 보관본 = 새로고침 때 서버에서 수백~2천 건 더 받음 · 메모리 정리 새로고침 하루 23번) */ /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: LCACHE.atGet ? [...m].map(([k, v]) => [k, lcSlim(v)]) : [...m], last, fullAt, mark: LIST_MARK, srvN: LF_SRVN_AT && Date.now() - LF_SRVN_AT < 24 * 3600e3 ? LF_SRVN : 0 }).catch(() => {}); /* (W2) rows는 이미 칸만(lcKeep) — 보관본도 그만큼 작아짐 · mark = 표시 받은 자리 */ };
   /* (1.89.101) 🚨 정범님 10/26 21:11 로거 멈춤의 원인 — 로거 크롬 보관본 rn-lcache(상품 2.6만 건 전체 문서 · 10/25 44MB)가 사진 받기 뒤 photos[](상품마다 미리보기 20~30장 주소)로 커져, Tampermonkey가 수집기를 켤 때 넘기는 저장소 묶음이 64MB 한도를 넘어 수집기가 아예 시작하지 못함(콘솔 'Message exceeded maximum allowed size of 64MiB' · 10/26 04:23~)
    *  → 로거 보관본에는 사진·미리보기 주소 목록을 빼고 수만 남김(로거는 사진을 쓰지 않음 · 사진 받기·미리보기 모으기는 서버 기록을 다시 읽음) · 그래도 24M자를 넘으면 보관하지 않고 지움(다음 시작 때 서버에서 받음 — 느릴 뿐 기능 같음) */
   function lcSlim(v) { if (!v || typeof v !== 'object') return v; if (!Array.isArray(v.photos) && !Array.isArray(v.previews) && !Array.isArray(v.photosMatch)) return v; const o = { ...v }; if (Array.isArray(o.photos)) { o.photosN = o.photos.length; delete o.photos; } if (Array.isArray(o.previews)) { o.previewsN = o.previews.length; delete o.previews; } if (o.photosMatch && typeof o.photosMatch === 'object') delete o.photosMatch; return o; }
@@ -5259,8 +5292,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     let c = null; if ((!force || force === 'inc') && !LF_STALE) { try { c = await LCACHE.get(); } catch (e) { c = null; } }
     if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new LMap(c.rows.map(([id, v]) => [id, lcRevive(v)])); /* (W2) 예전 보관본(문서 전체)도 넣을 때 칸만 남음 */ let max = c.last; LIST_MARK = +c.mark || 0; const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000))); /* 2분 겹쳐 읽음(시계 차이) · (listfix1) 서버 답만 */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
         let nm = 0; try { nm = await lcPullMarks(m); } catch (e) {}
-        { const srv = await lfSrvCount(); if (!srv) throw new Error('서버 건수를 못 셈'); const why = lfShort(m.size, srv, 0); if (why) throw new Error(`보관본이 모자람(${why})`); } /* (listfix1) 11/08 JS-MAIN 보관본이 10,023건뿐인데 그대로 받아 17,446개를 새 상품으로 적음 — 서버 건수와 대어 3% 넘게 모자라면 통째로 다시 읽음 */
-        LISTINGS = m; LIST_LAST = max; LIST_FULL = c.fullAt || Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건${nm ? ` · 표시만 바뀐 ${nm.toLocaleString()}건` : ''}만 받음)`); if (ss.size + nm > 300) lcPut(m, max, c.fullAt); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
+        let baseNote = ''; { let srv = await lfSrvCount(true); if (!srv) { const k = lfKnownN(c); if (!k) throw new Error(lfSrvWhy()); srv = k; baseNote = ` · 서버 건수 대신 아는 기준 ${k.toLocaleString()}건(${lfSrvWhy()})`; } const why = lfShort(m.size, srv, 0); if (why) throw new Error(`보관본이 모자람(${why})`); } /* (lfcount1 · 리드 11/17 h4 소견 ③) 세는 길이 모두 막혀도 켤 때마다 2.6만 건 통째 읽기(하루 약 170만 읽기 · 긴 멈춤 55.9초)로 빠지지 않게 — 서버가 센 적 있는 건수(이 세션 24시간 안 · 보관본에 적힌 그때 서버 건수)를 기준으로 3% 대조 · 서버가 센 적 없는 기준(보관본 자기 크기)은 쓰지 않음 · 되돌리기(쓰기)는 이 기준을 쓰지 않고 멈춤 */ /* (listfix1) 11/08 JS-MAIN 보관본이 10,023건뿐인데 그대로 받아 17,446개를 새 상품으로 적음 — 서버 건수와 대어 3% 넘게 모자라면 통째로 다시 읽음 */
+        LISTINGS = m; LIST_LAST = max; LIST_FULL = c.fullAt || Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건${nm ? ` · 표시만 바뀐 ${nm.toLocaleString()}건` : ''}만 받음${baseNote})`, baseNote ? 1 : 0); if (ss.size + nm > 300) lcPut(m, max, c.fullAt); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
     const m = new LMap(); let max = 0; const t0 = Date.now(); LIST_MARK = t0; /* (W2) 읽기 시작 뒤 적힌 표시는 다음 'inc'에서 */
     /* (1.89.126 4시간 점검 · 🪶) 하루 한 번 '통째로 읽기'를 2천 건씩 나눠 받음 — 10/27 22:56 LOGGER가 상품 2.6만 건 문서 전체를 한 번에 받아 한 번에 27.5초 멈춤(5분 긴 작업 63.7초) · 힙 1,650MB(평소 200~500MB)였음. 문서 수·읽기 비용은 같고, 한 번에 드는 응답이 2천 건으로 줄어 멈춤이 쪼개지고 힙 꼭대기가 낮아짐 · 나눠 읽는 동안 바뀐 상품은 다음 'inc'가 읽기 시작 시각부터 다시 받아 빠지지 않음 */
     const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await q.get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('상품 기록을 서버에서 다 받지 못함(보관 사본만 옴)'); /* (h4 11/17 하루 3번 점검) 11/17 12:37 HOME이 Firestore가 잠깐 끊긴(unavailable) 사이 통째 읽기 7번째 묶음을 PC 안 사본에서 덜 받아 11,999건(실제 26,710건)만 읽고 끝 → 전체 재검토가 나머지 1만 4천여 상품을 '새 상품'으로 보고 처음 본 날·등록일·수량을 덮어 적음 — 서버 답만 받고, 덜 받으면 읽기를 실패로 둠(새로 적지 않음) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */ if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; ui('기존 상품 기록 읽는 중', m.size, 0); await sleep(50); }
@@ -5339,7 +5372,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const m = new Map(); const keep = (v) => ({ f: v.firstSeenAt, r: v.registeredAt, g: v.registeredYearGuessed, q: v.qty, ql: v.qtyList, ec: v.editChkAt, a: !!v.active, lid: v.listingId == null ? '' : String(v.listingId) });
     if (since) { const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(since - 120000))); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); return m; }
     const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await lfSrvGet(q); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); ui('지금 상품 기록 읽는 중', m.size, LF_SRVN || 0, ''); if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; }
-    const srv = await lfSrvCount(); const why = srv ? lfShort(m.size, srv, 0) : '서버 건수를 못 셈'; if (why) throw new Error(`지금 상품 기록을 다 받지 못함(${why}) — 아무것도 쓰지 않음`); return m;
+    const srv = await lfSrvCount(true); const why = srv ? lfShort(m.size, srv, 0) : '서버 건수를 못 셈' + (lfSrvCount.err ? ': ' + lfSrvCount.err : ''); if (why) throw new Error(`지금 상품 기록을 다 받지 못함(${why}) — 아무것도 쓰지 않음`); return m;
   }
   const lfrDl = (name, obj) => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { log('내려받기 실패: ' + e.message, 1); } };
   const lfrStamp = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:T]/g, '');
@@ -5407,8 +5440,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const lfaRef = () => C('prd_system').doc(LFA.DOC);
   const lfaSet = (o) => lfaRef().set({ ...o, pc: PC_NAME || '', at: nowIso(), ...W() }, { merge: true }).catch(() => {});
   async function lfaClaim() { return db.runTransaction(async (tx) => { const s = await tx.get(lfaRef()); const x = s.data() || {}; if (x.stop === true) return null;
-    const old = x.state === 'run' && Date.now() - (Date.parse(x.runAt || '') || 0) > 3 * 3600e3; if (x.state && x.state !== 'wait' && !old) return null; if ((x.tries || 0) >= LFA.TRY) return null;
-    tx.set(lfaRef(), { state: 'run', runAt: nowIso(), tries: (x.tries || 0) + 1, pc: PC_NAME || '' }, { merge: true }); return x; }); }
+    const old = x.state === 'run' && Date.now() - (Date.parse(x.runAt || '') || 0) > 3 * 3600e3; if (x.state && x.state !== 'wait' && !old) return null;
+    let tries = x.tries || 0; const fix = {}; if (!x.cntfix && x.state === 'wait' && /서버 건수를 못 셈/.test(String(x.err || ''))) { fix.cntfix = 'lfcount1 ' + (typeof VER !== 'undefined' ? VER : ''); fix.cntfixAt = nowIso(); fix.cntfixTries = tries; tries = 0; } /* (lfcount1) 건수 세기가 고장이던 판(compat에 count() 없음)에서 「서버 건수를 못 셈」으로 쓴 시도는 셈에서 한 번만 빼 줌 — cntfix 표시로 되풀이 안 함 · done·held·error-apply·stop은 위에서 그대로 막음 */
+    if (tries >= LFA.TRY) return null;
+    tx.set(lfaRef(), { state: 'run', runAt: nowIso(), tries: tries + 1, pc: PC_NAME || '', ...fix, ...(x.err ? { prevErr: String(x.err).slice(0, 500), err: '' } : {}) }, { merge: true }); return x; }); } /* (lfcount1) 새 시도를 맡을 때 지난 까닭은 prevErr로 옮김(지우지 않음 · 지금 까닭과 헷갈리지 않게) */
   async function lfrAuto() {
     if (!LFA.ON || !PUBONLY || /^MJ-MAIN$/i.test(String(PC_NAME || '')) || !auth.currentUser || running || (typeof BKX !== 'undefined' && BKX.state === 'run') || GM_getValue('rn-lfa-done', '')) return;
     const ls = await lfaPost('/lf-ls'); if (ls.st !== 200 || !ls.j || !ls.j.ok) return; /* 도우미가 아직 1.8.31이 아님 — 다음 확인 때(도우미는 한 시간마다 스스로 새 판) */
@@ -9349,7 +9384,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     revAll: ['판매자 평가 전체 수집', async () => { if (!window.__rnAuto && !window.__rnRemote && window.__rnHuman(5000) && !confirm('모든 판매자의 평가를 처음 것까지 받습니다. 평가가 많은 판매자는 한 곳에 수천 쪽이라 며칠이 걸릴 수 있습니다. 멈춰도 이어서 할 수 있습니다. 시작할까요?')) return; return reviewJob('all'); }],
     chain: ['모두 일괄 수집', () => runChain(false)],
     prdChain: ['상품 일괄 수집 (고객 제외)', () => runChain(true)],
-    dynAll: ['구매자 분포 전체 수집', async () => { const human = window.__rnHuman(5000); /* (1.63.6) 확인 창은 사람이 막 누른 때만 · 책 수는 세기만(문서 수만 건을 다 받지 않음) */ let n = 0; if (human && !window.__rnRemote && !window.__rnAuto) { try { n = (await C('prd_books').count().get()).data().count; } catch (e) { n = (await C('prd_books').get()).size; } } if (human && !window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
+    dynAll: ['구매자 분포 전체 수집', async () => { const human = window.__rnHuman(5000); /* (1.63.6) 확인 창은 사람이 막 누른 때만 · 책 수는 세기만(문서 수만 건을 다 받지 않음) */ let n = 0; if (human && !window.__rnRemote && !window.__rnAuto) { try { n = await srvCount('prd_books'); } catch (e) { n = (await C('prd_books').get()).size; } /* (lfcount1) compat에 count()가 없어 늘 통째로 받던 것 */ } if (human && !window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
     soldInfo: ['판매완료 상품 정보·이미지', () => soldInfoJob()],
     poolInfo: ['알라딘 구매 풀(미연결) 도서 정보', () => poolInfoJob()],
     photos: ['📷 제품 사진 다시 받기 (예전 \'상품 사진\' 자리 — 제품 사진 판정만)', () => prodPhotosJob()],
