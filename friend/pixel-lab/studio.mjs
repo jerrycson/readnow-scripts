@@ -9,7 +9,8 @@ const defaults=new Map([
   ['latest-fern','최신 페른'],['latest-himmel','최신 힘멜'],['latest-chest','최신 몸통'],
   ['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
   ['photo-engine36','내 참고그림'],['world','환경'],['learning','학습 기록'],
-  ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구']
+  ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
+  ['acceptance','기본형 완성 기준·결함']
 ]);
 const studioRound=49;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
