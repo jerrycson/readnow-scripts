@@ -1,8 +1,9 @@
 // 나눈 수집기(본체 + 모듈)를 Tampermonkey처럼 이어 붙여 가짜 알라딘 화면에서 띄움: 시작 오류 없음 · 관제판·두 패널·모듈 확인
-const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
-const OUT = '/home/claude/w/out/'; const R = __dirname + '/repo/'; const FB = __dirname + '/fb/package/';
+// (kfail2 11/17) 옛 작업 자리(/home/claude/…) 대신 pcbuild.js가 저장소 원본을 split.js로 나눈 결과·Firebase compat 파일을 찾아 줌 · 인자를 주면 그 폴더의 본체를 씀
+const PB = require('./pcbuild.js'); const { chromium } = PB.playwright(); const fs = require('fs');
+const OUT = process.argv[2] ? require('path').resolve(process.argv[2]) + '/' : PB.build(); const R = PB.ROOT; const FB = PB.fbDir();
 const PATCH = (fs.readFileSync(__dirname + '/tone.js', 'utf8').match(/body \+= `([^`]*)`/) || [])[1];
-const main = fs.readFileSync(OUT + process.argv[2] || 'readnow-collector.user.js', 'utf8');
+const main = fs.readFileSync(OUT + 'readnow-collector.user.js', 'utf8');
 const reqs = [...main.matchAll(/\/\/ @require\s+(\S+)/g)].map((m) => m[1]);
 const load = (u) => { const f = u.split('?')[0].split('/').pop(); if (/gstatic/.test(u)) { let b = fs.readFileSync(FB + f, 'utf8'); if (/storage-compat/.test(f)) b += PATCH; return b; } if (/xlsx/.test(u)) return 'window.XLSX={};'; if (fs.existsSync(OUT + f)) return fs.readFileSync(OUT + f, 'utf8'); if (fs.existsSync(R + f)) return fs.readFileSync(R + f, 'utf8'); throw new Error('없음 ' + f); };
 const shim = `window.GM_info = { script: { version: '${(main.match(/@version\s+(\S+)/) || [])[1]}' } }; const _k = (k) => 'gm:' + k;
@@ -11,12 +12,12 @@ window.GM_listValues = () => Object.keys(localStorage).filter((x) => x.startsWit
 window.GM_xmlhttpRequest = () => {}; window.GM_notification = () => {}; window.GM_openInTab = () => ({ close() {} }); localStorage.setItem('gm:rnu-pcname', JSON.stringify('TEST-PC'));`;
 const code = reqs.map(load).join('\n;\n') + '\n;\n' + main;
 (async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1300, height: 950 } }); const errs = []; p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message + (/JSON/.test(e.message) ? ' @ ' + String(e.stack).slice(0, 600) : ''))); p.on('console', (m) => { if (m.type() === 'error' && !/Firestore|firestore|net::|Failed to load/.test(m.text())) errs.push('CONSOLE ' + m.text().slice(0, 160)); });
-  await p.route('**/*', (rt) => { const u = rt.request().url(); if (/aladin\.co\.kr\/scm\/worder_preparatory_complete/.test(u)) return rt.fulfill({ contentType: 'text/html; charset=utf-8', body: '<html><head><title>샵매니저</title></head><body><a href="/wC2Cuser_logout.aspx">로그아웃</a><div style="height:1500px">가짜 판매관리</div></body></html>' }); return rt.fulfill({ status: 404, body: '' }); });
+  await p.route('**/*', (rt) => { const u = rt.request().url(); if (/aladin\.co\.kr\/scm\/worder_preparatory_complete/.test(u)) return rt.fulfill({ contentType: 'text/html; charset=utf-8', body: '<html><head><title>샵매니저</title></head><body><a href="/wC2Cuser_logout.aspx">로그아웃</a><div style="height:1500px">가짜 판매관리</div></body></html>' }); return rt.abort('internetdisconnected'); }); /* (kfail2 11/17) 바깥(Firebase 등)은 404 빈 글 대신 끊김 — 빈 글이면 Firestore가 JSON을 못 읽어 우리 코드 밖 오류가 섞임 */
   await p.goto('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); await p.evaluate(shim);
   await p.addScriptTag({ content: '(function(){' + code + '\n})();' }).catch((e) => errs.push('ADD ' + e.message.slice(0, 200)));
   await p.waitForTimeout(6000);
   const st = await p.evaluate(() => ({ mods: window.__rnMods, ok: window.__rnModsOk, ctl: !!document.querySelector('#rn-ctl'), crmIn: !!document.querySelector('#rn-ctl #rn-crm'), prdIn: !!document.querySelector('#rn-ctl #rnp'), badge: (document.querySelector('#rnCtlBadge') || {}).textContent, aladin: !!window.ReadnowAladin, red: [...document.querySelectorAll('div')].some((d) => /모듈 판이 맞지 않음/.test(d.textContent) && d.style.position === 'fixed'), prdApi: Object.keys(window.__rnPrd || {}).join(','), crmApi: Object.keys(window.__rnCrm || {}).length }));
-  console.log(JSON.stringify(st, null, 1)); await p.click('#rn-uni [data-t="prd"]'); await p.waitForTimeout(500); await p.screenshot({ path: __dirname + '/split_prd.png', clip: { x: 860, y: 0, width: 440, height: 950 } });
+  console.log(JSON.stringify(st, null, 1)); await p.click('#rn-uni [data-t="prd"]'); await p.waitForTimeout(500); await p.screenshot({ path: OUT + 'split_prd.png', clip: { x: 860, y: 0, width: 440, height: 950 } });
 
   const R = await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const out = {};
     // ① 다른 탭에서 모두 일괄 수집 중 (이 탭은 쉬는 중)
@@ -24,7 +25,7 @@ const code = reqs.map(load).join('\n;\n') + '\n;\n' + main;
       chain: { order: ['crm', 'listings', 'metrics', 'sellers'], labels: { crm: '고객·주문', listings: '신규 등록', metrics: '도서·시장 지표', sellers: '판매자' }, on: { crm: true, listings: true, metrics: true, sellers: true }, res: { crm: 'done', listings: 'done' }, cur: 'metrics' },
       cur: { state: '도서·시장 지표 갱신', done: 1200, total: 4000, etaMin: 35 },
       ph: { prd: { list: [{ l: '기존 상품 기록 읽는 중', at: now - 9 * 60000, ms: 120000 }, { l: '도서·시장 지표 갱신', at: now - 7 * 60000 }] } } });
-    window.__rnJournalToggle(); await wait(1500); out.other = document.querySelector('#rnjO').innerText;
+    if (!document.querySelector('#rn-jw').classList.contains('on')) window.__rnJournalToggle(); /* (kfail2 11/17) 1.88.5(10/20)부터 일하는 탭은 기록 창이 저절로 열림 — 그대로 부르면 닫혀 버려 위 칸이 '쉬는 중'에 멈춤 */ await wait(2500); out.other = document.querySelector('#rnjO').innerText;
     // ② 이 탭에서 고객 '반품' 하나만
     GM_deleteValue('rnu-live-zzz111'); const S = window.__rnStatus; S.job = null;
     window.__rnPhase('crm', '반품 (상태별)', 'returns'); await wait(50); window.__rnPhase('crm', '자동 로그인 중 (1번째)', 'returns'); window.__rnPhase('crm', '반품 주문 상세', 'returns'); S.crm = { active: true, label: '반품 · 반품 주문 상세', done: 30, total: 120 };
@@ -36,9 +37,22 @@ const code = reqs.map(load).join('\n;\n') + '\n;\n' + main;
     document.querySelector('#rn-jw [data-jt="pw"]').click(); await wait(2500); out.pwTop = document.querySelector('#rnjO').innerText; out.pwBody = document.querySelector('#rnjB').innerText;
     out.pwErr = document.querySelectorAll('#rnjB .err').length;
     return out; });
-  console.log(JSON.stringify(R, null, 1)); await p.screenshot({ path: __dirname + '/j143_pw.png', clip: { x: 0, y: 450, width: 800, height: 500 } });
+  console.log(JSON.stringify(R, null, 1)); await p.screenshot({ path: OUT + 'j143_pw.png', clip: { x: 0, y: 450, width: 800, height: 500 } });
   await p.evaluate(async () => { document.querySelector('#rn-jw [data-jt="today"]').click(); const now = Date.now(); GM_setValue('rnu-live-zzz111', { tab: 'zzz111', page: 'wrecord_edit.aspx', at: now, busy: true, job: '모두 일괄 수집', jobStart: now - 50 * 60000,
       chain: { order: ['crm', 'listings', 'metrics', 'sellers'], labels: { crm: '고객·주문', listings: '신규 등록', metrics: '도서·시장 지표', sellers: '판매자' }, on: { crm: true, listings: true, metrics: true, sellers: true }, res: { crm: 'done', listings: 'done' }, cur: 'metrics' },
       cur: { state: '도서·시장 지표 갱신', done: 1200, total: 4000, etaMin: 35 }, ph: { prd: { list: [{ l: '기존 상품 기록 읽는 중', at: now - 9 * 60000, ms: 120000 }, { l: '도서·시장 지표 갱신', at: now - 7 * 60000 }] } } }); await new Promise((r) => setTimeout(r, 1500)); });
-  await p.screenshot({ path: __dirname + '/j143_chain.png', clip: { x: 0, y: 450, width: 800, height: 500 } });
-  console.log('ERR', errs.slice(0, 8)); await br.close(); })();
+  await p.screenshot({ path: OUT + 'j143_chain.png', clip: { x: 0, y: 450, width: 800, height: 500 } });
+  console.log('ERR', errs.slice(0, 8)); await br.close();
+  /* (kfail2 11/17) 판정 — 예전엔 결과를 찍기만 하고 통과·실패를 가르지 않아 시험 문지기가 늘 '통과 줄 없음'으로 봄 */
+  let bad = 0; const ok = (c, m) => { if (!c) bad++; console.log((c ? '  ✓ ' : '  ❌ ') + m); };
+  const V = (main.match(/@version\s+([\d.]+)/) || [])[1]; const M = st.mods || {};
+  ok(['boot', 'runtime', 'crm', 'products', 'ship', 'helper'].every((k) => M[k] === V) && st.ok === true, `나눈 모듈 6개가 모두 본체 판(${V})으로 뜸 · 모듈 확인 통과`);
+  ok(st.ctl && st.crmIn && st.prdIn, '통합 관제판 안에 고객·상품 두 패널');
+  ok(!st.red, '모듈 판이 맞지 않음 빨간 띠 없음');
+  ok(st.aladin && /runJob/.test(st.prdApi) && st.crmApi > 5, '알라딘 공용 파서·상품·고객 함수가 깨어남');
+  ok(/모두 일괄 수집/.test(R.other) && /다른 탭/.test(R.other), '① 다른 탭이 하는 일(모두 일괄 수집)이 기록 창 위 칸에 보임');
+  ok(R.crmPh === JSON.stringify(['반품 (상태별)', '반품 주문 상세']) && R.crmNote == null, '② 잠깐 지나가는 단계(자동 로그인)는 단계 목록에 안 쌓임');
+  ok(/가격 감시기/.test(R.pwTop) && /감시 중/.test(R.pwTop) && /line 3/.test(R.pwBody) && R.pwErr >= 1, '③ 🛰 감시 칸: 감시기 상태·기록·⚠ 줄은 오류 색');
+  const errs2 = errs.filter((e) => !/client is offline/.test(e)); /* 시험 자리엔 인터넷이 없어 Firestore '오프라인' 거절은 당연함 */
+  ok(!errs2.length, '시작·동작 중 화면 오류 없음' + (errs2.length ? ' — ' + errs2[0].slice(0, 160) : ''));
+  console.log(bad ? `❌ tj143 실패 ${bad}` : '✓ tj143 통과'); process.exit(bad ? 1 : 0); })().catch((e) => { console.log('❌ tj143 시험 오류: ' + (e && e.stack || e)); process.exit(1); });

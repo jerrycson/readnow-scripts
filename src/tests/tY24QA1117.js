@@ -59,7 +59,7 @@ console.log('③ 답 보냄 대기열 · 되풀이 0');
 
 console.log('④ 글 검사');
 { const qr = cut('/* ◆y24qr 시작', '/* ◆y24qr 끝 */');
-  ok(/S\.qnaAll\.concat\(y24QnaList\(\)\)/.test(T), '👥 문의 모음이 알라딘 + 예스24를 합침');
+  ok(/S\.qnaAll : \[\]\)\.concat\(qnaY24List\(\)\)/.test(fnOf('qnaAllList')) && /qnaAllList\(\)/.test(fnOf('renderQnaBox')), '👥 문의 모음이 알라딘 + 예스24를 합침(y24qna3 11/17 — qnaAllList 한 곳에서)');
   ok(/🟦 예스24/.test(fnOf('renderQnaBox')) && /🟧 알라딘/.test(fnOf('renderQnaBox')), '문의 모음 카드에 판매처 표시');
   ok(/y24QaSend\(/.test(fnOf('qrSend')) && /y24QrHtml\(/.test(fnOf('qrHtml')), '답 창 보내기가 예스24 문의는 예스24 길로');
   ok(/runTransaction/.test(fnOf('y24QaSend')) && /y24WRelayWhy/.test(fnOf('y24QaSend')), '맡김은 한 거래(transaction) 안 · 맡은 PC가 살아 있을 때만');

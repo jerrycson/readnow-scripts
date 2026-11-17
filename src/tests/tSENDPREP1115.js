@@ -14,4 +14,4 @@ t(!F.CMD_TXT.shipWait && !/shipWait/.test(A), '② 출고 PC 기다림 표시(sh
 t(!/출고 PC MJ-MAIN 기다림/.test(F.cmdResLine('A1')), '③ 근거 줄에 출고 PC 기다림 없음: ' + F.cmdResLine('A1'));
 S.shipCmds = [{ ...S.shipCmds[0], status: 'running', claim: { pc: 'JS-MAIN', at: new Date().toISOString() }, beatAt: new Date().toISOString() }]; t(F.cmdStateOf('A1') === 'running', '④ 어느 PC가 맡으면 처리 중'); t(/처리: JS-MAIN/.test(F.cmdResLine('A1')), '④ 맡은 PC 이름이 근거 줄에');
 S.shipCmds = [{ id: 'x', type: 'startDelivery', orderNos: ['A1'], status: 'queued', createdAt: new Date().toISOString() }]; t(F.cmdStateOf('A1') === 'queued', '④ 방금 맡긴 것은 대기');
-console.log(`tSENDPREP1115: ${ok} 통과 · ${bad} 실패`); process.exit(bad ? 1 : 0);
+console.log(bad ? `❌ tSENDPREP1115: ${ok} 통과 · ${bad} 실패` : `✓ tSENDPREP1115 통과 — ${ok}개`); process.exit(bad ? 1 : 0); /* (kfail2 11/17) 끝 줄을 문지기가 읽는 '✓ … 통과' 꼴로 — 전엔 '7 통과 · 0 실패'라 통과 줄 없음으로 읽혀 알려진 실패에 올라 있었음 */

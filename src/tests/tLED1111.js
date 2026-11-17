@@ -56,6 +56,11 @@ console.log('② 화면');
 require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type()); d.dismiss().catch(() => {}); });
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
   const cmds = (type) => p.evaluate(async (ty) => { const g = await db.collection('shp_cmds').get(); const L = []; g.forEach((d) => { const v = d.data() || {}; if (v.type === ty) L.push({ id: d.id, ...v }); }); return L; }, type);
+  /* (kfail2 11/17) 두 번 누름의 '0.4초 안 겹누름'은 브라우저 안에서 바로 이어 누름 — 전엔 playwright 누름·기다림·자료 읽기를 오가 바쁜 기계(부하 10 넘음)에서 둘째 누름이 0.4초를 넘겨 '실행'이 되어(맡김이 생김) 이 항목이 실패하거나, 그 줄이 끝나 사라져 셋째 누름이 30초를 넘겼음 · 기대 그대로 */
+  const armQuick = (sel, ty) => p.evaluate(async ([sel, ty]) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const n = async () => { const g = await db.collection('shp_cmds').get(); let c = 0; g.forEach((d) => { if ((d.data() || {}).type === ty) c++; }); return c; };
+    document.querySelector(sel).click(); const t0 = Date.now(); while (!(document.querySelector(sel) || {}).classList?.contains('ux2-armed') && Date.now() - t0 < 3000) await W(20); const at = Date.now();
+    const b = document.querySelector(sel); const arm = b ? b.textContent : ''; const tip = (document.querySelector('.ux2-armtip') || {}).textContent || ''; const sheet = !!document.querySelector('.bigask-ov'); const inp = !!document.querySelector('#bdel_in, .askbox .askin'); const n0 = await n();
+    document.querySelector(sel).click(); const gap = Date.now() - at; await W(100); return { arm, tip, sheet, inp, n0, n0b: await n(), gap }; }, [sel, ty]);
   /* 장부 자료: 시험 상품 두 권(aladin_U215983410 1권 · aladin_U215983412 1권)을 예스24에서 팔린 것으로 */
   await p.evaluate(() => { const uni = '/* ◆ledger 시작'; void uni; window.__ledSold = new Set(['aladin_U215983410', 'aladin_U215983412']);
     window.ledNow = () => { const al = ['aladin_U215983410', 'aladin_U215983412', 'aladin_U215983414'].map((id) => { const l = S.plist.get(id); return { id, title: l.title, isbn: l.isbn13, grade: l.grade, price: l.price, qty: 1, live: aladinLive(l), st: l.status, skus: ['SK' + id.slice(-2)] }; });
@@ -67,10 +72,9 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const R = await p.evaluate(() => { const sh = document.getElementById('sheet'); const tabs = [...sh.querySelectorAll('[data-ledview]')].map((b) => b.textContent.trim()); const go = sh.querySelectorAll('[data-ledgo]'); const inp = sh.querySelectorAll('[data-ledto]');
     return { tabs, todoOn: !!sh.querySelector('[data-ledview="todo"].on'), rows: sh.querySelectorAll('.bt-tb tr').length - 1, go: go.length, val: inp[0] && inp[0].value, bar: !!sh.querySelector('#led_bulkal') }; });
   ok(R.todoOn && R.tabs.length >= 2 && /처리할 일\s*2/.test(R.tabs.join('|')) && R.rows === 2 && R.go === 2 && R.val === '0' && R.bar, '🛠 처리할 일 보기 — 팔린 2줄만 · 줄마다 알라딘 맡기기 · 고칠 값 0(남은 실물)으로 미리 채움 · 일괄 줄', R);
-  const b1 = p.locator('[data-ledgo="SK10"]'); await b1.click(); await p.waitForTimeout(150); const arm = await b1.textContent(); const n0 = (await cmds('prdEdit')).length;
-  await b1.click(); await p.waitForTimeout(100); const n0b = (await cmds('prdEdit')).length; /* 0.4초 안 겹누름 = 무시 */
+  const Q1 = await armQuick('[data-ledgo="SK10"]', 'prdEdit'); const { arm, n0, n0b } = Q1; /* 0.4초 안 겹누름 = 무시 */
   await p.waitForTimeout(450); await p.locator('[data-ledgo="SK10"]').click(); await p.waitForTimeout(900); const C1 = await cmds('prdEdit');
-  ok(/한 번 더/.test(arm || '') && n0 === 0 && n0b === 0, '한 번 누름 = 무장(대상 표시 · 맡기지 않음) · 0.4초 안 겹누름 무시', { arm, n0, n0b });
+  ok(/한 번 더/.test(arm || '') && n0 === 0 && n0b === 0, '한 번 누름 = 무장(대상 표시 · 맡기지 않음) · 0.4초 안 겹누름 무시', Q1);
   ok(C1.length === 1 && C1[0].listingKey === 'aladin_U215983410' && C1[0].ch && C1[0].ch.state === '판매중지', '두 번째 누름 = 알라딘 상품 정보 수정 맡김 1건(판매중지)', C1.map((c) => [c.listingKey, c.ch]));
   const P1 = await p.evaluate(() => { ledRedraw(); const sh = document.getElementById('sheet'); const td = [...sh.querySelectorAll('.ledtd')].map((x) => x.textContent); return { pend: td.some((t) => /반영 기다림/.test(t)), go: sh.querySelectorAll('[data-ledgo]').length }; });
   ok(P1.pend && P1.go === 1, '맡김 진행 중 = ⏳ 반영 기다림(그 줄 단추 숨김)', P1);
@@ -152,9 +156,8 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   /* ② 재고 품목 🗑 = 두 번 누르기 */
   await p.evaluate(() => { history.back(); }); await p.waitForTimeout(400);
   await p.evaluate(() => { STK.ch = 'aladin'; STK.del = false; openStockView(); }); await p.waitForTimeout(900);
-  const db0 = (await cmds('regDel')).length; const del = p.locator('[data-stkdel1="aladin_U215983411"]'); await del.click(); await p.waitForTimeout(200);
-  const D1 = await p.evaluate(() => ({ txt: (document.querySelector('[data-stkdel1="aladin_U215983411"]') || {}).textContent || '', sheet: !!document.querySelector('.bigask-ov'), inp: !!document.querySelector('#bdel_in, .askbox .askin'), tip: (document.querySelector('.ux2-armtip') || {}).textContent || '' }));
-  const n1 = (await cmds('regDel')).length; await p.locator('[data-stkdel1="aladin_U215983411"]').click(); await p.waitForTimeout(100); const n1b = (await cmds('regDel')).length;
+  const db0 = (await cmds('regDel')).length; const Q2 = await armQuick('[data-stkdel1="aladin_U215983411"]', 'regDel');
+  const D1 = { txt: Q2.arm, sheet: Q2.sheet, inp: Q2.inp, tip: Q2.tip, gap: Q2.gap }; const n1 = Q2.n0, n1b = Q2.n0b;
   await p.waitForTimeout(450); await p.locator('[data-stkdel1="aladin_U215983411"]').click(); await p.waitForTimeout(1000); const RD = await cmds('regDel');
   ok(/한 번 더/.test(D1.txt) && /테스트 책 1/.test(D1.txt + D1.tip) && !D1.sheet && !D1.inp && n1 === db0 && n1b === db0, '🗑 한 번 = 무장(단추에 대상 표시) · 검토 판·글자 입력 창 없음 · 0.4초 안 겹누름 무시', { D1, n1, n1b });
   ok(RD.length === db0 + 1 && RD.some((c) => (c.items || [])[0] && c.items[0].listingKey === 'aladin_U215983411' && c.status === 'queued' && /재고 품목/.test(c.why || '')), '4초 안 다시 = 샵매니저 삭제 맡김 1건(대조 뒤 지움 · 기록 남음)', RD.map((c) => [c.why, c.status]));

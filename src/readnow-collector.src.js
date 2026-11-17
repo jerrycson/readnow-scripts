@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.351
+// @version      1.89.353
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -21,11 +21,11 @@
 // @downloadURL  https://readnow.kr/readnow-collector.user.js
 // @require      https://readnow.kr/readnow-orders-core.js?v=0.3.0
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
-// @require      https://readnow.kr/readnow-products-core.js?v=0.19.9
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.10
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.16
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.18
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.198
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.199
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.24
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.12
@@ -8184,6 +8184,21 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    * 저장: prd_market_nobook/{상품} — src 'usedSearch' · rows(상품마다 번호·이름·일치·우리 여부·판매자/알라딘/매장 최저가·개수) · 시세(marketNoBook) · 후보가 바뀔 때만 판(v)을 통째로 보관 · 시세가 바뀔 때만 history
    *       기본 7일에 한 번 다시 봄 (설정 nbDays) — 웹앱 시장 블록·관찰 도구·수동 일괄 처리가 이 rows로 '첫 페이지' 대신 비교 */
   async function nbMarketJob() {
+    /* (edkw1 · 정범님 11/17 14:00 I-1117-1400-12) 🔖 판본 검색 대조 — 판본 의심 상품은 검색 후보 가운데 판본 낱말(리커버·한정 …)이 같은 상품만 같은 상품(match) · 어느 시장을 쓸지(ed.use)와 두 시장 최저가를 함께 남김
+     *  판단은 공용 상품 파일 edDecide 한 곳(웹앱·클라우드 진단과 같은 셈) · 스위치 app_settings/main.edSearch(기본 켬 · 끄면 예전과 같음) */
+    const NBED = { at: 0, on: true }; /* 함수 안에 둠 — 번외 수집기가 이 함수를 글자 그대로 떼어 쓸 때도 그대로 돎 */
+    async function nbEdOn() { if (Date.now() - NBED.at > 10 * 60e3) { try { const d = (await C('app_settings').doc('main').get()).data() || {}; NBED.on = d.edSearch !== false; } catch (e) {} NBED.at = Date.now(); } return NBED.on; }
+    const edKwN = (l) => { try { return P.edKwOf ? P.edKwOf(l.title).length : 0; } catch (e) { return 0; } };
+    const nbLowOf = (c) => { const ch = (c && c.channels) || {}; const v = [ch.seller && ch.seller.min, ch.aladin && ch.aladin.min, ch.store && ch.store.min].filter((x) => +x > 0); return v.length ? Math.min(...v) : null; };
+    async function nbEdJudge(l, cands, th) {
+      let bt = null, autoLow = null; if (l.bookId) { try { bt = ((await C('prd_books').doc(String(l.bookId)).get()).data() || {}).title || null; } catch (e) {} try { const r = (((await C('prd_book_metrics').doc(String(l.bookId)).get()).data() || {}).usedFirstPage || []).filter((x) => x && +x.price > 0 && !x.soldOut && String(x.usedCode || '') !== String(l.usedCode)); if (r.length) autoLow = Math.min(...r.map((x) => +x.price)); } catch (e) {} }
+      const d = P.edDecide({ title: l.title, bookId: l.bookId || null, bookTitle: bt, unreg: P.isUnregistered(l), set: !!P.setInfo(l.title).set }, { src: 'usedSearch', cands, at: nowIso() }, { th });
+      const ids = new Set(d.ids || []); const E = new Map((d.cands || []).map((e) => [e.itemId, e]));
+      const multi = !!d.multi; for (const c of cands) { const e = E.get(String(c.itemId)); c.match = multi || d.use === 'srch' ? ids.has(String(c.itemId)) : !!(c.match && (!e || e.ok)); /* 미등록·세트·srch = 판단이 고른 것만 · 그 밖(자동 지표 그대로·사람 확인) = 예전 같은 상품 가운데 판본 낱말이 같은 것만(참고 시세) */ if (e) { c.edOk = e.ok; c.edSim = e.sim; if (e.miss.length) c.edMiss = e.miss; if (e.extra.length) c.edExtra = e.extra; if (e.self) c.self = true; } }
+      const lows = cands.filter((c) => c.match && !c.ours && !c.self).map(nbLowOf).filter((x) => x != null); const srchLow = lows.length ? Math.min(...lows) : null;
+      return { use: d.use, hold: !!d.hold, why: d.why || null, kw: d.kw, br: d.br, book: d.book, multi: d.multi, good: d.good ?? 0, cut: d.cut ?? 0, pick: d.pick, alt: d.alt, n: ids.size, autoLow, srchLow, diff: autoLow != null && srchLow != null ? srchLow - autoLow : null, our: l.price ?? null, at: nowIso() }; }
+    const nbAU = (x) => (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue ? firebase.firestore.FieldValue.arrayUnion(x) : [x]);
+    const nbEdTally = (t, ed) => { const o = { ...(t || { n: 0 }) }; o.n++; o[ed.use] = (o[ed.use] || 0) + 1; if (ed.hold) o.hold = (o.hold || 0) + 1; if (ed.use === 'srch' && ed.diff != null) { o.dN = (o.dN || 0) + 1; o.dSum = (o.dSum || 0) + ed.diff; } return o; };
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
       await loadListings();
@@ -8191,9 +8206,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (!prog || !prog.list) {
         const have = new Map(); (await C('prd_market_nobook').get()).forEach((d) => have.set(d.id, d.data().at || ''));
         const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.nbDays || 7) * 864e5).toISOString();
-        const want = (l) => l.usedCode && l.title && !['video', 'music'].includes(l.mediaType) && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set); /* 영상·음반은 빼고 (1.38.0) */ const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
+        const edOn = await nbEdOn(); const edS = (l) => !!(edOn && P.edSuspect && P.edSuspect(l.title).on); /* (edkw1 · 정범님 11/17 14:00) 🔖 판본 의심(리커버·한정판 등 낱말 16개 · 괄호) 상품도 자동 시장 지표와 함께 검색 대조 — ⚙ 판본 검색 대조(app_settings/main.edSearch · 기본 켬) */
+        const want = (l) => l.usedCode && l.title && !['video', 'music'].includes(l.mediaType) && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set || edS(l)); /* 영상·음반은 빼고 (1.38.0) */ const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
         const hoNb = typeof c2HoLive === 'function' ? await c2HoLive('nbMarket', 48) : null; /* 번외가 이 함수를 글자 그대로 떼어 쓸 때(c2HoLive 없음)도 그대로 돎 */ if (hoNb) log(`검색 시세: 이미 본 상품 다시 보기는 번외 수집기(${hoNb})로 넘김 — 운영은 처음 보는 상품만 · 되돌리기는 ⚙ › 🔀 번외로 넘기기`); /* (11/11 col2rep3 · 약속 38·48) */
-        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (hoNb ? !have.get(k) : (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch'))).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시
+        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (hoNb ? !have.get(k) : (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch'))).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0) || (edKwN(b[1]) - edKwN(a[1]))).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시 · (edkw1) 같은 판매 중이면 판본 낱말 있는 상품 먼저
         prog = { list, i: 0, ok: 0, none: 0, startedAt: nowIso() }; await saveProgress('nbMarket', prog);
         log(`검색 시세(미등록·세트·새상품 없음): ${list.length.toLocaleString()}개 (판매 중 먼저, ${SET.nbDays || 7}일 안에 본 것은 건너뜀)`);
       }
@@ -8206,17 +8222,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);
           const th = SET.photoMatch ?? 0.9; const all = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(qy, r.title) }));
           const cands = all.filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ ...r, match: r.cov >= th && r.vol && !(l.bookId && String(r.itemId) === String(l.bookId)) })); // 같은 상품 = 이름 일치 + 권 번호 같음 (세트의 새책 상세 = 첫 페이지에 이미 있으니 뺌)
-          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price });
-          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const sig = `${M.median}|${M.low}|${M.n}`;
+          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const ed = edOn && P.edDecide && P.edSuspect(l.title).on ? await nbEdJudge(l, cands, th) : null; if (ed) prog.ed = nbEdTally(prog.ed, ed);
+          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price }); const sig = `${M.median}|${M.low}|${M.n}`;
+          const edHist = ed && (!old || !old.ed || old.ed.use !== ed.use || ((old.ed.pick || {}).itemId || null) !== ((ed.pick || {}).itemId || null)) ? { edHist: nbAU({ at: nowIso(), use: ed.use, pick: (ed.pick || {}).itemId || null, autoLow: ed.autoLow, srchLow: ed.srchLow, our: l.price ?? null }) } : {}; /* 어느 시장을 쓸지가 바뀐 때만 기록 */
           const cSig = JSON.stringify(cands.map((x) => [x.itemId, x.price, x.title])); if (!old || old.candSig !== cSig) await ref.collection('v').doc(nowIso().replace(/[:.]/g, '-')).set({ at: nowIso(), query: qy, cands, market: { median: M.median, low: M.low, n: M.n }, ...W() }); // 후보 목록이 바뀌면 그 판을 통째로 보관
-          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
+          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, ed: ed || null, ...edHist, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
             ...(old && old.sig === sig ? {} : { sig, history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), median: M.median, low: M.low, n: M.n, our: l.price ?? null }) }), ...W() }, { merge: true });
           M.n ? prog.ok++ : prog.none++;
           ui('검색 시세 (미등록·세트)', prog.i + 1, prog.list.length, `${l.title} · ${M.n ? `시세 ${M.median.toLocaleString()}원 (${M.n}개, 신뢰도 ${M.conf})` : '비교할 상품 없음'}`);
         } catch (e) { prog.none++; if (prog.none < 20) log(`시세 ${l.title}: ${e.message}`, 1); }
         if (prog.i % 5 === 0) await saveProgress('nbMarket', prog);
       }
-      await finishJob('nbMarket', { ok: prog.ok, none: prog.none }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}`);
+      await finishJob('nbMarket', { ok: prog.ok, none: prog.none, ...(prog.ed ? { ed: prog.ed } : {}) }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}${prog.ed ? ` · 🔖 판본 대조 ${prog.ed.n}개(검색 우선 ${prog.ed.srch || 0} · 사람 확인 ${prog.ed.check || 0} · 자동 지표 그대로 ${prog.ed.auto || 0})` : ''}`);
     } finally { await releaseLane('aladin'); }
   }
 
@@ -11043,7 +11060,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
               tx.set(ref, { reNosD: iso, trail: firebase.firestore.FieldValue.arrayUnion({ at: iso, m: `🔁 옛 웹앱이 다시 셈에서 또 '할 일 없음'으로 닫음 — 수집기가 알라딘 쪽 값을 확인하고 새 맡김 ${jid}로 맡은 PC(${pc})에 바로 한 번`, by: pc }) }, { merge: true });
               tx.set(nref, { k: 'w', job: { id: jid, rows: (c.job || {}).rows || rows }, st: 'new', holder: pc, by: pc + '(수집기)', at: iso, from: d.id, reNosD: iso, msg: `🔁 ${d.id}의 같은 할 일 — 수집기가 알라딘 쪽 확인 뒤 바로 맡김`, trail: [{ at: iso, m: `🔁 '할 일 없음'으로 두 번 닫힌 ${d.id}의 같은 할 일(옛 웹앱 다시 셈) — 수집기가 알라딘 쪽 값(판매중 · 맡긴 수량과 같음)을 확인하고 바로 맡김(한 번)`, by: pc }] }); got = true; }); } catch (e) { got = false; }
           if (got) { wSeen = Date.now(); try { window.__rnLog && window.__rnLog('예스24', 'info', `🔁 예스24 — 옛 웹앱이 또 닫은 수량 맡김 ${d.id}를 알라딘 쪽 확인 뒤 새 맡김 ${jid}로 이 PC 번외에 바로 한 번(${rows.map((r) => r.no + ' ' + r.to + '권').join(', ')})`); } catch (e) {} } } } catch (e) {} }
-    const wRelay = async (pc, y) => { if (wBusy || Date.now() - wAt < (Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
+    /* (11/17 y24qna3 · 정범님 I-1117-2027-23.2 「답 받기 1분 넘게 · 같은 PC인데」 · 진단 y24qa-278453: 맡김 → 받음 40초(쉴 때 60초 간격 + 10초 틱) · 받음 → 끝 22초(15초 간격)) ⚡ 빠른 길
+     *  · 받기: 이 PC가 예스24를 맡고(mine·on·로거 아님) 리드 탭일 때만 col2_y24_cmd st 'new'를 듣고(onSnapshot · 들어올 때만 읽기) 새 맡김이 오면 그 자리에서 중계(최소 1.5초 간격) · 옛 15초/60초 확인은 그대로 남김(듣기가 끊겨도)
+     *  · 끝: 넘긴 맡김은 5분 동안 이 PC 번외 /y24/w/state(127.0.0.1 · Firestore 읽기 0)를 2초마다 보고 결과가 보이면 바로 되돌려 적음 · 번외 안의 사람 속도(답 화면 읽기·1.5초 기다림·다시 읽기)는 그대로 */
+    let wLast = null, wKickT = 0, wLiveUn = null, wLivePc = '', wLiveErr = 0, wFastT = 0, wFastBusy = false; const wFast = new Map();
+    const wKick = () => { const L = wLast; if (!L) return; if (wBusy || Date.now() - wAt < 1500) { if (!wKickT) wKickT = setTimeout(() => { wKickT = 0; wKick(); }, 1600); return; } wRelay(L.pc, L.y, true).catch(() => {}); };
+    const wLiveOff = () => { if (wLiveUn) { try { wLiveUn(); } catch (e) {} } wLiveUn = null; wLivePc = ''; };
+    const wLiveSync = (pc, y) => { const ok = !!(pc && y && !y.logger && y.mine !== false && y.on); wLast = ok ? { pc, y } : null; if (!ok) return wLiveOff(); if (wLiveUn && wLivePc === pc) return; if (Date.now() - wLiveErr < 5 * 60e3) return; wLiveOff();
+      try { const P = pc.trim().toUpperCase(); wLiveUn = firebase.firestore().collection(W_CMD).where('st', '==', 'new').onSnapshot((sn) => { const add = sn.docChanges().some((c) => { if (c.type !== 'added') return false; const v = c.doc.data() || {}; return !v.holder || String(v.holder).trim().toUpperCase() === P; }); if (add) { wSeen = Date.now(); wKick(); } }, () => { wLiveErr = Date.now(); wLiveOff(); }); wLivePc = pc; } catch (e) { wLiveErr = Date.now(); wLiveOff(); } };
+    const wFastTick = async () => { const now = Date.now(); for (const [k, t] of wFast) if (t < now) wFast.delete(k); if (!wFast.size || !wLast) { clearInterval(wFastT); wFastT = 0; return; } if (wFastBusy) return; wFastBusy = true;
+      try { const st = await gxs('GET', '/y24/w/state'); const res = (st && st.ok && st.res) || {}; const hit = [...wFast.keys()].filter((k) => res[k]); if (hit.length) { hit.forEach((k) => wFast.delete(k)); wSeen = Date.now(); wKick(); } } catch (e) {} finally { wFastBusy = false; } }; /* 결과를 본 맡김은 바로 빼서 되풀이 0(못 적으면 옛 15초 확인이 이어 받음) */
+    const wFastAdd = (jid) => { if (!jid) return; wFast.set(String(jid), Date.now() + 5 * 60e3); if (!wFastT) wFastT = setInterval(() => { wFastTick().catch(() => {}); }, 2000); };
+    const wRelay = async (pc, y, fast) => { if (wBusy || Date.now() - wAt < (fast ? 1500 : Date.now() - wSeen > 5 * 60e3 ? 60e3 : 15e3)) return; wAt = Date.now(); if (!pc || y.logger || y.mine === false || !y.on) return; wBusy = true; try { await wRelay1(pc); } finally { wBusy = false; } };
     const wRelay1 = async (pc) => { const fs = firebase.firestore(); const iso = () => new Date().toISOString();
       await wRe1114b(fs, pc); /* (y24qty1) 한 번짜리 — 걸린 맡김을 줄로 */
       await wReNos(fs, pc); /* (y24qty2 ◆y24nos) '할 일 없음'으로 닫힌 맡김 — 문서마다 한 번 더 줄로 */
@@ -11063,17 +11091,17 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           else if (r._st === 404) fin = { state: 'fail', pre: true, msg: `${pc} 번외가 옛 판(예스24 쓰기 없음)`, todo: `${pc} 번외 새 판을 받은 뒤 다시` };
           else if (!r.ok) fin = { state: 'fail', pre: true, stop: !!r.stop, msg: String(r.err || '번외가 맡김을 거절').slice(0, 200), todo: r.stop ? '예스24 판매관리에서 멈춘 까닭을 확인한 뒤 🛠 처리할 일 「▶ 예스24 쓰기 이어 가기」' : null }; }
         { const rq = fin ? y24RePatch(v, fin, pc, Date.now()) : null; if (rq) { const { _t, ...rq0 } = rq; try { await fs.collection(W_CMD).doc(d.id).set({ ...rq0, trail: firebase.firestore.FieldValue.arrayUnion(_t) }, { merge: true }); } catch (e) {} try { window.__rnLog && window.__rnLog('예스24', 'warn', `🟦 원격 예스24 쓰기 맡김 못 넘김(${String(fin.msg || '').slice(0, 60)}) — 맡긴 일 줄로 되돌림 ${rq.reN}/${Y24_RE_MAX}(웹앱이 다시 세어 보냄)`); } catch (e) {} continue; } } /* (y24re 11/13) 번외가 '처음 한 건 확인 중'·닿지 못함 등으로 받지 못한 맡김 → 같은 문서를 hold로(3번까지) */
-        try { await fs.collection(W_CMD).doc(d.id).set(fin ? { st: 'done', doneAt: iso(), res: fin, ...wFinTop(fin) } : { st: 'run', runAt: iso(), prog: { step: '', wait: true, why: null } }, { merge: true }); } catch (e) {}
+        try { await fs.collection(W_CMD).doc(d.id).set(fin ? { st: 'done', doneAt: iso(), res: fin, ...wFinTop(fin) } : { st: 'run', runAt: iso(), prog: { step: '', wait: true, why: null } }, { merge: true }); if (!fin) wFastAdd(String((v.job || {}).id || d.id)); } catch (e) {} /* (y24qna3) 넘긴 맡김은 결과를 2초마다 이 PC 번외에서 봄 */
         try { window.__rnLog && window.__rnLog('예스24', fin ? 'warn' : 'info', fin ? `🟦 원격 예스24 쓰기 맡김(${String(v.by || '').slice(0, 20)}) 넘기지 못함 — ${fin.msg}` : `🟦 원격 예스24 쓰기 맡김 ${((v.job || {}).rows || []).length}건(${String(v.by || '').slice(0, 20)})을 이 PC 번외에 넘김`); } catch (e) {} }
       /* ② 넘긴 맡김의 결과·진행 되돌려 적기 */
       let qr = null; try { qr = await fs.collection(W_CMD).where('st', '==', 'run').limit(30).get(); } catch (e) { return; } const mine = qr.docs.filter((d) => String((d.data() || {}).tookBy || '') === pc); if (mine.length) wSeen = Date.now(); if (!mine.length) return;
       const st = await gxs('GET', '/y24/w/state'); if (!st || !st.ok) return; const res = st.res || {}; const wait = new Set((st.wait || []).map((w) => w.id)); const acks = [];
       for (const d of mine) { const v = d.data() || {}; const jid = String((v.job || {}).id || d.id); const x = res[jid];
-        try { if (x) { const rs = wSafe(x); const rq = y24RePatch(v, rs, pc, Date.now()); if (rq) { const { _t, ...rq0 } = rq; await fs.collection(W_CMD).doc(d.id).set({ ...rq0, trail: firebase.firestore.FieldValue.arrayUnion(_t) }, { merge: true }); try { window.__rnLog && window.__rnLog('예스24', 'warn', `🟦 예스24 쓰기 실패(${String(rq.lastRej.err).slice(0, 60)}) — 맡긴 일 줄로 되돌림 ${rq.reN}/${Y24_RE_MAX}(웹앱이 다시 세어 보냄)`); } catch (e) {} } /* (y24re 11/13) '저장되지 않음'·아무것도 안 누른 실패 → 같은 문서를 맡긴 일 줄로(3번까지 · 가격 아님) */ else await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: rs, prog: null, ...wFinTop(rs) }, { merge: true }); acks.push(jid); delete wSig[d.id]; continue; }
+        try { if (x) { const rs = wSafe(x); const rq = y24RePatch(v, rs, pc, Date.now()); if (rq) { const { _t, ...rq0 } = rq; await fs.collection(W_CMD).doc(d.id).set({ ...rq0, trail: firebase.firestore.FieldValue.arrayUnion(_t) }, { merge: true }); try { window.__rnLog && window.__rnLog('예스24', 'warn', `🟦 예스24 쓰기 실패(${String(rq.lastRej.err).slice(0, 60)}) — 맡긴 일 줄로 되돌림 ${rq.reN}/${Y24_RE_MAX}(웹앱이 다시 세어 보냄)`); } catch (e) {} } /* (y24re 11/13) '저장되지 않음'·아무것도 안 누른 실패 → 같은 문서를 맡긴 일 줄로(3번까지 · 가격 아님) */ else await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: rs, prog: null, ...wFinTop(rs) }, { merge: true }); acks.push(jid); wFast.delete(jid); delete wSig[d.id]; continue; }
           const inCur = st.cur && st.cur.id === jid; if (!inCur && !wait.has(jid)) { if (Date.now() - (Date.parse(v.runAt || v.tookAt || '') || 0) > 10 * 60e3) { const rs = { state: 'fail', msg: `${pc} 번외에서 이 맡김이 사라짐(번외가 다시 켜졌을 수 있음)`, todo: '예스24 판매관리에서 바뀌었는지 보고 다시 맡기거나 손으로' }; await fs.collection(W_CMD).doc(d.id).set({ st: 'done', doneAt: iso(), res: rs, ...wFinTop(rs) }, { merge: true }); } continue; }
           const prog = { step: inCur ? String(st.cur.step || '').slice(0, 60) : '', wait: !inCur, why: st.why ? String(st.why).slice(0, 160) : null }; const sg = JSON.stringify(prog); if (wSig[d.id] === sg) continue; wSig[d.id] = sg; await fs.collection(W_CMD).doc(d.id).set({ prog, progAt: iso() }, { merge: true }); } catch (e) {} }
       if (acks.length) await gxs('POST', '/y24/w/ack', { ids: acks }); };
-    G.__rnC2yWRelay = wRelay; G.__rnC2yWCut = wSafe;
+    G.__rnC2yWRelay = wRelay; G.__rnC2yWCut = wSafe; G.__rnC2yWLive = () => ({ live: !!wLiveUn, pc: wLivePc, fast: [...wFast.keys()], err: wLiveErr || null }); /* (y24qna3) 진단·시험용 — 빠른 길이 켜져 있는지 */
     /* (11/12 col2rep6 · 진단 11/12 03:40 — HOME col2_ctl 번외 상태가 00:12 0.1.25에서 멈춤(웹앱 탭 닫힘) · 11/11 JS-MAIN도 16:47 뒤 같은 꼴 · 💓 y24hb만 살아 있어 번외가 새 판을 받았는지·오늘 몇 장인지 아무도 모름)
      *  로거 다리(rnC2lg)처럼 사무실 PC도 — 이 PC 웹앱이 3분 넘게 번외에 안 왔고(relay.pullAt) 🔌 홀로 연결도 살아 있지 않으면 5분마다 col2_ctl/<PC>.st를 대신 씀(판·켜짐·오늘 몫·지금 글·새 판 받기 결과만 · 손님 정보·키 없음 · by '수집기 다리')
      *  · 웹앱이 다시 오면 웹앱이 씀(이 다리는 비킴) · 결과(하루 요약·견줌)는 여전히 웹앱 또는 홀로 연결이 올림 */
@@ -11089,14 +11117,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (h && h.on) return { on: !!a.want, logger: !!a.logger, login: h.login === true ? 'ok' : h.login === false ? 'need' : 'unknown', active: !!h.active, seat: !!h.linked, msg: c(a.msg), day, cmpWait: N(a.cmpWait), hands: { linked: !!h.linked, login: h.login === true ? true : h.login === false ? false : null, n: N(h.n), ok: N(h.ok), fail: N(h.fail), q: N(h.q), out: N(h.out), at: N(h.at), ver: c(h.ver, 20), last, win: h.win ? { n: N(h.win.n), on: !!h.win.on } : null, todo: c(h.todo, 160) } };
       return { on: !!a.on, want: !!a.want, logger: !!a.logger, login: c(a.login, 20), active: !!a.active, seat: !!a.seat, msg: c(a.msg), day, cmpWait: N(a.cmpWait) }; };
     G.__rnC2yStPut = stPut;
-    const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
+    const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) { wLast = null; wLiveOff(); return; } /* (y24qna3) 리드 탭이 아니면 듣기도 끔 */ if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
       busy = true; let jobs = [];
       try { const pc = (window.__rnPcName && window.__rnPcName.get()) || ''; const cfg = gv2('rn-y24cfg', null); let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
         const prev = c2yNow(); if (prev && prev.jobs) { const L = gv2('rn-y24job', []), D = gv2('rn-y24jdone', {}); for (const j of L) { if (!j || !j.id || D[j.id]) continue; D[j.id] = { at: Date.now(), st: 'run', by: 'col2' }; jobs.push(j); } if (jobs.length) GM_setValue('rn-y24jdone', D); }
         const r = await gx('POST', '/y24/feed', { by: pc, cfg: cfg ? { ordMin: cfg.ordMin, off: !!cfg.off, holder: cfg.holder || null } : null, hold, jobs, ack, jack });
         const undo = (keep) => { if (!jobs.length) return; const D = gv2('rn-y24jdone', {}); let ch = false; for (const j of jobs) if (!(keep && keep.has(j.id)) && D[j.id] && D[j.id].by === 'col2' && D[j.id].st === 'run') { delete D[j.id]; ch = true; } if (ch) GM_setValue('rn-y24jdone', D); };
-        if (!r || !r.ok) { undo(null); miss++; if (miss >= 3) { nextAt = Date.now() + 5 * 60e3; hbPut(pc, { hlp: false, holder: cfg && cfg.holder ? String(cfg.holder).slice(0, 40) : null, msg: '이 PC 번외 도우미(127.0.0.1:8797)가 답하지 않음 — 번외가 꺼져 있거나 깔리지 않음' }); } if (prev) GM_setValue('rn-col2y', { on: false, jobs: false, login: null, at: Date.now() }); return; }
-        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y)); if (!y.logger) stPut(pc, y).catch(() => {}); /* (11/12 col2rep6) 웹앱이 닫혀도 번외 상태 한 줄 */ if (!y.logger) wRelay(pc, y).catch(() => {}); /* (11/11 y24ops4) 원격 예스24 쓰기 다리 */
+        if (!r || !r.ok) { undo(null); wLast = null; wLiveOff(); miss++; if (miss >= 3) { nextAt = Date.now() + 5 * 60e3; hbPut(pc, { hlp: false, holder: cfg && cfg.holder ? String(cfg.holder).slice(0, 40) : null, msg: '이 PC 번외 도우미(127.0.0.1:8797)가 답하지 않음 — 번외가 꺼져 있거나 깔리지 않음' }); } if (prev) GM_setValue('rn-col2y', { on: false, jobs: false, login: null, at: Date.now() }); return; }
+        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y)); if (!y.logger) stPut(pc, y).catch(() => {}); /* (11/12 col2rep6) 웹앱이 닫혀도 번외 상태 한 줄 */ wLiveSync(pc, y); if (!y.logger) wRelay(pc, y).catch(() => {}); /* (11/11 y24ops4) 원격 예스24 쓰기 다리 · (y24qna3) 새 맡김 듣기 켜고 끔 */
         undo(new Set(Array.isArray(r.took) ? r.took : []));
         if (Array.isArray(r.recs) && r.recs.length) { const seen = gv2('rn-c2yids', []); const S0 = new Set(seen); const q = qGet(); let bytes = q.reduce((a, x) => a + (x.body ? x.body.length : 0), 0), drop = 0, add = 0;
           for (const x of r.recs) { if (!x || !x.id) continue; ack.push(x.id); if (S0.has(x.id)) continue; S0.add(x.id); seen.push(x.id); const { id, src, ...rec } = x; rec.c2 = 1; /* (adapt10) 번외가 읽은 줄 표시(장부 길 이름만 · 올리는 칸엔 안 씀) */ q.push(rec); bytes += rec.body ? rec.body.length : 0; add++; }

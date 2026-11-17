@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.53
+// @version      0.10.54
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -9,8 +9,8 @@
 // @downloadURL  https://readnow.kr/readnow-price-watch.user.js
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
-// @require      https://readnow.kr/readnow-products-core.js?v=0.19.9
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.10
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.16
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -201,10 +201,15 @@
   }
   const CTRLG = new Map(); /* (10/30 위험 4) 비교군 그룹이 살아 있는지 — 10분 기억 */
   async function ctrlAlive(gid) { if (!gid) return false; const c0 = CTRLG.get(gid); if (c0 && Date.now() - c0.at < 600000) return c0.v; let v = false; try { const g = (await C('prd_price_batches').doc(gid).get()).data(); v = !!(g && !g.archived && !(SET.batchOff || {})[gid]); } catch (e) { v = true; /* 못 읽으면 지키는 쪽 */ } CTRLG.set(gid, { at: Date.now(), v }); return v; }
-  /* (0.10.53 plock1 · 정범님 11/17) 🔒 상품 잠금 — 잠긴 상품(prd_locks/{키}.on)은 판매 상태 말고 아무것도 안 바꿈(판매가·판매보류풀 포함) · 웹앱·수집기·클라우드와 같은 plkBlock */
+  /* (0.10.54 plock1 · 정범님 11/17) 🔒 상품 잠금 — 잠긴 상품(prd_locks/{키}.on)은 판매 상태 말고 아무것도 안 바꿈(판매가·판매보류풀 포함) · 웹앱·수집기·클라우드와 같은 plkBlock */
   const plkBlock = (lk, ks, down) => { ks = (ks || []).slice(); if (!lk || lk.on !== true) return { keep: ks, drop: [] }; const keep = ks.filter((k) => k === 'state' || (k === 'qty' && !!down)); return { keep, drop: ks.filter((k) => !keep.includes(k)) }; };
   let PLKC = { t: 0, S: new Set() }; async function plkSetW() { if (Date.now() - PLKC.t > 120e3) { try { const q = await C('prd_locks').where('on', '==', true).get(); PLKC = { t: Date.now(), S: new Set(q.docs.map((d) => d.id)) }; } catch (e) {} } return PLKC.S; } /* 판정용(자동 승인을 만들지 않게) — 반영 직전에는 따로 바로 읽음 */
   async function plkReadW(x) { try { const d = await C('prd_locks').doc(String(x.key || '')).get(); if (d.exists) return d.data() || null; if (x.listingId) { const q = await C('prd_locks').where('lid', '==', String(x.listingId)).limit(1).get(); if (!q.empty) return q.docs[0].data() || null; } return null; } catch (e) { return undefined; } } /* undefined = 못 읽음 → 잠긴 것으로(안전 쪽) */
+  /* (0.10.53 edkw1) 🔖 판본 검색 대조 — 수집기 검색 시세가 남긴 prd_market_nobook/{상품}.ed 를 읽어, 검색이 같은 판본을 찾았거나(srch) 근거가 모자라 사람 확인(check·hold)이면 막음 · 스위치 app_settings/main.edSearch(기본 켬 · 10분 기억) */
+  const EDS = { at: 0, on: true };
+  async function edBlockOf(l, key) { try { if (!P.edSuspect || !P.edSuspect(l.title || '').on) return null; if (Date.now() - EDS.at > 600000) { try { EDS.on = ((await C('app_settings').doc('main').get()).data() || {}).edSearch !== false; } catch (e) {} EDS.at = Date.now(); } if (!EDS.on) return null;
+      const e = ((await C('prd_market_nobook').doc(key).get()).data() || {}).ed; if (!e || !(e.use === 'srch' || (e.use === 'check' && e.hold))) return null; const w = (v) => (v == null ? '-' : Number(v).toLocaleString('ko-KR') + '원');
+      return { use: e.use, hold: !!e.hold, autoLow: e.autoLow ?? null, srchLow: e.srchLow ?? null, at: e.at || null, short: e.use === 'srch' ? '🔖 판본 의심 — 검색 시장 우선' : '🔖 판본 확인 필요', line: e.use === 'srch' ? `🔖 판본 의심 — 이 중고 목록은 다른 판본일 수 있음 · 검색에서 같은 판본을 찾음(자동 지표 최저 ${w(e.autoLow)} → 검색 최저 ${w(e.srchLow)}) · 자동 반영 막음` : `🔖 판본 확인 필요 — ${e.why || '같은 판본을 가리지 못함'} · 자동 반영 막음` }; } catch (e) { return null; } }
   async function processOne(l) {
     const key = 'aladin_' + l.usedCode; const now = new Date().toISOString();
     const decRef = C('prd_price_decisions').doc(key); const prevD = (await decRef.get()).data() || {};
@@ -271,6 +276,7 @@
           else Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: why }); }
         else { Object.assign(rec, { approvalState: prevD.approvalState === 'pending' ? null : prevD.approvalState || null }); if (prevD.approvalState !== 'pending') delete rec.approval; } }
       else Object.assign(rec, { approvalState: prevD.approvalState }); if (keepW) delete rec.approval; }
+    const ED = await edBlockOf(l, key); if (ED) { rec.ed = ED; rec.reasons = [ED.line, ...(rec.reasons || [])].slice(0, 12); if (rec.approval && rec.approval.decision === 'auto' && rec.approval.at === now) { Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: [ED.short] }); } else if (rec.approvalState === 'pending' && !keepApproval) rec.autoBlock = [ED.short, ...(rec.autoBlock || [])].slice(0, 8); } /* (0.10.53 edkw1 · 정범님 11/17 14:00) 🔖 판본 의심 상품: 이 새책 화면의 중고 목록이 다른 판본일 수 있음 → 이번 판정의 자동 반영을 막고 관리자에게(값은 그대로 · 웹앱 일괄 계산이 검색 시장으로 다시 셈) */
     if (!watched && prevD.strat && prevD.strat.active) rec.strat = { ...prevD.strat, active: false, end: 'notWatched', endedAt: now }; // 감시를 끄거나 뺀 상품의 전략은 끝냄 (다시 보기 목록에 계속 남지 않게)
     /* (10/30 위험 2) 판정 기록은 트랜잭션으로 — 처음 읽은 결정(prevD)과 지금 결정이 다르면(그 사이 웹앱에서 일괄 확정·직접 가격·원상복귀 등) 결정 칸(approvalState·approval·autoBlock)은 쓰지 않고 시장·판정 칸만 · 예전엔 수~수십 초 뒤 merge 쓰기로 다른 기기의 확정을 소리 없이 옛 값으로 덮었음 */
     const logRef = prevD.sig !== sig ? decRef.collection('log').doc() : null; let raced = false;
@@ -472,7 +478,7 @@
       // ↓ 맡은(반영 중) 뒤에 확인 — 확인하다 막을 때도 그 사이 바뀐 다른 결정을 덮지 않음
       if (!x.listingId) { await d.ref.set({ approvalState: 'blocked', execNote: '샵매니저 상품번호(ItemId)가 없음', ...W() }, { merge: true }); continue; }
       if (x.group === 'control') { await d.ref.set({ approvalState: 'blocked', execNote: '비교 묶음은 바꾸지 않음(효과 측정용)', ...W() }, { merge: true }); continue; }
-      { const lk = await plkReadW(x); if (lk === undefined || plkBlock(lk, ['price']).drop.length) { await d.ref.set({ approvalState: 'blocked', execNote: lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽) — 다시 결정하면 다시 봄' : '🔒 잠금이라 건너뜀 (잠긴 상품은 판매 상태 말고는 바꾸지 않음 · 판매보류풀 포함)', ...W() }, { merge: true }); log(`🔒 잠김 — 건너뜀: ${x.title || x.usedCode}`); continue; } } /* (0.10.53 plock1) 판매가·관리코드(보류풀) 모두 — 맡은 뒤 바로 읽음 */
+      { const lk = await plkReadW(x); if (lk === undefined || plkBlock(lk, ['price']).drop.length) { await d.ref.set({ approvalState: 'blocked', execNote: lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽) — 다시 결정하면 다시 봄' : '🔒 잠금이라 건너뜀 (잠긴 상품은 판매 상태 말고는 바꾸지 않음 · 판매보류풀 포함)', ...W() }, { merge: true }); log(`🔒 잠김 — 건너뜀: ${x.title || x.usedCode}`); continue; } } /* (0.10.54 plock1) 판매가·관리코드(보류풀) 모두 — 맡은 뒤 바로 읽음 */
       if (kind === 'approved') { // 엔진 제안 승인: 옛 엔진·오래된 판정이면 반영하지 않음 (관리자가 직접 정한 가격·보류풀은 그대로 반영)
         if (x.engine !== PR.VERSION) { await d.ref.set({ approvalState: 'stale', execNote: `옛 판정 엔진(${x.engine || '?'})의 제안 — 새 판정 후 다시 결정`, ...W() }, { merge: true }); continue; }
         if (Date.now() - Date.parse(x.at) > 48 * 3600e3) { await d.ref.set({ approvalState: 'stale', execNote: '판정이 48시간 넘게 지남 — 다시 판정 후 결정', ...W() }, { merge: true }); continue; }
