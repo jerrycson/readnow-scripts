@@ -1,2 +1,2 @@
-doc=app_settings/omni_auto
-# 1029014592
+edkw=1
+# 191928911
