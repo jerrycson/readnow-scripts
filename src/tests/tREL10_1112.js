@@ -15,7 +15,7 @@ const CMD = fs.readFileSync(find('lab/pcdock/install-pcdock.cmd'), 'utf8');
 console.log('① PC 배치 설치 파일 글');
 const PC = new Function(cut('const PCDOCK_CMD = ', '\nfunction pcdockInstDownload') + '\nreturn PCDOCK_CMD;')();
 ok(PC === CMD, '웹앱 설치 파일 글 = lab/pcdock/install-pcdock.cmd 그대로(줄 끝 CRLF까지)', { a: PC.length, b: CMD.length });
-ok(/readnow-scripts\/main\/lab\/pcdock\/install-pcdock\.ps1/.test(PC) && /readnow\.kr\/lab\/pcdock\/bundle\.json/.test(fs.readFileSync(find('lab/pcdock/install-pcdock.ps1'), 'utf8')) && /\['lab\/pcdock', true\]/.test(fs.readFileSync(find('hosting/build.js'), 'utf8')), '설치 길: cmd → 저장소 install-pcdock.ps1 → readnow.kr/lab/pcdock 묶음(Hosting 목록에 lab/pcdock 있음)');
+ok(/(readnow-scripts\/main|readnow\.kr)\/lab\/pcdock\/install-pcdock\.ps1/.test(PC) /* (bunoe3 11/17) 저장소 비공개(priv1) 뒤 설치 글이 readnow.kr 주소로 받음 — 두 길 다 맞음 */ && /readnow\.kr\/lab\/pcdock\/bundle\.json/.test(fs.readFileSync(find('lab/pcdock/install-pcdock.ps1'), 'utf8')) && /\['lab\/pcdock', true\]/.test(fs.readFileSync(find('hosting/build.js'), 'utf8')), '설치 길: cmd → 저장소 install-pcdock.ps1 → readnow.kr/lab/pcdock 묶음(Hosting 목록에 lab/pcdock 있음)');
 ok(/data-pcdockinst="1"[^>]*>🖥 리드나우 PC 배치\(JS-MAIN 실행·배치 창\) 설치 파일 받기<\/button> <small class="hint">JS-MAIN에서 한 번 더블클릭 → 바탕 화면 아이콘<\/small>/.test(T) && /go: \{ tab: 'settings', sec: 'set_mgr' \} \},/.test(cut("{ t: '🖥 리드나우 PC 배치 설치 파일 받기", '\n')), '⚙ 설정 › ⑭ 🧭 관리도구에 단추와 설명 한 줄 · 🔍 기능 찾기 항목');
 ok(/new Blob\(\[PCDOCK_CMD\], \{ type: 'application\/octet-stream' \}\)/.test(T) && !/window\.open\([^)]*pcdock/.test(T), 'Blob으로 내려받기(서버 주소로 받지 않음 · 새 창 없음)');
 

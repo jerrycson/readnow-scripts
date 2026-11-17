@@ -108,7 +108,7 @@ class Browser {
     const ws = r.ws, tail = r.tail;
     if (!ws && this.dead) { await sleep(150); throw new Error(exitWhy(this.exit, this.freed) + (this.retried ? ' · 프로필을 쥔 크롬을 닫고 한 번 더 띄워도 같음' : '')); }
     if (!ws) { this.kill(); throw new Error('번외 크롬 DevTools 주소를 못 받음(30초)' + (tail.s ? ' · 마지막 줄: ' + lastLine(tail.s) : '')); }
-    this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => { if (m === 'Page.frameNavigated' && sid === this.sid && !p.frame.parentId) { this.ctxId = null; this.frameUrl = p.frame.url; } if (m === 'Runtime.executionContextDestroyed' && p.executionContextId === this.ctxId) this.ctxId = null; });
+    this.rbc = null; this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => { if (m === 'Page.frameNavigated' && sid === this.sid && !p.frame.parentId) { this.ctxId = null; this.frameUrl = p.frame.url; } if (m === 'Runtime.executionContextDestroyed' && p.executionContextId === this.ctxId) this.ctxId = null; });
     const { targetInfos } = await this.cdp.send('Target.getTargets'); let t = targetInfos.find((x) => x.type === 'page'); if (!t) t = { targetId: (await this.cdp.send('Target.createTarget', { url: 'about:blank' })).targetId };
     const { sessionId } = await this.cdp.send('Target.attachToTarget', { targetId: t.targetId, flatten: true }); this.sid = sessionId;
     await this.cdp.send('Page.enable', {}, sessionId); await this.cdp.send('Runtime.enable', {}, sessionId).catch(() => {});
@@ -128,15 +128,22 @@ class Browser {
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
   /* (0.1.10 정범님 11/10 '아직 안 도는 9가지도 그림자로') 그려 읽기 — 이 번외 크롬 안 쿠키 없는 따로 된 칸(새 브라우저 맥락 · 일 하나 끝나면 버림)의 보이지 않는 탭
    *  운영 숨은 창(credentialless iframe · 알림 창 못 띄움)·도우미 /render(따로 된 프로필 · 화면 없이)와 같은 뜻: 로그인 없음 · 쿠키 없음 · 알림 창은 저절로 닫음 · 작업 창 화면에는 탭이 안 보임 */
-  async openTab(url, timeoutSec) { const c = this.cdp; const { browserContextId: bc } = await c.send('Target.createBrowserContext', { disposeOnDetach: true });
+  async openTab(url, timeoutSec, keepBc) { const c = this.cdp; const bc = keepBc || (await c.send('Target.createBrowserContext', { disposeOnDetach: true })).browserContextId;
     let tid; try { tid = (await c.send('Target.createTarget', { url: 'about:blank', browserContextId: bc, hidden: true, background: true })).targetId; } catch (e) { tid = (await c.send('Target.createTarget', { url: 'about:blank', browserContextId: bc, newWindow: true, background: true, left: -32000, top: 40, width: 1300, height: 2000 })).targetId; }
-    const T = { tid, bc, sid: null, ctx: null };
+    const T = { tid, bc, kept: !!keepBc, sid: null, ctx: null };
     try { T.sid = (await c.send('Target.attachToTarget', { targetId: tid, flatten: true })).sessionId; await c.send('Page.enable', {}, T.sid); await c.send('Runtime.enable', {}, T.sid).catch(() => {});
       const dlg = (m, p, s) => { if (s === T.sid && m === 'Page.javascriptDialogOpening') c.send('Page.handleJavaScriptDialog', { accept: false }, T.sid).catch(() => {}); }; c.on.push(dlg); T.off = () => { c.on = c.on.filter((x) => x !== dlg); };
       const done = new Promise((res) => { const f = (m, p, s) => { if (s === T.sid && m === 'Page.loadEventFired') { c.on = c.on.filter((x) => x !== f); res(true); } }; c.on.push(f); setTimeout(() => { c.on = c.on.filter((x) => x !== f); res(false); }, (timeoutSec || 25) * 1000); });
       const nav = await c.send('Page.navigate', { url }, T.sid); if (nav && nav.errorText) throw new Error('화면을 못 엶: ' + nav.errorText); T.loaded = await done; return T; }
     catch (e) { await this.closeTab(T); throw e; } }
-  async closeTab(T) { if (!T) return; try { T.off && T.off(); } catch (e) {} try { await this.cdp.send('Target.closeTarget', { targetId: T.tid }, null, 5000); } catch (e) {} try { await this.cdp.send('Target.disposeBrowserContext', { browserContextId: T.bc }, null, 5000); } catch (e) {} }
+  async closeTab(T) { if (!T) return; try { T.off && T.off(); } catch (e) {} try { await this.cdp.send('Target.closeTarget', { targetId: T.tid }, null, 5000); } catch (e) {} if (!T.kept) try { await this.cdp.send('Target.disposeBrowserContext', { browserContextId: T.bc }, null, 5000); } catch (e) {} }
+  /* (0.1.78 bunoe3 · 11/17 그림자 '못 읽음 100%' — 예스24 도서·예스24 중고 20/20 · 네이버 도서 27/30 · 두 PC 모두)
+   *  진단으로 읽은 것: 쿠키 없이 받은 예스24 검색 주소(product/search?domain=BOOK·USED_GOODS)는 결과 없이 첫 화면(Main/default.aspx · 50만 자)으로 돌려보냄(클라우드 extprobe=raw 11/17 21:5x)
+   *  운영은 그리기를 도우미 /render의 따로 된 '오래 쓰는' 프로필(로그인 없음 · 사이트 쿠키는 남음)에서 함 — 번외는 그릴 때마다 새 빈 칸(쿠키 0)이라 매번 첫 방문
+   *  → 운영과 같은 뜻으로: 그리기 전용 칸 하나를 오래 씀(알라딘 칸과 따로 · 로그인 없음 · 사이트 쿠키만 남음) · 6시간 또는 300번마다 새 칸 · col2.json renderKeep:false면 예전처럼 그릴 때마다 새 칸 */
+  async renderBc(keep) { if (keep === false) return null; const R = this.rbc; if (R && Date.now() - R.at < 6 * 3600e3 && R.n < 300) { R.n++; return R.id; }
+    if (R) { this.rbc = null; try { await this.cdp.send('Target.disposeBrowserContext', { browserContextId: R.id }, null, 5000); } catch (e) {} }
+    const id = (await this.cdp.send('Target.createBrowserContext', { disposeOnDetach: true })).browserContextId; this.rbc = { id, at: Date.now(), n: 1 }; return id; }
   async tabWorld(T, srcs) { if (T.ctx) return T.ctx; const ft = await this.cdp.send('Page.getFrameTree', {}, T.sid); const w = await this.cdp.send('Page.createIsolatedWorld', { frameId: ft.frameTree.frame.id, worldName: 'rn3-col2', grantUniveralAccess: false }, T.sid);
     for (const s of srcs || []) { const r = await this.cdp.send('Runtime.evaluate', { expression: s, contextId: w.executionContextId, returnByValue: true }, T.sid); if (r.exceptionDetails) throw new Error('운영 공용 파일 넣기 실패: ' + String(r.exceptionDetails.text || '').slice(0, 120)); }
     return (T.ctx = w.executionContextId); }
@@ -144,14 +151,15 @@ class Browser {
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
   /* 도우미 /render와 같은 꼴 { ok, html, ms } — opt.re(링크 꼴)가 보이거나 wait(ms)가 지나면 그때 화면 HTML */
   async render(url, opt) { const o = opt || {}; const wait = Math.max(3000, Math.min(30000, +o.wait || 12000)); const t0 = Date.now(); let T = null;
-    try { T = await this.openTab(url, Math.ceil(wait / 1000) + 10); const ctx = await this.tabWorld(T, []); const re = o.re ? JSON.stringify([o.re, o.reFlags || '']) : 'null';
+    try { T = await this.openTab(url, Math.ceil(wait / 1000) + 10, await this.renderBc(o.keep)); const ctx = await this.tabWorld(T, []); const re = o.re ? JSON.stringify([o.re, o.reFlags || '']) : 'null';
       /* (11/11 col2rep2 · 외부 정보 '못 읽음 100%' — 예스24 도서·예스24 중고·네이버 도서) 예전엔 링크 꼴(/goods/숫자)이 하나라도 보이면 곧바로 HTML을 떴는데, 예스24·네이버 검색 화면은 머리·광고·추천에 같은 꼴 링크가 먼저 있고
        *  검색 결과 목록(itemUnit 등)은 조금 뒤 따로 불러옴 → 결과 목록이 없는 HTML을 떠 '검색 결과 목록이 화면에 없음'으로 늘 실패
        *  운영 도우미 /render(readnow-local.js)는 화면을 1280×6000으로 크게 열고 wait 동안 다 그린 뒤 뜸(--virtual-time-budget · --dump-dom) → 같은 뜻으로: 화면 크게(지연 로딩 칸이 참) · 최소 minMs 기다림 · 그 뒤 링크 수가 3번(1.2초) 그대로일 때 뜸 · 최대 wait */
       try { await this.cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 6000, deviceScaleFactor: 1, mobile: false }, T.sid); } catch (e) {}
       const minMs = Math.min(wait, Math.max(1500, +o.minMs || 5000));
-      const html = await this.evalIn(T.sid, ctx, `(async () => { const R = ${re}; const re = R ? new RegExp(R[0], R[1]) : null; const t0 = Date.now(); let last = -1, same = 0; for (;;) { const n = re ? [...document.querySelectorAll('a[href]')].filter((a) => re.test(a.href)).length : 0; same = n === last ? same + 1 : 0; last = n; const el = Date.now() - t0; if ((n > 0 && el >= ${minMs} && same >= 3) || el > ${wait}) break; await new Promise((r) => setTimeout(r, 400)); } await new Promise((r) => setTimeout(r, 300)); return document.documentElement ? document.documentElement.outerHTML : ''; })()`, wait + 15000);
-      if (typeof html !== 'string' || !html) return { ok: false, why: '그리기 실패: ' + ((html && html.why) || '빈 화면') }; return { ok: true, html: html.slice(0, 3000000), ms: Date.now() - t0 }; }
+      const html = await this.evalIn(T.sid, ctx, `(async () => { const R = ${re}; const re = R ? new RegExp(R[0], R[1]) : null; const t0 = Date.now(); let last = -1, same = 0; for (;;) { const n = re ? [...document.querySelectorAll('a[href]')].filter((a) => re.test(a.href)).length : 0; same = n === last ? same + 1 : 0; last = n; const el = Date.now() - t0; if ((n > 0 && el >= ${minMs} && same >= 3) || el > ${wait}) break; await new Promise((r) => setTimeout(r, 400)); } await new Promise((r) => setTimeout(r, 300)); return document.documentElement ? JSON.stringify([location.origin + location.pathname, document.title.slice(0, 60), document.documentElement.outerHTML]) : ''; })()`, wait + 15000);
+      let land = null, H = html; try { const j = JSON.parse(html); land = { final: j[0], title: j[1] }; H = j[2]; } catch (e) {} /* (0.1.78) 그린 화면이 끝난 곳(주소·제목 — 검색어·쿼리는 뺌) · 못 읽음 까닭에 함께 남김 */
+      if (typeof H !== 'string' || !H) return { ok: false, why: '그리기 실패: ' + ((html && html.why) || '빈 화면'), land }; return { ok: true, html: H.slice(0, 3000000), ms: Date.now() - t0, land }; }
     catch (e) { return { ok: false, why: '그리기 실패: ' + e.message }; } finally { await this.closeTab(T); } }
   /* 따로 된 칸 탭에서 화면을 열고(그려) 운영 공용 파일·떼어 온 함수·받침을 넣은 뒤 expr 하나를 부름 — 끝나면 탭·칸을 버림 */
   async tabJob(url, srcs, expr, timeoutSec) { let T = null; try { T = await this.openTab(url, timeoutSec || 25); const ctx = await this.tabWorld(T, srcs); return await this.evalIn(T.sid, ctx, expr, ((timeoutSec || 25) + 40) * 1000); }
@@ -162,7 +170,7 @@ class Browser {
   async mainEval(expr) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true }, this.sid); return r.result ? r.result.value : null; }
   /* 넘겨받은 크롬(adopted)은 우리 자식 프로세스가 아니라 proc.kill로 못 닫음 → 조종 길로 Browser.close · 남으면 다음 띄우기의 freeProfile이 이 프로필 크롬만 끝냄 */
   kill() { const c = this.cdp, ad = this.adopted && c && !c.closed; if (ad) { try { c.send('Browser.close', {}, null, 3000).catch(() => {}); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 300); } else { try { if (c) c.close(); } catch (e) {} }
-    try { if (this.proc && this.proc.exitCode == null && !this.proc.killed) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; }
+    try { if (this.proc && this.proc.exitCode == null && !this.proc.killed) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; this.rbc = null; }
   /* 조종 연결만 끊기고 크롬은 살아 있는지(그대로 두면 같은 프로필을 쥔 채 남아 다음 띄우기가 바로 꺼짐) */
   orphan() { if (this.adopted) return !!(this.cdp && this.cdp.closed); return !!(this.proc && this.proc.exitCode == null && this.proc.signalCode == null && (!this.cdp || this.cdp.closed)); }
   async close() { try { if (this.cdp && !this.cdp.closed) await this.cdp.send('Browser.close', {}, null, 5000).catch(() => {}); } catch (e) {} await sleep(300); this.kill(); }

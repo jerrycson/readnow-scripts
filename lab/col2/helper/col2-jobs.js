@@ -53,7 +53,7 @@ function makeJobs(ctx) {
   /* (0.1.10) 🖼 그려 읽기 — 운영 extRender와 같은 꼴: 도우미 /render(따로 된 칸 탭에 그려 HTML) → 운영 본체 extRenderHelper(글자 그대로)가 그 답을 해석 · 그릴 때마다 속도 규칙 한 장 */
   async function renderFor(url, opt) { const o = opt || {}; const sk = S.curSite; const tk = sk && ctx.site ? await ctx.site.take(sk) : await ctx.pace.take(); if (!tk.ok) return { ok: false, why: tk.why }; /* (11/11) 바깥 사이트를 그리면 그 사이트 몫 */
     const core = await ctx.core(); const br = await ctx.browser(); const wait = Math.min(30000, Math.max(6000, o.max || 12000));
-    const Rd = await br.render(ctx.extUrl ? ctx.extUrl(url) : url, { wait, re: o.re, reFlags: o.reFlags }); if (!Rd.ok) { if (sk && ctx.site) ctx.site.fail(sk, 'error'); else ctx.pace.fail('error'); }
+    const Rd = await br.render(ctx.extUrl ? ctx.extUrl(url) : url, { wait, re: o.re, reFlags: o.reFlags, keep: C().renderKeep }); if (Rd && Rd.land) S.curLand = Rd.land; /* (0.1.78) 그린 화면이 끝난 곳 — 못 읽으면 하루 요약 land에 */ if (!Rd.ok) { if (sk && ctx.site) ctx.site.fail(sk, 'error'); else ctx.pace.fail('error'); }
     const expr = `(async () => { const X = globalThis.__col2; X.gm = 'render'; X.rendered = ${JSON.stringify(Rd)}; try { return await Col2Lift.extRenderHelper(${JSON.stringify(url)}, ${JSON.stringify(o)}); } finally { X.gm = null; X.rendered = null; } })()`;
     const r = await br.mainJob(core.src, expr, 60); return r && typeof r === 'object' ? r : { ok: false, why: '그린 화면 해석 답 없음' }; }
   /* (0.1.10) 📚 KPIPA 마지막 날 — 운영 kpipaJob과 같은 규칙(한국 14:30 뒤면 어제 · 그 전엔 그제) · 날짜 셈은 떼어 온 kpYmd·kpAdd */
@@ -189,7 +189,7 @@ function makeJobs(ctx) {
       try { r = t.reader === 'dyn' ? await dynRead(br, core, t, a) : t.reader === 'nb' ? await nbRead(br, core, a) : await kpRead(br, core); } catch (e) { r = { ok: false, why: e.message, kind: 'error' }; }
       if (r && r.ok) SP.ok(); else if (r && !r.needLogin) SP.fail(r.kind === '429' ? '429' : 'error'); }
     else { const tk = await SP.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
-      S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
+      S.curSite = SK; S.curLand = null; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
     /* (0.1.43 adapt10 · 약속 64) 🔄 번외 읽기 성적 → 목표·방법 장부(col2-ag.js) — 알라딘·그려 읽기는 일 종류마다 장부(칸마다 채움) · 바깥 시세는 출처가 길 · 읽기만 셈(차례·속도는 그대로) */
     try { const AGX = require('./col2-ag.js').get(); const rr = r || {}; if (AGX && !rr.skip && !rr.needLogin) { const isExt = !(t.reader === 'al' || t.reader === 'dyn' || t.reader === 'nb' || t.reader === 'kp'); const eng = isExt ? 'ext' : (t.reader === 'al' ? 'al_' : t.reader + '_') + String(t.k).replace(/[^\w]/g, '').slice(0, 24); const mid = isExt ? String(t.src || t.k) : t.reader;
       AGX.obs(eng, mid, { n: 1, ok: rr.ok ? 1 : 0, cost: t.cost || 1, ms: now() - t0, why: rr.ok ? null : rr.why });
@@ -199,7 +199,7 @@ function makeJobs(ctx) {
     if (!r.ok && t.cls === 'ext' && DAYSTOP_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'fail', [], { why: String(r.why || '').slice(0, 120), ms }); ctx.note(`${t.name} — '이 PC IP 등록이 필요' 답 → 오늘은 이 PC에서 더 묻지 않음(키 계정에 이 PC 공인 IP를 넣으면 다음 날부터)`, { k: 'read', l: 'warn', m: t.name }); return { did: true }; }
     if (!r.ok && t.cls === 'ext' && failKey(r.why) === '키 없음·틀림') { (S.pause || (S.pause = {}))[k] = now() + 30 * 60e3; }
     if (!r.ok && t.cls === 'ext' && ENDED_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝 — ' + String(r.why || '').slice(0, 80), ms }); return { did: true }; }
-    if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); failStop(t); return { did: true }; }
+    if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms, land: t.cls === 'ext' ? S.curLand : null }); failStop(t); return { did: true }; }
     queue(t, a, r, ms); settle(); save(); return { did: true }; }
 
   /* (11/12 hot1) 오늘 거의 다 못 읽는 바깥 출처는 그날 남은 시간 쉼 — 11/12 JS-MAIN 예스24 도서 167번·예스24 중고 134번 모두 못 읽음(맞음 0) · 한 번마다 화면을 그려 최대 12~30초 기다림 = 헛일
@@ -312,10 +312,13 @@ function makeJobs(ctx) {
     return t.replace(/https?:\/\/\S+/g, '').replace(/[\d,.]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 40) || '못 읽음'; };
   function failAdd(k, why) { const s = S.day.t && S.day.t[k]; if (!s) return; const f = s.failWhy || (s.failWhy = {}); const key = failKey(why); f[key] = (f[key] || 0) + 1;
     const ks = Object.keys(f); if (ks.length > 12) { ks.sort((a, b) => f[a] - f[b]); for (const x of ks.slice(0, ks.length - 12)) delete f[x]; } }
+  /* (0.1.78 bunoe3) 🧭 못 읽은 바깥 일이 그린 화면이 끝난 곳(주소·제목 · 쿼리 뺌) — 예: 예스24 검색이 첫 화면(/Main/default.aspx)으로 돌려보냈나 · 일마다 많은 것 6가지 */
+  function landAdd(k, L) { const s = S.day.t && S.day.t[k]; if (!s) return; const f = s.land || (s.land = {}); const key = (String(L.final || '').replace(/[?#].*$/, '').slice(0, 70) + ' · ' + String(L.title || '').replace(/\s+/g, ' ').slice(0, 30)).trim(); f[key] = (f[key] || 0) + 1;
+    const ks = Object.keys(f); if (ks.length > 12) { ks.sort((a, b) => f[a] - f[b]); for (const x of ks.slice(0, ks.length - 12)) delete f[x]; } }
   function record(t, a, id, v, reasons, x) { x = x || {}; const d = kday(); if (S.day.d !== d) S.day = TK.dayNew(d); const s = TK.dayAdd(S.day, t.k, v, reasons); const ps = TK.passOf(s, P(), t.k);
-    if (v === 'fail') failAdd(t.k, x.why);
+    if (v === 'fail') failAdd(t.k, x.why); if (v === 'fail' && x.land && x.land.final) landAdd(t.k, x.land);
     const pcn = ctx.pc(); const did = String(t.k + '_' + id).replace(/[^\w.-]/g, '_').slice(0, 150);
-    if (!x.noItem) ctx.out('col2_jobs', did, R({ task: t.k, name: t.name, col: t.col, id: String(id), key: a && a.key || null, at: new Date().toISOString(), d, verdict: v, reasons, why: x.why || null, rows: x.rows || [], how: x.how || null, ageH: x.ageH == null ? null : x.ageH, ms: x.ms || null, pc: pcn, kind: kind(), ver: ctx.VERSION }));
+    if (!x.noItem) ctx.out('col2_jobs', did, R({ task: t.k, name: t.name, col: t.col, id: String(id), key: a && a.key || null, at: new Date().toISOString(), d, verdict: v, reasons, why: x.why || null, land: x.land || null, rows: x.rows || [], how: x.how || null, ageH: x.ageH == null ? null : x.ageH, ms: x.ms || null, pc: pcn, kind: kind(), ver: ctx.VERSION }));
     ctx.out('col2_jday', `${d}_${String(pcn).replace(/[^\w.-]/g, '_')}`.slice(0, 150), { d, pc: pcn, kind: kind(), at: new Date().toISOString(), ver: ctx.VERSION, rule: ps.rule, tasks: summary(), ...(QCFG().on && paceCap() ? { share: qPlan() } : {}) }); /* (11/12 handoff4) ⚖ 하루 몫 나누기(일마다 먼저 몫·몫·쓴 장) */
     const was = S.last && S.last[t.k]; S.last = { ...(S.last || {}), [t.k]: { at: now(), v, can: ps.can } };
     const lab = { same: '같음', diff: '다름', fail: '못 읽음', noprod: '운영 값 없음', skip: '건너뜀' }[v] || v;
@@ -323,7 +326,7 @@ function makeJobs(ctx) {
     if (ps.can && !(was && was.can)) ctx.note(`✅ ${t.name} — 오늘 '넘길 수 있음'(표본 ${ps.n} · 같음 ${ps.rate}% · ${ps.rule})`, { k: 'read', l: 'ok', m: t.name });
     save(); }
   const BF = require('./col2-benchfull.js').makeBenchFull({ ctx, S, save: (f) => save(f), record: (t, a, id, v, rs, x) => record(t, a, id, v, rs, x), own, now }); /* (11/12 handoff3) */
-  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, pre: s.pre || 0, preWhy: s.preWhy || undefined, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
+  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, pre: s.pre || 0, preWhy: s.preWhy || undefined, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, land: s.land ? Object.fromEntries(Object.entries(s.land).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
   /* 화면용 — 일 목록(이 PC가 하는지 · 차례 · 오늘 셈 · 넘길 수 있음) */
   function view() { const pl = plan(); const sm = summary(); const lg = kind() === 'logger';
     return { kind: kind(), pc: ctx.pc(), d: S.day.d, rule: TK.passOf(null, P()).rule, wait: S.wait.length, busy: busy(), tasks: TK.TASKS.map((t) => ({ k: t.k, name: t.name, ops: t.ops, cls: t.cls, reader: t.reader, col: t.col, who: t.who, state: t.state, why: t.why || null, note: t.note || null,

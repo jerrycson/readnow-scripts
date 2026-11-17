@@ -16,7 +16,7 @@ console.log('① 둘째 줄');
 ok(S.SEED.length >= 2 && S.SEED[1] === F, '차례표 둘째 줄 = 환율', S.SEED.map((s) => s.id)); /* (11/17 bunoe1) 셋째 줄부터 tC2SEED1117 */
 ok(F && F.pc === 'HOME' && F.on === true && F.task === 'ext.fx' && F.needSame === 1, 'HOME · 켬 · 같은 값 1건 조건', F);
 ok(new Set(S.SEED.map((s) => s.id)).size === S.SEED.length, '줄 이름 겹침 없음');
-ok(S.SEED.every((s) => s.pc !== 'MJ-MAIN' && s.pc !== 'LOGGER'), '출고 PC·로거 줄 없음');
+ok(S.SEED.every((s) => s.pc !== 'MJ-MAIN' && (s.pc !== 'LOGGER' || /^bn3-/.test(s.id))), '출고 PC 줄 없음 · 로거 줄은 로거 고유 일 bn3 줄만(11/17 bunoe3 · tC2SEEDLG1117)');
 
 console.log('② 실제 꼴(번외가 운영 키 없이 frankfurter) → 기다림');
 const w = S.decide(F, DONE, [day(fxT()), null], SOLO, NOW);

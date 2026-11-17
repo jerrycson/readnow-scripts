@@ -48,12 +48,19 @@ function plan(x) { x = x || {}; const pcs = (Array.isArray(x.pcs) && x.pcs.lengt
   if (x.hold) return { on: true, go: false, fb: false, why: '🚚 출고 중 — 평소 프로필을 빌리지 않음' };
   if (x.loginNeed) return { on: true, go: false, fb: true, why: '🔐 평소 크롬의 알라딘 로그인이 풀려 있음 — 번외는 로그인하지 않음(평소 크롬에서 한 번 로그인해 주세요)' };
   if (x.locked) return { on: true, go: false, wait: true, fb: true, why: '평소 크롬이 그 프로필을 쓰는 중 — 한 번에 한 브라우저만(기다림 · 그동안 예비 손발 길)' };
+  /* (0.1.78 bunoe3 · 안전 스위치 ①「쉬는 시각에만」 · 기본 꺼짐 alProf.idleOnly:true로 켬) 사람 입력(키보드·마우스)이 idleMin분(기본 5) 넘게 없을 때만 빌림 — 못 재면 빌리지 않음 */
+  if (x.idleOnly) { const need = idleNeedMs(x.idleMin); const ms = x.idleMs;
+    if (ms == null || !Number.isFinite(+ms) || +ms < 0) return { on: true, go: false, wait: true, idle: true, fb: true, why: '🧭 쉬는 시각에만 — 사람 입력이 없는 시간을 못 재 빌리지 않음(그동안 예비 손발 길)' };
+    if (+ms < need) return { on: true, go: false, wait: true, idle: true, fb: true, why: `🧭 쉬는 시각에만 — 마지막 사람 입력 ${Math.floor(+ms / 60e3)}분 전 · ${need / 60e3}분 넘게 입력이 없을 때만 빌림(그동안 예비 손발 길)` }; }
   return { on: true, go: true, fb: false, why: '🧭 길 나 — 평소 프로필을 잠깐 빌려 한 바퀴 읽고 곧바로 돌려줌' }; }
 
+const idleNeedMs = (m) => Math.max(1, Math.min(120, Number.isFinite(+m) && +m > 0 ? +m : 5)) * 60e3;
+/* (0.1.78 bunoe3 · 안전 스위치 ②「잠깐 빌림 알림」 · 기본 꺼짐 alProf.borrowNote:true로 켬) 빌리기 바로 전에 이 PC 화면 알림(작업 표시줄 풍선) · 옆 창·기록 줄 */
+const borrowMsg = (sec) => `🧭 평소 크롬 잠깐 빌림 — ${Math.max(5, Math.round(+sec || 0))}초 뒤 돌려줌`;
 /* col2-al에 넘길 지금 값 — 파일 체계는 잠금·폴더 있음만 봄 */
 function look(cfg, o) { o = o || {}; const c = cfg || {}; const P = c.alProf || {}; const dir = P.dir ? String(P.dir) : '';
   let exists = null; if (dir) { try { exists = (o.fs || fs).statSync(dir).isDirectory(); } catch (e) { exists = false; } }
   const lk = dir && exists ? profLocked(dir, o) : { locked: false };
-  return { path: c.alPath === 'prof' ? 'prof' : 'tm', pc: o.pc || c.pc || '', pcs: P.pcs, dir, exists, isDefault: isDefaultDir(dir, o.env), locked: lk.locked, lockBy: lk.by || null }; }
+  return { path: c.alPath === 'prof' ? 'prof' : 'tm', pc: o.pc || c.pc || '', pcs: P.pcs, dir, exists, isDefault: isDefaultDir(dir, o.env), locked: lk.locked, lockBy: lk.by || null, idleOnly: P.idleOnly === true, idleMin: P.idleMin, borrowNote: P.borrowNote === true }; }
 
-module.exports = { plan, look, profLocked, isDefaultDir, defaultDirs, DEF_PCS };
+module.exports = { plan, look, profLocked, isDefaultDir, defaultDirs, DEF_PCS, borrowMsg, idleNeedMs };

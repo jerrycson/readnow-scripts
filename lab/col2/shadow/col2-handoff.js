@@ -240,9 +240,11 @@
     /* (11/12 handoff4) R21 확인함 — 쿠키 없이도 같은 답 · 값은 정가·등급으로만 셈(알라딘 쪽 셈) */
     free21: '로그인 없이 읽히는 공개 주소(/shop/usedshop/c2c_sales_ajax) — 쿠키 없이도 같은 답(11/12 확인): 추천 판매가 = 정가 × 45% × 품질(최상 100% · 상 90% · 중 80%) · 운영은 따로 도는 일이 아니라 ✍ 등록·등급 바꾸기(W6·W7) 안에서만 부름 → 그 쓰기와 함께 넘김(따로 넘길 일 없음)' };
   const BUNDLES = [
-    { id: 'lg', name: '🌐 로거 고유 일', lg: true, note: '로거 PC 번외만 맡음 · 사무실과 엮지 않는 따로 칸(약속 0)', keys: ['dynamic', 'shopSum', 'metrics', 'usedPage', 'survey', 'bench', 'voice'] },
+    /* (11/17 일꾼 bunoe3 · 리드 '로거 고유 일은 로거에 · 다른 기기와 겹치는 것만 정리') 📈 시장 지표·🏷 중고 첫 쪽은 넘김이 📦 상품 화면 묶음(사무실 PC 한 대 · PUBSET)이라 🌐 로거 묶음에서 📘 묶음으로 옮김
+     *  — 로거 번외는 두 그림자를 그대로 읽음(견줌만 · 🏷 중고 첫 쪽이 🏪 숍 요약 차례를 채움) · 로거 칸에 넘김 줄은 없음(차례표 col2seed도 로거로 안 보냄) */
+    { id: 'lg', name: '🌐 로거 고유 일', lg: true, note: '로거 PC 번외만 맡음 · 사무실과 엮지 않는 따로 칸(약속 0) · 📈·🏷은 📘 묶음(사무실 한 대)으로 넘김', keys: ['dynamic', 'shopSum', 'survey', 'bench', 'voice'] },
     { id: 'ext', name: '🔎 외부 정보·통계', note: '바깥 사이트 일 — 운영 extFill이 넘긴 출처는 ISBN 있는 책을 묻지 않음', keys: ['ext.nl', 'ext.lib', 'ext.kakao', 'ext.kyobo', 'ext.google', 'ext.yes24', 'ext.naverbook', 'ext.ttb', 'ext.joongmo', 'ext.yes24used', 'ext.bunjang', 'ext.joongna', 'ext.daangn', 'ext.dvdprime', 'ext.ebay', 'ext.abebooks', 'ext.ridi', 'ext.fx', 'kpipa'] },
-    { id: 'pub', name: '📘 알라딘 공개 화면(사무실)', note: '로그인 없는 알라딘 화면 — 📦 상품 화면 묶음(📘·📈·🏷)은 사무실 PC 한 대(기본 JS-MAIN · 약속 0)', keys: ['product', 'nbMarket'] },
+    { id: 'pub', name: '📘 알라딘 공개 화면(사무실)', note: '로그인 없는 알라딘 화면 — 📦 상품 화면 묶음(📘·📈·🏷)은 사무실 PC 한 대(기본 JS-MAIN · 약속 0)', keys: ['product', 'metrics', 'usedPage', 'nbMarket'] },
     { id: 'alr', name: '🟧 알라딘 샵매니저 읽기', note: '22가지 — 로그인 없이 되는 것과 로그인이 필요한 것을 나눔', keys: ALR.map((x) => 'al.' + x[0]) },
   ];
   /* 묶음 보기 — jdays(최근 3일 col2_jday) · doc(app_settings/col2_handoff) → [{ id, name, items:[{k,name,st,why,pc}] , n:{on,can,shadow,block}, can:[넘길 수 있는 일 k…] }] */

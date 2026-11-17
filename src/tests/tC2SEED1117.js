@@ -13,11 +13,11 @@ const SOLO = { HOME: { at: 'x' }, 'JS-MAIN': { at: 'x' } };
 const BY = (id) => S.SEED.find((s) => s.id === id);
 
 console.log('① 새 줄 모양');
-const NEW = S.SEED.slice(2);
+const NEW = S.SEED.filter((s) => /^bn1-/.test(s.id)); /* (11/17 bunoe3) 로거 줄(bn3-)은 tC2SEEDLG1117 */
 ok(S.SEED[0].id === 'rv5-1113-nl-home' && S.SEED[1].id === 'c2s-1114-fx-home', '옛 두 줄이 앞 그대로');
 ok(NEW.length === 6 && NEW.every((s) => /^bn1-/.test(s.id)), '새 줄 6개(bn1-)', NEW.map((s) => s.id));
 ok(NEW.every((s) => ['kpipa', 'ext.joongmo', 'ext.kyobo', 'ext.ridi', 'ext.lib', 'ext.fx'].includes(s.k)), '로그인 없는 일만(KPIPA·바깥 정보·환율)', NEW.map((s) => s.k));
-ok(S.SEED.every((s) => s.pc !== 'MJ-MAIN' && s.pc !== 'LOGGER'), '출고 PC·로거 줄 없음');
+ok(S.SEED.every((s) => s.pc !== 'MJ-MAIN') && NEW.every((s) => s.pc !== 'LOGGER') && S.SEED.filter((s) => s.pc === 'LOGGER').every((s) => /^bn3-/.test(s.id)), '출고 PC 줄 없음 · bn1 줄에 로거 없음(로거 고유 일 줄은 bn3 — tC2SEEDLG1117)');
 ok(new Set(S.SEED.map((s) => s.id)).size === S.SEED.length, '줄 이름 겹침 없음');
 { const ds = NEW.filter((s) => !s.move && !s.take).map((s) => String(s.from).slice(0, 10)); ok(new Set(ds).size === ds.length && ds.every(Boolean), '넘기는 줄은 하루에 하나씩(from 날짜가 모두 다름)', ds); }
 
@@ -51,5 +51,5 @@ ok(S.decide(FX, seedCur(null), dF(), { HOME: {} }, t).act === 'wait', 'JS-MAIN �
 console.log('⑤ 옛 줄');
 ok(S.decide(S.SEED[1], { seeds: { 'c2s-1114-fx-home': { act: 'on' } } }, [], SOLO, t).act === 'done', '옛 환율 줄 = 이미 한 줄');
 const IX = fs.readFileSync(path.join(R, 'cloud/index.js'), 'utf8');
-ok(/^const VER = '0\.35\.\d+'; \/\/ \(0\.35\.\d+ bunoe1\)/m.test(IX), '클라우드 판 설명에 bunoe1');
+ok(/^const VER = '0\.35\.\d+';.*\/\/ \(0\.35\.\d+ bunoe1\)/m.test(IX), '클라우드 판 설명에 bunoe1'); /* (11/17 bunoe3) 뒤 판 설명이 앞에 붙어도 bunoe1 설명이 VER 줄에 남았는지 봄 */
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);

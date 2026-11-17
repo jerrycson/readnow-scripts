@@ -53,5 +53,23 @@ const AP = require('../helper/col2-alprof.js');
     ok(/cfg\(\)\.alPath === 'prof' \? profPlan\(\) : null/.test(src), "길 나는 alPath:'prof'일 때만(기본 꺼짐)");
     const ap = fs.readFileSync(path.join(__dirname, '..', 'helper', 'col2-alprof.js'), 'utf8');
     ok(!/Cookies|Login Data|Local State|Preferences|readFileSync/.test(ap.replace(/\/\*[\s\S]*?\*\//g, '')), '길 나 판단은 쿠키·계정·설정 파일을 읽지 않음(잠금 파일만)'); }
+  console.log('⑥ (0.1.78 bunoe3) 안전 스위치 — 「쉬는 시각에만」·「잠깐 빌림 알림」 기본 꺼짐');
+  { const lk0 = AP.look({ pc: 'HOME', alPath: 'prof', alProf: { dir: '/없는/폴더' } }, { env: {} }); ok(lk0.idleOnly === false && lk0.borrowNote === false, '두 스위치 모두 기본 꺼짐(설정 없으면 false)', lk0);
+    ok(AP.plan({ ...base, pc: 'HOME', idleMs: 0 }).go, '쉬는 시각 스위치가 꺼져 있으면 사람 입력과 상관없이 예전 그대로');
+    const lk1 = AP.look({ pc: 'HOME', alPath: 'prof', alProf: { dir: '/x', idleOnly: true, idleMin: 7, borrowNote: true } }, { env: {} }); ok(lk1.idleOnly && lk1.idleMin === 7 && lk1.borrowNote, 'alProf.idleOnly·idleMin·borrowNote로 켬', lk1);
+    const on = { ...base, pc: 'HOME', idleOnly: true };
+    const a = AP.plan({ ...on, idleMs: 4 * 60e3 + 59e3 }); ok(!a.go && a.wait && a.fb && a.idle && /4분 전/.test(a.why) && /5분/.test(a.why), '켜 두면 사람 입력 5분 안이면 빌리지 않고 예비 길', a);
+    ok(AP.plan({ ...on, idleMs: 5 * 60e3 }).go, '5분 넘게 입력이 없으면 빌림');
+    const u = AP.plan({ ...on, idleMs: null }); ok(!u.go && u.fb && /못 재/.test(u.why), '못 재면(창 다루기 실패·Windows 아님) 빌리지 않음', u);
+    ok(!AP.plan({ ...on, idleMs: -1 }).go, 'GetLastInputInfo 실패(-1)도 빌리지 않음');
+    ok(!AP.plan({ ...on, idleMin: 10, idleMs: 9 * 60e3 }).go && AP.plan({ ...on, idleMin: 10, idleMs: 10 * 60e3 }).go, 'idleMin으로 바꿈(10분)');
+    ok(!AP.plan({ ...on, idleMs: 99 * 60e3, hold: true }).go && !AP.plan({ ...on, idleMs: 99 * 60e3, locked: true }).go, '쉬는 시각이어도 출고 중·평소 크롬이 쥔 때는 안 빌림(앞 조건이 먼저)');
+    ok(AP.borrowMsg(42) === '🧭 평소 크롬 잠깐 빌림 — 42초 뒤 돌려줌', '알림 글', AP.borrowMsg(42));
+    const src = fs.readFileSync(path.join(__dirname, '..', 'helper', 'col2-al.js'), 'utf8'); const blk = (src.match(/async function profStep[\s\S]*?\n  async function step\(\)/) || [''])[0];
+    ok(/if \(idleWant\(\)\) \{ await idleRead\(true\); const p2 = profPlan\(\);[^\n]*if \(!p2\.go\)/.test(blk) && blk.indexOf('idleRead(true)') < blk.indexOf('new Browser('), '켜 두면 띄우기 바로 전에 사람 입력을 다시 재고 아니면 띄우지 않음');
+    ok(/cfg\(\)\.alProf && cfg\(\)\.alProf\.borrowNote === true\) \{[^\n]*AP\.borrowMsg[^\n]*WIN\.run\('toast'/.test(blk) && blk.indexOf('borrowMsg') < blk.indexOf('await b.launch()'), '알림은 켜 둔 때만 · 크롬을 띄우기 전에');
+    ok(/const idleWant = \(\) => cfg\(\)\.alPath === 'prof' && !!\(cfg\(\)\.alProf && cfg\(\)\.alProf\.idleOnly === true\)/.test(src), '사람 입력은 길 나 + 스위치를 켠 때만 잼(그 밖엔 PowerShell을 더 부르지 않음)');
+    const W = require('../helper/col2-win.js'); const ps = W.PS_SRC({ showW: 1, showH: 1 });
+    ok(/GetLastInputInfo/.test(ps) && ps.indexOf("$Act -eq 'idle'") > 0 && ps.indexOf("$Act -eq 'idle'") < ps.indexOf('Get-CimInstance') && ps.indexOf("$Act -eq 'toast'") < ps.indexOf('Get-CimInstance'), "창 다루기 'idle'·'toast'는 크롬 프로세스·창을 찾기 전에 끝남(크롬을 안 건드림)"); }
   L.done('t_alprof');
 })();

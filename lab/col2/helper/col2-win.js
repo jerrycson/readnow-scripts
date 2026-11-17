@@ -8,7 +8,7 @@ const fs = require('fs'), cp = require('child_process'), crypto = require('crypt
 /* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해') 창 자리 함수 이름을 R → Get-RnRect — PowerShell은 별칭이 함수보다 먼저라 'R'은 Invoke-History(r)로 불려
  *  'ID 21433606에 대한 기록을 찾을 수 없습니다'로 find·hide가 창이 있을 때마다 실패했음(HOME col2_ctl 11/09 17:40) */
 const PS_SRC = (D) => PS_RAW(D).replace(/\$\{WIN_HASH\}/g, WIN_HASH);
-const PS_RAW = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome', [int]$Top = 0)
+const PS_RAW = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome', [int]$Top = 0, [string]$Msg = '')
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
@@ -33,6 +33,9 @@ public static class RnCol2Win {
   [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWL(IntPtr h, int i);
   [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] public static extern IntPtr SetWL(IntPtr h, int i, IntPtr v);
   public struct RECT { public int L; public int T; public int R; public int B; }
+  public struct LII { public uint cbSize; public uint dwTime; }
+  [DllImport("user32.dll")] public static extern bool GetLastInputInfo(ref LII p);
+  public static long IdleMs() { var p = new LII(); p.cbSize = (uint)Marshal.SizeOf(typeof(LII)); if (!GetLastInputInfo(ref p)) return -1; return (long)unchecked((uint)Environment.TickCount - p.dwTime); }
   public static List<IntPtr> Find(HashSet<uint> pids) { var L = new List<IntPtr>(); EnumWindows((h, l) => { uint p; GetWindowThreadProcessId(h, out p); if (!pids.Contains(p)) return true; var c = new StringBuilder(256); GetClassName(h, c, 256); if (c.ToString() != "Chrome_WidgetWin_1") return true; if (GetWindowTextLength(h) == 0) return true; L.Add(h); return true; }, IntPtr.Zero); return L; }
   public static bool Tool(IntPtr h) { long ex = GetWL(h, -20).ToInt64(); return (ex & 0x80L) != 0; }
   public static void Taskbar(IntPtr h, bool hide) { long ex = GetWL(h, -20).ToInt64(); long nx = hide ? ((ex | 0x80L) & ~0x40000L) : ((ex & ~0x80L) | 0x40000L); if (nx == ex) return; ShowWindow(h, 0); SetWL(h, -20, new IntPtr(nx)); ShowWindow(h, 4); }
@@ -52,6 +55,9 @@ function Info($h) { @{ h = [int64]$h; r = (Get-RnRect $h); vis = [RnCol2Win]::Is
 $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen; $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $out = @{ ok = $true; act = $Act; vs = @{ x = $vs.X; y = $vs.Y; w = $vs.Width; h = $vs.Height }; wa = @{ x = $wa.X; y = $wa.Y; w = $wa.Width; h = $wa.Height } }
 $out.scr = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $b = $_.WorkingArea; @{ x = $b.X; y = $b.Y; w = $b.Width; h = $b.Height } })
+<# (0.1.78 bunoe3) idle = 이 PC 사람 입력(키보드·마우스)이 없는 시간(ms · 창·프로세스는 안 봄) · toast = 작업 표시줄 풍선 알림 6초(길 나 「잠깐 빌림 알림」) — 둘 다 크롬 창을 찾지도 건드리지도 않음 #>
+if ($Act -eq 'idle') { $out.idleMs = [RnCol2Win]::IdleMs(); $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
+if ($Act -eq 'toast') { try { Add-Type -AssemblyName System.Drawing; $ni = New-Object System.Windows.Forms.NotifyIcon; $ni.Icon = [System.Drawing.SystemIcons]::Information; $ni.Text = 'ReadNow col2'; $ni.Visible = $true; $ni.ShowBalloonTip(6000, '리드나우 번외', $Msg, [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $ni.Dispose(); $out.shown = $true } catch { $out.ok = $false; $out.err = [string]$_ }; $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
 $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
 <# (11/12 hands1 정범님 'HOME 알라딘은 평소 크롬을 손발로') @hands = 평소 크롬(따로 된 프로필 --user-data-dir 없이 뜬 크롬 = 정범님 크롬)의 창 가운데 제목에 '리드나우 손발'(운영 수집기 탭이 붙임)이 든 창만 · 운영 작업 창은 운영 도우미 몫이라 안 건드림
    · 찾기·숨기기·띄우기·앞으로만 — 끄기(kill)·닫기(close)는 평소 크롬에 절대 안 함 #>
@@ -96,6 +102,7 @@ function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () =
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Act', act, '-Mark', mark];
     for (const k of ['X', 'Y', 'W', 'H']) { const v = a[k.toLowerCase()]; if (v != null && Number.isFinite(+v)) args.push('-' + k, String(Math.round(+v))); }
     if (a.place) args.push('-Place', a.place === 'edge' ? 'edge' : 'off');
+    if (a.msg) args.push('-Msg', String(a.msg).replace(/[\r\n"]/g, ' ').slice(0, 120)); /* (0.1.78) toast 글 */
     if (a.top) args.push('-Top', '1'); /* (0.1.7) ▁ 작은 단추 — 늘 다른 창 위에(그 밖 show는 앞으로 꺼낸 뒤 보통 창으로) */
     { const t = Date.now(); T.push(t); while (T.length && t - T[0] > 3600e3) T.shift(); if (T.length > 5000) T.splice(0, T.length - 5000); }
     cp.execFile(psExe(), args, { windowsHide: true, timeout: 45000, maxBuffer: 4 * 1048576 }, (e, out, err) => { const line = String(out || '').trim().split(/\r?\n/).reverse().find((l) => /^\{/.test(l.trim())); let j = null; try { j = JSON.parse(line); } catch (x) {}

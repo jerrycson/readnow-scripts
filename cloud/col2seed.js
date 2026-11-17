@@ -33,7 +33,16 @@ const SEED = [
    *  move = 차례표가 켠 줄(사람 값 아님)이고 그 PC 소식이 그 일 한도(환율 30시간) 넘게 없을 때만 다른 PC로 옮김 · JS-MAIN은 늘 켜져 있고(F26) 웹앱이 키를 건넴(11/16 같음 1)
    *  (11/17 정범님 19.2) 「HOME 소식 30시간 없으면 JS-MAIN」을 한 길로 합침 — take = 차례표가 켠 줄이면 소식 시간을 기다리지 않고 바로 JS-MAIN으로(사람 값은 그대로) · JS-MAIN 번외는 jobs.fx.at 시각마다 받아 올림 · 다른 PC 번외는 받지 않음(handedElse)
    *  되돌림: ⚙ 🔀 ext.fx 되돌리기(운영 로거가 다시 받음) · 시각은 col2.json jobs.fx.at */
-  { id: 'bn1-1118-fx-js', k: 'ext.fx', pc: 'JS-MAIN', on: true, minV: '0.1.77', task: 'ext.fx', needSame: 1, take: true, from: '2026-11-17T00:00:00+09:00', why: '💱 환율(수출입은행) — JS-MAIN 번외가 하루 정해진 시각(11:35·15:05)에 받아 운영 칸(ext_fx)에 올림 · 웹앱·다른 PC 번외는 그 값만 읽음 · 키를 받는 JS-MAIN이 운영과 같은 고시를 읽은 날 · 로그인 없음 · 돈 무관' }
+  { id: 'bn1-1118-fx-js', k: 'ext.fx', pc: 'JS-MAIN', on: true, minV: '0.1.77', task: 'ext.fx', needSame: 1, take: true, from: '2026-11-17T00:00:00+09:00', why: '💱 환율(수출입은행) — JS-MAIN 번외가 하루 정해진 시각(11:35·15:05)에 받아 운영 칸(ext_fx)에 올림 · 웹앱·다른 PC 번외는 그 값만 읽음 · 키를 받는 JS-MAIN이 운영과 같은 고시를 읽은 날 · 로그인 없음 · 돈 무관' },
+  /* (11/17 일꾼 bunoe3 · 리드 '로거 일 넘김 줄 — 로거 고유 일(F05~F08)은 로거에 · 다른 기기와 겹치는 것만 정리') 🌐 로거 줄 — HOME 줄(11/18~11/21) 다음 날부터 하루에 한 줄씩
+   *  로거 고유 일만(LG_JOBS: 👥 구매자 분포·🏪 숍 요약·🎯 숍 목록 끝까지) · 로거로만 감(decide가 다른 PC면 'bad') · 알라딘 공개 화면만(로그인·계정·쿠키·우리 숍 화면·우리 상품 목록 없음 · 테더링으로만 — 와이파이면 번외가 알라딘에 안 감)
+   *  📈 시장 지표·🏷 중고 첫 쪽은 줄 없음 — 넘김은 📦 상품 화면 묶음(사무실 PC 한 대 · JS-MAIN)과 겹치므로(로거 그림자는 견줌만 · 🏷이 🏪 숍 차례를 채움)
+   *  근거 진단 11/17 22시 LOGGER 0.1.77 하루 요약: 👥 31건 같음 17·다름 14(모두 '때가 다름') · 🏪 30건 같음 6·다름 24(모두 '때가 다름') · 둘 다 까닭 모를 다름 0·못 읽음 0 · 🎯 끝까지(benchFull)는 아직 표본 없음 → 그 일이 '넘길 수 있음'이 될 때까지 기다림
+   *  쓰기 = 로거 웹앱(c2HoPlanW·c2HoBenchW) 또는 홀로 연결 — 운영 dynOne·rev6mJob·benchFinish 글자 그대로 · 지우는 쓰기 없음 · 로거 소식이 일마다 한도(👥 8시간·🏪 30시간·🎯 30시간) 넘게 없으면 운영 로거가 스스로 다시 함
+   *  되돌림: 웹앱 ⚙ 설정 › 🔀 번외로 넘기기 › 그 일 [↩ 되돌리기] 두 번 · 또는 여기에 같은 일 { on:false } 줄 */
+  { id: 'bn3-1122-dy-lg', k: 'dynamic', pc: 'LOGGER', on: true, minV: '0.1.77', task: 'dynamic', from: '2026-11-22T00:00:00+09:00', why: "👥 구매자 분포·함께 산 책 — 11/17 LOGGER 31건 다름은 '때가 다름'뿐 · 로거 고유 일 · 알라딘 공개 화면(로그인 없음) · 돈 무관" },
+  { id: 'bn3-1123-ss-lg', k: 'shopSum', pc: 'LOGGER', on: true, minV: '0.1.77', task: 'shopSum', from: '2026-11-23T00:00:00+09:00', why: "🏪 숍 요약(6개월 평가 수·등급·품절취소율) — 11/17 LOGGER 30건 다름은 '때가 다름'뿐 · 로거 고유 일 · 알라딘 공개 화면(로그인 없음) · 돈 무관" },
+  { id: 'bn3-1124-bf-lg', k: 'bench', pc: 'LOGGER', on: true, minV: '0.1.77', task: 'benchFull', from: '2026-11-24T00:00:00+09:00', why: "🎯 집중 벤치마킹 숍 목록 끝까지(작은 숍) — 로거 고유 일 · 알라딘 공개 화면(로그인 없음) · 돈 무관 · 끝까지 읽기 그림자가 '넘길 수 있음'인 날만" }
 ];
 const LG_JOBS = new Set(['dynamic', 'shopSum', 'bench']); /* 웹앱 C2HO_JOBS lg:true와 같음 */
 const verGE = (a, b) => { const p = (s) => String(s || '').split('.').map((x) => +x || 0); const A = p(a), B = p(b); for (let i = 0; i < Math.max(A.length, B.length); i++) { if ((A[i] || 0) !== (B[i] || 0)) return (A[i] || 0) > (B[i] || 0); } return true; };

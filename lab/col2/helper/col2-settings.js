@@ -19,7 +19,7 @@
   /* 기본값은 col2-config.js(COL2)와 각 일 파일 기본값에서 — 여기 적은 숫자는 그 파일에 기본값이 없을 때만(시험 t_settings가 일 파일 글과 견줌) */
   const AL_DEF = { chkMin: 20, confirmMin: 30, delivMin: 30, listMin: 60, qnaMin: 120, gapA: 3000, gapB: 6000, hourCap: 30, dayCap: 300, cool429Min: 30, nightFrom: 1, nightTo: 5 }; /* col2-al.js C() 기본값과 같음 */
   const Y24_DEF = { ordMin: 5, prdH: 24, tourH: 24, takeover: true, tkHour: 3 }; /* col2-y24.js C() 기본값과 같음 */
-  const RLG_DEF = { perHour: 3, perDay: 30, gapMin: 5, failStop: 2, shortMin: 20, backMaxMin: 120 }; /* col2-relogin.js DEF와 같음 */
+  const RLG_DEF = { perHour: 3, perDay: 40, gapMin: 5, failStop: 2, shortMin: 20, backMaxMin: 120 }; /* col2-relogin.js DEF와 같음 */
   /* 표 한 줄: k 이름 · g 묶음 · t 이름표 · sc 범위 · ty int|num|bool|time · lo~hi(저장 값 단위) · mul(보이는 값 = 저장 값 ÷ mul) · u 단위 · f 자주(often)/가끔(some)/드묾(rare)
    *  · p = col2.json 안 경로 · dk = 기본값 찾는 곳(COL2 경로 'PACE.dayCap' 또는 'AL.chkMin' 같은 일 파일 기본값) · i = ⓘ 설명(숨김) */
   const S = (k, g, t, sc, ty, lo, hi, p, dk, o) => ({ k, g, t, sc, ty, lo, hi, p, dk, mul: 1, u: '', f: 'some', i: '', ...(o || {}) });
