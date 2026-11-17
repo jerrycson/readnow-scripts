@@ -555,7 +555,11 @@ const sideOn = () => (CFG.side == null ? !TEST : CFG.side !== false);
 async function sideOpen(why) { if (!sideOn() || !CFG.on) return null; try { const f = await WIN.run('find', STAT_MARK); if (f.ok && f.n) return null; return await appWin('status', why); } catch (e) { return null; } }
 /* 웹앱 관리도구 PC별 한 줄 — 예스24 판매관리 읽기(손님 정보 없음) */
 function alLine() { const a = AL.sum(); const h = a.hands || {}; if (h.on) return { on: !!a.want, logger: a.logger, login: h.login === true ? 'ok' : h.login === false ? 'need' : 'unknown', active: !!h.active, seat: !!h.linked, pp: a.pp, hands: { linked: !!h.linked, login: h.login, n: h.n, ok: h.ok, fail: h.fail, win: h.win ? { n: h.win.n, on: !!h.win.on } : null }, msg: String(a.msg || '').slice(0, 160), day: { n: a.day.n, same: a.day.same, diff: a.day.diff, wait: a.day.wait }, w: ALW.line() }; /* (11/12 hands1) 🖐 손발 길 — 웹앱 PC 줄: 자리는 운영 탭 것 · 로그인 = 평소 크롬 */ return { on: a.on, logger: a.logger, login: a.login, active: a.active, seat: a.seat, pp: a.pp, msg: String(a.msg || '').slice(0, 160), day: { n: a.day.n, same: a.day.same, diff: a.day.diff, wait: a.day.wait }, w: ALW.line() }; } /* (알라딘 읽기) 웹앱 PC 줄 🟧 한 줄(제안) */
-function y24Line() { const y = Y24.sum(); return { on: y.on, logger: y.logger, login: y.login, active: y.active, msg: String(y.msg || '').slice(0, 160), ordAt: y.ord.at, ordErr: y.ord.err, prdAt: y.prd.at, prdN: y.prd.n, day: y.day, q: y.q, sent: y.sent, jobsOk: y.jobsOk, re: y.re || null, reWhy: y.reWhy || null /* (11/13 home2) 다시 로그인 상태·자취(값 없음) — 홀로 연결 상태에도 */ }; }
+function y24Line() { const y = Y24.sum(); return { on: y.on, logger: y.logger, login: y.login, active: y.active, msg: String(y.msg || '').slice(0, 160), ordAt: y.ord.at, ordErr: y.ord.err, prdAt: y.prd.at, prdN: y.prd.n, day: y.day, q: y.q, sent: y.sent, jobsOk: y.jobsOk, re: y.re || null, reWhy: y.reWhy || null /* (11/13 home2) 다시 로그인 상태·자취(값 없음) — 홀로 연결 상태에도 */, main: y.main || null, opsNum: y.opsNum || null, ops: y.ops ? { at: y.ops.at, end: y.ops.end } : null, qa: qaLine(y.qa), qaq: y.qaq || null /* (11/17 y24qa2) ❓ 문의 줄·답 대기열 — 홀로 연결로 웹앱까지(전엔 여기서 빠져 웹앱이 미답변을 못 봄) */ }; }
+/* (11/17 y24qa2) 웹앱으로 가는 문의 줄 — 칸 이름 고정·길이 자름(손님 이름·아이디·메일 칸은 애초에 qaRows가 안 뽑음 · 본문은 전화·메일 가림) */
+function qaLine(q) { if (!q || !Array.isArray(q.rows)) return null; const t = (v, n) => (v == null ? undefined : String(v).slice(0, n));
+  return { at: q.at || null, n: +q.n || 0, total: q.total != null ? +q.total : null, noAns: q.noAns != null ? +q.noAns : null, avgDays: q.avgDays != null ? +q.avgDays : null, poll: q.poll ? { at: q.poll.at, how: q.poll.how, r: t(q.poll.r, 60), got: !!q.poll.got } : null,
+    rows: q.rows.slice(0, 30).map((z) => JSON.parse(JSON.stringify({ no: t(z.no, 20), gno: t(z.gno, 20), gnm: t(z.gnm, 80), ttl: t(z.ttl, 80), q: t(z.q, 400), dt: t(z.dt, 20), ans: t(z.ans, 200), ansDt: t(z.ansDt, 20), ay: z.ay === 0 || z.ay === 1 ? z.ay : null, rpt: z.rpt ? 1 : undefined, gb: t(z.gb, 4), ord: z.ord ? 1 : undefined }))) }; }
 /* 📊 상태 창 — 작은 앱 창(380×560)에 맞게: 글자 작게 · 접는 칸 · 가로 넘침 없음 (ALPS 도우미 화면 모양) */
 const SMALL_CSS = `:root{--ink:#1E2B28;--sub:#5B6B66;--line:#DCE3E0;--bg:#F3F5F4;--card:#fff;--pri:#2F5D50;--soft:#E6EFEB;--ok:#2F7D4F;--okSoft:#E3F1E8;--no:#B0322A;--noSoft:#FDECEA;--warn:#A8661B;--warnSoft:#FFF4E5;--r:10px} /* (11/11 col2ui1) 웹앱 디자인 토큰과 같은 색(천 초록 · 호박 · 빨강) */
 @media (prefers-color-scheme: dark){:root{--ink:#E6ECEA;--sub:#9DB0AA;--line:#33403C;--bg:#141A18;--card:#1D2523;--pri:#7FC3AE;--soft:#22302B;--ok:#6FCF9C;--okSoft:#1E3328;--no:#F08C82;--noSoft:#3A2220;--warn:#E8B46A;--warnSoft:#3A2E1A}}
@@ -730,7 +734,7 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/log/day' && req.method === 'GET') return J(200, { ok: true, lines: JRN.day(u.searchParams.get('d')) });
   if (u.pathname === '/log/all' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', ...H }); return res.end(JRN.allText()); }
   if (u.pathname === '/y24/reg/state' && req.method === 'GET') return J(200, { ...Y24.reg.state(), solo: y24SoloLive() ? { at: Y24S.at, why: Y24S.why } : null }); /* (headless1) solo = 클라우드가 판단 중 — 웹앱은 보기만 */ /* (11/10 y24auto) 🟦 예스24 자동 올림 — 맡김·결과(웹앱이 받아 장부에 적음) */
-  if (u.pathname === '/y24/w/state' && req.method === 'GET') return J(200, Y24.w.state());
+  if (u.pathname === '/y24/w/state' && req.method === 'GET') return J(200, Y24.qa ? Y24.qa.merge(Y24.w.state()) : Y24.w.state()); /* (11/17 y24qa2) ❓ 문의 답 대기·결과를 예스24 쓰기와 한 상태로(수집기는 이 하나만 봄 · 수집기 판 안 바꿈) */
   if (u.pathname === '/y24/learn' && req.method === 'GET') return J(200, Y24.learn.state()); /* (11/11 y24ops3) 🎓 배우기 모드 — 받은 저장 요청 모양(값·손님 정보 없음) */ /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지) — 맡김·결과(웹앱 🛠 처리할 일이 받아 줄에 보임) */
   if (u.pathname === '/nv/st' && req.method === 'GET') return J(200, { ok: true, ver: VERSION, pc: CFG.pc || os.hostname(), nv: NV.sum(), solo: { live: SOLO.live(), reg: SOLO.sum().reg } }); /* (11/12 col2solo1) solo.live = 홀로 연결이 네이버를 맡음 — 웹앱·수집기 다리는 비킴 */
   if (u.pathname === '/solo/st' && req.method === 'GET') return SOLO.pubInfo().then((r) => J(200, { ...r, ver: VERSION })); /* (11/12 col2solo1) 🔌 홀로 연결 — 상태·공개 열쇠·지문(개인 열쇠 없음) · 웹앱 ⚙ 🔀 칸 '이 기기 등록' */ /* (0.1.22) 🟩 네이버 — 상태만(시크릿·토큰 없음 · 공개 열쇠는 있음) */
@@ -795,10 +799,10 @@ const srv = http.createServer((req, res) => {
   if (p === '/nv/feed') return body((o) => { if (SOLO.live() && !(o && o.ack)) return J(200, { ok: true, st: NV.sum(), out: [], solo: true }); J(200, NV.feed(o)); }, 262144); /* (11/12) 홀로 연결이 살아 있으면 읽은 것은 그 길로만 */
   if (p === '/solo/link') return body((o) => { if (org && !(COL2.WEB_ORIGINS || [COL2.WEB_ORIGIN]).includes(org)) return J(403, { ok: false, err: '웹앱만' }); const r = SOLO.link(o); J(r.ok ? 200 : 400, { ...r, solo: SOLO.sum() }); }); /* (11/12) 🔌 클라우드 주소(비밀 아님) — 웹앱 등록 때 */
   if (p === '/solo/now') return body(() => { SOLO.kick(50); J(200, { ok: true }); });
-  if (p === '/y24/w/put') return body((o) => { const r = Y24.w.put(o); J(r.code, r.body); }, 256 * 1024);
-  if (p === '/y24/w/ack') return body((o) => J(200, Y24.w.ack(o.ids)));
+  if (p === '/y24/w/put') return body((o) => { const r = Y24.qa && Y24.qa.isQa(o) ? Y24.qa.put(o) : Y24.w.put(o); J(r.code, r.body); }, 256 * 1024); /* (11/17 y24qa2) 줄이 모두 kind:'qa'면 문의 답 */
+  if (p === '/y24/w/ack') return body((o) => { if (Y24.qa) Y24.qa.ack(o.ids); J(200, Y24.w.ack(o.ids)); });
   if (p === '/y24/learn') return body(async (o) => { const r = await Y24.learn.set(o); J(r.ok ? 200 : 409, r); }); /* (11/11 y24ops3) 🎓 배우기 켜기·끄기 {on, page, min, by} */
-  if (p === '/y24/w/resume') return body((o) => J(200, Y24.w.resume(o.by || o.why || '')));
+  if (p === '/y24/w/resume') return body((o) => { if (Y24.qa) Y24.qa.resume(o.by || o.why || ''); J(200, Y24.w.resume(o.by || o.why || '')); });
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
   if (p === '/y24/login') return body(async (o) => { const r = await Y24.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
   if (p === '/y24/re1') return body((o) => { const r = Y24.reOnce(o.by || ''); J(r.ok ? 200 : 409, r); }); /* (11/11 y24ops4) 원격 '다시 로그인 한 번'(맡은 PC 수집기 다리가 부름) */
