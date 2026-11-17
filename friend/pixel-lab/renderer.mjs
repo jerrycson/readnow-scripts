@@ -10,8 +10,8 @@ function rotation(yaw,pitch){
  const y=yaw*Math.PI/180,p=pitch*Math.PI/180,cy=Math.cos(y),sy=Math.sin(y),cp=Math.cos(p),sp=Math.sin(p);
  return v=>{const x=cy*v[0]+sy*v[2],z=-sy*v[0]+cy*v[2];return [x,cp*v[1]-sp*z,sp*v[1]+cp*z];};
 }
-export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outline=true,breathAmplitude,portrait=false,sceneOverride,studyResolution,castShadows=false,isolateDetail=false,freeOrbit=false,cameraZoom=1,screenOffset=[0,0]}={}){
- if(studyResolution!==undefined&&![128,192,256,512].includes(studyResolution))throw new Error('연구용 원본 크기는 128·192·256·512px입니다.');
+export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outline=true,breathAmplitude,portrait=false,sceneOverride,studyResolution,castShadows=false,isolateDetail=false,freeOrbit=false,cameraZoom=1,screenOffset=[0,0],highDefinition=false}={}){
+ if(studyResolution!==undefined&&![128,192,256,512].includes(studyResolution)&&!(highDefinition&&[1024,2048].includes(studyResolution)))throw new Error('연구용 원본 크기는 128·192·256·512px, 고해상도 원형은 1024·2048px입니다.');
  const angle=v=>freeOrbit&&Number.isFinite(v)?((v%360)+360)%360:normalizeAngle(v);
  yaw=angle(yaw);pitch=angle(pitch);
  const s=validateSettings(settings),w=studyResolution||s.resolution,h=w,data=new Uint8ClampedArray(w*h*4),depthBuffer=new Float32Array(w*h).fill(-Infinity);
@@ -29,7 +29,7 @@ export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outli
    depthBuffer[index]=d;
    const normal=norm(a.n.map((q,i)=>u*q+v*b.n[i]+z*c.n[i])),pos=a.world.map((q,i)=>u*q+v*b.world[i]+z*c.world[i]);
    if(strain){data.set(strain===1?[220,84,41,255]:[51,139,197,255],index*4);continue;}
-   data.set([...shade(material,normal,pos,w,shadows?shadows.visibility(pos,normal):1),255],index*4);
+   data.set([...shade(material,normal,pos,w,shadows?shadows.visibility(pos,normal):1,highDefinition),255],index*4);
   }
  }
  const projected=new Map();

@@ -41,10 +41,16 @@ export function materialLibrary(s){
  };
 }
 const light=norm([-.55,.8,1]),half=norm([light[0],light[1],light[2]+1]);
-export function shade(mat,normal,pos,resolution,visibility=1){
+function continuousColor(colors,value){
+ const point=Math.max(0,Math.min(1,value))*(colors.length-1),a=Math.floor(point),b=Math.min(a+1,colors.length-1),t=point-a;
+ return colors[a].map((channel,i)=>Math.round(channel+(colors[b][i]-channel)*t));
+}
+export function shade(mat,normal,pos,resolution,visibility=1,continuous=false){
  const diffuse=dot(normal,light)*visibility,nh=Math.max(0,dot(normal,half))*visibility;
  if(mat.skin){const lit=Math.max(0,diffuse),fade=mat.portrait?Math.max(0,Math.min(1,(pos[1]-mat.chin-.02)/.20)):0;
- const value=.27+.69*lit+fade*(.29-.29*lit);return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
+  const value=.27+.69*lit+fade*(.29-.29*lit);
+  if(continuous)return continuousColor(mat.colors,value);
+  return mat.colors[Math.min(mat.colors.length-1,Math.max(1,Math.round(value*(mat.colors.length-1))))];}
  let value=(diffuse+.18)/1.15;
  const spec=Math.pow(nh,4+(1-mat.roughness)*65)*(mat.specular||0);
  if(mat.metal)value=.05+.60*Math.max(0,diffuse)+spec;else value+=spec;
@@ -59,6 +65,7 @@ export function shade(mat,normal,pos,resolution,visibility=1){
   if(mat.pattern==='stone')value+=.04*Math.sin(pos[0]*13+pos[1]*7+pos[2]*11);
  }
  if(mat.emission)value=.65+.30*Math.max(0,diffuse);
+ if(continuous)return continuousColor(mat.colors,value);
  const tone=value<.06?0:value<.29?1:value<.53?2:value<.83?3:4;
  return mat.colors[tone];
 }
