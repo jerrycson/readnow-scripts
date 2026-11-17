@@ -29,7 +29,9 @@ export function mountAppearance52(host,publish,edition=52){
       for(const [key,label] of entries)choices.append(choiceButton(key,label,key===current,()=>{change({researchFace:key});draw();}));
       if(edition>=54&&['F02','M01'].includes(current)){
         const controls=node('div');controls.className='choices';
-        for(const [key,label] of [['source','기존 얼굴'],['face54','54차 얼굴 시안']]){
+        const versions=[['source','기존 얼굴'],['face54','54차 얼굴 시안']];
+        if(edition>=55)versions.push(['lateral55','55차 귀 앞 피부'],['face55','55차 입과 귀 앞 피부']);
+        for(const [key,label] of versions){
           controls.append(choiceButton(key,label,(values.researchFaceVersion||'source')===key,()=>{change({researchFaceVersion:key});draw();}));
         }
         choices.append(controls);

@@ -1,0 +1,76 @@
+{
+  "round": 55,
+  "units": "px@128",
+  "metric": "같은 원본 표식에서 좌우 경계의 절대 가로 거리 평균. 작을수록 가까움.",
+  "input": "고정 정사영 0·45·90·135·180°, 90° 사진 왼쪽 43~68행을 11px 가림. 교정은 손상된 쪽만 제외.",
+  "limitations": "얼굴은 실측 한 사람의 같은 메시를 투영한 통제 실험, 흉부는 합성 한 외피. 새 사람이나 독립 촬영·사람 채택 없음.",
+  "decision": "수동 비교·복원. 자동 채택 없음.",
+  "rows": [
+    {
+      "id": "face-masked-side",
+      "subject": "face",
+      "condition": "같은 입력 사진의 손실 전 왼쪽 26점",
+      "role": "paired-control",
+      "yaw": 90,
+      "pitch": 0,
+      "count": 26,
+      "before": 10.76923076923077,
+      "after": 5.730769230769231
+    },
+    {
+      "id": "face-held--30-0",
+      "subject": "face",
+      "condition": "같은 대상의 생성 미사용 정사영",
+      "role": "held-view",
+      "yaw": -30,
+      "pitch": 0,
+      "count": 204,
+      "before": 3.906862745098039,
+      "after": 3.980392156862745
+    },
+    {
+      "id": "face-held-25-20",
+      "subject": "face",
+      "condition": "같은 대상의 생성 미사용 정사영",
+      "role": "held-view",
+      "yaw": 25,
+      "pitch": 20,
+      "count": 202,
+      "before": 1.618811881188119,
+      "after": 1.6435643564356435
+    },
+    {
+      "id": "torso-masked-side",
+      "subject": "torso",
+      "condition": "같은 입력 사진의 손실 전 왼쪽 26점",
+      "role": "paired-control",
+      "yaw": 90,
+      "pitch": 0,
+      "count": 26,
+      "before": 10.807692307692308,
+      "after": 18.153846153846153
+    },
+    {
+      "id": "torso-held--30-0",
+      "subject": "torso",
+      "condition": "같은 대상의 생성 미사용 정사영",
+      "role": "held-view",
+      "yaw": -30,
+      "pitch": 0,
+      "count": 200,
+      "before": 3.43,
+      "after": 3.425
+    },
+    {
+      "id": "torso-held-25-20",
+      "subject": "torso",
+      "condition": "같은 대상의 생성 미사용 정사영",
+      "role": "held-view",
+      "yaw": 25,
+      "pitch": 20,
+      "count": 210,
+      "before": 1.061904761904762,
+      "after": 1.0809523809523809
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import {createRenderQueue} from './workbench-render.mjs?v=54';
-import {buttons,mark,editor} from './workbench-controls.mjs?v=54';
+import {createRenderQueue} from './workbench-render.mjs?v=55';
+import {buttons,mark,editor} from './workbench-controls.mjs?v=55';
 import {faceOptions50} from './face-options50.mjs';
 import {modelNames,isWorkbenchSubject,isChestSubject} from './workbench-subjects50.mjs';
 import {chestOptions50} from './chest-options50.mjs';
@@ -18,7 +18,7 @@ let count=[1,2,4].includes(prefs.count)?prefs.count:4;
 let x=clamp(Number(prefs.x)||50,15,85),y=clamp(Number(prefs.y)||50,15,85);
 function save(){try{localStorage.setItem(pref,JSON.stringify({count,x,y}));}catch{}}
 const params=new URL(location.href).searchParams;
-const requested=params.get('case'), edition=['50','51','52','53'].includes(params.get('round'))?Number(params.get('round')):54;
+const requested=params.get('case'), edition=['50','51','52','53','54'].includes(params.get('round'))?Number(params.get('round')):55;
 let id=isWorkbenchSubject(requested)?requested:'F02',active=0,solo=null,revision=0,tab='view',visible=true;
 const cameras=[0,-45,-90,135].map(yaw=>({yaw,pitch:0,zoom:1,size:1024,framing:'model'}));
 const items=[],versions=[0,0,0,0],ready=[-1,-1,-1,-1],pins=[null,null,null,null];
@@ -215,7 +215,7 @@ function selectModel(key){
     if(b.dataset.key==='pose')b.disabled=!poseEnabled;
   }
   if((tab==='shape'&&!editable)||(tab==='pose'&&!poseEnabled))chooseTab('model');
-  if(!editable&&edition>=54&&id===requested&&['shoulder54','hip54'].includes(params.get('trial')))chooseTab('pose');
+  if(!editable&&edition>=54&&id===requested&&['shoulder54','hip54','ground55'].includes(params.get('trial')))chooseTab('pose');
   mark(el('models'),key);mark(el('families'),key);
   const title=modelNames[id]||((id.startsWith('female')?'여성':'남성')+' '+id.split('-')[1]+'등신');
   el('subjectLabel').textContent=title;

@@ -1,6 +1,6 @@
 import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
-import {studioTools,studioGroups} from './studio-catalog.mjs?ui=54';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=55';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -10,12 +10,12 @@ const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([
   ['workbench','다중 시점 작업대'],['definition','고해상도 원형 · 픽셀판'],
   ['latest-fern','최신 페른'],['latest-himmel','최신 힘멜'],['latest-chest','최신 몸통'],
-  ['shoulder54','어깨·겨드랑이'],['hip54','골반·무릎'],['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
-  ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
+  ['shoulder54','어깨·겨드랑이'],['hip54','골반·무릎'],['ground55','발 접지'],['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
+  ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-occlusion55','가린 윤곽 편집'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함'],['round-plan','회차별 계획']
 ]);
-const studioRound=54;
+const studioRound=55;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}

@@ -1,0 +1,1107 @@
+{
+  "id": "55-knee-surface",
+  "area": "55차 하체 자세 모델링 연구",
+  "default": "꺼짐. 켜면 지원 기본체의 접지 자세에서 무릎 피부만 교체한다.",
+  "source": "중립 원형과 기존 접지 리그로 변형한 같은 장면. 제3자 사진 원본 미포함.",
+  "module": "knee-surface55.mjs",
+  "sha256": "1a0868664b131a4b860c7067164bf68a91e060592d5bdf24515b5364fae4da56",
+  "plate": "knee-plate55.png",
+  "plateSha256": "02975c798725c45dc158337a67e2559810cdb9df126793e7020ce99fb49855de",
+  "note": "knee-note55.json",
+  "noteSha256": "9495e46c9f10c3e6de2c10ff2a49e97bf1d6b0f45fe76cb052baa2b12f5cd08f",
+  "contract": {
+    "supports": "supportsKneeSurface55(rest)",
+    "apply": "applyKneeSurface55(rest,posed,rig)",
+    "rest": "체형·골반 결합을 마친 중립",
+    "posed": "같은 rest에 plantFeet55를 한 번 적용한 장면",
+    "rig": "supportRig55(rest,raw) 또는 같은 호출에 사용한 리그",
+    "returns": "동일 관절과 발. 중립·미지원·기적용은 입력과 같은 객체.",
+    "selected": [
+      "male-5",
+      "female-6",
+      "male-7",
+      "male-8"
+    ]
+  },
+  "metric": "동일 카메라·조명·기존 가시 피부 부품 경계 ±2px, 주위 피부 4방향 이웃을 조건으로 고정한 영역. sRGB에서 0.2126R+0.7152G+0.0722B 휘도를 쓰고 가로·세로 2차 차분의 제곱합 평균 제곱근. 단위는 영상 휘도. 다른 해상도와 수치 직비교 불가.",
+  "ablation": [
+    {
+      "pose": "light",
+      "seams": {
+        "1-3": 87,
+        "2-3": 109
+      },
+      "candidates": [
+        {
+          "case": "all",
+          "pixels": 0,
+          "n": 856,
+          "rms": 10.190866678248305,
+          "max": 53.78219096355221
+        },
+        {
+          "case": "noBall",
+          "pixels": 428,
+          "n": 856,
+          "rms": 8.154011346195098,
+          "max": 128.59329782504224
+        },
+        {
+          "case": "noThigh",
+          "pixels": 225,
+          "n": 839,
+          "rms": 8.139849019359868,
+          "max": 53.78219096355221
+        },
+        {
+          "case": "noCalf",
+          "pixels": 196,
+          "n": 854,
+          "rms": 6.532134187722785,
+          "max": 30.818393817978198
+        },
+        {
+          "case": "noCaps",
+          "pixels": 0,
+          "n": 856,
+          "rms": 10.190866678248305,
+          "max": 53.78219096355221
+        },
+        {
+          "case": "flatNormals",
+          "pixels": 854,
+          "n": 856,
+          "rms": 0,
+          "max": 0
+        }
+      ]
+    },
+    {
+      "pose": "deep",
+      "seams": {
+        "1-3": 98,
+        "2-3": 124,
+        "1-2": 1
+      },
+      "candidates": [
+        {
+          "case": "all",
+          "pixels": 0,
+          "n": 958,
+          "rms": 10.965436521837448,
+          "max": 67.8565414137797
+        },
+        {
+          "case": "noBall",
+          "pixels": 451,
+          "n": 957,
+          "rms": 6.500758489426255,
+          "max": 69.78691026374501
+        },
+        {
+          "case": "noThigh",
+          "pixels": 281,
+          "n": 836,
+          "rms": 13.232596599432068,
+          "max": 98.02445492834937
+        },
+        {
+          "case": "noCalf",
+          "pixels": 217,
+          "n": 955,
+          "rms": 7.884052145189223,
+          "max": 67.8565414137797
+        },
+        {
+          "case": "noCaps",
+          "pixels": 0,
+          "n": 958,
+          "rms": 10.965436521837448,
+          "max": 67.8565414137797
+        },
+        {
+          "case": "flatNormals",
+          "pixels": 957,
+          "n": 958,
+          "rms": 0,
+          "max": 0
+        }
+      ]
+    }
+  ],
+  "cameraTrials": {
+    "resolution": 512,
+    "calibration": {
+      "poses": [
+        "light",
+        "deep",
+        "limit"
+      ],
+      "yawPitch": [
+        [
+          0,
+          0
+        ],
+        [
+          45,
+          0
+        ],
+        [
+          90,
+          0
+        ],
+        [
+          145,
+          9
+        ]
+      ]
+    },
+    "separate": {
+      "poses": [
+        "equal",
+        "asym"
+      ],
+      "yawPitch": [
+        [
+          0,
+          16
+        ],
+        [
+          -48,
+          -11
+        ],
+        [
+          125,
+          -12
+        ],
+        [
+          177,
+          0
+        ]
+      ],
+      "note": "후보 형상을 고정한 후 본 구도. 기본체별 사용 범위를 정할 때도 참조했다."
+    },
+    "bodyPresets": [
+      "balanced",
+      "slender",
+      "muscular",
+      "full",
+      "powerful"
+    ],
+    "counts": {
+      "all": 1400,
+      "measured": 1384,
+      "notVisible": 16,
+      "manual400": 400,
+      "manualFaces": 96000
+    },
+    "modelGroups": [
+      {
+        "id": "female-2",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 94,
+        "improved": 94,
+        "worstRmsDifference": -2.5968019705200627,
+        "worstView": {
+          "yaw": -48,
+          "pitch": -11
+        },
+        "maxOutlineChange": 0.09480812641083522,
+        "minDet": -1.8925167210973608,
+        "minAreaRatio": 0.014355554904800184,
+        "overturnedFaces": 291,
+        "negativeDetFaces": 393
+      },
+      {
+        "id": "male-2",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 94,
+        "improved": 94,
+        "worstRmsDifference": -2.5968019705200627,
+        "worstView": {
+          "yaw": -48,
+          "pitch": -11
+        },
+        "maxOutlineChange": 0.09480812641083522,
+        "minDet": -1.8925167210973608,
+        "minAreaRatio": 0.014355554904800184,
+        "overturnedFaces": 291,
+        "negativeDetFaces": 393
+      },
+      {
+        "id": "female-3",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 98,
+        "improved": 92,
+        "worstRmsDifference": 16.692151974301872,
+        "worstView": {
+          "yaw": 177,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.10490247759620454,
+        "minDet": -0.09925803592974615,
+        "minAreaRatio": 0.061390418575887305,
+        "overturnedFaces": 1,
+        "negativeDetFaces": 64
+      },
+      {
+        "id": "male-3",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 98,
+        "improved": 92,
+        "worstRmsDifference": 16.692151974301872,
+        "worstView": {
+          "yaw": 177,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.10490247759620454,
+        "minDet": -0.09925803592974615,
+        "minAreaRatio": 0.061390418575887305,
+        "overturnedFaces": 1,
+        "negativeDetFaces": 64
+      },
+      {
+        "id": "female-4",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 84,
+        "worstRmsDifference": 18.961550690480113,
+        "worstView": {
+          "yaw": 177,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.1483957219251337,
+        "minDet": -0.14647188259031,
+        "minAreaRatio": 0.07308161647850343,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 71
+      },
+      {
+        "id": "male-4",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 84,
+        "worstRmsDifference": 18.961550690480113,
+        "worstView": {
+          "yaw": 177,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.1483957219251337,
+        "minDet": -0.14647188259031,
+        "minAreaRatio": 0.07308161647850343,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 71
+      },
+      {
+        "id": "female-5",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 95,
+        "worstRmsDifference": 1.621679649672302,
+        "worstView": {
+          "yaw": 177,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.015693659761456372,
+        "minDet": 0.3337910622036875,
+        "minAreaRatio": 0.3417149252288615,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "male-5",
+        "active": true,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 100,
+        "worstRmsDifference": -0.042337065970190935,
+        "worstView": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.019801980198019802,
+        "minDet": 0.3409016866533754,
+        "minAreaRatio": 0.351297798264868,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "female-6",
+        "active": true,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 100,
+        "worstRmsDifference": -0.20507908657379126,
+        "worstView": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.014285714285714285,
+        "minDet": 0.39543247808767545,
+        "minAreaRatio": 0.4027307650443913,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "male-6",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 98,
+        "worstRmsDifference": 0.4508236850503877,
+        "worstView": {
+          "yaw": -48,
+          "pitch": -11
+        },
+        "maxOutlineChange": 0.015727391874180863,
+        "minDet": 0.40313743234861843,
+        "minAreaRatio": 0.41312093477854417,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "female-7",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 97,
+        "worstRmsDifference": 0.4098150420638138,
+        "worstView": {
+          "yaw": -48,
+          "pitch": -11
+        },
+        "maxOutlineChange": 0.01938610662358643,
+        "minDet": 0.4395140589300121,
+        "minAreaRatio": 0.4463622622189169,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "male-7",
+        "active": true,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 100,
+        "worstRmsDifference": -0.6493125485041293,
+        "worstView": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.024549918166939442,
+        "minDet": 0.44753182992645,
+        "minAreaRatio": 0.45732019238379995,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "female-8",
+        "active": false,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 98,
+        "worstRmsDifference": 1.283049409370694,
+        "worstView": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.020036429872495445,
+        "minDet": 0.472599756326698,
+        "minAreaRatio": 0.4791056341754567,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      },
+      {
+        "id": "male-8",
+        "active": true,
+        "neutralSame": true,
+        "poses": 25,
+        "views": 100,
+        "measured": 100,
+        "improved": 100,
+        "worstRmsDifference": -0.5061102504747943,
+        "worstView": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "maxOutlineChange": 0.020754716981132074,
+        "minDet": 0.48083942653181355,
+        "minAreaRatio": 0.4904823668137863,
+        "overturnedFaces": 0,
+        "negativeDetFaces": 0
+      }
+    ]
+  },
+  "candidate": {
+    "span": 1.35,
+    "bulge": 0.68,
+    "gridRows": 10,
+    "nineVariants": [
+      {
+        "span": 0.85,
+        "bulge": 0,
+        "bandRms": 7.323323994954277,
+        "localRms": 4.407752931459349,
+        "outlineLoss": 10,
+        "outlineGain": 14
+      },
+      {
+        "span": 0.85,
+        "bulge": 0.68,
+        "bandRms": 6.374282008126334,
+        "localRms": 3.924456284916236,
+        "outlineLoss": 0,
+        "outlineGain": 34
+      },
+      {
+        "span": 0.85,
+        "bulge": 1.2,
+        "bandRms": 6.3888294872177775,
+        "localRms": 3.988832187469387,
+        "outlineLoss": 0,
+        "outlineGain": 57
+      },
+      {
+        "span": 1.35,
+        "bulge": 0,
+        "bandRms": 7.717319929342614,
+        "localRms": 4.631316550254638,
+        "outlineLoss": 27,
+        "outlineGain": 8
+      },
+      {
+        "span": 1.35,
+        "bulge": 0.68,
+        "bandRms": 6.248821797185879,
+        "localRms": 3.894964950716871,
+        "outlineLoss": 8,
+        "outlineGain": 36
+      },
+      {
+        "span": 1.35,
+        "bulge": 1.2,
+        "bandRms": 6.91754720680169,
+        "localRms": 4.398877595745897,
+        "outlineLoss": 5,
+        "outlineGain": 70
+      },
+      {
+        "span": 1.85,
+        "bulge": 0,
+        "bandRms": 7.5429424314038584,
+        "localRms": 4.492874557674911,
+        "outlineLoss": 67,
+        "outlineGain": 17
+      },
+      {
+        "span": 1.85,
+        "bulge": 0.68,
+        "bandRms": 6.191255044372473,
+        "localRms": 3.8101704561466203,
+        "outlineLoss": 40,
+        "outlineGain": 35
+      },
+      {
+        "span": 1.85,
+        "bulge": 1.2,
+        "bandRms": 6.733600228192239,
+        "localRms": 4.172337435333758,
+        "outlineLoss": 36,
+        "outlineGain": 67
+      }
+    ]
+  },
+  "actualShots": [
+    {
+      "key": "light",
+      "size": 48,
+      "changedPixels": 1,
+      "before": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "after": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "centers": [
+        [
+          25.467978735220342,
+          37.12791862274426
+        ],
+        [
+          28.057910241372966,
+          37.12791862274426
+        ]
+      ]
+    },
+    {
+      "key": "light",
+      "size": 96,
+      "changedPixels": 13,
+      "before": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "after": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "centers": [
+        [
+          50.935957470440684,
+          74.25583724548852
+        ],
+        [
+          56.11582048274593,
+          74.25583724548852
+        ]
+      ]
+    },
+    {
+      "key": "light",
+      "size": 512,
+      "changedPixels": 897,
+      "before": {
+        "n": 309,
+        "rms": 11.946211585831835,
+        "max": 59.06079314909344
+      },
+      "after": {
+        "n": 309,
+        "rms": 1.9741982195229624,
+        "max": 7.4393281121348105
+      },
+      "centers": [
+        [
+          271.65843984235033,
+          396.03113197593876
+        ],
+        [
+          299.2843759079783,
+          396.03113197593876
+        ]
+      ]
+    },
+    {
+      "key": "light",
+      "size": 1024,
+      "changedPixels": 3608,
+      "before": {
+        "n": 856,
+        "rms": 10.190866678248305,
+        "max": 53.78219096355221
+      },
+      "after": {
+        "n": 856,
+        "rms": 1.097634253662433,
+        "max": 5.157955719080959
+      },
+      "centers": [
+        [
+          543.3168796847007,
+          792.0622639518775
+        ],
+        [
+          598.5687518159566,
+          792.0622639518775
+        ]
+      ]
+    },
+    {
+      "key": "deep",
+      "size": 48,
+      "changedPixels": 2,
+      "before": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "after": {
+        "n": 0,
+        "rms": null,
+        "max": null
+      },
+      "centers": [
+        [
+          23.683910927529325,
+          37.88885472633567
+        ],
+        [
+          30.597937940980337,
+          37.88885472633567
+        ]
+      ]
+    },
+    {
+      "key": "deep",
+      "size": 96,
+      "changedPixels": 8,
+      "before": {
+        "n": 18,
+        "rms": 47.216078355318274,
+        "max": 107.26441727618713
+      },
+      "after": {
+        "n": 18,
+        "rms": 44.75390603526504,
+        "max": 107.26441727618713
+      },
+      "centers": [
+        [
+          47.36782185505865,
+          75.77770945267135
+        ],
+        [
+          61.195875881960674,
+          75.77770945267135
+        ]
+      ]
+    },
+    {
+      "key": "deep",
+      "size": 512,
+      "changedPixels": 846,
+      "before": {
+        "n": 375,
+        "rms": 12.721278587655675,
+        "max": 58.60179994095742
+      },
+      "after": {
+        "n": 375,
+        "rms": 8.990057164851992,
+        "max": 73.78650978952727
+      },
+      "centers": [
+        [
+          252.62838322697948,
+          404.14778374758055
+        ],
+        [
+          326.3780047037902,
+          404.14778374758055
+        ]
+      ]
+    },
+    {
+      "key": "deep",
+      "size": 1024,
+      "changedPixels": 3360,
+      "before": {
+        "n": 958,
+        "rms": 10.965436521837448,
+        "max": 67.8565414137797
+      },
+      "after": {
+        "n": 958,
+        "rms": 6.248821797185879,
+        "max": 64.19751388332733
+      },
+      "centers": [
+        [
+          505.25676645395896,
+          808.2955674951611
+        ],
+        [
+          652.7560094075804,
+          808.2955674951611
+        ]
+      ]
+    }
+  ],
+  "actualMotion": {
+    "frames": 1305,
+    "records": [
+      {
+        "id": "AB01",
+        "take": 1,
+        "sourceHash": "7d4adaf1ca565de3fc172cde1b92a6b607f7a90d1f22b37453fa0cd4b6e30482",
+        "sampleCount": 296,
+        "maxJointDelta": 0,
+        "deep": {
+          "frame": 2390,
+          "observedFlexFromStanding": 79.5769,
+          "nativeAbsoluteFlex": 98.73630414803088,
+          "changedAbsoluteFlex": 98.73630414803088
+        }
+      },
+      {
+        "id": "AB03",
+        "take": 2,
+        "sourceHash": "bc15985ad7ee165411c5348a78c1bd93b4cde7fdbe48057709c24f8d3d66af42",
+        "sampleCount": 358,
+        "maxJointDelta": 0,
+        "deep": {
+          "frame": 290,
+          "observedFlexFromStanding": 57.2305,
+          "nativeAbsoluteFlex": 74.31238317564335,
+          "changedAbsoluteFlex": 74.31238317564335
+        }
+      },
+      {
+        "id": "AB06",
+        "take": 3,
+        "sourceHash": "f146fc5bb9ebcae7449693ac2b6cfd00ca0b174f2fd394bf1488648170687ed2",
+        "sampleCount": 333,
+        "maxJointDelta": 0,
+        "deep": {
+          "frame": 250,
+          "observedFlexFromStanding": 34.728,
+          "nativeAbsoluteFlex": 67.73808148222936,
+          "changedAbsoluteFlex": 67.73808148222936
+        }
+      },
+      {
+        "id": "AB10",
+        "take": 1,
+        "sourceHash": "99fe3d56d0aef64df6e203066c3cb0bf26cbc449e180ee1b9ce87ca216edb4d2",
+        "sampleCount": 318,
+        "maxJointDelta": 0,
+        "deep": {
+          "frame": 310,
+          "observedFlexFromStanding": 73.5308,
+          "nativeAbsoluteFlex": 86.97058287809386,
+          "changedAbsoluteFlex": 86.97058287809386
+        }
+      }
+    ],
+    "source": "https://doi.org/10.7274/28689221",
+    "rights": "CC BY 4.0, M. Alizadeh Noghani, S. Green, E. Bolívar-Nieto. 공급된 C3D에서 얻은 각도 입력과 원형·이음 간 관절 보존을 평가했다."
+  },
+  "photo": {
+    "source": "Ogata 등 2019, 그림 4 왼쪽 사진. PDF 삽입 원본 201×113px.",
+    "photoJoints": "고관절·발목은 육안 근사. 촬영 높이·방위·원근 정보 없음.",
+    "photoPoints": [
+      [
+        78,
+        84
+      ],
+      [
+        88,
+        98
+      ]
+    ],
+    "visible": [
+      [
+        105.5,
+        71
+      ],
+      [
+        108.5,
+        73
+      ],
+      [
+        108.5,
+        75
+      ],
+      [
+        107.5,
+        77
+      ],
+      [
+        106.5,
+        79
+      ],
+      [
+        105.5,
+        81
+      ],
+      [
+        104.5,
+        83
+      ]
+    ],
+    "camera": {
+      "yaw": 90,
+      "pitch": 0
+    },
+    "fits": [
+      {
+        "shift": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "segmentAngles": {
+          "thigh": 110.17065341185042,
+          "shin": -32.22875743509856
+        },
+        "absoluteFlex": 142.17998696399792,
+        "scale": 0.13930200461859266,
+        "offset": [
+          17.429164925282336,
+          -36.206089520234
+        ],
+        "matchedRows": 6,
+        "before": [
+          [
+            null,
+            71
+          ],
+          [
+            102.96059576109823,
+            73
+          ],
+          [
+            105.05012583037711,
+            75
+          ],
+          [
+            105.3287298396143,
+            77
+          ],
+          [
+            104.77152182113993,
+            79
+          ],
+          [
+            103.23919977033542,
+            81
+          ],
+          [
+            101.7068777195309,
+            83
+          ]
+        ],
+        "after": [
+          [
+            null,
+            71
+          ],
+          [
+            103.378501774954,
+            73
+          ],
+          [
+            105.18942783499571,
+            75
+          ],
+          [
+            105.4680318442329,
+            77
+          ],
+          [
+            104.77152182113993,
+            79
+          ],
+          [
+            103.23919977033542,
+            81
+          ],
+          [
+            101.7068777195309,
+            83
+          ]
+        ],
+        "beforeMae": 2.9904915429840195,
+        "afterMae": 2.8744065391351916
+      },
+      {
+        "shift": [
+          -1,
+          1,
+          1,
+          -1
+        ],
+        "segmentAngles": {
+          "thigh": 111.41296947487177,
+          "shin": -31.534791905188293
+        },
+        "absoluteFlex": 142.72486662754966,
+        "scale": 0.14028521093673246,
+        "offset": [
+          16.996061274321093,
+          -37.29584987893827
+        ],
+        "matchedRows": 6,
+        "before": [
+          [
+            null,
+            71
+          ],
+          [
+            103.83260684415849,
+            73
+          ],
+          [
+            105.09517374258908,
+            75
+          ],
+          [
+            105.23545895352581,
+            77
+          ],
+          [
+            104.39374768790542,
+            79
+          ],
+          [
+            102.71032515666462,
+            81
+          ],
+          [
+            101.58804346917077,
+            83
+          ]
+        ],
+        "after": [
+          [
+            null,
+            71
+          ],
+          [
+            103.97289205509522,
+            73
+          ],
+          [
+            105.23545895352581,
+            75
+          ],
+          [
+            105.23545895352581,
+            77
+          ],
+          [
+            104.53403289884216,
+            79
+          ],
+          [
+            102.71032515666462,
+            81
+          ],
+          [
+            101.58804346917077,
+            83
+          ]
+        ],
+        "beforeMae": 3.024107357664301,
+        "afterMae": 2.9539647521959367
+      },
+      {
+        "shift": [
+          1,
+          -1,
+          -1,
+          1
+        ],
+        "segmentAngles": {
+          "thigh": 108.79988515865267,
+          "shin": -32.855721950433
+        },
+        "absoluteFlex": 141.4407396494035,
+        "scale": 0.13846525880727664,
+        "offset": [
+          17.811181255339378,
+          -35.2153472393242
+        ],
+        "matchedRows": 5,
+        "before": [
+          [
+            null,
+            71
+          ],
+          [
+            null,
+            73
+          ],
+          [
+            104.90582904511639,
+            75
+          ],
+          [
+            105.4596900803455,
+            77
+          ],
+          [
+            104.90582904511639,
+            79
+          ],
+          [
+            103.6596417158509,
+            81
+          ],
+          [
+            101.99805861016358,
+            83
+          ]
+        ],
+        "after": [
+          [
+            null,
+            71
+          ],
+          [
+            null,
+            73
+          ],
+          [
+            105.04429430392366,
+            75
+          ],
+          [
+            105.4596900803455,
+            77
+          ],
+          [
+            105.04429430392366,
+            79
+          ],
+          [
+            103.6596417158509,
+            81
+          ],
+          [
+            101.99805861016358,
+            83
+          ]
+        ],
+        "beforeMae": 2.3141903006814486,
+        "afterMae": 2.2588041971585398
+      }
+    ]
+  },
+  "limits": [
+    "외부 사진은 저해상도이며 카메라와 관절 중심이 추정이다. 0.12 원사진 화소는 재현의 우위로 판단하지 않았다.",
+    "기본체별 5개 대표 체형과 5개 자세를 검사했다. 모든 연속 슬라이더 조합·비대칭 관절·보행이나 첨예한 눌림에 대한 검증은 남아 있다.",
+    "국소 면 방향·면적·야코비안은 전신 자가 교차나 내부 해부 구조를 검증하지 않는다.",
+    "기존 띠의 RMS 감소가 모든 새로운 주름과 명암의 정확성을 뜻하지 않는다. 48px는 두 자세 모두 띠 내부 표본을 확보하지 못했다.",
+    "중립은 원래 표면을 사용한다. 이 자료는 중립 직후 표면 전환의 시간 연속성을 정량화하지 않았다."
+  ]
+}

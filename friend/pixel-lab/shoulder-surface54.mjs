@@ -59,9 +59,9 @@ function topology(parts){
   return result;
 }
 // 공통 모서리를 축으로 맞은편 두 점을 움직인다. 벌리는 동안 네 점의 무게중심을 유지한다.
-function flexCreases(hinges,points,strength){
-  const keepAngle=72*Math.PI/180,cos=Math.cos(keepAngle);
-  for(let pass=0;pass<36;pass++){
+export function flexCreases(hinges,points,strength,minAngle=72,passes=36){
+  const keepAngle=minAngle*Math.PI/180,cos=Math.cos(keepAngle);
+  for(let pass=0;pass<passes;pass++){
     let active=0;
     for(const [i,j,a,b] of hinges){
       const axis=norm(sub(points[j],points[i]));

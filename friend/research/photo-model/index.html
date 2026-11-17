@@ -19,7 +19,7 @@
     <p class="intro">같은 대상의 다섯 방향 사진을 맞추고, 보이는 외곽을 입체 표면으로 연결합니다. 얼굴부터 관찰하고 검증한 뒤 상체·하체·전신으로 넓힙니다.</p>
     <p class="status">현재 범위: 얼굴 외곽 · 교정 정사영 · 사진 투영. 얼굴 내부의 정밀 입체와 실제 카메라 추정은 연구 예정입니다.</p>
     <nav class="links" aria-label="바로 관찰하기">
-      <a class="primary" href="../hub/?lab=studio&amp;tool=photo-engine50">내 참고그림 · 다중 시점 검수</a><a href="#multiview-review">최신 검증 일지</a><a href="#photoEngine">이전 사진 모델링</a>
+      <a class="primary" href="#occlusion55">55차 · 가린 윤곽 편집</a><a href="../hub/?lab=studio&amp;tool=photo-engine50">내 참고그림 · 다중 시점 검수</a><a href="#multiview-review">최신 검증 일지</a><a href="#photoEngine">이전 사진 모델링</a>
       <a href="../../pixel-lab/study34.html#photoEngine">기존 34차 관찰창</a>
       <a href="../../pixel-lab/contour36.html#photoEngine">36차 관찰창</a>
       <a href="#journal">진전 일지</a><a href="#sources">연구 근거</a>
@@ -49,9 +49,11 @@
     <h2 id="engineTitle">직접 모델링하고 같은 얼굴에 적용하기</h2>
     <p>얼굴 판을 이 브라우저에 저장한 뒤 정밀조형에서 페른이나 힘멜의 원형과 나란히 볼 수 있습니다. 사진 시점을 맞춰 마스크 안의 입력 전경을 겹치고, 불투명도를 바꾸거나 사진 외형을 꺼서 원형으로 돌아갈 수 있습니다. 임의 사진의 가려진 얼굴 깊이와 상체·하체·전신은 자동 복원 대상에 포함되지 않습니다.</p>
     <nav class="links" aria-label="사진 적용 비교"><a href="../../pixel-lab/studio-sculpt.html?case=F02#localReference">페른 정밀조형</a><a href="../../pixel-lab/studio-sculpt.html?case=M01#localReference">힘멜 정밀조형</a></nav>
-    <p>이 페이지와 기존 관찰창은 <a href="../../pixel-lab/photo-engine36.html">같은 사진 모델링 엔진</a>을 엽니다. 「실제 두상 다섯 방향 불러오기」로 시험하거나 사용할 권리가 있는 프로젝트 사진을 방향별로 넣어 보세요. 보존판은 현재 브라우저에 저장됩니다.</p>
-    <iframe class="engine" src="../../pixel-lab/photo-engine36.html" title="다섯 방향 사진 기반 얼굴 모델링 작업대"></iframe>
-    <p class="source">좁은 화면에서 조작하기 어려우면 <a href="../../pixel-lab/photo-engine36.html" target="_blank" rel="noopener">작업대만 넓게 열기</a>를 이용하세요.</p>
+    <nav id="occlusion55" class="links" aria-label="현재 화면에서 사용할 사진 작업대"><a href="#occlusion55">55차 가린 윤곽 편집</a><a href="#photoEngine">이전 사진 투영·조형 적용</a></nav>
+    <p>55차 편집기에서 사진별 가림을 지정하고 외피를 비교할 수 있습니다. 이전 사진 투영 작업대와 55차 새 판은 이 브라우저에서 다시 엽니다.</p>
+    <iframe class="engine" id="activePhotoEngine" title="55차 가린 윤곽 편집"></iframe>
+    <iframe class="engine" id="legacyPhotoEngine" title="이전 사진 투영과 정밀조형 적용" hidden></iframe>
+    <p class="source">좁은 화면에서 조작하기 어려우면 <a id="photoWide55" href="./occlusion55.html" target="_blank" rel="noopener">지금 작업대만 넓게 열기</a>를 이용하세요.</p>
   </section>
 
   <section id="journal" class="panel" aria-labelledby="journalTitle">
@@ -113,5 +115,6 @@
   </section>
 </main>
 <script type="module" src="page.mjs"></script>
+<script type="module" src="photo-entry55.mjs"></script>
 </body>
 </html>
