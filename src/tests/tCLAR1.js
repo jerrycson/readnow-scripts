@@ -61,6 +61,7 @@ const textChk = () => { const m = src.match(/function clarityStop\(w\) \{[^\n]*?
   const head = src.slice(0, src.indexOf('==/UserScript==')); ok(/@run-at\s+document-idle/.test(head) && !/clarity/i.test(head), '머리(@run-at document-idle 그대로 · clarity 줄 없음) 안 바꿈');
   ok(/cg: \{ on: true, pre: globalThis\.__rnClarityGuard\.pre/.test(src), 'PC 신호 pcBeat.blk.cg에 막은 셈을 실음 → 웹앱 🖥 기기 운영 보고');
   const app = fs.readFileSync([path.join(__dirname, '../app.html'), path.join(__dirname, '../../src/app.html')].find((p) => fs.existsSync(p)) || '', 'utf8');
-  if (app) ok(/function blkCgTxt\(c\)/.test(app) && /수집기가 알라딘 화면마다 막음 — 손 0/.test(app) && /인쇄 도우미 1\.2\.2를 받아야 생김/.test(app) && /hosts로 받기까지 막기\(선택\)/.test(app), "웹앱: '수집기가 막음 — 손 0'이 먼저 · hosts 단추는 선택 · 단추가 안 보이는 까닭(인쇄 도우미 1.2.2 전)"); };
+  if (app) ok(/function blkCgTxt\(c\)/.test(app) && /수집기가 알라딘 화면마다 막음 — 손 0/.test(app) && /인쇄 도우미 1\.2\.2를 받아야 생김/.test(app) && /hosts로 받기까지 막기\(선택\)/.test(app), "웹앱: '수집기가 막음 — 손 0'이 먼저 · hosts 단추는 선택 · 단추가 안 보이는 까닭(인쇄 도우미 1.2.2 전)")
+  if (app) ok(/data-blk-ahn="1"[^<]*안랩 안전 거래[^<]*꼭 「아니오」[^<]*이미 「예」를 눌렀다면 이 단추를 다시 누르고/.test(app) && /안랩 안전 거래\(AhnLab Safe Transaction\)가 「Windows의 hosts 파일 변경이 탐지되었습니다[^<]*<b>「아니오」<\/b>/.test(app), '웹앱: hosts 단추 옆·설명서에 안랩 안전 거래 「복원?」 창은 「아니오」 · 이미 「예」면 다시 누르고 「아니오」(정범님 11/18)'); };
 
 (async () => { textChk(); const errs = await run(); ok(!errs.length, '화면 오류 없음', errs); console.log(bad ? `❌ tCLAR1 실패 ${bad}` : '✓ tCLAR1 모두 통과'); })().catch((e) => { console.log('❌ tCLAR1 멈춤', e.message); });

@@ -61,7 +61,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const scrDoc = await until(() => { const v = Object.values((window.__FS || {}).shp_cmds || {}).find((x) => x.batchId === 'gC'); return v ? JSON.parse(JSON.stringify(v)) : null; }, 60);
   ok(scrDoc && scrDoc.type === 'metrics' && scrDoc.label === '그룹: 그룹 다' && !('foldId' in scrDoc), '그룹 화면 📈 단추가 같은 함수(bMetricsSend)로 맡김 — 묶음 표식 없음', scrDoc);
   await p.evaluate(async (fid) => { history.back(); await new Promise((r) => setTimeout(r, 300)); openBkfold(fid); await new Promise((r) => setTimeout(r, 300)); }, fid);
-  const act = await until(() => { const a = document.querySelector('#bkf_scr #bkf_act'); return a && a.querySelectorAll('[data-bkfrun]').length === 5 ? a.textContent : null; }, 60);
+  const act = await until(() => { const a = document.querySelector('#bkf_scr #bkf_act'); return a && a.querySelectorAll('[data-bkfrun]').length >= 5 ? /* (판 ⑤) 🏷 매입가 하한 단추가 더해져 여섯 */ a.textContent : null; }, 60);
   ok(act && /가격은 바꾸지 않습니다/.test(act) && /켜진 그룹 \d\/4/.test(act) && /매일 자동 지표 0\/4/.test(act), '묶음 화면 「▶ 한꺼번에」 = 단추 다섯 · 켜진·꺼진·매일 자동 수 · 가격은 안 바꾼다는 말', (act || '').slice(0, 200));
   /* ⓑ 취소하면 쓰기 0 */
   let w0 = await nW(); await p.evaluate(() => { window.__ANS = false; }); let r = await run('metrics');
