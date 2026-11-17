@@ -19,6 +19,7 @@
 #  · 대화 세션(chat)이 먼저 — 예약 점검이 잡고 있으면 chat은 ask를 남기고 사장님께 '점검이 ○○ 하는 중, 곧 넘겨받음'을 알림
 #  · 예약 점검은 커밋하기 전·10분마다 get으로 ask를 확인 → 있으면 지금 것만 마무리해 push하고 release, chat이 놓을 때까지 읽기만(5분마다 get)
 #  · (11/17 차례 전달) 표가 비었어도 30분 안에 남긴 다른 쪽 부탁(ask)이 있으면 take는 비킴(YIELD · 종료 코드 3) — 먼저 기다린 쪽이 다음 차례
+#    · 부탁도 이름 + 세션(RN_LOCK_HOST)으로 가림 — 같은 lead 이름표 일꾼끼리도 남의 부탁을 지우거나 앞지르지 않음
 #    · ask는 남의 살아 있는 부탁을 덮지 않음(종료 코드 6) · wait는 누구든(gpt 포함) 부탁을 남기고 10분마다 새로 함 · 못 잡고 끝나면 내 부탁만 지움
 #  · push 전에는 언제나 git pull --rebase → 다른 쪽이 같은 원본(src/…)을 고쳤으면 내 바뀜을 최신 위에 다시 얹고(판 번호는 최신보다 하나 위로) 다시 빌드·시험
 set -euo pipefail
@@ -51,24 +52,25 @@ ts = lambda s: datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ').timestamp() i
 alive = j.get('holder') and (ts(now) - ts(j.get('beat') or j.get('since')) < int(os.environ['STALE']))
 host = os.environ['HOSTID']; mine = j.get('holder') == who and j.get('host', host) == host  # (10/29) 이름 + 세션(hostname)이 같아야 '내 것'
 ask = j.get('ask') or {}; askfresh = ask.get('who') and (ts(now) - ts(ask.get('at')) < 1800)  # (11/17) 30분 안 부탁만 셈
+same = lambda a: a.get('who') == who and a.get('host', host) == host  # (11/17) 부탁도 이름 + 세션이 같아야 '내 부탁' — 같은 lead 이름표 일꾼끼리 서로의 부탁을 지우지 않게
 if cmd == 'take':
     if alive and not mine: print('BUSY'); sys.exit()
-    if not alive and askfresh and ask.get('who') != who: print('YIELD'); sys.exit()  # 표가 비었어도 먼저 기다린 쪽 차례
+    if not alive and askfresh and not same(ask): print('YIELD'); sys.exit()  # 표가 비었어도 먼저 기다린 쪽 차례
     j.update(holder=who, host=host, what=what, since=j.get('since') if mine else now, beat=now)
-    if (j.get('ask') or {}).get('who') == who: j['ask'] = None
+    if same(j.get('ask') or {}): j['ask'] = None
 elif cmd == 'beat':
     if not mine: print('NOTMINE'); sys.exit()
     j.update(beat=now, what=what or j.get('what'))
 elif cmd == 'ask':
-    if askfresh and ask.get('who') != who: print('ASKED'); sys.exit()  # 먼저 부탁한 쪽을 덮지 않음(차례 지킴)
-    j['ask'] = {'who': who, 'why': what, 'at': now}
+    if askfresh and not same(ask): print('ASKED'); sys.exit()  # 먼저 부탁한 쪽을 덮지 않음(차례 지킴)
+    j['ask'] = {'who': who, 'host': host, 'why': what, 'at': now}
 elif cmd == 'clearask':
-    if ask.get('who') and ask.get('who') != who and askfresh: print('ASKED'); sys.exit()  # 남의 살아 있는 부탁은 못 지움
+    if ask.get('who') and not same(ask) and askfresh: print('ASKED'); sys.exit()  # 남의 살아 있는 부탁은 못 지움
     j['ask'] = None
 elif cmd == 'release':
     if j.get('holder') is not None and not mine: print('NOTMINE'); sys.exit()
     j['last'] = {'who': who, 'done': what, 'at': now}; j.update(holder=None, host=None, what=None, since=None, beat=None)
-    if (j.get('ask') or {}).get('who') == who: j['ask'] = None
+    if same(j.get('ask') or {}): j['ask'] = None
 print(json.dumps(j, ensure_ascii=False, indent=1))
 PY
 )
