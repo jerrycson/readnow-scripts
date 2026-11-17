@@ -1,6 +1,6 @@
 import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
-import {studioTools,studioGroups} from './studio-catalog.mjs?ui=56';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=57';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs?v=57-diagnostic';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -10,12 +10,13 @@ const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([
   ['workbench','다중 시점 작업대'],['definition','고해상도 원형 · 픽셀판'],
   ['latest-fern','최신 페른'],['latest-himmel','최신 힘멜'],['latest-chest','최신 몸통'],
+  ['transition57','57차 어깨 첫 움직임'],['knee57','57차 무릎 전환'],
   ['surface56','56차 어깨 표면'],['shoulder54','어깨·겨드랑이'],['hip54','골반·무릎'],['ground55','발 접지'],['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
   ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-occlusion55','가린 윤곽 편집'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함'],['round-plan','회차별 계획']
 ]);
-const studioRound=56;
+const studioRound=57;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -46,11 +47,11 @@ function pathFor(t){
   if(t.id==='history')for(const k of ['a','b','av','bv'])if(q.has(k))u.searchParams.set(k,q.get(k));
   if(t.id==='workbench'&&isWorkbenchSubject(q.get('case')))u.searchParams.set('case',q.get('case'));
   if(t.id==='workbench'){
-    const requestedRound=q.get('round');if(['50','51','52','53','54','55','56'].includes(requestedRound))u.searchParams.set('round',requestedRound);
+    const requestedRound=q.get('round');if(['50','51','52','53','54','55','56','57'].includes(requestedRound))u.searchParams.set('round',requestedRound);
     else if(edition?.round>=50&&edition.round<=studioRound)u.searchParams.set('round',edition.round);
     if(q.get('trial'))u.searchParams.set('trial',q.get('trial'));
   }
-  if(t.id==='surface56'&&/^(female|male)-[2-8]$/.test(q.get('case')))u.searchParams.set('case',q.get('case'));
+  if(['surface56','transition57','knee57'].includes(t.id)&&/^(female|male)-[2-8]$/.test(q.get('case')))u.searchParams.set('case',q.get('case'));
   if(['sculpt','all-around','definition'].includes(t.id)&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
   return u.href;
 }
@@ -74,7 +75,7 @@ function routeFromChild(e){
 function open(id,context){
   const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='workbench');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
   let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);workspace.main.append(f);f.onload=()=>{signal(f,!f.hidden);try{f.contentDocument?.addEventListener('click',routeFromChild);}catch{}};}
-  else if(context&&['workbench','surface56','sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
+  else if(context&&['workbench','surface56','transition57','knee57','sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
   for(const [key,other] of frames){other.hidden=key!==current;signal(other,!other.hidden);}
   workspace.setPrimary(t,f);$('title').textContent=(t.case?(edition?.round||studioRound)+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();observeTool();
 }
@@ -86,7 +87,7 @@ function focusMode(on){document.body.classList.toggle('focus',on);$('focus').tex
 $('focus').onclick=()=>focusMode(!document.body.classList.contains('focus'));focusMode(matchMedia('(max-width:760px)').matches);
 $('copy').onclick=async()=>{const u=new URL('../research/hub/',location.href);u.search=location.search;u.searchParams.set('lab','studio');try{await navigator.clipboard.writeText(u.href);say('현재 작업 링크를 복사했습니다.');}catch{say('현재 작업 링크: '+u.href);}};
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;
-  if(['workbench','surface56'].includes(current)&&e.source===frames.get(current)?.contentWindow&&workspace.isMainVisible()&&!frames.get(current).hidden&&e.data?.type==='bookfriend:workbench-case'&&isWorkbenchSubject(e.data.id))setState(current,{case:e.data.id});
+  if(['workbench','surface56','transition57','knee57'].includes(current)&&e.source===frames.get(current)?.contentWindow&&workspace.isMainVisible()&&!frames.get(current).hidden&&e.data?.type==='bookfriend:workbench-case'&&isWorkbenchSubject(e.data.id))setState(current,{case:e.data.id});
   if(e.source===frames.get('history')?.contentWindow&&e.data?.type==='bookfriend:version-selection'&&current==='history'){
     const next={};for(const k of ['a','b','av','bv']) if(typeof e.data[k]==='string'&&e.data[k].length<150)next[k]=e.data[k];setState('history',next);
   }

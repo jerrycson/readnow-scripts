@@ -7,6 +7,8 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
+ tool('transition57','pose','57차 어깨 · 첫 움직임','같은 중립 피부의 0~10° 전환을 이전판과 켜고 끄며, 0.001° 입력·시작과 복귀·체형 조합으로 검토합니다. 주름 반례가 남은 수동 시안입니다.','workbench.html?round=57&case=male-8&trial=transition57',['57','어깨','중립','연속','피부','첫 프레임','복원'],57),
+ tool('knee57','pose','57차 무릎 · 중립과 굽힘','지원하는 남성 5·7·8등신과 여성 6등신에서 중립부터 같은 무릎 피부를 이어 작은 굽힘과 실측 스쿼트를 비교합니다.','workbench.html?round=57&case=male-8&trial=knee57',['57','무릎','중립','굽힘','스쿼트','첫 프레임'],57),
  tool('surface56','pose','56차 어깨 표면·복합 자세','같은 전신·카메라에서 어깨 표면보정 강도0~100%와 팔·골반·접지를 바꾸고 되돌립니다. 기본 시안은 남성8등신 오른팔 앞으로90°, 팔꿈치45°이며 수동 검토 후보입니다.','workbench.html?round=56&case=male-8&trial=surface56',['56','어깨','표면','복합','피부','강도','되돌리기'],56),
  tool('photo-occlusion55','photo','가린 윤곽 편집','한 사진 전체나 왼쪽·오른쪽 윤곽에서 가린 구간을 표시하고 생성에 쓰는 외곽을 다시 비교합니다.','../research/photo-model/occlusion55.html',['사진','참고','윤곽','가림','복원','55'],55),
  tool('shoulder54','pose','어깨와 겨드랑이','같은 전신에서 양팔이나 한 팔을 들고 겨드랑이와 위팔의 연결면을 비교합니다. 관절 탭에서 등신별 골반과 무릎으로도 전환할 수 있습니다.','workbench.html?round=54&case=female-8&trial=shoulder54',['팔','어깨','겨드랑이','쇄골','견갑','관절'],54),
