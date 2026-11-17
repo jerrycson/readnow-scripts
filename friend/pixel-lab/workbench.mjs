@@ -1,5 +1,5 @@
-import {createRenderQueue} from './workbench-render.mjs?v=55';
-import {buttons,mark,editor} from './workbench-controls.mjs?v=55';
+import {createRenderQueue} from './workbench-render.mjs?v=56';
+import {buttons,mark,editor} from './workbench-controls.mjs?v=56';
 import {faceOptions50} from './face-options50.mjs';
 import {modelNames,isWorkbenchSubject,isChestSubject} from './workbench-subjects50.mjs';
 import {chestOptions50} from './chest-options50.mjs';
@@ -18,7 +18,7 @@ let count=[1,2,4].includes(prefs.count)?prefs.count:4;
 let x=clamp(Number(prefs.x)||50,15,85),y=clamp(Number(prefs.y)||50,15,85);
 function save(){try{localStorage.setItem(pref,JSON.stringify({count,x,y}));}catch{}}
 const params=new URL(location.href).searchParams;
-const requested=params.get('case'), edition=['50','51','52','53','54'].includes(params.get('round'))?Number(params.get('round')):55;
+const requested=params.get('case'), edition=['50','51','52','53','54','55'].includes(params.get('round'))?Number(params.get('round')):56;
 let id=isWorkbenchSubject(requested)?requested:'F02',active=0,solo=null,revision=0,tab='view',visible=true;
 const cameras=[0,-45,-90,135].map(yaw=>({yaw,pitch:0,zoom:1,size:1024,framing:'model'}));
 const items=[],versions=[0,0,0,0],ready=[-1,-1,-1,-1],pins=[null,null,null,null];
@@ -78,7 +78,7 @@ function showModelStatus(){
   const current52={jawNormal52:'52차 H2 턱 음영',jawBoth52:'H2 턱 형상·음영 · 보류',lowerContact52:'52차 안·바깥 접선',floor52:'하부 낮추기 · 보류'};
   const current53={face53:'53차 얼굴 · 비교 시안',field53:'53차 볼 지지면 · 초기 시험',tissue53:'53차 안쪽 피부와 윤곽 · 비교 시안'};
   const current54={face54:'54차 눈·입과 턱 · 검토',support54:'54차 하관만',matched53:'53차 형상 · 같은 자세',tissue54:'54차 겨드랑이 주름 · 검토'};
-  const version=current54[kind]||current53[kind]||current52[kind]||current51[kind]||trial[kind];
+  const version=({'fern05-56':'56차 5화 입·턱 · 수동 비교'})[kind]||current54[kind]||current53[kind]||current52[kind]||current51[kind]||trial[kind];
   el('subjectLabel').textContent=label+(version?' · '+version:isWorkbenchSubject(key)&&!key.includes('-')?' · 보존 원형':'');
 }
 function refreshViews(){
@@ -215,7 +215,7 @@ function selectModel(key){
     if(b.dataset.key==='pose')b.disabled=!poseEnabled;
   }
   if((tab==='shape'&&!editable)||(tab==='pose'&&!poseEnabled))chooseTab('model');
-  if(!editable&&edition>=54&&id===requested&&['shoulder54','hip54','ground55'].includes(params.get('trial')))chooseTab('pose');
+  if(!editable&&edition>=54&&id===requested&&['shoulder54','hip54','ground55','surface56'].includes(params.get('trial')))chooseTab('pose');
   mark(el('models'),key);mark(el('families'),key);
   const title=modelNames[id]||((id.startsWith('female')?'여성':'남성')+' '+id.split('-')[1]+'등신');
   el('subjectLabel').textContent=title;
@@ -236,6 +236,8 @@ function selectModel(key){
   if(edition>=52&&!editable)el('modelNotes').textContent='이 전신에서 얼굴·헤어·근육·지방을 바꾸면 같은 몸, 같은 카메라에서 비교합니다. 기본 얼굴은 이목구비를 각각 조절할 수 있습니다.';
   if(edition>=53&&!editable)el('modelNotes').textContent='외형 조합의 허리·골반에서 허리 폭과 깊이를 따로 조절하고 골반과 허벅지를 잇는 면을 비교하세요.';
   if(edition>=54&&!editable)el('modelNotes').textContent='관절에서 양팔이나 한쪽 팔을 올려 어깨와 겨드랑이를 비교하세요. 외형 조합에서 정한 몸매와 머리 모양도 함께 보입니다.';
+  const notice=el('candidateNotice');notice.hidden=edition<56;
+  if(edition>=56){notice.textContent=id==='F02'?'56차 페른은 5화의 조금 벌린 입·턱을 수동 비교합니다. 12화 입과 28화 턱 반례가 남아 기본으로 채택하지 않았습니다.':id==='M01'?'힘멜의 기존 미소0.35는 감은 눈7화2의48px 입선 오차가2.247px로 같았고, 다문 미소6화6에서는1.804→2.297px로 커져49차 중립을 유지합니다. 6화는 이전 수집목록에서 이번에 새로 표식한 컷이며 새56피부 후보가 아닙니다.':id==='W'?'W의 56차 돌출 후보는 사선·측면에서 악화해 보류했습니다. 현재 비교형은 55차이며 56차 후보로 자동 바꾸지 않습니다.':id==='atlas:B21'?'B21의 56차 밑선 후보는 일부 정면·사선에서 가까워졌지만 측면·이중선 반례로 보류했습니다. 현재 55차 비교형을 유지합니다.':!editable?'56차 어깨 표면은 수동 비교 후보입니다. 관절의 0%는 같은 자세의 55차 표면이며 되돌리기로 강도와 자세를 함께 복원합니다.':'';notice.hidden=!notice.textContent;}
   showCategory(face?'face':chest?'chest':'body');
   if(visiblePanes().every(i=>pins[i]))pins[active]=null;
   for(const [i,{canvas}] of items.entries())if(!pins[i])canvas.width=canvas.height=1;

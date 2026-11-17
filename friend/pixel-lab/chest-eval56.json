@@ -1,0 +1,6110 @@
+{
+  "round": 56,
+  "base": "e671c5b2f",
+  "prior": "tissue55",
+  "trial": null,
+  "applied": [],
+  "default": "W·atlas:B21 모두 55차 유지. 모든 56차 변경은 연구용 강제 비교.",
+  "plate": "chest-plate56.png",
+  "note": "chest-note56.json",
+  "summary": "W의 최저점은 55가 원도와 이미 일치한다. B21의 앞·사선 일부 최저점과 복귀선이 가까워졌으나 기울기와 별도 각도의 이중 피크가 남았다.",
+  "sources": [
+    {
+      "title": "Wallner 등 (2022) · 그림 1과 2의 가상 형태 원도",
+      "url": "https://doi.org/10.1007/s00266-021-02753-y"
+    },
+    {
+      "title": "The Aesthetic Society · 성인 사례 107646, 정면·사선·측면 원사진. 사진 권리 보유",
+      "url": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/107646"
+    },
+    {
+      "title": "Tong 등 (2020) · 세 자세에서 표면스캔의 완전도와 가림, 그림 5·6",
+      "url": "https://doi.org/10.1038/s41598-020-70476-2"
+    },
+    {
+      "title": "Takaya 등 (2022) · 성인 기증 표본의 유방하주름 지지 구조",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34998682/"
+    }
+  ],
+  "sourceRows": [
+    {
+      "label": "W230",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "180f9d3013dc3aca8afbff966cbe8243062cf71bac9dec2e6372d607c962c7a8",
+      "photoSize": [
+        2006,
+        1122
+      ],
+      "leftRightRows": [
+        40,
+        50
+      ],
+      "pairedDark": [
+        39,
+        50
+      ]
+    },
+    {
+      "label": "W240",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "180f9d3013dc3aca8afbff966cbe8243062cf71bac9dec2e6372d607c962c7a8",
+      "photoSize": [
+        2006,
+        1122
+      ],
+      "leftRightRows": [
+        40,
+        50
+      ],
+      "pairedDark": [
+        37,
+        50
+      ]
+    },
+    {
+      "label": "B21앞",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "dddfc1898d657d36aa1cbfb74ef13e56f33aca25981f75ea54b6afb4dee0ae3e",
+      "photoSize": [
+        450,
+        450
+      ],
+      "leftRightRows": [
+        32,
+        21
+      ],
+      "pairedDark": [
+        32,
+        21
+      ]
+    },
+    {
+      "label": "B21사",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "7a4cae93f71b4ecf7f8db533445ca69042a1622b4a69b03c62045e6d0b4bc0e5",
+      "photoSize": [
+        450,
+        450
+      ],
+      "leftRightRows": [
+        44,
+        26
+      ],
+      "pairedDark": [
+        43,
+        26
+      ]
+    },
+    {
+      "label": "B21측",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "f5f805828b3432a786b5908ef60bfb9c4c759fcc031e12dedbbbef7c29a396e9",
+      "photoSize": [
+        450,
+        675
+      ],
+      "leftRightRows": [
+        22,
+        0
+      ],
+      "pairedDark": [
+        22,
+        0
+      ]
+    },
+    {
+      "label": "허리손",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "de953256d37386f8373dfdacceeed5d9530e11454f9fa2708043c44ad35221a5",
+      "photoSize": [
+        1770,
+        1472
+      ],
+      "leftRightRows": [
+        42,
+        17
+      ],
+      "pairedDark": [
+        41,
+        16
+      ]
+    },
+    {
+      "label": "뒤통수",
+      "rights": "공개본은 사진 대신 관찰 좌표와 수치를 사용한다.",
+      "sourceSha256": "de953256d37386f8373dfdacceeed5d9530e11454f9fa2708043c44ad35221a5",
+      "photoSize": [
+        1770,
+        1472
+      ],
+      "leftRightRows": [
+        22,
+        13
+      ],
+      "pairedDark": [
+        13,
+        7
+      ]
+    }
+  ],
+  "measure": "원사진 가로열별로 밝기가 회복되는 세 폭의 기울기와 그 위 두 폭의 어두운 골을 검사했다. 양쪽 모델에 모두 보인 행에서만 같은 구간의 거리·최저점·내측과 외측의 기울기를 계산했다. 좌우는 화면 기준이다. 두 개의 수치 피크를 시트 전체에 이어진 해부학적 주름으로 해석하지 않았다.",
+  "volume": "같은 중립 삼각형 패치를 z=.10 평면에 수직으로 닫고 부호 있는 체적을 양쪽에 따로 적분했다. 보상은 전후 깊이에만 주므로 단일 선형 계산으로 같은 자세의 원형 부피에 맞춘다. 다른 자세와 두 유형 간 재료점 비교는 양쪽 합산체적의 역세제곱근으로 표준화한다. 관측 부피의 대용량으로, 실제 인체의 유방 부피 측정은 아니다. 팔을 들 때 추가된 겨드랑이 세분면은 이 고정 중립 패치에 포함하지 않았다.",
+  "proposals": {
+    "primaryEach": 38,
+    "B21additional": 96,
+    "materialProtectedRadii": 3,
+    "amplitude": 6,
+    "secondMaterialRadiiAndGains": 6,
+    "crossChecked": 42,
+    "crossPassed": 0
+  },
+  "W": {
+    "plan": {
+      "down": 0,
+      "tilt": 0,
+      "out": 0.035
+    },
+    "scores": [
+      {
+        "key": "W230",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            368.478231267508,
+            477.42612103504285
+          ],
+          [
+            655.521768732492,
+            477.42612103504285
+          ]
+        ],
+        "scores": [
+          {
+            "all": 40,
+            "matched": 40,
+            "beforeCount": 40,
+            "afterCount": 40,
+            "returnMae": [
+              1.075,
+              1.075
+            ],
+            "darkN": 35,
+            "darkMae": [
+              1.3714285714285714,
+              1.3142857142857143
+            ],
+            "floor": {
+              "source": 946,
+              "before": 946,
+              "after": 946,
+              "n": 23
+            },
+            "slopeInnerOuter": [
+              [
+                -28.639442883638164,
+                -34.948192366513844,
+                -35.04354695568217
+              ],
+              [
+                38.10519471472257,
+                23.834922246247075,
+                32.075879363851556
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          },
+          {
+            "all": 50,
+            "matched": 50,
+            "beforeCount": 50,
+            "afterCount": 50,
+            "returnMae": [
+              1.46,
+              1.46
+            ],
+            "darkN": 50,
+            "darkMae": [
+              1.44,
+              1.36
+            ],
+            "floor": {
+              "source": 944,
+              "before": 944,
+              "after": 943,
+              "n": 37
+            },
+            "slopeInnerOuter": [
+              [
+                41.57055891227061,
+                38.33586270758744,
+                38.417122386335876
+              ],
+              [
+                -25.906507999514385,
+                -16.263513160757356,
+                -17.132996150343136
+              ]
+            ],
+            "doubleCount": [
+              1,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "key": "W240",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            368.478231267508,
+            477.42612103504285
+          ],
+          [
+            655.521768732492,
+            477.42612103504285
+          ]
+        ],
+        "scores": [
+          {
+            "all": 40,
+            "matched": 40,
+            "beforeCount": 40,
+            "afterCount": 40,
+            "returnMae": [
+              1.55,
+              1.475
+            ],
+            "darkN": 36,
+            "darkMae": [
+              2.2222222222222223,
+              2.2777777777777777
+            ],
+            "floor": {
+              "source": 946,
+              "before": 947,
+              "after": 947,
+              "n": 24
+            },
+            "slopeInnerOuter": [
+              [
+                -25.281726273389342,
+                -35.16911353378211,
+                -35.16911353378211
+              ],
+              [
+                29.744881296942225,
+                35.53767779197438,
+                40.60129464500447
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          },
+          {
+            "all": 50,
+            "matched": 50,
+            "beforeCount": 50,
+            "afterCount": 50,
+            "returnMae": [
+              1.3,
+              1.28
+            ],
+            "darkN": 49,
+            "darkMae": [
+              1.469387755102041,
+              1.5918367346938775
+            ],
+            "floor": {
+              "source": 944,
+              "before": 945,
+              "after": 944,
+              "n": 36
+            },
+            "slopeInnerOuter": [
+              [
+                40.858224669507955,
+                37.98171088516599,
+                37.878554721216645
+              ],
+              [
+                -23.59773134916738,
+                -19.117162439176393,
+                -16.857203112907214
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "key": "허리손",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            367.50857547199075,
+            475.57079565542614
+          ],
+          [
+            656.4914245280092,
+            475.57079565542585
+          ]
+        ],
+        "scores": [
+          {
+            "all": 42,
+            "matched": 25,
+            "beforeCount": 27,
+            "afterCount": 25,
+            "returnMae": [
+              18.4,
+              18.36
+            ],
+            "darkN": 23,
+            "darkMae": [
+              19.695652173913043,
+              19.869565217391305
+            ],
+            "floor": {
+              "source": 339,
+              "before": 362,
+              "after": 362,
+              "n": 17
+            },
+            "slopeInnerOuter": [
+              [
+                -14.602458804078356,
+                -19.94461641283339,
+                -20.749362413445123
+              ],
+              [
+                34.61549653159776,
+                56.87957559840978,
+                56.860862547219334
+              ]
+            ],
+            "doubleCount": [
+              2,
+              2
+            ]
+          },
+          {
+            "all": 17,
+            "matched": 3,
+            "beforeCount": 3,
+            "afterCount": 4,
+            "returnMae": [
+              19,
+              18.666666666666668
+            ],
+            "darkN": 3,
+            "darkMae": [
+              19.666666666666668,
+              19
+            ],
+            "floor": {
+              "source": 343,
+              "before": 323,
+              "after": 325,
+              "n": 3
+            },
+            "slopeInnerOuter": [
+              [
+                null,
+                null,
+                null
+              ],
+              [
+                null,
+                null,
+                null
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "key": "뒤통수",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            386.7426974385515,
+            429.8677473354376
+          ],
+          [
+            637.2570261742255,
+            429.86767231855083
+          ]
+        ],
+        "scores": [
+          {
+            "all": 22,
+            "matched": 2,
+            "beforeCount": 2,
+            "afterCount": 2,
+            "returnMae": [
+              19.5,
+              19.5
+            ],
+            "darkN": 1,
+            "darkMae": [
+              19,
+              19
+            ],
+            "floor": {
+              "source": 284,
+              "before": 265,
+              "after": 265,
+              "n": 1
+            },
+            "slopeInnerOuter": [
+              [
+                null,
+                null,
+                null
+              ],
+              [
+                null,
+                null,
+                null
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          },
+          {
+            "all": 13,
+            "matched": 3,
+            "beforeCount": 3,
+            "afterCount": 3,
+            "returnMae": [
+              18,
+              18
+            ],
+            "darkN": 3,
+            "darkMae": [
+              18,
+              18
+            ],
+            "floor": {
+              "source": 295,
+              "before": 275,
+              "after": 275,
+              "n": 3
+            },
+            "slopeInnerOuter": [
+              [
+                null,
+                null,
+                null
+              ],
+              [
+                null,
+                null,
+                null
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          }
+        ]
+      }
+    ],
+    "neutralRasters": [
+      {
+        "view": "B3",
+        "scores": [
+          {
+            "rawRise": 5.976744186046512
+          },
+          {
+            "rawRise": 6.069767441860465
+          }
+        ]
+      },
+      {
+        "view": "S3",
+        "scores": [
+          {
+            "rawRise": 4.052631578947368,
+            "exterior": 1.40625
+          },
+          {
+            "rawRise": 4.7894736842105265,
+            "exterior": 1.5625
+          }
+        ]
+      },
+      {
+        "view": "A5",
+        "scores": [
+          {
+            "rawRise": 3.3846153846153846
+          },
+          {
+            "rawRise": 3.4871794871794872
+          }
+        ]
+      }
+    ],
+    "old6c": "6c 정면 근사 38행 중 0. 아래 35도에서 근접 검출한 9행의 광선은 실제 들어 올린 손을 맞힌다.",
+    "sideNote": "S3 가시 외곽만 단계 간 대응으로 판단. rawRise는 피부-배경 전이와 혼동된 과거 재현 필드다."
+  },
+  "B21": {
+    "first": [
+      {
+        "key": "B21앞",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            337.43136821417556,
+            553.7429503087822
+          ],
+          [
+            706.7441339021466,
+            562.1054218417087
+          ]
+        ],
+        "scores": [
+          {
+            "all": 32,
+            "matched": 19,
+            "beforeCount": 20,
+            "afterCount": 24,
+            "returnMae": [
+              14.578947368421053,
+              9.157894736842104
+            ],
+            "darkN": 19,
+            "darkMae": [
+              16.789473684210527,
+              11.157894736842104
+            ],
+            "floor": {
+              "source": 419,
+              "before": 441,
+              "after": 431,
+              "n": 9
+            },
+            "slopeInnerOuter": [
+              [
+                -33.07830946744515,
+                -21.578617447380434,
+                -20.198014330848295
+              ],
+              [
+                24.788737099073398,
+                -16.54961639590974,
+                -16.431324786202403
+              ]
+            ],
+            "doubleCount": [
+              4,
+              3
+            ]
+          },
+          {
+            "all": 21,
+            "matched": 20,
+            "beforeCount": 21,
+            "afterCount": 20,
+            "returnMae": [
+              15.5,
+              9.65
+            ],
+            "darkN": 18,
+            "darkMae": [
+              14.5,
+              8.5
+            ],
+            "floor": {
+              "source": 423,
+              "before": 448,
+              "after": 440,
+              "n": 11
+            },
+            "slopeInnerOuter": [
+              [
+                38.15917682547902,
+                38.94846918895014,
+                37.79373835475359
+              ],
+              [
+                -9.926245506651705,
+                23.025492008528033,
+                21.80140948635181
+              ]
+            ],
+            "doubleCount": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "key": "B21사",
+        "offset": 0,
+        "scale": 1,
+        "registration": [
+          [
+            231.37637158021658,
+            553.7429503087822
+          ],
+          [
+            540.1407034453359,
+            562.1054218417087
+          ]
+        ],
+        "scores": [
+          {
+            "all": 44,
+            "matched": 31,
+            "beforeCount": 33,
+            "afterCount": 35,
+            "returnMae": [
+              18.35483870967742,
+              9.290322580645162
+            ],
+            "darkN": 25,
+            "darkMae": [
+              18.36,
+              8.72
+            ],
+            "floor": {
+              "source": 369,
+              "before": 394,
+              "after": 384,
+              "n": 21
+            },
+            "slopeInnerOuter": [
+              [
+                -33.74954139343758,
+                -39.774784135855235,
+                -35.719234125839755
+              ],
+              [
+                19.24404861380672,
+                -27.283134359043068,
+                -31.209822126504214
+              ]
+            ],
+            "doubleCount": [
+              2,
+              3
+            ]
+          },
+          {
+            "all": 26,
+            "matched": 21,
+            "beforeCount": 22,
+            "afterCount": 21,
+            "returnMae": [
+              10.380952380952381,
+              9.285714285714286
+            ],
+            "darkN": 20,
+            "darkMae": [
+              9.35,
+              8.2
+            ],
+            "floor": {
+              "source": 414,
+              "before": 416,
+              "after": 410,
+              "n": 18
+            },
+            "slopeInnerOuter": [
+              [
+                19.107405566362747,
+                -3.508609307275402,
+                -1.8030783474069534
+              ],
+              [
+                -15.108051495962243,
+                -6.671895729277828,
+                -5.52035671056129
+              ]
+            ],
+            "doubleCount": [
+              16,
+              19
+            ]
+          }
+        ]
+      }
+    ],
+    "restrictedPlan": {
+      "center": 0.3,
+      "h": 0.14,
+      "width": 0.13,
+      "span": 0.42,
+      "down": 0.035,
+      "out": 0.015,
+      "tilt": -0.035
+    },
+    "materialIndices": [
+      1794,
+      1808,
+      1809,
+      1810,
+      1823,
+      1824,
+      1825,
+      1874,
+      1875
+    ],
+    "protectRadius": 0.085,
+    "protected": [
+      {
+        "name": "B21앞",
+        "yaw": 0,
+        "pitch": 0,
+        "score": [
+          {
+            "all": 32,
+            "matched": 20,
+            "beforeCount": 20,
+            "afterCount": 21,
+            "returnMae": [
+              14.75,
+              14.35
+            ],
+            "darkN": 19,
+            "darkMae": [
+              16.789473684210527,
+              16.263157894736842
+            ],
+            "floor": {
+              "source": 419,
+              "before": 441,
+              "after": 440,
+              "n": 9
+            },
+            "slopeInnerOuter": [
+              [
+                -33.07830946744515,
+                -21.578617447380434,
+                -21.20114252696817
+              ],
+              [
+                24.788737099073398,
+                -16.54961639590974,
+                -16.54961639590974
+              ]
+            ],
+            "doubleCount": [
+              4,
+              3
+            ]
+          },
+          {
+            "all": 21,
+            "matched": 21,
+            "beforeCount": 21,
+            "afterCount": 21,
+            "returnMae": [
+              15.714285714285714,
+              14.761904761904763
+            ],
+            "darkN": 21,
+            "darkMae": [
+              15.142857142857142,
+              14.476190476190476
+            ],
+            "floor": {
+              "source": 423,
+              "before": 448,
+              "after": 445,
+              "n": 12
+            },
+            "slopeInnerOuter": [
+              [
+                39.028828590523915,
+                38.88533972558438,
+                37.7568111799264
+              ],
+              [
+                -11.309932474020213,
+                29.89890183861456,
+                29.89890183861456
+              ]
+            ],
+            "doubleCount": [
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "name": "B21사",
+        "yaw": -40,
+        "pitch": 0,
+        "score": [
+          {
+            "all": 44,
+            "matched": 32,
+            "beforeCount": 33,
+            "afterCount": 34,
+            "returnMae": [
+              18.1875,
+              16.4375
+            ],
+            "darkN": 26,
+            "darkMae": [
+              18.192307692307693,
+              15.884615384615385
+            ],
+            "floor": {
+              "source": 369,
+              "before": 394,
+              "after": 391,
+              "n": 21
+            },
+            "slopeInnerOuter": [
+              [
+                -34.79858900470671,
+                -40.37678596790812,
+                -37.43961097512234
+              ],
+              [
+                19.24404861380672,
+                -27.283134359043068,
+                -29.577838681261326
+              ]
+            ],
+            "doubleCount": [
+              2,
+              3
+            ]
+          },
+          {
+            "all": 26,
+            "matched": 21,
+            "beforeCount": 22,
+            "afterCount": 22,
+            "returnMae": [
+              11.523809523809524,
+              10.952380952380953
+            ],
+            "darkN": 20,
+            "darkMae": [
+              10.4,
+              9.95
+            ],
+            "floor": {
+              "source": 414,
+              "before": 416,
+              "after": 413,
+              "n": 18
+            },
+            "slopeInnerOuter": [
+              [
+                19.330122533133093,
+                -2.729874069304705,
+                -2.5802070473740666
+              ],
+              [
+                -15.490605212397137,
+                -3.465648879376411,
+                -3.6529471905513637
+              ]
+            ],
+            "doubleCount": [
+              16,
+              16
+            ]
+          }
+        ]
+      },
+      {
+        "name": "B21앞",
+        "yaw": 3,
+        "pitch": 4,
+        "score": [
+          {
+            "all": 32,
+            "matched": 24,
+            "beforeCount": 24,
+            "afterCount": 25,
+            "returnMae": [
+              10.916666666666666,
+              10.458333333333334
+            ],
+            "darkN": 22,
+            "darkMae": [
+              12.909090909090908,
+              12.409090909090908
+            ],
+            "floor": {
+              "source": 419,
+              "before": 439,
+              "after": 437,
+              "n": 11
+            },
+            "slopeInnerOuter": [
+              [
+                -33.59178736393941,
+                -25.69663783738106,
+                -25.139129069043406
+              ],
+              [
+                26.61827529508308,
+                4.6887179241425345,
+                5.652593472532467
+              ]
+            ],
+            "doubleCount": [
+              5,
+              4
+            ]
+          },
+          {
+            "all": 21,
+            "matched": 19,
+            "beforeCount": 19,
+            "afterCount": 20,
+            "returnMae": [
+              15.473684210526315,
+              14.842105263157896
+            ],
+            "darkN": 19,
+            "darkMae": [
+              15.052631578947368,
+              14
+            ],
+            "floor": {
+              "source": 423,
+              "before": 449,
+              "after": 447,
+              "n": 10
+            },
+            "slopeInnerOuter": [
+              [
+                38.80617003654411,
+                39.83903640528658,
+                39.0965184870034
+              ],
+              [
+                -9.926245506651705,
+                21.80140948635181,
+                21.80140948635181
+              ]
+            ],
+            "doubleCount": [
+              1,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "B21사",
+        "yaw": -46,
+        "pitch": 3,
+        "score": [
+          {
+            "all": 44,
+            "matched": 29,
+            "beforeCount": 31,
+            "afterCount": 31,
+            "returnMae": [
+              21.517241379310345,
+              19.20689655172414
+            ],
+            "darkN": 24,
+            "darkMae": [
+              22.291666666666668,
+              19.25
+            ],
+            "floor": {
+              "source": 369,
+              "before": 399,
+              "after": 395,
+              "n": 19
+            },
+            "slopeInnerOuter": [
+              [
+                -35.043866592237144,
+                -29.888778530378158,
+                -25.125636479889952
+              ],
+              [
+                0,
+                -43.53119928561417,
+                -43.53119928561417
+              ]
+            ],
+            "doubleCount": [
+              7,
+              6
+            ]
+          },
+          {
+            "all": 26,
+            "matched": 22,
+            "beforeCount": 22,
+            "afterCount": 23,
+            "returnMae": [
+              11.409090909090908,
+              11.409090909090908
+            ],
+            "darkN": 20,
+            "darkMae": [
+              10.8,
+              10.5
+            ],
+            "floor": {
+              "source": 413,
+              "before": 420,
+              "after": 417,
+              "n": 15
+            },
+            "slopeInnerOuter": [
+              [
+                20.556045219583464,
+                -1.9289495019963532,
+                -2.937885169008446
+              ],
+              [
+                -20.390630220444898,
+                -13.265029230276927,
+                -11.94880275846176
+              ]
+            ],
+            "doubleCount": [
+              19,
+              19
+            ]
+          }
+        ]
+      },
+      {
+        "name": "B21사",
+        "yaw": -34,
+        "pitch": -4,
+        "score": [
+          {
+            "all": 44,
+            "matched": 34,
+            "beforeCount": 34,
+            "afterCount": 39,
+            "returnMae": [
+              16,
+              14.647058823529411
+            ],
+            "darkN": 31,
+            "darkMae": [
+              15.451612903225806,
+              13.580645161290322
+            ],
+            "floor": {
+              "source": 369,
+              "before": 392,
+              "after": 389,
+              "n": 24
+            },
+            "slopeInnerOuter": [
+              [
+                -33.67413432852813,
+                -40.08283383917937,
+                -38.23640641723044
+              ],
+              [
+                30.90674987664785,
+                52.784487451399364,
+                50.75232146798722
+              ]
+            ],
+            "doubleCount": [
+              3,
+              4
+            ]
+          },
+          {
+            "all": 26,
+            "matched": 16,
+            "beforeCount": 18,
+            "afterCount": 18,
+            "returnMae": [
+              10.375,
+              9.625
+            ],
+            "darkN": 15,
+            "darkMae": [
+              8.933333333333334,
+              8.266666666666667
+            ],
+            "floor": {
+              "source": 412,
+              "before": 413,
+              "after": 411,
+              "n": 14
+            },
+            "slopeInnerOuter": [
+              [
+                21.54213445054206,
+                5.033045699576933,
+                4.805750291312216
+              ],
+              [
+                -11.689369175439191,
+                23.939570663995262,
+                25.769327624338718
+              ]
+            ],
+            "doubleCount": [
+              14,
+              14
+            ]
+          }
+        ]
+      }
+    ],
+    "independentSide": [
+      {
+        "yaw": 84,
+        "registration": "상단·최대돌출",
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "yaw": 84,
+        "registration": "상단·유두",
+        "score": {
+          "all": 22,
+          "matched": 18,
+          "beforeCount": 18,
+          "afterCount": 18,
+          "returnMae": [
+            15.777777777777779,
+            15.777777777777779
+          ],
+          "darkN": 18,
+          "darkMae": [
+            15.666666666666666,
+            15.666666666666666
+          ],
+          "floor": {
+            "source": 625,
+            "before": 612,
+            "after": 612,
+            "n": 15
+          },
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              16.989593854564866,
+              27.334075859656036,
+              27.334075859656036
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "yaw": 90,
+        "registration": "상단·최대돌출",
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "yaw": 90,
+        "registration": "상단·유두",
+        "score": {
+          "all": 22,
+          "matched": 3,
+          "beforeCount": 3,
+          "afterCount": 3,
+          "returnMae": [
+            30,
+            30
+          ],
+          "darkN": 3,
+          "darkMae": [
+            30.333333333333332,
+            30.333333333333332
+          ],
+          "floor": {
+            "source": 625,
+            "before": 596,
+            "after": 596,
+            "n": 3
+          },
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "yaw": 96,
+        "registration": "상단·최대돌출",
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "yaw": 96,
+        "registration": "상단·유두",
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "originalRegistrationCoverage": [
+      {
+        "name": "55",
+        "yaw": 84,
+        "registration": "상단·최대돌출",
+        "p": null,
+        "reg": [
+          [
+            627.4711140315652,
+            382.8176462455908
+          ],
+          [
+            785.6511982571665,
+            577.0594881195796
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 0,
+          "both": 0,
+          "all": 22
+        }
+      },
+      {
+        "name": "55",
+        "yaw": 84,
+        "registration": "상단·유두",
+        "p": null,
+        "reg": [
+          [
+            627.4711140315652,
+            382.8176462455908
+          ],
+          [
+            725.0607489323862,
+            520.2687513108076
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 18,
+          "beforeCount": 18,
+          "afterCount": 18,
+          "returnMae": [
+            15.777777777777779,
+            15.777777777777779
+          ],
+          "darkN": 18,
+          "darkMae": [
+            15.666666666666666,
+            15.666666666666666
+          ],
+          "floor": {
+            "source": 625,
+            "before": 612,
+            "after": 612,
+            "n": 15
+          },
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              16.989593854564866,
+              27.334075859656036,
+              27.334075859656036
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 22,
+          "both": 22,
+          "all": 22
+        }
+      },
+      {
+        "name": "55",
+        "yaw": 90,
+        "registration": "상단·최대돌출",
+        "p": null,
+        "reg": [
+          [
+            614.719034762452,
+            382.8176462455908
+          ],
+          [
+            773.8594319496838,
+            577.0594881195796
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 0,
+          "both": 0,
+          "all": 22
+        }
+      },
+      {
+        "name": "55",
+        "yaw": 90,
+        "registration": "상단·유두",
+        "p": null,
+        "reg": [
+          [
+            614.719034762452,
+            382.8176462455908
+          ],
+          [
+            740.0203077064378,
+            517.0234197399849
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 3,
+          "beforeCount": 3,
+          "afterCount": 3,
+          "returnMae": [
+            30,
+            30
+          ],
+          "darkN": 3,
+          "darkMae": [
+            30.333333333333332,
+            30.333333333333332
+          ],
+          "floor": {
+            "source": 625,
+            "before": 596,
+            "after": 596,
+            "n": 3
+          },
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 22,
+          "both": 22,
+          "all": 22
+        }
+      },
+      {
+        "name": "55",
+        "yaw": 96,
+        "registration": "상단·최대돌출",
+        "p": null,
+        "reg": [
+          [
+            600.8415442531414,
+            382.8176462455908
+          ],
+          [
+            759.1986789081515,
+            577.0594881195796
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 1,
+          "both": 1,
+          "all": 22
+        }
+      },
+      {
+        "name": "55",
+        "yaw": 96,
+        "registration": "상단·유두",
+        "p": null,
+        "reg": [
+          [
+            600.8415442531414,
+            382.8176462455908
+          ],
+          [
+            752.6700701531818,
+            513.9167924315816
+          ]
+        ],
+        "score": {
+          "all": 22,
+          "matched": 0,
+          "beforeCount": 0,
+          "afterCount": 0,
+          "returnMae": [
+            null,
+            null
+          ],
+          "darkN": 0,
+          "darkMae": [
+            null,
+            null
+          ],
+          "floor": null,
+          "slopeInnerOuter": [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null
+            ]
+          ],
+          "doubleCount": [
+            0,
+            0
+          ]
+        },
+        "sourceCoverage": {
+          "at": 22,
+          "both": 22,
+          "all": 22
+        }
+      }
+    ],
+    "doubleProtectionFinal": [
+      {
+        "radius": 0.045,
+        "scale": 0.55,
+        "extra": 1,
+        "worstReturn": -0.0952380952380949,
+        "floorDifferences": [
+          0,
+          -1,
+          -1,
+          -2,
+          -1,
+          -2,
+          -3,
+          -2,
+          -2,
+          1
+        ]
+      },
+      {
+        "radius": 0.045,
+        "scale": 1,
+        "extra": 1,
+        "worstReturn": 0.045454545454546746,
+        "floorDifferences": [
+          -1,
+          -3,
+          -3,
+          -1,
+          -2,
+          -2,
+          -4,
+          -3,
+          -3,
+          2
+        ]
+      },
+      {
+        "radius": 0.08,
+        "scale": 0.55,
+        "extra": 1,
+        "worstReturn": -0.09999999999999964,
+        "floorDifferences": [
+          0,
+          -1,
+          -1,
+          -2,
+          -1,
+          -2,
+          -3,
+          -2,
+          -2,
+          1
+        ]
+      },
+      {
+        "radius": 0.08,
+        "scale": 1,
+        "extra": 1,
+        "worstReturn": 0.045454545454546746,
+        "floorDifferences": [
+          -1,
+          -3,
+          -3,
+          -1,
+          -2,
+          -2,
+          -4,
+          -3,
+          -3,
+          2
+        ]
+      },
+      {
+        "radius": 0.115,
+        "scale": 0.55,
+        "extra": 1,
+        "worstReturn": -0.09999999999999964,
+        "floorDifferences": [
+          0,
+          -1,
+          -1,
+          -2,
+          -1,
+          -2,
+          -3,
+          -2,
+          -2,
+          1
+        ]
+      },
+      {
+        "radius": 0.115,
+        "scale": 1,
+        "extra": 1,
+        "worstReturn": -0.04545454545454497,
+        "floorDifferences": [
+          -1,
+          -3,
+          -3,
+          -1,
+          -2,
+          -2,
+          -4,
+          -3,
+          -3,
+          2
+        ]
+      }
+    ]
+  },
+  "sourceValidation": "W 230 적합 후 인접 240, 사선·측면·다른 사람의 뒤통수 자세를 따로 검사. B21 첫 시안에서 사선을 새로 열어 본 뒤에는 정면·사선 둘 다 개선 대상에 포함했다. 측면을 열어 본 다음 그 두 등록을 후속 보호에 사용했다. 보정 후 같은 사진을 새 독립 환자 검증으로 세지 않았다.",
+  "geometry": [
+    {
+      "id": "W",
+      "stage": "first",
+      "poses": [
+        {
+          "pose": 0,
+          "volume55": [
+            0.40540527323549536,
+            0.40691552848105705
+          ],
+          "volume56": [
+            0.40540527323549524,
+            0.406915528481058
+          ],
+          "relativeVolume": [
+            -2.220446049250313e-16,
+            2.220446049250313e-15
+          ],
+          "scaleToUnitVolume": 1.0717433770873865,
+          "floorMaterial55": [
+            {
+              "index": 1813,
+              "world": [
+                -0.3704018623353336,
+                5.77839930419753,
+                0.9052407912774605
+              ],
+              "unitVolumeDelta": [
+                0.06841639555330332,
+                -0.3183802728748112,
+                -0.09408538109568974
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.3704018623353336,
+                5.77839930419753,
+                0.9052407912774605
+              ],
+              "unitVolumeDelta": [
+                -0.06848431705935562,
+                -0.31837419812326934,
+                -0.09401361517199353
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1813,
+              "world": [
+                -0.3704018623353336,
+                5.77839930419753,
+                0.9168905011320354
+              ],
+              "unitVolumeDelta": [
+                0.06838377504289178,
+                -0.31889089965644735,
+                -0.07983634187795415
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.3704018623353336,
+                5.77839930419753,
+                0.9169004567049384
+              ],
+              "unitVolumeDelta": [
+                -0.06845360701317418,
+                -0.31888107423000683,
+                -0.07983880958318876
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.9506549350898853,
+          "turnsOver90": 0,
+          "bend90": [
+            80.28964543276922,
+            80.61268450971782
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 64,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 14112,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 59,
+              "beforeDual": 5,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 12678,
+              "outlinePixels": 31
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 5101,
+              "outlinePixels": 80
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 4,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 100,
+              "outlinePixels": 31
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 7,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 4,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 488,
+              "outlinePixels": 31
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 5031,
+              "outlinePixels": 80
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 57,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 11720,
+              "outlinePixels": 31
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 65,
+              "beforeDual": 5,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 11895,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 61,
+              "beforeDual": 3,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 14775,
+              "outlinePixels": 2
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 57,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 9343,
+              "outlinePixels": 43
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 7,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 913,
+              "outlinePixels": 48
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 24
+            },
+            {
+              "size": 96,
+              "changed": 106
+            }
+          ]
+        },
+        {
+          "pose": 90,
+          "volume55": [
+            0.42694441255795057,
+            0.42735410520347267
+          ],
+          "volume56": [
+            0.42694441255795346,
+            0.4273541052034749
+          ],
+          "relativeVolume": [
+            6.661338147750939e-15,
+            5.10702591327572e-15
+          ],
+          "scaleToUnitVolume": 1.0538936369172758,
+          "floorMaterial55": [
+            {
+              "index": 1813,
+              "world": [
+                -0.3745895857650357,
+                5.800880434315585,
+                0.8985772162753594
+              ],
+              "unitVolumeDelta": [
+                0.06555631148114585,
+                -0.32540405717463977,
+                -0.10260187971256275
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.3745895857650357,
+                5.800880434315585,
+                0.8985772162753594
+              ],
+              "unitVolumeDelta": [
+                -0.06561918225263078,
+                -0.32540856954699227,
+                -0.10255415427125529
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1813,
+              "world": [
+                -0.3745895857650357,
+                5.800880434315585,
+                0.9101823624581836
+              ],
+              "unitVolumeDelta": [
+                0.06549141084500136,
+                -0.3259697775343703,
+                -0.08818965193048756
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.3745895857650357,
+                5.800880434315585,
+                0.9101913349423233
+              ],
+              "unitVolumeDelta": [
+                -0.06555647148875907,
+                -0.32597070872210804,
+                -0.08820813469958592
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8857335401670711,
+          "turnsOver90": 0,
+          "bend90": [
+            74.93681839692698,
+            74.46875005180556
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 72,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 14661,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 58,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 13395,
+              "outlinePixels": 33
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 31,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 4475,
+              "outlinePixels": 76
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 15,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 426,
+              "outlinePixels": 33
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 16,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1257,
+              "outlinePixels": 33
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 30,
+              "beforeDual": 1,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 4860,
+              "outlinePixels": 76
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 59,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 12560,
+              "outlinePixels": 33
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 61,
+              "beforeDual": 4,
+              "afterDual": 5,
+              "newColumns": 2,
+              "changedPixels": 12710,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 77,
+              "beforeDual": 5,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 15491,
+              "outlinePixels": 16
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 9596,
+              "outlinePixels": 26
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 14,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 874,
+              "outlinePixels": 31
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 23
+            },
+            {
+              "size": 96,
+              "changed": 93
+            }
+          ]
+        },
+        {
+          "pose": 178,
+          "volume55": [
+            0.4396034105029266,
+            0.4376852833510484
+          ],
+          "volume56": [
+            0.4396034105029287,
+            0.43768528335105034
+          ],
+          "relativeVolume": [
+            4.884981308350689e-15,
+            4.440892098500626e-15
+          ],
+          "scaleToUnitVolume": 1.0446059355402155,
+          "floorMaterial55": [
+            {
+              "index": 1883,
+              "world": [
+                -0.3145742157950297,
+                5.820874367433875,
+                0.9028429475678534
+              ],
+              "unitVolumeDelta": [
+                0.13709690302213468,
+                -0.3421551919785875,
+                -0.0917469967857898
+              ]
+            },
+            {
+              "index": 8555,
+              "world": [
+                0.3145742157950297,
+                5.820874367433875,
+                0.9028429475678534
+              ],
+              "unitVolumeDelta": [
+                -0.13715215223028138,
+                -0.3421730977786429,
+                -0.09171262156632348
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1883,
+              "world": [
+                -0.3145742157950297,
+                5.820874367433875,
+                0.9155048290353052
+              ],
+              "unitVolumeDelta": [
+                0.13693012455927156,
+                -0.34275463740638773,
+                -0.07573338896585981
+              ]
+            },
+            {
+              "index": 8555,
+              "world": [
+                0.3145742157950297,
+                5.820874367433875,
+                0.9155109310951765
+              ],
+              "unitVolumeDelta": [
+                -0.136987712017582,
+                -0.34276958186412737,
+                -0.07575795217086231
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8700182549124733,
+          "turnsOver90": 0,
+          "bend90": [
+            65.20711336045302,
+            65.9526198692277
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 75,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 16764,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 64,
+              "beforeDual": 5,
+              "afterDual": 7,
+              "newColumns": 3,
+              "changedPixels": 14767,
+              "outlinePixels": 42
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 32,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 5351,
+              "outlinePixels": 96
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 17,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 730,
+              "outlinePixels": 42
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 16,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 15,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1953,
+              "outlinePixels": 42
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 5833,
+              "outlinePixels": 96
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 65,
+              "beforeDual": 6,
+              "afterDual": 7,
+              "newColumns": 2,
+              "changedPixels": 14525,
+              "outlinePixels": 42
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 84,
+              "beforeDual": 6,
+              "afterDual": 5,
+              "newColumns": 1,
+              "changedPixels": 13676,
+              "outlinePixels": 2
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 70,
+              "beforeDual": 5,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 16504,
+              "outlinePixels": 10
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 62,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 10513,
+              "outlinePixels": 50
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 18,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1671,
+              "outlinePixels": 50
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 20
+            },
+            {
+              "size": 96,
+              "changed": 107
+            }
+          ]
+        },
+        {
+          "pose": "waist",
+          "volume55": [
+            0.33152357330324883,
+            0.33238181744097073
+          ],
+          "volume56": [
+            0.3315235733032477,
+            0.3323818174409692
+          ],
+          "relativeVolume": [
+            -3.3306690738754696e-15,
+            -4.6629367034256575e-15
+          ],
+          "scaleToUnitVolume": 1.1462990566183962,
+          "floorMaterial55": [
+            {
+              "index": 1813,
+              "world": [
+                -0.37085962088379526,
+                5.7819571190677195,
+                0.9041862398020246
+              ],
+              "unitVolumeDelta": [
+                0.07601193479751366,
+                -0.342885414441171,
+                -0.09747389218204587
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.37085962088379526,
+                5.7819571190677195,
+                0.9041862398020246
+              ],
+              "unitVolumeDelta": [
+                -0.07608927745993496,
+                -0.3428784973524427,
+                -0.09739250491199633
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1813,
+              "world": [
+                -0.37085962088379526,
+                5.7819571190677195,
+                0.9157745872678313
+              ],
+              "unitVolumeDelta": [
+                0.07598281869344282,
+                -0.34337227055287783,
+                -0.08172935350397031
+              ]
+            },
+            {
+              "index": 8485,
+              "world": [
+                0.37085962088379526,
+                5.7819571190677195,
+                0.9157846529266249
+              ],
+              "unitVolumeDelta": [
+                -0.0760616852093604,
+                -0.3433617811726489,
+                -0.08172855273050544
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.6874309434685206,
+          "turnsOver90": 0,
+          "bend90": [
+            85.6664319564415,
+            86.75367712537135
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 72,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 13387,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 60,
+              "beforeDual": 6,
+              "afterDual": 6,
+              "newColumns": 1,
+              "changedPixels": 11569,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 4943,
+              "outlinePixels": 73
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 11,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 543,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 501,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 11,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 693,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 3,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 4966,
+              "outlinePixels": 73
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 60,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 11533,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 78,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 10506,
+              "outlinePixels": 12
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 61,
+              "beforeDual": 5,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 12936,
+              "outlinePixels": 10
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 61,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 8629,
+              "outlinePixels": 4
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 213,
+              "outlinePixels": 8
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 21
+            },
+            {
+              "size": 96,
+              "changed": 91
+            }
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "volume55": [
+            0.4768391247954577,
+            0.4780374490471618
+          ],
+          "volume56": [
+            0.4768391247954597,
+            0.47803744904716317
+          ],
+          "relativeVolume": [
+            4.218847493575595e-15,
+            2.886579864025407e-15
+          ],
+          "scaleToUnitVolume": 1.0155101153743158,
+          "floorMaterial55": [
+            {
+              "index": 1883,
+              "world": [
+                -0.309663397328035,
+                5.81187957943795,
+                0.9053038314892266
+              ],
+              "unitVolumeDelta": [
+                0.07039069562142197,
+                -0.41380059861328516,
+                -0.06816708688827777
+              ]
+            },
+            {
+              "index": 8555,
+              "world": [
+                0.309663397328035,
+                5.81187957943795,
+                0.9053038314892266
+              ],
+              "unitVolumeDelta": [
+                -0.07044311765843168,
+                -0.41381457044665765,
+                -0.06814121304334379
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1883,
+              "world": [
+                -0.309663397328035,
+                5.81187957943795,
+                0.9179139026533939
+              ],
+              "unitVolumeDelta": [
+                0.070324493163183,
+                -0.41414743885705224,
+                -0.05204525047184883
+              ]
+            },
+            {
+              "index": 8555,
+              "world": [
+                0.309663397328035,
+                5.81187957943795,
+                0.9179187312789209
+              ],
+              "unitVolumeDelta": [
+                -0.07037823808698472,
+                -0.41415996956927575,
+                -0.0520652172028781
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.883765633422594,
+          "turnsOver90": 0,
+          "bend90": [
+            73.38310622056315,
+            72.1164808865803
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 69,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 17210,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 63,
+              "beforeDual": 6,
+              "afterDual": 7,
+              "newColumns": 2,
+              "changedPixels": 16041,
+              "outlinePixels": 49
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 31,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 2,
+              "changedPixels": 4460,
+              "outlinePixels": 98
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 762,
+              "outlinePixels": 49
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 10,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 142,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1589,
+              "outlinePixels": 49
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 32,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 5284,
+              "outlinePixels": 98
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 62,
+              "beforeDual": 4,
+              "afterDual": 6,
+              "newColumns": 2,
+              "changedPixels": 15941,
+              "outlinePixels": 49
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 77,
+              "beforeDual": 9,
+              "afterDual": 8,
+              "newColumns": 1,
+              "changedPixels": 14285,
+              "outlinePixels": 4
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 56,
+              "beforeDual": 5,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 18689,
+              "outlinePixels": 10
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 63,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 10600,
+              "outlinePixels": 36
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 19,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1225,
+              "outlinePixels": 48
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 31
+            },
+            {
+              "size": 96,
+              "changed": 112
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B21",
+      "stage": "first",
+      "poses": [
+        {
+          "pose": 0,
+          "volume55": [
+            0.5075192605305259,
+            0.5303467472137859
+          ],
+          "volume56": [
+            0.507519260530505,
+            0.5303467472137962
+          ],
+          "relativeVolume": [
+            -4.107825191113079e-14,
+            1.9317880628477724e-14
+          ],
+          "scaleToUnitVolume": 0.9876875299528468,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.44075686564410754,
+                5.561370752905754,
+                0.8971689257534721
+              ],
+              "unitVolumeDelta": [
+                0.08634802190670092,
+                -0.27968787045638305,
+                -0.14465695034077722
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.571767951884832,
+                0.7296075467077007
+              ],
+              "unitVolumeDelta": [
+                -0.4449797934035591,
+                -0.24442402406507588,
+                -0.18983780378468876
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1816,
+              "world": [
+                -0.4488357133528341,
+                5.5861401154147785,
+                0.9787526828131754
+              ],
+              "unitVolumeDelta": [
+                0.07877813465372203,
+                -0.25800235504444863,
+                -0.09484343211581112
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.587663339726818,
+                0.7316486716233406
+              ],
+              "unitVolumeDelta": [
+                -0.44516435270666077,
+                -0.23086678814806222,
+                -0.2118162306840594
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8313146657262284,
+          "turnsOver90": 0,
+          "bend90": [
+            26.987771531406285,
+            28.471366845485804
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 55,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 19628,
+              "outlinePixels": 14
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 23112,
+              "outlinePixels": 353
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 27,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 12309,
+              "outlinePixels": 651
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1197,
+              "outlinePixels": 378
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 264,
+              "outlinePixels": 14
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2157,
+              "outlinePixels": 353
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 10790,
+              "outlinePixels": 651
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 22237,
+              "outlinePixels": 378
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 21823,
+              "outlinePixels": 6
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 24,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 24484,
+              "outlinePixels": 23
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 19812,
+              "outlinePixels": 385
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3021,
+              "outlinePixels": 431
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 96
+            },
+            {
+              "size": 96,
+              "changed": 397
+            }
+          ]
+        },
+        {
+          "pose": 90,
+          "volume55": [
+            0.5172429509536928,
+            0.5398515789425248
+          ],
+          "volume56": [
+            0.5172429509536947,
+            0.5398515789425202
+          ],
+          "relativeVolume": [
+            3.552713678800501e-15,
+            -8.43769498715119e-15
+          ],
+          "scaleToUnitVolume": 0.981662177039769,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                0.38575286099937756,
+                -0.3181965790512134,
+                -0.3275764399038815
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                -0.4487316248718265,
+                -0.3025955183398158,
+                -0.23694143566437736
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.58766339387418,
+                0.7316484336945503
+              ],
+              "unitVolumeDelta": [
+                0.38652113898096846,
+                -0.3054329672745356,
+                -0.3537591201437178
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.58766339387418,
+                0.73164820661675
+              ],
+              "unitVolumeDelta": [
+                -0.4489585274731323,
+                -0.28911289158609554,
+                -0.2569885922985687
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.5693910190668481,
+          "turnsOver90": 0,
+          "bend90": [
+            28.953273464259496,
+            28.629811720201822
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 52,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 21429,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 50,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 23948,
+              "outlinePixels": 534
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 12967,
+              "outlinePixels": 612
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3961,
+              "outlinePixels": 571
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 315,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 5016,
+              "outlinePixels": 534
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 0,
+              "afterDual": 2,
+              "newColumns": 2,
+              "changedPixels": 12018,
+              "outlinePixels": 612
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 51,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 23633,
+              "outlinePixels": 571
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 3,
+              "afterDual": 5,
+              "newColumns": 2,
+              "changedPixels": 24346,
+              "outlinePixels": 5
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 23,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 25469,
+              "outlinePixels": 62
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 55,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 22333,
+              "outlinePixels": 240
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 12,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3828,
+              "outlinePixels": 295
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 107
+            },
+            {
+              "size": 96,
+              "changed": 418
+            }
+          ]
+        },
+        {
+          "pose": 178,
+          "volume55": [
+            0.5313587497083103,
+            0.5528262120135584
+          ],
+          "volume56": [
+            0.5313587497082974,
+            0.5528262120135565
+          ],
+          "relativeVolume": [
+            -2.4202861936828413e-14,
+            -3.4416913763379853e-15
+          ],
+          "scaleToUnitVolume": 0.9734168813007208,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                0.3966240852912124,
+                -0.36973780047559435,
+                -0.3022182955526616
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                -0.4543705513978646,
+                -0.3642789812113267,
+                -0.20797280936430765
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.587663450117455,
+                0.7316477544797448
+              ],
+              "unitVolumeDelta": [
+                0.3971810768115887,
+                -0.3570131839337067,
+                -0.3251238597380773
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.587663450117455,
+                0.7316475328941074
+              ],
+              "unitVolumeDelta": [
+                -0.4545431528190987,
+                -0.350906222739367,
+                -0.22540123608387347
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.7116209409868286,
+          "turnsOver90": 0,
+          "bend90": [
+            31.294847849868315,
+            30.612978576244416
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 58,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 24301,
+              "outlinePixels": 11
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 55,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 28249,
+              "outlinePixels": 573
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 15044,
+              "outlinePixels": 580
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 4705,
+              "outlinePixels": 585
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 373,
+              "outlinePixels": 11
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 6389,
+              "outlinePixels": 573
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 38,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 14920,
+              "outlinePixels": 580
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 2,
+              "changedPixels": 27448,
+              "outlinePixels": 585
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 5,
+              "afterDual": 7,
+              "newColumns": 3,
+              "changedPixels": 24768,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 31,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 0,
+              "changedPixels": 25465,
+              "outlinePixels": 37
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 56,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 24183,
+              "outlinePixels": 407
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 17,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 6478,
+              "outlinePixels": 439
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 116
+            },
+            {
+              "size": 96,
+              "changed": 450
+            }
+          ]
+        },
+        {
+          "pose": "waist",
+          "volume55": [
+            0.45047029858792886,
+            0.47279711492557247
+          ],
+          "volume56": [
+            0.45047029858794,
+            0.47279711492558973
+          ],
+          "relativeVolume": [
+            2.4868995751603507e-14,
+            3.6415315207705135e-14
+          ],
+          "scaleToUnitVolume": 1.0269693860946256,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.4410100746503812,
+                5.566791841231795,
+                0.8951582535590283
+              ],
+              "unitVolumeDelta": [
+                0.09050985088870149,
+                -0.29327364351700663,
+                -0.15153230427504147
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.5717679604539825,
+                0.7296075426338261
+              ],
+              "unitVolumeDelta": [
+                -0.4639969141030927,
+                -0.2637068463565216,
+                -0.19786204134404164
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.13876200236284686,
+                5.587663348295969,
+                0.7316491472497807
+              ],
+              "unitVolumeDelta": [
+                0.4013651982209111,
+                -0.27474729121564406,
+                -0.3527202291592603
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.587663348295969,
+                0.731648913150612
+              ],
+              "unitVolumeDelta": [
+                -0.46419960787358716,
+                -0.24960468952575454,
+                -0.22171121958182988
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8252640561343495,
+          "turnsOver90": 0,
+          "bend90": [
+            27.291022908171154,
+            28.594562885047765
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 51,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 18870,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 52,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 21564,
+              "outlinePixels": 362
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 29,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 11472,
+              "outlinePixels": 665
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2907,
+              "outlinePixels": 376
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1042,
+              "outlinePixels": 18
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3696,
+              "outlinePixels": 362
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 32,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 10261,
+              "outlinePixels": 665
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 22195,
+              "outlinePixels": 376
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 56,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 19703,
+              "outlinePixels": 12
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 22,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 22587,
+              "outlinePixels": 23
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 19506,
+              "outlinePixels": 278
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 8,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1981,
+              "outlinePixels": 312
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 93
+            },
+            {
+              "size": 96,
+              "changed": 389
+            }
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "volume55": [
+            0.5573743514767522,
+            0.580232561002954
+          ],
+          "volume56": [
+            0.5573743514767645,
+            0.580232561002935
+          ],
+          "relativeVolume": [
+            2.220446049250313e-14,
+            -3.275157922644212e-14
+          ],
+          "scaleToUnitVolume": 0.9579347453747247,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                0.3838083307725942,
+                -0.3357800385164332,
+                -0.29469955615269694
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                -0.44239202877881406,
+                -0.3258735319074366,
+                -0.19276454613271884
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.587663421186649,
+                0.731647937194089
+              ],
+              "unitVolumeDelta": [
+                0.38426202773826645,
+                -0.3232590760882326,
+                -0.3180982255789077
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.587663421186649,
+                0.7316477134069221
+              ],
+              "unitVolumeDelta": [
+                -0.44255815368442114,
+                -0.3127274909075208,
+                -0.21056176622404996
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8247104243244917,
+          "turnsOver90": 0,
+          "bend90": [
+            30.80087787247193,
+            29.43889301723063
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 24019,
+              "outlinePixels": 23
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 51,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 27682,
+              "outlinePixels": 554
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 14645,
+              "outlinePixels": 578
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 5043,
+              "outlinePixels": 580
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 1,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 604,
+              "outlinePixels": 23
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 5557,
+              "outlinePixels": 554
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 3,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 14834,
+              "outlinePixels": 578
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 50,
+              "beforeDual": 5,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 26352,
+              "outlinePixels": 580
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 57,
+              "beforeDual": 7,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 25285,
+              "outlinePixels": 12
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 28,
+              "beforeDual": 6,
+              "afterDual": 4,
+              "newColumns": 0,
+              "changedPixels": 27754,
+              "outlinePixels": 52
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 24508,
+              "outlinePixels": 388
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 14,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 5051,
+              "outlinePixels": 422
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 117
+            },
+            {
+              "size": 96,
+              "changed": 438
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B21",
+      "stage": "second",
+      "poses": [
+        {
+          "pose": 0,
+          "volume55": [
+            0.5075192605305259,
+            0.5303467472137859
+          ],
+          "volume56": [
+            0.5075192605305312,
+            0.5303467472137864
+          ],
+          "relativeVolume": [
+            1.0436096431476471e-14,
+            8.881784197001252e-16
+          ],
+          "scaleToUnitVolume": 0.9876875299528468,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.44075686564410754,
+                5.561370752905754,
+                0.8971689257534721
+              ],
+              "unitVolumeDelta": [
+                0.08634802190670092,
+                -0.27968787045638305,
+                -0.14465695034077722
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.571767951884832,
+                0.7296075467077007
+              ],
+              "unitVolumeDelta": [
+                -0.4449797934035591,
+                -0.24442402406507588,
+                -0.18983780378468876
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1816,
+              "world": [
+                -0.4488357133528341,
+                5.569953166743565,
+                0.9613915784812501
+              ],
+              "unitVolumeDelta": [
+                0.07848831179043382,
+                -0.2714519101987669,
+                -0.08987521445897094
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.571939882850689,
+                0.7296287130292602
+              ],
+              "unitVolumeDelta": [
+                -0.44503600529891624,
+                -0.2444774752746648,
+                -0.19667745966672767
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8497695603447006,
+          "turnsOver90": 0,
+          "bend90": [
+            26.987771531406285,
+            27.29887159740379
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 55,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9217,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 14893,
+              "outlinePixels": 109
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8277,
+              "outlinePixels": 223
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 592,
+              "outlinePixels": 115
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 153,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1406,
+              "outlinePixels": 109
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 29,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 6823,
+              "outlinePixels": 223
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 54,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 13955,
+              "outlinePixels": 115
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 1,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 14206,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 24,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 13866,
+              "outlinePixels": 7
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 13509,
+              "outlinePixels": 130
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1847,
+              "outlinePixels": 144
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 43
+            },
+            {
+              "size": 96,
+              "changed": 186
+            }
+          ]
+        },
+        {
+          "pose": 90,
+          "volume55": [
+            0.5172429509536928,
+            0.5398515789425248
+          ],
+          "volume56": [
+            0.5172429509536972,
+            0.5398515789425244
+          ],
+          "relativeVolume": [
+            8.659739592076221e-15,
+            -6.661338147750939e-16
+          ],
+          "scaleToUnitVolume": 0.981662177039769,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                0.38575286099937756,
+                -0.3181965790512134,
+                -0.3275764399038815
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                -0.4487316248718265,
+                -0.3025955183398158,
+                -0.23694143566437736
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.571939936998051,
+                0.7296286089664802
+              ],
+              "unitVolumeDelta": [
+                0.38598265813343385,
+                -0.31828377171436806,
+                -0.335614193438892
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.571939936998051,
+                0.7296285900771312
+              ],
+              "unitVolumeDelta": [
+                -0.4488024311677358,
+                -0.30264467467276196,
+                -0.24333462402644604
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8633141806897155,
+          "turnsOver90": 0,
+          "bend90": [
+            28.953273464259496,
+            29.69083069501995
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 52,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 10449,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 15715,
+              "outlinePixels": 181
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8866,
+              "outlinePixels": 216
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2135,
+              "outlinePixels": 192
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 167,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3369,
+              "outlinePixels": 181
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 7766,
+              "outlinePixels": 216
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 3,
+              "afterDual": 4,
+              "newColumns": 2,
+              "changedPixels": 14648,
+              "outlinePixels": 192
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 15591,
+              "outlinePixels": 5
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 23,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 14669,
+              "outlinePixels": 17
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 56,
+              "beforeDual": 3,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 15195,
+              "outlinePixels": 113
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 15,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 2501,
+              "outlinePixels": 131
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 48
+            },
+            {
+              "size": 96,
+              "changed": 198
+            }
+          ]
+        },
+        {
+          "pose": 178,
+          "volume55": [
+            0.5313587497083103,
+            0.5528262120135584
+          ],
+          "volume56": [
+            0.5313587497083105,
+            0.5528262120135589
+          ],
+          "relativeVolume": [
+            4.440892098500626e-16,
+            8.881784197001252e-16
+          ],
+          "scaleToUnitVolume": 0.9734168813007208,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                0.3966240852912124,
+                -0.36973780047559435,
+                -0.3022182955526616
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                -0.4543705513978646,
+                -0.3642789812113267,
+                -0.20797280936430765
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.571939993241326,
+                0.7296284063827716
+              ],
+              "unitVolumeDelta": [
+                0.39679614419596204,
+                -0.36980624566293,
+                -0.30936131081448864
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.571939993241326,
+                0.7296283863352181
+              ],
+              "unitVolumeDelta": [
+                -0.45442511524049745,
+                -0.3643281890610687,
+                -0.21364326911401332
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8801397804935692,
+          "turnsOver90": 0,
+          "bend90": [
+            31.294847849868315,
+            31.2972690107044
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 58,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 11940,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 56,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 17682,
+              "outlinePixels": 192
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9723,
+              "outlinePixels": 195
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2497,
+              "outlinePixels": 196
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 211,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 4008,
+              "outlinePixels": 192
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 39,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 9314,
+              "outlinePixels": 195
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 56,
+              "beforeDual": 4,
+              "afterDual": 6,
+              "newColumns": 2,
+              "changedPixels": 16456,
+              "outlinePixels": 196
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 5,
+              "afterDual": 7,
+              "newColumns": 3,
+              "changedPixels": 16021,
+              "outlinePixels": 5
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 31,
+              "beforeDual": 4,
+              "afterDual": 5,
+              "newColumns": 1,
+              "changedPixels": 14422,
+              "outlinePixels": 10
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 56,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 16145,
+              "outlinePixels": 161
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 18,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 3916,
+              "outlinePixels": 178
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 52
+            },
+            {
+              "size": 96,
+              "changed": 194
+            }
+          ]
+        },
+        {
+          "pose": "waist",
+          "volume55": [
+            0.45047029858792886,
+            0.47279711492557247
+          ],
+          "volume56": [
+            0.45047029858793103,
+            0.47279711492557286
+          ],
+          "relativeVolume": [
+            4.884981308350689e-15,
+            8.881784197001252e-16
+          ],
+          "scaleToUnitVolume": 1.0269693860946256,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.4410100746503812,
+                5.566791841231795,
+                0.8951582535590283
+              ],
+              "unitVolumeDelta": [
+                0.09050985088870149,
+                -0.29327364351700663,
+                -0.15153230427504147
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.5717679604539825,
+                0.7296075426338261
+              ],
+              "unitVolumeDelta": [
+                -0.4639969141030927,
+                -0.2637068463565216,
+                -0.19786204134404164
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.13876200236284686,
+                5.57193989141984,
+                0.729628796942983
+              ],
+              "unitVolumeDelta": [
+                0.40104305840733795,
+                -0.28824203940115384,
+                -0.3308750200046113
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.57193989141984,
+                0.7296287794720046
+              ],
+              "unitVolumeDelta": [
+                -0.4640587688981441,
+                -0.2637607791039589,
+                -0.20525931095702893
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8524437208458508,
+          "turnsOver90": 0,
+          "bend90": [
+            27.291022908171154,
+            28.097664261506697
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 51,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9146,
+              "outlinePixels": 13
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 14376,
+              "outlinePixels": 134
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 30,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 7953,
+              "outlinePixels": 228
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1422,
+              "outlinePixels": 139
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 419,
+              "outlinePixels": 13
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2437,
+              "outlinePixels": 134
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 32,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 6838,
+              "outlinePixels": 228
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 55,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 14130,
+              "outlinePixels": 139
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 56,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 13015,
+              "outlinePixels": 2
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 22,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 12652,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 13463,
+              "outlinePixels": 77
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 8,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 1251,
+              "outlinePixels": 86
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 41
+            },
+            {
+              "size": 96,
+              "changed": 191
+            }
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "volume55": [
+            0.5573743514767522,
+            0.580232561002954
+          ],
+          "volume56": [
+            0.5573743514767485,
+            0.5802325610029554
+          ],
+          "relativeVolume": [
+            -6.5503158452884236e-15,
+            2.4424906541753444e-15
+          ],
+          "scaleToUnitVolume": 0.9579347453747247,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                0.3838083307725942,
+                -0.3357800385164332,
+                -0.29469955615269694
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                -0.44239202877881406,
+                -0.3258735319074366,
+                -0.19276454613271884
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.57193996431052,
+                0.729628456552474
+              ],
+              "unitVolumeDelta": [
+                0.3839460681910666,
+                -0.3358483015366289,
+                -0.30191964116056363
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.57193996431052,
+                0.7296284358452265
+              ],
+              "unitVolumeDelta": [
+                -0.44244386625120125,
+                -0.3259255089723987,
+                -0.1984852372571433
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.872828656743718,
+          "turnsOver90": 0,
+          "bend90": [
+            30.80087787247193,
+            30.64988137138416
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 2,
+              "changedPixels": 11554,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 17347,
+              "outlinePixels": 185
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9868,
+              "outlinePixels": 197
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2794,
+              "outlinePixels": 193
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 1,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 300,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3600,
+              "outlinePixels": 185
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 3,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 9236,
+              "outlinePixels": 197
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 5,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 16136,
+              "outlinePixels": 193
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 57,
+              "beforeDual": 7,
+              "afterDual": 7,
+              "newColumns": 2,
+              "changedPixels": 16409,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 28,
+              "beforeDual": 6,
+              "afterDual": 6,
+              "newColumns": 0,
+              "changedPixels": 16033,
+              "outlinePixels": 14
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 0,
+              "changedPixels": 16208,
+              "outlinePixels": 149
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 17,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 3042,
+              "outlinePixels": 164
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 50
+            },
+            {
+              "size": 96,
+              "changed": 193
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B21",
+      "stage": "protected",
+      "poses": [
+        {
+          "pose": 0,
+          "volume55": [
+            0.5075192605305259,
+            0.5303467472137859
+          ],
+          "volume56": [
+            0.5075192605305353,
+            0.530346747213788
+          ],
+          "relativeVolume": [
+            1.865174681370263e-14,
+            3.9968028886505635e-15
+          ],
+          "scaleToUnitVolume": 0.9876875299528468,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.44075686564410754,
+                5.561370752905754,
+                0.8971689257534721
+              ],
+              "unitVolumeDelta": [
+                0.08634802190670092,
+                -0.27968787045638305,
+                -0.14465695034077722
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.571767951884832,
+                0.7296075467077007
+              ],
+              "unitVolumeDelta": [
+                -0.4449797934035591,
+                -0.24442402406507588,
+                -0.18983780378468876
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 1816,
+              "world": [
+                -0.4488357133528341,
+                5.569953166743565,
+                0.9622660832036762
+              ],
+              "unitVolumeDelta": [
+                0.07871294012692415,
+                -0.27101038286297235,
+                -0.08324010639500577
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876199999999958,
+                5.571939882850689,
+                0.7296290058124807
+              ],
+              "unitVolumeDelta": [
+                -0.4449797934035575,
+                -0.24425420999408506,
+                -0.18981660889449287
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8223678427409127,
+          "turnsOver90": 0,
+          "bend90": [
+            26.987771531406285,
+            27.29344767180465
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 55,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 10697,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 15576,
+              "outlinePixels": 119
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 28,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8552,
+              "outlinePixels": 245
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 520,
+              "outlinePixels": 121
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 153,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 6,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1389,
+              "outlinePixels": 119
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 29,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 6940,
+              "outlinePixels": 245
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 54,
+              "beforeDual": 2,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 14220,
+              "outlinePixels": 121
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 1,
+              "afterDual": 2,
+              "newColumns": 1,
+              "changedPixels": 14404,
+              "outlinePixels": 0
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 24,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 14199,
+              "outlinePixels": 7
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 13687,
+              "outlinePixels": 143
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1890,
+              "outlinePixels": 159
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 49
+            },
+            {
+              "size": 96,
+              "changed": 192
+            }
+          ]
+        },
+        {
+          "pose": 90,
+          "volume55": [
+            0.5172429509536928,
+            0.5398515789425248
+          ],
+          "volume56": [
+            0.5172429509536954,
+            0.5398515789425258
+          ],
+          "relativeVolume": [
+            5.10702591327572e-15,
+            1.7763568394002505e-15
+          ],
+          "scaleToUnitVolume": 0.981662177039769,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                0.38575286099937756,
+                -0.3181965790512134,
+                -0.3275764399038815
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.571768006032194,
+                0.7296075209654115
+              ],
+              "unitVolumeDelta": [
+                -0.4487316248718265,
+                -0.3025955183398158,
+                -0.23694143566437736
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620149305273,
+                5.571939936998051,
+                0.7296288943283248
+              ],
+              "unitVolumeDelta": [
+                0.3863821817007196,
+                -0.3177912279600044,
+                -0.3301189529199424
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620149305273,
+                5.571939936998051,
+                0.7296288671215131
+              ],
+              "unitVolumeDelta": [
+                -0.448731624871826,
+                -0.3024267402135715,
+                -0.23692048095030696
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8566722586757317,
+          "turnsOver90": 0,
+          "bend90": [
+            28.953273464259496,
+            29.627307084292447
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 52,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 12020,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 16302,
+              "outlinePixels": 167
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8781,
+              "outlinePixels": 233
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2064,
+              "outlinePixels": 162
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 171,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3277,
+              "outlinePixels": 167
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 34,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 7805,
+              "outlinePixels": 233
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 3,
+              "afterDual": 4,
+              "newColumns": 2,
+              "changedPixels": 14949,
+              "outlinePixels": 162
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 15861,
+              "outlinePixels": 5
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 23,
+              "beforeDual": 3,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 14939,
+              "outlinePixels": 14
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 55,
+              "beforeDual": 3,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 15409,
+              "outlinePixels": 100
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 15,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 2425,
+              "outlinePixels": 123
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 56
+            },
+            {
+              "size": 96,
+              "changed": 213
+            }
+          ]
+        },
+        {
+          "pose": 178,
+          "volume55": [
+            0.5313587497083103,
+            0.5528262120135584
+          ],
+          "volume56": [
+            0.5313587497083109,
+            0.5528262120135613
+          ],
+          "relativeVolume": [
+            1.1102230246251565e-15,
+            5.329070518200751e-15
+          ],
+          "scaleToUnitVolume": 0.9734168813007208,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                0.3966240852912124,
+                -0.36973780047559435,
+                -0.3022182955526616
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.571768062275469,
+                0.7296074942267008
+              ],
+              "unitVolumeDelta": [
+                -0.4543705513978646,
+                -0.3642789812113267,
+                -0.20797280936430765
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620304389795,
+                5.571939993241326,
+                0.7296286557713771
+              ],
+              "unitVolumeDelta": [
+                0.3971662125062124,
+                -0.3693622477297851,
+                -0.30443811322797937
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620304389795,
+                5.571939993241326,
+                0.7296286294505064
+              ],
+              "unitVolumeDelta": [
+                -0.45437055139786414,
+                -0.3641116207067425,
+                -0.20795223598066495
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8767721311174066,
+          "turnsOver90": 0,
+          "bend90": [
+            31.294847849868315,
+            31.302447501149107
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 58,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 13445,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 56,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 18523,
+              "outlinePixels": 181
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9824,
+              "outlinePixels": 222
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2482,
+              "outlinePixels": 183
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 215,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3929,
+              "outlinePixels": 181
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 39,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 1,
+              "changedPixels": 9291,
+              "outlinePixels": 222
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 56,
+              "beforeDual": 4,
+              "afterDual": 5,
+              "newColumns": 1,
+              "changedPixels": 16872,
+              "outlinePixels": 183
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 59,
+              "beforeDual": 5,
+              "afterDual": 7,
+              "newColumns": 3,
+              "changedPixels": 16373,
+              "outlinePixels": 6
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 31,
+              "beforeDual": 4,
+              "afterDual": 5,
+              "newColumns": 1,
+              "changedPixels": 14468,
+              "outlinePixels": 13
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 56,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 16583,
+              "outlinePixels": 166
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 18,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 3871,
+              "outlinePixels": 187
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 53
+            },
+            {
+              "size": 96,
+              "changed": 205
+            }
+          ]
+        },
+        {
+          "pose": "waist",
+          "volume55": [
+            0.45047029858792886,
+            0.47279711492557247
+          ],
+          "volume56": [
+            0.45047029858793153,
+            0.47279711492557264
+          ],
+          "relativeVolume": [
+            5.995204332975845e-15,
+            4.440892098500626e-16
+          ],
+          "scaleToUnitVolume": 1.0269693860946256,
+          "floorMaterial55": [
+            {
+              "index": 1889,
+              "world": [
+                -0.4410100746503812,
+                5.566791841231795,
+                0.8951582535590283
+              ],
+              "unitVolumeDelta": [
+                0.09050985088870149,
+                -0.29327364351700663,
+                -0.15153230427504147
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.5717679604539825,
+                0.7296075426338261
+              ],
+              "unitVolumeDelta": [
+                -0.4639969141030927,
+                -0.2637068463565216,
+                -0.19786204134404164
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.13876200236284686,
+                5.57193989141984,
+                0.729629115498653
+              ],
+              "unitVolumeDelta": [
+                0.40129594746242203,
+                -0.2877632605414001,
+                -0.324635656443387
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.13876200236284686,
+                5.57193989141984,
+                0.7296290876370496
+              ],
+              "unitVolumeDelta": [
+                -0.4639969141030922,
+                -0.2635302785180642,
+                -0.19783991528530762
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8257888258403205,
+          "turnsOver90": 0,
+          "bend90": [
+            27.291022908171154,
+            28.022290160311034
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 51,
+              "beforeDual": 1,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 10392,
+              "outlinePixels": 13
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 14819,
+              "outlinePixels": 142
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 30,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 8046,
+              "outlinePixels": 256
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 20,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 1471,
+              "outlinePixels": 147
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 0,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 457,
+              "outlinePixels": 13
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2408,
+              "outlinePixels": 142
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 32,
+              "beforeDual": 0,
+              "afterDual": 1,
+              "newColumns": 1,
+              "changedPixels": 6714,
+              "outlinePixels": 256
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 54,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 14260,
+              "outlinePixels": 147
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 56,
+              "beforeDual": 2,
+              "afterDual": 2,
+              "newColumns": 0,
+              "changedPixels": 13240,
+              "outlinePixels": 3
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 22,
+              "beforeDual": 4,
+              "afterDual": 4,
+              "newColumns": 1,
+              "changedPixels": 12870,
+              "outlinePixels": 2
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 13593,
+              "outlinePixels": 85
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 8,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 1176,
+              "outlinePixels": 101
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 42
+            },
+            {
+              "size": 96,
+              "changed": 197
+            }
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "volume55": [
+            0.5573743514767522,
+            0.580232561002954
+          ],
+          "volume56": [
+            0.5573743514767533,
+            0.580232561002957
+          ],
+          "relativeVolume": [
+            1.9984014443252818e-15,
+            5.10702591327572e-15
+          ],
+          "scaleToUnitVolume": 0.9579347453747247,
+          "floorMaterial55": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                0.3838083307725942,
+                -0.3357800385164332,
+                -0.29469955615269694
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.571768033344663,
+                0.7296075079807445
+              ],
+              "unitVolumeDelta": [
+                -0.44239202877881406,
+                -0.3258735319074366,
+                -0.19276454613271884
+              ]
+            }
+          ],
+          "floorMaterial56": [
+            {
+              "index": 4077,
+              "world": [
+                -0.1387620224616342,
+                5.57193996431052,
+                0.7296287225457583
+              ],
+              "unitVolumeDelta": [
+                0.3842427507157354,
+                -0.33542299171021367,
+                -0.2970111420770787
+              ]
+            },
+            {
+              "index": 10729,
+              "world": [
+                0.1387620224616342,
+                5.57193996431052,
+                0.7296286946521259
+              ],
+              "unitVolumeDelta": [
+                -0.44239202877881356,
+                -0.3257088332614358,
+                -0.19274425068406353
+              ]
+            }
+          ],
+          "minimumFaceAreaRatio": 0.8678687247688187,
+          "turnsOver90": 0,
+          "bend90": [
+            30.80087787247193,
+            30.663223175905998
+          ],
+          "views": [
+            {
+              "yaw": 0,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 2,
+              "afterDual": 3,
+              "newColumns": 2,
+              "changedPixels": 13118,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": 45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 18078,
+              "outlinePixels": 167
+            },
+            {
+              "yaw": 90,
+              "pitch": 0,
+              "visibleRuns": 33,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 9965,
+              "outlinePixels": 212
+            },
+            {
+              "yaw": 135,
+              "pitch": 0,
+              "visibleRuns": 21,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 2776,
+              "outlinePixels": 178
+            },
+            {
+              "yaw": 180,
+              "pitch": 0,
+              "visibleRuns": 1,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 314,
+              "outlinePixels": 9
+            },
+            {
+              "yaw": -135,
+              "pitch": 0,
+              "visibleRuns": 22,
+              "beforeDual": 0,
+              "afterDual": 0,
+              "newColumns": 0,
+              "changedPixels": 3508,
+              "outlinePixels": 167
+            },
+            {
+              "yaw": -90,
+              "pitch": 0,
+              "visibleRuns": 35,
+              "beforeDual": 3,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 9253,
+              "outlinePixels": 212
+            },
+            {
+              "yaw": -45,
+              "pitch": 0,
+              "visibleRuns": 53,
+              "beforeDual": 5,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 16630,
+              "outlinePixels": 178
+            },
+            {
+              "yaw": 0,
+              "pitch": -28,
+              "visibleRuns": 57,
+              "beforeDual": 7,
+              "afterDual": 7,
+              "newColumns": 2,
+              "changedPixels": 16773,
+              "outlinePixels": 8
+            },
+            {
+              "yaw": 0,
+              "pitch": 28,
+              "visibleRuns": 28,
+              "beforeDual": 6,
+              "afterDual": 5,
+              "newColumns": 0,
+              "changedPixels": 16320,
+              "outlinePixels": 17
+            },
+            {
+              "yaw": 48,
+              "pitch": -24,
+              "visibleRuns": 54,
+              "beforeDual": 4,
+              "afterDual": 3,
+              "newColumns": 0,
+              "changedPixels": 16634,
+              "outlinePixels": 155
+            },
+            {
+              "yaw": -130,
+              "pitch": 22,
+              "visibleRuns": 17,
+              "beforeDual": 1,
+              "afterDual": 1,
+              "newColumns": 0,
+              "changedPixels": 2870,
+              "outlinePixels": 171
+            }
+          ],
+          "pixel": [
+            {
+              "size": 48,
+              "changed": 53
+            },
+            {
+              "size": 96,
+              "changed": 208
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "learningEvidence": [
+    {
+      "episode": "W S3 측면 가시 외곽",
+      "unit": "px",
+      "before": 1.40625,
+      "after": 1.5625,
+      "note": "돌출안 보류"
+    },
+    {
+      "episode": "B21 중립 정면 화면 오른쪽 어두운 골 최저점",
+      "unit": "px",
+      "before": 25,
+      "after": 22,
+      "note": "측면 보호안, 일부 개선·전체 보류"
+    },
+    {
+      "episode": "B21 178도 아래 28도 2개 피크 검출 열",
+      "unit": "step",
+      "before": 5,
+      "after": 7,
+      "note": "측면 보호안 강제 적용의 자세 반례"
+    }
+  ],
+  "sha256": {
+    "plate": "b48285743884dbdb63bf0021ab88e0fb85fe082a73ceb971c1c261b2a1e8e183",
+    "note": "ded318c7c601f72ca206397dffc2ab1b5c5b75d7beb4d9ac12ebc21768a11390",
+    "experimentModule": "55a0803f0d476da2b59e6e78e2108c2073fe9dbc6f7c64b38153c7b137f3256f"
+  }
+}

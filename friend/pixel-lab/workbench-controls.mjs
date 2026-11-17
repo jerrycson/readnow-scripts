@@ -20,7 +20,7 @@ export function mark(host,key){
 import {chestFits51} from './chest-fits51.mjs';
 import {mountAppearance52} from './appearance-panel52.mjs?v=55';
 import {supportsChest53} from './chest53.mjs';
-import {mountShoulder54} from './shoulder-panel54.mjs';
+import {mountShoulder54} from './shoulder-panel54.mjs?v=56';
 import {mountHip54} from './hip-panel54.mjs';
 import {mountGround55} from './ground-panel55.mjs';
 import {supportsChest54} from './chest54.mjs';
@@ -34,7 +34,7 @@ export function editor(onEdit,edition=50){
   let id, resolved=[], zoneKey=null, edit, last, back=[],forward=[], panel, dial;
   const drawShoulder=edition>=54?mountShoulder54(el('nativeShoulder54'),(nativeShoulder,done)=>{
     edit={...edit,nativeShoulder};if(done)commit();onEdit();
-  }):()=>{};
+  },edition):()=>{};
   const drawHip=edition>=54?mountHip54(el('nativeHip54'),(nativeHip,done)=>{
     edit={...edit,nativeHip,ground55:null};if(done)commit();onEdit();
   }):()=>{};
@@ -86,7 +86,7 @@ export function editor(onEdit,edition=50){
     }
     mark(el('versions'),edit.version);
     if(isChestSubject(id)){
-      pressureLabel.hidden=edition<55||edit.version!=='tissue55';
+      pressureLabel.hidden=edition<55||!['tissue55','tissue56'].includes(edit.version);
       pressure.value=Math.round(100*(edit.compression||0));amount.value=pressure.value+'%';
       el('showNac').checked=edit.surface.showNac;
       const shot=edit.pose&&edit.pose!=='neutral'?edit.pose:edit.angle===0?'neutral':edit.pivot==='arms.raise'?String(edit.angle):'';
@@ -183,6 +183,10 @@ export function editor(onEdit,edition=50){
       if(edition>=54&&supportsChest54(id))options.push(['matched53','53차 형상 · 같은 자세'],['tissue54','54차 겨드랑이 주름']);
       if(edition>=55&&['F02','M01'].includes(id))options.push(['lateral55','55차 귀 앞 피부'],['mouth55','55차 입매'],['face55','55차 두 교정 함께']);
       if(edition>=55&&isChestSubject(id))options.push(['tissue55','55차 피부 표식·압박']);
+      if(edition>=56&&id==='F02')options.push(['fern05-56','56차 5화의 조금 벌린 입·턱 · 비교']);
+      if(edition>=56&&trial==='face56')trial=id==='F02'?'fern05-56':'source';
+      // W 후보와 B21의 독립 재검은 보류 중이다. 없는56 후보로 표시하지 않는다.
+      if(edition>=56&&trial==='tissue56'&&isChestSubject(id))trial='tissue55';
       if(!saved&&!editable&&edition>=53&&trial==='pelvis53'){
         edit.appearance={waistBreadth53:.58,waistDepth53:.84,seatDepth53:.60,pelvisJoin53:true};
       }
@@ -191,7 +195,8 @@ export function editor(onEdit,edition=50){
       if(!saved&&!editable&&edition>=54&&trial==='shoulder54')edit.nativeShoulder={elevation:90};
       if(!saved&&!editable&&edition>=54&&trial==='hip54')edit.nativeHip={right:{flex:60,knee:40}};
       if(!saved&&!editable&&edition>=55&&trial==='ground55')edit.ground55={depth:.14,supportPads:/-[2-4]$/.test(id)};
-      bodyJointGroup(edition>=55&&trial==='ground55'?'ground':trial==='hip54'?'hip':trial==='shoulder54'?'shoulder':nativeGroup);
+      if(!saved&&!editable&&edition>=56&&trial==='surface56')edit.nativeShoulder={side:'right',plane:'front',elevation:90,flexion:45,twist:0,reach:false,joined:true,surface56:1};
+      bodyJointGroup(edition>=55&&trial==='ground55'?'ground':trial==='hip54'?'hip':['shoulder54','surface56'].includes(trial)?'shoulder':nativeGroup);
       if(!saved&&editable&&options.some(([key])=>key===trial)){
         edit.version=trial;
         if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53','matched53','tissue54','tissue55'].includes(trial)&&markerLevels50[id]?'rebound':'source';
