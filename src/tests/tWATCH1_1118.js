@@ -60,9 +60,9 @@ let n = 0; for (let h = 1; h <= 6; h++) { r = spw({ now: t0 + 11 * 60e3 + h * 61
 ok(n === 3, '출고 일이 기다리면 1시간마다 3번까지만 다시', n);
 r = spw({ now: t0 + 7 * 3600e3 + 11 * 60e3, name: 'MJ-MAIN', st, beatAt: t0 + 7 * 3600e3 + 10 * 60e3, work: 4 }); ok(r.push && /다시 켜짐/.test(r.push.title) && r.st.down === false, '돌아오면 「다시 켜짐」 한 번', r); st = r.st;
 r = spw({ now: t0 + 7 * 3600e3 + 12 * 60e3, name: 'MJ-MAIN', st, beatAt: t0 + 7 * 3600e3 + 11 * 60e3, work: 0 }); ok(!r.push, '돌아온 뒤 조용');
-let s2 = {}; r = spw({ now: t0 + 20 * 60e3, st: s2, beatAt: t0, work: 0 }); ok(r.push, '출고 일이 없어도 첫 알림은 한 번(기본 onlyWork:false)'); s2 = r.st;
-r = spw({ now: t0 + 90 * 60e3, st: s2, beatAt: t0, work: 0 }); ok(!r.push, '출고 일이 없으면 다시 알리지 않음');
-ok(!spw({ now: t0 + 20 * 60e3, st: {}, beatAt: t0, work: 0, cfg: { onlyWork: true } }).push, 'onlyWork:true면 출고 일이 있을 때만');
+ok(!spw({ now: t0 + 20 * 60e3, st: {}, beatAt: t0, work: 0 }).push, '기본(onlyWork:true · 리드 결정 F57 (나)) — 출고 일이 없으면 꺼져도 알리지 않음');
+let s2 = {}; r = spw({ now: t0 + 20 * 60e3, st: s2, beatAt: t0, work: 0, cfg: { onlyWork: false } }); ok(r.push, 'onlyWork:false면 출고 일이 없어도 첫 알림은 한 번'); s2 = r.st;
+r = spw({ now: t0 + 90 * 60e3, st: s2, beatAt: t0, work: 0, cfg: { onlyWork: false } }); ok(!r.push, '출고 일이 없으면 다시 알리지 않음');
 ok(!spw({ now: t0 + 20 * 60e3, st: {}, beatAt: t0, work: 3, cfg: { on: false } }).push, 'on:false면 끔');
 ok(!spw({ now: t0 + 20 * 60e3, st: {}, beatAt: t0, work: 3, dup: true }).push, '🔕 PC 부재 알림에서 그 PC를 켜 두었으면 겹치지 않음');
 const r3 = spw({ now: t0 + 20 * 60e3, st: { down: true, since: t0, sent: null, n: 0 }, beatAt: t0, work: 0, dup: true }); const back = spw({ now: t0 + 30 * 60e3, st: r3.st, beatAt: t0 + 29 * 60e3 });
