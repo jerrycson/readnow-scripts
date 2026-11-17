@@ -92,14 +92,14 @@
   "at": "2026-11-17T23:25:33Z",
   "first": "2026-11-17T21:00:00Z"
  },
- "holder": "lead",
- "host": "vm-fbrev1",
- "what": "fbrev1 앞 페이지 올리기 지킴 · 올림",
- "since": "2026-11-17T22:44:13Z",
- "beat": "2026-11-17T23:13:44Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "리드: 시험 대본(wake1 worklock.test.sh)이 22:39:49Z 덮은 가짜 칸 h5·h6을 비움 — 진짜 줄 차례는 그대로",
-  "at": "2026-11-17T22:43:33Z"
+  "done": "웹앱 1.78.698 ⬆ 앞 페이지 올리기 지킴·카드(fbrev1·fbcard1) 875175608",
+  "at": "2026-11-17T23:26:20Z"
  }
 }
