@@ -172,7 +172,7 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
   /* N. 사진 지킴 — 사진을 못 옮기는 길이거나 저장소에 없는 사진이 있으면 올리지 않음 · 다 있으면 사진 다시 붙이는 길(개별 자동 등록) */
   const N = await p.evaluate(async () => { const T = window.TB; const ph = (n, st) => Array.from({ length: n }, (_, i) => ({ url: 'https://x/p' + i + '.jpg', where: 'top', file: 'p' + i + '.jpg', ...(i < st ? { stored: 'products/p' + i + '.jpg' } : {}) }));
     await T.reset(); const a = T.put(T.mk(331, { productPhotos: ph(1, 1) })); const r1 = await T.q([a]); const n1 = T.jobs().length;
-    window.__fbCfgX = { noPhoto: false }; await T.reset(); const b = T.put(T.mk(332, { productPhotos: ph(2, 1) })), c = T.put(T.mk(333, { productPhotos: ph(2, 2) })); T.pl(false); const r2 = await T.q([b, c]); const J = T.jobs().map((j) => [j.key, j.way, j.photos && j.photos.n]); T.pl(true); window.__fbCfgX = null; await T.reset(); return { r1, n1, r2, J }; });
+    window.__fbCfgX = { noPhoto: false }; await T.reset(); const b = T.put(T.mk(332, { productPhotos: ph(2, 1) })), c = T.put(T.mk(333, { productPhotos: ph(2, 2) })); T.pl(false); const r2 = await T.q([b, c]); const J = T.jobs().map((j) => [j.key, j.way, j.photos ? (j.photos.main ? 1 : 0) + (j.photos.zoom || []).length : 0]); T.pl(true); window.__fbCfgX = null; await T.reset(); return { r1, n1, r2, J }; });
   ok(N.r1.n === 0 && N.n1 === 0 && (N.r1.skip || []).some((x) => /우리 사진 1장이 붙은 상품/.test(x)), "N '사진 상품 빼기'가 켜져 있으면 사진 붙은 상품은 맡겨져도 올리지 않음(대량 등록은 사진을 못 옮김)", N.r1);
   ok(N.r2.n === 1 && (N.r2.skip || []).some((x) => /사진 2장 중 1장만/.test(x)) && N.J.length === 1 && N.J[0][0] === 'aladin_U333' && N.J[0][1] === 'one' && N.J[0][2] === 2, 'N 저장소에 없는 사진이 있으면 올리지 않음 · 다 있으면 사진까지 다시 붙이는 길로', [N.r2, N.J]);
 
