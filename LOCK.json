@@ -2,24 +2,24 @@
  "queue": [
   {
    "who": "lead",
-   "host": "bunoe4",
-   "why": "판 내기 기다림: bunoe4 번외 판",
-   "first": "2026-11-17T22:39:59Z",
-   "at": "2026-11-17T22:44:07Z"
-  },
-  {
-   "who": "lead",
    "host": "shipqB-plock2",
    "why": "판 내기 기다림: 판 내기 기다림: plock2 잠금 2(shipqB)",
-   "first": "2026-11-17T22:40:01Z",
+   "first": "2026-11-17T21:00:00Z",
    "at": "2026-11-17T22:44:10Z"
   },
   {
    "who": "lead",
    "host": "vm-bkfold1",
    "why": "판 내기 기다림: bkfold1 수동 일괄 묶음 판 ②",
-   "first": "2026-11-17T22:40:04Z",
+   "first": "2026-11-17T21:00:01Z",
    "at": "2026-11-17T22:44:15Z"
+  },
+  {
+   "who": "lead",
+   "host": "bunoe4",
+   "why": "판 내기 기다림: bunoe4 번외 판",
+   "first": "2026-11-17T22:39:59Z",
+   "at": "2026-11-17T22:44:07Z"
   },
   {
    "who": "lead",
@@ -80,10 +80,10 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "bunoe4",
-  "why": "판 내기 기다림: bunoe4 번외 판",
-  "at": "2026-11-17T22:44:07Z",
-  "first": "2026-11-17T22:39:59Z"
+  "host": "shipqB-plock2",
+  "why": "판 내기 기다림: 판 내기 기다림: plock2 잠금 2(shipqB)",
+  "at": "2026-11-17T22:44:10Z",
+  "first": "2026-11-17T21:00:00Z"
  },
  "holder": "lead",
  "host": "vm-fbrev1",
