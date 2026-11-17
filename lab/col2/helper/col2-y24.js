@@ -128,7 +128,7 @@ function makeY24(o) { let REG = null, W = null, QA = null;
   { const t = rd(TPL_F, {}); for (const [k, v] of Object.entries(t)) if (v && v.u) Y.tpl[k] = { u: v.u, b: v.b || '', m: v.m || 'POST', h: {}, at: +v.at || 0 }; }
   const saveTpl = () => { const o2 = {}; for (const [k, v] of Object.entries(Y.tpl)) o2[k] = { u: v.u, b: v.b, m: v.m, at: v.at }; wr(TPL_F, o2); }; /* 머리글은 파일에 안 남김 */
   const kday = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 10); const dayAdd = (k) => { const d = kday(); if (Y.day.d !== d) Y.day = { d, calls: 0, recs: 0 }; Y.day[k]++; };
-  const C = () => ({ ordMin: 5, prdH: 24, tourH: 24, opsH: 3, qaMin: TEST ? 0 : 5, keepMin: 20, feedMin: 5, takeover: true, tkHour: 3, ...(cfg().y24cfg || {}) }); /* (11/12 login1) takeover = 「이미 로그인된」에서 다른 곳 세션을 끊고 이어받기(기본 켬 · 옆 창 ⚙ › 🖥 이 PC만) · tkHour = 한 시간 이어받기 상한 */ /* 근거: 없음, 설정(col2.json y24cfg)으로 바꿈 · ordMin은 웹앱 설정(app_settings/platforms.y24.ordMin)을 수집기가 넘겨줌 */
+  const C = () => ({ ordMin: 5, prdH: 24, tourH: 24, opsH: 3, qaMin: 5, keepMin: 20, feedMin: 5, takeover: true, tkHour: 3, ...(cfg().y24cfg || {}) }); /* (11/12 login1) takeover = 「이미 로그인된」에서 다른 곳 세션을 끊고 이어받기(기본 켬 · 옆 창 ⚙ › 🖥 이 PC만) · tkHour = 한 시간 이어받기 상한 */ /* 근거: 없음, 설정(col2.json y24cfg)으로 바꿈 · ordMin은 웹앱 설정(app_settings/platforms.y24.ordMin)을 수집기가 넘겨줌 */
   const ordMinNow = () => { const v = Y.feed.cfg && Y.feed.cfg.ordMin != null ? +Y.feed.cfg.ordMin : C().ordMin; return Number.isFinite(v) && v > 0 ? v : 0; };
   const pcName = () => String(cfg().pc || require('os').hostname() || '');
   const isLogger = () => /^LOGGER/i.test(pcName());
@@ -360,7 +360,8 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   /* (11/17 y24qa2 · 정범님 11/17 12:19 「아직 문의에 답변하지 않았는데 웹앱에서 인식도 못 해」) ❓ 상품 문의 목록을 몇 분마다(기본 5분 · y24cfg.qaMin) 배운 조건으로 바로 다시 읽음(읽기만 · 화면 [조회]와 같은 요청 하나)
    *  · 조건을 아직 못 배웠으면 문의 화면을 열고 [조회]를 한 번 눌러 배움 · 거절되면 조건을 버리고 다음에 다시 배움
    *  · 미답변 줄은 본문이 목록에 비어 오므로 답 화면 읽기(QA.detail · 읽기만)로 본문을 채움(한 번에 5줄까지 · 이 PC 기억에만) */
-  async function qaPoll() { const c = C(); Y.qaNext = now() + c.qaMin * 60e3 * (0.8 + Math.random() * 0.4) * (TEST ? SC : 1); const at0 = Y.qa && Y.qa.at || 0; let how = 'tpl', r = null;
+  const qaMinOf = () => { const v = (cfg().y24cfg || {}).qaMin; return v != null ? +v : TEST ? 0 : C().qaMin; }; /* 시험은 y24cfg.qaMin을 정한 때만 문의 읽기(다른 시험 차례를 안 바꿈) · 기본값 글은 t_settings가 그대로 읽음 */
+  async function qaPoll() { const c = C(); Y.qaNext = now() + qaMinOf() * 60e3 * (0.8 + Math.random() * 0.4) * (TEST ? SC : 1); const at0 = Y.qa && Y.qa.at || 0; let how = 'tpl', r = null;
     if (!Y.tpl.QAList) { how = 'learn'; r = await learn('/CustomerService/QAList', 'QAList').catch((e) => 'err:' + e.message); if (r === 'login') setLogin('need', '문의 목록 읽기 중 로그인 화면'); }
     else { const x = await callTpl('QAList', qaBody(Y.tpl.QAList, now())).catch((e) => ({ st: 0, err: e.message })); if (x && x.login) { r = 'login'; setLogin('need', '문의 목록 다시 읽기가 로그인 화면'); } else if (bad(x)) { r = 'bad:' + (x && (x.err || x.st)); delete Y.tpl.QAList; saveTpl(); } else r = 'ok'; }
     for (let i = 0; i < 10 && !((Y.qa && Y.qa.at || 0) > at0); i++) await sleep(200); const got = (Y.qa && Y.qa.at || 0) > at0;
@@ -407,7 +408,7 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
     if (QA && QA.pick()) { await QA.once().catch((e) => { Y.msg = '❓ 예스24 문의 답 오류: ' + e.message; }); Y.keepAt = now(); Y.msg = '❓ 예스24 문의 답 한 건 끝 — ' + (QA.R.msg || ''); return 1500; } /* (11/17 y24qa2) 사람이 쓴 답 — 손님이 기다리므로 다른 쓰기보다 먼저(한 건씩) */
     if (W && W.pick()) { await W.once(); Y.keepAt = now(); Y.msg = '🟦 예스24 쓰기 한 묶음 끝 — ' + (W.R.msg || ''); return 1500; } /* (11/11 y24w) 수량·판매중지 — 자동 올림보다 먼저(팔린 책을 빨리 내림) */
     if (REG && REG.pick()) { await REG.once(); Y.keepAt = now(); Y.msg = '🟦 예스24 자동 올림 한 묶음 끝 — ' + (REG.R.msg || ''); return 1500; }
-    if (c.qaMin > 0 && now() >= (Y.qaNext || 0) && Y.login === 'ok') { await qaPoll(); Y.keepAt = now(); Y.msg = '❓ 상품 문의 다시 읽음' + (Y.qaPoll && Y.qaPoll.got ? ` — 미답변 ${Y.qaPoll.noAns}` : ` (${Y.qaPoll ? Y.qaPoll.r : ''})`); return 1000; } /* (11/17 y24qa2) */
+    if (qaMinOf() > 0 && now() >= (Y.qaNext || 0) && Y.login === 'ok') { await qaPoll(); Y.keepAt = now(); Y.msg = '❓ 상품 문의 다시 읽음' + (Y.qaPoll && Y.qaPoll.got ? ` — 미답변 ${Y.qaPoll.noAns}` : ` (${Y.qaPoll ? Y.qaPoll.r : ''})`); return 1000; } /* (11/17 y24qa2) */
     const ordMin = ordMinNow();
     if (ordMin > 0 && now() >= Y.ord.next) { const r = await ordOnce(); if (r === 'ok') setLogin('ok'); /* (rel10) 주문 목록을 읽었으면 로그인 살아 있음 — 옛 경고 지움 */ Y.ord.next = now() + ordMin * 60e3 * (0.7 + Math.random() * 0.6) * (TEST ? SC : 1); Y.keepAt = now(); Y.msg = r === 'ok' ? '🔁 주문 두 목록 읽음' : r === 'login' ? '🔐 로그인 필요' : Y.ord.err; return 1000; }
     if (c.prdH > 0 && now() >= Y.prd.next && Y.login === 'ok') { Y.prd.next = now() + c.prdH * 3600e3; await prdAll(); Y.keepAt = now(); return 1000; }
