@@ -11,13 +11,24 @@
  *  지키는 것: 관찰·기록만 — 값·등록·돈을 바꾸지 않음(제33조 무손해) · 알라딘은 클라우드 공개 화면만(로거·사무실 PC에 일 없음 · 제5조) · 사람처럼 쉬엄쉬엄(화면 사이 2.5~6초 · 하루 상한 · 막히면 쉼)
  *          사람이 넣은 설정(app_settings/ed_cfg)은 읽기만 · 지우지 않음(묶음이 바뀌면 hist에 남김) · 손님 정보 없음 */
 'use strict';
-const ED_V = '0.1.2';
+const ED_V = '0.1.3';
 const ED_DEF = {
   on: true, tickMs: 95e3, dayCap: 600, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 600쪽 · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
   maxEds: 24, maxLinkHops: 14, searchTop: 6, accept: 0.72, maybe: 0.52, // 받아들임 문턱 0.72 · 후보 0.52(첫 값 — 매일 스스로 맞춤 edTune)
   recheckOop: 14, recheckNewer: 30, recheckOn: 30, avs: 'GJP', // 다시 보기 날 · 대상 새책 상태(G 구판절판 · J 절판 · P 품절 · S 판매중을 넣으면 모두)
   notify: true, push: true, infoReuseDays: 30, nl: true,
+  alDay: null, capMax: 2400, metReq: 3, // (0.1.3 watch1 11/18 · 리드 결정 「하루 상한은 되돌릴 수 있는 기준값 · 알라딘 전체 하루 몫 안에서 남는 몫을 판본 엔진에 줌(고정 600 대신) · 막힘 기록 나오면 줄임」) 근거: 없음(되돌릴 수 있는 기준값 · app_settings/ed_cfg) — alDay = 클라우드 알라딘 전체 하루 몫(없으면 책 정보 알라딘 상한 + 시장 지표 상한×metReq + dayCap) · capMax = 판본 엔진이 빌려 쓸 수 있는 끝 · dayCap 600은 바닥
 };
+/* (0.1.3) 오늘 판본 엔진 상한(순수) — 다른 엔진(책 정보 알라딘·클라우드 시장 지표)이 오늘 끝까지 쓸 것으로 보이는 몫(지금까지 쓴 것을 하루 지난 비율로 늘려 본 것 · 그 엔진 상한까지)을 전체 몫에서 빼고 남는 것을 하루 지난 비율만큼만 빌려 줌(새벽에 한꺼번에 쓰지 않게)
+ *  막힘 기록(판본 엔진 막힘 · 책 정보 알라딘 막힘 화면·쉼)이 오늘 하나라도 있으면 바닥(dayCap)으로 · 판본 엔진이 오늘 두 번 넘게 막히면 바닥의 절반
+ *  o = { base, alDay, capMax, frac(0~1 · 한국 시각 하루 지난 비율), others:[{ k, used, cap }], edBlocks, alBlk(책 정보 쪽 막힘 있음) } → { cap, base, extra, total, spare, why } */
+function edCapOf(o) { o = o || {}; const base = Math.max(0, +o.base || 0); const frac = Math.min(1, Math.max(0, +o.frac || 0)); const others = (o.others || []).map((x) => ({ k: x.k, used: Math.max(0, +x.used || 0), cap: Math.max(0, +x.cap || 0) }));
+  const total = o.alDay != null && isFinite(+o.alDay) && +o.alDay > 0 ? +o.alDay : base + others.reduce((a, x) => a + x.cap, 0);
+  if ((+o.edBlocks || 0) >= 2) return { cap: Math.floor(base / 2), base, extra: 0, total, spare: 0, why: `판본 엔진이 오늘 ${+o.edBlocks}번 막힘 — 바닥의 절반` };
+  if ((+o.edBlocks || 0) >= 1 || o.alBlk) return { cap: base, base, extra: 0, total, spare: 0, why: o.alBlk ? '책 정보 알라딘 막힘 기록 — 바닥으로' : '판본 엔진 막힘 기록 — 바닥으로' };
+  const want = others.reduce((a, x) => a + Math.min(Math.max(x.cap, x.used), frac > 0.02 ? Math.max(x.used, Math.ceil(x.used / frac)) : x.cap), 0); /* 하루 2% 전(00:29 전)은 다 쓴다고 봄 */
+  const spare = Math.max(0, total - base - want); const hi = Math.max(base, +o.capMax || base); const extra = Math.max(0, Math.min(hi - base, Math.floor(spare * frac)));
+  return { cap: base + extra, base, extra, total, spare, why: extra ? `남는 몫 ${spare}쪽 중 하루 지난 만큼 ${extra}쪽을 빌림` : '남는 몫 없음 — 바닥' }; }
 const EDKW = /(개정|신판|구판|최신\s*판|이전\s*판|초판|증보|판본|새\s*버전|새\s*판|리커버|특별판|보급판|합본|양장|다른\s*판|기념판|완역판|결정판|\d+\s*판)/;
 const NEWER = /(개정판|신판|최신|새\s*버전|새\s*판|새\s*상품|개정\s*증보)/;
 const OLDER = /(구판|이전\s*판|초판|옛\s*판)/;
@@ -121,15 +132,18 @@ function IN_PAGE_SEARCH(q) { return (async () => { let r; try { r = await fetch(
   const L = []; for (const b of d.querySelectorAll('.ss_book_box')) { const a = b.querySelector('a.bo3'); const id = b.getAttribute('itemid') || (((a && a.getAttribute('href')) || '').match(/ItemId=(\d+)/i) || [])[1]; if (!id || !a) continue; const bt = T(b); if (/\[중고\]/.test(bt.slice(0, 40))) continue; const li = [...b.querySelectorAll('li')].map(T).find((t) => /\|/.test(t) && /(\(지은이\)|\(옮긴이\)|\d{4}\s*년)/.test(t)) || ''; L.push({ iid: String(id), title: T(a).slice(0, 140), line: li.slice(0, 240), kind: (bt.match(/^\s*\[([^\]]{1,8})\]/) || [])[1] || null, ebook: /\[전자책\]|eBook/.test(bt.slice(0, 60)) || undefined }); if (L.length >= 25) break; }
   return { L, n: L.length }; })(); }
 
-/* ══ 엔진 ══ ctx = { db, C, FV, W, log, nowIso, getPage, extKeys, notes, push, pulse, found } */
+/* ══ 엔진 ══ ctx = { db, C, FV, W, log, nowIso, getPage, extKeys, notes, push, pulse, found, alUse } · (0.1.3) alUse() = { others:[{ k:'bk'|'met', used, cap }], alBlk } — 다른 엔진의 오늘 알라딘 몫(읽기만) */
 function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso || (() => new Date().toISOString()); const sleep = (ms) => new Promise((r) => setTimeout(r, ms)); const kDay = (t) => new Date((t || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
-  const ST = { day: null, used: 0, pauseUntil: 0, last: 0, busy: false, cfg: null, cfgAt: 0, tg: null, tgAt: 0, cur: 0, errs: [], tick: null, newEd: [], blocks: 0 };
+  const ST = { day: null, used: 0, pauseUntil: 0, last: 0, busy: false, cfg: null, cfgAt: 0, tg: null, tgAt: 0, cur: 0, errs: [], tick: null, newEd: [], blocks: 0, capAt: 0, capV: null };
   const clean = (v) => JSON.parse(JSON.stringify(v, (k, x) => (x === undefined || (typeof x === 'number' && !Number.isFinite(x)) ? null : x)));
   async function cfg() { if (ST.cfg && Date.now() - ST.cfgAt < 10 * 60e3) return ST.cfg; let c = {}; try { const d = await C('app_settings').doc('ed_cfg').get(); c = d.exists ? d.data() || {} : {}; } catch (e) {} let st = {}; try { const d = await C('app_settings').doc('ed_study').get(); st = d.exists ? d.data() || {} : {}; } catch (e) {}
-    ST.cfg = { ...ED_DEF, ...c, accept: +c.accept || +(st.tune && st.tune.th) || ED_DEF.accept }; ST.cfgAt = Date.now(); if (!ST.day && st.today && st.today.day === kDay()) { ST.day = st.today.day; ST.used = +st.today.pages || 0; } return ST.cfg; }
+    ST.cfg = { ...ED_DEF, ...c, accept: +c.accept || +(st.tune && st.tune.th) || ED_DEF.accept }; ST.cfgAt = Date.now(); if (!ST.day && st.today && st.today.day === kDay()) { ST.day = st.today.day; ST.used = +st.today.pages || 0; ST.blocks = Math.max(ST.blocks, +st.today.blk || 0); } return ST.cfg; } /* (0.1.3) 새 컨테이너도 오늘 막힘 횟수를 이어 받음(줄인 상한 그대로) */
+  const kFrac = () => { const t = new Date(Date.now() + 9 * 3600e3); return (t.getUTCHours() * 3600 + t.getUTCMinutes() * 60 + t.getUTCSeconds()) / 86400; };
+  function capNow() { const c = ST.cfg || ED_DEF; if (ST.capV && Date.now() - ST.capAt < 60e3) return ST.capV; let u = null; try { u = ctx.alUse ? ctx.alUse() : null; } catch (e) {} if (!u) { ST.capV = { cap: c.dayCap, base: c.dayCap, extra: 0, why: '다른 엔진 몫을 모름 — 바닥' }; ST.capAt = Date.now(); return ST.capV; }
+    ST.capV = edCapOf({ base: c.dayCap, alDay: c.alDay, capMax: c.capMax, frac: kFrac(), others: (u.others || []).map((x) => (x.k === 'met' ? { ...x, used: x.used * (+c.metReq || 3), cap: x.cap * (+c.metReq || 3) } : x)), edBlocks: ST.blocks, alBlk: !!u.alBlk }); ST.capAt = Date.now(); return ST.capV; }
   function dayRoll() { const d = kDay(); if (ST.day !== d) { ST.day = d; ST.used = 0; ST.blocks = 0; } }
-  async function pace() { const c = ST.cfg || ED_DEF; dayRoll(); if (ST.pauseUntil > Date.now()) throw Object.assign(new Error('쉬는 중'), { pause: 1 }); if (ST.used >= c.dayCap) throw Object.assign(new Error('오늘 상한'), { cap: 1 }); const gap = c.gapMin + Math.random() * (c.gapMax - c.gapMin); const w = ST.last + gap - Date.now(); if (w > 0) await sleep(w); ST.last = Date.now(); ST.used++; }
-  function blocked(why) { ST.blocks++; ST.pauseUntil = Date.now() + Math.min(6, ST.blocks) * 30 * 60e3; ST.errs.unshift({ at: nowIso(), why: '알라딘이 막음 — ' + why + ` · ${Math.min(6, ST.blocks) * 30}분 쉼` }); ST.errs.length = Math.min(ST.errs.length, 20); }
+  async function pace() { const c = ST.cfg || ED_DEF; dayRoll(); if (ST.pauseUntil > Date.now()) throw Object.assign(new Error('쉬는 중'), { pause: 1 }); if (ST.used >= capNow().cap) throw Object.assign(new Error('오늘 상한'), { cap: 1 }); const gap = c.gapMin + Math.random() * (c.gapMax - c.gapMin); const w = ST.last + gap - Date.now(); if (w > 0) await sleep(w); ST.last = Date.now(); ST.used++; }
+  function blocked(why) { ST.blocks++; ST.capAt = 0; ST.pauseUntil = Date.now() + Math.min(6, ST.blocks) * 30 * 60e3; ST.errs.unshift({ at: nowIso(), why: '알라딘이 막음 — ' + why + ` · ${Math.min(6, ST.blocks) * 30}분 쉼` }); ST.errs.length = Math.min(ST.errs.length, 20); }
   async function product(o) { await pace(); const p = await ctx.getPage(); const r = await p.evaluate(IN_PAGE_PRODUCT, o); if (r && r.block) { blocked(String(r.block)); throw Object.assign(new Error('막힘 ' + r.block), { pause: 1 }); } return r; }
   async function search(q) { await pace(); const p = await ctx.getPage(); const r = await p.evaluate(IN_PAGE_SEARCH, q); if (r && r.block) { blocked(String(r.block)); throw Object.assign(new Error('막힘 ' + r.block), { pause: 1 }); } return r && r.L ? r.L : []; }
   async function nlSearch(title) { const c = ST.cfg || ED_DEF; if (!c.nl || !ctx.extKeys) return []; let k = null; try { k = (await ctx.extKeys()).nlKey; } catch (e) {} if (!k) return []; try { const u = `https://www.nl.go.kr/seoji/SearchApi.do?cert_key=${encodeURIComponent(k)}&result_style=json&page_no=1&page_size=30&title=${encodeURIComponent(title)}`; const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); if (!r.ok) return []; const j = await r.json(); return (j.docs || []).map((d) => ({ isbn: /^97[89]\d{10}$/.test(String(d.EA_ISBN || '')) ? String(d.EA_ISBN) : null, title: [d.TITLE, d.VOL].filter(Boolean).join(' ').slice(0, 140), authors: String(d.AUTHOR || '').split(/[;,]/).map((s) => s.replace(/(지음|지은이|저|글|옮김|역|번역|편|엮음|그림)\s*$/g, '').replace(/^.*:\s*/, '').trim()).filter((s) => s.length >= 2).slice(0, 6), translators: (String(d.AUTHOR || '').match(/([^;,:]+?)\s*(옮김|역|번역)/g) || []).map((s) => s.replace(/(옮김|역|번역)$/, '').trim()).slice(0, 4), publisher: d.PUBLISHER || null, pubDate: ymd(d.REAL_PUBLISH_DATE || d.PUBLISH_PREDATE), pages: parseInt(String(d.PAGE || '').replace(/\D/g, ''), 10) || null, edStmt: d.EDITION_STMT || null, form: [d.FORM, d.EBOOK_YN === 'Y' ? '전자책' : ''].filter(Boolean).join(' ') })).filter((x) => x.isbn); } catch (e) { return []; } }
@@ -197,7 +211,7 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     return { n: L.length, push }; }
 
   /* 한 회차(/daily 10분마다 · 95초 안) — 대상 차례대로 · 다시 볼 때가 안 된 책은 건너뜀 */
-  async function tick(o) { o = o || {}; if (ST.busy) return { skip: 'busy' }; const c = await cfg(); if (!c.on && !o.force) return { skip: 'off' }; dayRoll(); if (ST.pauseUntil > Date.now() && !o.force) return { skip: 'pause', until: new Date(ST.pauseUntil).toISOString() }; if (ST.used >= c.dayCap && !o.force) return { skip: 'cap', used: ST.used };
+  async function tick(o) { o = o || {}; if (ST.busy) return { skip: 'busy' }; const c = await cfg(); if (!c.on && !o.force) return { skip: 'off' }; dayRoll(); if (ST.pauseUntil > Date.now() && !o.force) return { skip: 'pause', until: new Date(ST.pauseUntil).toISOString() }; ST.capAt = 0; if (ST.used >= capNow().cap && !o.force) return { skip: 'cap', used: ST.used, cap: ST.capV.cap };
     ST.busy = true; const T0 = Date.now(); const R = { at: nowIso(), books: [], pages0: ST.used, skipped: 0, errs: [] }; let tune = { pos: [], neg: [] };
     try { const L = o.isbn ? [{ isbn: o.isbn, t: '', av: null }] : await targets(); R.targets = L.length; let guard = 0;
       while (Date.now() - T0 < c.tickMs && guard++ < 200 && L.length) { if (!o.isbn && ST.cur >= L.length) { ST.cur = 0; ST.tgAt = 0; break; } const t = o.isbn ? L[0] : L[ST.cur++];
@@ -212,10 +226,10 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
   /* 장부 + 연구 요약(하루 셈 · 스스로 맞춤 · 채점 · 진화 기록) */
   async function ledger(R, tune) { const c = ST.cfg || ED_DEF; const today = kDay(); const ref = C('app_settings').doc('ed_study'); const S0 = ((await ref.get().catch(() => null)) || {}); const S = (S0.exists ? S0.data() : null) || {};
     const T = S.today && S.today.day === today ? S.today : { day: today, books: 0, eds: 0, newer: 0, older: 0, trans: 0, pages: 0, links: 0, withEd: 0, errs: 0 };
-    for (const b of R.books) { T.books++; T.eds += b.eds; T.newer += b.newer; T.older += b.older; T.trans += b.trans; T.links += b.links || 0; if (b.eds > 1) T.withEd++; if (b.err) T.errs++; } T.pages = ST.used; T.errs += R.errs.length;
+    for (const b of R.books) { T.books++; T.eds += b.eds; T.newer += b.newer; T.older += b.older; T.trans += b.trans; T.links += b.links || 0; if (b.eds > 1) T.withEd++; if (b.err) T.errs++; } T.pages = ST.used; T.errs += R.errs.length; T.blk = ST.blocks; const cv = capNow(); T.cap = cv.cap; T.capMax = Math.max(+T.capMax || 0, cv.cap); /* (0.1.3) 오늘 상한(빌린 몫 포함) */
     const TP = { pos: [...((S.tunePool && S.tunePool.pos) || []), ...tune.pos].slice(-400), neg: [...((S.tunePool && S.tunePool.neg) || []), ...tune.neg].slice(-400) };
     if (R.books.length || R.errs.length) await C('ed_ledger').doc(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-')).set(clean({ at: R.at, saw: { targets: R.targets || 0, skipped: R.skipped }, did: R.books.slice(0, 20), pages: R.pages, ms: R.ms, errs: R.errs.slice(0, 6), alert: R.alert || null, th: c.accept, v: ED_V }));
-    const upd = { v: ED_V, at: nowIso(), today: T, tunePool: TP, cfg: { dayCap: c.dayCap, accept: c.accept, maybe: c.maybe, avs: c.avs, on: c.on }, errs: ST.errs.slice(0, 10), pause: ST.pauseUntil > Date.now() ? new Date(ST.pauseUntil).toISOString() : null };
+    const upd = { v: ED_V, at: nowIso(), today: T, tunePool: TP, cfg: { dayCap: c.dayCap, accept: c.accept, maybe: c.maybe, avs: c.avs, on: c.on, alDay: c.alDay, capMax: c.capMax }, capNow: cv, errs: ST.errs.slice(0, 10), pause: ST.pauseUntil > Date.now() ? new Date(ST.pauseUntil).toISOString() : null };
     if (S.dayDone !== today && new Date(Date.now() + 9 * 3600e3).getUTCHours() >= 22 || (S.dayDone !== today && S.today && S.today.day && S.today.day !== today)) { /* 하루 한 번(밤 10시 넘어 또는 날이 바뀐 첫 회차): 스스로 맞춤·채점·진화 기록 */
       const tn = edTune(TP.pos, TP.neg, c.accept); upd.tune = { ...tn, at: nowIso() }; const fixes = [...(S.fixes || [])]; if (tn.th !== c.accept) fixes.unshift({ d: today, t: `받아들임 문턱 ${c.accept} → ${tn.th} (${tn.why} · 링크 짝 ${tn.n[0]} · 분명히 다른 후보 ${tn.n[1]} · F1 ${tn.f1})` });
       const sc = await truthScore().catch(() => null); const day = S.today && S.today.day !== today ? S.today : T; const prevTrend = Array.isArray(S.trend) ? S.trend : []; const val = sc && sc.p != null && sc.r != null ? Math.round(((2 * sc.p * sc.r) / Math.max(1e-9, sc.p + sc.r)) * 1000) / 1000 : null;
@@ -228,11 +242,11 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
   async function diag(q) { const c = await cfg(); if (q.edprobe) { const s = String(q.edprobe); const t = /^97[89]\d{10}$/.test(s) ? { isbn: s } : { isbn: null }; if (!t.isbn) { const r = await product({ iid: s.replace(/\D/g, ''), probe: true }); return { one: r }; } return await runBook(t, { probe: true, budgetMs: 150e3 }); }
     if (q.edrun) { return await tick({ isbn: String(q.edrun), force: true }); }
     const d = await C('app_settings').doc('ed_study').get(); const L = await C('ed_ledger').orderBy('at', 'desc').limit(+q.n || 6).get().catch(() => null);
-    return { v: ED_V, cfg: c, mem: { day: ST.day, used: ST.used, pause: ST.pauseUntil ? new Date(ST.pauseUntil).toISOString() : null, targets: ST.tg ? ST.tg.length : null, cur: ST.cur, busy: ST.busy, errs: ST.errs.slice(0, 6), tick: ST.tick }, study: d.exists ? { ...d.data(), tunePool: undefined } : null, ledger: L ? L.docs.map((x) => ({ id: x.id, ...x.data() })) : null }; }
+    return { v: ED_V, cfg: c, mem: { day: ST.day, used: ST.used, cap: capNow(), pause: ST.pauseUntil ? new Date(ST.pauseUntil).toISOString() : null, targets: ST.tg ? ST.tg.length : null, cur: ST.cur, busy: ST.busy, errs: ST.errs.slice(0, 6), tick: ST.tick }, study: d.exists ? { ...d.data(), tunePool: undefined } : null, ledger: L ? L.docs.map((x) => ({ id: x.id, ...x.data() })) : null }; }
   /* 정답 표본 넣기(/kp-in edtruth · 사람·Claude가 확인한 묶음) — [{ our: ISBN, same:[ISBN…], diff:[ISBN…], note }] · 덮지 않고 합침(같은 ISBN은 한 번) · 지우지 않음 */
   async function truthPut(L, by) { const out = { n: 0, bad: [] }; for (const t of (Array.isArray(L) ? L : []).slice(0, 200)) { const our = String((t && t.our) || ''); if (!/^97[89]\d{10}$/.test(our)) { out.bad.push(our.slice(0, 16)); continue; } const ok = (a) => [...new Set((Array.isArray(a) ? a : []).map(String).filter((x) => /^97[89]\d{10}$/.test(x) && x !== our))].slice(0, 60); const ref = C('ed_truth').doc(our); const o = ((await ref.get().catch(() => null)) || {}); const v = o.exists ? o.data() || {} : {};
       await ref.set(clean({ same: [...new Set([...(v.same || []), ...ok(t.same)])], diff: [...new Set([...(v.diff || []), ...ok(t.diff)])], note: t.note ? String(t.note).slice(0, 300) : v.note || null, by: String(by || 'claude').slice(0, 40), at: nowIso(), hist: [...((v.hist || []).slice(-9)), { at: nowIso(), by: String(by || '').slice(0, 40), same: ok(t.same).length, diff: ok(t.diff).length }] })); out.n++; } return out; }
   return { tick, diag, runBook, cfg, truthPut };
 }
 
-module.exports = { makeEdition, ED_V, ED_DEF, _t: { edLabel, edVol, edCore, dice, nameOv, edSame, edLinks, edLine, edOrder, edTune, edScore, edSelfCheck, ymd, norm, IN_PAGE_PRODUCT, IN_PAGE_SEARCH } };
+module.exports = { makeEdition, ED_V, ED_DEF, _t: { edCapOf, edLabel, edVol, edCore, dice, nameOv, edSame, edLinks, edLine, edOrder, edTune, edScore, edSelfCheck, ymd, norm, IN_PAGE_PRODUCT, IN_PAGE_SEARCH } };
