@@ -319,7 +319,11 @@
   const smallName = (x) => { const t = String(x || '').replace(/\([^)]*\)?/g, '').replace(/\s+/g, ' ').trim(); return t.length > 12 ? t.slice(0, 12) : t; };
   /* 책 → { k: 큰 분야 열쇠, b: 큰 이름, s: 작은 이름(없으면 ''), g: 짐작했나 } — c2 = 셋째 칸(클라우드) · 없으면 c 경로에서 */
   /* (shop2) cp('종류>분류>…>가장 작은 분류')가 있으면 그것으로 — 국내도서는 둘째 칸이 큰 분야 · 다른 종류는 종류가 큰 분야(책장)이고 그 아래가 표찰 · deep = 표찰을 가장 작은 분류까지(설정 catDepth) */
-  function catOf(x, deep) { const P = x && x.cp ? String(x.cp).split('>').map((v) => v.trim()).filter(Boolean) : null;
+  /* (shelfload2 11/17) 같은 분류 글이면 답도 같음 — 16,000권 짜기에서 분류 셈이 가장 무거움(휴대폰 약 0.3초) → 분류 글로 기억(제목·지은이로 짐작한 답은 기억 안 함) · 돌려줄 땐 늘 새 상자 */
+  const CATM = new Map();
+  function catOf(x, deep) { if (!x) return catOf1(x, deep); const mk = (deep ? '1' : '0') + '\u0001' + (x.cp == null ? '' : x.cp) + '\u0001' + (x.c == null ? '' : x.c) + '\u0001' + (x.c2 == null ? '' : x.c2); const m = CATM.get(mk); if (m) return { ...m };
+    const r = catOf1(x, deep); if (!r.g) { if (CATM.size > 20000) CATM.clear(); CATM.set(mk, r); return { ...r }; } return r; }
+  function catOf1(x, deep) { const P = x && x.cp ? String(x.cp).split('>').map((v) => v.trim()).filter(Boolean) : null;
     if (P && P.length) { const kb = KIND_BIG[P[0]]; if (kb) { const i = BIGK[kb]; let sm = deep ? P.slice(1).join(' › ') : P[1] || ''; sm = deep ? sm.slice(0, 40) : smallName(sm); return { k: kb, b: BIG[i][1], s: sm, g: false }; }
       if (P[0] === '국내도서' && P.length > 1) return catOf0({ ...x, c: P[1], c2: deep ? P.slice(2).join(' › ') : P[2] || null }, deep); }
     return catOf0(x, deep); }
