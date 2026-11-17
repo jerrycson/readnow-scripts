@@ -1,4 +1,5 @@
-import {bodyParts} from './renderer.mjs';
+import {humanScene} from './anatomy.mjs?v=52-hair';
+import {validateSettings} from './model.mjs';
 import {FACIAL_OPTIONS} from './facial.mjs';
 import {HAIR_DESIGNS} from './hair-design.mjs';
 import {buildHair52} from './hair-sheet52.mjs';
@@ -26,7 +27,7 @@ export function appearanceScene52(study,scene,values={}){
       const key=JSON.stringify(design),last=cache.get(study);
       if(last?.base===scene&&last.key===key)styled=last.styled;
       else{
-        const generated=bodyParts({...study.settings,...design},0,'idle',{designHair:buildHair52});
+        const generated=humanScene(validateSettings({...study.settings,...design}),0,'idle',{designHair:buildHair52});
         const baseIndex=scene.parts.findIndex(p=>p.name==='head'),headIndex=generated.parts.findIndex(p=>p.name==='head');
         if(baseIndex<0||headIndex<0)throw Error('전신의 머리 이음을 찾을 수 없습니다.');
         styled={...scene,parts:[...scene.parts.slice(0,baseIndex),...generated.parts.slice(headIndex)]};

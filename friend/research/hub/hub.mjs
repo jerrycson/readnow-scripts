@@ -6,7 +6,7 @@ import {readBlocks,mergeHistory} from './archives.mjs';
 import {choices} from '../../pixel-lab/choice33.mjs';
 import {records33} from './round33.mjs';
 import {additions} from './round32-cards.mjs';
-import {route,library,originals,initReader,showError} from './reader.mjs';
+import {route,library,originals,initReader,showError} from './reader.mjs?v=52-notes';
 const query=k=>new URL(location.href).searchParams.get(k)||'';
 const validTab=v=>['library','report','board','originals'].includes(v)?v:'library';
 const el=id=>document.getElementById(id);

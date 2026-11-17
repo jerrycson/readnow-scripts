@@ -29,7 +29,7 @@ function draw(){const test=split.find(x=>x[0]===filter)[1],terms=el('find').valu
  const rows=data.filter(r=>test(r)&&terms.every(t=>[r.noteId,r.title,r.group,r.unit,r.state].join(' ').toLocaleLowerCase().includes(t)));el('count').textContent=rows.length+' / '+data.length+'개 자료';
  el('list').replaceChildren(...rows.map(r=>{const b=node('button',r.title);b.dataset.id=r.noteId;b.setAttribute('aria-current',String(r.noteId===active));b.onclick=()=>{select(r.noteId);if(innerWidth<760)el('reader').scrollIntoView();};return b;}));
  el('filters').replaceChildren(...split.map(([k])=>{const b=node('button',k);b.setAttribute('aria-pressed',String(k===filter));b.onclick=()=>{filter=k;draw();};return b;}));}
-async function json(file){const r=await fetch(file);if(!r.ok)throw Error('응답 '+r.status);return r.json();}
+async function json(file){const r=await fetch(file,file.endsWith('/releases.json')?{cache:'no-store'}:{});if(!r.ok)throw Error('응답 '+r.status);return r.json();}
 async function start(){
  const [notes,atlas,controls,ref]=await Promise.all(['notes35.json','atlas35.json','gravity35.json','reference35.json'].map(json));data=notes;geometry=new Map();
  for(const r of [...atlas.faces,...atlas.bodies])geometry.set(r.id,{lines:r.lines.map(l=>l.points),label:r.name+'의 원자료에서 직접 딴 가시선. 회전 창에서 실제 캐릭터와 겹쳐 비교할 수 있습니다.'});
