@@ -7,9 +7,15 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
- {...tool('latest-fern','compare','최신 페른','공개한 최신 일지에서 페른의 실제 모델을 찾아 엽니다.','contour36.html?round=42&case=F02',['최신','페른','얼굴','F02','원화','턱','눈','비교']),case:'F02'},
- {...tool('latest-himmel','compare','최신 힘멜','공개한 최신 일지에서 힘멜의 실제 기본/후보를 찾아 엽니다. 후보 자동 채택이 아닙니다.','contour36.html?round=42&case=M01',['최신','힘멜','얼굴','M01','원화','카메라','구도','비교']),case:'M01'},
- {...tool('latest-chest','compare','최신 가슴','공개한 최신 일지에서 가슴의 실제 기본/후보를 찾아 엽니다. 권고와 연구 후보를 구분합니다.','contour36.html?round=42&case=W',['최신','가슴','성인','W','밑선','흉벽','비교']),case:'W'},
+ tool('all-around','sculpt','전방위 동시 교정','40차와 49차 연구형을 한 메시마다 10·26방향에서 동시에 비교하고 부위별로 교정합니다.','../research/modeling-methods/compare.html',['전방위','정면','양사선','교정','조작기','동시','49']),
+ tool('learning','general','실험실 학습 기록','실험에 쓴 자료와 결과, 채택 또는 보류한 근거를 확인합니다.','../research/studio-engine/index.html',['학습','검증','일지','자기학습']),
+ tool('photo-research','photo','내 참고그림 연구','사진 입력부터 윤곽 복원·학습까지 연구 내용과 적용 범위를 봅니다.','../research/photo-model/index.html',['사진','참고그림','원문','엔진']),
+ tool('methods','general','모델링 기법과 검증','원전·방법 목록과 실제 적용 사례를 읽습니다.','../research/modeling-methods/index.html',['원전','연구','기법','검증','방법','Hernandez','SceneCraft','BlenderGPT','L3GO']),
+ tool('journal','general','최신 회차 결과·과정','해당 회차의 실제 모델과 표정·자세 실험, 원화 기록을 확인합니다.','round49.html',['일지','결과','과정','49']),
+
+ {...tool('latest-fern','compare','최신 페른','공개한 최신 일지에서 페른의 실제 모델을 찾아 엽니다.','contour36.html?round=49&case=F02',['최신','페른','얼굴','F02','원화','턱','눈','비교']),case:'F02'},
+ {...tool('latest-himmel','compare','최신 힘멜','공개한 최신 일지에서 힘멜의 실제 기본/후보를 찾아 엽니다. 후보 자동 채택이 아닙니다.','contour36.html?round=49&case=M01',['최신','힘멜','얼굴','M01','원화','카메라','구도','비교']),case:'M01'},
+ {...tool('latest-chest','compare','최신 가슴','공개한 최신 일지에서 가슴의 실제 기본/후보를 찾아 엽니다. 권고와 연구 후보를 구분합니다.','contour36.html?round=49&case=W',['최신','가슴','성인','W','밑선','흉벽','비교']),case:'W'},
  tool('basic-turn','general','기본 연구실','프로토타입. 14개 기본형의 회전·구조 A/B/C·설정·로컬 복원과 기록. 최신 특정 얼굴을 대신하지 않습니다.','index.html',['일반','회전','기본형','설정','이전 저장','복원','A','B','C'],6),
  tool('basic-bodies','shape','14개 기본형','프로토타입. 남녀 2~8등신을 같은 화면 높이로 비교하고 선택합니다.','index.html?tab=bodies',['남녀','2등신','3등신','4등신','5등신','6등신','7등신','8등신','귀여움','전신'],6),
  tool('basic-angles','pose','64방향','프로토타입. 수평8×수직8 방향을 만들고 선택한 각도로 돌아갑니다.','index.html?tab=angles',['64','방향','전신','앞','뒤','옆','위','아래','회전'],6),

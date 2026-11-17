@@ -21,7 +21,7 @@ window.addEventListener('message',e=>{
   if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data?.type!=='bookfriend:studio-state'||typeof e.data.search!=='string'||e.data.search.length>1600||query().searchParams.get('lab')!=='studio')return;
   const state=new URLSearchParams(e.data.search),u=query(),direct=new URL('../../pixel-lab/studio.html',location.href);
   for(const k of studioKeys){const v=state.get(k);if(v&&v.length<=150){u.searchParams.set(k,v);direct.searchParams.set(k,v);}else u.searchParams.delete(k);}
-  history.replaceState(history.state,'',u);document.querySelector('#separate').href=direct.href;
+  history.replaceState(history.state,'',u);frame.dataset.loadedUrl=direct.href;document.querySelector('#separate').href=direct.href;
 });
 function sync(){
   const id=query().searchParams.get('lab');
@@ -32,7 +32,7 @@ function sync(){
     for(const k of studioKeys)if(sub.get(k))url.searchParams.set(k,sub.get(k));
     latest.hidden=true;const separate=document.querySelector('#separate');separate.hidden=false;separate.href=url;
     document.querySelector('#experimentName').textContent='책방 친구 · 내 실험실';frame.title='내 실험실';
-    if(!frame.dataset.studio){showFrame(url.href);frame.dataset.studio='true';}if(!dialog.open)dialog.showModal();return;
+    if(!frame.dataset.studio||frame.dataset.loadedUrl!==url.href){showFrame(url.href);frame.dataset.studio='true';}if(!dialog.open)dialog.showModal();return;
   }
   delete frame.dataset.studio;
   const requested=sub.get('case') || (sub.get('mode')==='chest'?'W':'F02');
