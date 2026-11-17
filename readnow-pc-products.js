@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.347의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.349의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.347' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.347', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.349' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.349', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -459,7 +459,7 @@
     </div>
     <div class="pane imp">
       <div class="drop" id="rnpDrop"><b>알라딘 등록 상품 파일(.xls)</b><span>여기에 끌어다 놓거나 눌러서 고르기<br>판매완료 엑셀은 고객 수집기에 넣어 주세요</span></div>
-      <input type="file" id="rnpFile" accept=".xls,.xlsx,.html" style="display:none">
+      <input type="file" id="rnpFile" accept=".xls,.xlsx,.html,.jsonl,.json" multiple style="display:none">
     </div>
     <div class="pane set">
       <label>알라딘 요청 간격 — 자동 조절(1초로 시작 → 잘 되면 이 최소값까지 빨라지고, 실패·로그인 풀림이면 바로 느려짐). 최소(ms)<input type="number" id="rnpDelay" min="300" step="50"></label>
@@ -1337,7 +1337,19 @@
       log(`💰 알라딘 예치금: 총잔액 ${P1.balance.toLocaleString()}원 · 새 내역 ${saved}줄${first ? ' (처음 — 1년치)' : ''} · 환급신청 ${rf.length}건`); return 'done';
     } finally { await releaseLane('aladin'); } }
   let LIST_LAST = 0, LIST_FULL = 0, LC_PUT_AT = 0; /* (1.88.6) 정범님 10/20 크롬 느림 실측: 일마다 이 PC 보관본(상품 2만 5천 건)을 IndexedDB에서 통째로 읽고(수 초 화면 멈춤) 바뀐 게 있으면 통째로 다시 씀(또 수 초) → 이미 메모리에 있으면 서버에서 바뀐 것만 받아 합치고, 보관본은 30분에 한 번만 다시 씀 */
-  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 240 : 30) * 60e3) return; /* (1.89.83 자동 점검 · 🔬 매일 정밀 점검 · 🪶) 로거 보관본은 240분에 한 번 — 1.89.76 계측으로 10/25 하루 LOGGER 'rn-*' 약 1GB·24번의 주인이 rn-lcache(한 번에 약 44MB 글자 · 상품 2.58만 건 전체 문서)임을 확인(21~24시 3번 131MB ≈ 44MB×3 · 24시 뒤 rn-lcache 44,442KB 1번) → 하루 약 6번 260MB. 다시 열 때 보관본 뒤 바뀐 것만 받으므로 기능 같음(4시간 묵은 보관본 = 새로고침 때 서버에서 수백~2천 건 더 받음 · 메모리 정리 새로고침 하루 23번) */ /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: LCACHE.atGet ? [...m].map(([k, v]) => [k, lcSlim(v)]) : [...m], last, fullAt, mark: LIST_MARK }).catch(() => {}); /* (W2) rows는 이미 칸만(lcKeep) — 보관본도 그만큼 작아짐 · mark = 표시 받은 자리 */ };
+  /* (listfix1 11/17 · 🚨 자료) 상품 기록 덜 받음 막기 — 11/17 12:37 HOME이 Firestore가 잠깐 끊긴 사이 26,710건 중 11,999건만 받고, 12:41~13:40 상품 조회가 나머지 14,686개를 '새 상품'으로 보고 처음 본 날·등록일(연도 추정)·수량을 덮어 적음 · 11/08 JS-MAIN도 같은 일(이 PC 보관본이 10,023건뿐인 채 받아들여 17,446개를 새 상품으로 적음)
+   *  ① 바뀐 것만 받는 읽기도 서버 답만(PC 안 사본이면 실패) ② 서버가 센 건수(count — 1천 건에 읽기 1번)와 대어 3% 넘게 모자라면 받지 않음(보관본·통째 읽기 모두 · 건수를 못 세면 지난번보다 20% 적은지만 봄) ③ 모자란 지도는 보관본으로 두지 않음 ④ 통째 읽기가 겹치면 하나만 ⑤ 상품 조회 한 번에 '이미 지난 번호(커서 아래)인데 처음 보는 상품'이 50개를 넘으면 적지 않고 멈춤 — 근거: 평소 scanDaily 새 상품 1~10 · scanNew 가장 많은 날 24 · scanFull 1, 사고 1,544·14,686·17,446 */
+  const LF_MIN = 0.97, LF_OLDNEW_MAX = 50; let LF_SRVN = 0, LF_SRVN_AT = 0, LF_STALE = false, LF_INF = null;
+  const lfShort = (n, srv, prev) => (srv > 2000 ? (n < srv * LF_MIN ? `서버 ${srv.toLocaleString()}건 중 ${n.toLocaleString()}건` : '') : prev > 2000 && n < prev * 0.8 ? `지난번 ${prev.toLocaleString()}건 중 ${n.toLocaleString()}건` : '');
+  const lfTrip = (sofar, page) => (+sofar || 0) + (+page || 0) > LF_OLDNEW_MAX;
+  async function lfSrvCount() { try { const s = await C('prd_listings').count().get(); const n = +((s.data() || {}).count) || 0; if (n) { LF_SRVN = n; LF_SRVN_AT = Date.now(); } return n; } catch (e) { return 0; } }
+  async function lfSrvGet(q) { const ss = await q.get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('상품 기록을 서버에서 받지 못함(PC 안 사본만 옴)'); return ss; }
+  async function lfStop(info) { /* 멈춘 까닭을 prd_system/listfix에 남김(진단·웹앱이 봄) · 사람이 확인하고 allowUntil(ISO 시각)을 적어 두면 그때까지는 멈추지 않음(정말 처음 보는 상품이 많은 날) */
+    let al = null; try { al = (await C('prd_system').doc('listfix').get({ source: 'server' })).data() || {}; } catch (e) { al = {}; } if (al.allowUntil && Date.parse(al.allowUntil) > Date.now()) { log(`🛡 처음 보는 옛 번호 상품 ${info.n}개 — prd_system/listfix 허락(${al.allowUntil}까지)이 있어 그대로 적음`, 1); return false; }
+    const fresh = Date.now() - LIST_FULL < 30 * 60e3 && LF_SRVN > 0 && LISTINGS && LISTINGS.size >= LF_SRVN * LF_MIN; /* 방금 서버에서 통째로 읽어 건수까지 맞는데도 그렇다 = 정말 처음 보는 상품 → 다시 읽기를 되풀이하지 않고(읽기 2.6만 번씩) 사람 확인을 기다림 */ if (!fresh) LF_STALE = true;
+    try { await C('prd_system').doc('listfix').set({ last: { at: nowIso(), pc: PC_NAME || '', ...info, fresh, known: LISTINGS ? LISTINGS.size : 0, srvN: LF_SRVN }, trips: firebase.firestore.FieldValue.increment(1), ...W() }, { merge: true }); } catch (e) {}
+    log(`🛡 상품 조회 멈춤: ${info.status} ${info.page}쪽 — 이미 지난 번호(${info.maxKnown} 아래)인데 처음 보는 상품이 ${(info.sofar + info.n).toLocaleString()}개(문턱 ${LF_OLDNEW_MAX}) · 상품 기록을 덜 받았을 수 있어 적지 않음 · ${fresh ? '방금 서버와 건수가 맞음 — 사람이 확인하고 prd_system/listfix allowUntil을 적어야 이어 적음' : '다음 회차에 서버에서 통째로 다시 읽음'} · 예: ${(info.sample || []).join(', ')}`, 1); return true; }
+  const lcPut = (m, last, fullAt, now) => { if (LF_SRVN > 2000 && m && m.size < LF_SRVN * LF_MIN) return; /* (listfix1) 서버 건수보다 3% 넘게 모자란 지도는 보관본으로 두지 않음(11/08 보관본 10,023건) */ const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 240 : 30) * 60e3) return; /* (1.89.83 자동 점검 · 🔬 매일 정밀 점검 · 🪶) 로거 보관본은 240분에 한 번 — 1.89.76 계측으로 10/25 하루 LOGGER 'rn-*' 약 1GB·24번의 주인이 rn-lcache(한 번에 약 44MB 글자 · 상품 2.58만 건 전체 문서)임을 확인(21~24시 3번 131MB ≈ 44MB×3 · 24시 뒤 rn-lcache 44,442KB 1번) → 하루 약 6번 260MB. 다시 열 때 보관본 뒤 바뀐 것만 받으므로 기능 같음(4시간 묵은 보관본 = 새로고침 때 서버에서 수백~2천 건 더 받음 · 메모리 정리 새로고침 하루 23번) */ /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: LCACHE.atGet ? [...m].map(([k, v]) => [k, lcSlim(v)]) : [...m], last, fullAt, mark: LIST_MARK }).catch(() => {}); /* (W2) rows는 이미 칸만(lcKeep) — 보관본도 그만큼 작아짐 · mark = 표시 받은 자리 */ };
   /* (1.89.101) 🚨 정범님 10/26 21:11 로거 멈춤의 원인 — 로거 크롬 보관본 rn-lcache(상품 2.6만 건 전체 문서 · 10/25 44MB)가 사진 받기 뒤 photos[](상품마다 미리보기 20~30장 주소)로 커져, Tampermonkey가 수집기를 켤 때 넘기는 저장소 묶음이 64MB 한도를 넘어 수집기가 아예 시작하지 못함(콘솔 'Message exceeded maximum allowed size of 64MiB' · 10/26 04:23~)
    *  → 로거 보관본에는 사진·미리보기 주소 목록을 빼고 수만 남김(로거는 사진을 쓰지 않음 · 사진 받기·미리보기 모으기는 서버 기록을 다시 읽음) · 그래도 24M자를 넘으면 보관하지 않고 지움(다음 시작 때 서버에서 받음 — 느릴 뿐 기능 같음) */
   function lcSlim(v) { if (!v || typeof v !== 'object') return v; if (!Array.isArray(v.photos) && !Array.isArray(v.previews) && !Array.isArray(v.photosMatch)) return v; const o = { ...v }; if (Array.isArray(o.photos)) { o.photosN = o.photos.length; delete o.photos; } if (Array.isArray(o.previews)) { o.previewsN = o.previews.length; delete o.previews; } if (o.photosMatch && typeof o.photosMatch === 'object') delete o.photosMatch; return o; }
@@ -1357,20 +1369,27 @@
   let LIST_MARK = 0; /* 표시(markAt) 받은 자리 */
   async function lcPullMarks(m) { /* markAt 뒤 바뀐 상품 기록(표시만 바뀐 것)을 받아 합침 — 문서 전체를 받으므로 그 상품의 지금 값 그대로 */ const since = Math.max(0, (LIST_MARK || 0) - 120000); let max = LIST_MARK || 0, n = 0;
     const ss = await C('prd_listings').where('markAt', '>', firebase.firestore.Timestamp.fromMillis(since)).get(); ss.forEach((d) => { if (/^_perm/.test(d.id)) return; const v = d.data(); m.set(d.id, v); n++; max = Math.max(max, lcMarkMs(v)); }); LIST_MARK = Math.max(max, LIST_MARK || 0); return n; }
-  async function loadListings(force) {
-    if (LISTINGS && !force) return LISTINGS;
+  async function loadListings(force) { /* (listfix1) 통째 읽기가 겹치면 하나만(11/08 16:19 두 읽기가 겹쳐 21,999·5,999건) · 덜 받은 것으로 보인 뒤(LF_STALE)엔 보관본을 거치지 않고 서버에서 통째로 */
+    if (LISTINGS && !force && !LF_STALE) return LISTINGS;
+    if (LF_STALE) force = true;
+    while (LF_INF) { const p = LF_INF; try { const r = await p; if (force !== true) return r; } catch (e) { if (force !== true) throw e; } if (LF_INF === p) LF_INF = null; }
+    const p = (LF_INF = loadListings0(force)); try { return await p; } finally { if (LF_INF === p) LF_INF = null; }
+  }
+  async function loadListings0(force) {
     try { await markReady(); } catch (e) {} /* (W2) 🏷 표시용 쓰기를 따로 할 수 있는지 처음 한 번 확인 */
-    if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000)).get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; let nm = 0; try { nm = await lcPullMarks(LISTINGS); } catch (e) {} /* (W2) 표시만 바뀐 상품(봤음·사진·미리보기) — 판매 추정이 쓰는 lastSeenAt 등 다른 PC가 적은 표시까지 */ if (ss.size || nm) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) {} }
+    if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000))); /* (listfix1) 서버 답만 */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; let nm = 0; try { nm = await lcPullMarks(LISTINGS); } catch (e) {} /* (W2) 표시만 바뀐 상품(봤음·사진·미리보기) — 판매 추정이 쓰는 lastSeenAt 등 다른 PC가 적은 표시까지 */ if (Date.now() - LF_SRVN_AT > 30 * 60e3) { const srv = await lfSrvCount(); const why = lfShort(LISTINGS.size, srv, 0); if (why) { log(`가진 상품 기록이 모자람(${why}) — 서버에서 통째로 다시 읽음`, 1); LF_STALE = true; throw new Error('상품 기록 모자람'); } } /* (listfix1) 30분에 한 번 서버 건수와 대어 봄 */ if (ss.size || nm) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) { if (!LF_STALE) { log('상품 기록 바뀐 것을 서버에서 못 받음 — 가진 기록 그대로 씀(다음에 다시 받음): ' + (e.code || e.message), 1); return LISTINGS; } } } /* (listfix1) 바뀐 것을 못 받은 것은 '조금 묵음'일 뿐 빠진 상품은 없음 — 예전처럼 PC 안 사본에서 일부만 받고 받은 자리(LIST_LAST)를 앞당기지 않음 · 모자람이 보였을 때만 통째로 */
     ui('기존 상품 기록 읽는 중', 0, 0);
-    let c = null; if (!force || force === 'inc') { try { c = await LCACHE.get(); } catch (e) { c = null; } }
-    if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new LMap(c.rows.map(([id, v]) => [id, lcRevive(v)])); /* (W2) 예전 보관본(문서 전체)도 넣을 때 칸만 남음 */ let max = c.last; LIST_MARK = +c.mark || 0; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000)).get(); /* 2분 겹쳐 읽음(시계 차이) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
+    let c = null; if ((!force || force === 'inc') && !LF_STALE) { try { c = await LCACHE.get(); } catch (e) { c = null; } }
+    if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new LMap(c.rows.map(([id, v]) => [id, lcRevive(v)])); /* (W2) 예전 보관본(문서 전체)도 넣을 때 칸만 남음 */ let max = c.last; LIST_MARK = +c.mark || 0; const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000))); /* 2분 겹쳐 읽음(시계 차이) · (listfix1) 서버 답만 */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
         let nm = 0; try { nm = await lcPullMarks(m); } catch (e) {}
+        { const srv = await lfSrvCount(); if (!srv) throw new Error('서버 건수를 못 셈'); const why = lfShort(m.size, srv, 0); if (why) throw new Error(`보관본이 모자람(${why})`); } /* (listfix1) 11/08 JS-MAIN 보관본이 10,023건뿐인데 그대로 받아 17,446개를 새 상품으로 적음 — 서버 건수와 대어 3% 넘게 모자라면 통째로 다시 읽음 */
         LISTINGS = m; LIST_LAST = max; LIST_FULL = c.fullAt || Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건${nm ? ` · 표시만 바뀐 ${nm.toLocaleString()}건` : ''}만 받음)`); if (ss.size + nm > 300) lcPut(m, max, c.fullAt); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
     const m = new LMap(); let max = 0; const t0 = Date.now(); LIST_MARK = t0; /* (W2) 읽기 시작 뒤 적힌 표시는 다음 'inc'에서 */
     /* (1.89.126 4시간 점검 · 🪶) 하루 한 번 '통째로 읽기'를 2천 건씩 나눠 받음 — 10/27 22:56 LOGGER가 상품 2.6만 건 문서 전체를 한 번에 받아 한 번에 27.5초 멈춤(5분 긴 작업 63.7초) · 힙 1,650MB(평소 200~500MB)였음. 문서 수·읽기 비용은 같고, 한 번에 드는 응답이 2천 건으로 줄어 멈춤이 쪼개지고 힙 꼭대기가 낮아짐 · 나눠 읽는 동안 바뀐 상품은 다음 'inc'가 읽기 시작 시각부터 다시 받아 빠지지 않음 */
-    const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await q.get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */ if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; ui('기존 상품 기록 읽는 중', m.size, 0); await sleep(50); }
+    const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await q.get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('상품 기록을 서버에서 다 받지 못함(보관 사본만 옴)'); /* (h4 11/17 하루 3번 점검) 11/17 12:37 HOME이 Firestore가 잠깐 끊긴(unavailable) 사이 통째 읽기 7번째 묶음을 PC 안 사본에서 덜 받아 11,999건(실제 26,710건)만 읽고 끝 → 전체 재검토가 나머지 1만 4천여 상품을 '새 상품'으로 보고 처음 본 날·등록일·수량을 덮어 적음 — 서버 답만 받고, 덜 받으면 읽기를 실패로 둠(새로 적지 않음) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */ if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; ui('기존 상품 기록 읽는 중', m.size, 0); await sleep(50); }
+    { let n0 = LISTINGS ? LISTINGS.size : 0; if (!n0) { try { const c0 = await LCACHE.get(); n0 = c0 && Array.isArray(c0.rows) ? c0.rows.length : 0; } catch (e) {} } const srv = await lfSrvCount(); const why = lfShort(m.size, srv, n0); if (why) { log(`기존 상품 기록을 덜 받음(${why}) — 이번 읽기를 버림(새 상품으로 잘못 적지 않게)`, 1); throw new Error('상품 기록 덜 받음'); } } /* (listfix1) 서버가 센 건수와 대어 3% 넘게 모자라면 버림 · 건수를 못 세면 아래 h4 기준(지난번보다 20%) */ /* (h4 11/17) 위와 같은 까닭 — 지난번보다 20% 넘게 적으면 받지 않음(상품이 하루에 20% 넘게 줄 일은 없음) */
     if (max > t0) max = t0; /* 나눠 읽는 사이 바뀐 것은 다음 'inc'가 (2분 겹쳐) 다시 받음 */
-    LISTINGS = m; LIST_LAST = max || Date.now(); LIST_FULL = Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 읽음`); lcPut(m, max || Date.now(), Date.now(), true); return m;
+    LISTINGS = m; LF_STALE = false; LIST_LAST = max || Date.now(); LIST_FULL = Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 읽음${LF_SRVN ? ` (서버 ${LF_SRVN.toLocaleString()}건)` : ''}`); lcPut(m, max || Date.now(), Date.now(), true); return m;
   }
   const stabJ = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().filter((kk) => x[kk] !== undefined).map((kk) => [kk, x[kk]])) : x)); let LOPS_WHY = {}; /* (1.89.27) 칸 순서·undefined 칸과 상관없는 비교 */
   // 한 상품 줄을 합치기 규칙으로 올릴 작업 목록 만들기 (빈 값으로 덮지 않음, 바뀐 칸만 이력)
@@ -1398,11 +1417,174 @@
     return { ops, isNew: !prev, changed: real.length > 0 };
   }
 
+  /* ───────── (listfix1 11/17 · 🚨 자료) 🩹 덮인 상품 기록 되돌리기 — 로거 백업 파일(D:\ReadNow\backup\firestore\prd_listings\날짜-full|inc.jsonl)을 상품 파일 칸에 함께 끌어다 놓으면 ─────────
+   *  11/17 12:41~13:40 KST 상품 조회가 상품 기록을 덜 받은 채 원래 있던 상품 14,686개를 새 상품으로 보고 덮어 적은 칸만 사고 전 값으로: 처음 본 때(firstSeenAt)·등록일(registeredAt)·연도 추정 표시(registeredYearGuessed)·수량(qty — 사고 뒤 정보수정 화면으로 다시 센 상품은 그대로 둠 · 목록 숫자는 qtyList로)
+   *  판매 상태·가격·제목·판매 중 여부·마지막 본 때는 사고 때 알라딘에서 실제로 본 값이라 그대로 · 고르는 상품 = 지금 처음 본 때가 사고 시간(T0~T1)인데 백업에 사고 전 판이 있는 것(정말 새 상품은 백업에 없어 건드리지 않음)
+   *  언제나 먼저 마른 실행(상품 기록은 안 씀): 칸별 숫자·보기 20줄 기록 + 계획 파일 내려받기 + prd_system/listfix_plan 요약 → 사람이 '복구'(또는 11/08 JS-MAIN 사고까지 '복구1108')를 적어야 씀
+   *  쓰기 전에 되돌림 자료(지금 값)를 prd_system/listfix_undo_<표>_<n>과 내려받기 파일로 먼저 남김(Firestore에 못 남기면 쓰지 않음) · 상품 200개씩(쓰기 400) · 1,000개마다 3개를 서버에서 다시 읽어 맞는지 보고 어긋나면 멈춤 · 되돌림 파일(listfix-undo-*.json)을 놓고 '되돌리기'를 적으면 원래대로 */
+  /* LFR-PURE-BEGIN */
+  const LFR = { T0: Date.parse('2026-11-17T03:37:00Z'), T1: Date.parse('2026-11-17T04:45:00Z'), FILE: /^\d{4}-\d\d-\d\d-(full|inc)\.jsonl$/i, UNDO: /^listfix-undo-.*\.json$/i, HIT_MAX: 20000 };
+  const lfrMs = (v) => { if (v == null || v === '') return 0; if (typeof v === 'number') return v; if (typeof v === 'string') return Date.parse(v) || 0; if (typeof v.__ts === 'number') return v.__ts; if (typeof v.toMillis === 'function') return v.toMillis(); if (typeof v.seconds === 'number') return v.seconds * 1000; return 0; };
+  const lfrIsDel = (v) => !!(v && typeof v === 'object' && v.__del === 1);
+  const lfrSame = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const lfrNew = () => ({ m: new Map(), lines: 0, after: 0, bad: 0, other: 0, maxU: 0, files: [] });
+  function lfrFold(B, line) { /* 백업 한 줄 → 상품마다 사고 전(uploadedAt < T0) 마지막 판 + 모든 판 중 가장 이른 처음 본 때(minF · 11/08 사고 전 값) */
+    if (!line || line.length < 10) return; let o; try { o = JSON.parse(line); } catch (e) { B.bad++; return; }
+    if (!o || typeof o.path !== 'string' || !/^prd_listings\/[^/]+$/.test(o.path) || !o.d || typeof o.d !== 'object') { B.other++; return; }
+    const id = String(o.id || o.path.slice(13)); if (/^_perm/.test(id)) return; const d = o.d; const u = lfrMs(d.uploadedAt); B.lines++;
+    if (u >= LFR.T0) { B.after++; return; } if (u > B.maxU) B.maxU = u;
+    const f = d.firstSeenAt ?? null; const fm = lfrMs(f); const x = B.m.get(id); const pm = x ? x.minF : null; const minF = !fm ? pm : !pm || fm < lfrMs(pm) ? f : pm;
+    if (!x || u >= x.u) B.m.set(id, { u, f, r: d.registeredAt ?? null, g: d.registeredYearGuessed === true, q: d.qty ?? null, minF }); else x.minF = minF;
+  }
+  function lfrPlan(B, cur, mode) { /* cur = 지금 서버 값 Map(id → { f, r, g, q, ql, ec }) · mode 'last' = 사고 직전 값 · 'min' = 백업에서 가장 이른 처음 본 때(11/08 JS-MAIN 사고도 되돌림) */
+    const rows = []; const n = { cur: cur.size, bk: B.m.size, hit: 0, noBk: 0, f: 0, r: 0, g: 0, q: 0, qKeep: 0, same: 0, older1108: 0 };
+    for (const [id, c] of cur) { const fm = lfrMs(c.f); if (!(fm >= LFR.T0 && fm <= LFR.T1)) continue; const b = B.m.get(id); if (!b) { n.noBk++; continue; } n.hit++;
+      if (b.minF && b.f && lfrMs(b.minF) < lfrMs(b.f)) n.older1108++;
+      const want = mode === 'min' && b.minF ? b.minF : b.f; const set = {}, before = {}; const put = (k, v, old) => { set[k] = v; before[k] = old === undefined ? { __del: 1 } : old; };
+      if (want && lfrMs(want) && lfrMs(want) < fm) { put('firstSeenAt', want, c.f); n.f++; }
+      if (b.r != null && !lfrSame(b.r, c.r)) { put('registeredAt', b.r, c.r); n.r++; }
+      if (c.g === true && !b.g) { put('registeredYearGuessed', { __del: 1 }, true); n.g++; }
+      if (b.q != null && c.q != null && +b.q !== +c.q) { if (lfrMs(c.ec) >= LFR.T0) n.qKeep++; else { put('qty', b.q, c.q); if (c.ql == null || +c.ql !== +c.q) put('qtyList', +c.q, c.ql); n.q++; } }
+      if (!Object.keys(set).length) { n.same++; continue; } rows.push({ id, set, before }); }
+    return { rows, n, mode: mode === 'min' ? 'min' : 'last' };
+  }
+  const lfrDoc = (set, FV, TSC) => { const o = {}; for (const [k, v] of Object.entries(set)) o[k] = lfrIsDel(v) ? FV.delete() : v && typeof v === 'object' && typeof v.__ts === 'number' ? TSC.fromMillis(v.__ts) : v; return o; };
+  const lfrChanges = (r) => Object.fromEntries(Object.keys(r.set).map((k) => [k, { from: lfrIsDel(r.before[k]) ? null : r.before[k] ?? null, to: lfrIsDel(r.set[k]) ? null : r.set[k] }]));
+  const lfrCheck = (B, cur, P) => { /* 이상하면 쓰지 않음 */ const w = []; if (!B.m.size || B.m.size < cur.size * 0.9) w.push(`백업 상품 ${B.m.size.toLocaleString()}개가 지금 ${cur.size.toLocaleString()}개의 90%보다 적음 — full 파일이 빠졌거나 덜 받음`); if (B.maxU < LFR.T0 - 48 * 3600e3) w.push(`백업의 마지막 기록이 ${new Date(B.maxU).toISOString()} — 사고 직전(11/16·11/17) inc 파일이 빠짐`); if (P.n.hit > LFR.HIT_MAX) w.push(`고른 상품 ${P.n.hit}개가 너무 많음(상한 ${LFR.HIT_MAX})`); if (B.bad > 100) w.push(`못 읽은 줄 ${B.bad}개`); return w; };
+  /* LFR-PURE-END */
+  async function lfrReadFile(B, f) { /* 줄 단위로 흘려 읽음(100MB full 파일도 한 번에 글자로 들지 않게) */
+    B.files.push(f.name); let rest = '', k = 0;
+    if (f.stream && typeof TextDecoderStream === 'function') { const rd = f.stream().pipeThrough(new TextDecoderStream()).getReader(); for (;;) { const { value, done } = await rd.read(); if (done) break; const parts = (rest + value).split('\n'); rest = parts.pop(); for (const ln of parts) lfrFold(B, ln); if (++k % 40 === 0) { ui('백업 파일 읽는 중: ' + f.name, B.lines, 0, ''); await sleep(0); } } }
+    else { const parts = (await f.text()).split('\n'); rest = parts.pop(); for (const ln of parts) lfrFold(B, ln); }
+    if (rest) lfrFold(B, rest);
+  }
+  async function lfrReadCur(since) { /* 지금 서버 값 — 서버 답만(PC 안 사본이면 실패) · 통째 읽기는 서버 건수와 대어 3% 넘게 모자라면 멈춤 */
+    const m = new Map(); const keep = (v) => ({ f: v.firstSeenAt, r: v.registeredAt, g: v.registeredYearGuessed, q: v.qty, ql: v.qtyList, ec: v.editChkAt, a: !!v.active, lid: v.listingId == null ? '' : String(v.listingId) });
+    if (since) { const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(since - 120000))); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); return m; }
+    const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await lfSrvGet(q); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); ui('지금 상품 기록 읽는 중', m.size, LF_SRVN || 0, ''); if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; }
+    const srv = await lfSrvCount(); const why = srv ? lfShort(m.size, srv, 0) : '서버 건수를 못 셈'; if (why) throw new Error(`지금 상품 기록을 다 받지 못함(${why}) — 아무것도 쓰지 않음`); return m;
+  }
+  const lfrDl = (name, obj) => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { log('내려받기 실패: ' + e.message, 1); } };
+  const lfrStamp = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  const lfrShow = (r) => `${r.id} ` + Object.keys(r.set).map((k) => `${k} ${JSON.stringify(lfrIsDel(r.before[k]) ? '(없음)' : r.before[k])}→${JSON.stringify(lfrIsDel(r.set[k]) ? '(지움)' : r.set[k])}`).join(' · ');
+  async function lfrApply(rows, source, tag) {
+    const undo = rows.map((r) => ({ id: r.id, set: bkSer(r.before), before: bkSer(r.set) })); const name = `listfix-undo-${tag}.json`; const CH = 2000; const parts = Math.ceil(undo.length / CH);
+    for (let i = 0; i < parts; i++) await C('prd_system').doc(`listfix_undo_${tag}_${i}`).set({ at: nowIso(), pc: PC_NAME || '', source, part: i, parts, n: undo.length, rows: JSON.stringify(undo.slice(i * CH, (i + 1) * CH)), ...W() }); /* 되돌림 자료를 먼저 — 못 남기면 여기서 오류로 멈춤(아무것도 안 씀) */
+    lfrDl(name, { kind: 'listfix-undo', tag, source, at: nowIso(), pc: PC_NAME || '', rows: undo }); log(`🩹 되돌림 자료 ${undo.length.toLocaleString()}줄을 prd_system/listfix_undo_${tag}_0~${parts - 1}과 내려받기 파일 ${name}에 먼저 남김`);
+    const FV = firebase.firestore.FieldValue; let done = 0;
+    for (let i = 0; i < rows.length; i += 1000) { if (stopFlag) throw new Error(`멈춤 — ${done.toLocaleString()}개까지 씀(되돌림 자료 ${name})`); const part = rows.slice(i, i + 1000); const ops = [];
+      for (const r of part) { const doc = lfrDoc(r.set, FV, firebase.firestore.Timestamp); const at = nowIso(); ops.push((b) => b.set(C('prd_listings').doc(r.id), { ...doc, listfixAt: at, listfixBy: source, ...W() }, { merge: true })); ops.push((b) => b.set(C('prd_listing_changes').doc(), { listingKey: r.id, at, source, changes: lfrChanges(r), ...W() })); }
+      await commitBatches(ops, `상품 기록 되돌리는 중 (${(i + part.length).toLocaleString()}/${rows.length.toLocaleString()})`); done += part.length;
+      for (const r of part.slice(0, 3)) { const v = (await C('prd_listings').doc(r.id).get({ source: 'server' })).data() || {}; for (const [k, x] of Object.entries(r.set)) { const good = lfrIsDel(x) ? v[k] === undefined : lfrSame(bkSer(v[k]), bkSer(x)); if (!good) throw new Error(`쓴 값 확인이 어긋남(${r.id} ${k}) — ${done.toLocaleString()}개까지 쓰고 멈춤 · 되돌림 자료 ${name}`); } } }
+    try { await C('prd_system').doc('listfix_plan').set({ applied: { at: nowIso(), pc: PC_NAME || '', source, tag, n: done, undo: name, undoParts: parts } }, { merge: true }); } catch (e) {}
+    log(`🩹 상품 기록 ${done.toLocaleString()}개를 되돌림(${source}) · 바뀐 칸은 상품 변경 기록(prd_listing_changes · source ${source})에도 남김 · 되돌림 파일: ${name}`); return done;
+  }
+  async function listfixRestore(files) {
+    const undoF = files.find((f) => LFR.UNDO.test(f.name)); if (undoF) return lfrUndoRun(undoF);
+    const bk = files.filter((f) => LFR.FILE.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!bk.some((f) => /-full\.jsonl$/i.test(f.name))) { log('🩹 되돌리기: 통째 백업 파일(날짜-full.jsonl)이 없음 — 10/28 full 파일과 그 뒤 inc 파일을 모두 함께 놓아 주세요 · 아무것도 쓰지 않음', 1); return; }
+    const B = lfrNew(); for (const f of bk) await lfrReadFile(B, f);
+    log(`🩹 백업 파일 ${bk.length}개 읽음(${bk[0].name} ~ ${bk[bk.length - 1].name}) — 상품 ${B.m.size.toLocaleString()}개 · 줄 ${B.lines.toLocaleString()} · 사고 뒤 판(뺌) ${B.after.toLocaleString()} · 못 읽은 줄 ${B.bad} · 마지막 기록 ${B.maxU ? new Date(B.maxU + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') : '-'} KST`);
+    const t0 = Date.now(); const cur = await lfrReadCur(0); const PL = lfrPlan(B, cur, 'last'), PM = lfrPlan(B, cur, 'min'); const w = lfrCheck(B, cur, PL); const st = lfrStamp(); const n = PL.n;
+    const sum = `지금 상품 ${n.cur.toLocaleString()} · 백업 상품 ${n.bk.toLocaleString()} · 사고 때 새 상품으로 적힌 것 중 백업에 있는 것 ${n.hit.toLocaleString()}(백업에 없음 = 정말 새 상품 ${n.noBk}) · 고칠 상품 ${PL.rows.length.toLocaleString()} — 처음 본 때 ${n.f.toLocaleString()} · 등록일 ${n.r.toLocaleString()} · 연도 추정 표시 지움 ${n.g.toLocaleString()} · 수량 ${n.q.toLocaleString()}(사고 뒤 다시 세어 그대로 ${n.qKeep}) · 이미 같음 ${n.same}`;
+    log('🩹 마른 실행(아무것도 안 씀): ' + sum); log(`🩹 '복구1108'(11/08 JS-MAIN 사고 전 처음 본 때까지)이면 고칠 상품 ${PM.rows.length.toLocaleString()} · 그중 11/08 사고로 이미 늦어져 있던 처음 본 때 ${n.older1108.toLocaleString()}`);
+    PL.rows.slice(0, 20).forEach((r) => log('   보기 ' + lfrShow(r)));
+    lfrDl(`listfix-plan-${st}.json`, { kind: 'listfix-plan', at: nowIso(), pc: PC_NAME || '', files: B.files, n, nMin: PM.n, rowsMin: PM.rows.length, warn: w, rows: PL.rows });
+    try { await C('prd_system').doc('listfix_plan').set({ at: nowIso(), pc: PC_NAME || '', files: B.files, n, nMin: PM.n, rows: PL.rows.length, rowsMin: PM.rows.length, warn: w, sample: PL.rows.slice(0, 20).map(lfrShow), ...W() }, { merge: true }); } catch (e) {}
+    if (w.length) { log('🩹 이상해서 멈춤(쓰지 않음): ' + w.join(' / '), 1); return; } if (!PL.rows.length && !PM.rows.length) { log('🩹 고칠 상품이 없음'); return; }
+    const ans = prompt(`🩹 상품 기록 되돌리기 — 마른 실행 결과(아직 아무것도 안 씀)\n${sum}\n\n· '복구' = 11/17 사고 직전 값으로 ${PL.rows.length.toLocaleString()}개\n· '복구1108' = 처음 본 때를 11/08 JS-MAIN 사고 전까지 되돌림 ${PM.rows.length.toLocaleString()}개\n\n쓰기 전에 지금 값을 되돌림 자료로 먼저 남깁니다. 진행하려면 위 낱말 하나를 그대로 적어 주세요(취소·다른 글 = 쓰지 않음)`);
+    const a = String(ans || '').trim(); if (a !== '복구' && a !== '복구1108') { log('🩹 되돌리기 쓰지 않음(마른 실행만) — 계획 파일 listfix-plan-' + st + '.json'); return; }
+    const mode = a === '복구1108' ? 'min' : 'last'; const cur2 = await lfrReadCur(t0); for (const [id, v] of cur2) cur.set(id, v); /* 마른 실행 사이 바뀐 상품은 지금 값으로 다시 셈 */
+    const P2 = lfrPlan(B, cur, mode); const P1 = mode === 'min' ? PM : PL; if (Math.abs(P2.rows.length - P1.rows.length) > 50) { log(`🩹 마른 실행(${P1.rows.length})과 지금 다시 센 것(${P2.rows.length})이 50개 넘게 다름 — 쓰지 않고 멈춤(다시 놓아 주세요)`, 1); return; }
+    await lfrApply(P2.rows, mode === 'min' ? 'listfix1117-1108' : 'listfix1117', st);
+    /* ③ 수량을 사고 전 값으로 되돌린 판매 중 상품만 정보수정 화면으로 다시 셈(판매완료는 양식이 없어 11/17 실패 2,046건이 났음 — 넣지 않음) */
+    const qq = P2.rows.filter((r) => r.set.qty !== undefined && !lfrIsDel(r.set.qty)).map((r) => [r.id, (cur.get(r.id) || {})]).filter(([, c]) => c.a && c.lid).map(([id, c]) => [id, c.lid]);
+    if (qq.length) { try { const nq = await qchkQueue(qq, '덮임 되돌린 뒤 수량 다시 세기', 'listfix1117'); log(`🔢 수량을 되돌린 판매 중 상품 ${nq.items.toLocaleString()}개를 정보수정 화면으로 다시 세게 줄에 넣음(${nq.cmds}묶음 · 로그인한 PC가 나눠 맡음)`); } catch (e) { log('🔢 수량 다시 세기 줄 넣기 실패: ' + e.message + ' — 되돌리기는 끝났음 · 웹앱에서 다시 넣어 주세요', 1); } }
+  }
+  async function lfrUndoRun(f) {
+    let U = null; try { U = JSON.parse(await f.text()); } catch (e) {} if (!U || U.kind !== 'listfix-undo' || !Array.isArray(U.rows)) { log(`🩹 '${f.name}'은 되돌림 파일이 아님 — 아무것도 쓰지 않음`, 1); return; }
+    const rows = U.rows.filter((r) => r && r.id && r.set && typeof r.set === 'object').map((r) => ({ id: String(r.id), set: r.set, before: r.before || {} })); log(`🩹 되돌림 파일 ${f.name}: 상품 ${rows.length.toLocaleString()}개 (${U.source || ''} · ${U.at || ''})`); rows.slice(0, 5).forEach((r) => log('   보기 ' + lfrShow(r)));
+    const ans = prompt(`🩹 되돌리기 — 상품 ${rows.length.toLocaleString()}개를 '${U.source || ''}' 쓰기 전 값으로 다시 적습니다(지금 값은 또 되돌림 자료로 남김). 진행하려면 '되돌리기'를 적어 주세요`); if (String(ans || '').trim() !== '되돌리기') { log('🩹 되돌리기 취소 — 아무것도 쓰지 않음'); return; }
+    await lfrApply(rows, 'listfix1117-undo', 'u' + lfrStamp());
+  }
+
+  /* (listfix1 · 정범님 11/17 16:16 「백업 파일 복사 — 이걸 내가 왜 해야 돼? 자동으로」 · 「모든 버전을 백업 · 구분해서 · 뜻을 훗날 세세히」 · 「MJ 빼고 아무거나」) 🩹 사람 손 0 되돌리기
+   *  로거(백업 파일이 있는 PC · MJ-MAIN 아님)의 수집기가 도우미(1.8.31 /lf-ls·/lf-get)로 백업 파일을 직접 읽어(읽기만) 두 길을 다 셈:
+   *   '복구'(last · 11/17 사고 직전 값) · '복구1108'(min · 처음 본 때를 11/08 JS-MAIN 사고 전까지)
+   *  버전 넷을 덮지 않고 따로 남김 — 로거 backup\listfix\<회차>\(about.json 뜻·근거·건수·만든 때 + pre·cur·last·min 조각 · 한 번 쓴 파일은 다시 못 씀) + Firestore prd_system/listfix_versions(runs.<회차>)·listfix_v_<회차>_<버전>_<n>
+   *  쓰기 = '복구1108'(리드 판단 · 정범님 14:55 「당연히 되돌려야지」) — 아래가 모두 맞을 때만 · 하나라도 어긋나면 'held'(쓰지 않음 · 다시 하지 않음 · 리드가 prd_system/listfix_auto를 봄)
+   *   ① lfrCheck 경고 0 ② 고른 상품(hit)과 고칠 상품이 보고서 ①(약 14,700)에서 ±15% 안 ③ 백업에 없는 상품 1,500 이하 ④ 쓰기 직전 다시 센 것과 50개 넘게 다르지 않음 ⑤ 되돌림 자료를 먼저 남김(lfrApply) */
+  const LFA = { ON: true, MODE: 'min', LO: 12500, HI: 16900, NOBK: 1500, TRY: 6, DOC: 'listfix_auto', VER: 'listfix_versions', CH: 2000, FSB: 600000, PART: 5000 };
+  const lfaJ = (r) => { try { return r && r.response && typeof r.response === 'object' ? r.response : JSON.parse(r.responseText); } catch (e) { return null; } };
+  const lfaPost = async (p, body, to) => { const r = await gmReq({ method: 'POST', url: HLP + p, anonymous: true, headers: { 'X-RN-Bk': '1', 'Content-Type': 'application/json' }, data: body == null ? '{}' : body, timeout: to || 120000 }); return { st: r ? r.status : 0, j: r ? lfaJ(r) : null }; };
+  async function lfaReadHlp(B, f) { /* 도우미에서 8MB씩 — 줄 끝에서 잘려 옴 */ B.files.push(f.name); let off = 0, k = 0;
+    while (off < f.bytes) { const { st, j } = await lfaPost(`/lf-get?f=${encodeURIComponent(f.name)}&off=${off}&len=${8 * 1048576}`, null, 180000); if (st !== 200 || !j || !j.ok) throw new Error(`백업 파일 ${f.name} 읽기 실패(${st} ${(j && j.err) || ''})`);
+      for (const ln of String(j.text || '').split('\n')) lfrFold(B, ln); if (!(j.next > off)) break; off = j.next; if (++k % 4 === 0) { ui('백업 파일 읽는 중(사람 손 없이): ' + f.name, off, f.bytes, ''); await sleep(0); } } }
+  async function lfaKeep(run, name, rows, about) { /* 도우미 파일(덮지 않음) — 첫 줄은 그 버전의 뜻 */ let part = 0; const out = [];
+    for (let i = 0; i < Math.max(1, rows.length); i += LFA.PART, part++) { const body = [JSON.stringify({ about: { ...about, part, from: i, n: Math.min(LFA.PART, rows.length - i) } }), ...rows.slice(i, i + LFA.PART).map((x) => JSON.stringify(bkSer(x)))].join('\n') + '\n';
+      const { st, j } = await lfaPost(`/lf-put?run=${run}&name=${name}&part=${part}`, body); if (st !== 200 || !j || !j.ok) throw new Error(`되돌리기 버전 ${name} 보관 실패(${st} ${(j && j.err) || ''})`); out.push({ file: j.file, bytes: j.bytes, sha: j.sha }); } return out; }
+  const lfaBytes = (t) => { let n = 0; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); n += c < 0x80 ? 1 : c < 0x800 ? 2 : c >= 0xd800 && c < 0xdc00 ? (i++, 4) : 3; } return n; };
+  async function lfaKeepFs(run, name, rows, about) { /* Firestore 사본 — 문서 하나 약 600KB까지(한도 1MiB · 상품 문서 통째인 버전도 안 넘게) · 새 문서만(회차가 이름에 들어가 덮을 일이 없음) */
+    const packs = []; let cur = [], sz = 0; for (const r of rows) { const t = JSON.stringify(bkSer(r)); const b = lfaBytes(t) + 1; if (cur.length && (sz + b > LFA.FSB || cur.length >= LFA.CH)) { packs.push(cur); cur = []; sz = 0; } cur.push(t); sz += b; } if (cur.length) packs.push(cur);
+    for (let i = 0; i < packs.length; i++) await C('prd_system').doc(`listfix_v_${run}_${name}_${i}`).set({ run, name, part: i, parts: packs.length, n: rows.length, about, rows: '[' + packs[i].join(',') + ']', at: nowIso(), pc: PC_NAME || '', ...W() }); return packs.length; }
+  const lfaRef = () => C('prd_system').doc(LFA.DOC);
+  const lfaSet = (o) => lfaRef().set({ ...o, pc: PC_NAME || '', at: nowIso(), ...W() }, { merge: true }).catch(() => {});
+  async function lfaClaim() { return db.runTransaction(async (tx) => { const s = await tx.get(lfaRef()); const x = s.data() || {}; if (x.stop === true) return null;
+    const old = x.state === 'run' && Date.now() - (Date.parse(x.runAt || '') || 0) > 3 * 3600e3; if (x.state && x.state !== 'wait' && !old) return null; if ((x.tries || 0) >= LFA.TRY) return null;
+    tx.set(lfaRef(), { state: 'run', runAt: nowIso(), tries: (x.tries || 0) + 1, pc: PC_NAME || '' }, { merge: true }); return x; }); }
+  async function lfrAuto() {
+    if (!LFA.ON || !PUBONLY || /^MJ-MAIN$/i.test(String(PC_NAME || '')) || !auth.currentUser || running || (typeof BKX !== 'undefined' && BKX.state === 'run') || GM_getValue('rn-lfa-done', '')) return;
+    const ls = await lfaPost('/lf-ls'); if (ls.st !== 200 || !ls.j || !ls.j.ok) return; /* 도우미가 아직 1.8.31이 아님 — 다음 확인 때(도우미는 한 시간마다 스스로 새 판) */
+    let x0 = null; try { x0 = await lfaClaim(); } catch (e) { return; } if (!x0) { const x = (await lfaRef().get().catch(() => null)); const st = x && x.data() ? x.data().state : ''; if (st === 'done' || st === 'held' || st === 'error-apply') GM_setValue('rn-lfa-done', st); return; }
+    setRunning('상품 기록 되돌리기(저절로)'); let stage = '목록'; const run = lfrStamp(); const made = nowIso();
+    try {
+      const files = (ls.j.files || []).filter((f) => LFR.FILE.test(f.name)); const bk = files.slice().sort((a, b) => a.name.localeCompare(b.name));
+      if (!bk.some((f) => /-full\.jsonl$/i.test(f.name))) throw Object.assign(new Error(`도우미 폴더(${ls.j.dir})에 통째 백업(날짜-full.jsonl)이 없음`), { wait: 1 });
+      stage = '백업 읽기'; await lfaSet({ state: 'run', stage, run, files: bk });
+      const B = lfrNew(); for (const f of bk) await lfaReadHlp(B, f);
+      stage = '지금 값 읽기'; await lfaSet({ stage }); const t0 = Date.now(); const cur = await lfrReadCur(0);
+      const PL = lfrPlan(B, cur, 'last'), PM = lfrPlan(B, cur, 'min'); const w = lfrCheck(B, cur, PM); const n = PM.n;
+      const PA = LFA.MODE === 'min' ? PM : PL; const exp = (v) => v >= LFA.LO && v <= LFA.HI;
+      if (!exp(n.hit)) w.push(`고른 상품 ${n.hit.toLocaleString()}개가 보고서 ①(약 14,700)에서 ±15%(${LFA.LO.toLocaleString()}~${LFA.HI.toLocaleString()}) 밖`);
+      if (!exp(PA.rows.length)) w.push(`고칠 상품 ${PA.rows.length.toLocaleString()}개가 ${LFA.LO.toLocaleString()}~${LFA.HI.toLocaleString()} 밖`);
+      if (n.noBk > LFA.NOBK) w.push(`백업에 없는 상품 ${n.noBk.toLocaleString()}개(상한 ${LFA.NOBK})`);
+      stage = '버전 보관'; await lfaSet({ stage });
+      const hitIds = new Set([...cur].filter(([, c]) => { const fm = lfrMs(c.f); return fm >= LFR.T0 && fm <= LFR.T1; }).map(([id]) => id));
+      const pre = [...hitIds].filter((id) => B.m.has(id)).map((id) => ({ id, ...bkSer(B.m.get(id)) }));
+      const curAll = [...cur].map(([id, c]) => ({ id, ...bkSer(c) })); const curHit = curAll.filter((r) => hitIds.has(r.id));
+      const bkInfo = { files: bk.map((f) => ({ name: f.name, bytes: f.bytes, at: f.at })), lines: B.lines, products: B.m.size, afterT0: B.after, bad: B.bad, lastKst: B.maxU ? new Date(B.maxU + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') : null };
+      const V = {
+        pre: { 뜻: '사고 전 상태 — 로거 백업에서 상품마다 11/17 12:37 KST(T0) 전 마지막 판(f 처음 본 때 · r 등록일 · g 연도 추정 표시 · q 수량 · u 그 판의 uploadedAt) + minF(모든 백업 판 중 가장 이른 처음 본 때)', 근거: '로거 백업 파일(아래 files)', 대상: '사고 때 처음 본 때가 12:37~13:45 KST로 적힌 상품 중 백업에 있는 것', 건수: pre.length },
+        cur: { 뜻: '적용 전 지금 값 — 되돌리기 쓰기 직전 서버에서 받은 상품 기록(f·r·g·q·ql 화면 수량·ec 수량 확인 때·a 판매 중·lid). 도우미 파일은 모든 상품, Firestore 사본은 고른 상품만', 근거: 'prd_listings 서버 통째 읽기(3% 넘게 모자라면 멈춤)', 건수: curAll.length, 고른상품: curHit.length },
+        last: { 뜻: "'복구' — 11/17 사고 직전 값으로(처음 본 때 = 사고 직전 판의 값 · 11/08 JS-MAIN 사고로 늦어진 처음 본 때는 그대로). set = 쓸 값 · before = 지금 값({__del:1} = 칸 없음)", 쓰기: LFA.MODE === 'last', 건수: PL.rows.length, 셈: PL.n },
+        min: { 뜻: "'복구1108' — '복구'와 같되 처음 본 때를 백업 전체에서 가장 이른 값(11/08 JS-MAIN 사고 전)으로. 리드 판단으로 이것을 씀", 쓰기: LFA.MODE === 'min', 건수: PM.rows.length, 셈: PM.n, 늦어져있던처음본때: n.older1108 },
+      };
+      const about = { kind: 'listfix-versions', run, made, pc: PC_NAME || '', why: '11/17 HOME 상품 기록 통째 읽기가 11,999/26,710건만 받아 14,686개를 새 상품으로 여겨 처음 본 때·등록일·수량 등을 덮은 사고(I-1117) 되돌리기', T0: new Date(LFR.T0).toISOString(), T1: new Date(LFR.T1).toISOString(), mode: LFA.MODE, backup: bkInfo, versions: V, warn: w, 규칙: '지우지 않음 · 덮지 않음 · 회차마다 새 폴더/새 문서' };
+      const kept = { pre: await lfaKeep(run, 'pre', pre, { run, version: 'pre', ...V.pre }), cur: await lfaKeep(run, 'cur', curAll, { run, version: 'cur', ...V.cur }), last: await lfaKeep(run, 'last', PL.rows, { run, version: 'last', ...V.last, 셈: undefined }), min: await lfaKeep(run, 'min', PM.rows, { run, version: 'min', ...V.min, 셈: undefined }) };
+      const fsParts = { pre: await lfaKeepFs(run, 'pre', pre, V.pre.뜻), cur: await lfaKeepFs(run, 'cur', curHit, V.cur.뜻), last: await lfaKeepFs(run, 'last', PL.rows, V.last.뜻), min: await lfaKeepFs(run, 'min', PM.rows, V.min.뜻) };
+      const ab = await lfaPost(`/lf-put?run=${run}&name=about&part=0&ext=json`, JSON.stringify({ ...about, kept, fsParts }, null, 1)); if (ab.st !== 200 || !(ab.j && ab.j.ok)) throw new Error('about.json 보관 실패 ' + ab.st);
+      const sumV = { made, pc: PC_NAME || '', dir: `backup\\listfix\\${run}`, mode: LFA.MODE, backup: bkInfo, warn: w, versions: Object.fromEntries(Object.entries(V).map(([k, v]) => [k, { ...v, 셈: v.셈 || null, files: kept[k], fsDocs: `prd_system/listfix_v_${run}_${k}_0~${fsParts[k] - 1}` }])) };
+      await C('prd_system').doc(LFA.VER).set({ runs: { [run]: sumV }, last: run, ...W() }, { merge: true });
+      log(`🩹 되돌리기 버전 보관(${run}) — 사고 전 ${pre.length.toLocaleString()} · 지금 값 ${curAll.length.toLocaleString()} · '복구' ${PL.rows.length.toLocaleString()} · '복구1108' ${PM.rows.length.toLocaleString()} · 로거 backup\\listfix\\${run} + prd_system/listfix_versions`);
+      if (w.length) { await lfaSet({ state: 'held', stage: '멈춤(쓰지 않음)', run, warn: w, n, nLast: PL.n, rows: PM.rows.length, rowsLast: PL.rows.length }); log('🩹 되돌리기 쓰지 않음(숫자가 예상과 다름 — 리드에게): ' + w.join(' / '), 1); GM_setValue('rn-lfa-done', 'held'); return; }
+      stage = '다시 세기'; const cur2 = await lfrReadCur(t0); for (const [id, v] of cur2) cur.set(id, v); const P2 = lfrPlan(B, cur, LFA.MODE);
+      if (Math.abs(P2.rows.length - PA.rows.length) > 50) { await lfaSet({ state: 'held', stage: '멈춤(다시 센 것이 다름)', run, warn: [`마른 실행 ${PA.rows.length} · 다시 센 것 ${P2.rows.length}`], n }); GM_setValue('rn-lfa-done', 'held'); return; }
+      stage = '쓰기'; await lfaSet({ state: 'applying', stage, run, n, rows: P2.rows.length });
+      let done = 0; try { done = await lfrApply(P2.rows, LFA.MODE === 'min' ? 'listfix1117-1108' : 'listfix1117', run); } catch (e) { await lfaSet({ state: 'error-apply', stage, run, err: String(e.message || e).slice(0, 500) }); GM_setValue('rn-lfa-done', 'error-apply'); throw e; }
+      const res = { run, done, mode: LFA.MODE, at: nowIso(), undo: `prd_system/listfix_undo_${run}_*` }; await lfaPost(`/lf-put?run=${run}&name=result&part=0&ext=json`, JSON.stringify(res, null, 1)).catch(() => {});
+      await C('prd_system').doc(LFA.VER).set({ runs: { [run]: { applied: res } } }, { merge: true }).catch(() => {});
+      let nq = null; const qq = P2.rows.filter((r) => r.set.qty !== undefined && !lfrIsDel(r.set.qty)).map((r) => [r.id, cur.get(r.id) || {}]).filter(([, c]) => c.a && c.lid).map(([id, c]) => [id, c.lid]);
+      if (qq.length) { try { nq = await qchkQueue(qq, '덮임 되돌린 뒤 수량 다시 세기', 'listfix1117'); } catch (e) { nq = { err: e.message }; } }
+      await lfaSet({ state: 'done', stage: '끝', run, n, rows: P2.rows.length, done, qtyQueue: nq }); GM_setValue('rn-lfa-done', 'done'); log(`🩹 상품 기록 ${done.toLocaleString()}개 되돌림(저절로 · '복구1108' · 회차 ${run})`);
+    } catch (e) { const wait = !!e.wait || stage !== '쓰기'; if (stage !== '쓰기') await lfaSet({ state: wait ? 'wait' : 'error', stage, run, err: String(e.message || e).slice(0, 500) }); log('🩹 저절로 되돌리기 멈춤(' + stage + '): ' + e.message, 1); }
+    finally { setRunning(null); } }
+  if (PUBONLY) { setTimeout(() => lfrAuto().catch(() => {}), 9 * 60e3); setInterval(() => lfrAuto().catch(() => {}), 30 * 60e3); }
+
   /* ───────── 파일 가져오기 ───────── */
   const drop = $('#rnpDrop');
   drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
   drop.ondragleave = () => drop.classList.remove('over');
-  drop.ondrop = async (e) => { e.preventDefault(); drop.classList.remove('over'); for (const f of e.dataTransfer.files) await runFile(f); };
+  drop.ondrop = async (e) => { e.preventDefault(); drop.classList.remove('over'); await runFiles([...e.dataTransfer.files]); };
   async function importFile(file) {
     const buf = await file.arrayBuffer();
     const head = new TextDecoder('utf-8').decode(buf.slice(0, 2000));
@@ -1449,6 +1631,9 @@
           const { doc } = await getDoc(listUrl(STATUS[stName], prog.page));
           const r = P.parseScmList(doc, new Date().getFullYear());
           const seenAt = nowIso(); let ops = []; let unknown = 0;
+          { const old = maxKnown ? r.rows.filter((x) => x.usedCode && +x.listingId && +x.listingId <= maxKnown && !LISTINGS.has('aladin_' + x.usedCode)) : []; /* (listfix1) 🛡 이미 지난 번호인데 처음 보는 상품 = 상품 기록을 덜 받았을 때의 모습 — 쓰기 전에 셈 */
+            if (old.length && lfTrip(prog.lfOld, old.length) && (await lfStop({ mode, status: stName, page: prog.page, n: old.length, sofar: +prog.lfOld || 0, maxKnown, sample: old.slice(0, 5).map((x) => String(x.listingId)) }))) throw new Error(`상품 기록을 덜 받은 것 같아 멈춤(처음 보는 옛 번호 상품 ${(+prog.lfOld || 0) + old.length}개)`);
+            prog.lfOld = (+prog.lfOld || 0) + old.length; }
           for (const row of r.rows) {
             if (!row.usedCode) { log('U코드 없는 줄: ' + row.listingId, 1); continue; }
             maxSeen = Math.max(maxSeen, +row.listingId);
@@ -5703,7 +5888,13 @@
 
   // 등록 파일 가져오기: 끌어다 놓기 또는 눌러서 고르기
   $('#rnpDrop').onclick = () => $('#rnpFile').click();
-  $('#rnpFile').onchange = async (e) => { for (const f of e.target.files) await runFile(f); e.target.value = ''; };
+  $('#rnpFile').onchange = async (e) => { await runFiles([...e.target.files]); e.target.value = ''; };
+  async function runFiles(fs0) { /* (listfix1) 로거 백업 파일(날짜-full|inc.jsonl)·되돌림 파일은 한 묶음으로 되돌리기에 · 나머지는 예전처럼 한 개씩 */ const lf = fs0.filter((f) => LFR.FILE.test(f.name) || LFR.UNDO.test(f.name)); if (lf.length) await runLfr(lf); for (const f of fs0) if (!lf.includes(f)) await runFile(f); }
+  async function runLfr(fs0) {
+    if (running) { log('다른 작업 진행 중: ' + running, 1); return; }
+    setRunning('상품 기록 되돌리기');
+    try { await listfixRestore(fs0); ui('끝: 상품 기록 되돌리기', 1, 1, '', ''); } catch (e) { ui('오류로 멈춤', 0, 0, e.message); log('🩹 되돌리기 멈춤: ' + e.message, 1); } finally { setRunning(null); }
+  }
   async function runFile(f) {
     if (running) { log('다른 작업 진행 중: ' + running, 1); return; }
     setRunning('파일 가져오기');
