@@ -4286,7 +4286,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     </div>
     <div class="pane imp">
       <div class="drop" id="rnpDrop"><b>알라딘 등록 상품 파일(.xls)</b><span>여기에 끌어다 놓거나 눌러서 고르기<br>판매완료 엑셀은 고객 수집기에 넣어 주세요</span></div>
-      <input type="file" id="rnpFile" accept=".xls,.xlsx,.html" style="display:none">
+      <input type="file" id="rnpFile" accept=".xls,.xlsx,.html,.jsonl,.json" multiple style="display:none">
     </div>
     <div class="pane set">
       <label>알라딘 요청 간격 — 자동 조절(1초로 시작 → 잘 되면 이 최소값까지 빨라지고, 실패·로그인 풀림이면 바로 느려짐). 최소(ms)<input type="number" id="rnpDelay" min="300" step="50"></label>
@@ -5244,11 +5244,102 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     return { ops, isNew: !prev, changed: real.length > 0 };
   }
 
+  /* ───────── (listfix1 11/17 · 🚨 자료) 🩹 덮인 상품 기록 되돌리기 — 로거 백업 파일(D:\ReadNow\backup\firestore\prd_listings\날짜-full|inc.jsonl)을 상품 파일 칸에 함께 끌어다 놓으면 ─────────
+   *  11/17 12:41~13:40 KST 상품 조회가 상품 기록을 덜 받은 채 원래 있던 상품 14,686개를 새 상품으로 보고 덮어 적은 칸만 사고 전 값으로: 처음 본 때(firstSeenAt)·등록일(registeredAt)·연도 추정 표시(registeredYearGuessed)·수량(qty — 사고 뒤 정보수정 화면으로 다시 센 상품은 그대로 둠 · 목록 숫자는 qtyList로)
+   *  판매 상태·가격·제목·판매 중 여부·마지막 본 때는 사고 때 알라딘에서 실제로 본 값이라 그대로 · 고르는 상품 = 지금 처음 본 때가 사고 시간(T0~T1)인데 백업에 사고 전 판이 있는 것(정말 새 상품은 백업에 없어 건드리지 않음)
+   *  언제나 먼저 마른 실행(상품 기록은 안 씀): 칸별 숫자·보기 20줄 기록 + 계획 파일 내려받기 + prd_system/listfix_plan 요약 → 사람이 '복구'(또는 11/08 JS-MAIN 사고까지 '복구1108')를 적어야 씀
+   *  쓰기 전에 되돌림 자료(지금 값)를 prd_system/listfix_undo_<표>_<n>과 내려받기 파일로 먼저 남김(Firestore에 못 남기면 쓰지 않음) · 상품 200개씩(쓰기 400) · 1,000개마다 3개를 서버에서 다시 읽어 맞는지 보고 어긋나면 멈춤 · 되돌림 파일(listfix-undo-*.json)을 놓고 '되돌리기'를 적으면 원래대로 */
+  /* LFR-PURE-BEGIN */
+  const LFR = { T0: Date.parse('2026-11-17T03:37:00Z'), T1: Date.parse('2026-11-17T04:45:00Z'), FILE: /^\d{4}-\d\d-\d\d-(full|inc)\.jsonl$/i, UNDO: /^listfix-undo-.*\.json$/i, HIT_MAX: 20000 };
+  const lfrMs = (v) => { if (v == null || v === '') return 0; if (typeof v === 'number') return v; if (typeof v === 'string') return Date.parse(v) || 0; if (typeof v.__ts === 'number') return v.__ts; if (typeof v.toMillis === 'function') return v.toMillis(); if (typeof v.seconds === 'number') return v.seconds * 1000; return 0; };
+  const lfrIsDel = (v) => !!(v && typeof v === 'object' && v.__del === 1);
+  const lfrSame = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const lfrNew = () => ({ m: new Map(), lines: 0, after: 0, bad: 0, other: 0, maxU: 0, files: [] });
+  function lfrFold(B, line) { /* 백업 한 줄 → 상품마다 사고 전(uploadedAt < T0) 마지막 판 + 모든 판 중 가장 이른 처음 본 때(minF · 11/08 사고 전 값) */
+    if (!line || line.length < 10) return; let o; try { o = JSON.parse(line); } catch (e) { B.bad++; return; }
+    if (!o || typeof o.path !== 'string' || !/^prd_listings\/[^/]+$/.test(o.path) || !o.d || typeof o.d !== 'object') { B.other++; return; }
+    const id = String(o.id || o.path.slice(13)); if (/^_perm/.test(id)) return; const d = o.d; const u = lfrMs(d.uploadedAt); B.lines++;
+    if (u >= LFR.T0) { B.after++; return; } if (u > B.maxU) B.maxU = u;
+    const f = d.firstSeenAt ?? null; const fm = lfrMs(f); const x = B.m.get(id); const pm = x ? x.minF : null; const minF = !fm ? pm : !pm || fm < lfrMs(pm) ? f : pm;
+    if (!x || u >= x.u) B.m.set(id, { u, f, r: d.registeredAt ?? null, g: d.registeredYearGuessed === true, q: d.qty ?? null, minF }); else x.minF = minF;
+  }
+  function lfrPlan(B, cur, mode) { /* cur = 지금 서버 값 Map(id → { f, r, g, q, ql, ec }) · mode 'last' = 사고 직전 값 · 'min' = 백업에서 가장 이른 처음 본 때(11/08 JS-MAIN 사고도 되돌림) */
+    const rows = []; const n = { cur: cur.size, bk: B.m.size, hit: 0, noBk: 0, f: 0, r: 0, g: 0, q: 0, qKeep: 0, same: 0, older1108: 0 };
+    for (const [id, c] of cur) { const fm = lfrMs(c.f); if (!(fm >= LFR.T0 && fm <= LFR.T1)) continue; const b = B.m.get(id); if (!b) { n.noBk++; continue; } n.hit++;
+      if (b.minF && b.f && lfrMs(b.minF) < lfrMs(b.f)) n.older1108++;
+      const want = mode === 'min' && b.minF ? b.minF : b.f; const set = {}, before = {}; const put = (k, v, old) => { set[k] = v; before[k] = old === undefined ? { __del: 1 } : old; };
+      if (want && lfrMs(want) && lfrMs(want) < fm) { put('firstSeenAt', want, c.f); n.f++; }
+      if (b.r != null && !lfrSame(b.r, c.r)) { put('registeredAt', b.r, c.r); n.r++; }
+      if (c.g === true && !b.g) { put('registeredYearGuessed', { __del: 1 }, true); n.g++; }
+      if (b.q != null && c.q != null && +b.q !== +c.q) { if (lfrMs(c.ec) >= LFR.T0) n.qKeep++; else { put('qty', b.q, c.q); if (c.ql == null || +c.ql !== +c.q) put('qtyList', +c.q, c.ql); n.q++; } }
+      if (!Object.keys(set).length) { n.same++; continue; } rows.push({ id, set, before }); }
+    return { rows, n, mode: mode === 'min' ? 'min' : 'last' };
+  }
+  const lfrDoc = (set, FV, TSC) => { const o = {}; for (const [k, v] of Object.entries(set)) o[k] = lfrIsDel(v) ? FV.delete() : v && typeof v === 'object' && typeof v.__ts === 'number' ? TSC.fromMillis(v.__ts) : v; return o; };
+  const lfrChanges = (r) => Object.fromEntries(Object.keys(r.set).map((k) => [k, { from: lfrIsDel(r.before[k]) ? null : r.before[k] ?? null, to: lfrIsDel(r.set[k]) ? null : r.set[k] }]));
+  const lfrCheck = (B, cur, P) => { /* 이상하면 쓰지 않음 */ const w = []; if (!B.m.size || B.m.size < cur.size * 0.9) w.push(`백업 상품 ${B.m.size.toLocaleString()}개가 지금 ${cur.size.toLocaleString()}개의 90%보다 적음 — full 파일이 빠졌거나 덜 받음`); if (B.maxU < LFR.T0 - 48 * 3600e3) w.push(`백업의 마지막 기록이 ${new Date(B.maxU).toISOString()} — 사고 직전(11/16·11/17) inc 파일이 빠짐`); if (P.n.hit > LFR.HIT_MAX) w.push(`고른 상품 ${P.n.hit}개가 너무 많음(상한 ${LFR.HIT_MAX})`); if (B.bad > 100) w.push(`못 읽은 줄 ${B.bad}개`); return w; };
+  /* LFR-PURE-END */
+  async function lfrReadFile(B, f) { /* 줄 단위로 흘려 읽음(100MB full 파일도 한 번에 글자로 들지 않게) */
+    B.files.push(f.name); let rest = '', k = 0;
+    if (f.stream && typeof TextDecoderStream === 'function') { const rd = f.stream().pipeThrough(new TextDecoderStream()).getReader(); for (;;) { const { value, done } = await rd.read(); if (done) break; const parts = (rest + value).split('\n'); rest = parts.pop(); for (const ln of parts) lfrFold(B, ln); if (++k % 40 === 0) { ui('백업 파일 읽는 중: ' + f.name, B.lines, 0, ''); await sleep(0); } } }
+    else { const parts = (await f.text()).split('\n'); rest = parts.pop(); for (const ln of parts) lfrFold(B, ln); }
+    if (rest) lfrFold(B, rest);
+  }
+  async function lfrReadCur(since) { /* 지금 서버 값 — 서버 답만(PC 안 사본이면 실패) · 통째 읽기는 서버 건수와 대어 3% 넘게 모자라면 멈춤 */
+    const m = new Map(); const keep = (v) => ({ f: v.firstSeenAt, r: v.registeredAt, g: v.registeredYearGuessed, q: v.qty, ql: v.qtyList, ec: v.editChkAt, a: !!v.active, lid: v.listingId == null ? '' : String(v.listingId) });
+    if (since) { const ss = await lfSrvGet(C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(since - 120000))); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); return m; }
+    const FP = firebase.firestore.FieldPath.documentId(); let lastD = null; for (let pg = 0; pg < 200; pg++) { let q = C('prd_listings').orderBy(FP).limit(2000); if (lastD) q = q.startAfter(lastD); const ss = await lfSrvGet(q); ss.forEach((d) => { if (!/^_perm/.test(d.id)) m.set(d.id, keep(d.data() || {})); }); ui('지금 상품 기록 읽는 중', m.size, LF_SRVN || 0, ''); if (ss.size < 2000) break; lastD = ss.docs[ss.docs.length - 1]; }
+    const srv = await lfSrvCount(); const why = srv ? lfShort(m.size, srv, 0) : '서버 건수를 못 셈'; if (why) throw new Error(`지금 상품 기록을 다 받지 못함(${why}) — 아무것도 쓰지 않음`); return m;
+  }
+  const lfrDl = (name, obj) => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) { log('내려받기 실패: ' + e.message, 1); } };
+  const lfrStamp = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  const lfrShow = (r) => `${r.id} ` + Object.keys(r.set).map((k) => `${k} ${JSON.stringify(lfrIsDel(r.before[k]) ? '(없음)' : r.before[k])}→${JSON.stringify(lfrIsDel(r.set[k]) ? '(지움)' : r.set[k])}`).join(' · ');
+  async function lfrApply(rows, source, tag) {
+    const undo = rows.map((r) => ({ id: r.id, set: bkSer(r.before), before: bkSer(r.set) })); const name = `listfix-undo-${tag}.json`; const CH = 2000; const parts = Math.ceil(undo.length / CH);
+    for (let i = 0; i < parts; i++) await C('prd_system').doc(`listfix_undo_${tag}_${i}`).set({ at: nowIso(), pc: PC_NAME || '', source, part: i, parts, n: undo.length, rows: JSON.stringify(undo.slice(i * CH, (i + 1) * CH)), ...W() }); /* 되돌림 자료를 먼저 — 못 남기면 여기서 오류로 멈춤(아무것도 안 씀) */
+    lfrDl(name, { kind: 'listfix-undo', tag, source, at: nowIso(), pc: PC_NAME || '', rows: undo }); log(`🩹 되돌림 자료 ${undo.length.toLocaleString()}줄을 prd_system/listfix_undo_${tag}_0~${parts - 1}과 내려받기 파일 ${name}에 먼저 남김`);
+    const FV = firebase.firestore.FieldValue; let done = 0;
+    for (let i = 0; i < rows.length; i += 1000) { if (stopFlag) throw new Error(`멈춤 — ${done.toLocaleString()}개까지 씀(되돌림 자료 ${name})`); const part = rows.slice(i, i + 1000); const ops = [];
+      for (const r of part) { const doc = lfrDoc(r.set, FV, firebase.firestore.Timestamp); const at = nowIso(); ops.push((b) => b.set(C('prd_listings').doc(r.id), { ...doc, listfixAt: at, listfixBy: source, ...W() }, { merge: true })); ops.push((b) => b.set(C('prd_listing_changes').doc(), { listingKey: r.id, at, source, changes: lfrChanges(r), ...W() })); }
+      await commitBatches(ops, `상품 기록 되돌리는 중 (${(i + part.length).toLocaleString()}/${rows.length.toLocaleString()})`); done += part.length;
+      for (const r of part.slice(0, 3)) { const v = (await C('prd_listings').doc(r.id).get({ source: 'server' })).data() || {}; for (const [k, x] of Object.entries(r.set)) { const good = lfrIsDel(x) ? v[k] === undefined : lfrSame(bkSer(v[k]), bkSer(x)); if (!good) throw new Error(`쓴 값 확인이 어긋남(${r.id} ${k}) — ${done.toLocaleString()}개까지 쓰고 멈춤 · 되돌림 자료 ${name}`); } } }
+    try { await C('prd_system').doc('listfix_plan').set({ applied: { at: nowIso(), pc: PC_NAME || '', source, tag, n: done, undo: name, undoParts: parts } }, { merge: true }); } catch (e) {}
+    log(`🩹 상품 기록 ${done.toLocaleString()}개를 되돌림(${source}) · 바뀐 칸은 상품 변경 기록(prd_listing_changes · source ${source})에도 남김 · 되돌림 파일: ${name}`); return done;
+  }
+  async function listfixRestore(files) {
+    const undoF = files.find((f) => LFR.UNDO.test(f.name)); if (undoF) return lfrUndoRun(undoF);
+    const bk = files.filter((f) => LFR.FILE.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!bk.some((f) => /-full\.jsonl$/i.test(f.name))) { log('🩹 되돌리기: 통째 백업 파일(날짜-full.jsonl)이 없음 — 10/28 full 파일과 그 뒤 inc 파일을 모두 함께 놓아 주세요 · 아무것도 쓰지 않음', 1); return; }
+    const B = lfrNew(); for (const f of bk) await lfrReadFile(B, f);
+    log(`🩹 백업 파일 ${bk.length}개 읽음(${bk[0].name} ~ ${bk[bk.length - 1].name}) — 상품 ${B.m.size.toLocaleString()}개 · 줄 ${B.lines.toLocaleString()} · 사고 뒤 판(뺌) ${B.after.toLocaleString()} · 못 읽은 줄 ${B.bad} · 마지막 기록 ${B.maxU ? new Date(B.maxU + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') : '-'} KST`);
+    const t0 = Date.now(); const cur = await lfrReadCur(0); const PL = lfrPlan(B, cur, 'last'), PM = lfrPlan(B, cur, 'min'); const w = lfrCheck(B, cur, PL); const st = lfrStamp(); const n = PL.n;
+    const sum = `지금 상품 ${n.cur.toLocaleString()} · 백업 상품 ${n.bk.toLocaleString()} · 사고 때 새 상품으로 적힌 것 중 백업에 있는 것 ${n.hit.toLocaleString()}(백업에 없음 = 정말 새 상품 ${n.noBk}) · 고칠 상품 ${PL.rows.length.toLocaleString()} — 처음 본 때 ${n.f.toLocaleString()} · 등록일 ${n.r.toLocaleString()} · 연도 추정 표시 지움 ${n.g.toLocaleString()} · 수량 ${n.q.toLocaleString()}(사고 뒤 다시 세어 그대로 ${n.qKeep}) · 이미 같음 ${n.same}`;
+    log('🩹 마른 실행(아무것도 안 씀): ' + sum); log(`🩹 '복구1108'(11/08 JS-MAIN 사고 전 처음 본 때까지)이면 고칠 상품 ${PM.rows.length.toLocaleString()} · 그중 11/08 사고로 이미 늦어져 있던 처음 본 때 ${n.older1108.toLocaleString()}`);
+    PL.rows.slice(0, 20).forEach((r) => log('   보기 ' + lfrShow(r)));
+    lfrDl(`listfix-plan-${st}.json`, { kind: 'listfix-plan', at: nowIso(), pc: PC_NAME || '', files: B.files, n, nMin: PM.n, rowsMin: PM.rows.length, warn: w, rows: PL.rows });
+    try { await C('prd_system').doc('listfix_plan').set({ at: nowIso(), pc: PC_NAME || '', files: B.files, n, nMin: PM.n, rows: PL.rows.length, rowsMin: PM.rows.length, warn: w, sample: PL.rows.slice(0, 20).map(lfrShow), ...W() }, { merge: true }); } catch (e) {}
+    if (w.length) { log('🩹 이상해서 멈춤(쓰지 않음): ' + w.join(' / '), 1); return; } if (!PL.rows.length && !PM.rows.length) { log('🩹 고칠 상품이 없음'); return; }
+    const ans = prompt(`🩹 상품 기록 되돌리기 — 마른 실행 결과(아직 아무것도 안 씀)\n${sum}\n\n· '복구' = 11/17 사고 직전 값으로 ${PL.rows.length.toLocaleString()}개\n· '복구1108' = 처음 본 때를 11/08 JS-MAIN 사고 전까지 되돌림 ${PM.rows.length.toLocaleString()}개\n\n쓰기 전에 지금 값을 되돌림 자료로 먼저 남깁니다. 진행하려면 위 낱말 하나를 그대로 적어 주세요(취소·다른 글 = 쓰지 않음)`);
+    const a = String(ans || '').trim(); if (a !== '복구' && a !== '복구1108') { log('🩹 되돌리기 쓰지 않음(마른 실행만) — 계획 파일 listfix-plan-' + st + '.json'); return; }
+    const mode = a === '복구1108' ? 'min' : 'last'; const cur2 = await lfrReadCur(t0); for (const [id, v] of cur2) cur.set(id, v); /* 마른 실행 사이 바뀐 상품은 지금 값으로 다시 셈 */
+    const P2 = lfrPlan(B, cur, mode); const P1 = mode === 'min' ? PM : PL; if (Math.abs(P2.rows.length - P1.rows.length) > 50) { log(`🩹 마른 실행(${P1.rows.length})과 지금 다시 센 것(${P2.rows.length})이 50개 넘게 다름 — 쓰지 않고 멈춤(다시 놓아 주세요)`, 1); return; }
+    await lfrApply(P2.rows, mode === 'min' ? 'listfix1117-1108' : 'listfix1117', st);
+    /* ③ 수량을 사고 전 값으로 되돌린 판매 중 상품만 정보수정 화면으로 다시 셈(판매완료는 양식이 없어 11/17 실패 2,046건이 났음 — 넣지 않음) */
+    const qq = P2.rows.filter((r) => r.set.qty !== undefined && !lfrIsDel(r.set.qty)).map((r) => [r.id, (cur.get(r.id) || {})]).filter(([, c]) => c.a && c.lid).map(([id, c]) => [id, c.lid]);
+    if (qq.length) { try { const nq = await qchkQueue(qq, '덮임 되돌린 뒤 수량 다시 세기', 'listfix1117'); log(`🔢 수량을 되돌린 판매 중 상품 ${nq.items.toLocaleString()}개를 정보수정 화면으로 다시 세게 줄에 넣음(${nq.cmds}묶음 · 로그인한 PC가 나눠 맡음)`); } catch (e) { log('🔢 수량 다시 세기 줄 넣기 실패: ' + e.message + ' — 되돌리기는 끝났음 · 웹앱에서 다시 넣어 주세요', 1); } }
+  }
+  async function lfrUndoRun(f) {
+    let U = null; try { U = JSON.parse(await f.text()); } catch (e) {} if (!U || U.kind !== 'listfix-undo' || !Array.isArray(U.rows)) { log(`🩹 '${f.name}'은 되돌림 파일이 아님 — 아무것도 쓰지 않음`, 1); return; }
+    const rows = U.rows.filter((r) => r && r.id && r.set && typeof r.set === 'object').map((r) => ({ id: String(r.id), set: r.set, before: r.before || {} })); log(`🩹 되돌림 파일 ${f.name}: 상품 ${rows.length.toLocaleString()}개 (${U.source || ''} · ${U.at || ''})`); rows.slice(0, 5).forEach((r) => log('   보기 ' + lfrShow(r)));
+    const ans = prompt(`🩹 되돌리기 — 상품 ${rows.length.toLocaleString()}개를 '${U.source || ''}' 쓰기 전 값으로 다시 적습니다(지금 값은 또 되돌림 자료로 남김). 진행하려면 '되돌리기'를 적어 주세요`); if (String(ans || '').trim() !== '되돌리기') { log('🩹 되돌리기 취소 — 아무것도 쓰지 않음'); return; }
+    await lfrApply(rows, 'listfix1117-undo', 'u' + lfrStamp());
+  }
+
   /* ───────── 파일 가져오기 ───────── */
   const drop = $('#rnpDrop');
   drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
   drop.ondragleave = () => drop.classList.remove('over');
-  drop.ondrop = async (e) => { e.preventDefault(); drop.classList.remove('over'); for (const f of e.dataTransfer.files) await runFile(f); };
+  drop.ondrop = async (e) => { e.preventDefault(); drop.classList.remove('over'); await runFiles([...e.dataTransfer.files]); };
   async function importFile(file) {
     const buf = await file.arrayBuffer();
     const head = new TextDecoder('utf-8').decode(buf.slice(0, 2000));
@@ -9552,7 +9643,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 
   // 등록 파일 가져오기: 끌어다 놓기 또는 눌러서 고르기
   $('#rnpDrop').onclick = () => $('#rnpFile').click();
-  $('#rnpFile').onchange = async (e) => { for (const f of e.target.files) await runFile(f); e.target.value = ''; };
+  $('#rnpFile').onchange = async (e) => { await runFiles([...e.target.files]); e.target.value = ''; };
+  async function runFiles(fs0) { /* (listfix1) 로거 백업 파일(날짜-full|inc.jsonl)·되돌림 파일은 한 묶음으로 되돌리기에 · 나머지는 예전처럼 한 개씩 */ const lf = fs0.filter((f) => LFR.FILE.test(f.name) || LFR.UNDO.test(f.name)); if (lf.length) await runLfr(lf); for (const f of fs0) if (!lf.includes(f)) await runFile(f); }
+  async function runLfr(fs0) {
+    if (running) { log('다른 작업 진행 중: ' + running, 1); return; }
+    setRunning('상품 기록 되돌리기');
+    try { await listfixRestore(fs0); ui('끝: 상품 기록 되돌리기', 1, 1, '', ''); } catch (e) { ui('오류로 멈춤', 0, 0, e.message); log('🩹 되돌리기 멈춤: ' + e.message, 1); } finally { setRunning(null); }
+  }
   async function runFile(f) {
     if (running) { log('다른 작업 진행 중: ' + running, 1); return; }
     setRunning('파일 가져오기');
