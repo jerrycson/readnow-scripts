@@ -1,3 +1,6 @@
+import {mountAngle46} from './studio-angle46.mjs';
+import {mountSurfaceControls} from './studio-surface-controls46.mjs';
+import {mountAngleComparison} from './studio-three-views46.mjs';
 import {mountMethodChoice} from './studio-method-view45.mjs';
 import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,displayScene,renderSculpt,
   plateInfo,surfaceZones,screenAnchors,posed,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
@@ -12,7 +15,7 @@ const button=(text,click)=>{const n=document.createElement('button');n.textConte
 const options=(node,entries)=>node.replaceChildren(...entries.map(([key,name])=>new Option(name,key)));
 let localPhoto;
 const models=new Map(),sessions=new Map(),cache=new Map();
-let learning44;
+let learning44, surfaceControls, angleDial, compareAngles;
 let id,session,model,assets,zones=[],selected,active=true,scheduled=false,dirty=false,sourceDirty=true;
 let raw,edited,baseKey,valueKey,plate,plateKey,plateLeft,plateRight,plateTimer;
 const status=s=>{el('status').textContent=s;};
@@ -64,6 +67,7 @@ function selectZone(key){
   const address=new URL(location.href);if(address.searchParams.get('zone')!==selected.key){address.searchParams.set('zone',selected.key);history.replaceState(null,'',address);}
   if(parent!==self)parent.postMessage({type:'bookfriend:sculpt-zone',case:id,zone:selected.key},location.origin);
   const labels=axes(id);
+  surfaceControls?.refresh();
   el('handleHelp').textContent=selected.label+' · 가로 '+labels[selected.xAxis]+' / 위아래 '+labels[selected.yAxis];
   for(const pin of el('handles').children)pin.setAttribute('aria-pressed',String(pin.dataset.zone===selected.key));
   for(const row of el('axes').children){
@@ -79,6 +83,7 @@ function updateValues(){
   el('pivot').value=p.view.pivot;
   const spec=pivotSpec(p.view.pivot);
   for(const node of [el('poseRange'),el('poseNum')]){node.min=spec.min;node.max=spec.max;node.value=p.view.angle;}
+  surfaceControls?.refresh();angleDial?.sync();
   el('jointLimit').textContent=spec.label+' · '+spec.min+'° ~ '+spec.max+'° · '+(p.view.pivot==='arms.raise'?'34차 팔·어깨띠 동작':'32차 피봇과 가중치')+'를 양쪽에 적용합니다.';
 }
 function updateShape(values){session.preview(values);updateValues();schedule(true);}
@@ -130,6 +135,7 @@ function draw(){
     }
     const left=displayed('start',raw),right=edited===raw?left:displayed('edited',edited);
     bitmap(el('before'),left.frame);bitmap(el('after'),right.frame);
+    compareAngles.update(model,left.display,right.display,p.view,()=>active);
     localPhoto.draw(id,raw,right.frame,right.display,model,p.view);
     const guides=screenAnchors(right.frame,model,right.display,p.view,zones);
     learning44?.observe({state:p,model,shown:right.display,frame:right.frame,zone:selected,guide:guides.find(g=>g.key===selected.key),photo:photo44});
@@ -172,6 +178,9 @@ function changeCase(next){
 const storeKey=()=>['bookfriend.sculpt.v1',id,el('slot').value].join('.');
 function put(p){const v=validatePreset(p);if(v.subject!==id)changeCase(v.subject);session.apply(v);updateValues();schedule(true);}
 function hook(){
+  surfaceControls=mountSurfaceControls({zone:()=>selected,labels:()=>axes(id),values:()=>session.current.values,preview:updateShape,commit});
+  angleDial=mountAngle46({host:el('poseDial46'),range:el('poseRange'),number:el('poseNum'),joint:el('pivot')});
+  compareAngles=mountAngleComparison(el('triptych'),renderSculpt,bitmap);
   learning44=mountSculptLearning44({redraw:()=>schedule(true),apply:values=>put({...session.current,values})});
   el('subject').onchange=e=>changeCase(e.target.value);el('region').onchange=e=>selectZone(e.target.value);
   el('allAxes').onchange=()=>selectZone(selected.key);

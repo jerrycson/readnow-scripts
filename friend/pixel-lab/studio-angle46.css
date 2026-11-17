@@ -1,0 +1,46 @@
+.studio-angle46 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .2rem .85rem;
+  margin-block: .4rem;
+}
+.studio-angle46-wheel {
+  display: block;
+  flex: 0 1 9rem;
+  width: 9rem;
+  min-width: 6rem;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f6f8f4;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.studio-angle46-wheel:focus-visible {
+  outline: 3px solid #a36a14;
+  outline-offset: 2px;
+}
+.studio-angle46-dragging .studio-angle46-wheel { cursor: grabbing; }
+.studio-angle46-wheel[aria-disabled="true"] {
+  cursor: default;
+  opacity: .55;
+}
+.studio-angle46-readout {
+  display: grid;
+  flex: 1 1 9rem;
+  gap: .2rem;
+  color: #263d34;
+  font-size: .85rem;
+  line-height: 1.4;
+}
+.studio-angle46-readout strong {
+  font-size: 1.45rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.studio-angle46-readout small { color: #53665b; }
