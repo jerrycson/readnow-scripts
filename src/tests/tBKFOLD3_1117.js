@@ -105,6 +105,9 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const rg = await p.evaluate(() => { S.prBatches = undefined; S._bkfPPh = null; bkfPP(S._bkfOpen.fid); return document.getElementById('bkf_pp').textContent; });
   ok(/다시 불러오는 중/.test(rg) || !!(await p.evaluate(() => document.querySelector('#bkf_pp [data-bkffix]'))), '그룹 목록이 비면 「다시 불러오는 중」(「없습니다」로 잘못 말하지 않음)', rg.slice(0, 80));
   ok(await until(() => Array.isArray(S.prBatches) && !!document.querySelector('#bkf_pp [data-bkffix]') && /그룹 가/.test(document.getElementById('bkf_scr').textContent), 100), '다시 불러오면 진단·단추가 돌아옴');
+  /* 다시 받는 사이 또 비어도(확인용 그룹 심기 등 · 11/18 판 ④ 시험 문지기에서 나옴) 다시 불러 곧 다시 그림 — 옛 코드는 15초 동안 「다시 불러오는 중」에 머묾 */
+  await p.evaluate(async () => { S.prBatches = undefined; S._bkfPPh = null; bkfPP(S._bkfOpen.fid); await new Promise((r) => { const t = setInterval(() => { if (Array.isArray(S.prBatches)) { clearInterval(t); r(); } }, 1); }); S.prBatches = undefined; });
+  ok(await until(() => Array.isArray(S.prBatches) && !!document.querySelector('#bkf_pp [data-bkffix]') && /그룹 가/.test(document.getElementById('bkf_scr').textContent), 25), '다시 받는 사이 또 비어도 곧 다시 불러 진단·단추가 돌아옴(15초 안 기다림)');
   /* ⓒ 「같은 결과」 이름표 — 같아도 충돌로 셈(막는 일은 판 ⑦) */
   const tg = await p.evaluate(() => { const o = window.batchCompute; const run = (f) => { window.batchCompute = f; S._bkfD.tg = {}; S._bkfPPh = null; bkfPP(S._bkfOpen.fid); const t = document.querySelector('#bkf_pp .bkf-tb tbody'); return { ts: t.querySelectorAll('.bkf-ts').length, to: t.querySelectorAll('.bkf-to').length, tx: t.querySelectorAll('.bkf-tx').length, opp: /반대 방향/.test(t.textContent), rows: t.querySelectorAll('tr').length }; };
     const A = S._bkfOpen.a; const isA = (c) => +c.pmax === +S.prBatches.find((g) => g.id === A).cond.pmax && +c.pmin === +S.prBatches.find((g) => g.id === A).cond.pmin;
