@@ -1,5 +1,8 @@
 // 수집기 1.89.65 qtyChkCmd·qEditRead·listingOps 수량 규칙 — 브라우저 안에서 함수 원문을 떼어 가짜 Firestore로 돌림
-const fs = require('fs'); const src = fs.readFileSync('../readnow-collector.user.js', 'utf8');
+const fs = require('fs'); const path = require('path');
+// (kfail2 11/17) 함수 원문은 수집기 원본(src/readnow-collector.src.js)에 있음 — 시험 문지기 자리(Q/w/pw)는 ../readnow-collector.user.js가 그 원본 사본이지만, 저장소에서 바로 돌리면 그 자리는 본체 로더(함수가 모듈로 옮겨져 없음)라 '못 찾음'으로 시작도 못 함 → 함수가 들어 있는 첫 파일을 씀(기대 그대로)
+const SRCS = [path.join(__dirname, '..', 'readnow-collector.src.js'), '../readnow-collector.user.js', path.join(__dirname, '..', '..', 'readnow-collector.user.js')];
+const src = SRCS.filter((f) => fs.existsSync(f)).map((f) => fs.readFileSync(f, 'utf8')).find((t) => t.includes('  async function qEditRead(lid) {')) || '';
 const cut = (a, b) => { const i = src.indexOf(a); const j = src.indexOf(b, i); if (i < 0 || j < 0) throw new Error('못 찾음 ' + a); return src.slice(i, j); };
 const fnRead = cut('  async function qEditRead(lid) {', '  async function qchkQueue(');
 const fnCmd = cut('  async function qtyChkCmd(ref, v, id) {', '  async function qchkNext() {');
