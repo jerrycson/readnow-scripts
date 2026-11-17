@@ -94,9 +94,9 @@
  },
  "holder": "lead",
  "host": "vm-fbrev1",
- "what": "fbrev1 앞 페이지 올리기 지킴 · push 검사",
+ "what": "fbrev1 앞 페이지 올리기 지킴 · push 검사 다시",
  "since": "2026-11-17T22:44:13Z",
- "beat": "2026-11-17T22:47:57Z",
+ "beat": "2026-11-17T23:01:19Z",
  "last": {
   "who": "lead",
   "done": "리드: 시험 대본(wake1 worklock.test.sh)이 22:39:49Z 덮은 가짜 칸 h5·h6을 비움 — 진짜 줄 차례는 그대로",
