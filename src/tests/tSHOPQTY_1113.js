@@ -1,13 +1,14 @@
 // tSHOPQTY_1113 — (11/13 shopux1 · 정범님 20:47 카드 n1113cartqty ⓑ 「2권 이상 담기 열기 · 설정 변경 가능」) 🛍 같은 책 여러 권 담기
 //   ① 한 권 주문은 예전과 바이트 하나 다르지 않음 — 옛 판(b32b544f) 셈과 새 셈을 같은 입력으로 견줌: 장바구니 담기·합계·주문 글(orderBody) · 클라우드 주문 검사(checkOrder)
-//   ② 클라우드 창구(가짜 Firestore + 진짜 http): 수량 3권 책을 2권 주문 → 주문 기록 줄 2개(각 1권 · 같은 상품) · 합계 2권 값 · '주문 중' 한 번 · 재고보다 많이/설정보다 많이/설정 끔이면 거절 · 견적도 2권 값
-//   ③ 웹앱 현금 판매 기록(bqCashDoc · 출고 목록·송장·알라딘 판매중지가 읽는 기록): 2권 주문 → 줄 2개 · 줄마다 1권 · 같은 상품 · 책값 합 = 낸 책값
+//   ② 클라우드 창구(가짜 Firestore + 진짜 http): 수량 3권 책을 2권 주문 → 한 줄 qty 2 · 합계 2권 값 · '주문 중' 한 번 · 재고보다 많이/설정보다 많이/설정 끔이면 거절 · 견적도 2권 값
+//   ③ 웹앱 현금 판매 기록(bqCashDoc · 출고 목록·송장·알라딘 판매중지가 읽는 기록): 2권 주문 → 한 줄 qty 2 · 품목 및 합계 필드 = 단가 × 수량
 // 실행: node src/tests/tSHOPQTY_1113.js · 손님 정보 없음(손님A · 010-0000-0000)
 const fs = require('fs'); const path = require('path'); const http = require('http'); const cp = require('child_process'); const vm = require('vm'); const os = require('os');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
 const ROOT = path.resolve(__dirname, '..', '..'); const SH = require(path.join(ROOT, 'cloud/shop.js')); const BQ = require(path.join(ROOT, 'shop/shop-core.js'));
 const OLD = 'b32b544f'; /* shopux1 앞 판(shop2 둘째) */
-const git = (f) => cp.execSync(`git -C "${ROOT}" show ${OLD}:${f}`, { encoding: 'utf8', maxBuffer: 64e6 });
+// 시험 사본은 git archive이므로 옛 판 비교만 원본 Git 객체 저장소에서 읽음. 실행 대상 소스는 ROOT 그대로.
+const git = (f) => cp.execFileSync('git', ['-C', process.env.RN_GIT_REPO || ROOT, 'show', OLD + ':' + f], { encoding: 'utf8', maxBuffer: 64e6 });
 (async () => {
 console.log('① 한 권 주문은 예전과 똑같음(옛 판 셈과 견줌)');
 { const sb = { module: { exports: {} } }; sb.exports = sb.module.exports; vm.runInNewContext(git('shop/shop-core.js'), sb); const OB = sb.module.exports;
@@ -56,6 +57,7 @@ console.log('③ 웹앱 현금 판매 기록(출고 목록·송장·알라딘 �
   const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + cut('/* ◆shop 시작', '/* ◆shop 끝 */') + '\nreturn { bqCashDoc, bqLedOrds, ledBuild };')();
   const Lm = new Map([['aladin_U3', { id: 'aladin_U3', title: '시험 책 3', grade: '상', price: 7000, sku: 'S3', qty: 3, listingId: 'L3' }], ['aladin_U1', { id: 'aladin_U1', title: '시험 책 1', grade: '상', price: 5000, sku: 'S1', qty: 1, listingId: 'L1' }]]);
   const cd = F.bqCashDoc({ ...o2, paidAt: o2.at }, Lm, 'admin', '2026-11-13T12:00:00Z'); const c3 = cd.items.find((x) => x.listingKey === 'aladin_U3');
+  ok(cd.totalAmount === o2.sum && cd.listTotal === cd.items.reduce((a, x) => a + (x.listPrice || 0) * x.qty, 0), '현금 기록의 합계 필드도 단가 × 수량(두 권 금액 누락 없음)');
   ok(cd.items.length === 2 && c3.qty === 2 && c3.price === 7000 && cd.items.reduce((a, x) => a + x.price * x.qty, 0) === o2.sum && c3.qtyBefore === 3 && c3.aladinStop.status === 'omni' && cd.items.find((x) => x.listingKey === 'aladin_U1').aladinStop.status === 'todo', '현금 판매 기록: 같은 책 2권 = 한 줄 qty 2 · 값×수량 합 = 낸 책값(매출 셈이 쓰는 꼴) · 재고 3권 중 2권 → 판매중지하지 않음(자동 내림이 수량만 줄임) · 1권 상품은 예전처럼 판매중지 할 일', cd.items.map((x) => [x.listingKey, x.qty, x.price, x.aladinStop.status]));
   const all = F.bqCashDoc({ ...o2, items: [{ ...o2.items[0], qty: 3 }], paidAt: o2.at }, Lm, 'admin', '2026-11-13T12:00:00Z'); ok(all.items[0].qty === 3 && all.items[0].aladinStop.status === 'todo', '재고 3권을 모두 팔면(남은 0) 예전처럼 판매중지 할 일');
   const LO = F.bqLedOrds([{ ...o2, st: 'new' }], '2026-10-01'); const ln = LO[0].lines.find((x) => x.lid === 'aladin_U3'); const V = F.ledBuild({ now: '2026-11-13T03:00:00Z', days: 30, al: [{ id: 'aladin_U3', title: '시험 책 3', price: 7000, qty: 3, live: true, skus: ['S3a', 'S3b', 'S3c'] }], y24: [{ no: '9003', title: '시험 책 3', price: 8000, stock: 3, live: true, self: 'S3a' }], ord: LO.map((o) => ({ ...o, lines: o.lines.filter((x) => x.lid === 'aladin_U3').map((x) => ({ ...x, sku: 'S3a' })) })) });
