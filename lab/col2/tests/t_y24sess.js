@@ -1,5 +1,5 @@
 /* t_y24sess — (11/13 y24sess1 · 정범님 22:53 카드 n1113y24sess 「끊는 곳 찾기 + 한도도 올려」) 스스로 다시 로그인 하루 한도·끊긴 뒤 기다림 늘리기
- *  ① 기본 하루 한도 30(예전 10) · 오늘 10번 쓴 PC도 새 판을 받으면 곧바로 다시 해도 됨(11:06까지 기다리지 않음) · 설정 값(perDay)이 있으면 그 값
+ *  ① 기본 하루 한도 40(11/17 bunoe3 · 정범님 22:50 「한도40」 · 그 전 30 · 처음 10) · 오늘 10번 쓴 PC도 새 판을 받으면 곧바로 다시 해도 됨(11:06까지 기다리지 않음) · 설정 값(perDay)이 있으면 그 값
  *  ② 오래 산 세션(예: 60분 뒤 풀림)은 기다림을 늘리지 않음 — 예스24 세션이 1시간쯤 뒤 풀리는 것은 서로 끊기가 아님
  *  ③ 금방 끊김(shortMin분 안)·「이미 로그인된」 끊김이 연달아 n번이면 gapMin × 2^n분 기다림(5 → 10 → 20 … backMaxMin까지) · 오래 산 세션이 나오면 처음부터
  *  ④ 간격 0(시험)이면 늘리기 끔 · 상태(sum)에 기다림·수명 자취(값 없음)
@@ -14,14 +14,20 @@ const SM = require(path.join(L.ROOT, 'helper', 'col2-settings.js'));
   const okCtx = { name: '예스24 판매관리', loginUrl: 'x', pre: async () => ({ ok: true }), nav: async () => {}, ev: async () => '', sleep: async () => {}, type: async () => {}, check: async () => true };
   const dir = () => { const D = fs.mkdtempSync(path.join(os.tmpdir(), 'c2ys_')); L.track(D); return D; };
 
-  console.log('① 하루 한도 30');
-  ok(DEF.perDay === 30 && DEF.perHour === 3 && DEF.gapMin === 5, '기본 하루 30 · 한 시간 3 · 사이 5분 그대로', DEF);
+  console.log('① 하루 한도 40');
+  ok(DEF.perDay === 40 && DEF.perHour === 3 && DEF.gapMin === 5, '기본 하루 40(정범님 11/17 22:50) · 한 시간 3 · 사이 5분 그대로', DEF);
+  ok(SM.RLG_DEF ? SM.RLG_DEF.perDay === 40 : /perDay: 40/.test(fs.readFileSync(path.join(L.ROOT, 'helper', 'col2-settings.js'), 'utf8')), '⚙ 설정 쪽 기본값도 40(두 곳이 같음)');
+  { const D = dir(); const t = T; fs.writeFileSync(path.join(D, 'relogin.json'), JSON.stringify({ y24: { tries: Array.from({ length: 30 }, (_, i) => t - 600e3 - i * 40 * 60e3), fails: 0, stop: null, auto: true, n: 30, last: { at: t - 600e3, ok: true } } }));
+    for (const m of ['.fix1111', '.fix1112', '.fix1113']) fs.writeFileSync(path.join(D, 'relogin.json' + m), '1');
+    ok(mk(D, { perDay: 30 }).why('y24', {}) !== null && /24시간에 30번까지/.test(mk(D, { perDay: 30 }).why('y24', {}) || ''), '예전 한도(30)라면 30번 쓴 날 막힘', mk(D, { perDay: 30 }).why('y24', {}));
+    ok(mk(D, {}).why('y24', {}) === null, '새 기본(40)은 30번 쓴 날도 다시 해도 됨', mk(D, {}).why('y24', {}));
+    const T0 = T; const R = mk(D, { perHour: 99, gapMin: 0 }); for (let i = 0; i < 10; i++) { T += 6 * 60e3; await R.run('y24', okCtx); } ok(/24시간에 40번까지/.test(R.why('y24', {}) || ''), '40번을 다 쓰면 그때 막힘(셈은 지난 24시간 그대로)', R.why('y24', {})); T = T0; }
   { const row = (SM.SCHEMA || []).find((r) => r.k === 'relogin.perDay'); ok(!SM.SCHEMA || (row && row.hi >= 30), '⚙ 설정 › 🧪 번외 › 🔐 다시 로그인 하루 칸에서 바꿀 수 있음(1~100)', row); }
   { const D = dir(); const t = T; /* HOME 11/13 꼴: 지난 24시간에 10번 · 마지막 18:12 */
     fs.writeFileSync(path.join(D, 'relogin.json'), JSON.stringify({ y24: { tries: Array.from({ length: 10 }, (_, i) => t - 4 * 3600e3 - i * 3600e3), fails: 0, stop: null, auto: true, n: 40, last: { at: t - 4 * 3600e3, ok: true } } }));
     for (const m of ['.fix1111', '.fix1112', '.fix1113']) fs.writeFileSync(path.join(D, 'relogin.json' + m), '1');
     ok(mk(D, { perDay: 10 }).why('y24', {}) !== null && /24시간에 10번까지/.test(mk(D, { perDay: 10 }).why('y24', {})), '예전 한도(10)라면 막힘', mk(D, { perDay: 10 }).why('y24', {}));
-    const R = mk(D, {}); ok(R.why('y24', {}) === null, '새 판(30)을 받으면 곧바로 다시 해도 됨 — 다음 날 11:06까지 기다리지 않음', R.why('y24', {})); ok(R.sum().y24.next === null && R.sum().y24.perDay === 30, '상태: 다시 되는 때 없음 · 한도 30', R.sum().y24); }
+    const R = mk(D, {}); ok(R.why('y24', {}) === null, '새 판(40)을 받으면 곧바로 다시 해도 됨 — 다음 날 11:06까지 기다리지 않음', R.why('y24', {})); ok(R.sum().y24.next === null && R.sum().y24.perDay === 40, '상태: 다시 되는 때 없음 · 한도 40', R.sum().y24); }
 
   console.log('② 오래 산 세션은 기다림을 늘리지 않음');
   { const D = dir(); const R = mk(D, { perHour: 50 });

@@ -392,7 +392,11 @@ function makeAl(o) {
   /* (11/17 bunoe1 · 리드 결정 「길 나」) 🧭 평소 크롬 프로필을 잠깐 빌려 읽기 — 기본 꺼짐(col2.json alPath:'prof'로 켬 · 되돌림 = 그 한 줄) · col2-alprof.js 조건 ①~⑦
    *  한 바퀴 = 띄움 → 샵매니저 첫 화면 → 다섯 읽기 중 때가 된 하나 → 곧바로 닫아 프로필을 돌려줌(평소 크롬과 동시에 안 씀) · 조종 크롬은 확장 끔(--disable-extensions = Tampermonkey 0)
    *  번외는 이 길에서 로그인하지 않고 쿠키·크롬 설정 파일을 읽거나 고치지 않음 · 남은 크롬 끝내기(stale kill) 안 함(평소 크롬일 수 있음) */
-  const profPlan = () => AP.plan({ ...AP.look(cfg(), { pc: pcName() }), hold: holdOn(), pp: A.pp, loginNeed: !!(A.profNeed && now() - A.profNeed < 30 * 60e3) });
+  const profPlan = () => AP.plan({ ...AP.look(cfg(), { pc: pcName() }), hold: holdOn(), pp: A.pp, loginNeed: !!(A.profNeed && now() - A.profNeed < 30 * 60e3), idleMs: A.idle && now() - A.idle.at < 60e3 ? A.idle.ms : null });
+  /* (0.1.78 bunoe3) 🧭 안전 스위치 ①「쉬는 시각에만」 — 이 PC 사람 입력이 없는 시간(Windows GetLastInputInfo · 창 다루기 'idle' · 20초에 한 번) · 못 재면 null(= 빌리지 않음) */
+  const idleWant = () => cfg().alPath === 'prof' && !!(cfg().alProf && cfg().alProf.idleOnly === true);
+  async function idleRead(force) { if (!force && A.idle && now() - A.idle.at < 20e3) return A.idle; let r = null; try { r = await WIN.run('idle', '@idle'); } catch (e) { r = null; }
+    const ms = r && r.ok && r.idleMs != null && Number.isFinite(+r.idleMs) && +r.idleMs >= 0 ? +r.idleMs : null; A.idle = { ms, at: now() }; return A.idle; }
   async function profStep(pl) { const c = C(); if (!cfg().on) { A.msg = '번외 수집 꺼짐'; return 30e3; }
     if (A.br && !A.brProf) await close('길 나로 바꿈 — 번외 프로필 크롬 닫음');
     if (night()) { A.msg = '🌙 밤 1~5시 — 알라딘 그림자 읽기 쉼(길 나)'; return 5 * 60e3; }
@@ -401,17 +405,20 @@ function makeAl(o) {
     if (capLeft() <= 0) { A.msg = `이번 시간·오늘 몫을 다 씀(시간 ${c.hourCap} · 하루 ${c.dayCap}장)`; return 60e3; }
     const due = KINDS.find((k) => now() >= (A.next[k] || 0));
     if (!due) { const nx = Math.min(...KINDS.map((k) => A.next[k] || 0)); A.msg = A.cmpQ.length ? `운영 문서 기다림 ${A.cmpQ.length}건(길 나)` : `🧭 길 나 — 다음 읽기 ${Math.max(0, Math.round((nx - now()) / 60e3))}분 뒤(프로필은 평소 크롬에 돌려줘 있음)`; return Math.min(15e3, Math.max(500, nx - now())); }
+    if (idleWant()) { await idleRead(true); const p2 = profPlan(); A.prof = p2; if (!p2.go) { A.msg = p2.why; return 15e3; } } /* (0.1.78) 띄우기 바로 전에 사람 입력을 다시 잼 */
     A.opens = A.opens.filter((t) => now() - t < 3600e3); if (A.opens.length >= 12) { A.msg = '🧭 길 나 — 한 시간에 12번 넘게 띄워 쉼'; return 5 * 60e3; } A.opens.push(now());
     const b = new Browser({ exe: o.chromeExe(), profile: pl.dir, headless: !!cfg().headless, rect: { x: -32000, y: 40, w: 1280, h: 900 }, handoffMs: o.handoffMs() }); A.br = b; A.brProf = true; A.shown = false; A.landed = false;
     note('🧭 길 나 — 평소 크롬 프로필을 잠깐 빌림(한 바퀴 읽고 곧바로 돌려줌 · 확장 끔 · 로그인 안 함)');
+    const t0 = now(); if (cfg().alProf && cfg().alProf.borrowNote === true) { const sec = Math.round((A.profMs || 45e3) / 1000); const m = AP.borrowMsg(sec); A.borrow = { msg: m, at: t0, sec }; note(m, { k: 'al', m: '알라딘' }); WIN.run('toast', '@toast', { msg: m }).catch(() => {}); } /* (0.1.78) 안전 스위치 ②「잠깐 빌림 알림」 — 기본 꺼짐 · 몇 초는 지난 바퀴 걸린 시간 */
     let r = 'err'; try { await b.launch(); b.cdp.on.push(onDialog);
       await nav(BASE + '/scm/wmain.aspx', 30); const s = await ev(JS_STATE); A.hour.n++; A.day.n++;
       if (isLoginSt(s)) { A.profNeed = now(); A.msg = pl.why = '🔐 평소 크롬의 알라딘 로그인이 풀려 있음 — 번외는 로그인하지 않음(평소 크롬에서 한 번 로그인해 주세요 · 30분 동안 예비 손발 길)'; r = 'login'; }
       else { A.profNeed = 0; A.landed = true; r = await doKind(due); A.next[due] = now() + c[due + 'Min'] * 60e3 * (0.8 + Math.random() * 0.4) * (TEST ? SC : 1); }
     } catch (e) { A.lastErr = e.message; A.msg = '🧭 길 나 — 크롬 준비·읽기 실패: ' + e.message; }
-    finally { await close('길 나 한 바퀴 끝 — 평소 프로필 돌려줌'); A.brProf = false; }
+    finally { await close('길 나 한 바퀴 끝 — 평소 프로필 돌려줌'); A.brProf = false; A.profMs = now() - t0; A.borrow = null; }
     if (r === 'ok') A.msg = `🧭 길 나 — ${AC.READ[due].t} 읽음`; await sleepR(c.gapA, c.gapB); return 300; }
   async function step() { const c = C();
+    if (idleWant()) await idleRead(false); /* (0.1.78) 쉬는 시각에만 — 켜 둔 때만 잼 */
     const pl = cfg().alPath === 'prof' ? profPlan() : null; A.prof = pl;
     if (pl && pl.go) return profStep(pl);
     if (pl && !pl.fb) { if (A.br) await close(pl.why); A.msg = pl.why; return 30e3; }
@@ -465,7 +472,7 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
-  function sum() { const hs = H.sum(); return { prof: A.prof ? { on: A.prof.on, go: A.prof.go, wait: !!A.prof.wait, why: A.prof.why } : { on: false, why: AP.plan({}).why }, hands: hs, todo: hs.on ? hs.todo : A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled() && !handsOn(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { const hs = H.sum(); return { prof: A.prof ? { on: A.prof.on, go: A.prof.go, wait: !!A.prof.wait, why: A.prof.why, idleOnly: idleWant(), idleMs: A.idle ? A.idle.ms : null, borrow: A.borrow || null } : { on: false, why: AP.plan({}).why }, hands: hs, todo: hs.on ? hs.todo : A.login === 'need' || A.login === 'unknown' ? A.todo || null : null, webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled() && !handsOn(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, human: A.hu ? { at: A.hu.at, open: !A.hu.exit, args: A.hu.args, cmd: A.hu.cmd } : null, hu: A.huLast || null, /* (11/12 login2) 마지막 사람 창 — 인자·닫힌 까닭·거친 길(호스트·경로만)·결과 */ alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };

@@ -10,7 +10,7 @@ const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 60); k++) {
 const ID = 'sellerid' + Math.random().toString(36).slice(2, 8), PW = 'Pw!' + Math.random().toString(36).slice(2, 12);
 function fakeY24() { const S = { sess: new Set(), other: false, log: [], btn: '기존 로그인 해제 후 로그인', pend: new Set() };
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title></head><body><h1>${h}</h1>${b}</body></html>`;
-  const form = () => page('로그인', '<form method="post" action="/Account/Login"><input name="id"><input type="password" name="pw"><button>로그인</button></form>');
+  const form = () => page('로그인', '<form method="post" action="/Account/Login"><input name="id"><input type="password" name="pw"><button>로그인</button></form>' + (S.initForm ? "<script>fetch('/api/Login/AlreadyLoginedYes24Init',{method:'POST',body:'init=1'}).catch(()=>{});</script>" : '')); /* (0.1.78 bunoe3) 진짜 판매관리처럼 로그인 화면 코드가 「AlreadyLoginedYes24Init」을 부름(다른 곳 로그인이 없어도) */
   const already = () => page('이미 로그인', `<p>이미 다른 곳에서 로그인되어 있습니다. 기존 로그인을 해제하고 로그인하시겠습니까?</p><button type="button" id="no" onclick="location.href='/Account/Login'">취소</button><button type="button" id="yes">${S.btn}</button>
 <script>yes.onclick=async()=>{const r=await fetch('/api/Login/AlreadyLoginedYes24Init',{method:'POST'}).then((x)=>x.json());if(r.ok)location.href='/';};</script>`);
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); const ck = (q.headers.cookie || '').match(/sid=(\w+)/); const pk = (q.headers.cookie || '').match(/pend=(\w+)/); const auth = !!(ck && S.sess.has(ck[1])); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => {
@@ -18,6 +18,7 @@ function fakeY24() { const S = { sess: new Set(), other: false, log: [], btn: '�
       const give = () => { const id = Math.random().toString(36).slice(2); S.sess.add(id); return `sid=${id}; Path=/; HttpOnly`; };
       if (u.pathname === '/Account/Login' && q.method === 'POST') { const f = new URLSearchParams(b); const good = f.get('id') === ID && f.get('pw') === PW; S.log.push({ login: true, good, t: Date.now() }); if (!good) return H(200, 'text/html', form());
         if (S.other) { const p = Math.random().toString(36).slice(2); S.pend.add(p); return H(302, 'text/html', '', { Location: '/Login/AlreadyLoginedYes24', 'Set-Cookie': `pend=${p}; Path=/` }); } return H(302, 'text/html', '', { Location: '/', 'Set-Cookie': give() }); }
+      if (u.pathname === '/api/Login/AlreadyLoginedYes24Init' && q.method === 'POST' && b === 'init=1') { S.log.push({ init: true }); return H(200, 'application/json', '{"ok":false}'); }
       if (u.pathname === '/api/Login/AlreadyLoginedYes24Init' && q.method === 'POST') { const okp = !!(pk && S.pend.has(pk[1])); S.log.push({ take: true, okp }); if (!okp) return H(200, 'application/json', '{"ok":false}'); S.pend.delete(pk[1]); S.other = false; return H(200, 'application/json', '{"ok":true}', { 'Set-Cookie': give() }); }
       S.log.push({ m: q.method, p: u.pathname, auth });
       if (u.pathname === '/Login/AlreadyLoginedYes24') return H(200, 'text/html', already());
@@ -41,6 +42,13 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
   try {
     let r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(r.j.ok, '계정 잠가 저장(확인 로그인)', r.j && r.j.err);
     let s = await until(async () => { await feed(); return (await y()).login === 'ok'; }, 160); ok(s, '처음 로그인 됨');
+    console.log('⓪ (0.1.78 bunoe3 · 진단 11/17) 세션이 저절로 끝남 — 로그인 화면 코드가 AlreadyLoginedYes24Init을 불러도 다른 곳 로그인으로 세지 않음');
+    { Y.S.initForm = true; Y.S.sess.clear(); const i0 = Y.S.log.filter((x) => x.init).length; await H.api('POST', '/y24/run', { what: 'ord' });
+      const v = await until(async () => { await feed(); const w = await y(); return w.login === 'ok' && Y.S.log.filter((x) => x.init).length > i0 && w.tk && w.tk.ends >= 1 ? w : null; }, 240); Y.S.initForm = false;
+      ok(v && v.tk.kicks === 0 && takes() === 0 && !v.already, '저절로 끝남 → [로그인] 한 번으로 다시 됨 · 다른 곳 로그인 끊김 0번 · 이어받기 0번 · 「이미 로그인된」 멈춤 없음', v && { tk: v.tk, already: v.already });
+      ok(v && v.tk.lgInit && v.tk.lgInit.n >= 1 && /AlreadyLoginedYes24Init/.test(v.tk.lgInit.p), '그 요청은 숫자만 남김(진단 y24.tk.lgInit)', v && v.tk.lgInit);
+      ok(v && /저절로 끝남 \d+번/.test(v.msg) && !/다른 곳 로그인에/.test(v.msg), "상태 글 = '세션이 저절로 끝남 n번 · 다른 곳 로그인 아님'", v && v.msg);
+      const rl = (await st()).relogin.y24; const lv = (rl.lives || []).slice(-1)[0] || (rl.last || {}); ok(!(lv && lv.kick) && !(rl.back && rl.back.n), '다시 로그인 쪽도 「이미 로그인된」 끊김으로 보지 않음(10분 양보 없음)', { lv, back: rl.back }); }
     console.log('① 다른 곳 로그인이 이 PC 세션을 끊음 → 「이미 로그인된」 화면에서 이어받기');
     cut(); await H.api('POST', '/y24/run', { what: 'ord' });
     s = await until(async () => { await feed(); const v = await y(); return v.login === 'ok' && takes() >= 1 ? v : null; }, 240);
