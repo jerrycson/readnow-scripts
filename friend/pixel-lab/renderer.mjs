@@ -33,7 +33,7 @@ export function renderPixels(settings,{yaw=0,pitch=0,phase=0,action='idle',outli
   }
  }
  const projected=new Map();
- for(const mesh of scene.parts){let vertices=projected.get(mesh.vertices);if(!vertices){vertices=mesh.vertices.map(transform);projected.set(mesh.vertices,vertices);}const material=mats[mesh.mat];if(!material)throw new Error('Unknown material: '+mesh.mat);for(let i=0;i<mesh.faces.length;i++){const [a,b,c]=mesh.faces[i];triangle(vertices[a],vertices[b],vertices[c],material,mesh.strain?.[i]);}}
+ for(const mesh of scene.parts){let vertices=projected.get(mesh.vertices);if(!vertices){vertices=mesh.vertices.map(transform);projected.set(mesh.vertices,vertices);}const material=scene.studyMaterials?.[mesh.mat]??mats[mesh.mat];if(!material)throw new Error('Unknown material: '+mesh.mat);for(let i=0;i<mesh.faces.length;i++){const [a,b,c]=mesh.faces[i];triangle(vertices[a],vertices[b],vertices[c],material,mesh.strain?.[i]);}}
  if(outline){const alpha=new Uint8Array(w*h);for(let i=0;i<alpha.length;i++)alpha[i]=data[i*4+3];const color=s.species==='human'?mats.skin.colors[0]:[34,42,43];for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const k=y*w+x;if(!alpha[k]&&[k-1,k+1,k-w,k+w].some(i=>alpha[i]))data.set([...color,255],k*4);}}
  let opaque=0,minX=w,minY=h,maxX=-1,maxY=-1,clipped=false;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(data[(y*w+x)*4+3]){opaque++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);if(x===0||y===0||x===w-1||y===h-1)clipped=true;}
