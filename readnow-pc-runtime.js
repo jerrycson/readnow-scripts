@@ -1,4 +1,4 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.356의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.357의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
 /* ◆ 🔄 목표·방법 적응 틀 ReadnowAdaptAg 0.1.7 — 공용 readnow-adapt-core.js의 ◆AG 덩어리를 글자 그대로(split.js가 떼어 넣음 · 수집기 머리 그대로 · adapt10) */
@@ -367,8 +367,8 @@
   if (root) root.ReadnowAnom = API;
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : null);
 
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.356' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.356', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.357' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.357', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -1085,6 +1085,33 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const setAll = (n) => { n = String(n || '').trim(); if (!n) return; try { GM_setValue('rnu-pcname', n); GM_setValue('pcName', n); const pc = GM_getValue('rn-pc', null) || { id: Math.random().toString(36).slice(2, 10), name: '' }; if (pc.name !== n) { pc.name = n; GM_setValue('rn-pc', pc); } if (!globalThis.__rnPubChrome) localStorage.setItem('rnu-pcname', n); /* (1.71.0) 로거 크롬은 알라딘 쪽 저장소에 PC 이름을 남기지 않음 */ } catch (e) {} };
   const cur = keys(); if (cur) setAll(cur); // 한 곳에만 있어도 모두 맞춤
   window.__rnPcName = { get: keys, set: setAll, ask: (why) => { const v = keys(); if (v) return v; if (!window.__rnHuman(8000)) { window.__rnNote('이 PC의 이름이 아직 없습니다 — 수집기 개요에서 PC 이름을 정해 주세요 (사람이 없을 때는 묻지 않고 넘어감)', 'warn'); return null; } const n = prompt(`이 PC의 이름을 정해 주세요 (예: JS-MAIN, HOME). ${why || ''}\n한 번만 정하면 됩니다 — 새로고침·스크립트 교체 뒤에도 기억합니다.`); if (n && n.trim()) { setAll(n.trim()); return n.trim(); } return null; } };
+})();
+/* (lfcount1 11/17 · 🚨 자료) 🔢 서버 건수 세기 — 수집기 Firebase는 compat 10.12.2라 compat Query에 count()가 없음(firestore-compat 0.3.32 · where·orderBy·limit·get·onSnapshot뿐)
+ *  → 예전 `C(x).count().get()`은 늘 TypeError였고 부르는 곳이 삼켜 0·null로 여김: 저절로 되돌리기(prd_system/listfix_auto)가 「서버 건수를 못 셈」으로 매번 멈춤 · listfix1 덜 받음 지킴이가 사실상 꺼짐 · 고객 연결이 crm_orders를 늘 통째로 받음
+ *  ① count()가 함수면 그것 ② 아니면 웹앱 fsRestCount(1.78.113)와 같은 공식 REST 집계(documents:runAggregationQuery · 로그인 토큰 · 문서를 읽지 않고 수만 · 1천 건에 읽기 1번) — 페이지 fetch, 막히면 GM_xmlhttpRequest(@connect googleapis.com 그대로 · 머리 그대로)
+ *  ③ 둘 다 안 되면 0·null로 삼키지 않고 까닭(어느 길이 왜)을 담은 오류를 던짐 → 부르는 곳이 기록에 남김 */
+(function rnSrvCountInit() { const G = globalThis;
+  const fbOf = (fb) => fb || (typeof firebase !== 'undefined' ? firebase : null) || G.firebase || null;
+  const gmPost = (url, headers, data) => new Promise((res, rej) => { try { GM_xmlhttpRequest({ method: 'POST', url, headers, data, anonymous: true, timeout: 60000, onload: (r) => res({ status: r.status, text: r.responseText || '' }), onerror: () => rej(new Error('연결 실패')), ontimeout: () => rej(new Error('시간 초과')) }); } catch (e) { rej(e); } });
+  async function restCount(coll, fb) { const F = fbOf(fb); if (!F || !F.apps || !F.apps.length) throw new Error('Firebase 준비 전'); const u = F.auth().currentUser; if (!u) throw new Error('Firebase 로그인 전(로그인한 사용자 없음)');
+    const tok = await u.getIdToken(); const pid = F.app().options.projectId; if (!pid) throw new Error('projectId 없음');
+    const url = `https://firestore.googleapis.com/v1/projects/${pid}/databases/(default)/documents:runAggregationQuery`; const headers = { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' };
+    const body = JSON.stringify({ structuredAggregationQuery: { structuredQuery: { from: [{ collectionId: coll }] }, aggregations: [{ alias: 'n', count: {} }] } });
+    let st = 0, text = '', via = 'fetch'; try { const r = await fetch(url, { method: 'POST', headers, body }); st = r.status; text = await r.text(); } catch (e) { if (typeof GM_xmlhttpRequest !== 'function') throw new Error('fetch 실패(' + (e.message || e) + ')'); via = 'gm'; try { const r = await gmPost(url, headers, body); st = r.status; text = r.text; } catch (e2) { throw new Error(`fetch 실패(${e.message || e}) · GM 요청 실패(${e2.message || e2})`); } }
+    let j = null; try { j = JSON.parse(text); } catch (e) {}
+    if (st !== 200) { const m = j && (Array.isArray(j) ? j[0] : j); const em = m && m.error ? `${m.error.status || ''} ${m.error.message || ''}`.trim() : String(text || '').slice(0, 120); throw Object.assign(new Error(`HTTP ${st}${em ? ' ' + em.slice(0, 160) : ''} (${via})`), { st, via, status: (m && m.error && m.error.status) || '' }); }
+    const v = Array.isArray(j) && j[0] && j[0].result && j[0].result.aggregateFields && j[0].result.aggregateFields.n; const n = v && v.integerValue != null ? +v.integerValue : NaN; if (!Number.isFinite(n)) throw new Error('답에 건수가 없음 (' + via + ')'); return n; }
+  /* srvCount(이름 · fb?) → 건수(숫자) · 못 세면 오류(message = '<길> 까닭 · <길> 까닭') */
+  /* (리드 11/17 h4 소견) 실제 까닭을 판 뒤에 확인하게 — 모음마다 세션 첫 실패·첫 성공을 한 번씩 prd_system/srvcount_diag.<PC>.<모음>에 남김(count() 있었는지·code·글 · REST 상태·code·길) · 기록 실패는 건수 세기를 막지 않음 */
+  const seen = new Set();
+  const note = (coll, ok, d) => { const k = coll + (ok ? ':ok' : ':err'); if (seen.has(k)) return; seen.add(k); try { const F = fbOf(); if (!F || !F.apps || !F.apps.length || !F.auth().currentUser) return; const W = typeof window !== 'undefined' ? window : G; const pc = String((W.__rnPcName && W.__rnPcName.get()) || 'PC').replace(/[^\w가-힣-]/g, '_').slice(0, 40) || 'PC';
+    F.firestore().collection('prd_system').doc('srvcount_diag').set({ [pc]: { [String(coll).replace(/\W/g, '_')]: { [ok ? 'ok' : 'err']: { at: new Date().toISOString(), ...d } } } }, { merge: true }).catch(() => {}); } catch (e) {} };
+  async function srvCount(coll, fb) { const F = fbOf(fb); const why = []; const d = { cnt: { has: false } };
+    try { const q = F && F.firestore ? F.firestore().collection(coll) : null; d.cnt.has = !!(q && typeof q.count === 'function'); if (d.cnt.has) { const s = await q.count().get(); const n = +((s.data() || {}).count); if (Number.isFinite(n)) { note(coll, true, { via: 'count()', n, ...d }); return n; } why.push('count() 답에 건수 없음'); } else why.push('count() 없음(compat)'); } catch (e) { d.cnt.code = String(e.code || ''); d.cnt.msg = String(e.message || e).slice(0, 200); why.push('count() 실패(' + String(e.code || e.message || e).slice(0, 80) + ')'); }
+    try { const n = await restCount(coll, F); note(coll, true, { via: 'rest', n, ...d }); return n; } catch (e) { d.rest = { st: e.st || 0, via: e.via || '', code: e.status || '', msg: String(e.message || e).slice(0, 300) }; why.push('REST 집계 ' + String(e.message || e).slice(0, 200)); }
+    note(coll, false, { ...d, why: why.join(' · ').slice(0, 500) });
+    throw Object.assign(new Error(why.join(' · ')), { detail: d }); }
+  G.__rnSrvCount = srvCount; G.__rnRestCount = restCount;
 })();
 /* ═════════════ 작업 기록 (두 모듈 공통) ═════════════
  * 모든 진행(단계 시작·끝, 쪽·항목마다의 진행, 양보·기다림·오류)을 초 단위로 남김.

@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.356의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.357의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.356' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.356', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.357' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.357', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -1030,7 +1030,7 @@
     if (!fdb || !fbUser) return;
     try {
       const localN = new Set((await dbAll('orderLines')).map((l) => l.orderNo)).size;
-      let serverN; try { serverN = (await fdb.collection('crm_orders').count().get()).data().count; } catch (e) { serverN = null; }
+      let serverN; try { serverN = await globalThis.__rnSrvCount('crm_orders', FB); } catch (e) { serverN = null; console.warn('[리드나우] crm_orders 서버 건수를 못 셈 — 통째로 받음:', e.message); } /* (lfcount1) compat에 count()가 없어 늘 null → 늘 통째로 받던 것 */
       if (serverN != null && serverN <= localN + 50) return;
       setNow('고객 연결을 위해 Firebase의 주문을 내려받는 중'); const snap = await fdb.collection('crm_orders').get();
       serverOrdersCache = []; snap.forEach((d) => serverOrdersCache.push({ _id: d.id, ...d.data() })); await markCrmDirty('serverOrders'); /* (1.89.140) buildDocs가 고객 연결에 씀 */
@@ -1683,8 +1683,8 @@
     let bad = 0; const cols = Object.keys(byCol);
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i]; let remote;
-      try { remote = (await fdb.collection(col).count().get()).data().count; }
-      catch (e) { remote = (await fdb.collection(col).get()).size; }
+      try { remote = await globalThis.__rnSrvCount(col, FB); } /* (lfcount1) compat에 count()가 없어 늘 통째로 받아 셌음 */
+      catch (e) { log(`${col}: 서버 건수를 못 셈(${String(e.message || e).slice(0, 160)}) — 문서를 통째로 받아 셈`); remote = (await fdb.collection(col).get()).size; }
       const local = byCol[col].length; const ok = remote >= local;
       log(`${col}: 이 PC ${local.toLocaleString()}개 / Firebase ${remote.toLocaleString()}개 ${ok ? '일치' : '부족'}`, ok ? 'ok' : 'err'); if (!ok) bad++;
       progress('Firebase 대조', i + 1, cols.length + 1);
