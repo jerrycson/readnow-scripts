@@ -440,18 +440,24 @@
     const waitOn = () => (navigator.onLine === false ? new Promise((r) => { const f = () => { window.removeEventListener('online', f); r(); }; window.addEventListener('online', f); setTimeout(f, 20000); }) : Promise.resolve());
     const go = (n) => one(n).catch((e) => { if (n >= 2) { const x = new Error(`책장 화면을 받지 못했습니다(${String(u0).split('?')[0]} · ${e.message}) — 인터넷 연결을 확인한 뒤 다시 해 보기를 눌러 주세요`); x.res = u0; throw x; } return waitOn().then(() => new Promise((r) => setTimeout(r, n ? 2000 : 800))).then(() => go(n + 1)); });
     return go(0); };
-  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.16' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.16' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.16' }))).catch((e) => { SHL.js = null; throw e; }));
+  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.16' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.18' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.18' }))).catch((e) => { SHL.js = null; throw e; }));
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
-    try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const J0 = await (SHL.p0 || k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); SHL.p0 = null; /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */ all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
+    try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const pre = SHL.p0 ? { p0: SHL.p0, p1: SHL.p1 } : null; SHL.p0 = SHL.p1 = null; let p1 = null;
+      const J0 = await (pre ? pre.p0.then((J) => { p1 = pre.p1.catch(() => null); return J; }) : k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */
+      /* (shelfload1 11/17) 나머지 묶음(k=1-)은 첫 책장을 그리기 '전에' 받기 시작 — 전엔 첫 그리기(PC 1.1초 · 휴대폰 몇 초)가 끝난 뒤에야 물어서 그만큼 늦게 다 옴 */
+      if (J0.kn > 1 && !p1) p1 = api('/shop/shelf?k=1-', { ms: 45000 }); if (p1) p1.catch(() => {});
+      all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
       /* (shelf6) 나머지 묶음은 한 번에(k=1-) — 전엔 묶음마다 나란히(4번)라 클라우드 자리(동시 4개)를 혼자 다 씀 · 클라우드가 옛 판이면(k2 없음) 남은 묶음을 하나씩 차례로 */
-      const rest = []; if (J0.kn > 1) { const J1 = await api('/shop/shelf?k=1-', { ms: 45000 }); rest.push(J1); prog(all.length + (J1.rows || []).length, J0.n);
+      const rest = []; if (J0.kn > 1) { const J1 = (await p1) || (await api('/shop/shelf?k=1-', { ms: 45000 })); /* 미리 받기가 실패했으면 다시 한 번 */ rest.push(J1); prog(all.length + (J1.rows || []).length, J0.n);
         for (let k = (J1.k2 != null ? J1.k2 : J1.k || 1) + 1; k < J0.kn; k++) { const J = await api('/shop/shelf?k=' + k); rest.push(J); prog(all.length + rest.reduce((a, x) => a + (x.rows || []).length, 0), J0.n); } }
       for (const J of rest) { const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); } prog(all.length, J0.n); }
     catch (e) { if (e.status !== 404) throw e; /* 클라우드 옛 판 — 새로 들어온 차례 쪽을 모음(최대 40쪽) */ all = []; for (let p = 0; p < 40; p++) { const r = await api('/shop/list?' + B.qs({ s: 'new', p })); const base = all.length; all = all.concat(r.items.map((x, i) => ({ ...x, c: x.c || null, at: x.at || null, _o: -(base + i) }))); prog(all.length, r.total); if (!r.more) break; } }
     const seen = new Set(); all = all.filter((x) => !seen.has(x.id) && seen.add(x.id)); SHL.items = all; SHL.at = Date.now(); return all; }
   async function shelfPage(q) { const epoch = ++shelfEpoch; const current = () => epoch === shelfEpoch && B.route(location.hash).name === 'shelf'; document.body.classList.add('shelf-on'); main().innerHTML = '<div class="bqs-wait">책장을 세우는 중…</div>';
-    if (!q.demo && !(SHL.items && Date.now() - SHL.at < 5 * 60e3) && !SHL.p0) { SHL.p0 = api('/shop/shelf?k=0', { ms: 30000 }); SHL.p0.catch(() => { SHL.p0 = null; }); } /* 화면 파일·설정과 나란히 */
+    if (!q.demo && !(SHL.items && Date.now() - SHL.at < 5 * 60e3) && !SHL.p0) { const p0 = (SHL.p0 = api('/shop/shelf?k=0', { ms: 30000 })); p0.catch(() => { if (SHL.p0 === p0) SHL.p0 = SHL.p1 = null; });
+      /* (shelfload1 11/17) 나머지 묶음도 미리 — 첫 묶음과 화면 파일이 다 온 뒤에 물음(휴대폰 4G에서 첫 화면 몫과 띠 폭을 다투지 않게) */
+      SHL.p1 = Promise.all([p0, shelfJs().catch(() => 0)]).then(([J]) => (J && J.kn > 1 ? api('/shop/shelf?k=1-', { ms: 45000 }) : null)); SHL.p1.catch(() => {}); } /* 화면 파일·설정과 나란히 */
     let c = {}; try { await Promise.all([shelfJs(), cfg().then((x) => { c = x; }, () => {})]); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) shelfPage(q); }); return; } if (!current()) return;
     const S = window.BQS; const raw = { ...((c && c.shelf) || {}), ...(q.cfg ? S.previewCfg(q.cfg) : {}) }; const sc = S.cfgOf(raw);
     if (!sc.on && !q.cfg && !q.demo) { main().innerHTML = '<div class="empty">서가 책장은 지금 쉬는 중입니다<br><a href="#/list?s=new">책 찾기로</a></div>'; return; }
