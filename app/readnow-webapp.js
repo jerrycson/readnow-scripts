@@ -41405,7 +41405,7 @@ setInterval(() => { if (S.user && S.leader !== false && S.prodLoaded && (typeof 
  *  적용 = 등록 줄(reg_items · 단계 q·sel·pick)의 사진 칸이 '비어 있을 때만'(앞 → 대표 · 뒤 → 추가 1 · 책등 → 추가 2) — 사람이 넣은 사진은 덮지 않음 · 잘린 그림은 Storage reg_photos/<줄>/…_cut.jpg
  *  기록 = ppt_sessions/cut_<시각>(물건마다 자리·ISBN·확신·사람 확인) · app_settings/cut_engine(단계·문턱·확인 기록·일지 · 지우지 않고 뒤에 덧붙임 · 오래된 것만 잘라 둠) · research_pulse V01
  *  단계: 1 그림자 · 2 안내(한 번 눌러 확인 · 지금) · 3 문턱 넘는 것 저절로(설정 cutAutoOn을 켜야) — 돈 드는 그림 AI 안 씀 · 브라우저 팝업 없음 */
-const CUT_URL = '../readnow-cutout-core.js?v=0.1.2';
+const CUT_URL = '../readnow-cutout-core.js?v=0.1.3';
 const CUT_SLOT = { back: ['z', 0, '추가 이미지 1'], front: ['main', null, '대표 사진'], spine: ['z', 1, '추가 이미지 2'] };
 const CUT_MODE = { back: ['🔙 뒷면 묶음', '여러 권 뒷면을 나란히·바둑판으로 놓고 한 장 — 바코드로 어느 상품인지 앎(가장 정확)'], front: ['📗 앞면 묶음', '뒷면을 찍은 그대로 앞면으로 뒤집어 한 장 — 같은 자리끼리 짝(좌우가 뒤바뀌면 스스로 알아챔)'], spine: ['📚 책등 줄', '책등이 보이게 나란히 세워 한 장 — 뒷면 차례(왼→오른·위→아래)와 같게 세우면 차례로 짝'] };
 function cutCore() { if (window.ReadnowCutout) return Promise.resolve(window.ReadnowCutout); return S._cutP || (S._cutP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = CUT_URL; s.onload = () => (window.ReadnowCutout ? res(window.ReadnowCutout) : rej(new Error('판별 엔진 파일이 비어 있음'))); s.onerror = () => { S._cutP = null; rej(new Error('판별 엔진 파일을 못 받음 (인터넷 확인)')); }; document.head.appendChild(s); })); }
