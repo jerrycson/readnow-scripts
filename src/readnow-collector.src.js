@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.350
+// @version      1.89.351
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5080,9 +5080,59 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   }
 
   /* ───────── 공통 쓰기 ───────── */
+  /* ⟦wguard1 쓰기 지킴이⟧ (11/17 일꾼 wguard1 · 🚨 자료 · 헌장 제7조 '자료는 덮지 않음' · 정범님 「다시는 그런 일이 일어나지 못하도록」)
+   *  까닭: 11/17 12:37 HOME이 상품 기록 26,710건 중 11,999건만 받은 채 상품 조회가 나머지 14,686개를 '새 상품'으로 보고 처음 본 날(firstSeenAt)·등록일(연도 추정)·수량을 덮어 적음(11/08 JS-MAIN도 같은 일)
+   *  → 읽는 쪽 안전띠(listfix1)와 따로, 쓰는 마지막 자리(commitBatches)에서 한 번 더 막음 — 어느 길로 들어온 쓰기든(상품 조회·등록 파일·공개 확인·판매 끝 반영…)
+   *  ① '처음' 값(firstSeenAt)이 든 쓰기 = 쓰는 쪽이 '새 문서'라고 믿은 쓰기 → 올리기 전에 서버(PC 안 사본 아님)에서 정말 없는지 봄 · 서버 답을 못 받으면 올리지 않음(멈춤)
+   *  ② 이미 있으면 처음 값을 빼고 올림(처음 본 날 · 상품은 연도 추정 등록일 · 아는 수량(qty — 목록 숫자는 qtyList로)) · 합치기 없는 통째 쓰기는 합치기로 바꿈(다른 칸을 지우지 않게)
+   *  ③ '새 문서라 믿었는데 이미 있음'이 1시간에 50개를 넘으면 그 묶음을 올리지 않고 멈춤 + prd_system/wguard에 까닭 기록 — 사람이 확인하고 allowUntil(ISO 시각)을 적으면 그때까지는 ②만 하고 지나감
+   *  ④ 사라짐(판매 중 → 안 보임) 표시: 서버에서 다시 보고(다른 PC가 이번 회차에 봤거나 이미 꺼진 것은 뺌) · 한 번에 max(300, 판매 중 5%) 넘으면 표시하지 않고 기록 */
+  const WG = { MAX_DUP: 50, WIN_MS: 3600e3, win: { t0: 0, n: 0 }, GONE_MIN: 300, GONE_RATE: 0.05, FIRST: ['firstSeenAt'] };
+  const wgRec = (calls) => { const r = { set: (ref, data, opt) => (calls.push({ k: 'set', ref, data, opt }), r), update: (ref, ...a) => (calls.push({ k: 'update', ref, a }), r), delete: (ref) => (calls.push({ k: 'delete', ref }), r) }; return r; };
+  const wgPlay = (b, calls) => { for (const c of calls) { if (c.k === 'set') (c.opt ? b.set(c.ref, c.data, c.opt) : b.set(c.ref, c.data)); else if (c.k === 'update') b.update(c.ref, ...c.a); else b.delete(c.ref); } return b; };
+  function wgFix(coll, data, srv) { /* 이미 있는 문서(srv)에 '처음' 값으로 적으려던 칸을 뺀 사본 */
+    const d = { ...data }; const cut = [];
+    for (const f of WG.FIRST) if (d[f] != null && srv[f] != null) { delete d[f]; cut.push(f); }
+    if (coll === 'prd_listings') {
+      if (d.registeredYearGuessed && srv.registeredAt) { delete d.registeredAt; delete d.registeredYearGuessed; cut.push('registeredAt'); }
+      if (d.qty != null && srv.qty != null) { const lq = +d.qty; delete d.qty; if (srv.qtyList != null || lq !== +srv.qty) d.qtyList = lq; cut.push('qty'); } }
+    return { d, cut };
+  }
+  async function wgSrvDocs(refs) { /* 서버에서만(사본이면 실패) — 문서 경로 → 내용 · 없는 문서는 안 들어감 */
+    const out = new Map(); const byCol = new Map(); for (const r of refs) { const k = r.parent.path || r.parent.id; if (!byCol.has(k)) byCol.set(k, { col: r.parent, ids: new Set() }); byCol.get(k).ids.add(r.id); }
+    const FP = firebase.firestore.FieldPath.documentId();
+    for (const { col, ids } of byCol.values()) { const L = [...ids]; for (let i = 0; i < L.length; i += 30) { const ss = await col.where(FP, 'in', L.slice(i, i + 30)).get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('🛡 쓰기 지킴이: 서버 답을 못 받음(PC 안 사본만) — 새 문서인지 확인 못 해 올리지 않음'); ss.forEach((d) => out.set(col.path ? col.path + '/' + d.id : d.ref ? d.ref.path : d.id, d.data() || {})); } }
+    return out;
+  }
+  async function wgAllowed() { try { const v = (await C('prd_system').doc('wguard').get({ source: 'server' })).data() || {}; return !!(v.allowUntil && Date.parse(v.allowUntil) > Date.now()) && v.allowUntil; } catch (e) { return false; } }
+  async function wgNote(kind, info) { try { await C('prd_system').doc('wguard').set({ [kind]: { at: nowIso(), pc: PC_NAME || '', ...info }, trips: firebase.firestore.FieldValue.increment(1), ...W() }, { merge: true }); } catch (e) {} }
+  async function wgGuard(calls, label) {
+    const cand = calls.filter((c) => c.k === 'set' && c.data && typeof c.data === 'object' && WG.FIRST.some((f) => c.data[f] != null)); if (!cand.length) return calls;
+    const srv = await wgSrvDocs(cand.map((c) => c.ref)); if (!srv.size) return calls;
+    const now = Date.now(); if (now - WG.win.t0 > WG.WIN_MS) WG.win = { t0: now, n: 0 };
+    let dup = 0; const ex = []; const cutN = {};
+    const out = calls.map((c) => { if (!cand.includes(c)) return c; const s = srv.get(c.ref.path); if (!s) return c; const coll = c.ref.parent.id; const { d, cut } = wgFix(coll, c.data, s); dup++; if (ex.length < 5) ex.push(coll + '/' + c.ref.id); cut.forEach((f) => (cutN[f] = (cutN[f] || 0) + 1));
+      if (coll === 'prd_listings' && typeof LISTINGS !== 'undefined' && LISTINGS && LISTINGS.set) { try { LISTINGS.set(c.ref.id, { ...s, ...d }); } catch (e) {} } /* 덜 받은 상품 지도를 서버 내용으로 메움 */
+      return { ...c, data: d, opt: c.opt && (c.opt.merge || c.opt.mergeFields) ? c.opt : { merge: true } }; });
+    if (!dup) return calls;
+    WG.win.n += dup; const info = { label: label || '', dup, winN: WG.win.n, cut: cutN, sample: ex };
+    if (WG.win.n > WG.MAX_DUP) { const al = await wgAllowed(); if (!al) { await wgNote('stop', info); log(`🛡 쓰기 지킴이 멈춤: '새 문서'로 적으려던 ${WG.win.n.toLocaleString()}개가 서버에 이미 있음(1시간 문턱 ${WG.MAX_DUP}) — 상품 기록 등을 덜 받았을 수 있어 이 묶음을 올리지 않음 · 예: ${ex.join(', ')} · 정말이면 prd_system/wguard allowUntil`, 1); throw new Error(`쓰기 지킴이: 이미 있는 문서 ${WG.win.n}개를 새 문서로 적으려 해 멈춤`); } log(`🛡 쓰기 지킴이: 이미 있는 문서 ${dup}개 — 허락(${al}까지)이 있어 처음 값만 빼고 올림`, 1); }
+    else log(`🛡 쓰기 지킴이: '새 문서'로 적으려던 ${dup}개가 이미 있어 처음 값(${Object.keys(cutN).join('·') || '없음'})을 빼고 올림 · 예: ${ex.join(', ')}`, 1);
+    await wgNote('fix', info); return out;
+  }
+  async function wgGoneCheck(gone, activeN, startedAt) { /* ④ gone = [[문서 id, 상품]] → 정말 표시할 것만 */
+    if (!gone.length) return gone;
+    const refs = gone.map(([k]) => C('prd_listings').doc(k)); const srv = await wgSrvDocs(refs);
+    const keep = gone.filter(([k], i) => { const s = srv.get(refs[i].path); if (!s) return false; /* 서버에 없음 — 지어 쓰지 않음 */ if (s.active === false) return false; if (s.seenBy_scm && startedAt && s.seenBy_scm >= startedAt) return false; /* 다른 PC가 이번 회차에 봄 */ return true; });
+    if (keep.length < gone.length) log(`🛡 사라짐 표시: 서버에서 다시 보니 ${(gone.length - keep.length).toLocaleString()}개는 이미 꺼졌거나 이번 회차에 보였음 — 빼고 ${keep.length.toLocaleString()}개만`);
+    const cap = Math.max(WG.GONE_MIN, Math.round(activeN * WG.GONE_RATE));
+    if (keep.length > cap) { const al = await wgAllowed(); if (!al) { await wgNote('goneStop', { n: keep.length, cap, activeN, sample: keep.slice(0, 5).map(([k]) => k) }); log(`🛡 사라짐 표시 멈춤: 한 번에 ${keep.length.toLocaleString()}개(문턱 ${cap.toLocaleString()} = max(${WG.GONE_MIN}, 판매 중 ${activeN.toLocaleString()}의 5%)) — 화면·읽기 오류일 수 있어 표시하지 않음 · 정말이면 prd_system/wguard allowUntil을 적고 다시`, 1); return []; } }
+    return keep;
+  }
   async function commitBatches(ops, label) {
     for (let i = 0; i < ops.length; i += 400) {
-      const b = db.batch(); ops.slice(i, i + 400).forEach((f) => f(b)); await b.commit();
+      const calls = []; const rec = wgRec(calls); ops.slice(i, i + 400).forEach((f) => f(rec)); /* (wguard1) 바로 올리지 않고 적어 두었다가 지킴이를 거쳐 올림 */
+      const safe = await wgGuard(calls, label); const b = wgPlay(db.batch(), safe); await b.commit();
       if (label) ui(label, Math.min(i + 400, ops.length), ops.length, '올리는 중');
     }
   }
@@ -5154,7 +5204,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const prog = (await loadProgress('deposit')) || {}; let page = first && prog.page && prog.start === start ? prog.page : 1; if (page > 1) doc = await depPage(doc, page, start, today);
       let saved = 0, seenKnown = 0; const FV = firebase.firestore.FieldValue; const at = nowIso(); let last = P1.lastPage;
       for (;;) { if (stopFlag) { await saveProgress('deposit', { page, start }); throw new Error('멈춤'); } const P = depParse(doc); last = Math.max(last, P.lastPage); const ids = P.rows.map((x) => `${x.date}_${x.detail}_${x.add ?? ''}_${x.use ?? ''}_${x.bal ?? ''}`.replace(/[\/\s]/g, ''));
-        const ex = await Promise.all(ids.map((id) => C('acc_deposit').doc(id).get().then((d) => d.exists).catch(() => false))); const b = db.batch(); let n = 0;
+        const ex = await Promise.all(ids.map((id) => C('acc_deposit').doc(id).get({ source: 'server' }).then((d) => { if (d.metadata && d.metadata.fromCache) throw new Error('예치금 기록을 서버에서 못 받음'); return d.exists; }))); /* (wguard1) 읽기 실패를 '없음'으로 보고 통째로 다시 적던 것(처음 본 날 덮음) → 실패면 이번 회차는 멈춤 */ const b = db.batch(); let n = 0;
         P.rows.forEach((x, i) => { if (ex[i]) { seenKnown++; return; } const ono = /^\d{3}-[A-Z]\d{6,}$/.test(x.detail) ? x.detail : null; b.set(C('acc_deposit').doc(ids[i]), { ...x, orderNo: ono, firstSeenAt: at, by: PC_NAME, ...W() }); n++; });
         if (n) await b.commit(); saved += n; ui('💰 알라딘 예치금 내역', page, last, `${page}/${last}쪽 · 새 줄 ${saved}개`);
         if (!first && P.rows.length && n === 0) break; /* 새 줄 없는 쪽 = 그 뒤는 이미 모은 것 */ if (page >= last || !P.rows.length) break;
@@ -5487,6 +5537,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         const activeN = [...LISTINGS.values()].filter((l) => l.active).length;
         // 안전장치: 판매 중 상품의 30% 넘게 한꺼번에 '사라짐'이면 알라딘 화면 오류(로그인 풀림·빈 화면)일 가능성이 커서 표시하지 않음
         if (activeN >= 50 && gone.length > activeN * 0.3) { log(`전체 재검토: 판매 중 ${activeN.toLocaleString()}개 중 ${gone.length.toLocaleString()}개가 목록에 안 보였습니다. 화면 오류일 수 있어 '사라짐' 표시를 하지 않았습니다 (실제라면 판매관리 화면 확인 후 다시)`, 1); gone.length = 0; }
+        if (gone.length) { const g2 = await wgGoneCheck(gone, activeN, prog.startedAt); gone.length = 0; gone.push(...g2); } /* (wguard1) ④ 서버에서 다시 보고 · 한 번에 너무 많으면 멈춤 */
         await commitBatches(gone.map(([k]) => (b) => b.set(C('prd_listings').doc(k), { active: false, goneFromActiveAt: nowIso(), goneEvents: firebase.firestore.FieldValue.arrayUnion(nowIso()), ...W() }, { merge: true }) /* (1.57.2) 사라진 때를 덮어쓰지 않고 쌓음 */), '사라진 상품 표시');
         gone.forEach(([k, l]) => LISTINGS.set(k, { ...l, active: false }));
         prog.stats.goneFromActive = gone.length;
@@ -8204,7 +8255,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function buybackJob(opt) { const WAIT = !!(opt && opt.wait); const PK = WAIT ? 'buybackWait' : 'buyback';
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
-      const have = new Map(); (await C('pur_buyback').get()).forEach((d) => have.set(d.id, d.data()));
+      const have = new Map(); { const ss = await C('pur_buyback').get({ source: 'server' }); if (ss.metadata && ss.metadata.fromCache) throw new Error('매입 기록을 서버에서 못 받음 — 덜 받은 채 새 접수로 적지 않음'); ss.forEach((d) => have.set(d.id, d.data())); } /* (wguard1) PC 안 사본(덜 받은 목록)으로 '처음 본 날'을 다시 적지 않게 */
       const prog = (await loadProgress(PK)) || { page: 1, list: [], phase: 'list', i: 0, got: 0, upd: 0 };
       if (prog.phase === 'list') {
         for (;;) {
