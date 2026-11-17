@@ -4,7 +4,7 @@ let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } 
 const path = require('path'); const fs = require('fs'); const W = path.resolve(__dirname, '..');
 (async () => {
   // ── ⑥ release-guard: 빠진 화면·빠진 설명서·죽은 선택자를 잡는가 (브라우저 없이)
-  { const gf = [W + '/release-guard.js', W + '/../readnow-scripts/src/tools/release-guard.js'].find((f) => fs.existsSync(f)); const g = require(gf); const t = fs.readFileSync(W + '/app.html', 'utf8');
+  { const gf = [W + '/release-guard.js', W + '/tools/release-guard.js', W + '/../src/tools/release-guard.js', W + '/../readnow-scripts/src/tools/release-guard.js'].find((f) => fs.existsSync(f)); const g = require(gf); const t = fs.readFileSync(W + '/app.html', 'utf8');
     const run = (x) => { const b = [], w = []; g.pgdCheck(x, null, b, (s) => w.push(s), () => {}); return { b, w }; };
     const r0 = run(t); ok(!r0.b.length, '지금 코드: 화면 설명서 검사 통과 ' + JSON.stringify(r0.b.slice(0, 3)));
     const r1 = run(t.replace('\nfunction openRefund(', '\nfunction openZzNew() { S.detail = { zznew: 1 }; }\nfunction openRefund(')); ok(r1.b.some((x) => /PG_SCR\)에 없는 화면: openZzNew/.test(x)), '새 상세 화면(설명서 목록에 없음) → 빌드 멈춤');
