@@ -1,4 +1,4 @@
-/* 주문 요청 장부: 탭 사이에 하나의 진행 요청을 공유한다. 개인정보·동의·주문 본문은 저장하지 않는다. */
+/* 주문 요청 장부: 탭 사이에 하나의 진행 요청을 공유한다. 이름·주소·동의·주문 본문·로그인 열쇠는 저장하지 않고, 계정 구분 해시만 보존한다. */
 (function (root, make) {
   'use strict';
   const api = make();
@@ -12,6 +12,13 @@
   const safeError = message => Object.assign(new Error(message), { orderJournal: true });
   const fault = () => safeError('주문 확인 정보를 안전하게 저장하지 못했습니다 — 새 주문을 보내지 말고 다시 확인해 주세요');
   const conflict = () => safeError('앞선 주문 상태가 바뀌었습니다 — 처리 결과를 먼저 확인해 주세요');
+  function ownerOf(token) {
+    if (token === '') return 'guest';
+    const m = /^(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(typeof token === 'string' ? token : '');
+    if (!m) throw safeError('주문을 시작할 로그인 상태를 확인하지 못했습니다 — 다시 확인해 주세요');
+    return 'member:' + m[1];
+  }
+  const sameOwner = (first, next) => ownerOf(first) === ownerOf(next);
   const terminal = r => r && (r.state === 'completed' || r.state === 'rejected');
   const receiptOK = r => !!(r && typeof r.no === 'string' && /^BQ\d{8}-[A-Z0-9]{5}$/.test(r.no) && typeof r.t === 'string' && /^[0-9a-f]{32}$/.test(r.t) && Number.isFinite(r.total) && r.total >= 0 && Number.isInteger(r.n) && r.n >= 1 && r.n <= 50);
   function rows(cart) {
@@ -24,7 +31,8 @@
     });
   }
   function valid(r) {
-    if (!r || r.schema !== 1 || !/^[0-9a-f]{32}$/.test(r.id || '') || !/^[0-9a-f]{64}$/.test(r.secret || '') || !/^[0-9a-f]{64}$/.test(r.bodyHash || '') || !['pending', 'completed', 'rejected'].includes(r.state)) throw fault();
+    if (!r || ![1, 2].includes(r.schema) || !/^[0-9a-f]{32}$/.test(r.id || '') || !/^[0-9a-f]{64}$/.test(r.secret || '') || !/^[0-9a-f]{64}$/.test(r.bodyHash || '') || !['pending', 'completed', 'rejected'].includes(r.state)) throw fault();
+    if (r.schema === 2 && r.owner !== 'guest' && !/^[0-9a-f]{64}$/.test(r.owner || '')) throw fault();
     rows(r.cart);
     if (terminal(r) && (!r.result || r.result.state !== r.state || (r.state === 'completed' ? !receiptOK(r.result.receipt) : ![400, 403, 409].includes(r.result.status) || typeof r.result.err !== 'string'))) throw fault();
     return r;
@@ -87,18 +95,20 @@
       });
     }
     const read = () => transaction(false, s => snapshot(s, (m, r) => s.done({ revision: m.revision, active: r })));
-    async function begin(revision, body, cart) {
-      const bodyHash = await hash(body), clean = rows(cart);
+    async function ownerHash(token) { const owner = ownerOf(token); return owner === 'guest' ? owner : hash({ orderOwner: owner }); }
+    async function owns(r, token) { valid(r); return r.schema === 2 && r.owner === await ownerHash(token); }
+    async function begin(revision, body, cart, token) {
+      const owner = await ownerHash(token), bodyHash = await hash(body), clean = rows(cart);
       const id = hex(crypto.getRandomValues(new Uint8Array(16))), secret = hex(crypto.getRandomValues(new Uint8Array(32)));
       return transaction(true, s => snapshot(s, (m, r) => {
         if (r) return s.done({ revision: m.revision, active: r, created: false });
         if (m.revision !== revision) throw conflict();
-        const active = { schema: 1, id, secret, bodyHash, cart: clean, at: new Date().toISOString(), state: 'pending' };
+        const active = { schema: 2, owner, id, secret, bodyHash, cart: clean, at: new Date().toISOString(), state: 'pending' };
         s.attempts.add(active); s.meta.put({ ...m, active: id, revision: m.revision + 1 }, 'current');
         s.done({ revision: m.revision + 1, active, created: true });
       }));
     }
-    async function matches(r, body) { valid(r); return r.bodyHash === await hash(body); }
+    async function matches(r, body, token) { valid(r); return await owns(r, token) && r.bodyHash === await hash(body); }
     function settle(id, status, body) {
       return transaction(true, s => s.get(s.attempts.get(id), value => {
         const r = valid(value), next = outcome(r, status, body);
@@ -116,7 +126,7 @@
       }));
     }
     const receipts = () => transaction(false, s => s.get(s.attempts.getAll(), all => s.done(all.map(valid).filter(r => r.state === 'completed').map(r => r.result.receipt))));
-    return { read, begin, matches, settle, acknowledge, receipts };
+    return { read, begin, matches, owns, settle, acknowledge, receipts };
   }
-  return { create, outcome, terminal };
+  return { create, outcome, terminal, sameOwner, OWNER_VERSION: 1 };
 });

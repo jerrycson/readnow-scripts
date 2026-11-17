@@ -20,6 +20,12 @@ on:
       - 'src/tests/standalone/account-orders*'
       - 'src/tests/standalone/order-attempt*'
       - 'src/tests/standalone/stability.test.cjs'
+      - 'src/tests/tORDERCLIENT.js'
+      - 'src/tests/tORDERINTEGRATED.js'
+      - 'src/tests/tACCOUNTAUTHUI.js'
+      - 'src/tests/standalone/order-journal-browser.cjs'
+      - 'src/tests/standalone/order-contract-browser.cjs'
+      - 'src/tests/standalone/account-auth*'
       - '.github/workflows/stability-shop.yml'
   workflow_dispatch:
 permissions:
@@ -43,6 +49,7 @@ jobs:
           export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
           RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
           node src/tests/tORDERCLIENT.js
+          node src/tests/tORDERINTEGRATED.js
           node src/tests/standalone/shelf-browser.cjs
 
   account-browser:
@@ -60,3 +67,4 @@ jobs:
           export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
           RN_ACCOUNT_UI=1 node src/tests/tACCOUNTORDERS.js
           RN_UI=1 node src/tests/tSHOP9_1112.js
+          node src/tests/tACCOUNTAUTHUI.js

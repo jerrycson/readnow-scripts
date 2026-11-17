@@ -29,12 +29,13 @@
    *  ③ 읽기가 429·502·503·504·연결 실패면 Retry-After(없으면 1.5·4·8초 + 흔들기)만큼 기다렸다 최대 3번 다시 — 주문(POST)은 다시 보내지 않음(두 번 접수 막기) */
   const SAME = { on: !window.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '') };
   const RETRY_ST = [429, 502, 503, 504]; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; if (!(get && SAME.on)) await pickApi(); const base = get && SAME.on ? location.origin : API; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
-    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && window.BQA && window.BQA.tok() ? { Authorization: 'Bearer ' + window.BQA.tok() } : {}) } }) }); /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */ let j = null; try { j = await r.json(); } catch (e) {}
+  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; if (!(get && SAME.on)) await pickApi(); const base = get && SAME.on ? location.origin : API; const bound = opt && Object.prototype.hasOwnProperty.call(opt, 'ownerToken'), token = bound || (opt && opt.auth) ? accountToken() : ''; if (bound && opt.ownerToken !== token) throw new Error('로그인 상태가 바뀌었습니다 — 현재 계정에서 다시 확인해 주세요'); if (opt && Object.prototype.hasOwnProperty.call(opt, 'canSend') && (typeof opt.canSend !== 'function' || opt.canSend() !== true)) throw new Error('화면이 바뀌었습니다 — 현재 화면에서 다시 확인해 주세요'); const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
+    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': (opt && opt.ctype) || 'application/json', ...(opt && opt.auth && token ? { Authorization: 'Bearer ' + (bound ? opt.ownerToken : token) } : {}) } }) }); /* (shop9) 로그인 열쇠는 POST에만(읽기 GET은 CDN이 대신 답하게 머리 없이) */ let j = null; try { j = await r.json(); } catch (e) {}
       if (get && base !== API && (!j || typeof j !== 'object') && r.status !== 429 && r.status < 500) { SAME.on = false; return api1(path, opt); } /* 같은 주소 넘김이 아직 없음(HTML 404 등) → 클라우드 주소로 */
       if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || (r.status === 429 ? '사람이 많아 잠시 기다리는 중입니다' : '연결이 잠시 안 됩니다')); e.j = j; e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000 || (j && j.retry ? j.retry * 1000 : 0); throw e; } return j; }
     catch (e) { if (e.name === 'AbortError') { const x = new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); x.slow = 1; throw x; } if (e instanceof TypeError) { const x = new Error('인터넷 연결을 확인해 주세요'); x.net = 1; throw x; } throw e; } finally { clearTimeout(t); } }
-  async function api(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const tries = get && !(opt && opt.retry === false) ? 3 : 0;
+  function accountToken() { if (!window.BQA || typeof window.BQA.tok !== 'function') throw new Error('로그인 정보 확인 기능을 준비하지 못했습니다 — 화면을 새로 고친 뒤 다시 확인해 주세요'); return window.BQA.tok(); } /* (ord6) 주문·계정 요청은 보낼 때마다 지금 기기의 열쇠를 다시 읽는다 */
+  async function api(path, opt) { if (opt && opt.auth && !Object.prototype.hasOwnProperty.call(opt, 'ownerToken')) opt = { ...opt, ownerToken: accountToken() }; const get = !opt || !opt.method || opt.method === 'GET'; const tries = get && !(opt && opt.retry === false) ? 3 : 0;
     for (let i = 0; ; i++) { try { return await api1(path, opt); }
       catch (e) { if (e.slow && get && i < 1 && !(opt && opt.retry === false)) { opt = { ...(opt || {}), ms: Math.max(30000, (opt && opt.ms) || 0) }; continue; } /* (shopux1) 읽기가 15초를 넘기면(클라우드가 막 깨어날 때 · 실제 게시본에서 겪음) 한 번 더 30초 기다림 — 주문(POST)은 그대로 다시 안 보냄 */
         const again = i < tries && (e.net || RETRY_ST.includes(e.status)) && navigator.onLine !== false; if (!again) throw e;
@@ -312,6 +313,7 @@
     const u = $('.undo', t); if (u) u.onclick = () => { const r = B.cartAdd(cart(), x, (ST.cfg || {}).maxItems); if (!r.why) { setCart(r.cart); if (B.route(location.hash).name === 'cart') cartPage(''); } t.classList.remove('on'); }; }
 
 
+  const orderOwnerChanged = () => new Error('주문을 시작한 로그인 상태가 바뀌었습니다 — 앞선 계정으로 돌아가거나 주문 결과를 먼저 확인해 주세요');
   function orderReceipt(saved) { const r = saved.result.receipt; const mine = LS.get('bq-orders', []).filter(x => x.no !== r.no); mine.unshift(r); LS.set('bq-orders', mine.slice(0, 20)); setCart(B.cartAfterOrder(cart(), saved.cart)); return r; }
   async function orderRecovery(snapshot, current) {
     let saved = snapshot.active, absent = false, message = '';
@@ -328,10 +330,20 @@
         else throw new Error('주문 결과를 확인할 수 없습니다');
       } catch (e) { message = e.message; }
     }
+    let canResume = false, ownerMessage = '';
+    if (saved.state === 'pending') {
+      try { const token = accountToken(); canResume = await orderJournal.owns(saved, token); if (!window.BQOrderJournal.sameOwner(token, accountToken())) canResume = false; }
+      catch (e) { ownerMessage = e.message; }
+      if (!canResume && !ownerMessage) ownerMessage = saved.schema === 1 ? '앞선 주문을 시작한 계정을 확인할 수 없습니다. 처리 결과를 확인하거나 미접수 요청을 닫아 주세요.' : saved.owner === 'guest' ? '앞선 주문은 비회원으로 시작했습니다. 로그아웃한 뒤 이어가거나 미접수 요청을 닫아 주세요.' : '앞선 주문을 시작한 회원으로 로그인해야 이어갈 수 있습니다. 결과 확인과 미접수 요청 닫기는 계속 사용할 수 있습니다.';
+    }
     if (!current()) return;
     let receipt = null;
     if (saved.state === 'completed') { try { receipt = orderReceipt(saved); } catch (e) { message = '주문은 접수됐습니다. 이 기기의 표시를 다시 확인해 주세요'; } }
-    main().innerHTML = `<h1 class="pt">주문 결과 확인</h1><div class="empty" role="status">${saved.state === 'completed' ? '<b>앞선 주문이 접수됐습니다</b><br>새로 주문하기 전에 앞선 주문을 확인해 주세요.' : saved.state === 'rejected' ? '<b>앞선 주문은 접수되지 않았습니다</b><br>' + esc(saved.result.err) : '<b>앞선 주문의 결과를 확인하고 있습니다</b><br>' + (absent ? '아직 처리 기록이 없습니다. 다시 전송하려면 앞선 주문과 같은 내용을 입력해 주세요.' : '연결이 돌아오면 결과를 다시 확인해 주세요. 새 주문은 잠시 기다려 주세요.')}<br>${message ? `<small>${esc(message)}</small><br>` : ''}${receipt ? `<p><a class="btn" href="#/done/${encodeURIComponent(receipt.no)}?t=${receipt.t}">접수된 주문 보기</a></p>` : ''}<button class="btn ghost" id="orecheck" type="button">처리 결과 다시 확인</button> ${saved.state === 'pending' ? (absent ? '<button class="btn" id="oreretry" type="button">같은 주문 내용 입력</button> <button class="btn ghost" id="oreclose" type="button">미접수 요청 닫기</button>' : '') : '<button class="btn" id="orenext" type="button">확인하고 주문서로</button>'}<p><a href="#/cart">장바구니 보기</a></p></div>`;
+    main().innerHTML = `<h1 class="pt">주문 결과 확인</h1><div class="empty" role="status">${saved.state === 'completed' ? '<b>앞선 주문이 접수됐습니다</b><br>새로 주문하기 전에 앞선 주문을 확인해 주세요.' : saved.state === 'rejected' ? '<b>앞선 주문은 접수되지 않았습니다</b><br>' + esc(saved.result.err) : '<b>앞선 주문의 결과를 확인하고 있습니다</b><br>' + (absent ? (canResume ? '아직 처리 기록이 없습니다. 다시 전송하려면 앞선 주문과 같은 내용을 입력해 주세요.' : '아직 처리 기록이 없습니다. 아래 안내를 확인해 주세요.') : '연결이 돌아오면 결과를 다시 확인해 주세요. 새 주문은 잠시 기다려 주세요.')}<br>${message ? `<small>${esc(message)}</small><br>` : ''}${receipt ? `<p><a class="btn" href="#/done/${encodeURIComponent(receipt.no)}?t=${receipt.t}">접수된 주문 보기</a></p>` : ''}<button class="btn ghost" id="orecheck" type="button">처리 결과 다시 확인</button> ${saved.state === 'pending' ? (absent ? '<button class="btn ghost" id="oreclose" type="button">미접수 요청 닫기</button>' : '') : '<button class="btn" id="orenext" type="button">확인하고 주문서로</button>'}<p><a href="#/cart">장바구니 보기</a></p></div>`;
+    if (ownerMessage) { const hint = document.createElement('p'); hint.id = 'oreowner'; hint.setAttribute('role', 'status'); hint.textContent = ownerMessage; main().querySelector('.empty').appendChild(hint);
+      if (saved.schema === 2) { const link = document.createElement('a'); link.className = 'btn ghost'; link.href = saved.owner === 'guest' ? '#/me' : '#/login?next=%23%2Forder'; link.textContent = saved.owner === 'guest' ? '로그인 상태 확인' : '앞선 계정으로 로그인'; hint.appendChild(document.createElement('br')); hint.appendChild(link); }
+    }
+    if (canResume && $('#oreclose')) { const retry = document.createElement('button'); retry.type = 'button'; retry.id = 'oreretry'; retry.className = 'btn'; retry.textContent = '같은 주문 내용 입력'; $('#oreclose').before(retry, document.createTextNode(' ')); }
     $('#orecheck').onclick = () => { if (current()) orderPage(); };
     const retry = $('#oreretry'); if (retry) retry.onclick = () => { if (current()) orderPage({ resumeId: saved.id }); };
     const close = $('#oreclose'); if (close) close.onclick = async () => {
@@ -344,11 +356,14 @@
     };
     const next = $('#orenext'); if (next) next.onclick = async () => { if (!current()) return; next.disabled = true; try { await orderJournal.acknowledge(saved.id, snapshot.revision); if (current()) orderPage(); } catch (e) { if (current()) { next.disabled = false; toast(e.message); } } };
   }
-  async function orderPage(options) { const current = pageScope(); let journal;
-    try { if (!orderJournal || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); journal = await orderJournal.read(); }
+  async function orderPage(options) { const current = pageScope(); let journal, formToken;
+    try { if (!orderJournal || !window.BQOrderJournal || window.BQOrderJournal.OWNER_VERSION !== 1 || typeof orderJournal.owns !== 'function' || typeof B.cartAfterOrder !== 'function') throw new Error('주문 화면을 새로 고친 뒤 다시 진행해 주세요'); formToken = accountToken(); journal = await orderJournal.read(); }
     catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
     if (!current()) return;
     const resuming = journal.active && journal.active.state === 'pending' && options && options.resumeId === journal.active.id;
+    if (resuming) { try { if (!await orderJournal.owns(journal.active, formToken)) { if (current()) await orderRecovery(journal, current); return; } }
+      catch (e) { if (current()) { main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); } return; }
+    }
     if (journal.active && !resuming) { await orderRecovery(journal, current); return; }
     if (!cart().length) { if (resuming) await orderRecovery(journal, current); else location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { if (!current()) return; main().innerHTML = errBox(e); bindAgain(() => { if (current()) orderPage(); }); return; } if (!current()) return;
     if (c.orderProtocol !== 1 && !isTest()) { main().innerHTML = '<h1 class="pt">주문서</h1><div class="empty">주문 확인 기능을 준비하고 있습니다. 잠시 뒤 새로 고쳐 주세요.<p><a href="#/cart">장바구니로</a></p></div>'; return; }
@@ -386,20 +401,23 @@
     const val = () => { const g = (k) => { const el = $('#f_' + k, form); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }; return { name: g('name'), phone: g('phone'), email: g('email'), same: g('same'), rname: g('rname'), rphone: g('rphone'), zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), memo: g('memo'), dep: g('dep'), agreeP: g('agreeP'), agreeT: g('agreeT'), hp: g('hp') }; };
     form.onsubmit = async (e) => { e.preventDefault(); if (!current()) return; if (typeof B.cartAfterOrder !== 'function') { const err = $('#oerr', form); err.hidden = false; err.textContent = '주문 화면을 새로 고친 뒤 다시 진행해 주세요'; return; } if (orderInFlight) { toast('앞선 주문을 처리하고 있습니다 — 결과를 받은 뒤 진행해 주세요'); return; } const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
-      const submitted = cartEntries(cart()); setCart(submitted); const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
-      const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted); let request = null;
-      try {
+      const draftText = saveDraft(), draftEpoch = orderDraftEpoch; const go = $('#go', form), oerr = $('#oerr', form); orderInFlight = true; go.disabled = true; go.textContent = '주문 넣는 중…'; oerr.hidden = true;
+      let request = null;
+      try { if (!window.BQOrderJournal.sameOwner(formToken, accountToken())) throw orderOwnerChanged();
+        const submitted = cartEntries(cart()); setCart(submitted); const body = B.orderBody({ ...f, cp: cpOk, expect: Q.local ? null : Q.total }, submitted);
         if (resuming) {
           const latest = await orderJournal.read();
           if (!latest.active || latest.active.id !== journal.active.id || latest.active.state !== 'pending') { if (current()) await orderRecovery(latest, current); return; }
-          if (!await orderJournal.matches(latest.active, body)) throw new Error('앞선 주문과 내용이 다릅니다 — 같은 책·수량·주소·쿠폰·합계로 입력하거나 가게로 문의해 주세요');
+          if (!await orderJournal.matches(latest.active, body, formToken)) throw new Error('앞선 주문과 내용이 다릅니다 — 같은 책·수량·주소·쿠폰·합계로 입력하거나 가게로 문의해 주세요');
           request = latest.active;
         } else {
-          const opened = await orderJournal.begin(journal.revision, body, submitted); journal = opened;
+          const opened = await orderJournal.begin(journal.revision, body, submitted, formToken); journal = opened;
           if (!opened.created) { if (current()) await orderRecovery(opened, current); else toast('앞선 주문의 처리 결과를 확인해 주세요'); return; }
           request = opened.active;
         }
-        const r = await api('/shop/order-attempt', { method: 'POST', auth: 1, body: JSON.stringify({ ...body, attempt: { id: request.id, secret: request.secret } }) });
+        const sendToken = accountToken();
+        if (!window.BQOrderJournal.sameOwner(formToken, sendToken) || !await orderJournal.owns(request, sendToken)) throw orderOwnerChanged();
+        const r = await api('/shop/order-attempt', { method: 'POST', auth: 1, ownerToken: sendToken, canSend: () => current() && form.isConnected, body: JSON.stringify({ ...body, attempt: { id: request.id, secret: request.secret } }) });
         const saved = await orderJournal.settle(request.id, 200, r); orderReceipt(saved);
         try { if (draftText !== undefined && draftEpoch === orderDraftEpoch && sessionStorage.getItem(DK) === draftText) sessionStorage.removeItem(DK); } catch (e2) {}
         if (current()) location.hash = '#/done/' + encodeURIComponent(r.no) + '?t=' + r.t + '&new=1';
@@ -554,7 +572,7 @@
   document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || e.defaultPrevented) return; const R = B.route(location.hash); const r = shelfRet(); if (R.name !== 'b' || !r || r.id !== R.arg) return; if (document.querySelector('.lb, .modal, dialog[open]')) return; e.preventDefault(); backToShelf(r); });
   document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-backshelf]'); if (!a) return; e.preventDefault(); const r = shelfRet(); if (r) backToShelf(r); });
   window.addEventListener('hashchange', (e) => { try { LST.fromShelf = /#\/shelf/.test(new URL(e.oldURL).hash) && /#\/b\//.test(location.hash); } catch (er) { LST.fromShelf = false; } });
-  window.BQX = { api, toast, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
+  window.BQX = { AUTH_OWNER: 1, api, toast, cardH, main, cfg, wish, setWish, LS, twice, copy, loading, errBox, apiBase: () => (SAME.on ? location.origin : API) }; /* (shop9) 👤⭐ shop-acct.js가 쓰는 것 */
   /* (shopux1) 맨 위로(긴 목록 · 쿠팡·무신사) · 휴대폰에서 로고 줄이 밀려 올라가면 찾기 줄 옆에 장바구니 단추 */
   { let ticking = false; const tp = () => { ticking = false; const y = window.scrollY; const tt = $('#totop'); if (tt) tt.hidden = y < 1400; const hd = $('#top'); if (hd) hd.classList.toggle('stuck', y > 54); };
     window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(tp); } }, { passive: true }); const tt = $('#totop'); if (tt) tt.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' }); }
