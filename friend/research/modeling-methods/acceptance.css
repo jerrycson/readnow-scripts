@@ -1,0 +1,20 @@
+header p{margin:.3rem 0}.paper figure{margin:1.2rem 0}.paper figure img{display:block;width:100%;height:auto}.paper figcaption{font-size:.95rem;max-width:83ch;margin:.4rem 0 1.8rem}.paper li,.paper dd{margin-bottom:.8rem}.paper dt{margin-top:1rem}.paper nav{margin-top:1rem}.paper:target{scroll-margin:1rem}.toc a{min-height:2rem}@media print{main .paper{break-after:auto}.paper figure,.paper li,.paper dd{break-inside:avoid}.paper figure img{max-height:56mm;object-fit:contain}.paper nav{display:none}}
+#lip-study { scroll-margin: 1.5rem; }
+#lip-detail summary { cursor: pointer; font-weight: 650; padding: .55rem 0; }
+#lip-detail summary:focus-visible { outline: 3px solid #aa611a; outline-offset: 3px; }
+#lip-detail h4 { margin-bottom: .25rem; }
+#lip-detail h4 + p { margin-top: 0; }
+@media print {
+  body.print-lip-study main > :not(#faults),
+  body.print-lip-study #faults > :not(#lip-study),
+  body.print-lip-study #lip-detail summary,
+  body.print-lip-study #print-lip-study,
+  body.print-lip-study #lip-study > p:not(.lead) { display: none; }
+  body.print-lip-study #lip-study { font-size: 9pt; line-height: 1.35; }
+  body.print-lip-study #lip-title { font-size: 15pt; margin: 0 0 2mm; }
+  body.print-lip-study #lip-study p { max-width: none; margin: 0 0 1.5mm; }
+  body.print-lip-study #lip-study figure { margin: 2mm 0; }
+  body.print-lip-study #lip-study figure img { width: auto; max-width: 100%; height: 42mm; }
+  body.print-lip-study #lip-study figcaption { font-size: 8pt; margin: 1mm 0; max-width: none; }
+  body.print-lip-study #lip-study h4 { margin: 2mm 0 .7mm; font-size: 9.5pt; }
+}

@@ -1,0 +1,1959 @@
+{
+  "edition": 56,
+  "state": "수동 원본별 시험 · 중립 보류",
+  "selection": {
+    "id": "F02",
+    "source": "05-3",
+    "kind": "chinPad",
+    "opening": 0.48,
+    "inset": 0.024,
+    "width": 1,
+    "at": "2026-11-18T01:38:50.4412064+09:00",
+    "baselineDigest": "4e0317d48f3a189bab83757315ba44de6f9f2d36fdbb98439b003a65644d50c9",
+    "sourceMarksDigest": "df99867ed243da714b5264babd37b616f2b10dd172fb79d270b29c30d99be536"
+  },
+  "geometry": [
+    {
+      "file": "face56.mjs",
+      "sha256": "36052a9bd0b9617ed0aa2dc9e376ab5ab3b08737f04f0de94bde3d431dad21f1"
+    },
+    {
+      "file": "face-shape56.mjs",
+      "sha256": "5d0e929dc384b360288ffa7d21f2ba109d43dada182329742e1d1494786784f6"
+    }
+  ],
+  "fields": {
+    "lip48": "48px 입 양끝·중앙 평균 거리",
+    "lip96": "96px 입 양끝·중앙 평균 거리",
+    "jaw": "원화 정합 248px 노출 피부까지 평균 거리"
+  },
+  "order": [
+    "neutral49",
+    "lateral55",
+    "combined55",
+    "trial56"
+  ],
+  "cases": {
+    "F02": {
+      "candidate": "fern05",
+      "defaultAdopted": false,
+      "geometry": {
+        "measured": 8278,
+        "flips": 0,
+        "flat": 0,
+        "minProjectedAreaRatio": 0.5223457337132944,
+        "belowMoved": 0,
+        "changed": 1306,
+        "max": 0.04537372852370544,
+        "eyeUnchanged": true,
+        "sourceDigest": "b3fb8d000f7c035230e226c33a28a67290f796142ce71dd50c26591cf891be16",
+        "appliedToDefault": "explicit-trial-only",
+        "lipMeanY": {
+          "upper-lip34": {
+            "vertices": 185,
+            "before": 7.2086984663711995,
+            "after": 7.1835391707299046
+          },
+          "lower-lip34": {
+            "vertices": 185,
+            "before": 7.192578041093108,
+            "after": 7.163093879828984
+          },
+          "mouth-line34": {
+            "vertices": 215,
+            "before": 7.204192345045358,
+            "after": 7.177719836931815
+          }
+        }
+      },
+      "views": [
+        {
+          "key": "05-3",
+          "role": "강도 선택",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/09/01_03-1.jpg",
+          "sha256": "1824d57e170d6042de9cfe853a821c480a668b768c53775922171c9c3167f931",
+          "visibleLimits": "밤 장면 정면에 가까운 사선. 작은 입이 벌어져 가운데 위·아래 경계의 평균을 찍었다. 좌우 귀와 관자는 앞머리·긴 머리로 가림. 화면 오른쪽 노출 턱만 추적. 옛 42·50차 수집 목록에 있으나 그 목록에는 이 컷의 입·턱 측정이 없다.",
+          "camera": {
+            "yaw": 10,
+            "pitch": -10,
+            "roll": -1.4712634074856332,
+            "anchorRms": 5.4079473254952655
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.019,
+              "visible48": 4,
+              "lip96": 2.0073,
+              "visible96": 3,
+              "jaw": 5.359,
+              "first": 4.163,
+              "last": 6.813
+            },
+            "lateral55": {
+              "lip48": 1.019,
+              "visible48": 4,
+              "lip96": 2.2877,
+              "visible96": 8,
+              "jaw": 6.86,
+              "first": 2.184,
+              "last": 12.542
+            },
+            "combined55": {
+              "lip48": 1.2487,
+              "visible48": 4,
+              "lip96": 2.3647,
+              "visible96": 4,
+              "jaw": 6.86,
+              "first": 2.184,
+              "last": 12.542
+            },
+            "trial56": {
+              "lip48": 0.8333,
+              "visible48": 5,
+              "lip96": 1.4023,
+              "visible96": 8,
+              "jaw": 3.4,
+              "first": 2.951,
+              "last": 3.945
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": 2,
+              "pitch": -10,
+              "before": {
+                "lip48": 1.3387,
+                "lip96": 2.5813,
+                "jaw": 7.975
+              },
+              "after": {
+                "lip48": 1.1443,
+                "lip96": 1.5897,
+                "jaw": 5.165
+              }
+            },
+            {
+              "yaw": 18,
+              "pitch": -10,
+              "before": {
+                "lip48": 1.234,
+                "lip96": 2.4213,
+                "jaw": 5.46
+              },
+              "after": {
+                "lip48": 1.0683,
+                "lip96": 1.66,
+                "jaw": 3.342
+              }
+            },
+            {
+              "yaw": 10,
+              "pitch": -18,
+              "before": {
+                "lip48": 1.158,
+                "lip96": 2.6887,
+                "jaw": 7.59
+              },
+              "after": {
+                "lip48": 1.0477,
+                "lip96": 1.792,
+                "jaw": 5.274
+              }
+            },
+            {
+              "yaw": 10,
+              "pitch": -2,
+              "before": {
+                "lip48": 1.178,
+                "lip96": 2.939,
+                "jaw": 10.586
+              },
+              "after": {
+                "lip48": 0.7743,
+                "lip96": 1.055,
+                "jaw": 7.17
+              }
+            }
+          ]
+        },
+        {
+          "key": "28-7",
+          "role": "기등록 원화",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2024/03/01_02-4.jpg",
+          "sha256": "35da102ceda5fad13fd45d3eeb8bd2480c92563519a97a605c9a34af746de6ae",
+          "visibleLimits": "양 눈동자와 코 앞면으로 고정. 왼쪽 위턱과 오른쪽 귀는 머리에 가려 제외. 두 눈 위 먹선과 다문 입이 보인다.",
+          "camera": {
+            "yaw": -10,
+            "pitch": 0,
+            "roll": -2.8982772635451126,
+            "anchorRms": 1.5240843993654338
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.7417,
+              "visible48": 6,
+              "lip96": 1.8957,
+              "visible96": 4,
+              "jaw": 6.159,
+              "first": 5.235,
+              "last": 7.245
+            },
+            "lateral55": {
+              "lip48": 1.0807,
+              "visible48": 5,
+              "lip96": 1.5577,
+              "visible96": 7,
+              "jaw": 3.279,
+              "first": 3.307,
+              "last": 3.247
+            },
+            "combined55": {
+              "lip48": 0.4503,
+              "visible48": 4,
+              "lip96": 0.5657,
+              "visible96": 4,
+              "jaw": 3.279,
+              "first": 3.307,
+              "last": 3.247
+            },
+            "trial56": {
+              "lip48": 0.8063,
+              "visible48": 5,
+              "lip96": 0.839,
+              "visible96": 6,
+              "jaw": 6.224,
+              "first": 5.422,
+              "last": 7.168
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": -18,
+              "pitch": 0,
+              "before": {
+                "lip48": 0.798,
+                "lip96": 1.4563,
+                "jaw": 3.962
+              },
+              "after": {
+                "lip48": 0.7553,
+                "lip96": 1.604,
+                "jaw": 6.652
+              }
+            },
+            {
+              "yaw": -2,
+              "pitch": 0,
+              "before": {
+                "lip48": 0.784,
+                "lip96": 1.672,
+                "jaw": 5.182
+              },
+              "after": {
+                "lip48": 0.7447,
+                "lip96": 1.0687,
+                "jaw": 6.467
+              }
+            },
+            {
+              "yaw": -10,
+              "pitch": -8,
+              "before": {
+                "lip48": 0.851,
+                "lip96": 1.0897,
+                "jaw": 8.948
+              },
+              "after": {
+                "lip48": 0.7263,
+                "lip96": 1.8973,
+                "jaw": 11.146
+              }
+            },
+            {
+              "yaw": -10,
+              "pitch": 8,
+              "before": {
+                "lip48": 1.0567,
+                "lip96": 1.428,
+                "jaw": 6.219
+              },
+              "after": {
+                "lip48": 0.982,
+                "lip96": 1.3303,
+                "jaw": 3.281
+              }
+            }
+          ]
+        },
+        {
+          "key": "04-4",
+          "role": "기등록 원화",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/09/04_04.jpg",
+          "sha256": "c0cf60fe8aa73feeb0bdfd997a07652a3292f6f50a3aa02cd283fa6ac20cb9c2",
+          "visibleLimits": "오른쪽을 보는 측면. 앞머리·옆머리가 눈썹 바깥부터 광대와 귀 앞 사이 대부분을 가린다. 보이는 귀는 귓구멍이 머리 뒤에 숨으므로 중심 대용 점 ±8 원본px. 입 오른끝은 바깥 입술과 만난다. 밝은 턱 외곽만 그렸다.",
+          "camera": {
+            "yaw": 85,
+            "pitch": 0,
+            "roll": -3.508848935431733,
+            "anchorRms": 0.31504198013086016
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.6057,
+              "visible48": 3,
+              "lip96": 1.496,
+              "visible96": 2,
+              "jaw": 3.007,
+              "first": 3.736,
+              "last": 2.409
+            },
+            "lateral55": {
+              "lip48": 1.031,
+              "visible48": 1,
+              "lip96": 2.139,
+              "visible96": 2,
+              "jaw": 12.367,
+              "first": 11.407,
+              "last": 13.154
+            },
+            "combined55": {
+              "lip48": 1.031,
+              "visible48": 1,
+              "lip96": 1.852,
+              "visible96": 1,
+              "jaw": 12.227,
+              "first": 11.096,
+              "last": 13.154
+            },
+            "trial56": {
+              "lip48": 0.7767,
+              "visible48": 2,
+              "lip96": 1.6027,
+              "visible96": 1,
+              "jaw": 6.459,
+              "first": 9.874,
+              "last": 3.659
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": 77,
+              "pitch": 0,
+              "before": {
+                "lip48": 1.034,
+                "lip96": 2.9507,
+                "jaw": 13.05
+              },
+              "after": {
+                "lip48": 0.5873,
+                "lip96": 1.7147,
+                "jaw": 7.071
+              }
+            },
+            {
+              "yaw": 93,
+              "pitch": 0,
+              "before": {
+                "lip48": 0.846,
+                "lip96": null,
+                "jaw": 9.397
+              },
+              "after": {
+                "lip48": 1.0687,
+                "lip96": 2.043,
+                "jaw": 9.823
+              }
+            },
+            {
+              "yaw": 85,
+              "pitch": -8,
+              "before": {
+                "lip48": 1.0337,
+                "lip96": 1.1777,
+                "jaw": 4.496
+              },
+              "after": {
+                "lip48": 0.772,
+                "lip96": 1.52,
+                "jaw": 3.036
+              }
+            },
+            {
+              "yaw": 85,
+              "pitch": 8,
+              "before": {
+                "lip48": 1.4037,
+                "lip96": 2.596,
+                "jaw": 20.389
+              },
+              "after": {
+                "lip48": 0.837,
+                "lip96": 1.9973,
+                "jaw": 14.677
+              }
+            }
+          ]
+        },
+        {
+          "key": "12-6",
+          "role": "기수집·이번 별도 표식",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/11/01_03-5.jpg",
+          "sha256": "2e75b501590b7a07506129d7a9a8f42c165d6fc52d6e8419aefed48e4d78a06b",
+          "visibleLimits": "이전 사진 목록에 든 별도 컷. 입 중심선 오른쪽 먹선은 작화에서 끊긴다. 턱끝 대부분이 목도리에 덮여 화면 오른쪽 볼부터 목도리 접촉 직전까지만 채점. 왼쪽 머리카락 뒤의 폭은 제외.",
+          "camera": {
+            "yaw": 22,
+            "pitch": -18,
+            "roll": 8.768548508314241,
+            "anchorRms": 6.973647802219861
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.2257,
+              "visible48": 4,
+              "lip96": 1.6757,
+              "visible96": 5,
+              "jaw": 3.369,
+              "first": 4.195,
+              "last": 2.394
+            },
+            "lateral55": {
+              "lip48": 1.1653,
+              "visible48": 5,
+              "lip96": 2.1917,
+              "visible96": 8,
+              "jaw": 3.696,
+              "first": 3.63,
+              "last": 3.775
+            },
+            "combined55": {
+              "lip48": 1.302,
+              "visible48": 3,
+              "lip96": 2.441,
+              "visible96": 4,
+              "jaw": 3.696,
+              "first": 3.63,
+              "last": 3.775
+            },
+            "trial56": {
+              "lip48": 1.6037,
+              "visible48": 5,
+              "lip96": 2.2907,
+              "visible96": 6,
+              "jaw": 3.223,
+              "first": 3.43,
+              "last": 2.978
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": 14,
+              "pitch": -18,
+              "before": {
+                "lip48": 1.0203,
+                "lip96": 0.9723,
+                "jaw": 4.102
+              },
+              "after": {
+                "lip48": 1.0403,
+                "lip96": 2.3407,
+                "jaw": 3.805
+              }
+            },
+            {
+              "yaw": 30,
+              "pitch": -18,
+              "before": {
+                "lip48": 1.279,
+                "lip96": 2.1997,
+                "jaw": 3.787
+              },
+              "after": {
+                "lip48": 1.7917,
+                "lip96": 3.0663,
+                "jaw": 3.401
+              }
+            },
+            {
+              "yaw": 22,
+              "pitch": -26,
+              "before": {
+                "lip48": 1.2743,
+                "lip96": 2.8077,
+                "jaw": 3.891
+              },
+              "after": {
+                "lip48": 1.3647,
+                "lip96": 2.6403,
+                "jaw": 2.553
+              }
+            },
+            {
+              "yaw": 22,
+              "pitch": -10,
+              "before": {
+                "lip48": 0.4613,
+                "lip96": 2.081,
+                "jaw": 4.299
+              },
+              "after": {
+                "lip48": 1.2373,
+                "lip96": 2.0153,
+                "jaw": 5.091
+              }
+            }
+          ]
+        },
+        {
+          "key": "set1",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": -3.5,
+            "pitch": 4.75,
+            "roll": 0.007804490799031982,
+            "anchorRms": 2.8881111513987383
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.804,
+              "visible48": 5,
+              "lip96": 2.0233,
+              "visible96": 2
+            },
+            "lateral55": {
+              "lip48": 0.999,
+              "visible48": 5,
+              "lip96": 1.4563,
+              "visible96": 5
+            },
+            "combined55": {
+              "lip48": 0.4883,
+              "visible48": 3,
+              "lip96": 1.385,
+              "visible96": 6
+            },
+            "trial56": {
+              "lip48": 1.091,
+              "visible48": 6,
+              "lip96": 1.3557,
+              "visible96": 7
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set2",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": 6.75,
+            "pitch": 3.25,
+            "roll": 4.937826905498795,
+            "anchorRms": 5.250907240295705
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.902,
+              "visible48": 3,
+              "lip96": 1.5163,
+              "visible96": 6
+            },
+            "lateral55": {
+              "lip48": 1.462,
+              "visible48": 5,
+              "lip96": 2.86,
+              "visible96": 6
+            },
+            "combined55": {
+              "lip48": 0.902,
+              "visible48": 3,
+              "lip96": 1.9337,
+              "visible96": 4
+            },
+            "trial56": {
+              "lip48": 0.6063,
+              "visible48": 6,
+              "lip96": 1.5837,
+              "visible96": 5
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set3",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": -93.25,
+            "pitch": 5.5,
+            "roll": -2.8360422494959496,
+            "anchorRms": 0.786425575083076
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.9127,
+              "visible48": 1,
+              "lip96": null,
+              "visible96": 0
+            },
+            "lateral55": {
+              "lip48": 0.8783,
+              "visible48": 1,
+              "lip96": 2.024,
+              "visible96": 1
+            },
+            "combined55": {
+              "lip48": 0.8783,
+              "visible48": 1,
+              "lip96": null,
+              "visible96": 0
+            },
+            "trial56": {
+              "lip48": 1.0493,
+              "visible48": 1,
+              "lip96": 2.1673,
+              "visible96": 1
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set4",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": 57.75,
+            "pitch": 14,
+            "roll": 1.8286674087447858,
+            "anchorRms": 8.202013074719474
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.0663,
+              "visible48": 2,
+              "lip96": 1.555,
+              "visible96": 3
+            },
+            "lateral55": {
+              "lip48": 0.9127,
+              "visible48": 3,
+              "lip96": 1.3137,
+              "visible96": 2
+            },
+            "combined55": {
+              "lip48": 0.5277,
+              "visible48": 3,
+              "lip96": 1.6777,
+              "visible96": 1
+            },
+            "trial56": {
+              "lip48": 0.3543,
+              "visible48": 2,
+              "lip96": 1.5313,
+              "visible96": 3
+            }
+          },
+          "sensitivity": []
+        }
+      ],
+      "directions": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 49,
+          "mask": 1,
+          "union": 812
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 96,
+          "changed": 165,
+          "mask": 2,
+          "union": 3273
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 19019,
+          "mask": 436,
+          "union": 347934
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 45,
+          "mask": 7,
+          "union": 829
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 152,
+          "mask": 27,
+          "union": 3354
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 15762,
+          "mask": 3387,
+          "union": 356279
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 44,
+          "mask": 9,
+          "union": 830
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 174,
+          "mask": 31,
+          "union": 3349
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 17113,
+          "mask": 3600,
+          "union": 355788
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 30,
+          "mask": 10,
+          "union": 732
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 101,
+          "mask": 31,
+          "union": 2937
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 9371,
+          "mask": 3747,
+          "union": 312353
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 25,
+          "mask": 10,
+          "union": 732
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 78,
+          "mask": 31,
+          "union": 2937
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 6460,
+          "mask": 3747,
+          "union": 312353
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 21,
+          "mask": 9,
+          "union": 830
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 71,
+          "mask": 31,
+          "union": 3349
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 6004,
+          "mask": 3600,
+          "union": 355788
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 17,
+          "mask": 7,
+          "union": 829
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 53,
+          "mask": 27,
+          "union": 3354
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 4082,
+          "mask": 3387,
+          "union": 356279
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 48,
+          "changed": 10,
+          "mask": 1,
+          "union": 812
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 96,
+          "changed": 7,
+          "mask": 2,
+          "union": 3273
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 475,
+          "mask": 436,
+          "union": 347934
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 48,
+          "changed": 27,
+          "mask": 0,
+          "union": 1068
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 96,
+          "changed": 106,
+          "mask": 2,
+          "union": 4281
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 1024,
+          "changed": 13169,
+          "mask": 72,
+          "union": 465910
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 48,
+          "changed": 48,
+          "mask": 1,
+          "union": 805
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 96,
+          "changed": 177,
+          "mask": 3,
+          "union": 3265
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 1024,
+          "changed": 22802,
+          "mask": 309,
+          "union": 347944
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 48,
+          "changed": 56,
+          "mask": 2,
+          "union": 830
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 96,
+          "changed": 181,
+          "mask": 14,
+          "union": 3344
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 1024,
+          "changed": 19610,
+          "mask": 1402,
+          "union": 358652
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 48,
+          "changed": 30,
+          "mask": 0,
+          "union": 972
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 96,
+          "changed": 109,
+          "mask": 1,
+          "union": 3899
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 1024,
+          "changed": 13449,
+          "mask": 76,
+          "union": 422242
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 1570
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 6296
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 1024,
+          "changed": 109,
+          "mask": 0,
+          "union": 690511
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 1570
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 6296
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "union": 690511
+        }
+      ]
+    },
+    "M01": {
+      "candidate": "기존 49 미소 진단(.35,0), 새 56차 모듈은 같은 입력 반환",
+      "defaultAdopted": false,
+      "geometry": {
+        "measured": 8318,
+        "flips": 0,
+        "flat": 0,
+        "minProjectedAreaRatio": 1,
+        "belowMoved": 0,
+        "changed": 0,
+        "max": 0,
+        "eyeUnchanged": true,
+        "sourceDigest": "58319126b428554dda48d2688216641610ced3000946a3df7ed0a47cb64f1690",
+        "appliedToDefault": "identity"
+      },
+      "views": [
+        {
+          "key": "07-2",
+          "role": "기등록 원화",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/10/01_01-3.jpg",
+          "sha256": "f51467665cf46f753dc9c32bfc80a319d10888bbbab2399b922fad113585d56d",
+          "visibleLimits": "감은 눈 사선. 눈 중심은 보이는 속눈썹의 중앙으로 대용했으며 약 ±5원본px. 귀 앞 위쪽 부분과 코끝으로 구도를 고정하고 입과 턱을 제외했다. 검지와 앞머리 뒤쪽의 관자 피부는 가림. 47차 자료 목록에 보유, 당시 계측 원화는 7화 3번이었다.",
+          "camera": {
+            "yaw": -66,
+            "pitch": 3,
+            "roll": -12.056173627591242,
+            "anchorRms": 0.8147638214613819
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 2.1153,
+              "visible48": 4,
+              "lip96": 6.0147,
+              "visible96": 2,
+              "jaw": 17.125,
+              "first": 10.616,
+              "last": 21.403
+            },
+            "lateral55": {
+              "lip48": 2.2473,
+              "visible48": 2,
+              "lip96": 5.3527,
+              "visible96": 1,
+              "jaw": 16.256,
+              "first": 8.106,
+              "last": 21.612
+            },
+            "combined55": {
+              "lip48": 2.2473,
+              "visible48": 2,
+              "lip96": 4.8893,
+              "visible96": 2,
+              "jaw": 16.256,
+              "first": 8.106,
+              "last": 21.612
+            },
+            "trial56": {
+              "lip48": 2.2473,
+              "visible48": 2,
+              "lip96": 5.3527,
+              "visible96": 1,
+              "jaw": 16.256,
+              "first": 8.106,
+              "last": 21.612
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": -74,
+              "pitch": 3,
+              "before": {
+                "lip48": 2.2273,
+                "lip96": 5.2673,
+                "jaw": 13.487
+              },
+              "after": {
+                "lip48": 2.2273,
+                "lip96": 4.321,
+                "jaw": 13.487
+              }
+            },
+            {
+              "yaw": -58,
+              "pitch": 3,
+              "before": {
+                "lip48": 2.673,
+                "lip96": 5.7913,
+                "jaw": 18.536
+              },
+              "after": {
+                "lip48": 2.673,
+                "lip96": 5.4133,
+                "jaw": 18.536
+              }
+            },
+            {
+              "yaw": -66,
+              "pitch": -5,
+              "before": {
+                "lip48": 2.3583,
+                "lip96": 5.8537,
+                "jaw": 13.786
+              },
+              "after": {
+                "lip48": 2.7043,
+                "lip96": 4.7543,
+                "jaw": 13.786
+              }
+            },
+            {
+              "yaw": -66,
+              "pitch": 11,
+              "before": {
+                "lip48": 2.3467,
+                "lip96": 4.8017,
+                "jaw": 20.152
+              },
+              "after": {
+                "lip48": 2.765,
+                "lip96": 4.203,
+                "jaw": 20.152
+              }
+            }
+          ]
+        },
+        {
+          "key": "03-3",
+          "role": "기등록 원화",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/09/03_03-1.jpg",
+          "sha256": "7dfb0d76df6f3f848503d558b44b841f7aca4e8c6977f35d2dab1816a9dd71ae",
+          "visibleLimits": "눈을 감고 웃는다. 눈선 중간 두 곳을 눈 위치 대용으로 쓰고 코와 보이는 귀로 구도 고정. 상안검 성능을 매기지 않는다. 원본 얼굴 폭 약 95px.",
+          "camera": {
+            "yaw": -8,
+            "pitch": 4,
+            "roll": -0.9258900828797489,
+            "anchorRms": 8.804512836601582
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.5863,
+              "visible48": 7,
+              "lip96": 2.0087,
+              "visible96": 6,
+              "jaw": 4.866,
+              "first": 6.552,
+              "last": 3.164
+            },
+            "lateral55": {
+              "lip48": 0.6763,
+              "visible48": 7,
+              "lip96": 1.819,
+              "visible96": 6,
+              "jaw": 2.823,
+              "first": 3.361,
+              "last": 2.279
+            },
+            "combined55": {
+              "lip48": 0.6103,
+              "visible48": 8,
+              "lip96": 0.8513,
+              "visible96": 7,
+              "jaw": 2.823,
+              "first": 3.363,
+              "last": 2.277
+            },
+            "trial56": {
+              "lip48": 0.6763,
+              "visible48": 7,
+              "lip96": 2.2767,
+              "visible96": 8,
+              "jaw": 2.823,
+              "first": 3.361,
+              "last": 2.279
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": -16,
+              "pitch": 4,
+              "before": {
+                "lip48": 1.219,
+                "lip96": 2.6583,
+                "jaw": 7.636
+              },
+              "after": {
+                "lip48": 0.9877,
+                "lip96": 2.043,
+                "jaw": 7.636
+              }
+            },
+            {
+              "yaw": 0,
+              "pitch": 4,
+              "before": {
+                "lip48": 1.0107,
+                "lip96": 2.2957,
+                "jaw": 5.412
+              },
+              "after": {
+                "lip48": 1.1267,
+                "lip96": 2.591,
+                "jaw": 5.412
+              }
+            },
+            {
+              "yaw": -8,
+              "pitch": -4,
+              "before": {
+                "lip48": 1.1397,
+                "lip96": 2.4353,
+                "jaw": 3.72
+              },
+              "after": {
+                "lip48": 0.9537,
+                "lip96": 2.9013,
+                "jaw": 3.72
+              }
+            },
+            {
+              "yaw": -8,
+              "pitch": 12,
+              "before": {
+                "lip48": 1.201,
+                "lip96": 2.2903,
+                "jaw": 4.296
+              },
+              "after": {
+                "lip48": 0.743,
+                "lip96": 0.8753,
+                "jaw": 4.296
+              }
+            }
+          ]
+        },
+        {
+          "key": "16-3",
+          "role": "기등록 원화",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/12/01_02-5.jpg",
+          "sha256": "7165a3b53a0d1ee9609808c883b13703890e32a9b0ee3aa865d1f17a5e04357a",
+          "visibleLimits": "올려다본 사선. 화면 왼쪽 드러난 볼부터 턱까지만 그었다. 오른쪽 귀와 관자는 머리와 그늘에 가려지며 귀 대용 점 ±10 원본px. 입 양끝이 보이지만 미소와 머리 기울기가 함께 있다.",
+          "camera": {
+            "yaw": -29,
+            "pitch": -12,
+            "roll": 16.741248758859776,
+            "anchorRms": 7.093173389782538
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.426,
+              "visible48": 5,
+              "lip96": 3.031,
+              "visible96": 5,
+              "jaw": 6.812,
+              "first": 3.504,
+              "last": 9.316
+            },
+            "lateral55": {
+              "lip48": 1.2757,
+              "visible48": 4,
+              "lip96": 2.5777,
+              "visible96": 7,
+              "jaw": 7.119,
+              "first": 4.991,
+              "last": 8.729
+            },
+            "combined55": {
+              "lip48": 1.426,
+              "visible48": 5,
+              "lip96": 2.9983,
+              "visible96": 8,
+              "jaw": 7.032,
+              "first": 5.013,
+              "last": 8.56
+            },
+            "trial56": {
+              "lip48": 1.426,
+              "visible48": 5,
+              "lip96": 3.031,
+              "visible96": 5,
+              "jaw": 7.119,
+              "first": 4.991,
+              "last": 8.729
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": -37,
+              "pitch": -12,
+              "before": {
+                "lip48": 1.775,
+                "lip96": 3.027,
+                "jaw": 7.108
+              },
+              "after": {
+                "lip48": 1.9227,
+                "lip96": 3.357,
+                "jaw": 7.108
+              }
+            },
+            {
+              "yaw": -21,
+              "pitch": -12,
+              "before": {
+                "lip48": 0.8897,
+                "lip96": 2.2797,
+                "jaw": 6.69
+              },
+              "after": {
+                "lip48": 1.0593,
+                "lip96": 2.2483,
+                "jaw": 6.69
+              }
+            },
+            {
+              "yaw": -29,
+              "pitch": -20,
+              "before": {
+                "lip48": 1.594,
+                "lip96": 2.91,
+                "jaw": 6.697
+              },
+              "after": {
+                "lip48": 1.4553,
+                "lip96": 3.4557,
+                "jaw": 6.697
+              }
+            },
+            {
+              "yaw": -29,
+              "pitch": -4,
+              "before": {
+                "lip48": 0.852,
+                "lip96": 2.8437,
+                "jaw": 6.286
+              },
+              "after": {
+                "lip48": 0.852,
+                "lip96": 2.0737,
+                "jaw": 6.286
+              }
+            }
+          ]
+        },
+        {
+          "key": "06-6",
+          "role": "기수집·이번 별도 표식",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/10/01_03-1.jpg",
+          "sha256": "5ad16a42e00c7573f1efbad397266b8ab1073583bf052589cef7b47cc81a13f8",
+          "visibleLimits": "감은 눈 7화2와 다른 열린 눈·다문 미소. 비스듬한 조명과 구도. 뒷턱은 목깃·목선과 겹쳐 앞쪽 한 구간에서 종료. 55차 선별표에 있던 컷이며 새 독립 인물/공식 자료 최초 발견이 아니다.",
+          "camera": {
+            "yaw": -48,
+            "pitch": -11,
+            "roll": -22.518177651292756,
+            "anchorRms": 6.906813756145068
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.804,
+              "visible48": 4,
+              "lip96": 4.645,
+              "visible96": 5,
+              "jaw": 12.699,
+              "first": 8.484,
+              "last": 19.537
+            },
+            "lateral55": {
+              "lip48": 1.804,
+              "visible48": 4,
+              "lip96": 4.2507,
+              "visible96": 5,
+              "jaw": 10.033,
+              "first": 3.277,
+              "last": 20.992
+            },
+            "combined55": {
+              "lip48": 2.2783,
+              "visible48": 4,
+              "lip96": 4.1277,
+              "visible96": 6,
+              "jaw": 10.043,
+              "first": 3.293,
+              "last": 20.992
+            },
+            "trial56": {
+              "lip48": 2.2973,
+              "visible48": 3,
+              "lip96": 4.7467,
+              "visible96": 4,
+              "jaw": 10.033,
+              "first": 3.277,
+              "last": 20.992
+            }
+          },
+          "sensitivity": [
+            {
+              "yaw": -56,
+              "pitch": -11,
+              "before": {
+                "lip48": 2.4967,
+                "lip96": 5.3937,
+                "jaw": 10.162
+              },
+              "after": {
+                "lip48": 2.4967,
+                "lip96": 4.272,
+                "jaw": 10.162
+              }
+            },
+            {
+              "yaw": -40,
+              "pitch": -11,
+              "before": {
+                "lip48": 2.179,
+                "lip96": 5.2237,
+                "jaw": 12.501
+              },
+              "after": {
+                "lip48": 1.946,
+                "lip96": 3.7087,
+                "jaw": 12.501
+              }
+            },
+            {
+              "yaw": -48,
+              "pitch": -19,
+              "before": {
+                "lip48": 2.492,
+                "lip96": 5.0503,
+                "jaw": 10.37
+              },
+              "after": {
+                "lip48": 2.492,
+                "lip96": 4.0727,
+                "jaw": 10.37
+              }
+            },
+            {
+              "yaw": -48,
+              "pitch": -3,
+              "before": {
+                "lip48": 2.3917,
+                "lip96": 4.1627,
+                "jaw": 13.413
+              },
+              "after": {
+                "lip48": 2.3917,
+                "lip96": 5.156,
+                "jaw": 13.413
+              }
+            }
+          ]
+        },
+        {
+          "key": "set1",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": 1.25,
+            "pitch": 1,
+            "roll": 1.9268686732127953,
+            "anchorRms": 2.9442194547536316
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.8957,
+              "visible48": 6,
+              "lip96": 1.6737,
+              "visible96": 10
+            },
+            "lateral55": {
+              "lip48": 0.9997,
+              "visible48": 5,
+              "lip96": 1.6957,
+              "visible96": 8
+            },
+            "combined55": {
+              "lip48": 0.7357,
+              "visible48": 6,
+              "lip96": 1.688,
+              "visible96": 7
+            },
+            "trial56": {
+              "lip48": 0.7337,
+              "visible48": 7,
+              "lip96": 1.8107,
+              "visible96": 9
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set2",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": -21.5,
+            "pitch": -5.25,
+            "roll": 15.202643762351817,
+            "anchorRms": 8.951851515881096
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 0.7293,
+              "visible48": 8,
+              "lip96": 3.382,
+              "visible96": 4
+            },
+            "lateral55": {
+              "lip48": 0.602,
+              "visible48": 8,
+              "lip96": 3.95,
+              "visible96": 2
+            },
+            "combined55": {
+              "lip48": 1.127,
+              "visible48": 8,
+              "lip96": 1.8577,
+              "visible96": 9
+            },
+            "trial56": {
+              "lip48": 0.7653,
+              "visible48": 7,
+              "lip96": 2.9627,
+              "visible96": 6
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set3",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": -100,
+            "pitch": 0.25,
+            "roll": -3.0071580918397656,
+            "anchorRms": 3.211506930792676
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 1.4133,
+              "visible48": 2,
+              "lip96": 3.3043,
+              "visible96": 1
+            },
+            "lateral55": {
+              "lip48": 1.1907,
+              "visible48": 1,
+              "lip96": 2.8057,
+              "visible96": 2
+            },
+            "combined55": {
+              "lip48": 1.1907,
+              "visible48": 1,
+              "lip96": null,
+              "visible96": 0
+            },
+            "trial56": {
+              "lip48": 1.1907,
+              "visible48": 1,
+              "lip96": null,
+              "visible96": 0
+            }
+          },
+          "sensitivity": []
+        },
+        {
+          "key": "set4",
+          "role": "기등록 설정화",
+          "source": null,
+          "sha256": null,
+          "visibleLimits": "설정화 입선 3점. 턱선 미채점.",
+          "camera": {
+            "yaw": 42.5,
+            "pitch": -15.75,
+            "roll": 13.19155752637307,
+            "anchorRms": 9.080520648351207
+          },
+          "measurements": {
+            "neutral49": {
+              "lip48": 2.1597,
+              "visible48": 4,
+              "lip96": 4.827,
+              "visible96": 6
+            },
+            "lateral55": {
+              "lip48": 2.0917,
+              "visible48": 4,
+              "lip96": 4.827,
+              "visible96": 5
+            },
+            "combined55": {
+              "lip48": 2.0127,
+              "visible48": 5,
+              "lip96": 4.711,
+              "visible96": 6
+            },
+            "trial56": {
+              "lip48": 2.0127,
+              "visible48": 5,
+              "lip96": 4.711,
+              "visible96": 6
+            }
+          },
+          "sensitivity": []
+        }
+      ],
+      "directions": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 3,
+          "mask": 0,
+          "union": 877
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 96,
+          "changed": 8,
+          "mask": 0,
+          "union": 3537
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 569,
+          "mask": 0,
+          "union": 379101
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 3,
+          "mask": 0,
+          "union": 902
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 3,
+          "mask": 0,
+          "union": 3636
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 395,
+          "mask": 0,
+          "union": 389624
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 2,
+          "mask": 0,
+          "union": 908
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 7,
+          "mask": 0,
+          "union": 3661
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 424,
+          "mask": 0,
+          "union": 392122
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 788
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 1,
+          "mask": 0,
+          "union": 3200
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 78,
+          "mask": 5,
+          "union": 341373
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 788
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 1,
+          "mask": 0,
+          "union": 3200
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 93,
+          "mask": 5,
+          "union": 341373
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 908
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 3661
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "union": 392122
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 902
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 3636
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "union": 389624
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "union": 877
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 3537
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "union": 379101
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 48,
+          "changed": 3,
+          "mask": 0,
+          "union": 1110
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 96,
+          "changed": 4,
+          "mask": 0,
+          "union": 4453
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 1024,
+          "changed": 453,
+          "mask": 0,
+          "union": 485579
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 48,
+          "changed": 4,
+          "mask": 0,
+          "union": 860
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 96,
+          "changed": 4,
+          "mask": 0,
+          "union": 3447
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 1024,
+          "changed": 508,
+          "mask": 0,
+          "union": 368037
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 48,
+          "changed": 3,
+          "mask": 0,
+          "union": 878
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 96,
+          "changed": 4,
+          "mask": 0,
+          "union": 3511
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 1024,
+          "changed": 376,
+          "mask": 0,
+          "union": 378205
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 48,
+          "changed": 4,
+          "mask": 0,
+          "union": 1017
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 96,
+          "changed": 4,
+          "mask": 0,
+          "union": 4078
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 1024,
+          "changed": 359,
+          "mask": 0,
+          "union": 443614
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 48,
+          "changed": 1,
+          "mask": 0,
+          "union": 1439
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "union": 5792
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 1024,
+          "changed": 29,
+          "mask": 29,
+          "union": 627673
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 48,
+          "changed": 2,
+          "mask": 0,
+          "union": 1439
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 96,
+          "changed": 2,
+          "mask": 0,
+          "union": 5792
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 1024,
+          "changed": 215,
+          "mask": 29,
+          "union": 627673
+        }
+      ]
+    }
+  }
+}

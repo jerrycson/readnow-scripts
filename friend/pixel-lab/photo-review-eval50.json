@@ -1,0 +1,986 @@
+{
+  "schema": 1,
+  "study": "사진 실루엣 생성 · 판별기 검증",
+  "units": "실제 128px, 보이는 각 행 양쪽 경계의 평균 거리와 실루엣 겹침",
+  "caseCount": 8,
+  "provenance": "실측 Lee Perry-Smith 두상 하나와 동결 학습 모듈 뒤 정한 합성 시드 셋. 같은 두상의 네 방향은 생성에서 제외. 세계의 다른 두상 일반화나 사람 승인을 뜻하지 않음.",
+  "challenges": [
+    [
+      -35,
+      0
+    ],
+    [
+      22.5,
+      0
+    ],
+    [
+      0,
+      25
+    ],
+    [
+      0,
+      -25
+    ]
+  ],
+  "cases": [
+    {
+      "subject": "실측 두상",
+      "mode": "학습",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 5,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 2.6519607843137254,
+          "iouBefore": 0.9842621736715423,
+          "iouAfter": 0.9838918718755786,
+          "rgba": 1321,
+          "alpha": 2
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6715686274509802,
+          "after": 2.700980392156863,
+          "iouBefore": 0.9853886616014027,
+          "iouAfter": 0.9842166796570537,
+          "rgba": 1336,
+          "alpha": 8
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6715686274509802,
+          "after": 2.676470588235294,
+          "iouBefore": 0.9862798020692758,
+          "iouAfter": 0.9860517435320585,
+          "rgba": 1120,
+          "alpha": 3
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6862745098039214,
+          "after": 2.7205882352941178,
+          "iouBefore": 0.9859453215248364,
+          "iouAfter": 0.9845946466397073,
+          "rgba": 1201,
+          "alpha": 9
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 2.6519607843137254,
+          "iouBefore": 0.9842621736715423,
+          "iouAfter": 0.9838918718755786,
+          "rgba": 1226,
+          "alpha": 2
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 3.622549019607843,
+          "after": 2.9705882352941178,
+          "iouBefore": 0.9506285297868464,
+          "iouAfter": 0.974103959467067,
+          "rgba": 1373,
+          "alpha": 187
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.25,
+          "after": 3.161764705882353,
+          "iouBefore": 0.9278735121691242,
+          "iouAfter": 0.9657992565055762,
+          "rgba": 1345,
+          "alpha": 276
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 96,
+          "before": 1.140625,
+          "after": 0.5833333333333334,
+          "iouBefore": 0.9596029949503744,
+          "iouAfter": 0.977702461648234,
+          "rgba": 1719,
+          "alpha": 167
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 106,
+          "before": 1.349056603773585,
+          "after": 0.8632075471698113,
+          "iouBefore": 0.9459728206827975,
+          "iouAfter": 0.9621456459005262,
+          "rgba": 1537,
+          "alpha": 183
+        }
+      ]
+    },
+    {
+      "subject": "실측 두상",
+      "mode": "아래턱 확대",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 9,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 6.088235294117647,
+          "iouBefore": 0.9842621736715423,
+          "iouAfter": 0.8712838941522378,
+          "rgba": 1251,
+          "alpha": 739
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6715686274509802,
+          "after": 5.348039215686274,
+          "iouBefore": 0.9853886616014027,
+          "iouAfter": 0.8910335146516932,
+          "rgba": 959,
+          "alpha": 586
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6715686274509802,
+          "after": 3.053921568627451,
+          "iouBefore": 0.9862798020692758,
+          "iouAfter": 0.9693292144748455,
+          "rgba": 365,
+          "alpha": 94
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6862745098039214,
+          "after": 5.328431372549019,
+          "iouBefore": 0.9859453215248364,
+          "iouAfter": 0.8936392075078207,
+          "rgba": 1059,
+          "alpha": 581
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 6.088235294117647,
+          "iouBefore": 0.9842621736715423,
+          "iouAfter": 0.8712838941522378,
+          "rgba": 1345,
+          "alpha": 739
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 3.622549019607843,
+          "after": 6.759803921568627,
+          "iouBefore": 0.9506285297868464,
+          "iouAfter": 0.851604495846229,
+          "rgba": 1259,
+          "alpha": 660
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.25,
+          "after": 7.612745098039215,
+          "iouBefore": 0.9278735121691242,
+          "iouAfter": 0.8273244781783681,
+          "rgba": 1327,
+          "alpha": 704
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 96,
+          "before": 1.140625,
+          "after": 5.234375,
+          "iouBefore": 0.9596029949503744,
+          "iouAfter": 0.8441280048997091,
+          "rgba": 2066,
+          "alpha": 790
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 106,
+          "before": 1.349056603773585,
+          "after": 5.504716981132075,
+          "iouBefore": 0.9459728206827975,
+          "iouAfter": 0.8256787983824379,
+          "rgba": 2172,
+          "alpha": 899
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 10794491",
+      "mode": "학습",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 1,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.676470588235294,
+          "after": 2.676470588235294,
+          "iouBefore": 0.9911977908180877,
+          "iouAfter": 0.9911977908180877,
+          "rgba": 1485,
+          "alpha": 0
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6176470588235294,
+          "after": 2.6127450980392157,
+          "iouBefore": 0.9929176023492832,
+          "iouAfter": 0.9930879557629169,
+          "rgba": 1320,
+          "alpha": 3
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.656862745098039,
+          "after": 2.661764705882353,
+          "iouBefore": 0.9914685060809584,
+          "iouAfter": 0.9912869849337448,
+          "rgba": 1495,
+          "alpha": 1
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.622549019607843,
+          "after": 2.622549019607843,
+          "iouBefore": 0.9929139301762876,
+          "iouAfter": 0.9929139301762876,
+          "rgba": 1232,
+          "alpha": 0
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.676470588235294,
+          "after": 2.676470588235294,
+          "iouBefore": 0.9911977908180877,
+          "iouAfter": 0.9911977908180877,
+          "rgba": 1170,
+          "alpha": 0
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.313725490196078,
+          "after": 3.264705882352941,
+          "iouBefore": 0.9364399802404083,
+          "iouAfter": 0.9705429011817092,
+          "rgba": 1597,
+          "alpha": 254
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.936274509803922,
+          "after": 3.299019607843137,
+          "iouBefore": 0.9175390562087292,
+          "iouAfter": 0.969557037797161,
+          "rgba": 1557,
+          "alpha": 390
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 94,
+          "before": 3.0210526315789474,
+          "after": 1.8736842105263158,
+          "iouBefore": 0.9443007415071564,
+          "iouAfter": 0.9814514676751306,
+          "rgba": 1827,
+          "alpha": 272
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 98,
+          "before": 3.176767676767677,
+          "after": 1.9292929292929293,
+          "iouBefore": 0.93673198272999,
+          "iouAfter": 0.9771309771309772,
+          "rgba": 1578,
+          "alpha": 251
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 10794491",
+      "mode": "아래턱 확대",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 9,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.676470588235294,
+          "after": 5.911764705882353,
+          "iouBefore": 0.9911977908180877,
+          "iouAfter": 0.8900912042046685,
+          "rgba": 950,
+          "alpha": 690
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6176470588235294,
+          "after": 5.205882352941177,
+          "iouBefore": 0.9929176023492832,
+          "iouAfter": 0.9099968364441633,
+          "rgba": 1305,
+          "alpha": 538
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.656862745098039,
+          "after": 3.156862745098039,
+          "iouBefore": 0.9914685060809584,
+          "iouAfter": 0.9734828261256452,
+          "rgba": 1022,
+          "alpha": 118
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.622549019607843,
+          "after": 5.284313725490196,
+          "iouBefore": 0.9929139301762876,
+          "iouAfter": 0.9077846202431707,
+          "rgba": 990,
+          "alpha": 551
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.676470588235294,
+          "after": 5.911764705882353,
+          "iouBefore": 0.9911977908180877,
+          "iouAfter": 0.8900912042046685,
+          "rgba": 998,
+          "alpha": 690
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.313725490196078,
+          "after": 7.2745098039215685,
+          "iouBefore": 0.9364399802404083,
+          "iouAfter": 0.8517520215633423,
+          "rgba": 1173,
+          "alpha": 606
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.936274509803922,
+          "after": 8.186274509803921,
+          "iouBefore": 0.9175390562087292,
+          "iouAfter": 0.8290411756147242,
+          "rgba": 1353,
+          "alpha": 665
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 94,
+          "before": 3.0210526315789474,
+          "after": 7.010526315789473,
+          "iouBefore": 0.9443007415071564,
+          "iouAfter": 0.8342726580350343,
+          "rgba": 1146,
+          "alpha": 767
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 98,
+          "before": 3.176767676767677,
+          "after": 7.025252525252525,
+          "iouBefore": 0.93673198272999,
+          "iouAfter": 0.8315153301886793,
+          "rgba": 2580,
+          "alpha": 762
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 81003613",
+      "mode": "학습",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 2,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 2.6519607843137254,
+          "iouBefore": 0.991740412979351,
+          "iouAfter": 0.991740412979351,
+          "rgba": 1451,
+          "alpha": 0
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.661764705882353,
+          "after": 2.656862745098039,
+          "iouBefore": 0.99171362280411,
+          "iouAfter": 0.9918766578249337,
+          "rgba": 1004,
+          "alpha": 3
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 2.656862745098039,
+          "iouBefore": 0.99247889485802,
+          "iouAfter": 0.9923254029163469,
+          "rgba": 1529,
+          "alpha": 1
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6372549019607843,
+          "after": 2.6372549019607843,
+          "iouBefore": 0.9925311203319502,
+          "iouAfter": 0.9925298804780877,
+          "rgba": 1570,
+          "alpha": 2
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 2.6519607843137254,
+          "iouBefore": 0.991740412979351,
+          "iouAfter": 0.991740412979351,
+          "rgba": 1200,
+          "alpha": 0
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.740196078431373,
+          "after": 3.338235294117647,
+          "iouBefore": 0.9224576967307376,
+          "iouAfter": 0.9678534393363291,
+          "rgba": 1839,
+          "alpha": 316
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 6.073529411764706,
+          "after": 3.696078431372549,
+          "iouBefore": 0.8752518468770987,
+          "iouAfter": 0.952764555108019,
+          "rgba": 1543,
+          "alpha": 503
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 96,
+          "before": 3.6288659793814433,
+          "after": 2.056701030927835,
+          "iouBefore": 0.914050822122571,
+          "iouAfter": 0.9701907790143084,
+          "rgba": 1836,
+          "alpha": 330
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 101,
+          "before": 2.5396039603960396,
+          "after": 0.9801980198019802,
+          "iouBefore": 0.9073170731707317,
+          "iouAfter": 0.9620471535365153,
+          "rgba": 1713,
+          "alpha": 321
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 81003613",
+      "mode": "아래턱 확대",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 9,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 5.421568627450981,
+          "iouBefore": 0.991740412979351,
+          "iouAfter": 0.8927751280692457,
+          "rgba": 739,
+          "alpha": 587
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.661764705882353,
+          "after": 4.931372549019608,
+          "iouBefore": 0.99171362280411,
+          "iouAfter": 0.9211375864719447,
+          "rgba": 1130,
+          "alpha": 479
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 3.196078431372549,
+          "iouBefore": 0.99247889485802,
+          "iouAfter": 0.9758709093651033,
+          "rgba": 999,
+          "alpha": 123
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6372549019607843,
+          "after": 4.921568627450981,
+          "iouBefore": 0.9925311203319502,
+          "iouAfter": 0.9213725188490537,
+          "rgba": 1025,
+          "alpha": 482
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6519607843137254,
+          "after": 5.421568627450981,
+          "iouBefore": 0.991740412979351,
+          "iouAfter": 0.8927751280692457,
+          "rgba": 960,
+          "alpha": 587
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.740196078431373,
+          "after": 7.372549019607843,
+          "iouBefore": 0.9224576967307376,
+          "iouAfter": 0.8477210987020827,
+          "rgba": 1052,
+          "alpha": 541
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 6.073529411764706,
+          "after": 8.862745098039216,
+          "iouBefore": 0.8752518468770987,
+          "iouAfter": 0.7989272030651341,
+          "rgba": 1089,
+          "alpha": 569
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 96,
+          "before": 3.6288659793814433,
+          "after": 8.51530612244898,
+          "iouBefore": 0.914050822122571,
+          "iouAfter": 0.8065952184666118,
+          "rgba": 1113,
+          "alpha": 713
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 101,
+          "before": 2.5396039603960396,
+          "after": 5.955445544554456,
+          "iouBefore": 0.9073170731707317,
+          "iouAfter": 0.8067469879518072,
+          "rgba": 2599,
+          "alpha": 690
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 77180931",
+      "mode": "학습",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 2,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6666666666666665,
+          "after": 2.6666666666666665,
+          "iouBefore": 0.9918087596121699,
+          "iouAfter": 0.9918087596121699,
+          "rgba": 1527,
+          "alpha": 0
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.627450980392157,
+          "after": 2.627450980392157,
+          "iouBefore": 0.9929681112019624,
+          "iouAfter": 0.9929658105676428,
+          "rgba": 1366,
+          "alpha": 4
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.627450980392157,
+          "after": 2.627450980392157,
+          "iouBefore": 0.9926152737752162,
+          "iouAfter": 0.9926152737752162,
+          "rgba": 1499,
+          "alpha": 0
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 2.6519607843137254,
+          "iouBefore": 0.9926314065826101,
+          "iouAfter": 0.9923026531280708,
+          "rgba": 1299,
+          "alpha": 4
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6666666666666665,
+          "after": 2.6666666666666665,
+          "iouBefore": 0.9918087596121699,
+          "iouAfter": 0.9918087596121699,
+          "rgba": 1148,
+          "alpha": 0
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.1911764705882355,
+          "after": 3.235294117647059,
+          "iouBefore": 0.9432924913603519,
+          "iouAfter": 0.9730169050715215,
+          "rgba": 1472,
+          "alpha": 233
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.882352941176471,
+          "after": 3.3284313725490198,
+          "iouBefore": 0.9225667129415394,
+          "iouAfter": 0.9698402347570916,
+          "rgba": 1544,
+          "alpha": 381
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 95,
+          "before": 1.7526315789473683,
+          "after": 0.6052631578947368,
+          "iouBefore": 0.9455081001472754,
+          "iouAfter": 0.9803586678052946,
+          "rgba": 1858,
+          "alpha": 294
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 99,
+          "before": 2.1313131313131315,
+          "after": 0.7676767676767676,
+          "iouBefore": 0.9333438635286685,
+          "iouAfter": 0.974896779521057,
+          "rgba": 1689,
+          "alpha": 282
+        }
+      ]
+    },
+    {
+      "subject": "새 합성 77180931",
+      "mode": "아래턱 확대",
+      "status": "regressed",
+      "flips": 0,
+      "worseViews": 9,
+      "views": [
+        {
+          "role": "input",
+          "yaw": 0,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6666666666666665,
+          "after": 5.897058823529412,
+          "iouBefore": 0.9918087596121699,
+          "iouAfter": 0.8936138241923366,
+          "rgba": 1053,
+          "alpha": 687
+        },
+        {
+          "role": "input",
+          "yaw": 45,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.627450980392157,
+          "after": 5.220588235294118,
+          "iouBefore": 0.9929681112019624,
+          "iouAfter": 0.9140108238123873,
+          "rgba": 1281,
+          "alpha": 545
+        },
+        {
+          "role": "input",
+          "yaw": 90,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.627450980392157,
+          "after": 3.122549019607843,
+          "iouBefore": 0.9926152737752162,
+          "iouAfter": 0.9749116607773851,
+          "rgba": 892,
+          "alpha": 115
+        },
+        {
+          "role": "input",
+          "yaw": 135,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.642156862745098,
+          "after": 5.205882352941177,
+          "iouBefore": 0.9926314065826101,
+          "iouAfter": 0.9144707122421322,
+          "rgba": 932,
+          "alpha": 545
+        },
+        {
+          "role": "input",
+          "yaw": 180,
+          "pitch": 0,
+          "rows": 102,
+          "before": 2.6666666666666665,
+          "after": 5.897058823529412,
+          "iouBefore": 0.9918087596121699,
+          "iouAfter": 0.8936138241923366,
+          "rgba": 1029,
+          "alpha": 687
+        },
+        {
+          "role": "holdout",
+          "yaw": -35,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.1911764705882355,
+          "after": 7.215686274509804,
+          "iouBefore": 0.9432924913603519,
+          "iouAfter": 0.8599856836077309,
+          "rgba": 1277,
+          "alpha": 621
+        },
+        {
+          "role": "holdout",
+          "yaw": 22.5,
+          "pitch": 0,
+          "rows": 102,
+          "before": 4.882352941176471,
+          "after": 8.132352941176471,
+          "iouBefore": 0.9225667129415394,
+          "iouAfter": 0.8369717324377274,
+          "rgba": 1459,
+          "alpha": 663
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": 25,
+          "rows": 95,
+          "before": 1.7526315789473683,
+          "after": 7.234375,
+          "iouBefore": 0.9455081001472754,
+          "iouAfter": 0.834850455136541,
+          "rgba": 1265,
+          "alpha": 810
+        },
+        {
+          "role": "holdout",
+          "yaw": 0,
+          "pitch": -25,
+          "rows": 99,
+          "before": 2.1313131313131315,
+          "after": 6.106060606060606,
+          "iouBefore": 0.9333438635286685,
+          "iouAfter": 0.8302204746524364,
+          "rgba": 2797,
+          "alpha": 793
+        }
+      ]
+    }
+  ],
+  "controls": {
+    "missing": true,
+    "reused": true,
+    "sourceGroup": true,
+    "seen": true,
+    "hidden": true,
+    "duplicateOrthographicAxis": true,
+    "identical": true,
+    "flipped": true,
+    "positive": {
+      "status": "review",
+      "automatic": false,
+      "description": "후보 자체를 정답으로 만든 판정기 양성 통제"
+    },
+    "selectableSynthetic": {
+      "seed": 10794507,
+      "afterInspection": true,
+      "worse": 0,
+      "status": "review",
+      "automatic": false,
+      "description": "별도 시드 탐색 뒤 고른 정상 수동 선택·저장 재현. 독립 성능 집계에서 제외"
+    }
+  }
+}

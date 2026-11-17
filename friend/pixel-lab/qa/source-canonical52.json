@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "policy": "측정 JSON의 기존 지문과 통계는 보존. 원본 raw 지문 일치를 확인한 별도 LF 배포 지문.",
+  "files": {
+    "face-jaw52.mjs": {
+      "recorded": "4f493ad6ba34456521573b089eb8b2a3fd0be9aa9e69a654bc97beaf0598530e",
+      "lf": "ba8c6cc6679843f98099b07e27b60ff594e459505bd388645e78cc71d4fd1104"
+    },
+    "hair-sheet52.mjs": {
+      "recorded": "ace03d809f87a1a0a142e6aedaa845817bb6d35fc7c672e8ee3189cffcf0fe91",
+      "lf": "ace03d809f87a1a0a142e6aedaa845817bb6d35fc7c672e8ee3189cffcf0fe91"
+    },
+    "hair-anchor52.mjs": {
+      "recorded": "0852ce0374370f194e392f3a9e7663987bd71c01e5d05baca06c9646dd106296",
+      "lf": "0852ce0374370f194e392f3a9e7663987bd71c01e5d05baca06c9646dd106296"
+    },
+    "scalp-clearance52.mjs": {
+      "recorded": "f9c3c22676f386cc3e2fdc43c95bff77ec3c7e10f253b37c67158887469ff4eb",
+      "lf": "f9c3c22676f386cc3e2fdc43c95bff77ec3c7e10f253b37c67158887469ff4eb"
+    },
+    "appearance52.mjs": {
+      "recorded": "6abd41365a8bcda0b66e5dce39f59b7c5c7b2a43becfa07e0c8592ee961d7e25",
+      "lf": "6abd41365a8bcda0b66e5dce39f59b7c5c7b2a43becfa07e0c8592ee961d7e25"
+    },
+    "head-fit52.mjs": {
+      "recorded": "8447f5c2ba2057ba6dcf48138740a0918d0ef908ae5e1be231c6f6d5ebc8e859",
+      "lf": "b2eacf67a8c2ff8539cc137f414f87150fca5ee8e0d6cab322e2ef3dc79f93df"
+    },
+    "hair-design.mjs": {
+      "recorded": "264569d8dde702fc2984dfbcf339009de62476ff658585c1683a4dc0ef001a3a",
+      "lf": "ab8e3d188e1b872b3dbe6182c660a3afad761403d09674e194151b8613add82d"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>52차 · 턱밑, 가슴 밑선과 전신 외형 교체</title>
+<link rel="stylesheet" href="round39.css"><style>
+main,header{max-width:1080px;margin:auto;padding:18px}nav{display:flex;flex-wrap:wrap;gap:12px 22px}section{margin-block:32px;scroll-margin-top:12px}figure{margin:14px 0}img{display:block;max-width:100%;height:auto}figcaption{margin-top:.4rem}p,li{max-width:83ch}article{border-top:1px solid #ccd6d1;padding:6px 0}a{overflow-wrap:anywhere}
+</style></head><body>
+<header><a href="../research/hub/">책방 친구 연구실</a><h1>턱밑과 가슴 밑선을 고치고, 전신에서 외형 교체하기</h1>
+<p>52차 · 페른·힘멜 · 성인 W · 남녀 2~8등신 기본체 14개</p>
+<nav aria-label="작업대 바로 열기"><a href="../research/hub/?lab=studio&amp;tool=workbench">내 실험실</a><a href="contour36.html?round=52&amp;case=F02&amp;trial=jawNormal52">페른 · 52차 턱 음영 직접 보기</a><a href="contour36.html?round=52&amp;case=M01">힘멜 · 보존 원형</a><a href="contour36.html?round=52&amp;case=W&amp;trial=lowerContact52">성인 W · 흉벽 이음 직접 보기</a><a href="workbench.html?round=52&amp;case=female-2">전신 · 얼굴과 체형 교체</a></nav>
+</header><main>
+<nav aria-label="이 일지의 순서"><a href="#face">얼굴</a><a href="#chest">가슴</a><a href="#body">체형</a><a href="#neck">머리 교체</a><a href="#hair">머리카락</a><a href="#failures">실패와 다음 검사</a><a href="round51.html">51차 기록</a></nav>
+<section id="face"><h2>페른의 턱에서 목으로 이어지는 두 줄</h2>
+<p>같은 얼굴에서 피부 좌표와 빛이 반사되는 면 방향을 따로 바꿨습니다. 두 줄이 가장 뚜렷한 50차 볼 보정 시안(H2)에서 피부 좌표를 유지하고 208점의 면 방향만 바꾸니 측면 밝기 차이가 27.58에서 17.15로 줄었습니다. 정면·양사선·위·아래를 포함한 열 방향에서 외곽은 같았습니다. 실제 원화와 겹칠 때 턱선 자체의 오차는 그대로입니다.</p>
+<figure><a href="jaw-h2-plate52.png"><img src="jaw-h2-plate52.png" alt="페른 H2 보존판과 교정 후보의 같은 카메라 렌더"></a></figure>
+<p><a href="jaw-stage-plate52.png">이중 띠가 나타난 회차 비교</a> · <a href="jaw-band-plate52.png">형상을 함께 움직였을 때의 반례</a> · <a href="face-eval52.json">원화·각도별 측정표</a></p></section>
+<section id="chest"><h2>가슴 내부 명암과 실제 밑면</h2>
+<p>W의 흉벽 이음은 사선 B3의 하부 명암 오차를 5.814→5.744 원도 px로 줄였습니다. 측면에서는 공기와 맞닿는 외곽이 1.438→1.406px로 가까워졌지만 안쪽 명암선은 1.579→1.737px로 멀어졌습니다. 보존한 51차, 52차 안·바깥 접선, 하부 낮추기 세 가지를 <strong>부위 → 비교 원형</strong>에서 바꿔 보세요. 다른 88개 선택에는 51차까지 확보한 결과가 남아 있습니다.</p>
+<figure><a href="chest-plate52.png"><img loading="lazy" src="chest-plate52.png" alt="세 후보의 동일한 정면, 사선, 측면과 팔을 든 자세, 원도와의 차이"></a><figcaption>팔 178도는 같은 자세의 모델 간 비교입니다. 이 각도로 촬영된 지정 원도는 없습니다.</figcaption></figure><a href="chest-eval52.json">도판의 열·행 수, 오차와 검증 조건</a></section>
+<aside aria-label="측정 해석 정정"><h3>측면 명암선의 해석 정정</h3><p>53차 첫 광선 검사에서 S3의 명암 검출 19열 모두가 모델 피부와 밝은 배경이 만나는 아랫선을 읽었음이 확인됐습니다. 표의 수치는 해당 필터의 실제 결과입니다. 이 값으로 피부 내부 음영이 원도와 가까워졌는지를 판정할 수 없습니다. 별도로 측정한 32행의 옆 실루엣은 다른 방향에서 읽은 경계입니다. 재현용 52차 도판과 원고는 당시 명칭으로 보존합니다.</p></aside>
+<section id="body"><h2>근육과 지방이 다른 모양으로 늘어나는지 보기</h2>
+<p><strong>모델 → 전신 14 → 외형 조합 → 체형</strong>에서 두 값을 독립적으로 바꿉니다. 여성 8등신에서 근육만 최대로 하면 위팔의 평균 반지름이 38.0%, 허리 두께가 6.7% 늘었습니다. 지방만 최대로 하면 각각 22.3%, 41.6% 늘었습니다. 14개 기본체를 14조건으로 검사하고 총 1,400장을 렌더했습니다. ‘외형 원형 복원’으로 기준 그림을 다시 열 수 있습니다.</p>
+<figure><a href="body-plate52.png"><img loading="lazy" src="body-plate52.png" alt="같은 인체를 두고 근육과 지방을 독립 조절한 결과"></a></figure><a href="body-eval52.json">등신과 체형별 측정표</a></section>
+<section id="neck"><h2>같은 전신에서 얼굴 교체</h2>
+<p><strong>모델 → 전신 14 → 외형 조합 → 얼굴 교체</strong>에서 기본 얼굴과 같은 성별의 연구 얼굴 4개를 고릅니다. 교체한 머리의 턱 아래와 몸의 목 둘레 사이에 새 면을 이어 붙였습니다. 2~4등신에서는 원래의 큰 두개와 낮은 눈높이를 유지하도록 보정했습니다. 이 조건에서 뺨과 귓밑 굴곡은 여전히 큽니다. 전신의 기본 얼굴에서는 얼굴형·눈·코·입·귀를 각각 20가지에서 고를 수 있습니다.</p>
+<p><a href="head-fit-female52.png">여성 교체 전후 도판</a> · <a href="head-fit-male52.png">남성 교체 전후 도판</a> · <a href="head-fit-hair52.png">긴 머리끝과 바닥의 옆·뒤사선</a> · <a href="head-fit-eval52.json">목 이음과 등신별 결과</a></p></section>
+<section id="hair"><h2>머리카락을 얹고 다시 보는 얼굴</h2>
+<p>100개 머리 선택 중 7계열 45개에 정수리부터 끝까지 이어지는 면을 적용했습니다. 연구 얼굴에서는 머리 표면의 실제 관자놀이와 정수리로 방향을 잡습니다. 페른의 긴 가르마에서 귀 근처로 새어 나오던 작은 피부 영역을 줄였고, 힘멜 옆가르마의 이마 중앙에서 면이 뒤집혀 검게 보이는 부분도 고쳤습니다.</p>
+<figure><a href="hair-plate52.png"><img loading="lazy" src="hair-plate52.png" alt="페른과 힘멜의 머리 교체 전후를 정면·사선·측면으로 표시한 자체 렌더"></a></figure><a href="hair-eval52.json">100개 옵션의 생성·8방향 가림·전신 14개 복원 검사</a></section>
+<section id="failures"><h2>실패와 다음 검사</h2>
+<article><h3>턱밑은 부드러워졌지만 정면 볼이 다시 꺾인 시안</h3><p>H2에서 피부까지 옮기면 정면 오른볼 경계가 역행한 폭이 2→7px가 됐습니다. 법선만 고친 시안을 따로 남겼습니다. 같은 법선 수정을 51차 페른에 적용하면 측면 명암 차이가 12.57→13.36으로 커집니다. 힘멜과 51차 페른에 일괄 적용하는 안은 보류했습니다.</p></article>
+<article><h3>중력 방향으로 내릴 때 다른 사선에서 흔들린 밑선</h3><p>W 하부 바닥만 더 내리면 B3 평균 오차는 5.233px까지 줄지만 A5는 3.410→4.128px로 늘어납니다. 별도 촬영의 허리손 자세는 팔이 가려 외곽을 읽을 수 없었습니다. 53차에서는 측면의 내부 명암과 밖으로 드러난 선을 만드는 피부점부터 분리해 확인합니다.</p></article>
+<article><h3>팔과 옆구리, 짧은 몸과 긴 머리의 충돌</h3><p>근육과 지방을 함께 올린 14개 체형에서 몸통 안으로 새로 들어간 팔 정점 수를 1,351개에서 25개로 줄였습니다. 중립 자세의 특정 구간을 잰 수치입니다. 옷을 입혀 움직일 때의 충돌, 2~4등신 교체 얼굴의 뺨, 뒤통수의 큰 머리 덩어리는 후속 검수 대상입니다.</p></article>
+<p><a href="../research/hub/round-plan51.html">53차 이후 작업 내용과 순서</a> · <a href="../research/hub/?lab=studio&amp;tool=learning">실험실 학습 기록</a></p>
+</section></main></body></html>

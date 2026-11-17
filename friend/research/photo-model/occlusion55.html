@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>가린 윤곽 편집 · 55차 내 참고그림</title><link rel="stylesheet" href="occlusion55.css"></head>
+<body><main>
+<header><a id="researchHome" href="./#occlusion55">내 참고그림 연구</a> · <a href="../../pixel-lab/photo-engine50.html">기존 다중 시점 검수</a><p class="round">내 참고그림 · 55차</p><h1>가린 윤곽 편집</h1>
+<p>머리카락·손·옷에 가려진 쪽을 표시하면, 그 경계를 빼고 같은 사진으로 외피를 다시 맞춥니다. 수평 사진은 형상 생성에, 위아래로 기운 사진은 비교에 씁니다.</p></header>
+<section><h2>사진과 보존판</h2><div class="row"><label>대상 <select id="subject"><option value="face">얼굴</option><option value="torso">흉부</option></select></label>
+<button id="example">가림이 있는 예시 열기</button><label>이 기기 보존판 <select id="versions"></select></label><button id="load">열기</button><button id="save">새 판으로 저장</button></div>
+<p class="hint">36·50차 보존판은 입력 마스크와 카메라로 엽니다. 이 작업의 저장은 55차 새 판을 추가합니다. 이전 판의 수동 조형과 학습 보정은 아래 외피 비교에서 제외합니다.</p></section>
+<section><h2>사진별 가림과 카메라</h2><div class="row"><label>사진 <select id="slot"></select></label><label>이 칸에 사진 열기 <input id="file" type="file" accept="image/png,image/jpeg,image/webp"></label></div>
+<fieldset id="editor" disabled><legend>선택한 사진</legend><div class="row"><label><input id="enabled" type="checkbox"> 이 사진의 관측 사용</label><label>용도 <select id="role"><option value="fit">외피 생성과 비교</option><option value="check">비교만</option></select></label>
+<label>좌우 ° <input id="yaw" type="number" min="-180" max="180" step="any"></label><label>상하 ° <input id="pitch" type="number" min="-90" max="90" step="any"></label></div>
+<details><summary>정사영 카메라 중심·배율</summary><p class="hint">새 사진은 전체 전경에서 카메라를 한 번 추정합니다. 가린 외곽이 중심을 틀었으면 독립 표식을 보고 직접 조정하세요.</p><div class="row"><label>중심 X <input id="cx" type="number" step="any"></label><label>중심 Y <input id="cy" type="number" step="any"></label><label>배율 <input id="scale" type="number" min="1" step="any"></label></div></details>
+<div class="row"><fieldset class="side-choice"><legend>가린 경계</legend><label><input type="radio" name="side55" value="left" checked>화면 왼쪽</label><label><input type="radio" name="side55" value="right">화면 오른쪽</label><label><input type="radio" name="side55" value="both">양쪽</label></fieldset>
+<label>첫 행 <input id="first" type="number" min="0" max="127" value="43"></label><label>끝 행 <input id="last" type="number" min="0" max="127" value="68"></label><button id="add">가림 구간 추가</button></div>
+<p class="hint">원본에서 세로로 드래그해 두 행을 고를 수도 있습니다. 아래 구간별 단추로 제외했던 경계를 다시 사용합니다.</p><ul id="bands"></ul></fieldset>
+<p role="status" id="status"></p></section>
+<section><h2>같은 카메라로 비교</h2><div class="plates">
+<figure><canvas id="source" width="128" height="128" aria-label="선택한 사진과 가림 표시"></canvas><figcaption>원본 · 분홍색은 제외한 경계</figcaption></figure>
+<figure><canvas id="all" width="128" height="128"></canvas><figcaption>가림 표시 전 외피</figcaption></figure>
+<figure><canvas id="observed" width="128" height="128"></canvas><figcaption>보이는 경계로 맞춘 외피</figcaption></figure></div>
+<p id="fitState"></p><p id="metric"></p><div id="heldScores" aria-label="외피 생성에 쓰지 않은 사진의 거리"></div><button id="export" disabled>현재 외피 OBJ 받기</button>
+<p class="hint">거리 단위는 원본 128px의 좌우 가시 경계입니다. 가려진 면과 흉부 내부·밑주름의 깊이는 채점하지 않습니다. 비교에만 둔 사진은 외피를 바꾸지 않습니다.</p></section>
+<p class="hint"><a href="./occlusion-eval55.json">55차 두 대상의 실측 6행</a> · 두상 예시는 <a href="https://github.com/keijiro/InfiniteScan">Lee Perry-Smith의 InfiniteScan</a>을 정사영하고 일부를 가렸습니다. <a href="https://creativecommons.org/licenses/by/3.0/">저작자표시 3.0</a>. 흉부 예시는 직접 만든 합성 외피입니다.</p>
+</main><script type="module" src="./occlusion55.mjs"></script></body></html>

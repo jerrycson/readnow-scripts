@@ -1,0 +1,440 @@
+{
+  "counts": {
+    "hair": 100,
+    "faceShape": 20,
+    "eyeShape": 20,
+    "noseShape": 20,
+    "mouthShape": 20,
+    "earShape": 20
+  },
+  "families": {
+    "crop": {
+      "count": 8,
+      "continuous": 8
+    },
+    "part": {
+      "count": 6,
+      "continuous": 6
+    },
+    "quiff": {
+      "count": 5,
+      "continuous": 0
+    },
+    "spike": {
+      "count": 6,
+      "continuous": 0
+    },
+    "curl": {
+      "count": 10,
+      "continuous": 0
+    },
+    "long": {
+      "count": 9,
+      "continuous": 9
+    },
+    "wave": {
+      "count": 6,
+      "continuous": 6
+    },
+    "tail": {
+      "count": 10,
+      "continuous": 0
+    },
+    "bun": {
+      "count": 10,
+      "continuous": 0
+    },
+    "braid": {
+      "count": 10,
+      "continuous": 0
+    },
+    "mullet": {
+      "count": 6,
+      "continuous": 6
+    },
+    "bob": {
+      "count": 5,
+      "continuous": 5
+    },
+    "fringe": {
+      "count": 5,
+      "continuous": 5
+    },
+    "roll": {
+      "count": 4,
+      "continuous": 0
+    }
+  },
+  "views": [
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": 0,
+      "before": {
+        "count": 1,
+        "pixels": 5
+      },
+      "after": {
+        "count": 1,
+        "pixels": 4
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 4
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": 45,
+      "before": {
+        "count": 1,
+        "pixels": 1
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 13
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": 90,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 18
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": 135,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": 180,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 18
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": -45,
+      "before": {
+        "count": 1,
+        "pixels": 8
+      },
+      "after": {
+        "count": 1,
+        "pixels": 1
+      },
+      "preClearance": {
+        "count": 3,
+        "pixels": 5
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": -90,
+      "before": {
+        "count": 1,
+        "pixels": 3
+      },
+      "after": {
+        "count": 1,
+        "pixels": 3
+      },
+      "preClearance": {
+        "count": 7,
+        "pixels": 16
+      }
+    },
+    {
+      "id": "F02",
+      "style": "f11",
+      "yaw": -135,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 16
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": 0,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": 45,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": 90,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": 135,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": 180,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": -45,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": -90,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 1,
+        "pixels": 1
+      }
+    },
+    {
+      "id": "M01",
+      "style": "m06",
+      "yaw": -135,
+      "before": {
+        "count": 0,
+        "pixels": 0
+      },
+      "after": {
+        "count": 0,
+        "pixels": 0
+      },
+      "preClearance": {
+        "count": 0,
+        "pixels": 0
+      }
+    }
+  ],
+  "native": [
+    {
+      "id": "female-2",
+      "style": "f11",
+      "changed48": 198,
+      "reset": true
+    },
+    {
+      "id": "female-3",
+      "style": "f11",
+      "changed48": 151,
+      "reset": true
+    },
+    {
+      "id": "female-4",
+      "style": "f11",
+      "changed48": 106,
+      "reset": true
+    },
+    {
+      "id": "female-5",
+      "style": "f11",
+      "changed48": 48,
+      "reset": true
+    },
+    {
+      "id": "female-6",
+      "style": "f11",
+      "changed48": 26,
+      "reset": true
+    },
+    {
+      "id": "female-7",
+      "style": "f11",
+      "changed48": 25,
+      "reset": true
+    },
+    {
+      "id": "female-8",
+      "style": "f11",
+      "changed48": 26,
+      "reset": true
+    },
+    {
+      "id": "male-2",
+      "style": "m06",
+      "changed48": 108,
+      "reset": true
+    },
+    {
+      "id": "male-3",
+      "style": "m06",
+      "changed48": 65,
+      "reset": true
+    },
+    {
+      "id": "male-4",
+      "style": "m06",
+      "changed48": 47,
+      "reset": true
+    },
+    {
+      "id": "male-5",
+      "style": "m06",
+      "changed48": 28,
+      "reset": true
+    },
+    {
+      "id": "male-6",
+      "style": "m06",
+      "changed48": 19,
+      "reset": true
+    },
+    {
+      "id": "male-7",
+      "style": "m06",
+      "changed48": 16,
+      "reset": true
+    },
+    {
+      "id": "male-8",
+      "style": "m06",
+      "changed48": 16,
+      "reset": true
+    }
+  ],
+  "notes": "분리된 화소 수는 머리카락으로 둘러싸인 1024화소 이하의 피부·얼굴부품 섬에서 센 값. 머리 모양이나 미적 완성도 점수가 아니다.",
+  "stages": {
+    "before": "이전 막대형 머리",
+    "preClearance": "연속면과 8가닥, 귀 주위 이웃 단면 보정 전",
+    "after": "연속면과 8가닥, 이웃 단면 보정 후"
+  },
+  "files": {
+    "hair-sheet52.mjs": "ace03d809f87a1a0a142e6aedaa845817bb6d35fc7c672e8ee3189cffcf0fe91",
+    "hair-anchor52.mjs": "0852ce0374370f194e392f3a9e7663987bd71c01e5d05baca06c9646dd106296",
+    "scalp-clearance52.mjs": "f9c3c22676f386cc3e2fdc43c95bff77ec3c7e10f253b37c67158887469ff4eb",
+    "appearance52.mjs": "6abd41365a8bcda0b66e5dce39f59b7c5c7b2a43becfa07e0c8592ee961d7e25"
+  }
+}

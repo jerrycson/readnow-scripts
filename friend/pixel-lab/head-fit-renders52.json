@@ -1,0 +1,506 @@
+{
+  "round": 52,
+  "metric": "원본 RGBA 중 한 채널 절대차 8 이상인 화소 수. 배경은 투명. 교체반응 수치.",
+  "head1024": [
+    {
+      "id": "F02",
+      "heads": 2,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 246741,
+      "alphaChanged": 50062
+    },
+    {
+      "id": "F02",
+      "heads": 2,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 233525,
+      "alphaChanged": 23669
+    },
+    {
+      "id": "F02",
+      "heads": 2,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 180862,
+      "alphaChanged": 18297
+    },
+    {
+      "id": "F02",
+      "heads": 2,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 219628,
+      "alphaChanged": 33619
+    },
+    {
+      "id": "M01",
+      "heads": 2,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 247461,
+      "alphaChanged": 46084
+    },
+    {
+      "id": "M01",
+      "heads": 2,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 241870,
+      "alphaChanged": 23892
+    },
+    {
+      "id": "M01",
+      "heads": 2,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 181875,
+      "alphaChanged": 21738
+    },
+    {
+      "id": "M01",
+      "heads": 2,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 195649,
+      "alphaChanged": 30818
+    },
+    {
+      "id": "F01",
+      "heads": 4,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 243184,
+      "alphaChanged": 50573
+    },
+    {
+      "id": "F01",
+      "heads": 4,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 221610,
+      "alphaChanged": 23846
+    },
+    {
+      "id": "F01",
+      "heads": 4,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 170988,
+      "alphaChanged": 15223
+    },
+    {
+      "id": "F01",
+      "heads": 4,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 217537,
+      "alphaChanged": 34294
+    },
+    {
+      "id": "M02",
+      "heads": 4,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 239909,
+      "alphaChanged": 40517
+    },
+    {
+      "id": "M02",
+      "heads": 4,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 241388,
+      "alphaChanged": 33792
+    },
+    {
+      "id": "M02",
+      "heads": 4,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 181870,
+      "alphaChanged": 20174
+    },
+    {
+      "id": "M02",
+      "heads": 4,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 189262,
+      "alphaChanged": 27939
+    },
+    {
+      "id": "F03",
+      "heads": 6,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 178702,
+      "alphaChanged": 15550
+    },
+    {
+      "id": "F03",
+      "heads": 6,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 185570,
+      "alphaChanged": 27591
+    },
+    {
+      "id": "F03",
+      "heads": 6,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 195245,
+      "alphaChanged": 27620
+    },
+    {
+      "id": "F03",
+      "heads": 6,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 182457,
+      "alphaChanged": 27977
+    },
+    {
+      "id": "M03",
+      "heads": 6,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 174674,
+      "alphaChanged": 14041
+    },
+    {
+      "id": "M03",
+      "heads": 6,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 171390,
+      "alphaChanged": 22906
+    },
+    {
+      "id": "M03",
+      "heads": 6,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 167737,
+      "alphaChanged": 14101
+    },
+    {
+      "id": "M03",
+      "heads": 6,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 174218,
+      "alphaChanged": 15296
+    },
+    {
+      "id": "F05",
+      "heads": 8,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 171846,
+      "alphaChanged": 15484
+    },
+    {
+      "id": "F05",
+      "heads": 8,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 184537,
+      "alphaChanged": 21434
+    },
+    {
+      "id": "F05",
+      "heads": 8,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 182994,
+      "alphaChanged": 19058
+    },
+    {
+      "id": "F05",
+      "heads": 8,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 168102,
+      "alphaChanged": 19218
+    },
+    {
+      "id": "M04",
+      "heads": 8,
+      "yaw": 0,
+      "pitch": 0,
+      "pixels1024": 173571,
+      "alphaChanged": 14813
+    },
+    {
+      "id": "M04",
+      "heads": 8,
+      "yaw": 45,
+      "pitch": 0,
+      "pixels1024": 179071,
+      "alphaChanged": 31675
+    },
+    {
+      "id": "M04",
+      "heads": 8,
+      "yaw": 90,
+      "pitch": 0,
+      "pixels1024": 178072,
+      "alphaChanged": 20395
+    },
+    {
+      "id": "M04",
+      "heads": 8,
+      "yaw": 160,
+      "pitch": -12,
+      "pixels1024": 178404,
+      "alphaChanged": 24711
+    }
+  ],
+  "hair1024": [
+    {
+      "n": 2,
+      "id": "f15",
+      "tag": "legacy",
+      "yaw": 90,
+      "pixels1024": 19020,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.23084502980260435,
+        "fittedMin": 0.025,
+        "changed": 351
+      }
+    },
+    {
+      "n": 2,
+      "id": "f15",
+      "tag": "legacy",
+      "yaw": 160,
+      "pixels1024": 53792,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.23084502980260435,
+        "fittedMin": 0.025,
+        "changed": 351
+      }
+    },
+    {
+      "n": 2,
+      "id": "f11",
+      "tag": "sheet",
+      "yaw": 90,
+      "pixels1024": 18769,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.12919476590878087,
+        "fittedMin": 0.025,
+        "changed": 774
+      }
+    },
+    {
+      "n": 2,
+      "id": "f11",
+      "tag": "sheet",
+      "yaw": 160,
+      "pixels1024": 30485,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.12919476590878087,
+        "fittedMin": 0.025,
+        "changed": 774
+      }
+    },
+    {
+      "n": 2,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 90,
+      "pixels1024": 60744,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.7348016398697919,
+        "fittedMin": 0.025,
+        "changed": 920
+      }
+    },
+    {
+      "n": 2,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 160,
+      "pixels1024": 127643,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": -0.7348016398697919,
+        "fittedMin": 0.025,
+        "changed": 920
+      }
+    },
+    {
+      "n": 3,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 90,
+      "pixels1024": 0,
+      "groundRow": 824.1951219512196,
+      "metadata": {
+        "sourceMin": 0.26519836013020814,
+        "fittedMin": 0.26519836013020814,
+        "changed": 0
+      }
+    },
+    {
+      "n": 3,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 160,
+      "pixels1024": 0,
+      "groundRow": 824.1951219512196,
+      "metadata": {
+        "sourceMin": 0.26519836013020814,
+        "fittedMin": 0.26519836013020814,
+        "changed": 0
+      }
+    },
+    {
+      "n": 8,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 90,
+      "pixels1024": 0,
+      "groundRow": 887.0915750915751,
+      "metadata": {
+        "sourceMin": 5.265198360130208,
+        "fittedMin": 5.265198360130208,
+        "changed": 0
+      }
+    },
+    {
+      "n": 8,
+      "id": "f15",
+      "tag": "sheet",
+      "yaw": 160,
+      "pixels1024": 0,
+      "groundRow": 887.0915750915751,
+      "metadata": {
+        "sourceMin": 5.265198360130208,
+        "fittedMin": 5.265198360130208,
+        "changed": 0
+      }
+    },
+    {
+      "n": 2,
+      "id": "f01",
+      "tag": "sheet",
+      "yaw": 90,
+      "pixels1024": 0,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": 1.082090576,
+        "fittedMin": 1.082090576,
+        "changed": 0
+      }
+    },
+    {
+      "n": 2,
+      "id": "f01",
+      "tag": "sheet",
+      "yaw": 160,
+      "pixels1024": 0,
+      "groundRow": 787.2688172043011,
+      "metadata": {
+        "sourceMin": 1.082090576,
+        "fittedMin": 1.082090576,
+        "changed": 0
+      }
+    }
+  ],
+  "browser": [
+    {
+      "id": "female-2",
+      "donor": "F02",
+      "size": 48,
+      "yaw": 0,
+      "displayed": 48,
+      "changed": 441,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "female-2",
+      "donor": "F02",
+      "size": 96,
+      "yaw": 90,
+      "displayed": 96,
+      "changed": 1123,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "female-2",
+      "donor": "F02",
+      "size": 1024,
+      "yaw": 90,
+      "displayed": 1024,
+      "changed": 114468,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "female-2",
+      "donor": "F02",
+      "size": 48,
+      "yaw": 160,
+      "displayed": 48,
+      "changed": 514,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "male-8",
+      "donor": "M04",
+      "size": 48,
+      "yaw": 0,
+      "displayed": 48,
+      "changed": 101,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "male-8",
+      "donor": "M04",
+      "size": 96,
+      "yaw": 90,
+      "displayed": 96,
+      "changed": 320,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "male-8",
+      "donor": "M04",
+      "size": 1024,
+      "yaw": 90,
+      "displayed": 1024,
+      "changed": 27065,
+      "restoreMismatch": 0
+    },
+    {
+      "id": "male-8",
+      "donor": "M04",
+      "size": 48,
+      "yaw": 160,
+      "displayed": 48,
+      "changed": 97,
+      "restoreMismatch": 0
+    }
+  ],
+  "plates": {
+    "head-fit-female52.png": "428d6c5129988feba4a896bddf93470213d67f267af80484ea3f3c3bf81fc3eb",
+    "head-fit-male52.png": "a82e55df83020b8e5e258cd14d500bc02251c9bf5d4c7beaa7595bee4ac3c4c3",
+    "head-fit-hair52.png": "c1349a5cc8aae4219e000993624f391157de716ca6538df7eaa108695ec81332"
+  },
+  "inputs": {
+    "head-fit52.mjs": "8447f5c2ba2057ba6dcf48138740a0918d0ef908ae5e1be231c6f6d5ebc8e859",
+    "hair-sheet52.mjs": "ace03d809f87a1a0a142e6aedaa845817bb6d35fc7c672e8ee3189cffcf0fe91",
+    "hair-anchor52.mjs": "0852ce0374370f194e392f3a9e7663987bd71c01e5d05baca06c9646dd106296",
+    "scalp-clearance52.mjs": "f9c3c22676f386cc3e2fdc43c95bff77ec3c7e10f253b37c67158887469ff4eb",
+    "hair-design.mjs": "264569d8dde702fc2984dfbcf339009de62476ff658585c1683a4dc0ef001a3a"
+  }
+}

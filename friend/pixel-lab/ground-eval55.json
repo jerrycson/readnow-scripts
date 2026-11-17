@@ -1,0 +1,669 @@
+{
+  "round": 55,
+  "source": "https://doi.org/10.7274/28689221",
+  "license": "CC BY 4.0",
+  "description": "직접 읽은 촬영 자료 네 시도의 요약과 캐릭터 모델 측정. 각도는 도, 좌표와 면적은 모형 머리 길이와 그 제곱. 실측 피부와 모형 바닥은 별도 항목.",
+  "trials": [
+    {
+      "id": "AB01",
+      "repeat": 1,
+      "role": "선행 비교",
+      "source": "https://raw.githubusercontent.com/WeRoLab/healthy-whole-body-noncyclic-dataset/a26fe4852a78f30c5e8a437b158847031cb8dc3c/AB01/Squat/1/Data/squat_1.c3d",
+      "sha256": "7d4adaf1ca565de3fc172cde1b92a6b607f7a90d1f22b37453fa0cd4b6e30482",
+      "frames": 2948,
+      "samples": 296,
+      "clipped": 24,
+      "kneeDegreesMAE": 22.695137620178215,
+      "segmentKneeMAE": 0.4358952203315835,
+      "segmentForwardMAE": 0.01699739759268279,
+      "segmentDropMAE": 0.051287263281207404,
+      "forwardLegLengthMAE": 0.06962720011694279,
+      "deep": {
+        "frame": 2230,
+        "observed": 79.4494,
+        "model": 104.16027180038164,
+        "kneeError": 24.71087180038164,
+        "forwardError": 0.0738110331460563,
+        "segments": 79.93243364703874,
+        "segmentKneeError": 0.48303364703873797,
+        "segmentForwardError": 0.016459831052909712,
+        "segmentDropError": 0.06082176989273269
+      }
+    },
+    {
+      "id": "AB03",
+      "repeat": 2,
+      "role": "선행 비교",
+      "source": "https://raw.githubusercontent.com/WeRoLab/healthy-whole-body-noncyclic-dataset/a26fe4852a78f30c5e8a437b158847031cb8dc3c/AB03/Squat/2/Data/squat_2.c3d",
+      "sha256": "bc15985ad7ee165411c5348a78c1bd93b4cde7fdbe48057709c24f8d3d66af42",
+      "frames": 3557,
+      "samples": 358,
+      "clipped": 17,
+      "kneeDegreesMAE": 23.72881493821971,
+      "segmentKneeMAE": 0.621927157876073,
+      "segmentForwardMAE": 0.01533966307482038,
+      "segmentDropMAE": 0.05177508221512925,
+      "forwardLegLengthMAE": 0.09291184406646136,
+      "deep": {
+        "frame": 286,
+        "observed": 57.2288,
+        "model": 81.7156920927446,
+        "kneeError": 24.486892092744604,
+        "forwardError": 0.09249907414057032,
+        "segments": 57.94459173516918,
+        "segmentKneeError": 0.7157917351691836,
+        "segmentForwardError": 0.018704090029584536,
+        "segmentDropError": 0.055061361652296775
+      }
+    },
+    {
+      "id": "AB06",
+      "repeat": 3,
+      "role": "초기식 고정 뒤 확인한 시도. 각도식 검증에는 이미 열람함",
+      "source": "https://raw.githubusercontent.com/WeRoLab/healthy-whole-body-noncyclic-dataset/a26fe4852a78f30c5e8a437b158847031cb8dc3c/AB06/Squat/3/Data/squat_3.c3d",
+      "sha256": "f146fc5bb9ebcae7449693ac2b6cfd00ca0b174f2fd394bf1488648170687ed2",
+      "frames": 3311,
+      "samples": 333,
+      "clipped": 16,
+      "kneeDegreesMAE": 44.72575727535984,
+      "segmentKneeMAE": 0.3220756153105228,
+      "segmentForwardMAE": 0.01032820285330064,
+      "segmentDropMAE": 0.09640570451798731,
+      "forwardLegLengthMAE": 0.20038609116848202,
+      "deep": {
+        "frame": 1559,
+        "observed": 33.5941,
+        "model": 80.87931802041952,
+        "kneeError": 47.28521802041952,
+        "forwardError": 0.21184999798734216,
+        "segments": 33.29122686445095,
+        "segmentKneeError": 0.30287313554904927,
+        "segmentForwardError": 0.009524821834518749,
+        "segmentDropError": 0.10505080164002595
+      }
+    },
+    {
+      "id": "AB10",
+      "repeat": 1,
+      "role": "두 방식 고정 후 처음 읽은 별도 시도",
+      "source": "https://raw.githubusercontent.com/WeRoLab/healthy-whole-body-noncyclic-dataset/a26fe4852a78f30c5e8a437b158847031cb8dc3c/AB10/Squat/1/Data/squat_1.c3d",
+      "sha256": "99fe3d56d0aef64df6e203066c3cb0bf26cbc449e180ee1b9ce87ca216edb4d2",
+      "frames": 3160,
+      "samples": 318,
+      "clipped": 25,
+      "kneeDegreesMAE": 27.974421486190963,
+      "segmentKneeMAE": 0.9176172426070437,
+      "segmentForwardMAE": 0.010531960012026676,
+      "segmentDropMAE": 0.09223427746983266,
+      "forwardLegLengthMAE": 0.11152969871462817,
+      "deep": {
+        "frame": 324,
+        "observed": 73.4783,
+        "model": 104.26105315403093,
+        "kneeError": 30.782753154030928,
+        "forwardError": 0.12431509459843845,
+        "segments": 74.34075053633487,
+        "segmentKneeError": 0.8624505363348618,
+        "segmentForwardError": 0.009131569521888483,
+        "segmentDropError": 0.10921356318403325
+      }
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "surfaces": 168,
+      "folds": 28,
+      "crushed": 260
+    },
+    {
+      "iteration": 2,
+      "surfaces": 168,
+      "folds": 4,
+      "crushed": 36
+    },
+    {
+      "iteration": 3,
+      "surfaces": 168,
+      "folds": 0,
+      "crushed": 36
+    },
+    {
+      "iteration": 4,
+      "surfaces": 168,
+      "folds": 34,
+      "crushed": 0
+    },
+    {
+      "iteration": 5,
+      "surfaces": 168,
+      "folds": 4,
+      "crushed": 0
+    },
+    {
+      "iteration": 6,
+      "surfaces": 168,
+      "folds": 0,
+      "crushed": 0
+    }
+  ],
+  "matchedAngles": [
+    {
+      "id": "female-2",
+      "angles": {
+        "flex": 48.71913089287475,
+        "knee": 80.28616488737954
+      },
+      "maxAngleDifference": 1.4210854715202004e-14,
+      "heelBefore": 0.1298673848602951,
+      "heelAfter": 0,
+      "forefootBefore": 0.06631683587633214,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-3",
+      "angles": {
+        "flex": 49.13563115604938,
+        "knee": 81.1104974040258
+      },
+      "maxAngleDifference": 0,
+      "heelBefore": 0.2603327748704972,
+      "heelAfter": 0,
+      "forefootBefore": 0.18092167969775208,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-4",
+      "angles": {
+        "flex": 49.328733767671054,
+        "knee": 81.50272869841947
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 0.4320935050663334,
+      "heelAfter": 0,
+      "forefootBefore": 0.3370307414242097,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-5",
+      "angles": {
+        "flex": 49.4376205840015,
+        "knee": 81.7470998217022
+      },
+      "maxAngleDifference": 0,
+      "heelBefore": 0.7882849949835333,
+      "heelAfter": 0,
+      "forefootBefore": 0.49760676482258237,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-6",
+      "angles": {
+        "flex": 49.48299718365186,
+        "knee": 81.83558241704701
+      },
+      "maxAngleDifference": 2.1316282072803006e-14,
+      "heelBefore": 0.919598408562257,
+      "heelAfter": 0,
+      "forefootBefore": 0.6109366397348612,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-7",
+      "angles": {
+        "flex": 49.51794296063438,
+        "knee": 81.90429596116748
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 1.0508716108780267,
+      "heelAfter": 0,
+      "forefootBefore": 0.7378769631655033,
+      "forefootAfter": 0
+    },
+    {
+      "id": "female-8",
+      "angles": {
+        "flex": 49.5459357083907,
+        "knee": 81.95965692811279
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 1.1821174062734965,
+      "heelAfter": 0,
+      "forefootBefore": 0.851955716545854,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-2",
+      "angles": {
+        "flex": 48.71913089287475,
+        "knee": 80.28616488737954
+      },
+      "maxAngleDifference": 1.4210854715202004e-14,
+      "heelBefore": 0.1298673848602951,
+      "heelAfter": 0,
+      "forefootBefore": 0.06631683587633214,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-3",
+      "angles": {
+        "flex": 49.13563115604938,
+        "knee": 81.1104974040258
+      },
+      "maxAngleDifference": 0,
+      "heelBefore": 0.2603327748704972,
+      "heelAfter": 0,
+      "forefootBefore": 0.18092167969775208,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-4",
+      "angles": {
+        "flex": 49.328733767671054,
+        "knee": 81.50272869841947
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 0.4320935050663334,
+      "heelAfter": 0,
+      "forefootBefore": 0.3370307414242097,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-5",
+      "angles": {
+        "flex": 49.440399734250846,
+        "knee": 81.74753140238015
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 0.7882939939017435,
+      "heelAfter": 0,
+      "forefootBefore": 0.4976345966946103,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-6",
+      "angles": {
+        "flex": 49.48524987520979,
+        "knee": 81.83592621766407
+      },
+      "maxAngleDifference": 7.105427357601002e-15,
+      "heelBefore": 0.9196087673186084,
+      "heelAfter": 0,
+      "forefootBefore": 0.610963232558607,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-7",
+      "angles": {
+        "flex": 49.51985298090447,
+        "knee": 81.90458345628232
+      },
+      "maxAngleDifference": 0,
+      "heelBefore": 1.050882997671284,
+      "heelAfter": 0,
+      "forefootBefore": 0.7379023240963547,
+      "forefootAfter": 0
+    },
+    {
+      "id": "male-8",
+      "angles": {
+        "flex": 49.54760699017024,
+        "knee": 81.95990564185612
+      },
+      "maxAngleDifference": 1.4210854715202004e-14,
+      "heelBefore": 1.1821296515523327,
+      "heelAfter": 0,
+      "forefootBefore": 0.8519808721557256,
+      "forefootAfter": 0
+    }
+  ],
+  "padMeasurements": [
+    {
+      "id": "female-2",
+      "depth": 0,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.010989592359914348,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-2",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01098959235991435,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-2",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.010989592359914351,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-2",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01098959235991435,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-3",
+      "depth": 0,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01629045455704951,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-3",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.016290454557049507,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-3",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.016290454557049507,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-3",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01629045455704951,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-4",
+      "depth": 0,
+      "original": {
+        "y": -1.3877787807814457e-17,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": -1.3877787807814457e-17,
+        "contactArea": 0.022625631329235427,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-4",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235424,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-4",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235427,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "female-4",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235424,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-2",
+      "depth": 0,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.010989592359914348,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-2",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01098959235991435,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-2",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.010989592359914351,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-2",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01098959235991435,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-3",
+      "depth": 0,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01629045455704951,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-3",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.016290454557049507,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-3",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.016290454557049507,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-3",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.01629045455704951,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-4",
+      "depth": 0,
+      "original": {
+        "y": -1.3877787807814457e-17,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": -1.3877787807814457e-17,
+        "contactArea": 0.022625631329235427,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-4",
+      "depth": 0.14,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235424,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-4",
+      "depth": 0.4,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235427,
+        "degenerate": 24
+      }
+    },
+    {
+      "id": "male-4",
+      "depth": 0.5,
+      "original": {
+        "y": 0,
+        "contactArea": 0,
+        "degenerate": 24
+      },
+      "pads": {
+        "y": 0,
+        "contactArea": 0.022625631329235424,
+        "degenerate": 24
+      }
+    }
+  ],
+  "poseSurfaceCount": 168,
+  "trajectoryFrames": 2562,
+  "maxBoneLengthChange": 8.881784197001252e-16,
+  "maxFootGroundOffset": 1.3877787807814457e-17,
+  "maxSoleVertexHeightChange": 1.3877787807814457e-17,
+  "minAreaRatioAcrossAllAuditedParts": 0.12384468766734472,
+  "limits": [
+    "골반 연결면의 꺾임과 눌림에 대한 기준은 프로젝트에서 정했다.",
+    "실측 재생은 관측한 분절 각도를 입력한 결과다.",
+    "두 발의 바닥 제약은 접촉 압력이나 균형을 측정하지 않는다."
+  ]
+}

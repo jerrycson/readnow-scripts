@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "policy": "측정 원문/통계 불변. 기록 당시 raw 지문을 확인한 별도 LF 배포 지문. Node/Edge 수치는 별도로 유지.",
+  "files": {
+    "face53.mjs": {
+      "recorded": "efa3f8005c25287103717e890eafefcd89a8f3465ec66aa588a3c3fec2168477",
+      "lf": "cdf34f651abc3f21f61f027ed4a190bef65a3b1f95dd630843c018c5109007a2"
+    },
+    "face-support53.mjs": {
+      "recorded": "1111b87a5f7b12a51278c469cdd707245e8650c907a40bd4024579d7aec2df89",
+      "lf": "e98024cba36ba3ebe1e76e4225d6608cc44b617734769f756e9cac0b02cec647"
+    },
+    "face-contour53.mjs": {
+      "recorded": "c5dc660ca92f4ce29d6d626a1e55b4edefd99337be2109b09b06c077c7586781",
+      "lf": "d42cc7042b9b3805fd0a206a69beaca499b054d57e41c18574b066cdd2943815"
+    },
+    "face-lower53.mjs": {
+      "recorded": "2267343e55d20fe69aa9bdb067f667bbb20f41792587b45de83d926d366cae74",
+      "lf": "9a1d0812d66e5d6ab15549e9ede5012d73f291f0444c88d884e259ae97d352eb"
+    }
+  }
+}

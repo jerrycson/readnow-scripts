@@ -29,7 +29,7 @@ export function gaitFoot(phase,side,stride,lift,run=false){
  const q=(u-stance)/(1-stance),smooth=q*q*(3-2*q);
  return {z:stride*(-.5+smooth),lift:Math.sin(Math.PI*q)*lift,stance:false,u};
 }
-export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}={}){
+export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08,designHair=addDesignedHair}={}){
  const s=validateSettings(settings),p=proportions(s),{n,t,f,bulk,shoulder,hip,pelvis,shoulderY,foot,arm,leg,depth,cute,manga,fat,muscle}=p,parts=[];
  const moving=action==='walk'||action==='run',running=action==='run',sitting=action==='sit'||action==='sleep';
  const bob=moving?.018*Math.cos(phase*2):.004*Math.sin(phase),lower=sitting?leg*.43:moving?leg*(running?.07:.035):0;
@@ -151,7 +151,7 @@ export function humanScene(settings,phase=0,action='idle',{breathAmplitude=.08}=
  }
  const head=[],headCenter=[0,n-.50-lower+bob,0],chin=n-1-lower+bob;
  const {width:headWidth,depth:headDepth}=makeFace(head,s,p,chin);
- if(s.hair!=='none'&&!addDesignedHair(head,s,p,chin,headWidth,headDepth,phase,moving)){
+ if(s.hair!=='none'&&!designHair(head,s,p,chin,headWidth,headDepth,phase,moving)){
   E(head,[0,chin+.80,-.015],[headWidth*1.055,.245,headDepth*1.055],'hair',null,'hair-cap');
   for(const side of [-1,1]){
    E(head,[side*headWidth*.75,chin+.66,-.10],[.16,.24,.27],'hair',null,'hair-side');
