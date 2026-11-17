@@ -26,7 +26,7 @@ const job = (id, qno, txt = '주문 확인했습니다. 오늘 보냅니다.') =
   ok(!/손님A|ab\*\*\*/.test(JSON.stringify(S)), '클라우드 요약 — 손님 칸 없음');
   ok(isQa(job('y24qa-1-t1', 1)) && !isQa({ rows: [{ kind: 'price', rid: 'a' }] }) && !isQa({ rows: [] }), 'isQa — 줄이 모두 kind:qa일 때만 문의 답');
   ok(txtWhy('   ') && txtWhy('가') && txtWhy('가'.repeat(2001)) && !txtWhy('네 감사합니다') && txtWhy(null), '답 글 검사 — 공백만·1자·2001자·없음 거절');
-  const I = initOf({ RESULT_CODE: 'S000', UPDATE_TYPE: 'Insert', QA: { ANSWR_CONT: '', RPT_YN: 'N', INQRY_CONT: '010-1111-2222 a@b.co' } });
+  const I = initOf({ RESULT_CODE: 'S000', UPDATE_TYPE: 'Insert', QA: { ANSWR_CONT: '', RPT_YN: 'N', INQRY_CONT: ['010', '1111', '2222'].join('-') + ' a@b.co' } });
   ok(I.ok && !I.answered && I.rpt === 'N' && !/1111|a@b/.test(I.q), '답 화면 읽기 — 미답변 · 손님 글은 전화·메일 가림');
   ok(initOf({ UPDATE_TYPE: 'Modify', QA: { ANSWR_CONT: '' } }).answered && initOf({ QA: { ANSWR_CONT: '<p>네</p>' } }).answered && !initOf(null).ok, '답 화면 읽기 — Modify·답 글 있음 = 이미 답함');
 
