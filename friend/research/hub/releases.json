@@ -775,6 +775,63 @@
         "file": "studio-training52.json",
         "sha256": "210887a35c72600df47e7d5badbc6540da55c2655f03965b668fe0de00d69ee3"
       }
+    },
+    {
+      "id": "2d98a190fd8d2c6c3fa65a59",
+      "project": "bookfriend",
+      "round": 52,
+      "cards": 374,
+      "sources": 363,
+      "chapters": 14,
+      "cardsSha": "e63e5a0dc30622769c2325e032ba028860486ea15c37d9421e172dc7ef00017c",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "9c3c2b362bf1386cf0648627446c23b9d6ee6b85182cd40d776ae9d8f2312146",
+      "at": "2026-11-17T13:57:24.617Z",
+      "label": "52차 · 턱밑·흉벽 대조와 전신 얼굴·외형 교체",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45",
+        "controller-note46",
+        "precedent-note46",
+        "face-note47",
+        "chest-note47",
+        "face-note48",
+        "chest-note48",
+        "face-note49",
+        "chest-note49",
+        "workspace-note50",
+        "face-note50",
+        "chest-note50",
+        "face-note51",
+        "chest-note51",
+        "workspace-note51",
+        "face-note52",
+        "chest-note52",
+        "body-note52",
+        "head-fit-note52",
+        "workspace-note52"
+      ],
+      "supersedes": "27a955d03a6306e13f4f2ffe",
+      "learningEvidence": {
+        "file": "studio-training52.json",
+        "sha256": "210887a35c72600df47e7d5badbc6540da55c2655f03965b668fe0de00d69ee3"
+      }
     }
   ]
 }
