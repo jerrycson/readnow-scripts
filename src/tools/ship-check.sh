@@ -17,7 +17,9 @@
 # 급할 때 넘기기: RN_SHIP_SKIP=1 git push … (넘긴 까닭을 커밋 글에 적을 것) · 시험만 넘기기: RN_QUICK_SKIP=1 (까닭을 커밋 글에)
 set -uo pipefail
 if [ "${1:-}" = install ]; then who=${2:?이름표}; h=$(git rev-parse --git-path hooks)/pre-push; mkdir -p "$(dirname "$h")"
-  printf '#!/usr/bin/env bash\n# (10/29) 리드나우 push 전 검사 — src/tools/ship-check.sh\nwhile read -r l ls r rs; do case "$r" in refs/heads/main) [ -n "${RN_SHIP_SKIP:-}" ] && exit 0; RN_PUSH_SHA="$ls" bash "$(git rev-parse --show-toplevel)/src/tools/ship-check.sh" %s || exit 1;; esac; done\nexit 0\n' "$who" > "$h"; chmod +x "$h"; echo "✓ pre-push 검사 깔림($who) — $h"; exit 0; fi
+  # (11/17) 여러 일꾼이 한 .git을 함께 쓰면 install이 서로 이름표를 덮어 남의 push를 막았음 → 이미 다른 이름표로 깔렸으면 덮지 않음(RN_SHIP_FORCE=1로만) · 한 번만 다른 이름표로 검사하려면 RN_SHIP_WHO=<이름표> git push
+  if [ -f "$h" ] && [ -z "${RN_SHIP_FORCE:-}" ] && grep -q 'ship-check.sh' "$h"; then old=$(grep -o 'RN_SHIP_WHO:-[^}]*' "$h" | head -1 | cut -d- -f2-); [ -z "$old" ] && old=$(grep -o 'ship-check.sh" [^ ]*' "$h" | head -1 | awk '{print $2}'); if [ -n "$old" ] && [ "$old" != "$who" ]; then echo "↷ pre-push 검사는 이미 '$old'로 깔려 있어 덮지 않음 — 내 이름표로 한 번만: RN_SHIP_WHO=$who git push · 바꾸려면 RN_SHIP_FORCE=1"; exit 0; fi; fi
+  printf '#!/usr/bin/env bash\n# (10/29) 리드나우 push 전 검사 — src/tools/ship-check.sh\nwhile read -r l ls r rs; do case "$r" in refs/heads/main) [ -n "${RN_SHIP_SKIP:-}" ] && exit 0; RN_PUSH_SHA="$ls" bash "$(git rev-parse --show-toplevel)/src/tools/ship-check.sh" "${RN_SHIP_WHO:-%s}" || exit 1;; esac; done\nexit 0\n' "$who" > "$h"; chmod +x "$h"; echo "✓ pre-push 검사 깔림($who) — $h"; exit 0; fi
 who=${1:?이름표(lead·friend·h4·daily…)}; T=${RN_PUSH_SHA:-HEAD}; bad=0; say() { echo "❌ $*"; bad=1; }
 git fetch -q origin main "+refs/heads/work-lock:refs/remotes/origin/work-lock" 2>/dev/null || git fetch -q origin main || { echo "⚠ fetch 실패 — 검사 못 함"; exit 1; }
 M=origin/main
