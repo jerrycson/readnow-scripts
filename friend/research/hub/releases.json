@@ -346,6 +346,39 @@
         "sha256": "2936d63ac07b34a518beb8d80691aaa54a36e34cd96426147e7af330c96b881a"
       },
       "supersedes": "2dee3f0da258ce80cd658038"
+    },
+    {
+      "id": "ef4f92b94fba7a6d96541f3f",
+      "project": "bookfriend",
+      "round": 45,
+      "cards": 341,
+      "sources": 330,
+      "chapters": 14,
+      "cardsSha": "acd02982952fd2654b2afe6a2a6427dad8ac47958163fc167414f744dbca0a4f",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "ea90f84c2a656b3e9ef2bda527bd4cfc51ffc528181c1c83dafabffef13adee7",
+      "at": "2026-11-17T07:07:15.609Z",
+      "label": "45차 · 부위 교정과 실험 기록 동기화",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45"
+      ],
+      "supersedes": "b58c89cd7277a43a45256b65"
     }
   ]
 }

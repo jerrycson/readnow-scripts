@@ -1,11 +1,12 @@
 import {studioTools,studioGroups} from './studio-catalog.mjs';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
+import {mountCaseSync} from './studio-case-sync45.mjs';
 const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([['latest-fern','최신 모델'],['history','판본 비교'],['sculpt','정밀 조형'],['photo-engine36','내 참고그림'],['world','환경 실험']]);
-const studioRound=44;
+const studioRound=45;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -16,7 +17,7 @@ function shareState(){
 }
 function setState(id,extra={}){
   const u=new URL(location.href);u.searchParams.set('tool',id);
-  for(const k of ['a','b','av','bv','case'])if(k in extra){if(extra[k])u.searchParams.set(k,extra[k]);else u.searchParams.delete(k);}
+  for(const k of ['a','b','av','bv','case','zone'])if(k in extra){if(extra[k])u.searchParams.set(k,extra[k]);else u.searchParams.delete(k);}
   history.replaceState(null,'',u);shareState();
 }
 function paintList(){
@@ -32,12 +33,14 @@ function paintList(){
 }
 function pathFor(t){
   const u=new URL(targets.get(t.case)||t.path,location.href), q=new URL(location.href).searchParams;
+  if(t.id==='sculpt'&&['chin','jaw','throat','mid','cheek','rib','breast','lower'].includes(q.get('zone')))u.searchParams.set('zone',q.get('zone'));
   if(t.id==='history')for(const k of ['a','b','av','bv'])if(q.has(k))u.searchParams.set(k,q.get(k));
   if(t.id==='sculpt'&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
   return u.href;
 }
 function signal(f,on){f.contentWindow?.postMessage({type:'bookfriend:studio-active',active:on},location.origin);}
 const observeTool=startStudioRecord(()=>tools.find(t=>t.id===current));
+mountCaseSync(document.querySelector('.workhead + details'));
 function open(id){
   const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='latest-fern');current=t.id;setState(current);
   let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);$('stages').append(f);f.onload=()=>signal(f,!f.hidden);}
@@ -55,6 +58,7 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin)return;
   if(e.source===frames.get('history')?.contentWindow&&e.data?.type==='bookfriend:version-selection'&&current==='history'){
     const next={};for(const k of ['a','b','av','bv']) if(typeof e.data[k]==='string'&&e.data[k].length<150)next[k]=e.data[k];setState('history',next);
   }
+  if(e.source===frames.get('sculpt')?.contentWindow&&current==='sculpt'&&e.data?.type==='bookfriend:sculpt-zone'&&['chin','jaw','throat','mid','cheek','rib','breast','lower'].includes(e.data.zone)&&['F02','M01','W'].includes(e.data.case))setState('sculpt',{case:e.data.case,zone:e.data.zone});
   if(e.source===frames.get('sculpt')?.contentWindow&&current==='sculpt'&&e.data?.type==='bookfriend:sculpt-case'&&['F02','M01','W'].includes(e.data.case))setState('sculpt',{case:e.data.case});
 });
 async function refresh(){

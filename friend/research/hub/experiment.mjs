@@ -16,7 +16,7 @@ function clearFrame(){
   delete frame.dataset.loadedUrl;
   if(frame.hasAttribute('src'))frame.removeAttribute('src');
 }
-const studioKeys=['tool','a','b','av','bv','case'];
+const studioKeys=['tool','a','b','av','bv','case','zone'];
 window.addEventListener('message',e=>{
   if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data?.type!=='bookfriend:studio-state'||typeof e.data.search!=='string'||e.data.search.length>1600||query().searchParams.get('lab')!=='studio')return;
   const state=new URLSearchParams(e.data.search),u=query(),direct=new URL('../../pixel-lab/studio.html',location.href);
@@ -79,7 +79,7 @@ document.addEventListener('click',e=>{
 function closeLab(){
   const saved = history.state?.returnTo;
   const url = saved ? new URL(saved,location.href) : query();
-  if(!saved)for(const k of ['tool','a','b','av','bv','lab','section','pose','panel','focus','mode','case','cell','form','scan','round','variant'])url.searchParams.delete(k);
+  if(!saved)for(const k of ['tool','a','b','av','bv','lab','section','pose','panel','focus','mode','case','zone','cell','form','scan','round','variant'])url.searchParams.delete(k);
   history.replaceState(null,'',url);sync();
 }
 dialog.addEventListener('cancel',e=>{e.preventDefault();closeLab();});document.querySelector('#closeLab').onclick=closeLab;

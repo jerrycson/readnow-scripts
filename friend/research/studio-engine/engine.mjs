@@ -2,8 +2,10 @@ import {entries,importExamples} from '../../pixel-lab/studio-evidence44.mjs';
 import {fit,evaluate,predict} from '../../pixel-lab/studio-learning44.mjs';
 import {publishedEvidence} from '../../pixel-lab/studio-cases44.mjs';
 import {refreshLearning} from '../../pixel-lab/studio-recorder44.mjs';
+import {mountCaseSync} from '../../pixel-lab/studio-case-sync45.mjs';
 const $=id=>document.getElementById(id),el=(tag,t)=>Object.assign(document.createElement(tag),{textContent:t||''});
 const lab=new URL('../../pixel-lab/',location.href);let rows=[],local=[],filter='all',models=[],busy=false;
+mountCaseSync($('stats').parentElement);
 const words={all:'전체',observed:'도구 사용',measured:'실측',accepted:'채택',rejected:'거절',deferred:'보류',reverted:'원복',surface:'표면',alignment:'정합',comparison:'비교',movement:'움직임',repeatability:'재현',direct:'직접 교정',learned:'학습 추천',baseline:'기준',photo:'사진',pose:'자세',cohort:'독립 시험 묶음',archive:'판본',simulation:'환경',W:'성인 몸통',F02:'페른',M01:'힘멜',world:'무대',studio:'실험실'};
 function showRows(){const box=$('rows');box.replaceChildren();for(const r of [...rows].reverse().filter(r=>filter==='all'||r.outcome===filter)){
  const tr=el('tr');for(const v of [(words[r.subject]||r.subject)+' · '+(words[r.task]||r.task),words[r.method]||r.method,r.metricBefore==null?'—':Number(r.metricBefore.toFixed(3))+' → '+Number(r.metricAfter.toFixed(3))+' '+r.unit,words[r.outcome]])tr.append(el('td',v));

@@ -1,6 +1,6 @@
 import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,displayScene,renderSculpt,
   plateInfo,surfaceZones,screenAnchors,posed,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
-import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs';
+import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs?v=45';
 import {loadRig} from './rig32.mjs';
 import {mountSculptLearning44} from './studio-sculpt-learn44.mjs';
 import {photoControls} from './studio-photo-fit.mjs?v=44-lab';
@@ -56,9 +56,12 @@ function layers(){
   const node=el('plate');if(node.firstElementChild)node.firstElementChild.style.display=el('photo').checked?'':'none';
   for(const g of node.querySelectorAll('g'))g.style.display=el(g.dataset.layer).checked?'':'none';
 }
+let initialZone=new URL(location.href).searchParams.get('zone');
 function selectZone(key){
   if(learning44)schedule();
   selected=zones.find(z=>z.key===key)||zones[0];el('region').value=selected.key;
+  const address=new URL(location.href);if(address.searchParams.get('zone')!==selected.key){address.searchParams.set('zone',selected.key);history.replaceState(null,'',address);}
+  if(parent!==self)parent.postMessage({type:'bookfriend:sculpt-zone',case:id,zone:selected.key},location.origin);
   const labels=axes(id);
   el('handleHelp').textContent=selected.label+' · 가로 '+labels[selected.xAxis]+' / 위아래 '+labels[selected.yAxis];
   for(const pin of el('handles').children)pin.setAttribute('aria-pressed',String(pin.dataset.zone===selected.key));
@@ -102,7 +105,7 @@ function setupPins(){
       v[axis]=clamp(v[axis]+d*(e.shiftKey?10:1),-100,100);updateShape(v);commit();
     };
   }
-  selectZone(selected?.key);pane.hidden=!el('showHandles').checked;
+  selectZone(initialZone||selected?.key);initialZone=null;pane.hidden=!el('showHandles').checked;
 }
 function draw(){
   scheduled=false;if(!active||!dirty||!model)return;dirty=false;
@@ -187,7 +190,8 @@ function hook(){
   const zoom=d=>view({zoom:clamp(Math.round((session.current.view.zoom+d)*100)/100,.5,2.5)});
   el('zoomIn').onclick=()=>zoom(.1);el('zoomOut').onclick=()=>zoom(-.1);el('resetView').onclick=()=>view(defaultView(id));
   for(const canvas of [el('before'),el('after')]){
-    let start=null;const orbit=(v,dx,dy)=>view({yaw:Math.round(((((v.yaw+dx+180)%360)+360)%360-180)*100)/100,pitch:clamp(Math.round((v.pitch+dy)*100)/100,-90,90)});
+    let start=null;const orbitAngle=v=>Math.round((((v+180)%360+360)%360-180)*100)/100;
+    const orbit=(v,dx,dy)=>view({yaw:orbitAngle(v.yaw+dx),pitch:orbitAngle(v.pitch+dy)});
     canvas.onpointerdown=e=>{if(e.button!==0)return;canvas.setPointerCapture(e.pointerId);start={x:e.clientX,y:e.clientY,v:{...session.current.view}};};
     canvas.onpointermove=e=>{if(start)orbit(start.v,(e.clientX-start.x)*.65,(e.clientY-start.y)*.5);};
     canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>{start=null;};
