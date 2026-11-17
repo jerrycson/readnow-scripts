@@ -1,0 +1,2980 @@
+{
+  "edition": 57,
+  "status": "검은 봉우리 국소 제거 · 흰 선 분리와 사선의 평평한 부착감 미달 · 두 인물 중립 채택 보류",
+  "visualReview": {
+    "darkBow": "선택 장면의 두 검은 봉우리가 줄었다.",
+    "lowerLip": "흰 아랫입술 선이 피부에서 떨어져 떠 있다.",
+    "oblique": "사선에서 입 전체가 평평한 작은 붙임판처럼 보인다.",
+    "decision": "전반 개선과 기본형 채택은 보류."
+  },
+  "input": {
+    "F02": "56차 fern05 수동 씬",
+    "M01": "55차 귀앞 단독 + 기존49 미소0.35"
+  },
+  "basePreservation": "49 중립·55귀앞 단독의 별도 실험은 neutralInputs에 기록",
+  "targetPoints": {
+    "F02": {
+      "requested": 585,
+      "moved": 585,
+      "retained": 0
+    },
+    "M01": {
+      "requested": 585,
+      "moved": 581,
+      "retained": 4,
+      "reason": "4 아랫입술 새 xy에서 피부 교차를 찾지 못해 원좌표 유지. 49 중립 입력은 12점 유지·573점 이동."
+    }
+  },
+  "method": "입선 재질을 구별한 실제 삼각형 투영, 원화 가시 입선의 양끝·중앙까지 거리. 1024는 원래 화면 화소, 48/96은 실제 해당 버퍼. 0 가시화소의 오차는 null.",
+  "history": {
+    "A": "가는 선에서 48/96 가시 입선 소실",
+    "B": "입술 패치가 입선을 덮는 구멍",
+    "C": "접합 경계 개선·국소 피부 접힘 증가와 측면 소실",
+    "D": "측면 반례 후 접촉 깊이 재맞춤·일부 앞구도 악화",
+    "E": "C/D 접촉 후 피부 원좌표를 보존하고 입술 세 패치만 접합"
+  },
+  "freeze": {
+    "at": "2026-11-18T02:19:49.6021761+09:00",
+    "sha256": "9494077CB6A1D6A8B2C69CCFD301E35E979480DA27373C48CF36E393476F5DD1",
+    "reason": "C의 피부 인접면 90도 초과 증가 51→54, M01 한 면법선 90도 초과를 보고 E를 분리. E는 원 피부를 보존하고 실제 입술 3패치의 접합만 바꾼다. 깊이 .006은 D의 세 깊이 중 최솟값. 전 원화는 C 검사에서 이미 본 상태.",
+    "originalCandidate": "후보동결57.json",
+    "independentNewCut": false,
+    "coreSha256": "bea63e1fc964397afdc5add23e791602715ab2db96c0b985e85a2e07ed0f7d3d",
+    "entrySha256": "24769a9830994ccee57d59a9e44f6b420260810fcd9a6946db35808264d80b1e"
+  },
+  "diagnostics": {
+    "F02": {
+      "05-3-빛과면": {
+        "flat": {
+          "changed": 4819,
+          "dark": 904
+        },
+        "upper-lip34": {
+          "changed": 284,
+          "dark": 929
+        },
+        "lower-lip34": {
+          "changed": 705,
+          "dark": 1014
+        },
+        "mouth-line34": {
+          "changed": 904,
+          "dark": 276
+        }
+      },
+      "05-3": {
+        "resolution": 1024,
+        "roi": [
+          495,
+          635,
+          615,
+          699
+        ],
+        "counts": [
+          284,
+          705,
+          904,
+          5787,
+          0
+        ],
+        "dark": [
+          110,
+          25,
+          904,
+          0,
+          0
+        ],
+        "meanLum": [
+          159.5381,
+          173.6897,
+          88.9007,
+          208.6623,
+          null
+        ],
+        "error": 23.3542,
+        "targetSpan": 40.7588,
+        "inkSpan": 94.5627,
+        "inkArea": 904,
+        "inkColumns": 89,
+        "gapColumns": 5,
+        "meanColumnWidth": 10.1573,
+        "bowDepth": 5.5,
+        "linePoints": [
+          [
+            508.5,
+            654
+          ],
+          [
+            554.54,
+            670.6999999999999
+          ],
+          [
+            601.5,
+            672
+          ]
+        ]
+      },
+      "28-7-빛과면": {
+        "flat": {
+          "changed": 4679,
+          "dark": 839
+        },
+        "upper-lip34": {
+          "changed": 277,
+          "dark": 873
+        },
+        "lower-lip34": {
+          "changed": 639,
+          "dark": 879
+        },
+        "mouth-line34": {
+          "changed": 839,
+          "dark": 213
+        }
+      },
+      "28-7": {
+        "resolution": 1024,
+        "roi": [
+          414,
+          679,
+          535,
+          742
+        ],
+        "counts": [
+          277,
+          639,
+          839,
+          5868,
+          0
+        ],
+        "dark": [
+          40,
+          34,
+          839,
+          0,
+          0
+        ],
+        "meanLum": [
+          157.5383,
+          172.1521,
+          87.3031,
+          208.558,
+          null
+        ],
+        "error": 26.2732,
+        "targetSpan": 31.2133,
+        "inkSpan": 95.7567,
+        "inkArea": 839,
+        "inkColumns": 90,
+        "gapColumns": 6,
+        "meanColumnWidth": 9.3222,
+        "bowDepth": 4,
+        "linePoints": [
+          [
+            426.5,
+            698.5
+          ],
+          [
+            468.65789473684197,
+            713.4473684210525
+          ],
+          [
+            521.5,
+            713
+          ]
+        ]
+      }
+    },
+    "M01": {
+      "06-6-빛과면": {
+        "flat": {
+          "changed": 3032,
+          "dark": 584
+        },
+        "upper-lip34": {
+          "changed": 144,
+          "dark": 584
+        },
+        "lower-lip34": {
+          "changed": 774,
+          "dark": 584
+        },
+        "mouth-line34": {
+          "changed": 584,
+          "dark": 0
+        }
+      },
+      "06-6": {
+        "resolution": 1024,
+        "roi": [
+          282,
+          639,
+          389,
+          696
+        ],
+        "counts": [
+          144,
+          774,
+          584,
+          4597,
+          0
+        ],
+        "dark": [
+          0,
+          0,
+          584,
+          0,
+          0
+        ],
+        "meanLum": [
+          184.1273,
+          188.8819,
+          102.7466,
+          216.4271,
+          null
+        ],
+        "error": 44.6116,
+        "targetSpan": 119.2477,
+        "inkSpan": 79.3503,
+        "inkArea": 584,
+        "inkColumns": 80,
+        "gapColumns": 0,
+        "meanColumnWidth": 7.3,
+        "bowDepth": 0.5,
+        "linePoints": [
+          [
+            295.5,
+            667.5
+          ],
+          [
+            334.6875,
+            668.4375
+          ],
+          [
+            374.5,
+            658.5
+          ]
+        ]
+      },
+      "set1-빛과면": {
+        "flat": {
+          "changed": 4789,
+          "dark": 830
+        },
+        "upper-lip34": {
+          "changed": 260,
+          "dark": 872
+        },
+        "lower-lip34": {
+          "changed": 1040,
+          "dark": 830
+        },
+        "mouth-line34": {
+          "changed": 830,
+          "dark": 42
+        }
+      },
+      "set1": {
+        "resolution": 1024,
+        "roi": [
+          450,
+          679,
+          601,
+          738
+        ],
+        "counts": [
+          260,
+          1040,
+          830,
+          6779,
+          0
+        ],
+        "dark": [
+          0,
+          42,
+          830,
+          0,
+          0
+        ],
+        "meanLum": [
+          172.4898,
+          175.0358,
+          93.0045,
+          209.7851,
+          null
+        ],
+        "error": 17.1411,
+        "targetSpan": 97.7056,
+        "inkSpan": 122.1407,
+        "inkArea": 830,
+        "inkColumns": 124,
+        "gapColumns": 0,
+        "meanColumnWidth": 6.6935,
+        "bowDepth": 4.5,
+        "linePoints": [
+          [
+            463.5,
+            698.5
+          ],
+          [
+            523.0555555555554,
+            712.5555555555555
+          ],
+          [
+            586.5,
+            707.5
+          ]
+        ]
+      }
+    }
+  },
+  "safety": {
+    "F02": {
+      "skinMoved": 0,
+      "maxSkinDistance": 0,
+      "outsideMoved": 0,
+      "normalDelta": 0,
+      "groups": {
+        "skin": {
+          "triangles": 26756,
+          "flipped": 0,
+          "flat": 0,
+          "min": 1,
+          "xyWindingChanges": 0
+        },
+        "upper-lip34": {
+          "triangles": 288,
+          "flipped": 69,
+          "flat": 0,
+          "min": -16.515908783403713,
+          "xyWindingChanges": 0
+        },
+        "lower-lip34": {
+          "triangles": 288,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.10593933710040258,
+          "xyWindingChanges": 0
+        },
+        "mouth-line34": {
+          "triangles": 336,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.12309580183679904,
+          "xyWindingChanges": 0
+        }
+      },
+      "angularLimit": "flipped는 원래 면법선과 90도 초과한 면의 수다. xyWindingChanges는 별도로 비교한다.",
+      "skinAdjacent": {
+        "count": 0,
+        "beforeOver90": 0,
+        "afterOver90": 0
+      },
+      "sourceUnchanged": true
+    },
+    "M01": {
+      "skinMoved": 0,
+      "maxSkinDistance": 0,
+      "outsideMoved": 0,
+      "normalDelta": 0,
+      "groups": {
+        "skin": {
+          "triangles": 26756,
+          "flipped": 0,
+          "flat": 0,
+          "min": 1,
+          "xyWindingChanges": 0
+        },
+        "upper-lip34": {
+          "triangles": 288,
+          "flipped": 2,
+          "flat": 0,
+          "min": -0.024793686133412533,
+          "xyWindingChanges": 0
+        },
+        "lower-lip34": {
+          "triangles": 288,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.02574365461567774,
+          "xyWindingChanges": 0
+        },
+        "mouth-line34": {
+          "triangles": 336,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.30804099703537985,
+          "xyWindingChanges": 0
+        }
+      },
+      "angularLimit": "flipped는 원래 면법선과 90도 초과한 면의 수다. xyWindingChanges는 별도로 비교한다.",
+      "skinAdjacent": {
+        "count": 0,
+        "beforeOver90": 0,
+        "afterOver90": 0
+      },
+      "sourceUnchanged": true
+    }
+  },
+  "failedSkinCandidate": {
+    "F02": {
+      "skinMoved": 536,
+      "maxSkinDistance": 0.011924015222967155,
+      "outsideMoved": 0,
+      "normalDelta": 14.117717344407925,
+      "groups": {
+        "skin": {
+          "triangles": 26756,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.5872436860614882,
+          "xyWindingChanges": 0
+        },
+        "upper-lip34": {
+          "triangles": 288,
+          "flipped": 10,
+          "flat": 0,
+          "min": -6.561697212214931,
+          "xyWindingChanges": 0
+        },
+        "lower-lip34": {
+          "triangles": 288,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.08467325680490567,
+          "xyWindingChanges": 0
+        },
+        "mouth-line34": {
+          "triangles": 336,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.12702936978088045,
+          "xyWindingChanges": 0
+        }
+      },
+      "angularLimit": "flipped는 원래 면법선과 90도 초과한 면의 수다. xyWindingChanges는 별도로 비교한다.",
+      "skinAdjacent": {
+        "count": 1704,
+        "beforeOver90": 51,
+        "afterOver90": 54
+      },
+      "sourceUnchanged": true
+    },
+    "M01": {
+      "skinMoved": 579,
+      "maxSkinDistance": 0.011987621178192076,
+      "outsideMoved": 0,
+      "normalDelta": 13.827277162611054,
+      "groups": {
+        "skin": {
+          "triangles": 26756,
+          "flipped": 1,
+          "flat": 0,
+          "min": -3.967536788190928,
+          "xyWindingChanges": 0
+        },
+        "upper-lip34": {
+          "triangles": 288,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.10775456730887767,
+          "xyWindingChanges": 0
+        },
+        "lower-lip34": {
+          "triangles": 288,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.045807011414468954,
+          "xyWindingChanges": 0
+        },
+        "mouth-line34": {
+          "triangles": 336,
+          "flipped": 0,
+          "flat": 0,
+          "min": 0.31330278347808593,
+          "xyWindingChanges": 0
+        }
+      },
+      "angularLimit": "flipped는 원래 면법선과 90도 초과한 면의 수다. xyWindingChanges는 별도로 비교한다.",
+      "skinAdjacent": {
+        "count": 1846,
+        "beforeOver90": 49,
+        "afterOver90": 49
+      },
+      "sourceUnchanged": true
+    }
+  },
+  "anatomy": {
+    "title": "Carey 등 2009 · 입·입술·구강 표준 형태 용어, 그림1",
+    "doi": "10.1002/ajmg.a.32602",
+    "url": "https://elementsofmorphology.nih.gov/anatomy-oral.shtml",
+    "sourceSha256": "DAF2BF7769D3EA043EFA635E1764BC06261AC1D46FCFEC036C08AC07A59BBF6F",
+    "limits": "홍순 테두리와 입 벌어지는 틈·구각을 구별하는 명칭 기준. 원화의 비율·미적 점수를 해부학 자료에서 도출하지 않았다."
+  },
+  "cases": {
+    "F02": {
+      "views": [
+        {
+          "key": "05-3",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/01_03-1.jpg",
+          "sha256": "1824d57e170d6042de9cfe853a821c480a668b768c53775922171c9c3167f931",
+          "limits": "밤 장면 정면에 가까운 사선. 작은 입이 벌어져 가운데 위·아래 경계의 평균을 찍었다. 좌우 귀와 관자는 앞머리·긴 머리로 가림. 화면 오른쪽 노출 턱만 추적. 옛 42·50차 수집 목록에 있으나 그 목록에는 이 컷의 입·턱 측정이 없다.",
+          "status": "처음 C를 선택한 장면",
+          "independentE": false,
+          "camera": {
+            "yaw": 10,
+            "pitch": -10,
+            "roll": -1.4712634074856332,
+            "rms": 5.4079473254952655,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              139.1161904761905,
+              144.43047619047618
+            ],
+            [
+              148.68190476190472,
+              142.89523809523808
+            ],
+            [
+              157.65714285714284,
+              146.08380952380952
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 23.3542,
+              "pixel48": 0.8333,
+              "pixel96": 1.4023,
+              "visible1024": 904,
+              "visible48": 5,
+              "visible96": 8,
+              "inkColumnWidth": 10.1573,
+              "holePixels": 1,
+              "jaw248": 3.4
+            },
+            "after": {
+              "pixel1024": 15.1287,
+              "pixel48": 0.579,
+              "pixel96": 1.364,
+              "visible1024": 232,
+              "visible48": 2,
+              "visible96": 2,
+              "inkColumnWidth": 5.2727,
+              "holePixels": 0,
+              "jaw248": 3.4
+            }
+          },
+          "candidateC": {
+            "pixel1024": 13.3485,
+            "pixel48": 0.579,
+            "pixel96": 1.6177,
+            "visible1024": 237,
+            "visible48": 2,
+            "visible96": 3,
+            "inkColumnWidth": 5.5116,
+            "holePixels": 0,
+            "jaw248": 3.4
+          }
+        },
+        {
+          "key": "28-7",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2024/03/01_02-4.jpg",
+          "sha256": "35da102ceda5fad13fd45d3eeb8bd2480c92563519a97a605c9a34af746de6ae",
+          "limits": "양 눈동자와 코 앞면으로 고정. 왼쪽 위턱과 오른쪽 귀는 머리에 가려 제외. 두 눈 위 먹선과 다문 입이 보인다.",
+          "status": "처음 C를 선택한 장면",
+          "independentE": false,
+          "camera": {
+            "yaw": -10,
+            "pitch": 0,
+            "roll": -2.8982772635451126,
+            "rms": 1.5240843993654338,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              107.69315068493154,
+              166.3525114155251
+            ],
+            [
+              115.8465753424657,
+              165.33333333333334
+            ],
+            [
+              125.81187214611874,
+              166.57899543378997
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 26.2732,
+              "pixel48": 0.8063,
+              "pixel96": 0.839,
+              "visible1024": 839,
+              "visible48": 5,
+              "visible96": 6,
+              "inkColumnWidth": 9.3222,
+              "holePixels": 0,
+              "jaw248": 6.224
+            },
+            "after": {
+              "pixel1024": 7.6658,
+              "pixel48": 0.6677,
+              "pixel96": 0.686,
+              "visible1024": 204,
+              "visible48": 2,
+              "visible96": 3,
+              "inkColumnWidth": 4.7442,
+              "holePixels": 0,
+              "jaw248": 6.224
+            }
+          },
+          "candidateC": {
+            "pixel1024": 6.7096,
+            "pixel48": 0.5357,
+            "pixel96": 0.686,
+            "visible1024": 206,
+            "visible48": 3,
+            "visible96": 3,
+            "inkColumnWidth": 4.7907,
+            "holePixels": 0,
+            "jaw248": 6.224
+          }
+        },
+        {
+          "key": "04-4",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/04_04.jpg",
+          "sha256": "c0cf60fe8aa73feeb0bdfd997a07652a3292f6f50a3aa02cd283fa6ac20cb9c2",
+          "limits": "오른쪽을 보는 측면. 앞머리·옆머리가 눈썹 바깥부터 광대와 귀 앞 사이 대부분을 가린다. 보이는 귀는 귓구멍이 머리 뒤에 숨으므로 중심 대용 점 ±8 원본px. 입 오른끝은 바깥 입술과 만난다. 밝은 턱 외곽만 그렸다.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 85,
+            "pitch": 0,
+            "roll": -3.508848935431733,
+            "rms": 0.31504198013086016,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              190.61960784313726,
+              134.77908496732027
+            ],
+            [
+              203.4248366013072,
+              137.37254901960785
+            ],
+            [
+              212.17777777777778,
+              132.26666666666665
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 13.3665,
+              "pixel48": 0.7767,
+              "pixel96": 1.6027,
+              "visible1024": 151,
+              "visible48": 2,
+              "visible96": 1,
+              "inkColumnWidth": 10.0667,
+              "holePixels": 8,
+              "jaw248": 6.459
+            },
+            "after": {
+              "pixel1024": 14.0998,
+              "pixel48": 0.776,
+              "pixel96": 1.6027,
+              "visible1024": 30,
+              "visible48": 1,
+              "visible96": 1,
+              "inkColumnWidth": 4.2857,
+              "holePixels": 0,
+              "jaw248": 6.459
+            }
+          },
+          "candidateC": {
+            "pixel1024": 17.1077,
+            "pixel48": null,
+            "pixel96": null,
+            "visible1024": 28,
+            "visible48": 0,
+            "visible96": 0,
+            "inkColumnWidth": 4.6667,
+            "holePixels": 0,
+            "jaw248": 6.835
+          }
+        },
+        {
+          "key": "12-6",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/01_03-5.jpg",
+          "sha256": "2e75b501590b7a07506129d7a9a8f42c165d6fc52d6e8419aefed48e4d78a06b",
+          "limits": "이전 사진 목록에 든 별도 컷. 입 중심선 오른쪽 먹선은 작화에서 끊긴다. 턱끝 대부분이 목도리에 덮여 화면 오른쪽 볼부터 목도리 접촉 직전까지만 채점. 왼쪽 머리카락 뒤의 폭은 제외.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 22,
+            "pitch": -18,
+            "roll": 8.768548508314241,
+            "rms": 6.973647802219861,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              135.8095238095238,
+              158.83809523809524
+            ],
+            [
+              147.4878306878307,
+              158.9037037037037
+            ],
+            [
+              165.26772486772487,
+              166.5142857142857
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 21.3487,
+              "pixel48": 1.6037,
+              "pixel96": 2.2907,
+              "visible1024": 895,
+              "visible48": 5,
+              "visible96": 6,
+              "inkColumnWidth": 10.9146,
+              "holePixels": 3,
+              "jaw248": 3.223
+            },
+            "after": {
+              "pixel1024": 25.2261,
+              "pixel48": 1.171,
+              "pixel96": null,
+              "visible1024": 226,
+              "visible48": 2,
+              "visible96": 0,
+              "inkColumnWidth": 5.5122,
+              "holePixels": 0,
+              "jaw248": 3.223
+            }
+          },
+          "candidateC": {
+            "pixel1024": 24.6955,
+            "pixel48": 1.171,
+            "pixel96": 3.318,
+            "visible1024": 233,
+            "visible48": 2,
+            "visible96": 2,
+            "inkColumnWidth": 5.5476,
+            "holePixels": 0,
+            "jaw248": 3.223
+          }
+        },
+        {
+          "key": "set1",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "sha256": "c02add702836ef99ab72502877acd9bd31afa79a2e605473c1b1e80484b5be73",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -3.5,
+            "pitch": 4.75,
+            "roll": 0.007804490799031982,
+            "rms": 2.8881111513987383,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              108,
+              159
+            ],
+            [
+              114,
+              161
+            ],
+            [
+              119,
+              164
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 26.1559,
+              "pixel48": 1.091,
+              "pixel96": 1.3557,
+              "visible1024": 801,
+              "visible48": 6,
+              "visible96": 7,
+              "inkColumnWidth": 8.8022,
+              "holePixels": 1
+            },
+            "after": {
+              "pixel1024": 10.4838,
+              "pixel48": 1.0847,
+              "pixel96": 1.458,
+              "visible1024": 197,
+              "visible48": 2,
+              "visible96": 2,
+              "inkColumnWidth": 4.4773,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 10.1285,
+            "pixel48": 1.0847,
+            "pixel96": 1.8933,
+            "visible1024": 197,
+            "visible48": 2,
+            "visible96": 1,
+            "inkColumnWidth": 4.4773,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set2",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "sha256": "0cff5f108aacb3778f60df6ba0a60cb70c615d920ace7ef7bdd41fce34ae3dc4",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 6.75,
+            "pitch": 3.25,
+            "roll": 4.937826905498795,
+            "rms": 5.250907240295705,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              116,
+              171
+            ],
+            [
+              123,
+              170
+            ],
+            [
+              131,
+              172
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 23.7878,
+              "pixel48": 0.6063,
+              "pixel96": 1.5837,
+              "visible1024": 814,
+              "visible48": 6,
+              "visible96": 5,
+              "inkColumnWidth": 9.25,
+              "holePixels": 3
+            },
+            "after": {
+              "pixel1024": 18.5538,
+              "pixel48": 1.0297,
+              "pixel96": 1.8553,
+              "visible1024": 204,
+              "visible48": 1,
+              "visible96": 4,
+              "inkColumnWidth": 4.6364,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 17.3805,
+            "pixel48": 1.0297,
+            "pixel96": 1.8553,
+            "visible1024": 203,
+            "visible48": 1,
+            "visible96": 4,
+            "inkColumnWidth": 4.6136,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set3",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "sha256": "a8b2eafbebc9c3099f1c4a47bcb3137c0f850765d44ef89f7ac17a8e9124f9ad",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -93.25,
+            "pitch": 5.5,
+            "roll": -2.8360422494959496,
+            "rms": 0.786425575083076,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              48,
+              150
+            ],
+            [
+              51,
+              150
+            ],
+            [
+              55,
+              152
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 23.7825,
+              "pixel48": 1.0493,
+              "pixel96": 2.1673,
+              "visible1024": 63,
+              "visible48": 1,
+              "visible96": 1,
+              "inkColumnWidth": 4.8462,
+              "holePixels": 1
+            },
+            "after": {
+              "pixel1024": 18.0783,
+              "pixel48": null,
+              "pixel96": null,
+              "visible1024": 5,
+              "visible48": 0,
+              "visible96": 0,
+              "inkColumnWidth": 1.25,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 25.0246,
+            "pixel48": null,
+            "pixel96": null,
+            "visible1024": 4,
+            "visible48": 0,
+            "visible96": 0,
+            "inkColumnWidth": 1.3333,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set4",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "sha256": "88a030fc66af3ee01bd4966cac8e81eb16a020afe0d13a6f2267c3ccf3461efc",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 57.75,
+            "pitch": 14,
+            "roll": 1.8286674087447858,
+            "rms": 8.202013074719474,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              181,
+              175
+            ],
+            [
+              185,
+              174
+            ],
+            [
+              189,
+              172
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 9.7569,
+              "pixel48": 0.3543,
+              "pixel96": 1.5313,
+              "visible1024": 323,
+              "visible48": 2,
+              "visible96": 3,
+              "inkColumnWidth": 7.878,
+              "holePixels": 7
+            },
+            "after": {
+              "pixel1024": 15.0388,
+              "pixel48": 0.7797,
+              "pixel96": null,
+              "visible1024": 88,
+              "visible48": 1,
+              "visible96": 0,
+              "inkColumnWidth": 3.52,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 9.5581,
+            "pixel48": 0.7797,
+            "pixel96": 1.6777,
+            "visible1024": 82,
+            "visible48": 1,
+            "visible96": 1,
+            "inkColumnWidth": 3.28,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "05-9",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/01_09-1.jpg",
+          "sha256": "032e52fd8dae3edd21b75eb8b6a8f40f56336b8508726b1b73bc8e15decbc570",
+          "limits": "낮은 사선. 중앙 오른쪽이 끊긴 짧은 선. 윗입술/아랫입술의 별도 색 경계 없음. 턱선·귀 안쪽 관찰 일부 가능.",
+          "status": "기수집·C 최초 표식대조, E는 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 43,
+            "pitch": -24,
+            "roll": 14.648319120212292,
+            "rms": 10.909678348163407,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              125.12727272727273,
+              130.76363636363635
+            ],
+            [
+              134.14545454545456,
+              133.13090909090909
+            ],
+            [
+              143.27636363636367,
+              138.65454545454546
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 24.7296,
+              "pixel48": 0.986,
+              "pixel96": 2.331,
+              "visible1024": 762,
+              "visible48": 4,
+              "visible96": 6,
+              "inkColumnWidth": 12.0952,
+              "holePixels": 9
+            },
+            "after": {
+              "pixel1024": 27.4405,
+              "pixel48": 1.331,
+              "pixel96": 2.4297,
+              "visible1024": 192,
+              "visible48": 3,
+              "visible96": 2,
+              "inkColumnWidth": 5.8182,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 22.5989,
+            "pixel48": 1.0963,
+            "pixel96": 2.8483,
+            "visible1024": 206,
+            "visible48": 1,
+            "visible96": 2,
+            "inkColumnWidth": 6.0588,
+            "holePixels": 0
+          }
+        }
+      ],
+      "orbit": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1646,
+          "mask": 0,
+          "shaBefore": "c05539062cceb894e675dd8bde95c2ea5b6e99f7bb397fc360a320b4f8287a61",
+          "shaAfter": "ab929cb86a4803fffc09ad6e98c8aebc49663b248410c87c8d2c46bcc0f5cf28"
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 10,
+          "mask": 0,
+          "shaBefore": "e61d1e3fac32eef4787ec5b25c4d2c75728005b25d804f6ac06839ea2c7f2b6f",
+          "shaAfter": "07d443dcff99a0110e6487d454cfe1be9dd5b98cd4c8c3fc2d32473ee433b361"
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 96,
+          "changed": 12,
+          "mask": 0,
+          "shaBefore": "fc89089aca57b3e8298edea7fbd8167733499e485f05f2ef5ade138c7ccb338b",
+          "shaAfter": "61cd2cf2244aa0187bb97fad260ded11e082335d7d9b158b4c2f297a33c0d745"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1168,
+          "mask": 0,
+          "shaBefore": "3cdd446a8000c01cb2323478e8a31902f709a36e5a2970dcd54117f13b4ffe65",
+          "shaAfter": "5c8139719d6bef5ac1d0fddce9d4ae4583a02156edc57a12e894342368d2a394"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "6b6c4e2f05e239513441b1db89cd6999b1ab63b2ca20eb59aea08d5106904fa7",
+          "shaAfter": "7693fc2b5d507c5495fe47d1131e43b245d8a3a2ac8e94023235d88ea7efdfff"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 10,
+          "mask": 0,
+          "shaBefore": "6e0a43feb8c5ea361c5d4506a1b8f37f7f0545f11a6df4d6fa32acb59f262d35",
+          "shaAfter": "bd33dc7c6bf1e1ce183009fe2c50d044d01a57feee8818e192652a3487cbede5"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1168,
+          "mask": 0,
+          "shaBefore": "1ab84693f1389111a29fe27306e5459e0c0f5714962190912303eb82842bae16",
+          "shaAfter": "288ad33fc58a9aaa2710f28c404eb711cbaa54f47252e780a3becf40d1c89092"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "800e39da3ebcfd2ba5bb0e9f64ec93698253435f6980985234a3c5b9db36fec7",
+          "shaAfter": "156aee4e600f2e7b38b228d8905a07ed794cd76db78817b88a9588c79651ae48"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 9,
+          "mask": 0,
+          "shaBefore": "44f32494a6416c5813b95e0f4d5656f9c766fdc48a6c5231e108236a8a6debbc",
+          "shaAfter": "d9174f7efbb3e7e160e5d17356e7dc38624f94817400f33ce72cffe79d617d9f"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 226,
+          "mask": 74,
+          "shaBefore": "e73a16591a8a36cdd47d0f2553dd41dbc4b598d8ac1a88e5e240bdd2ce410feb",
+          "shaAfter": "207862288a1c7ae95202a318184fe09a177c89cfde4103b93c19cb79237f98f2"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 3,
+          "mask": 0,
+          "shaBefore": "960debbb1ede490f1fc8f59e84554d6c2234dc632188d69c4d725155ecf24724",
+          "shaAfter": "51e9da15c69eed727ead4e66c157e0de6e6759c6c90de2a9aaabcd90d8463199"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "0cc7d8daf49676be1066580dfea9fcf700b9a9495883fc74f64f656f9cc635f1",
+          "shaAfter": "1f1e4077b164ecfc14ad2a037ef121b4b431f586752559a8d8045fff6fda87ac"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 259,
+          "mask": 74,
+          "shaBefore": "551f1914467da9857603ee770a43a7a3f2211c74f9893f17b4916f41a53b0b5e",
+          "shaAfter": "81227c58c4128b1fa04307c13cea650f4f266b9f4e72f7456dea67a971c153b7"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 2,
+          "mask": 0,
+          "shaBefore": "721e2c8fe82f557485d9db13a93dd251f8ff6504c2da9eccc2844b12a0abe080",
+          "shaAfter": "603e42ff53cb7721f1efc7d21d4953384fd9b89c43416ed83a0bf4748de56d76"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "eaebd93ac94ad92418c1721536ba46c9eea005c22f7b629cabb873b126382384",
+          "shaAfter": "f52a95de6ed4f878c9c03c7de525d45c2ad4065982779909b574ed9541673ece"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "77b28b7e886ffd216062fdbcb4a476e54ce6cb365aa685b41f9cf8ac959f4fb9",
+          "shaAfter": "77b28b7e886ffd216062fdbcb4a476e54ce6cb365aa685b41f9cf8ac959f4fb9"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "7a11deaba03ee8d632eecae4be793bb8df97296256ec77775cfb4fe1961b0e9b",
+          "shaAfter": "7a11deaba03ee8d632eecae4be793bb8df97296256ec77775cfb4fe1961b0e9b"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "817d7ac4d3efe2f3581d32ce975c2f210d7609e0d207aceb0fe3242734aac629",
+          "shaAfter": "817d7ac4d3efe2f3581d32ce975c2f210d7609e0d207aceb0fe3242734aac629"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "ffbbf1c18ef6355be5e726159e91d77b7667e9c6faeae5caa9dc8ad4b1bd20ec",
+          "shaAfter": "ffbbf1c18ef6355be5e726159e91d77b7667e9c6faeae5caa9dc8ad4b1bd20ec"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "15cbc45fd7f9c8b79edb4962b755e23622b72b9f8ca66b0126050f736490a0f0",
+          "shaAfter": "15cbc45fd7f9c8b79edb4962b755e23622b72b9f8ca66b0126050f736490a0f0"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "324010665969cc247ee40a14e08cc490ec5d27854b29d12408ed3b5a88a9d0d6",
+          "shaAfter": "324010665969cc247ee40a14e08cc490ec5d27854b29d12408ed3b5a88a9d0d6"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "57a00ec6e376348c00ecfe73aa7c0e04b906048804df82a3344104d1fbc55575",
+          "shaAfter": "57a00ec6e376348c00ecfe73aa7c0e04b906048804df82a3344104d1fbc55575"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "cd28d9ac31288e2d6e68a27298cc153015da0f9af348ad438e667341c0abd093",
+          "shaAfter": "cd28d9ac31288e2d6e68a27298cc153015da0f9af348ad438e667341c0abd093"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "4b7137ef77107d7306a79f5db47ade41808035bc0dca216ee06177ef13691beb",
+          "shaAfter": "4b7137ef77107d7306a79f5db47ade41808035bc0dca216ee06177ef13691beb"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 1024,
+          "changed": 1001,
+          "mask": 0,
+          "shaBefore": "1bda092b1a78451328ed76cf76cff70c44012abe263a7a756c3728b4f54ef009",
+          "shaAfter": "2a0290e9a57baf3dbf525dd939f47399ab3a5d6128894d494b196e2e796cd9d1"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "adfdc1666aea97115de0dc6a366a4af8dca115c306f87d1f7cc6a0b45e81de98",
+          "shaAfter": "9a97cff507135760320fe3f77e00f481ce9013ebb00da35969f29314c8826abd"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 96,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "2881d927681c70237baa74d98b45ddf144dd3298870b9d2e0851f29caaf157a2",
+          "shaAfter": "98c10899a344aa6b054b02c44644339395df479dd0fb60f899b736cd1511ff1c"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 1024,
+          "changed": 1805,
+          "mask": 0,
+          "shaBefore": "7c8ecc68cca11f2a0bc569faf1568d54bcc5aab05bce0bfa89a8839d5283d71b",
+          "shaAfter": "4dedde388985d4f01971b2730514cb02e1332204fb7481e4f71f82f91ccb6af9"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "3ff15ffaa45dcbb627319ad32ab2ed5af8aba3eb4de58dc15bfa3fd3fb48712c",
+          "shaAfter": "95faa87c9107c142197136a178578393390a0f4c7d1fe13a6898f8d4dacd5516"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 96,
+          "changed": 14,
+          "mask": 0,
+          "shaBefore": "bfd6237917e305c168ef2645c5f6c8c871e793d681840cee44d5aa9ff6d26835",
+          "shaAfter": "8aaf3b5f5ba9d58bc4e41e9afc547288e46254bd3a14a4e8d573b093d6bd2dd3"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 1024,
+          "changed": 1385,
+          "mask": 0,
+          "shaBefore": "669e403605b2722d9a1a0eb529012d7165edabe59447bcee2f602f2b45c5b148",
+          "shaAfter": "7b209fc5005e747a914b47573defb8cdb836eba5bb18cdf6e66cd12beb5c350a"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 48,
+          "changed": 6,
+          "mask": 0,
+          "shaBefore": "897827dc4a95e6d448a1a640e109bee1ab6c5c67136563c8225b348127f97784",
+          "shaAfter": "97a256b433a3ac9e282956275f7e0026e1e08aed2a4317fc7d7d82daa7dee1a0"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 96,
+          "changed": 13,
+          "mask": 0,
+          "shaBefore": "010a58c2905c4da2e1844d7374fa13f09393161a19009f3ff8a17e4b5b9884ca",
+          "shaAfter": "91bc53337fa0f83c65f681852a73ad96fbeb7f90ae5b0a84259d4eb5e07c04ab"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 1024,
+          "changed": 693,
+          "mask": 0,
+          "shaBefore": "0931296ce78085711c6a8260094d9e2f3cbf4184ae134b868a6bbbd615b3e8d2",
+          "shaAfter": "981c2389f370f8733892058a7f11f6e780e7f50372d8a130df6cc2e176dd5e88"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 48,
+          "changed": 5,
+          "mask": 0,
+          "shaBefore": "1625ea13c438cb7cd2265825bbe20d3242fcb980e8519a6b5bf499256cbb2f87",
+          "shaAfter": "6147d21f1c10205fcb3fa0e3a55a9a6a46eb6d8434406cf93bcaacc525e06a34"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 96,
+          "changed": 6,
+          "mask": 0,
+          "shaBefore": "87cb722eaf3bdf67c67b2b7e5bf383c19ec95830604b935e0b5198e464578235",
+          "shaAfter": "1aba9156a14a3da0b62343d50a05bcf71a46fe0b66dc214b3b3c51e84906d8e4"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "8eac533b07425ef0cff1ed6cf5ccfd6cdba5c39553e55605a27d54ced85acc8f",
+          "shaAfter": "8eac533b07425ef0cff1ed6cf5ccfd6cdba5c39553e55605a27d54ced85acc8f"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "375d5e90611d547a4af421ad65689faadb29ef031f92c55ef4c92be84ed44ca1",
+          "shaAfter": "375d5e90611d547a4af421ad65689faadb29ef031f92c55ef4c92be84ed44ca1"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "b5b32c8e2cb3a20f6823ba9d26079db3ad5f347199404ce0be807ada4fb3b921",
+          "shaAfter": "b5b32c8e2cb3a20f6823ba9d26079db3ad5f347199404ce0be807ada4fb3b921"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "ff34e95e9e2dad32039cb56b43b4206227d04852d178128c8f5d27ee1b91ab62",
+          "shaAfter": "ff34e95e9e2dad32039cb56b43b4206227d04852d178128c8f5d27ee1b91ab62"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "eb8855aaca388b9f05583ea181f90aeb47b9442b8af4295431af64ac76ad6031",
+          "shaAfter": "eb8855aaca388b9f05583ea181f90aeb47b9442b8af4295431af64ac76ad6031"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "30b5ef7918030a4827bd5644cad9a2938cdde08f5e3bde84bf3d0af9dbf73993",
+          "shaAfter": "30b5ef7918030a4827bd5644cad9a2938cdde08f5e3bde84bf3d0af9dbf73993"
+        }
+      ]
+    },
+    "M01": {
+      "views": [
+        {
+          "key": "07-2",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/10/01_01-3.jpg",
+          "sha256": "f51467665cf46f753dc9c32bfc80a319d10888bbbab2399b922fad113585d56d",
+          "limits": "감은 눈 사선. 눈 중심은 보이는 속눈썹의 중앙으로 대용했으며 약 ±5원본px. 귀 앞 위쪽 부분과 코끝으로 구도를 고정하고 입과 턱을 제외했다. 검지와 앞머리 뒤쪽의 관자 피부는 가림. 47차 자료 목록에 보유, 당시 계측 원화는 7화 3번이었다.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -66,
+            "pitch": 3,
+            "roll": -12.056173627591242,
+            "rms": 0.8147638214613819,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              76.47452471482892,
+              158.51254752851713
+            ],
+            [
+              90.0532319391635,
+              152.0060836501901
+            ],
+            [
+              104.1977186311787,
+              142.5764258555133
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 56.2488,
+              "pixel48": 2.2473,
+              "pixel96": 5.3527,
+              "visible1024": 299,
+              "visible48": 2,
+              "visible96": 1,
+              "inkColumnWidth": 6.2292,
+              "holePixels": 0,
+              "jaw248": 16.256
+            },
+            "after": {
+              "pixel1024": 54.2537,
+              "pixel48": 2.7247,
+              "pixel96": 5.138,
+              "visible1024": 184,
+              "visible48": 1,
+              "visible96": 3,
+              "inkColumnWidth": 4.6,
+              "holePixels": 0,
+              "jaw248": 16.256
+            }
+          },
+          "candidateC": {
+            "pixel1024": 51.3716,
+            "pixel48": 2.7247,
+            "pixel96": 4.4343,
+            "visible1024": 180,
+            "visible48": 1,
+            "visible96": 3,
+            "inkColumnWidth": 4.5,
+            "holePixels": 0,
+            "jaw248": 16.256
+          }
+        },
+        {
+          "key": "03-3",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/03_03-1.jpg",
+          "sha256": "7dfb0d76df6f3f848503d558b44b841f7aca4e8c6977f35d2dab1816a9dd71ae",
+          "limits": "눈을 감고 웃는다. 눈선 중간 두 곳을 눈 위치 대용으로 쓰고 코와 보이는 귀로 구도 고정. 상안검 성능을 매기지 않는다. 원본 얼굴 폭 약 95px.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -8,
+            "pitch": 4,
+            "roll": -0.9258900828797489,
+            "rms": 8.804512836601582,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              95.32500000000009,
+              178.05625
+            ],
+            [
+              110.04999999999991,
+              184.0625
+            ],
+            [
+              137.75625000000005,
+              177.8625
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 9.7937,
+              "pixel48": 0.6763,
+              "pixel96": 2.2767,
+              "visible1024": 798,
+              "visible48": 7,
+              "visible96": 8,
+              "inkColumnWidth": 6.4878,
+              "holePixels": 0,
+              "jaw248": 2.823
+            },
+            "after": {
+              "pixel1024": 12.1269,
+              "pixel48": 0.646,
+              "pixel96": 2.1383,
+              "visible1024": 469,
+              "visible48": 5,
+              "visible96": 7,
+              "inkColumnWidth": 4.6436,
+              "holePixels": 0,
+              "jaw248": 2.823
+            }
+          },
+          "candidateC": {
+            "pixel1024": 13.0211,
+            "pixel48": 0.646,
+            "pixel96": 2.1383,
+            "visible1024": 461,
+            "visible48": 5,
+            "visible96": 7,
+            "inkColumnWidth": 4.6566,
+            "holePixels": 0,
+            "jaw248": 2.823
+          }
+        },
+        {
+          "key": "16-3",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/12/01_02-5.jpg",
+          "sha256": "7165a3b53a0d1ee9609808c883b13703890e32a9b0ee3aa865d1f17a5e04357a",
+          "limits": "올려다본 사선. 화면 왼쪽 드러난 볼부터 턱까지만 그었다. 오른쪽 귀와 관자는 머리와 그늘에 가려지며 귀 대용 점 ±10 원본px. 입 양끝이 보이지만 미소와 머리 기울기가 함께 있다.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -29,
+            "pitch": -12,
+            "roll": 16.741248758859776,
+            "rms": 7.093173389782538,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              47.7654794520548,
+              119.10794520547945
+            ],
+            [
+              63.73260273972603,
+              127.5331506849315
+            ],
+            [
+              83.57260273972602,
+              131.27013698630137
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 28.7855,
+              "pixel48": 1.426,
+              "pixel96": 3.031,
+              "visible1024": 759,
+              "visible48": 5,
+              "visible96": 5,
+              "inkColumnWidth": 7.0278,
+              "holePixels": 0,
+              "jaw248": 7.119
+            },
+            "after": {
+              "pixel1024": 26.6235,
+              "pixel48": 1.2757,
+              "pixel96": 3.9087,
+              "visible1024": 438,
+              "visible48": 4,
+              "visible96": 3,
+              "inkColumnWidth": 4.9773,
+              "holePixels": 0,
+              "jaw248": 7.119
+            }
+          },
+          "candidateC": {
+            "pixel1024": 24.8427,
+            "pixel48": 1.2757,
+            "pixel96": 3.031,
+            "visible1024": 443,
+            "visible48": 4,
+            "visible96": 5,
+            "inkColumnWidth": 5.0341,
+            "holePixels": 0,
+            "jaw248": 7.119
+          }
+        },
+        {
+          "key": "06-6",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/10/01_03-1.jpg",
+          "sha256": "5ad16a42e00c7573f1efbad397266b8ab1073583bf052589cef7b47cc81a13f8",
+          "limits": "감은 눈 7화2와 다른 열린 눈·다문 미소. 비스듬한 조명과 구도. 뒷턱은 목깃·목선과 겹쳐 앞쪽 한 구간에서 종료. 55차 선별표에 있던 컷이며 새 독립 인물/공식 자료 최초 발견이 아니다.",
+          "status": "처음 C를 선택한 장면",
+          "independentE": false,
+          "camera": {
+            "yaw": -48,
+            "pitch": -11,
+            "roll": -22.518177651292756,
+            "rms": 6.906813756145068,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              106.0839857651246,
+              182.1608540925267
+            ],
+            [
+              130.70747330960856,
+              169.27544483985767
+            ],
+            [
+              154.27188612099638,
+              151.2711743772242
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 44.6116,
+              "pixel48": 2.2973,
+              "pixel96": 4.7467,
+              "visible1024": 584,
+              "visible48": 3,
+              "visible96": 4,
+              "inkColumnWidth": 7.3,
+              "holePixels": 0,
+              "jaw248": 10.033
+            },
+            "after": {
+              "pixel1024": 42.2344,
+              "pixel48": 2.2973,
+              "pixel96": 5.0673,
+              "visible1024": 333,
+              "visible48": 3,
+              "visible96": 2,
+              "inkColumnWidth": 4.9701,
+              "holePixels": 0,
+              "jaw248": 10.033
+            }
+          },
+          "candidateC": {
+            "pixel1024": 39.0683,
+            "pixel48": 2.1193,
+            "pixel96": 4.5707,
+            "visible1024": 340,
+            "visible48": 2,
+            "visible96": 3,
+            "inkColumnWidth": 5.0746,
+            "holePixels": 0,
+            "jaw248": 10.033
+          }
+        },
+        {
+          "key": "set1",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "sha256": "d2b19d0317cbb92ced5edff04fc50c7d14b05cb36143571e7f4e97221b77b27c",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "처음 C를 선택한 장면",
+          "independentE": false,
+          "camera": {
+            "yaw": 1.25,
+            "pitch": 1,
+            "roll": 1.9268686732127953,
+            "rms": 2.9442194547536316,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              104,
+              176
+            ],
+            [
+              119,
+              180
+            ],
+            [
+              135,
+              175
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 17.1411,
+              "pixel48": 0.7337,
+              "pixel96": 1.8107,
+              "visible1024": 830,
+              "visible48": 7,
+              "visible96": 9,
+              "inkColumnWidth": 6.6935,
+              "holePixels": 0
+            },
+            "after": {
+              "pixel1024": 13.1326,
+              "pixel48": 0.9997,
+              "pixel96": 2.092,
+              "visible1024": 482,
+              "visible48": 5,
+              "visible96": 6,
+              "inkColumnWidth": 4.7255,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 13.1326,
+            "pixel48": 0.9997,
+            "pixel96": 2.092,
+            "visible1024": 480,
+            "visible48": 5,
+            "visible96": 6,
+            "inkColumnWidth": 4.7059,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set2",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "sha256": "38e1ccbd2e0fb6935bdc7d4290a7f1f7ba91b36af9e2a7e0154580f8761812d7",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -21.5,
+            "pitch": -5.25,
+            "roll": 15.202643762351817,
+            "rms": 8.951851515881096,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              56,
+              151
+            ],
+            [
+              68,
+              160
+            ],
+            [
+              81,
+              166
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 20.9514,
+              "pixel48": 0.7653,
+              "pixel96": 2.9627,
+              "visible1024": 797,
+              "visible48": 7,
+              "visible96": 6,
+              "inkColumnWidth": 6.9304,
+              "holePixels": 0
+            },
+            "after": {
+              "pixel1024": 21.7774,
+              "pixel48": 1.258,
+              "pixel96": 3.5703,
+              "visible1024": 456,
+              "visible48": 4,
+              "visible96": 3,
+              "inkColumnWidth": 4.8511,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 20.3532,
+            "pixel48": 1.258,
+            "pixel96": 4.0493,
+            "visible1024": 461,
+            "visible48": 4,
+            "visible96": 2,
+            "inkColumnWidth": 4.9043,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set3",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "sha256": "f4c463c1425ce14d5c3f244cab09974c1cb98be0072ff92b37134d14a64a3c4b",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -100,
+            "pitch": 0.25,
+            "roll": -3.0071580918397656,
+            "rms": 3.211506930792676,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              54,
+              158
+            ],
+            [
+              61,
+              157
+            ],
+            [
+              69,
+              155
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 30.442,
+              "pixel48": 1.1907,
+              "pixel96": null,
+              "visible1024": 39,
+              "visible48": 1,
+              "visible96": 0,
+              "inkColumnWidth": 5.5714,
+              "holePixels": 0
+            },
+            "after": {
+              "pixel1024": 29.495,
+              "pixel48": null,
+              "pixel96": null,
+              "visible1024": 16,
+              "visible48": 0,
+              "visible96": 0,
+              "inkColumnWidth": 4,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": null,
+            "pixel48": null,
+            "pixel96": null,
+            "visible1024": 0,
+            "visible48": 0,
+            "visible96": 0,
+            "inkColumnWidth": null,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "set4",
+          "url": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "sha256": "8c87ebfacb41eb14359dd569f2d84f0a5e1693b16bdcbb10879d5bbd8924377d",
+          "limits": "설정화의 보이는 입선 3점. 반대 구각이 가려진 경우 포함.",
+          "status": "C의 보류 재검·E 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": 42.5,
+            "pitch": -15.75,
+            "roll": 13.19155752637307,
+            "rms": 9.080520648351207,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              173,
+              149
+            ],
+            [
+              188,
+              156
+            ],
+            [
+              203,
+              161
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 45.6385,
+              "pixel48": 2.0127,
+              "pixel96": 4.711,
+              "visible1024": 701,
+              "visible48": 5,
+              "visible96": 6,
+              "inkColumnWidth": 7.4574,
+              "holePixels": 0
+            },
+            "after": {
+              "pixel1024": 43.8316,
+              "pixel48": 2.6377,
+              "pixel96": 4.1483,
+              "visible1024": 387,
+              "visible48": 3,
+              "visible96": 3,
+              "inkColumnWidth": 5.0921,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 41.3569,
+            "pixel48": 1.807,
+            "pixel96": 4.4993,
+            "visible1024": 400,
+            "visible48": 3,
+            "visible96": 3,
+            "inkColumnWidth": 5.2632,
+            "holePixels": 0
+          }
+        },
+        {
+          "key": "12-1",
+          "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/01_01-4.jpg",
+          "sha256": "2043193dcbfc0a28810f03605dbaf532b5c825ae445c814852436b632197bbd8",
+          "limits": "정측면에 가까운 구도. 인물의 반대쪽 입꼬리·눈, 화면 아래 턱끝 가림. 입선은 외곽과 만나는 점부터 한쪽 구각까지. 칼날 반사는 제외.",
+          "status": "기수집·C 최초 표식대조, E는 접촉후",
+          "independentE": false,
+          "camera": {
+            "yaw": -76,
+            "pitch": 0,
+            "roll": 13.027326479710448,
+            "rms": 10.735610098776467,
+            "coordinateSize": 248
+          },
+          "sourceLine": [
+            [
+              53.568000000000005,
+              128.96
+            ],
+            [
+              71.69454545454545,
+              134.8669090909091
+            ],
+            [
+              87.92727272727272,
+              137.25672727272726
+            ]
+          ],
+          "measurements": {
+            "before": {
+              "pixel1024": 49.9466,
+              "pixel48": 2.674,
+              "pixel96": 5.6133,
+              "visible1024": 227,
+              "visible48": 2,
+              "visible96": 3,
+              "inkColumnWidth": 7.3226,
+              "holePixels": 0
+            },
+            "after": {
+              "pixel1024": 49.6262,
+              "pixel48": 2.441,
+              "pixel96": null,
+              "visible1024": 121,
+              "visible48": 3,
+              "visible96": 0,
+              "inkColumnWidth": 4.4815,
+              "holePixels": 0
+            }
+          },
+          "candidateC": {
+            "pixel1024": 47.0697,
+            "pixel48": 2.666,
+            "pixel96": null,
+            "visible1024": 111,
+            "visible48": 2,
+            "visible96": 0,
+            "inkColumnWidth": 4.625,
+            "holePixels": 0
+          }
+        }
+      ],
+      "orbit": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1913,
+          "mask": 0,
+          "shaBefore": "c9c6aa8933a8f0c2caa895019abbf83dca942dce19c294d76bb1ed08c010a0a3",
+          "shaAfter": "1d59b1fd926afd92854d93cc68d067f47db9e23fec252ec239099785c5f5bfd1"
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 9,
+          "mask": 0,
+          "shaBefore": "9b9c6b0eae42f89a8ba2843e7c8277fa2a5609a81422edef08e4840881f61789",
+          "shaAfter": "97ef142eb1ce7ad69e75a519a06176adf402c70b8d75d564387dc143ccbce64e"
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 96,
+          "changed": 22,
+          "mask": 0,
+          "shaBefore": "09983b16725f82a8b4810affe4af67602fc89df6f5af4c55abe9c72ebdb246bd",
+          "shaAfter": "1705af76bf5801101c85fa5ddb77e48d07d52b86a817b4bb8b47bccaf03dce80"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1322,
+          "mask": 0,
+          "shaBefore": "072e0bd9d88e5f976817b212ff9c6e46a6f72bd944b07e1831fce1a0a4da209f",
+          "shaAfter": "b38708471c24d5eb3e638e37bea7d756e389e71688271b229a0a22e85e976181"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "375feb8bb8a71304fa46727c68d503f21f93c52b69c34f6fbecc9d50a58d4419",
+          "shaAfter": "fe08fa18e8155a3a79683a4e880d7a25b0528b9f081b1de99b0eae48cc2c1b85"
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 15,
+          "mask": 0,
+          "shaBefore": "ba4eb272f5a36836bd5467a136350b7a03cb6297c8ff3c77f9933a923b99c947",
+          "shaAfter": "e4ebaecdc9852563ef1c4a6ca2d54613851b31e16bf0d3581cdee9b133cf79c1"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 1456,
+          "mask": 0,
+          "shaBefore": "e189b1a7ca5dbaece6e3a93b441cb3f94c363d087bab0ce5f0b56c1567918892",
+          "shaAfter": "678242148fe358752f92fc59a3d989c7b6f63c99e5369fd1e94a3e244e932e98"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 4,
+          "mask": 0,
+          "shaBefore": "14f56b9717cc1ce07cbfc4894005814687e4914c01dd8a4ef6f582d197458cc1",
+          "shaAfter": "f3915db8dd2a77518386d23a0d6a6280a74c3091be8d9f014eb720d5b4e3153c"
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 96,
+          "changed": 15,
+          "mask": 0,
+          "shaBefore": "9d9794ed8d508495dcbf89009977a61a4867d9426dc6c263fad7cfaf5db040b6",
+          "shaAfter": "0464fb1dc1ba86efbdc68986d52f7b9d5eba0546411813c40fd698d796c5ce97"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 275,
+          "mask": 109,
+          "shaBefore": "27f685399e666eed33d66b642c264d4d033dc53e830d07beb6f937b7fdbd925d",
+          "shaAfter": "4b8c49c759b180080fc7880a386b391496cb73cac6638fde44f58a5f1c1f0655"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "c2b4a24c33a3da5f6e595e54bc6757e5b9dc44161ec0b7e3d9b697e3f1f06eea",
+          "shaAfter": "da2e258563d02c915681540dc96273323363bbd9c678330314b9cf57a3942323"
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 2,
+          "mask": 0,
+          "shaBefore": "5d96d5bad31e245a28937ad86e06e1f9d249e680f8555072805ffc29c7962b58",
+          "shaAfter": "ea41c4d5a116556190b2d2b5a60890a66f01d1557353f25f56f2464a2d840e7e"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 234,
+          "mask": 109,
+          "shaBefore": "ee7a0678483ab9884ff86eb82fe921185c4b131e083f7ef92c6c163a7396282c",
+          "shaAfter": "104c20e2cddc131d268aef92259eb3e435f9ae67a1fe39d21a6890e26cdc38a5"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "95edbe5b757b36429412067bb34da810a21bedca7b382fabf837b446dcf095ef",
+          "shaAfter": "1621f47ca5be724174987f472c5703e76d46e88b9add11ffe6503305d37cf845"
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 96,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "175896ce547b8121f2eab29c00dee2cb69533d8e23ab76e3dcc16f3ec7b16375",
+          "shaAfter": "5195a4c732981f650f85a786ff73662f201dff92698a0615c4466e0e538be130"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "405e128765e1cf2da3a73d3084618c59d5276b9acd49abd4739ca322fee21b1d",
+          "shaAfter": "405e128765e1cf2da3a73d3084618c59d5276b9acd49abd4739ca322fee21b1d"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "945b2f68bb023c7fe863b4dc0c47695c9a492ecb48e81ae7ef5cd61d3ab7fa71",
+          "shaAfter": "945b2f68bb023c7fe863b4dc0c47695c9a492ecb48e81ae7ef5cd61d3ab7fa71"
+        },
+        {
+          "yaw": -135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "d59ca5da26ca0b2670ff7c8260cf2c42d903cbfc29fbd73835f6be396f8c9344",
+          "shaAfter": "d59ca5da26ca0b2670ff7c8260cf2c42d903cbfc29fbd73835f6be396f8c9344"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "6f59af0d6cdbcf9ae92313b7d857c3a25a1618fff09157d4e980ee373be6cc11",
+          "shaAfter": "6f59af0d6cdbcf9ae92313b7d857c3a25a1618fff09157d4e980ee373be6cc11"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "6afea21737e60921896d4396f4b211c3ddf8326c2ce88bb31bc1d494f25c4981",
+          "shaAfter": "6afea21737e60921896d4396f4b211c3ddf8326c2ce88bb31bc1d494f25c4981"
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "c0231b51f25ed4de2775157ee5affbbdf786459a2b290342ab10079509890853",
+          "shaAfter": "c0231b51f25ed4de2775157ee5affbbdf786459a2b290342ab10079509890853"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 1024,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "9a5175f5ceff2a38486acf3f9fad4427f15f4876124bbf22d01fdc433a9b1d96",
+          "shaAfter": "9a5175f5ceff2a38486acf3f9fad4427f15f4876124bbf22d01fdc433a9b1d96"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "7bd1fd5016bf11f39f0116341f0b0b6992d849656ac00c70cef2afb8c58a65e7",
+          "shaAfter": "7bd1fd5016bf11f39f0116341f0b0b6992d849656ac00c70cef2afb8c58a65e7"
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "692b4ba2a677db8fbacc15d72c1cdfdb58365f601d15014890794606daf8f104",
+          "shaAfter": "692b4ba2a677db8fbacc15d72c1cdfdb58365f601d15014890794606daf8f104"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 1024,
+          "changed": 1530,
+          "mask": 0,
+          "shaBefore": "7408ada17bb2791450ccd655a9ec3547d97e39fc99574b246cec0bfcb0f74a58",
+          "shaAfter": "f2078a1a4b855783f309b7d4f454e46b4ad5f6b89a3699709b1a44000a2c404c"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "01df97c5a2bd393cd9cce588269e0df13f475f2d058ee2f9dfcf3a1b05a0ec9e",
+          "shaAfter": "205f4cfaec0a7968be128f2c33e66dbfe411eb8e99fc3d77bae8afa45e8f382f"
+        },
+        {
+          "yaw": 0,
+          "pitch": 30,
+          "size": 96,
+          "changed": 13,
+          "mask": 0,
+          "shaBefore": "5ffbfbfd6cf3e8d90cc17bac001fedf97ba735b1b1f65537991b5647a9bd28e2",
+          "shaAfter": "268eee5e7c69887e2a5b4a26f1f7a09979ebf2b8cacef43d7a67108b8f6b115c"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 1024,
+          "changed": 1818,
+          "mask": 0,
+          "shaBefore": "be6074a1eefcad4a0b54e01f4e5e2c30bcf856dd9c6204f026ec29e294b947c8",
+          "shaAfter": "ebbe29605b9ce058339065b2cbf841cc0b4fbd6132383efc7a7d20032d07daca"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 48,
+          "changed": 6,
+          "mask": 0,
+          "shaBefore": "edf7a3181f380d342a0db011e0f2188452900e07f0929f12053bfa7f771550ed",
+          "shaAfter": "abd407657f00461ba6c4666c76416dcd99dc871bd286f9625cb044318302ae28"
+        },
+        {
+          "yaw": 0,
+          "pitch": -30,
+          "size": 96,
+          "changed": 17,
+          "mask": 0,
+          "shaBefore": "3fe3faf7cf453c300d61d9ae10bfd037718820ea5261a0e6b3219f9ca04614aa",
+          "shaAfter": "4df8ca6c4d526089c65e73b4b1c522829ec7e47cb9d22eacea97d6c9247d5140"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 1024,
+          "changed": 1345,
+          "mask": 0,
+          "shaBefore": "000f60d6813aae4deb60f684bf5c5b7bd569975bf8e205cfa992cfc638031e3e",
+          "shaAfter": "4a1b20bd255df955c066cc98bc7abb2ea569547b2e6f7c8ff661de872f99daf8"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 48,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "24c26ba87fe13b780d0bb1c686b1f3c0fe75410c734ca860f0cf3593b19a96cb",
+          "shaAfter": "71d727e30f3b7a668fbda00b1d8b0f0d36aed9db09f9c6a78e9a4e56d7f40f71"
+        },
+        {
+          "yaw": -45,
+          "pitch": -25,
+          "size": 96,
+          "changed": 12,
+          "mask": 0,
+          "shaBefore": "e8b471f8f080571397bc0f86381a09a4bb4e06a1d17667416a86ce421fe995f9",
+          "shaAfter": "6cc433afe01f4eba0b64c27284ca2d71f4e64ae9253bcfc08fee4ecd6c7fe478"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 1024,
+          "changed": 1078,
+          "mask": 0,
+          "shaBefore": "6359d242e0ef997d12978ea57bc611351895c4f3b742373eec90d543d1d04103",
+          "shaAfter": "fe518a147c71b9400e26faf37d2b948b6cf6dd211e49b268b39093692c9758c9"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 48,
+          "changed": 6,
+          "mask": 0,
+          "shaBefore": "3798c8ee2bd2817b81cd673a9912e1aa2de7c4a97dea0dbc4e72dc6ef8c63445",
+          "shaAfter": "a5491c7372cca0f3c2028a258b21593363562929d20a213538c8f1e6c86debc4"
+        },
+        {
+          "yaw": 45,
+          "pitch": 25,
+          "size": 96,
+          "changed": 12,
+          "mask": 0,
+          "shaBefore": "4f07e66f903e20477604bd794c6d69291252cc0dda0d599cde75d1b9f9e573cc",
+          "shaAfter": "fd9e94039a5f61264189b5ed15811c2f0fde758aeb14d7ed1ac5131f385e0300"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 1024,
+          "changed": 40,
+          "mask": 35,
+          "shaBefore": "e58a1fb041a01dc474d755a8c8fe874a29ddab94f77b7568ee88f09d58a9e15a",
+          "shaAfter": "e540ff0e32af38bc9c268f4763ac8a4e83570285d9a80320b350dbe089b13fca"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 48,
+          "changed": 1,
+          "mask": 0,
+          "shaBefore": "55557a220b0ad5a238caf00cde86b6cf537bfa7f0398149793f15a7209987bd4",
+          "shaAfter": "c793586ef255ae7766d4eac52f9846f3c38dd7f6cb874fb76efeb732f606b7ca"
+        },
+        {
+          "yaw": 0,
+          "pitch": 90,
+          "size": 96,
+          "changed": 0,
+          "mask": 0,
+          "shaBefore": "b54d2534aec6ed67f07aa01e430546d4f57b82687405cb52f1633f0fa5c5e7ac",
+          "shaAfter": "b54d2534aec6ed67f07aa01e430546d4f57b82687405cb52f1633f0fa5c5e7ac"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 1024,
+          "changed": 759,
+          "mask": 35,
+          "shaBefore": "d6fcf8c8ee8c1a2edb8ca29af2b489ba45d07a96110b2b14d90a2f1522151cc6",
+          "shaAfter": "d69dab1c356d014862e7a6b7d19197a2e49309b87f186c2f657b7a009db2656d"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 48,
+          "changed": 4,
+          "mask": 0,
+          "shaBefore": "3f825a39f71e5ec1c81803b63b8a87144c4b2d21c2a083f27d0f04ccd607ce6b",
+          "shaAfter": "f23d238c57af30711a4697768cbeaf278bc1a2d3dcec6883fc9a03d8a6296b2e"
+        },
+        {
+          "yaw": 0,
+          "pitch": -90,
+          "size": 96,
+          "changed": 7,
+          "mask": 0,
+          "shaBefore": "17f13778968554432f9c5c78e74803f4ac3bfbcd79ad1ce045a2662bbc56cd71",
+          "shaAfter": "1d0abc3ab7829fe40a944a2cf507d4301b42705bf91b8c045dbd4f5c2c1087a3"
+        }
+      ]
+    }
+  },
+  "neutralInputs": {
+    "F02": [
+      {
+        "key": "05-3",
+        "models": {
+          "neutral49": {
+            "pixel1024": 22.8041,
+            "pixel48": 1.019,
+            "pixel96": 2.0073,
+            "visible1024": 548,
+            "visible48": 4,
+            "visible96": 3,
+            "inkColumnWidth": 6.6829,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 22.0037,
+            "pixel48": 1.0207,
+            "pixel96": null,
+            "visible1024": 191,
+            "visible48": 2,
+            "visible96": 0,
+            "inkColumnWidth": 4.8974,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 28.953,
+            "pixel48": 1.019,
+            "pixel96": 2.2877,
+            "visible1024": 717,
+            "visible48": 4,
+            "visible96": 8,
+            "inkColumnWidth": 8.3372,
+            "holePixels": 3
+          },
+          "lateral55E": {
+            "pixel1024": 26.3901,
+            "pixel48": 1.0207,
+            "pixel96": 2.3783,
+            "visible1024": 229,
+            "visible48": 2,
+            "visible96": 4,
+            "inkColumnWidth": 5.2045,
+            "holePixels": 0
+          }
+        }
+      },
+      {
+        "key": "28-7",
+        "models": {
+          "neutral49": {
+            "pixel1024": 21.7897,
+            "pixel48": 0.7417,
+            "pixel96": 1.8957,
+            "visible1024": 489,
+            "visible48": 6,
+            "visible96": 4,
+            "inkColumnWidth": 6.037,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 15.8505,
+            "pixel48": 1.1133,
+            "pixel96": 1.4717,
+            "visible1024": 174,
+            "visible48": 1,
+            "visible96": 3,
+            "inkColumnWidth": 4.8333,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 26.7814,
+            "pixel48": 1.0807,
+            "pixel96": 1.5577,
+            "visible1024": 658,
+            "visible48": 5,
+            "visible96": 7,
+            "inkColumnWidth": 7.3111,
+            "holePixels": 1
+          },
+          "lateral55E": {
+            "pixel1024": 17.1888,
+            "pixel48": 0.6877,
+            "pixel96": null,
+            "visible1024": 206,
+            "visible48": 2,
+            "visible96": 0,
+            "inkColumnWidth": 4.7907,
+            "holePixels": 0
+          }
+        }
+      },
+      {
+        "key": "04-4",
+        "models": {
+          "neutral49": {
+            "pixel1024": 12.2055,
+            "pixel48": 0.6057,
+            "pixel96": 1.496,
+            "visible1024": 203,
+            "visible48": 3,
+            "visible96": 2,
+            "inkColumnWidth": 6.3438,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 20.0585,
+            "pixel48": 1.2253,
+            "pixel96": 1.911,
+            "visible1024": 65,
+            "visible48": 1,
+            "visible96": 1,
+            "inkColumnWidth": 4.3333,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 21.8735,
+            "pixel48": 1.031,
+            "pixel96": 2.139,
+            "visible1024": 116,
+            "visible48": 1,
+            "visible96": 2,
+            "inkColumnWidth": 8.2857,
+            "holePixels": 7
+          },
+          "lateral55E": {
+            "pixel1024": 22.5713,
+            "pixel48": null,
+            "pixel96": null,
+            "visible1024": 27,
+            "visible48": 0,
+            "visible96": 0,
+            "inkColumnWidth": 4.5,
+            "holePixels": 0
+          }
+        }
+      }
+    ],
+    "M01": [
+      {
+        "key": "07-2",
+        "models": {
+          "neutral49": {
+            "pixel1024": 48.0716,
+            "pixel48": 2.1153,
+            "pixel96": 6.0147,
+            "visible1024": 439,
+            "visible48": 4,
+            "visible96": 2,
+            "inkColumnWidth": 6.1831,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 54.2593,
+            "pixel48": 2.591,
+            "pixel96": 8.1723,
+            "visible1024": 245,
+            "visible48": 3,
+            "visible96": 2,
+            "inkColumnWidth": 4.2241,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 56.2446,
+            "pixel48": 2.2473,
+            "pixel96": 5.3527,
+            "visible1024": 275,
+            "visible48": 2,
+            "visible96": 1,
+            "inkColumnWidth": 6.25,
+            "holePixels": 0
+          },
+          "lateral55E": {
+            "pixel1024": 55.5091,
+            "pixel48": 2.7247,
+            "pixel96": 5.138,
+            "visible1024": 168,
+            "visible48": 1,
+            "visible96": 3,
+            "inkColumnWidth": 4.5405,
+            "holePixels": 0
+          }
+        }
+      },
+      {
+        "key": "06-6",
+        "models": {
+          "neutral49": {
+            "pixel1024": 34.8116,
+            "pixel48": 1.804,
+            "pixel96": 4.645,
+            "visible1024": 693,
+            "visible48": 4,
+            "visible96": 5,
+            "inkColumnWidth": 7.3723,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 41.3003,
+            "pixel48": 2.2973,
+            "pixel96": 5.244,
+            "visible1024": 409,
+            "visible48": 3,
+            "visible96": 3,
+            "inkColumnWidth": 5.3117,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 45.0327,
+            "pixel48": 1.804,
+            "pixel96": 4.2507,
+            "visible1024": 542,
+            "visible48": 4,
+            "visible96": 5,
+            "inkColumnWidth": 7.2267,
+            "holePixels": 0
+          },
+          "lateral55E": {
+            "pixel1024": 43.7098,
+            "pixel48": 2.2973,
+            "pixel96": 5.0673,
+            "visible1024": 312,
+            "visible48": 3,
+            "visible96": 2,
+            "inkColumnWidth": 5.0323,
+            "holePixels": 0
+          }
+        }
+      },
+      {
+        "key": "set1",
+        "models": {
+          "neutral49": {
+            "pixel1024": 20.3521,
+            "pixel48": 0.8957,
+            "pixel96": 1.6737,
+            "visible1024": 866,
+            "visible48": 6,
+            "visible96": 10,
+            "inkColumnWidth": 6.3212,
+            "holePixels": 0
+          },
+          "neutral49E": {
+            "pixel1024": 15.5235,
+            "pixel48": 1.053,
+            "pixel96": 1.3663,
+            "visible1024": 540,
+            "visible48": 4,
+            "visible96": 9,
+            "inkColumnWidth": 4.8649,
+            "holePixels": 0
+          },
+          "lateral55": {
+            "pixel1024": 17.6478,
+            "pixel48": 0.9997,
+            "pixel96": 1.6957,
+            "visible1024": 773,
+            "visible48": 5,
+            "visible96": 8,
+            "inkColumnWidth": 6.7807,
+            "holePixels": 0
+          },
+          "lateral55E": {
+            "pixel1024": 12.8278,
+            "pixel48": 1.053,
+            "pixel96": 2.2103,
+            "visible1024": 441,
+            "visible48": 4,
+            "visible96": 5,
+            "inkColumnWidth": 4.6915,
+            "holePixels": 0
+          }
+        }
+      }
+    ]
+  },
+  "cameraSensitivity": {
+    "F02": [
+      {
+        "key": "05-3",
+        "scores": [
+          {
+            "yaw": 2,
+            "pitch": -10,
+            "rms": 8.71561748560226,
+            "m": {
+              "before": {
+                "high": 24.4299,
+                "low48": 1.1443,
+                "low96": 1.5897
+              },
+              "after": {
+                "high": 16.5883,
+                "low48": 0.864,
+                "low96": 1.5663
+              }
+            }
+          },
+          {
+            "yaw": 18,
+            "pitch": -10,
+            "rms": 1.8993252405748104,
+            "m": {
+              "before": {
+                "high": 22.571,
+                "low48": 1.0683,
+                "low96": 1.66
+              },
+              "after": {
+                "high": 14.4528,
+                "low48": 1.083,
+                "low96": 1.5783
+              }
+            }
+          },
+          {
+            "yaw": 10,
+            "pitch": -18,
+            "rms": 6.937675708417279,
+            "m": {
+              "before": {
+                "high": 24.34,
+                "low48": 1.0477,
+                "low96": 1.792
+              },
+              "after": {
+                "high": 17.26,
+                "low48": 0.6447,
+                "low96": 1.4263
+              }
+            }
+          },
+          {
+            "yaw": 10,
+            "pitch": -2,
+            "rms": 6.019412074348658,
+            "m": {
+              "before": {
+                "high": 22.799,
+                "low48": 0.7743,
+                "low96": 1.055
+              },
+              "after": {
+                "high": 14.637,
+                "low48": 0.8083,
+                "low96": 1.198
+              }
+            }
+          }
+        ]
+      },
+      {
+        "key": "05-9",
+        "scores": [
+          {
+            "yaw": 35,
+            "pitch": -24,
+            "rms": 9.707716898867588,
+            "m": {
+              "before": {
+                "high": 20.458,
+                "low48": 0.753,
+                "low96": 2.0597
+              },
+              "after": {
+                "high": 19.612,
+                "low48": 1.1593,
+                "low96": 2.5523
+              }
+            }
+          },
+          {
+            "yaw": 51,
+            "pitch": -24,
+            "rms": 12.825911677287545,
+            "m": {
+              "before": {
+                "high": 29.763,
+                "low48": 1.6903,
+                "low96": 2.6273
+              },
+              "after": {
+                "high": 34.5041,
+                "low48": 1.7247,
+                "low96": 3.8693
+              }
+            }
+          },
+          {
+            "yaw": 43,
+            "pitch": -32,
+            "rms": 12.913080008039529,
+            "m": {
+              "before": {
+                "high": 30.523,
+                "low48": 1.375,
+                "low96": 2.64
+              },
+              "after": {
+                "high": 31.6327,
+                "low48": 1.5947,
+                "low96": 3.4253
+              }
+            }
+          },
+          {
+            "yaw": 43,
+            "pitch": -16,
+            "rms": 9.965159780232518,
+            "m": {
+              "before": {
+                "high": 22.6853,
+                "low48": 1.0117,
+                "low96": 2.5023
+              },
+              "after": {
+                "high": 26.9262,
+                "low48": 1.446,
+                "low96": 3.3827
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "M01": [
+      {
+        "key": "06-6",
+        "scores": [
+          {
+            "yaw": -56,
+            "pitch": -11,
+            "rms": 8.672700310726345,
+            "m": {
+              "before": {
+                "high": 48.3746,
+                "low48": 2.4967,
+                "low96": 4.272
+              },
+              "after": {
+                "high": 46.8759,
+                "low48": 2.222,
+                "low96": 4.7673
+              }
+            }
+          },
+          {
+            "yaw": -40,
+            "pitch": -11,
+            "rms": 7.6856798093115986,
+            "m": {
+              "before": {
+                "high": 42.2098,
+                "low48": 1.946,
+                "low96": 3.7087
+              },
+              "after": {
+                "high": 40.4916,
+                "low48": 2.5497,
+                "low96": 4.5393
+              }
+            }
+          },
+          {
+            "yaw": -48,
+            "pitch": -19,
+            "rms": 2.421486696385859,
+            "m": {
+              "before": {
+                "high": 44.1751,
+                "low48": 2.492,
+                "low96": 4.0727
+              },
+              "after": {
+                "high": 42.9041,
+                "low48": 2.241,
+                "low96": 3.7813
+              }
+            }
+          },
+          {
+            "yaw": -48,
+            "pitch": -3,
+            "rms": 10.96383381943066,
+            "m": {
+              "before": {
+                "high": 46.109,
+                "low48": 2.3917,
+                "low96": 5.156
+              },
+              "after": {
+                "high": 44.0874,
+                "low48": 2.3917,
+                "low96": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "key": "12-1",
+        "scores": [
+          {
+            "yaw": -84,
+            "pitch": 0,
+            "rms": 11.27381768325297,
+            "m": {
+              "before": {
+                "high": 44.6826,
+                "low48": 1.8567,
+                "low96": 4.2337
+              },
+              "after": {
+                "high": 44.5015,
+                "low48": 2.534,
+                "low96": null
+              }
+            }
+          },
+          {
+            "yaw": -68,
+            "pitch": 0,
+            "rms": 10.174766649243653,
+            "m": {
+              "before": {
+                "high": 54.5445,
+                "low48": 2.7067,
+                "low96": 5.302
+              },
+              "after": {
+                "high": 53.0946,
+                "low48": 2.512,
+                "low96": null
+              }
+            }
+          },
+          {
+            "yaw": -76,
+            "pitch": -8,
+            "rms": 9.86726544743829,
+            "m": {
+              "before": {
+                "high": 51.8092,
+                "low48": 2.2573,
+                "low96": 5.0147
+              },
+              "after": {
+                "high": 51.6391,
+                "low48": 2.2573,
+                "low96": 5.434
+              }
+            }
+          },
+          {
+            "yaw": -76,
+            "pitch": 8,
+            "rms": 11.736038657179503,
+            "m": {
+              "before": {
+                "high": 49.2634,
+                "low48": 2.2433,
+                "low96": 4.8977
+              },
+              "after": {
+                "high": 49.1922,
+                "low48": 2.6187,
+                "low96": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
