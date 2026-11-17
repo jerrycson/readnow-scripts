@@ -72,7 +72,7 @@ $('star').onclick=()=>{favorites=favorites.includes(current)?favorites.filter(k=
 $('search').oninput=paintList;
 function focusMode(on){document.body.classList.toggle('focus',on);$('focus').textContent=on?'도구 목록':'목록 접기';$('focus').setAttribute('aria-pressed',String(on));}
 $('focus').onclick=()=>focusMode(!document.body.classList.contains('focus'));focusMode(matchMedia('(max-width:760px)').matches);
-$('copy').onclick=async()=>{const u=new URL('../research/hub/',location.href);u.search=location.search;u.searchParams.set('lab','studio');try{await navigator.clipboard.writeText(u.href);say('현재 작업 링크를 복사했습니다.');}catch{window.prompt('현재 작업 링크',u.href);}};
+$('copy').onclick=async()=>{const u=new URL('../research/hub/',location.href);u.search=location.search;u.searchParams.set('lab','studio');try{await navigator.clipboard.writeText(u.href);say('현재 작업 링크를 복사했습니다.');}catch{say('현재 작업 링크: '+u.href);}};
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;
   if(e.source===frames.get('history')?.contentWindow&&e.data?.type==='bookfriend:version-selection'&&current==='history'){
     const next={};for(const k of ['a','b','av','bv']) if(typeof e.data[k]==='string'&&e.data[k].length<150)next[k]=e.data[k];setState('history',next);
