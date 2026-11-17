@@ -1,3 +1,4 @@
+import {assertRecordedFile52} from './source-canonical52.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -106,14 +107,19 @@ const hairModule=fs.readFileSync(new URL('hair-sheet52.mjs',path));
 const inputHashes={headFit:sha(geometryModule),hairSheet:sha(hairModule),hairAnchor:sha(fs.readFileSync(new URL("hair-anchor52.mjs",path))),scalpClearance:sha(fs.readFileSync(new URL("scalp-clearance52.mjs",path)))};
 const summary={inputHashes,round:52,scope:'중립 14몸체 × 같은 성별 4얼굴. 최초 전신 머리 접합. 51/52 얼굴 보정 미적용.',angles:deg.map(yaw=>[yaw,yaw===160?-12:0]),rows,hair};
 if(process.argv.includes('--record'))fs.writeFileSync(new URL('head-fit-eval52.json',path),JSON.stringify(summary,null,2)+'\n');
-else assert.deepEqual(summary,read('head-fit-eval52'));
+else {
+ const recorded=read('head-fit-eval52'),names={headFit:'head-fit52.mjs',hairSheet:'hair-sheet52.mjs',hairAnchor:'hair-anchor52.mjs',scalpClearance:'scalp-clearance52.mjs'};
+ assert.deepEqual(Object.keys(inputHashes).sort(),Object.keys(recorded.inputHashes).sort());
+ const canonical=Object.fromEntries(Object.entries(names).map(([key,file])=>{assert.equal(inputHashes[key],sha(fs.readFileSync(new URL(file,path))),key+' 현재 입력 연결');return [key,assertRecordedFile52(file,recorded.inputHashes[key])];}));
+ assert.deepEqual({...summary,inputHashes:canonical},{...recorded,inputHashes:canonical});
+}
 console.log('56종, 네 방향 224회, 56개 체형 병행 복원, 머리카락 추가 검증',hair.filter(x=>x.changed));
 
 
 if(!process.argv.includes('--record')){
  const renders=read('head-fit-renders52');
  assert.equal(renders.head1024.length,32);assert.ok(renders.head1024.every(v=>v.pixels1024>0));
- for(const [file,digest] of Object.entries({...renders.plates,...renders.inputs}))assert.equal(sha(fs.readFileSync(new URL(file,path))),digest,file);
+ for(const [file,digest] of Object.entries({...renders.plates,...renders.inputs}))assertRecordedFile52(file,digest);
  for(const trial of renders.hair1024){
   const ref=hair.find(m=>m.n===trial.n&&m.id===trial.id&&m.generator===(trial.tag==='legacy'?'기존 33파트':'52 연속면'));
   assert.ok(ref);assert.ok(Math.abs(ref.sourceMin-trial.metadata.sourceMin)<1e-7);

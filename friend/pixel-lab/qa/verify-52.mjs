@@ -1,3 +1,4 @@
+import {assertRecordedFile52} from './source-canonical52.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -16,7 +17,7 @@ assert.equal(body.contact.reduce((a,r)=>a+r.previousBoth.newHits,0),1351);
 assert.equal(body.contact.reduce((a,r)=>a+r.cases.both.newHits,0),25);
 assert.equal(hair.native.length,14);assert(hair.native.every(v=>v.reset&&v.changed48>0));
 assert.equal(hair.counts.hair,100);assert.equal(Object.values(hair.families).reduce((sum,r)=>sum+r.continuous,0),45);
-for(const [file,sha] of Object.entries(hair.files))assert.equal(createHash('sha256').update(read(file)).digest('hex'),sha);
+for(const [file,sha] of Object.entries(hair.files))assertRecordedFile52(file,sha);
 const notes=['face-note52','chest-note52','body-note52','workspace-note52','head-fit-note52'].flatMap(json);
 assert.equal(new Set(notes.map(n=>n.noteId)).size,6);
 for(const n of notes){assert(n.unit.length>100&&!n.unit.includes('\n'));assert(n.detail.length>900&&n.sources.length>=2);}
