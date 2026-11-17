@@ -1,0 +1,5078 @@
+{
+  "title": "36차 원전 시점·참조선 자료 색인",
+  "generatedFrom": [
+    "atlas35.json",
+    "fit36.json"
+  ],
+  "coverage": {
+    "faces": {
+      "cases": 40,
+      "views": 134,
+      "viewDistribution": {
+        "2": 12,
+        "3": 2,
+        "4": 26
+      },
+      "calibrationViews": 80,
+      "heldOutViews": 28,
+      "unmeasuredViews": 26
+    },
+    "bodies": {
+      "cases": 20,
+      "views": 65,
+      "viewDistribution": {
+        "3": 17,
+        "4": 1,
+        "5": 2
+      },
+      "calibrationViews": 40,
+      "heldOutViews": 20,
+      "unmeasuredViews": 5
+    },
+    "note": "직접 모사·held-out 측정 여부만 데이터 필드로 판정. ‘선 미측정’은 ‘가려짐’과 같은 뜻이 아니며, 가림 여부는 원자료에 기록되지 않았다."
+  },
+  "records": [
+    {
+      "id": "F01",
+      "name": "프리렌",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-1/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -34,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "name": "페른",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 0,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "정면변주",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "name": "플람메",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-7/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -30,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "오른눈썹"
+          ],
+          "lineCount": 7,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "name": "제리에",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-24/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 0,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara15_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara15_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara15_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara15_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "name": "메토데",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-25/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -28,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "기울인측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "name": "칸네",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-11/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -38,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara01_face2.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara01_face4.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara01_face1.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "뒤돌아봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara01_face3.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "name": "라비네",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-12/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara02_face2.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara02_face1.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara02_face4.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "뒤돌아봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara02_face3.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "name": "위벨",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-14/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 12,
+      "views": [
+        {
+          "index": 0,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara04_face3.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "오른눈썹"
+          ],
+          "lineCount": 9,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara04_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara04_face1.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara04_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "name": "라우펜",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-18/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 325,
+      "extraSource": null,
+      "blindIndex": 2,
+      "blindYaw": -40,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara08_face2.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara08_face1.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara08_face3.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "올려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara08_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "name": "에레",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-19/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -24,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara09_face3.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara09_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara09_face4.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "올려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara09_face1.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "name": "젠제",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-20/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 320,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 77,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara10_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "오른눈썹"
+          ],
+          "lineCount": 9,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara10_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara10_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 코·입"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "가린사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara10_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "name": "에델",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-23/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -55,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara14_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara14_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara14_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "뒤돌아봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara14_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "name": "아우라",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group2/2-2/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -24,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara9_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara9_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara9_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara9_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "name": "리니에",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "F",
+      "source": "https://frieren-anime.jp/character/chara_group2/2-4/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara11_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara11_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara11_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "표정변주",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara11_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F15",
+      "name": "우라라카 오챠코",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group01/01-03/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0167,
+            0,
+            0.3222,
+            0.627
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/41_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2,
+            0.5079,
+            0.5611,
+            1
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/41_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "미소 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F16",
+      "name": "아스이 츠유",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group01/01-06/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 28,
+      "extraSource": "https://sculptors.jp/topics/25065",
+      "blindIndex": 1,
+      "blindYaw": 25,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0833,
+            0.1667,
+            0.4778,
+            0.8413
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/22_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "원형 사선",
+          "width": 1280,
+          "height": 1920,
+          "box": [
+            0.37,
+            0.2,
+            0.71,
+            0.45
+          ],
+          "image": "https://sculptors.jp/system/wp-content/uploads/2025/05/0d62d5c8447505e0e6742ced818aafb5.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "원형 미소",
+          "width": 1280,
+          "height": 1920,
+          "box": [
+            0.31,
+            0.15,
+            0.72,
+            0.41
+          ],
+          "image": "https://sculptors.jp/system/wp-content/uploads/2025/05/07caf8a08d2fa2ca92a1a01cc69b6201.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "왼눈꺼풀",
+            "오른눈꺼풀",
+            "입선",
+            "턱선"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "원형 뒤",
+          "width": 1280,
+          "height": 1920,
+          "box": [
+            0.31,
+            0.13,
+            0.84,
+            0.42
+          ],
+          "image": "https://sculptors.jp/system/wp-content/uploads/2025/05/169ccbce83746adca7493bf6813f01fc.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F17",
+      "name": "야오요로즈 모모",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group01/01-09/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0167,
+            0,
+            0.3611,
+            0.6349
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/35_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2,
+            0.3889,
+            0.5611,
+            1
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/35_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "벌어진 입"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F18",
+      "name": "지로 쿄카",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group01/01-13/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 290,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0444,
+            0,
+            0.3056,
+            0.619
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/26_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2611,
+            0.4444,
+            0.5611,
+            1
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/26_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 코·입"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F19",
+      "name": "아시도 미나",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group01/01-14/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0056,
+            0.0238,
+            0.3333,
+            0.5952
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/21_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2167,
+            0.4603,
+            0.5667,
+            0.9921
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/21_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "F20",
+      "name": "켄도 이츠카",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "F",
+      "source": "https://heroaca.com/character/chara_group02/02-01/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -30,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.316,
+            0.505,
+            0.549,
+            0.89
+          ],
+          "image": "https://heroaca.com/assets/oldimg/chara/chara_pc/c_chara_main38_2.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선"
+          ],
+          "lineCount": 8,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.12,
+            0.025,
+            0.25,
+            0.228
+          ],
+          "image": "https://heroaca.com/assets/oldimg/chara/chara_pc/c_chara_main38_2.png",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "작화 3",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.394,
+            0.016,
+            0.477,
+            0.157
+          ],
+          "image": "https://heroaca.com/assets/oldimg/chara/chara_pc/c_chara_main38_2.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M01",
+      "name": "힘멜",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -48,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "뒤돌아봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M02",
+      "name": "하이터",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-3/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M03",
+      "name": "슈타르크",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-6/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 2,
+      "blindYaw": 27,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "오른눈썹"
+          ],
+          "lineCount": 9,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "뒤돌아봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face4.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M04",
+      "name": "자인",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-10/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -23,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "표정변주",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "반대측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara1_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M05",
+      "name": "뎅켄",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-15/",
+      "active": 0,
+      "extraIndex": 3,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara05_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "코",
+            "왼눈썹"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara05_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "올려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara05_face3.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara05_face4.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "드러난 코끝"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M06",
+      "name": "비어벨",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-13/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 2,
+      "blindYaw": -38,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara03_face2.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara03_face1.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "가린 턱 앞부분"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara03_face3.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara03_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M07",
+      "name": "란트",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-16/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 270,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 48,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara06_face2.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선"
+          ],
+          "lineCount": 8,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara06_face3.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara06_face1.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "뒤사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara06_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M08",
+      "name": "리히터",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-17/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 40,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -45,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara07_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara07_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "사선변주",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara07_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara07_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M09",
+      "name": "샤르프",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-22/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -14,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara13_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara13_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara13_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "올려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara13_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M10",
+      "name": "레르넨",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-26/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 48,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/03/chara17_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 8,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/03/chara17_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/03/chara17_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "코·턱 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "올려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/03/chara17_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M11",
+      "name": "뤼그너",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group2/2-3/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 90,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 30,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara10_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara10_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara10_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆얼굴"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2023/10/chara10_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M12",
+      "name": "미도리야 이즈쿠",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-01/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 60,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0,
+            0,
+            0.3556,
+            0.5952
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/40_cahra_face-2.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2056,
+            0.4524,
+            0.5667,
+            0.9841
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/40_cahra_face-2.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 코·턱"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M13",
+      "name": "바쿠고 카츠키",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-02/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 58,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0,
+            0.0159,
+            0.3056,
+            0.5397
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/34_cahra_face-1.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.1667,
+            0.3968,
+            0.5889,
+            1
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/34_cahra_face-1.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "옆 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M14",
+      "name": "이이다 텐야",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-04/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 325,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0167,
+            0,
+            0.3,
+            0.6349
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/37_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2556,
+            0.4127,
+            0.5667,
+            1
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/37_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "눈꺼풀"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M15",
+      "name": "토도로키 쇼토",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-05/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 35,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0222,
+            0.0159,
+            0.3444,
+            0.5794
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/24_cahra_face-3.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선"
+          ],
+          "lineCount": 8,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2333,
+            0.4762,
+            0.55,
+            0.9603
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/24_cahra_face-3.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "입꼬리"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M16",
+      "name": "키리시마 에이지로",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-08/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0222,
+            0.0238,
+            0.3611,
+            0.6032
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/32_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2278,
+            0.3333,
+            0.5667,
+            0.9921
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/32_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M17",
+      "name": "카미나리 덴키",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-11/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0,
+            0,
+            0.3333,
+            0.627
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/28_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2556,
+            0.3254,
+            0.5722,
+            0.9841
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/28_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "미소 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M18",
+      "name": "아오야마 유가",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-12/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 320,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0222,
+            0,
+            0.3333,
+            0.627
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/31_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2389,
+            0.4603,
+            0.5611,
+            0.9921
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/31_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "열린 미소"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M19",
+      "name": "세로 한타",
+      "type": "얼굴",
+      "series": "히로아카",
+      "category": "M",
+      "source": "https://heroaca.com/character/chara_group01/01-17/",
+      "active": 0,
+      "extraIndex": 1,
+      "extraYaw": 325,
+      "extraSource": null,
+      "blindIndex": null,
+      "blindYaw": null,
+      "views": [
+        {
+          "index": 0,
+          "label": "작화 1",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.0333,
+            0.0079,
+            0.3333,
+            0.5714
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/30_cahra_face.png",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선"
+          ],
+          "lineCount": 8,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "작화 2",
+          "width": 850,
+          "height": 594,
+          "box": [
+            0.2333,
+            0.4048,
+            0.5389,
+            0.9921
+          ],
+          "image": "https://heroaca.com/wp/wp-content/uploads/2020/09/30_cahra_face.png",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "M20",
+      "name": "게나우",
+      "type": "얼굴",
+      "series": "프리렌",
+      "category": "M",
+      "source": "https://frieren-anime.jp/character/chara_group1/1-21/",
+      "active": 0,
+      "extraIndex": 2,
+      "extraYaw": 315,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 81,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara11_face1.jpg",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "윗눈꺼풀",
+            "아랫눈꺼풀",
+            "입선",
+            "턱끝",
+            "코",
+            "뺨·하악선",
+            "왼눈썹",
+            "오른눈썹"
+          ],
+          "lineCount": 10,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "사선",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara11_face2.jpg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "측면",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara11_face3.jpg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "사선 입선"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "내려다봄",
+          "width": 248,
+          "height": 248,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://frieren-anime.jp/wp-content/uploads/2024/01/chara11_face4.jpg",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B09",
+      "name": "완만한 하부 활",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/128546",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -42,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-02/fde73666-db79-4aa9-a293-376561f5b995.jpeg?h=2fc3b974&itok=VFTzfH7k",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-02/92a266fb-fde2-4673-b905-6ad36c19dd53.jpeg?h=5920e07f&itok=lBUqXU6i",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 675,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_tall_2_3/public/photocases/after/2026-02/6b4c0ee7-0931-4ec7-91f4-7d2cd1efb251.jpeg?h=691e7ab7&itok=nB-2M7as",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B11",
+      "name": "긴 세로 타원",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/116821",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 44,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-08/7822ad66-0985-4069-a364-2fb3583bdcc1.jpg?h=97dc3ded&itok=U56WN_wC",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-08/10def62f-79e0-4a51-916c-0cd6a3912be4.jpg?itok=EVBTyymF",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-08/b5d64531-2603-4792-ac5b-bdd2d433599b.jpg?itok=DYTdo6nE",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "추가 촬영 4",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-08/032ce580-6d14-484f-8fd7-b336badb8053.jpg?h=2a12df07&itok=2j0Jm3ds",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B12",
+      "name": "하부 무게중심",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/108066",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -38,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/3888ffcb-cb5d-49e4-b3f7-e218d1b7c8b2.jpg?itok=vkH356l9",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/cd8aba9b-8b15-4331-933c-55b06a394b69.jpg?itok=5v6pH8Ys",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 675,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_tall_2_3/public/photocases/after/2023-03/ab751663-f1d0-49cd-a9d9-5a899fb33b32.jpg?itok=Nt3U9pwK",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B14",
+      "name": "깊은 하부 곡선",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/108201",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -45,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2023-03/f516b9ce-9ebe-40da-808b-c5f5d5edf3a3.jpg?itok=X6J14CKZ",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/7932e865-3c55-4a40-a64c-4f2892ed6286.jpg?h=95cf39a0&itok=kk4iZ3L4",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/4cba466b-b2c9-41af-a284-4ac2b8cfd019.jpg?itok=-ue5VsVd",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B15",
+      "name": "안쪽 긴 경사",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-lift/128831",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -38,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-02/9ce5950a-d166-40d6-954f-2ffce054bb5e.jpg?itok=ial4ts_W",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-02/066e8ce8-e710-4655-8c65-99ef00e52d8e.jpg?itok=5-tkpJRK",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-02/f52c3fe1-cb72-42ad-b442-da7b284fc082.jpg?itok=cVtVMW3I",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B18",
+      "name": "짧고 선명한 반환",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-lift/112091",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 43,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-03/2641d539-9323-4a5e-a386-88d1b6981bbe.jpg?itok=_GgkMNei",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-03/4a7d422f-a504-4de5-8508-227522b6c405.jpg?itok=3rBM22OM",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-03/6f4831c8-d372-418f-82bd-c7937dc259e1.jpg?itok=7Yoaavtb",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B21",
+      "name": "부드러운 하부 활",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/107646",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/a2a79f5a-dfab-444a-aa54-6842d7b7623a.jpg?itok=KdKlmF1D",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/1434c595-b21c-4c07-a2c3-76171ae6dd5f.jpg?itok=XFkEhDDR",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 675,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_tall_2_3/public/photocases/after/2023-03/64e8b44b-eff7-4215-84dc-f4957b4f0e3e.jpg?itok=okmPruou",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B22",
+      "name": "짧은 밑곡선",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/128261",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 42,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/4e42ff96-38e0-4831-ac1b-65fb8c0a00e3.jpeg?itok=fmcpi8_5",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/a6960123-2702-4c6e-b0b2-0cfbcc8aab4b.jpeg?itok=HmAbCLMT",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/24721b08-543c-4c1a-878a-65e6c9c22d1f.jpeg?itok=MFDi3qZa",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B23",
+      "name": "넓게 돌아오는 하부",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/130211",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 35,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-05/5c2bce65-dc4c-4e05-84b1-01471f8c3193.jpeg?h=dd16f33d&itok=NM3SNXDh",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-05/9b682c64-193f-4a99-abe7-acdaf483a2a9.jpeg?h=384b08cc&itok=60RwF5HO",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-05/0c12bfe5-2495-4b34-bd71-e7bd45f5a509.jpeg?h=9d62d391&itok=sszaJQht",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B24",
+      "name": "긴 윗사선",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/108281",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -36,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2023-03/9c8275f5-6beb-4f15-9f8a-9f5bc13a38f8.jpg?h=e60de012&itok=7GN4_F1o",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/93162222-4223-43d5-9f04-bd8bceff2eeb.jpg?itok=gaKtyIpu",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 675,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_tall_2_3/public/photocases/after/2023-03/e5e4307a-b39e-4d5c-a925-69416486d307.jpg?itok=vvl4wBDG",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B25",
+      "name": "세로 타원",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-lift/112106",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -37,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-03/da3a007e-2c07-467c-85f5-b22cce0afeeb.jpg?itok=jblcQcyM",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-03/c4646c38-a0d1-4a75-bab4-a86c7be4976d.jpg?itok=pzAFU3DG",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-03/4ed4db8a-4813-4548-8a3b-57a6b20db228.jpg?itok=qg1Twg4J",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "추가 촬영 4",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-03/8e1b3c0d-5605-4fe0-b892-7132125e0ff0.jpg?itok=mnsqVQ6F",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 4,
+          "label": "추가 촬영 5",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-03/0be0bac3-cd28-4f27-8dc0-c0acbf285c13.jpg?itok=3nLv8WKB",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B27",
+      "name": "얕은 경사형",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-augmentation/107791",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 38,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/1529f1c9-abfd-464f-b87d-2571d0cecdba.jpg?itok=YmY94cy8",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/573c0816-0ddb-4733-934f-567400983499.jpg?itok=0oUVfxEs",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 675,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_tall_2_3/public/photocases/after/2023-03/1a3db9dc-f4c3-43c3-b2f4-68592b12fde0.jpg?itok=_hOoeBQS",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B31",
+      "name": "좁은 하부 반경",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-augmentation/108146",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 42,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/3a30cd03-33b1-44b7-a92c-7d9c981440a4.jpg?itok=LqRHSfWl",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/f04bbf81-14fa-45a7-b345-046ce71fe983.jpg?h=a156a1be&itok=sQlzLCvv",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/d8ec7fb8-a569-4cc8-9c4d-3bf911d5103c.jpg?itok=S-TNVCB9",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B32",
+      "name": "완만한 하부 회귀",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-augmentation/107586",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 44,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2023-03/9b1c0ced-27c2-4800-971f-b7ff6f584850.jpg?itok=oGVQjumA",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2023-03/8b3479ed-8d30-46b4-8c5c-963c60eaa0dd.jpg?itok=2Nq9ZUYg",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2023-03/9f3edbdc-7eab-4c93-8039-27be7f3ad58c.jpg?itok=wIOeoRdn",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B40",
+      "name": "낮은 최저점",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/115716",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 48,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-07/f802abcd-9a5e-4ed5-a72c-2525d7dfd0f4.jpg?itok=F9pm3V8m",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-07/b492656b-23a9-4171-8788-d2ef1c3ea012.jpg?itok=mbwYCQa_",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 300,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_wide_3_2/public/photocases/after/2024-07/e92bea6c-3be8-4bbf-b111-30fb64b28dc7.jpg?h=a041dc02&itok=3YbxRJVf",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B41",
+      "name": "짧은 전환형",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-lift/126936",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 33,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2025-12/e7d3a812-3855-4de0-bea6-fa0a4ff6538d.jpg?h=836c8db8&itok=rnDsBhfg",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2025-12/82ea0e0d-cf16-4da1-9218-58406767acd3.jpg?itok=c2eau5hI",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2025-12/82b5d2c5-2f72-4e81-9d57-c22300bcb233.jpg?itok=qBhYmpzO",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 3,
+          "label": "추가 촬영 4",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2025-12/3a0f7f83-bf97-41ff-b6b4-eafdb0a379be.jpg?itok=ErZ58tOX",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 4,
+          "label": "추가 촬영 5",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2025-12/8d57acf3-6a17-4c38-8d22-baf870278a8c.jpg?itok=C5T5NmYV",
+          "role": "선 미측정",
+          "lineTypes": [],
+          "lineCount": 0,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B42",
+      "name": "길게 돌아오는 밑선",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-lift/128991",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -43,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-03/e2fd6a3f-3bfd-4c8a-8b98-fe586d27e8e9.jpg?itok=MHzhT_BM",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-03/b58951d0-08b4-4013-8ad3-e49b5f2034eb.jpg?itok=18AWNti5",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-03/895e5467-0439-456d-96f9-d394e1984958.jpg?itok=RlwpheNk",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B43",
+      "name": "완만한 기저 전환형",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/127916",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -40,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/6e16f682-8b5b-4e8b-be24-e2a5b070b18c.jpeg?itok=DDKQ_v6L",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/f9b6f7b2-cc65-48f6-a95c-4fdbc2f4c9f6.jpeg?itok=xie5Vta3",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2026-01/0918eb33-0189-489e-b886-cb8113ee12b2.jpeg?itok=mJsnAwy9",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B45",
+      "name": "얕은 흉벽 복귀형",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/118931",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": 46,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-12/770e5ebf-6842-4ad1-9495-65312a58e936.jpg?itok=aGKZ0K13",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-12/0fb910e1-ced5-4282-9039-91f7c2bbb4e4.jpg?itok=fzMQXqs9",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2024-12/4411524f-1f7a-4142-aa68-36efe8b20a3a.jpg?itok=dpeFwZwO",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    },
+    {
+      "id": "B46",
+      "name": "하부 곡률 전환형",
+      "type": "가슴 형태",
+      "series": "The Aesthetic Society",
+      "category": "성인 실측",
+      "source": "https://www.theaestheticsociety.org/photo-gallery/breast/breast-reduction/103896",
+      "active": 2,
+      "extraIndex": 0,
+      "extraYaw": 0,
+      "extraSource": null,
+      "blindIndex": 1,
+      "blindYaw": -36,
+      "views": [
+        {
+          "index": 0,
+          "label": "정면",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2022-08/e6f5d7a0-b5ed-438b-a5c9-43bf51586c39.jpg?itok=zoiBLdfr",
+          "role": "별도 직접 모사 시점",
+          "lineTypes": [
+            "앞면 가시 하부",
+            "정면 표식 중심"
+          ],
+          "lineCount": 4,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 1,
+          "label": "추가 촬영 2",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2022-08/3e139d0a-0a53-4687-afc0-430b28a2c106.jpg?itok=ycDPjK0s",
+          "role": "보정 제외 확인 시점",
+          "lineTypes": [
+            "가시 하부"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        },
+        {
+          "index": 2,
+          "label": "윤곽 대조",
+          "width": 450,
+          "height": 450,
+          "box": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "image": "https://www.theaestheticsociety.org/sites/default/files/styles/crop_photocase_square/public/photocases/after/2022-08/9e85d7ee-db4b-41ae-886d-b1285561989c.jpg?itok=49PFBfuP",
+          "role": "교정 기준 시점",
+          "lineTypes": [
+            "가시 윤곽"
+          ],
+          "lineCount": 1,
+          "occlusion": "원자료에 가림 여부 별도 주석 없음"
+        }
+      ]
+    }
+  ],
+  "special36": {
+    "faces": {
+      "F02": {
+        "label": "페른 · 36차 실측 교정 사례",
+        "metrics": {
+          "other": [
+            11.034415406107186,
+            8.484763976469452
+          ],
+          "front": [
+            11.24081753259088,
+            4.121342621399649
+          ],
+          "side": [
+            5.078837240724566,
+            0.5595697966140787
+          ]
+        },
+        "meaning": "정면·측면 비교에서 모델 평균 거리 개선. other는 별도 jaw/가시선 비교값이며 방향 전체의 360° 측정으로 해석하지 않는다."
+      },
+      "M01": {
+        "label": "힘멜 · 36차 실측 교정 사례",
+        "metrics": {
+          "other": [
+            23.108862007071092,
+            28.372790970453327
+          ],
+          "front": [
+            10.68743281922813,
+            2.033275478963119
+          ],
+          "side": [
+            8.237937667871284,
+            0.6945609432267653
+          ]
+        },
+        "meaning": "정면·측면 비교에서 모델 평균 거리 개선. other는 별도 jaw/가시선 비교값이며 방향 전체의 360° 측정으로 해석하지 않는다."
+      }
+    },
+    "basicW": {
+      "label": "W 기본형 · 36차 별도 형상 교정",
+      "fit": {
+        "width": 1.1095,
+        "center": 0.44475,
+        "depth": 1.176,
+        "lateral": 0.17,
+        "rim": [
+          0,
+          -0.0325,
+          0.0975,
+          -0.0325,
+          0
+        ]
+      },
+      "passes": [
+        0.05167158115495178,
+        0.042327632615083634,
+        0.0405642250503504
+      ],
+      "referencePanels": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5"
+      ],
+      "meanBefore": 0.03555886065790523,
+      "meanAfter": 0.029756587086464416,
+      "measurementCount": 25,
+      "note": "15개 참조 패널의 원자료 선과 25개 비교 수치. 얼굴 40사례나 atlas 가슴 20사례의 360° 측정 결과가 아니다."
+    }
+  }
+}

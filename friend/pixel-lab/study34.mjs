@@ -1,3 +1,4 @@
+import {readApplied,reshapeHead} from './photo-apply36.mjs';
 import {DEFAULTS} from './model.mjs';
 import {portraitPixels} from './portrait48.mjs';
 import {morphForm,chestParams} from './morph33.mjs';
@@ -41,6 +42,11 @@ el('fit').onclick=()=>{resetCam();drawSoon();};
 el('play').onclick=()=>{stop();st.t=0;function next(now){start??=now;st.t=Math.min(2.2,(now-start)/1000);drawSoon();if(st.t<2.2)tick=requestAnimationFrame(next);else stop();}tick=requestAnimationFrame(next);};
 el('pause').onclick=stop;el('rewind').onclick=()=>{stop();st.t=0;drawSoon();};el('time').oninput=e=>{stop();st.t=+e.target.value/1000;drawSoon();};
 const safeLink=(txt,url)=>{const a=node('a',txt);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
+let userHull=null,fittedUser=null,fitSerial=0;
+async function refreshUser(select=false){const n=++fitSerial;try{const v=await readApplied();if(n!==fitSerial)return;userHull=v;fittedUser=null;el('fit34Box').hidden=!v;if(v)el('fit34Toggle').checked=select||localStorage.getItem('bookfriend-face-enabled36')!=='0';drawSoon();}catch(e){el('status').textContent=e.message;}}
+const fitBus='BroadcastChannel' in window?new BroadcastChannel('bookfriend-photo-model36'):null;if(fitBus)fitBus.onmessage=e=>{if(e.data?.kind==='apply')refreshUser(true);};
+el('fit34Toggle').oninput=()=>{localStorage.setItem('bookfriend-face-enabled36',el('fit34Toggle').checked?'1':'0');drawSoon();};window.addEventListener('storage',e=>{if(e.key==='bookfriend-face-enabled36'&&userHull){el('fit34Toggle').checked=e.newValue!=='0';drawSoon();}});el('fit34Fold').ontoggle=()=>{if(el('fit34Fold').open&&!el('fit34Frame').getAttribute('src'))el('fit34Frame').src='photo-engine36.html';};
+window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===el('fit34Frame').contentWindow&&e.data?.type==='bookfriend-face-fit36')refreshUser(true);});refreshUser();
 let localURL;
 function references(){
  const host=el('reference');host.replaceChildren();if(st.mode!=='face')return;
@@ -57,7 +63,7 @@ function references(){
   host.append(row,node('p',(female?'수산나 자롤리':'조반니')+' · 같은 촬영의 세 컷입니다. 가운데 사진은 고개를 살짝 돌린 자세입니다. 45° 작화와는 별도로 비교하세요.'),safeLink('모델 에이전시의 촬영 시트 전체',doc));
  }else{
   const input=node('input','');input.type='file';input.accept='image/*';input.setAttribute('aria-label','이 기기의 참고 그림');const img=node('img','');img.style.maxWidth='100%';img.alt='선택한 참고 그림';img.hidden=!localURL;if(localURL)img.src=localURL;
-  input.onchange=()=>{if(!input.files.length)return;if(localURL)URL.revokeObjectURL(localURL);localURL=URL.createObjectURL(input.files[0]);img.src=localURL;img.hidden=false;};host.append(input,img);
+  input.onchange=()=>{if(!input.files.length)return;if(localURL)URL.revokeObjectURL(localURL);localURL=URL.createObjectURL(input.files[0]);img.src=localURL;img.hidden=false;};const work=node('button','이 관찰창에서 사진 작업대 열기');work.onclick=()=>{el('fit34Fold').open=true;el('fit34Fold').scrollIntoView({block:'start'});};host.append(input,img,work,node('p','선택한 그림을 이 탭에 띄웁니다. 모델과 윤곽을 겹쳐 보려면 원본 윤곽 관찰창을 여세요.'),safeLink('내 그림과 모델 윤곽 맞추기','contour36.html?case='+ (female?'F02':'M01')+'#photoEngine'));
  }
 }
 for(const r of records34.filter(r=>r.url)){const a=node('article','');a.append(node('h3',r.title),node('strong',r.line),node('p',r.unit),node('p',r.detail),safeLink('원전 열기',r.url));el('sources').append(a);}
@@ -83,7 +89,8 @@ function draw(){
  scenes=[articulate(prior,pose,time?legacy:0).scene,pose34(base,pose,d).scene];poseKey=pk;}
  const cam=st.mode==='body'?commonFrame(...scenes,st.yaw,st.pitch):st.mode==='chest'?chestCamera(base):{};
  const size=drag||tick?Math.min(st.size,96):st.size;
- scenes.forEach((scene,i)=>paint(el(i?'after':'before'),portraitPixels({...s,resolution:Math.min(size,128)},{sceneOverride:{...scene,...cam},portrait:st.mode==='face'?'face':false,yaw:st.yaw,pitch:st.pitch,freeOrbit:true,studyResolution:size>128?size:undefined,cameraZoom:st.zoom,screenOffset:st.offset})));
+ const display=scenes.slice();if(st.mode==='face'&&userHull&&el('fit34Toggle').checked){if(fittedUser?.source!==display[1])fittedUser={source:display[1],scene:reshapeHead(display[1],userHull)};display[1]=fittedUser.scene;}
+ display.forEach((scene,i)=>paint(el(i?'after':'before'),portraitPixels({...s,resolution:Math.min(size,128)},{sceneOverride:{...scene,...cam},portrait:st.mode==='face'?'face':false,yaw:st.yaw,pitch:st.pitch,freeOrbit:true,studyResolution:size>128?size:undefined,cameraZoom:st.zoom,screenOffset:st.offset})));
  const nk=[st.sex,st.heads].join('/');if(st.mode==='face'&&nativeKey!==nk){nativeKey=nk;const host=el('trip');host.replaceChildren();for(const [n,scene] of [['33차',prior],['34차',base]]){host.append(node('span',n));for(const yaw of [0,45,90]){const c=node('canvas','');c.setAttribute('aria-label',n+' '+yaw+'도 48px');paint(c,portraitPixels({...s,resolution:48},{sceneOverride:scene,portrait:'face',yaw}));host.append(c);}}}
  el('status').textContent=st.heads+'등신 · 좌우 '+st.yaw.toFixed(1)+'° · 상하 '+st.pitch.toFixed(1)+'° · '+Math.round(st.zoom*100)+'% · '+size+'px';
  el('time').value=Math.round(st.t*1000);el('timeOut').value=st.t.toFixed(2)+'초';

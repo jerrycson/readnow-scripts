@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>사진에서 입체로 · 책방 친구 연구실</title>
+  <style>
+    :root{font-family:system-ui,"Malgun Gothic",sans-serif;color:#233a35;background:#f3f4ef;line-height:1.75}*{box-sizing:border-box}body{margin:0}main{max-width:1200px;margin:auto;padding:32px 24px 70px}a{color:#215d4e;text-underline-offset:3px}h1,h2,h3{line-height:1.4}h1{font-size:clamp(28px,4vw,42px);margin:12px 0}h2{font-size:25px;margin-top:0}h3{font-size:19px}p{margin:10px 0 18px}.eyebrow{font-size:14px;letter-spacing:.08em;color:#5b7068}.intro{max-width:800px;font-size:18px}.links,.steps{display:flex;gap:10px;flex-wrap:wrap}.links a,.steps a{border:1px solid #bacbc1;border-radius:8px;background:#fff;padding:8px 14px;text-decoration:none}.links .primary{background:#235c4c;color:white}.panel{margin-top:26px;padding:24px;background:#fff;border:1px solid #d8dfd5;border-radius:12px}.status{color:#5d6653;font-size:14px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px}.columns section{min-width:0}.engine{width:100%;height:920px;border:1px solid #bccac0;background:#f3f4ef;border-radius:8px}.journal{border-left:3px solid #85a08b;padding-left:20px}.journal time{font-size:14px;color:#526458}li{margin:8px 0}.paper{max-width:760px;white-space:pre-line}.source{font-size:14px}.research-note{border-top:1px solid #d9e0d7;padding-top:18px;margin-top:20px}details summary{cursor:pointer;font-weight:650}details[open] summary{margin-bottom:16px}.hint{border-left:3px solid #b19d6d;padding-left:16px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}@media(max-width:700px){main{padding:20px 14px 40px}.panel{padding:16px}.columns{grid-template-columns:1fr}.engine{height:1550px}.links a{flex-grow:1;text-align:center}}@media print{html,body,main{background:#fff!important}main>:not(#sources){display:none}#sources>:not(#notes){display:none}body{background:white;font-size:10pt;line-height:1.6}p{margin:7px 0 10px}h4{margin:12px 0 5px}.source{font-size:9pt}.eyebrow{font-size:9pt}.status{font-size:9pt}main{max-width:none;padding:0}.no-print,.engine{display:none}.panel{border:0;padding:0;margin:18pt 0}.paper{max-width:none}.research-note{break-before:page;border:0;margin:0;padding:0}.research-note h3{font-size:16pt}.research-note details{display:contents}.research-note summary{display:none}.research-note .paper{display:block!important}.columns{display:block}a{color:inherit}.journal{border-color:#777}h2,h3{break-after:avoid}@page{size:A4;margin:18mm 20mm}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <a href="../hub/">연구실 목록</a>
+    <p class="eyebrow">책방 친구 · 사진 기반 모델링 · 36차</p>
+    <h1>사진에서 입체로</h1>
+    <p class="intro">같은 대상의 다섯 방향 사진을 맞추고, 보이는 외곽을 입체 표면으로 연결합니다. 얼굴부터 관찰하고 검증한 뒤 상체·하체·전신으로 넓힙니다.</p>
+    <p class="status">현재 범위: 얼굴 외곽 · 교정 정사영 · 사진 투영. 얼굴 내부의 정밀 입체와 실제 카메라 추정은 연구 예정입니다.</p>
+    <nav class="links" aria-label="바로 관찰하기">
+      <a class="primary" href="#photoEngine">사진 모델링 열기</a>
+      <a href="../../pixel-lab/study34.html#photoEngine">기존 34차 관찰창</a>
+      <a href="../../pixel-lab/contour36.html#photoEngine">36차 관찰창</a>
+      <a href="#journal">진전 일지</a><a href="#sources">연구 근거</a>
+    </nav>
+  </header>
+
+  <section class="panel" aria-labelledby="processTitle">
+    <h2 id="processTitle">지금 만드는 공정</h2>
+    <ol>
+      <li>정면·앞 사선·측면·뒤 사선·뒷면의 같은 대상을 준비합니다.</li>
+      <li>배경과 전경을 나누고, 머리카락·옷 등 불필요한 영역을 포함·제외 붓으로 고칩니다.</li>
+      <li>중심·크기·촬영각을 맞춰 다섯 윤곽이 함께 허용하는 부피를 만듭니다.</li>
+      <li>표면을 돌려 보고 부위의 폭·깊이를 조절합니다. 사진 투영을 끄고 형상 자체도 확인합니다.</li>
+      <li>새 판을 보존한 뒤 관찰창에 적용하고, 제외했을 때 이전 판으로 돌아오는지 비교합니다.</li>
+    </ol>
+    <p class="hint">사진의 색이 입혀져 닮아 보여도 눈구멍·입술의 깊이까지 복원된 것은 아닙니다. 실측 두상 예시는 같은 실측 메시를 다섯 방향으로 그린 입력입니다. 독립적인 실사 촬영 다섯 장의 정확도 시험과 구별합니다.</p>
+  </section>
+
+  <section id="photoEngine" class="panel" aria-labelledby="engineTitle">
+    <h2 id="engineTitle">직접 모델링하고 같은 얼굴에 적용하기</h2>
+    <p>이 페이지와 기존 관찰창은 <a href="../../pixel-lab/photo-engine36.html">같은 사진 모델링 엔진</a>을 엽니다. 「실제 두상 다섯 방향 불러오기」로 시험하거나 사용할 권리가 있는 프로젝트 사진을 방향별로 넣어 보세요. 보존판은 현재 브라우저에 저장됩니다.</p>
+    <iframe class="engine" src="../../pixel-lab/photo-engine36.html" title="다섯 방향 사진 기반 얼굴 모델링 작업대"></iframe>
+    <p class="source">좁은 화면에서 조작하기 어려우면 <a href="../../pixel-lab/photo-engine36.html" target="_blank" rel="noopener">작업대만 넓게 열기</a>를 이용하세요.</p>
+  </section>
+
+  <section id="journal" class="panel" aria-labelledby="journalTitle">
+    <h2 id="journalTitle">새 진전마다 남기는 일지</h2>
+    <p>연구 원리에서 무엇을 가져왔고 실제로 무엇이 달라졌는지 함께 남깁니다. 앞으로의 실험은 결과가 나온 날짜에 추가하며, 실패·이전 판도 보존합니다.</p>
+    <article class="journal">
+      <time datetime="2026-11-17">2026-11-17 · 36차 · 얼굴 외곽 공정과 관찰창 연결</time>
+      <h3>마스크 편집 → 부피 구성 → 적용·제외를 연결</h3>
+      <ul>
+        <li>실측 두상의 다섯 방향 입력과 합성 입력으로 작업대를 확인했습니다.</li>
+        <li>포함 붓 뒤 제외 붓으로 같은 위치의 픽셀을 원복하는 동작을 확인했습니다.</li>
+        <li>촬영각을 31도로 고친 한 사례의 OBJ: 정점 <strong>6,432개</strong>, 삼각형 <strong>12,860개</strong>. 생성 구조의 수치이며 깊이 정확도가 아닙니다.</li>
+        <li>34차·36차 관찰창에서 적용 선택을 켰을 때 픽셀 변경을 확인했습니다. 적용 제외와 원복의 독립 수치는 아래 검증 파일에서 확인합니다.</li>
+      </ul>
+      <p class="status">이 항목은 36차 브라우저 검증 보고 범위입니다. 실제 촬영 전반·모든 기본형·정밀 얼굴 완성을 뜻하지 않습니다.</p>
+      <p><a id="evalLink" href="../../pixel-lab/engine-eval36.json">독립 검증 수치 원문 열기</a> <span id="evalState" class="status" role="status">검증 파일 상태 확인 중</span></p>
+      <div id="evalMetrics" aria-live="polite"></div>
+      <p class="source">겹침률(IoU)은 두 실루엣의 합집합 중 교집합 비율로 클수록 잘 맞습니다. 평균 윤곽 거리는 128px 투영 영상에서 양쪽 경계 사이의 거리로 작을수록 잘 맞습니다. 얼굴 내부의 깊이나 매력 점수는 아닙니다. 알려진 공통 카메라 조건과 사진마다 자동 중심·크기를 잡은 조건의 차이가 정렬 오차의 영향을 보여 줍니다.</p>
+    </article>
+  </section>
+
+  <section id="sources" class="panel" aria-labelledby="sourcesTitle">
+    <h2 id="sourcesTitle">원전 → 우리 적용 → 아직 모르는 것</h2>
+    <p>각 자료에 한 줄, 한 문단, A4 한 페이지용 상세 원고를 붙였습니다. 상세 원고를 펼치거나 인쇄할 수 있습니다. 원전의 주장과 이번 구현·시험을 구분합니다.</p>
+    <button id="print" class="no-print" type="button">상세 원고 인쇄 미리보기</button>
+    <div id="notes" aria-live="polite">연구 원고를 불러오는 중입니다.</div>
+    <p class="source"><a href="../../pixel-lab/engine-notes36.json">연구 원고 데이터</a></p>
+  </section>
+
+  <section id="next" class="panel" aria-labelledby="nextTitle">
+    <h2 id="nextTitle">다음 실험의 순서</h2>
+    <nav class="steps" aria-label="향후 연구 순서"><a href="#markers">색 표식</a><a href="#calibration">다시점 보정</a><a href="#innerFace">내부 눈·입</a><a href="#body">상체·하체·전신</a></nav>
+    <div class="columns">
+      <section id="markers"><h3>1. 색 표식</h3><p>같은 위치를 여러 사진에서 다시 찾도록 표식을 두고, 동일 대상·조명·크기로 반복 촬영합니다. 아직 결과가 없는 예정 실험입니다.</p></section>
+      <section id="calibration"><h3>2. 다시점 보정</h3><p>원근·렌즈·촬영 자세를 추정하고 남겨 둔 시점에서 오차를 잽니다. 현재의 정사영 가정과 비교합니다.</p></section>
+      <section id="innerFace"><h3>3. 내부 눈·입의 입체</h3><p>외곽만으로 정해지지 않는 눈·코·입 안쪽을 추가 관찰과 깊이 근거로 만듭니다. 사진 무늬와 형상을 따로 검수합니다.</p></section>
+      <section id="body"><h3>4. 상체 → 하체 → 전신</h3><p>얼굴 검증과 정범님 확인 뒤 부위를 넓힙니다. 자세·가림·신체와 옷의 분리를 확인하며 승인 전 양산으로 넘어가지 않습니다.</p></section>
+    </div>
+  </section>
+</main>
+<script type="module" src="page.mjs"></script>
+</body>
+</html>
