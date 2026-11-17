@@ -50,7 +50,7 @@ function loadCfg() { let j; try { j = JSON.parse(fs.readFileSync(SF, 'utf8')); }
   return v.cfg; }
 function saveCfg(cfg) { const old = path.join(HOME, 'old'); fs.mkdirSync(old, { recursive: true }); if (fs.existsSync(SF)) fs.copyFileSync(SF, path.join(old, 'settings-' + Date.now() + '.json')); /* 예전 설정은 지우지 않고 old\에 */
   const tmp = SF + '.t'; fs.writeFileSync(tmp, JSON.stringify(cfg, null, 1)); fs.renameSync(tmp, SF); }
-const ST = { mons: [], monsAt: 0, monErr: '', monErrAt: 0, build: 0, closeTok: null, found: {}, icons: {}, foundAt: 0, from: {}, tried: {}, findErr: '', startup: null, busy: '', last: null, update: null, lastHit: Date.now(), scan: null, port: 0 };
+const ST = { mons: [], monsAt: 0, monErr: '', monErrAt: 0, build: 0, closeTok: null, allTok: null, lastClose: null, found: {}, icons: {}, foundAt: 0, from: {}, tried: {}, findErr: '', startup: null, busy: '', last: null, update: null, lastHit: Date.now(), scan: null, port: 0 };
 try { const j = JSON.parse(fs.readFileSync(path.join(HOME, 'found.json'), 'utf8')); ST.found = j.found || {}; ST.icons = j.icons || {}; ST.foundAt = j.at || 0; ST.from = j.from || {}; ST.tried = j.tried || {}; } catch (e) {}
 /* (0.1.7) 그 경로에 실행 파일이 있나 — 윈도우에서만 실제로 봄(시험 상자는 RN_PCDOCK_MISSING에 적은 경로만 '없음') · shell:AppsFolder\…(시작 메뉴 앱)은 있음으로 */
 function exeOk(p) { p = String(p || ''); if (!p) return false; if (/^shell:/i.test(p)) return true; if (process.platform === 'win32') { try { return fs.statSync(p).isFile(); } catch (e) { return false; } }
@@ -102,9 +102,10 @@ async function startupState() { const r = await ps('startup', STARTUP(), ['-On',
 function chromeProfiles() { try { const f = path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'User Data', 'Local State'); const j = JSON.parse(fs.readFileSync(f, 'utf8')); const c = (j.profile && j.profile.info_cache) || {}; return Object.keys(c).map((k) => ({ dir: k, name: c[k].name || k })); } catch (e) { return []; } }
 
 /* ── ③ 실행·배치 ────────────────────────────────────────────── */
-/* opts: { mode:'keep'|'close', token } — 'close'는 /api/closeplan에서 미리 보여 준 목록(token)의 창만 닫음 · 윈도우 시작 자동 실행은 언제나 'keep'(묻지 않음) */
+/* opts: { mode:'keep'|'close', token, pick } — 'close'는 /api/closeplan에서 미리 보여 준 목록(token)의 창 중 정범님이 고른 것(pick = 목록 차례 번호 · 없으면 전부)만 닫음 · 화면은 창 번호를 모름 · 윈도우 시작 자동 실행은 언제나 'keep'(묻지 않음)
+ *  (0.1.9) 닫기는 「⛔ 전체 닫기」와 같은 차례(PowerShell CloseSet: 닫아 달라는 부탁 → 기다림 → 남으면 강제 종료) */
 async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' };
-  let close = []; if (opts.mode === 'close') { const t = ST.closeTok; if (!t || t.token !== opts.token || Date.now() - t.at > 5 * 60e3) return { ok: false, err: '닫을 목록이 오래됐거나 없음 — ③을 다시 눌러 목록을 새로 보고 골라 주세요' }; close = t.list; ST.closeTok = null; }
+  let close = []; if (opts.mode === 'close') { const t = ST.closeTok; if (!t || t.token !== opts.token || Date.now() - t.at > 5 * 60e3) return { ok: false, err: '닫을 목록이 오래됐거나 없음 — ③을 다시 눌러 목록을 새로 보고 골라 주세요' }; close = pickOf(t.list, opts.pick); ST.closeTok = null; }
   /* (0.1.5) 실행이 겹치지 않게 — 이 서버 안(ST.busy)뿐 아니라 윈도우 시작 자동 실행(--autorun 프로세스)과도: run.lock(pid·시각) · 15분 넘었거나 그 프로세스가 없으면 낡은 것으로 봄 */
   const lk = runLock(); if (!lk.ok) return { ok: false, err: lk.err };
   ST.busy = '실행·배치'; const t0 = Date.now();
@@ -112,14 +113,15 @@ async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok
     const need = needFind(cfg.apps); if (need.length && Date.now() - ST.foundAt > 60e3) await findAll(cfg.apps);
     const plan = A.buildPlan(cfg, ST.mons, ST.found, G, exeOk); stepSrc(plan); if (!plan.steps.length) { const r = { ok: false, err: cfg.place.length ? '놓을 수 있는 것이 없음' : '아직 아무것도 놓지 않았습니다 — ① 설정에서 프로그램을 칸에 끌어 놓아 주세요', skipped: plan.skipped }; setLast({ at: Date.now(), by, ...r, rows: [] }); return r; }
     const nTabs = plan.steps.reduce((x, st) => x + ((st.tabs || []).length), 0); const nSeq = plan.steps.filter((st) => st.match && st.match.seq).length; const slowMax = Math.max(0, ...plan.steps.map((st) => +(st.match && st.match.slow) || 0)); /* (0.1.7) 카카오톡처럼 늦게 뜨는 창은 더 기다림 */ /* (0.1.6) 크롬은 하나씩 · 단계마다 최대 15초 */ /* (0.1.5) 탭마다 최대 8초 — PowerShell 시간 상한과 맞춤(0.1.3은 탭 시간을 안 쳐서 중간에 끊겨 결과를 잃을 수 있었음) */
-    const autoRun = !!opts.auto || by === '윈도우 시작'; const closeFirst = A.closeFirstFor(cfg, plan.steps, { auto: autoRun }); /* (0.1.6 · 정범님 11/14 15:46) 목록의 프로그램은 먼저 닫고 새로 · 수집기·도우미 창은 지킴 */
-    /* (11/16 점검 ④-2 🔴) 윈도우 시작 자동 실행 때는 먼저 닫기를 하지 않음(크롬이 막 되살아나는 때 · 사람이 지켜보지 않음) · 크롬은 언제나 닫지 않음 · 기본 끔 */
+    const autoRun = !!opts.auto || by === '윈도우 시작'; const closeFirst = A.closeFirstFor(cfg, { auto: autoRun }); /* (0.1.9 · 정범님 11/17 16:16) ①에서 고른 프로그램(크롬·수집기 포함 모두 고를 수 있음 · 기본 아무것도 안 고름)을 먼저 닫고 새로 — 실제로 닫힘(부탁 → 기다림 → 강제 종료) */
+    /* (11/16 점검 ④-2 🔴) 윈도우 시작 자동 실행 때는 먼저 닫기를 하지 않음(크롬이 막 되살아나는 때 · 사람이 지켜보지 않음) · 기본 끔 */
     if (autoRun && cfg.run.closeFirst === true) log('② 윈도우 시작 자동 실행 — 먼저 닫기는 켜져 있어도 하지 않음(남겨 둔 채 자리만)');
-    const r = await ps('run', { steps: plan.steps, waitSec: cfg.run.waitSec, close, closeFirst }, null, (Math.max(cfg.run.waitSec, slowMax) + 60 + plan.steps.length * 3 + nTabs * 8 + nSeq * 15 + close.length) * 1000);
+    const r = await ps('run', { steps: plan.steps, waitSec: cfg.run.waitSec, close, closeFirst, selfPids: [process.pid] }, null, (Math.max(cfg.run.waitSec, slowMax) + 60 + plan.steps.length * 3 + nTabs * 8 + nSeq * 15 + close.length + (close.length ? 15 : 0) + (closeFirst ? 17 : 0)) * 1000); /* (0.1.9) 닫기 기다림(6초·8초)과 강제 종료 확인 시간 */
     if (+r.build) ST.build = +r.build;
     const res = (r.res || []).map((x) => { const f = A.friendly(x); return { ...x, msg: f.msg, raw: f.raw }; }); const fe = A.friendlyErr(r.err);
     const out = { ok: !!r.ok, err: fe.msg || undefined, raw: fe.raw || undefined, res, skipped: plan.skipped, closed: r.closed || [], pre: r.pre || null, closeErr: r.closeErr || undefined, mode: close.length ? 'close' : 'keep', sec: Math.round((Date.now() - t0) / 1000) };
-    log(`③ 실행·배치(${by}${close.length ? ' · 모두 닫고' : ''}) — ${res.filter((x) => x.ok).length}/${res.length} 놓음 · 건너뜀 ${plan.skipped.length}` + (close.length ? ` · 닫기 부탁 ${(r.closed || []).filter((c) => c.ok).length}/${close.length}` : '') + (r.pre ? ` · 먼저 닫음 ${((r.pre.closed) || []).length} · 지킴 ${((r.pre.kept) || []).length}` : '') + ` · ${out.sec}초` + (r.err ? ' · ' + r.err : '') + res.filter((x) => !x.ok).map((x) => ' · ✗ ' + x.name + ': ' + x.how).join(''));
+    log(`③ 실행·배치(${by}${close.length ? ' · 모두 닫고' : ''}) — ${res.filter((x) => x.ok).length}/${res.length} 놓음 · 건너뜀 ${plan.skipped.length}` + (close.length ? ` · 모두 닫기 ${closeSum(r.closed)}/${close.length}` : '') + (r.pre ? ` · 먼저 닫기 ${closeSum(r.pre.closed)} · 고른 프로그램 아님 ${((r.pre.kept) || []).length}` : '') + ` · ${out.sec}초` + (r.err ? ' · ' + r.err : '') + res.filter((x) => !x.ok).map((x) => ' · ✗ ' + x.name + ': ' + x.how).join(''));
+    for (const c of [...(r.closed || []), ...((r.pre && r.pre.closed) || [])]) if (c.res !== 'closed') log('③   ' + closeRow(c));
     setLast({ at: Date.now(), by, ...out, rows: stepRows(cfg, ST.mons, res, plan) }); return out; } finally { ST.busy = ''; runUnlock(); } }
 /* (0.1.8 · 정범님 11/16 15:28 「카카오톡이 여전히 안 열리고 배치도 안 됨 — 윈도우 시작 때 카카오톡이 뜨기 전에 배치가 돈 듯」)
  *  윈도우 시작 자동 실행이 끝난 뒤에도 늦게 뜨는 프로그램(목록의 match.boot — 카카오톡)을 auto.lateSec(기본 180초)까지 LATE_MS(15초)마다 다시 찾음
@@ -178,11 +180,33 @@ function runLock() { for (let k = 0; k < 2; k++) { try { fs.writeFileSync(RLK, J
       if (j && alive && Date.now() - (+j.at || 0) < 15 * 60e3) { const m = '다른 실행·배치가 아직 도는 중(윈도우 시작 자동 실행일 수 있음) — 끝난 뒤 다시'; noteErr('run', m); return { ok: false, err: m }; }
       try { fs.unlinkSync(RLK); } catch (x) {} } } return { ok: true }; }
 function runUnlock() { try { const j = JSON.parse(fs.readFileSync(RLK, 'utf8')); if (j.pid === process.pid) fs.unlinkSync(RLK); } catch (e) {} }
-/* ③ '모두 닫고' 미리보기 — 지금 떠 있는 창 중 닫을 것 · 지킬 것(까닭과 함께) */
-async function closePlan() { if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' }; const r = await ps('windows'); if (!r.ok) return { ok: false, err: r.err };
-  const cfg = loadCfg(); const P = CP.plan(r.wins || [], cfg.clean.keep); const token = crypto.randomBytes(12).toString('hex');
-  ST.closeTok = { token, at: Date.now(), list: P.close.map((w) => ({ h: w.h, pid: w.pid, proc: w.proc, title: w.title })) };
-  return { ok: true, token, close: P.close.map((w) => ({ proc: w.proc, title: w.title })), keep: P.keep }; }
+/* (0.1.9) 닫은 결과 줄 — res: closed(부탁으로 닫힘) · killed(남아서 강제 종료) · left(강제 종료도 안 됨 — 관리자 권한 프로그램 등) */
+const RES_T = { closed: '닫힘', killed: '강제 종료', left: '남음' };
+function closeSum(rows) { rows = rows || []; const n = (k) => rows.filter((c) => c.res === k).length; return `닫힘 ${n('closed')} · 강제 종료 ${n('killed')} · 남음 ${n('left')}`; }
+function closeRow(c) { return `${c.res === 'left' ? '✗' : c.res === 'killed' ? '⚠' : '✓'} ${RES_T[c.res] || c.res || '?'} — ${c.proc || '?'}${c.title ? ' · ' + scrubP(String(c.title)).slice(0, 60) : ''}${c.why ? ' (' + scrubP(String(c.why)).slice(0, 80) + ')' : ''}`; }
+/* ③ '모두 닫고' 미리보기 · 「⛔ 전체 닫기」 미리보기 — 지금 작업 표시줄에 뜬 창 모두(PC 배치 자신·윈도우 셸·시스템만 '안 닫음')
+ *  (0.1.9 · 정범님 11/17 16:16 「수집기든 뭐든 상관없이 전부」) 크롬·Claude·원격도 목록에 들어감(걱정되는 것은 warn으로만) · 0.1.8까지는 closeplan 보호 목록이 그런 창을 아예 뺐음 */
+async function allPlan() { const r = await ps('closeall', { plan: true, selfPids: [process.pid] }); if (!r.ok) return { ok: false, err: r.err };
+  const cfg = loadCfg(); return { ok: true, P: CP.planAll(r.wins || [], cfg.clean.keep) }; }
+function tokOf(P) { return { token: crypto.randomBytes(12).toString('hex'), at: Date.now(), list: P.close.map((w) => ({ h: w.h, pid: w.pid, proc: w.proc, title: w.title })) }; }
+/* 고른 것 — pick = 미리 보여 준 목록의 차례 번호(화면은 창 번호·프로세스 번호를 모름 · 0.1.5부터 지킨 것) · 없으면 전부 */
+const pickOf = (list, pick) => Array.isArray(pick) ? list.filter((w, i) => pick.includes(i)) : list;
+const planOut = (t, P) => ({ ok: true, token: t.token, close: P.close.map((w, i) => ({ i, proc: w.proc, title: w.title, warn: w.warn || '' })), never: P.never, keep: P.never.map((x) => ({ proc: x.proc, title: x.title, why: x.why })) });
+async function closePlan() { if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' }; const a = await allPlan(); if (!a.ok) return a;
+  ST.closeTok = tokOf(a.P); return planOut(ST.closeTok, a.P); }
+/* (0.1.9 · 정범님 11/17 16:16) 「⛔ 전체 닫기」 — 첫 누름(token 없음) = 목록 · 두 번째 누름(token + 고른 pick) = 닫기(부탁 → 6초 기다림 → 남으면 강제 종료) · 결과는 화면·기록에 */
+async function closeAll(o) { o = o || {}; if (ST.busy) return { ok: false, err: '지금 ' + ST.busy + ' 중' };
+  if (!o.token) { const a = await allPlan(); if (!a.ok) return a; ST.allTok = tokOf(a.P); return planOut(ST.allTok, a.P); }
+  const t = ST.allTok; if (!t || t.token !== o.token || Date.now() - t.at > 5 * 60e3) return { ok: false, err: '닫을 목록이 오래됐거나 없음 — 「⛔ 전체 닫기」를 다시 눌러 목록을 새로 봐 주세요' };
+  const wins = pickOf(t.list, o.pick); ST.allTok = null;
+  if (!wins.length) return { ok: false, err: '고른 창이 없음' };
+  const lk = runLock(); if (!lk.ok) return { ok: false, err: lk.err }; ST.busy = '전체 닫기'; const t0 = Date.now();
+  try { const r = await ps('closeall', { wins, waitSec: 6, selfPids: [process.pid] }, null, 60000 + wins.length * 1000);
+    if (!r.ok) { log('⛔ 전체 닫기 실패 — ' + String(r.err || '').slice(0, 160)); noteErr('closeall', r.err); return { ok: false, err: A.friendlyErr(r.err).msg || r.err }; }
+    const rows = (r.rows || []).map((c) => ({ proc: c.proc, title: scrubP(String(c.title || '')).slice(0, 120), res: String(c.res || ''), why: scrubP(String(c.why || '')).slice(0, 160) }));
+    const sec = Math.round((Date.now() - t0) / 1000);
+    log(`⛔ 전체 닫기 — ${closeSum(rows)} · 고른 창 ${wins.length} · ${sec}초`); for (const c of rows) log('⛔   ' + closeRow(c));
+    ST.lastClose = { at: Date.now(), n: wins.length, rows, sec }; return { ok: true, rows, sec }; } finally { ST.busy = ''; runUnlock(); } }
 
 /* ── ④ PC 정리 ──────────────────────────────────────────────── */
 function layoutProcs(cfg) { const L = []; for (const p of cfg.place) { const t = cfg.apps.find((x) => x.id === p.app); if (!t) continue; const a = A.instApp(t, p); if (a.kind === 'exe') L.push(A.procOf(a.exe || ST.found[A.keyOf(a)] || '')); if (a.kind === 'phone') L.push('PhoneExperienceHost', 'YourPhone', 'YourPhoneServer'); if (a.kind === 'claude') L.push('claude'); } return L.filter(Boolean); }
@@ -308,11 +332,13 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
     if (u.pathname === '/api/find') { const r = await findAll(loadCfg().apps); return J(200, { ok: r.ok, err: r.err, found: ST.found, from: ST.from, tried: ST.tried, icons: ST.icons }); }
     if (u.pathname === '/api/lnk') { const name = String(o.name || '').replace(/[^\w가-힣 .()-]/g, '_').slice(0, 80); if (!/\.lnk$/i.test(name) || !o.b64) return J(400, { ok: false, err: '.lnk 파일만' });
       const td = path.join(HOME, 'tmp'); fs.mkdirSync(td, { recursive: true }); const f = path.join(td, 'drop-' + crypto.randomBytes(6).toString('hex') + '.lnk'); fs.writeFileSync(f, Buffer.from(String(o.b64), 'base64'));
-      try { const r = await ps('lnk', { path: f }); return J(200, { ok: r.ok, err: r.err, name: name.replace(/\.lnk$/i, ''), target: r.target, args: r.args, icon: r.icon }); } finally { try { fs.unlinkSync(f); } catch (e) {} } }
+      let r; try { r = await ps('lnk', { path: f }); } finally { try { fs.unlinkSync(f); } catch (e) {} } /* (0.1.9) 임시 파일을 먼저 치우고 대답(대답 뒤에 치우면 받는 쪽이 먼저 볼 수 있었음 — t_server가 가끔 실패하던 까닭) */
+      return J(200, { ok: r.ok, err: r.err, name: name.replace(/\.lnk$/i, ''), target: r.target, args: r.args, icon: r.icon }); }
     if (u.pathname === '/api/exe') { const n = String(o.name || ''); if (!/^[\w가-힣 .()-]{1,80}\.exe$/i.test(n)) return J(400, { ok: false, err: '.exe 이름만' }); const r = await ps('exe', { name: n }, null, 90000); return J(200, { ok: r.ok, err: r.err, list: r.list || [], icon: r.icon }); }
     if (u.pathname === '/api/startup') { const on = !!o.on; const r = await ps('startup', STARTUP(), ['-On', on ? '1' : '0']); if (r.ok) { ST.startup = !!r.on; const c = loadCfg(); c.auto.on = ST.startup; if (Number.isFinite(+o.delaySec)) c.auto.delaySec = Math.max(0, Math.min(600, Math.round(+o.delaySec))); saveCfg(c); log(`② 윈도우 시작 자동 실행·배치 ${ST.startup ? '켬' : '끔'}`); } return J(200, { ok: r.ok, err: r.err, on: ST.startup }); }
     if (u.pathname === '/api/closeplan') return J(200, await closePlan());
-    if (u.pathname === '/api/run') return J(200, await runLayout('단추', { mode: o.mode === 'close' ? 'close' : 'keep', token: String(o.token || '') }));
+    if (u.pathname === '/api/run') return J(200, await runLayout('단추', { mode: o.mode === 'close' ? 'close' : 'keep', token: String(o.token || ''), pick: pickArg(o.pick) }));
+    if (u.pathname === '/api/closeall') return J(200, await closeAll({ token: String(o.token || ''), pick: pickArg(o.pick) })); /* (0.1.9) ⛔ 전체 닫기 — 두 번 누름 */
     if (u.pathname === '/api/clean/scan') return J(200, await cleanScan(+o.lv || 1));
     if (u.pathname === '/api/clean/run') return J(200, await cleanRun(o));
     if (u.pathname === '/api/fit') { const view = o.view === 'set' ? CFG.SET_WIN : o.view === 'clean' ? CFG.CLEAN_WIN : CFG.WIN; const home = o.view === 'home' || !o.view; const sr = home ? selfRect() : null; /* (0.1.7) 처음 화면은 ①에서 놓은 칸으로 */
@@ -320,9 +346,11 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
     return J(404, { ok: false });
   } catch (e) { log('✗ ' + u.pathname + ' ' + e.message); return J(500, { ok: false, err: e.message }); } });
 
+const pickArg = (v) => Array.isArray(v) ? v.slice(0, 400).map((x) => Math.round(+x)).filter((x) => Number.isInteger(x) && x >= 0) : null;
 function diagOut() { const L = ST.last; return { ok: true, app: 'readnow-pcdock', ver: VER, at: Date.now(), mons: ST.mons.length, monErr: ST.monErr ? scrubP(ST.monErr).slice(0, 300) : '', monErrAt: ST.monErrAt || 0, aware: ST.aware || '', build: ST.build || 0, busy: ST.busy || '', upd: ST.update ? ST.update.v : '',
-  last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '', sec: +L.sec || 0, pre: L.pre ? { closed: (L.pre.closed || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), gone: !!c.gone })), kept: (L.pre.kept || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), why: String(c.why || '').slice(0, 60) })) } : null, rows: Array.isArray(L.rows) ? L.rows : [], skip: (L.skipped || []).slice(0, 10).map((k) => ({ n: String(k.app || '').slice(0, 30), why: scrubP(k.why || '').slice(0, 160), ...(k.tried ? { tried: scrubP(k.tried).slice(0, 300) } : {}) })) } : null,
+  last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '', sec: +L.sec || 0, pre: L.pre ? { closed: (L.pre.closed || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), res: String(c.res || '').slice(0, 10) })), kept: (L.pre.kept || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), why: String(c.why || '').slice(0, 60) })) } : null, closed: (L.closed || []).length ? closeSum(L.closed) : '', rows: Array.isArray(L.rows) ? L.rows : [], skip: (L.skipped || []).slice(0, 10).map((k) => ({ n: String(k.app || '').slice(0, 30), why: scrubP(k.why || '').slice(0, 160), ...(k.tried ? { tried: scrubP(k.tried).slice(0, 300) } : {}) })) } : null,
   find: { at: ST.foundAt || 0, err: ST.findErr ? scrubP(ST.findErr).slice(0, 200) : '', from: Object.fromEntries(Object.entries(ST.from).slice(0, 12).map(([k, v]) => [k, scrubP(v).slice(0, 60)])), miss: Object.fromEntries(Object.entries(ST.tried).slice(0, 6).map(([k, v]) => [k, scrubP(v).slice(0, 300)])) }, /* (0.1.7) 어디서 찾았나·못 찾으면 찾아본 자리 */ pc: pcLabel().pc, pcSrc: pcLabel().src, errs: readDiag().errs.slice(0, 5),
+  lastClose: ST.lastClose ? { at: ST.lastClose.at, n: ST.lastClose.n, sum: closeSum(ST.lastClose.rows), left: ST.lastClose.rows.filter((c) => c.res === 'left').slice(0, 8).map((c) => ({ p: String(c.proc || '').slice(0, 20), why: String(c.why || '').slice(0, 80) })) } : null, /* (0.1.9) 마지막 ⛔ 전체 닫기 */
   win: { at: WINST.at, ok: WINST.ok, how: scrubP(WINST.how).slice(0, 160), by: WINST.by, n: WINST.n, open: uiOpen() }, launch: LAUNCH.how }; } /* (0.1.4) win = 마지막 창 열기 결과 · launch = 켜는 길(run.vbs) 고침 상태 */
 /* (0.1.3) 🔄 「새 판으로 바꾸기」 — run.vbs(→ run.cmd가 받아 둔 새 판으로 바꿔 끼움)를 새로 켜고, 새 판이 이 옛 서버를 넘겨받음(아래 main의 '옛 판이면 넘겨받기') */
 function restartNew() { const vbs = path.join(path.dirname(APP), 'run.vbs');

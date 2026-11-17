@@ -70,7 +70,7 @@ console.log('④ (0.1.8) 칸 겹쳐 놓기 허용 · 윈도우 시작 늦게 뜸
 { const c = cfgWith([{ id: 's', app: 'self', o: {}, mon: 'D2', c: 0, r: 0, w: 1, h: 1 }, { id: 'w', app: 'chrome', o: { urls: ['https://readnow.kr/app/'] }, mon: 'D1', c: 0, r: 0, w: 1, h: 1 }]);
   const P = A.buildPlan(c, MONS, { 'chrome.exe': 'C:\\chrome.exe' }, G); const s = P.steps.find((x) => x.app === 'self');
   ok(s && s.self && s.launch === null && s.reuse && s.match.title === '^리드나우 PC 배치$' && s.match.procs[0] === 'chrome' && s.rect.x === 1920, '③ 때 자기 창은 새로 안 띄우고(launch 없음) 떠 있는 창(제목이 꼭 같음)의 자리만', s);
-  ok(A.closeProcs([s]).length === 0 && new RegExp(A.KEEP_TITLE).test('리드나우 PC 배치'), '먼저 닫기 대상에서 빠짐 · 제목도 지키는 창 목록에(C# CloseWhy — t_pick이 실제로 돌려 봄)'); }
+  const c2 = JSON.parse(JSON.stringify(c)); c2.run.closeApps = ['self']; ok(A.closeRules(c2).length === 0 && A.closeFirstFor(c2, {}) === null, '(0.1.9) 먼저 닫기에 골라도 자기 창은 규칙이 없음(PowerShell NeverWhy도 「PC 배치 창」으로 막음 — t_closeall)'); }
 
 console.log('④ PowerShell 글자 검사(이 상자엔 PowerShell이 없음)');
 { const ps = fs.readFileSync(path.join(R, 'pcdock.ps1'), 'utf8'); const ev = (ps.split('function FindEv(')[1] || '').split('\n  return @{ c = @($cl)')[0];
@@ -107,7 +107,7 @@ async function layout(S, P) { const st = (await P('GET', '/api/state')).j; const
     const fj = JSON.parse(fs.readFileSync(path.join(S.D, 'found.json'), 'utf8')); ok(fj.found['KakaoTalk.exe'] === KP && fj.from['KakaoTalk.exe'] && !(KP in fj.icons), '찾은 경로·어디서를 found.json에 저장(후보 경로마다 아이콘을 쌓지 않음)', Object.keys(fj.icons));
     r = await layout(S, P); ok(r && r.ok, '카카오톡을 칸에 놓고 저장', r);
     r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop(); const kk = run.input.steps.find((s) => s.app === 'kakao'); const me = run.input.steps.find((s) => s.app === 'self');
-    ok(kk && kk.launch.file === KP && kk.match.slow === 30 && me && me.launch === null && !(run.input.closeFirst && run.input.closeFirst.procs.includes('chrome')), '③ — 찾은 경로로 켬 · 30초까지 기다림 · 자기 창은 자리만 · 먼저 닫기에 크롬 없음(자기 창만 있을 때)', run.input);
+    ok(kk && kk.launch.file === KP && kk.match.slow === 30 && me && me.launch === null && !run.input.closeFirst, '③ — 찾은 경로로 켬 · 30초까지 기다림 · 자기 창은 자리만 · 먼저 닫기는 고른 것이 없어 하지 않음(기본)', run.input);
     r = await P('GET', '/api/diag', undefined, {}); const row = r.j.last.rows.find((x) => /카카오톡/.test(x.n));
     ok(row && /떠 있는 프로세스/.test(row.src) && /떠 있는 프로세스/.test(r.j.find.from['KakaoTalk.exe']), '진단 — 카카오톡 줄에 어디서 찾았나(src) · find.from', [row, r.j.find]); stop(S);
 

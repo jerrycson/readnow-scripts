@@ -1,4 +1,4 @@
-/* t_ui — 진짜 크로미움(Playwright)으로 화면을 눌러 봄: 처음 화면 단추 4개 · ① 배치도에 끌어 놓기·모서리 늘리기·겹침 막기·칸 수 바꾸기·탐색기 끌어 놓기·저장 · ④ 정리 미리보기·두 번 누르기
+/* t_ui — 진짜 크로미움(Playwright)으로 화면을 눌러 봄: 처음 화면 단추 5개(⛔ 전체 닫기 · 0.1.9) · ① 배치도에 끌어 놓기·모서리 늘리기·겹침 막기·칸 수 바꾸기·탐색기 끌어 놓기·저장 · ④ 정리 미리보기·두 번 누르기
  *  가짜 PowerShell(모니터 3대 — 1920×1080 · 2560×1080 · 3840×2160 150%) · 스크린샷(deviceScaleFactor 1)은 PCDOCK_SHOTS 폴더(없으면 임시 폴더)에
  * 실행: node lab/pcdock/tests/t_ui.js */
 'use strict';
@@ -17,7 +17,7 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     const ctx = await br.newContext({ viewport: { width: 340, height: 470 }, deviceScaleFactor: 1 }); const pg = await ctx.newPage(); pg.on('pageerror', (e) => errs.push(e.message)); pg.on('dialog', (d) => { errs.push('팝업: ' + d.message()); d.dismiss(); });
     await pg.goto(`http://127.0.0.1:${port}/`); await pg.waitForFunction(() => /판 /.test(document.querySelector('#ver').textContent));
     console.log('① 처음 화면');
-    ok(await pg.$$eval('#home .big', (L) => L.length) === 4, '단추 4개'); ok(/모니터 3대/.test(await pg.textContent('#b1s')), '모니터 수가 보임');
+    ok(await pg.$$eval('#home .big', (L) => L.length) === 5 && /전체 닫기/.test(await pg.textContent('#b5')), '단추 5개(⛔ 전체 닫기 더함 · 0.1.9)'); ok(/모니터 3대/.test(await pg.textContent('#b1s')), '모니터 수가 보임');
     await pg.screenshot({ path: path.join(SHOTS, '1-home.png') });
     await pg.click('#b2'); await pg.waitForFunction(() => document.querySelector('#b2sw').classList.contains('on')); ok(/켜짐/.test(await pg.textContent('#b2s')) && fs.existsSync(path.join(D, 'startup.lnk')), '② 누르면 켜짐(시작 프로그램 바로가기)');
     console.log('② 설정 — 배치도');
@@ -35,9 +35,11 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await drag('.app[data-app="excel"]', await C(D1, 2, 0)); await drag('.blk[data-i="3"]', await C(D1, 3, 2)); ok((await pg.evaluate(() => C.place))[3].c === 3, '놓은 덩이를 끌어 다른 칸으로 옮김', await pg.evaluate(() => [C.place, document.querySelector("#toast").textContent]));
     await pg.click('.app[data-app="claude"]'); await pg.fill('[data-f=room]', 'https://claude.ai/chat/0b9f3a10-1111-2222-3333-444455556666'); ok(/claude:\/\//.test(await pg.textContent('#detail')), 'Claude 세부 설정(방 주소 · 여는 길)');
     /* 배치마다 자기 설정 — 칸의 크롬 덩이를 누르면 그 배치 설정 · 탭 ＋ 추가 · ↑ 순서 */
-    await pg.click('.blk[data-i="1"]'); ok(/이 배치만의 설정/.test(await pg.textContent('#detail')) && await pg.$('.blk[data-i="1"].sel'), '놓은 덩이를 누르면 그 배치의 설정 칸이 열림(덩이에 표시)');
+    const P1 = await pg.evaluate(() => C.place[1].id); await pg.click('.blk[data-i="1"]'); ok(/이 배치만의 설정/.test(await pg.textContent('#detail')) && await pg.$(`.blk[data-p="${P1}"].sel`), '놓은 덩이를 누르면 그 배치의 설정 칸이 열림(덩이에 표시)');
+    /* (0.1.9 · 정범님 11/17 16:16 「배치도에서 누른 아이콘이 위로」) 누른 덩이 = C.place 맨 뒤(맨 위에 그림 · 저장하면 ③도 이 차례로 놓아 실제 화면에서도 맨 위) */
+    { const o = await pg.evaluate(() => ({ last: C.place[C.place.length - 1].id, dom: [...document.querySelectorAll('#map .blk')].pop().dataset.p })); ok(o.last === P1 && o.dom === P1, '누른 덩이가 맨 위로(차례 맨 뒤 · 그림도 맨 뒤)', o); }
     await pg.fill('[data-tabs=urls] [data-ti="0"]', 'https://readnow.kr/manual/'); await pg.click('[data-tabs=urls] [data-add]'); await pg.fill('[data-tabs=urls] [data-ti="1"]', 'https://readnow.kr/app/');
-    await pg.click('[data-tabs=urls] [data-up="1"]'); ok(JSON.stringify(await pg.evaluate(() => C.place[1].o.urls)) === JSON.stringify(['https://readnow.kr/app/', 'https://readnow.kr/manual/']), '탭 ＋ 추가 · ↑로 순서 바꿈', await pg.evaluate(() => C.place[1].o.urls));
+    await pg.click('[data-tabs=urls] [data-up="1"]'); { const u = await pg.evaluate((id) => C.place.find((p) => p.id === id).o.urls, P1); ok(JSON.stringify(u) === JSON.stringify(['https://readnow.kr/app/', 'https://readnow.kr/manual/']), '탭 ＋ 추가 · ↑로 순서 바꿈', u); }
     /* 같은 틀(크롬)을 한 번 더 놓으면 새 배치(따로 설정) */
     await drag('.app[data-app="chrome"]', await C(D2, 0, 0)); ok(/크롬 2/.test(await pg.textContent('#detail')), '같은 크롬을 또 놓으면 새 배치 「크롬 2」가 생기고 그 설정이 열림');
     await pg.fill('[data-tabs=urls] [data-ti="0"]', 'https://b.example.kr/'); await pg.click('[data-tabs=urls] [data-add]'); await pg.fill('[data-tabs=urls] [data-ti="1"]', 'https://c.example.kr/'); await pg.click('[data-tabs=urls] [data-rm="0"]');
@@ -48,7 +50,7 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await pg.waitForFunction(() => C.apps.some((a) => a.name === 'Tool' && /Tool\.exe$/.test(a.exe))); ok(true, '탐색기에서 끌어 놓은 프로그램(.exe)이 목록에 더해짐(경로는 도우미가 찾음)');
     await pg.evaluate(() => { const dt = new DataTransfer(); dt.items.add(new File(['L'], '메모장.lnk')); const el = document.querySelector('#apps'); el.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true })); });
     await pg.waitForFunction(() => C.apps.some((a) => /notepad\+\+/.test(a.exe || ''))); ok(true, '바로가기(.lnk)도 대상을 풀어 더함');
-    await pg.selectOption('#monopts .mo:nth-child(3) select', '2x2'); ok(await pg.$$eval(`.cell[data-mon="${D3.replace(/\\/g, '\\\\')}"]`, (L) => L.length) === 4 && (await pg.evaluate(() => C.place))[2].w === 1, '4K 모니터를 2×2로 — 놓은 자리도 비율대로 옮김', await pg.evaluate(() => C.place[2]));
+    await pg.selectOption('#monopts .mo:nth-child(3) select', '2x2'); ok(await pg.$$eval(`.cell[data-mon="${D3.replace(/\\/g, '\\\\')}"]`, (L) => L.length) === 4 && (await pg.evaluate(() => C.place.find((p) => p.app === 'claude'))).w === 1, '4K 모니터를 2×2로 — 놓은 자리도 비율대로 옮김', await pg.evaluate(() => C.place.find((p) => p.app === 'claude')));
     await pg.screenshot({ path: path.join(SHOTS, '2-settings.png') });
     await pg.click('#setOk'); await pg.waitForSelector('#home.on');
     const saved = JSON.parse(fs.readFileSync(path.join(D, 'settings.json'), 'utf8')); ok(saved.v === 2 && saved.place.length === 5 && saved.apps.some((a) => a.name === 'Tool') && saved.mons[D3].grid === '2x2' && saved.place.filter((p) => p.app === 'chrome').map((p) => p.o.urls.length).join() === '2,1' && saved.place.every((p) => p.id), '✔ 확인 → settings.json에 저장(배치 5 · 배치마다 자기 탭 · 더한 프로그램 · 2×2)', saved.place);
@@ -61,10 +63,11 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await pg.click('#b3'); await pg.click('#askKeep'); await pg.waitForFunction(() => /끝/.test(document.querySelector('#last').textContent)); { const t = await pg.textContent('#last'); ok(t.match(/✅/g).length === 3 && /⏭ 엑셀: 실행 파일을 못 찾음 → ①/.test(t) && runs().pop().input.close.length === 0, '남겨 둔 채 — 결과 줄(놓은 3 · 못 찾은 엑셀은 까닭 → 할 일)', t); }
     ok(/카카오톡: 켜지 못함 →/.test(await pg.textContent('#last')) && await pg.$eval('#last details.raw', (d) => !d.open && /지정된 파일/.test(d.textContent)), '실패는 사람 말로 · 원문은 접어 둠');
     await pg.screenshot({ path: path.join(SHOTS, '3-home-after-run.png') });
-    await pg.click('#b3'); await pg.click('#askClose'); await pg.waitForSelector('#askGo'); { const t = await pg.textContent('#askList'); ok(/닫을 창 2개/.test(t) && /메모장/.test(t) && /지키는 창 4개/.test(t) && await pg.$$eval('[data-close]', (L) => L.length) === 2, '모두 닫고 — 닫을 목록·지키는 목록을 먼저 보여 줌', t); }
+    await pg.click('#b3'); await pg.click('#askClose'); await pg.waitForSelector('#askGo'); { const t = await pg.textContent('#askList'); ok(/닫을 수 있는 창 5개/.test(t) && /메모장/.test(t) && /Chrome/.test(t) && /안 닫는 창 2개/.test(t) && await pg.$$eval('#askList input[data-i]:checked', (L) => L.length) === 5 && !(await pg.$('#askList [data-h]')), '모두 닫고 — 닫을 목록(크롬·Claude도 고를 수 있음 · 기본 모두 고름 · 창 번호 없이 차례 번호만)·안 닫는 목록을 먼저 보여 줌', t); }
+    for (const i of [0, 1, 4]) await pg.uncheck(`#askList input[data-i="${i}"]`); ok(/고른 2개/.test(await pg.textContent('#askGo')), '고르기를 바꾸면 단추 글도 바뀜(고른 2개)');
     await pg.screenshot({ path: path.join(SHOTS, '3b-ask-close.png') });
     const nRun = runs().length; await pg.click('#askGo'); ok(/한 번 더/.test(await pg.textContent('#askGo')) && runs().length === nRun, '첫 번째 누름은 글만 바뀜(아직 안 닫음)');
-    await pg.click('#askGo'); await pg.waitForFunction(() => /모두 닫고/.test(document.querySelector('#last').textContent)); ok(runs().pop().input.close.map((c) => c.h).sort().join() === '104,105' && /닫힘 2개/.test(await pg.textContent('#last')), '두 번째 누름에 그 목록 창만 닫고 엶 · 결과에 닫은 수');
+    await pg.click('#askGo'); await pg.waitForFunction(() => /모두 닫고/.test(document.querySelector('#last').textContent)); { const rr = runs().pop(); const t = await pg.textContent('#last'); ok(rr.input.close.map((c) => c.h).sort().join() === '104,105' && /모두 닫기 — 닫힘 2 · 강제 종료 0 · 남음 0/.test(t), '두 번째 누름에 고른 창만 닫고 엶 · 결과에 닫힘·강제 종료·남음 수', [rr.input.close, t]); }
     await pg.setViewportSize({ width: 560, height: 720 }); await pg.click('#b4'); await pg.click('#lvs button[data-lv="3"]'); await pg.click('#scan'); await pg.waitForSelector('#doClean');
     ok(/OneDrive/.test(await pg.textContent('#scanout')) && /Add-MpPreference/.test(await pg.textContent('#scanout')) && !(await pg.$('[data-pid="11"]')) && await pg.$eval('[data-pid="15"]', (x) => x.disabled), '깊게 미리보기 — 끌 후보(크롬 없음 · Adobe 보조 막힘) · Defender 제안 글');
     ok(/권하는 정도/.test(await pg.textContent('#advice')), '어디까지 비우면 좋은지 조언 단락');
@@ -78,9 +81,20 @@ const SHOTS = process.env.PCDOCK_SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 
     await drag('.app[data-app="self"]', await C(D2, 3, 0)); ok(await pg.$$eval('.blk', (L) => L.length) === nb + 1 && /한 곳에만/.test(await pg.textContent('#toast')), '두 번째로 놓으면 안 놓이고 쪽지(창이 하나라 한 곳만)');
     { const i = await pg.evaluate(() => C.place.findIndex((p) => p.app === 'self')); await drag(`.blk[data-i="${i}"]`, await C(D2, 3, 1)); ok((await pg.evaluate(() => C.place.find((p) => p.app === 'self'))).c === 3, '놓은 자기 창 덩이를 끌어 칸 바꿈'); }
     const nFit = fs.readFileSync(path.join(D, 'fake.log'), 'utf8').split('\n').filter((l) => /"act":"fit"/.test(l)).length;
-    await pg.click('#setOk'); await pg.waitForSelector('#home.on'); await pg.waitForTimeout(400);
+    await pg.click('#setOk'); await pg.waitForSelector('#home.on');
+    /* (0.1.9) 고정 0.4초 대신 「옮겨 달라는 부탁이 로그에 찍힐 때까지」(최대 8초) — 도우미 줄이 다른 일로 잠깐 차 있으면 0.4초 안에 안 찍혀 가끔 틀렸음 */
+    for (let k = 0; k < 80 && fs.readFileSync(path.join(D, 'fake.log'), 'utf8').split('\n').filter((l) => /"act":"fit"/.test(l)).length <= nFit; k++) await pg.waitForTimeout(100);
     { const sv = JSON.parse(fs.readFileSync(path.join(D, 'settings.json'), 'utf8')); ok(sv.place.filter((p) => p.app === 'self').length === 1 && sv.place.find((p) => p.app === 'self').mon === D2, '저장 — 자기 창 자리 하나', sv.place); }
     { const F = fs.readFileSync(path.join(D, 'fake.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.act === 'fit'); const f = F[F.length - 1]; ok(F.length > nFit && f.input.rect && f.input.rect.x === 1920 + 512 * 3 && f.input.rect.y === 360 && f.input.rect.w === 512, '처음 화면으로 돌아가면 놓은 칸(울트라와이드 4번째 칸 · 둘째 줄)으로 옮겨 달라고 함', f); }
+    console.log('⑥ (0.1.9 · 정범님 11/17 16:16) ⛔ 전체 닫기 — 첫 누름 목록 · 두 번째 누름 닫기 · 결과를 그 자리에');
+    await pg.click('#b5'); await pg.waitForSelector('#allGo'); { const t = await pg.textContent('#allList'); ok(await pg.isVisible('#all') && /닫을 수 있는 창 5개/.test(t) && /Chrome/.test(t) && /Claude/.test(t) && /안 닫는 창 2개/.test(t) && await pg.$$eval('#allList input[data-i]:checked', (L) => L.length) === 5 && !fs.readFileSync(path.join(D, 'fake.log'), 'utf8').split('\n').some((l) => /"act":"closeall"/.test(l) && !/"plan":true/.test(l)), '첫 누름 = 목록만(크롬·Claude도 · 기본 모두 고름 · 아직 안 닫음)', t); }
+    await pg.screenshot({ path: path.join(SHOTS, '6-closeall.png') });
+    await pg.uncheck('#allList input[data-i="0"]'); await pg.uncheck('#allList input[data-i="1"]'); ok(/고른 3개 모두 닫기/.test(await pg.textContent('#allGo')), '고르기를 바꾸면 단추 글도 바뀜(고른 3개)');
+    await pg.click('#allGo'); await pg.waitForFunction(() => /전체 닫기 끝/.test(document.querySelector('#allList').textContent));
+    { const ca = fs.readFileSync(path.join(D, 'fake.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.act === 'closeall' && !x.input.plan).pop(); const t = await pg.textContent('#allList');
+      ok(ca && ca.input.wins.map((w) => w.h).join() === '104,105,106' && /닫힘 2 · 강제 종료 0 · 남음 1/.test(t) && /남음 = 강제 종료도 안 된/.test(t) && /닫힘 2/.test(await pg.textContent('#b5s')), '두 번째 누름에 고른 창만 닫음 · 결과(닫힘·강제 종료·남음 · 남은 것은 직접 닫아 달라는 글)', [ca && ca.input.wins, t]); }
+    await pg.screenshot({ path: path.join(SHOTS, '6b-closeall-done.png') });
+    await pg.click('#allNo'); ok(!(await pg.isVisible('#all')), '← 처음으로');
     ok(!errs.length, '화면 오류·브라우저 팝업 없음', errs);
   } finally { await br.close(); sp.kill(); fs.rmSync(D, { recursive: true, force: true }); }
   console.log('스크린샷: ' + SHOTS);
