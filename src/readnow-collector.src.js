@@ -25,10 +25,10 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.15
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.18
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.197
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.198
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.24
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
-// @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
+// @require      https://readnow.kr/readnow-ml-core.js?v=0.9.12
 // @require      https://readnow.kr/readnow-autosched-core.js?v=0.18.32
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
