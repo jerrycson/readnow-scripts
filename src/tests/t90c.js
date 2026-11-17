@@ -20,13 +20,14 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   console.log(JSON.stringify(r2));
   chk('상품 탭 맨 위 칸', r2.topOk); chk('재고 품목 맨 위', /U21598341[15]/.test(r2.first || '')); chk('재고 품목 머리 🧯', r2.hd); chk('재고 합계 시험 뺌', /시험 2개 뺌/.test(r2.sum)); chk('목록 창 맨 위', /U21598341[15]/.test(r2.f2 || '')); chk('목록 창 머리 🧯', r2.hd2);
   // 기록: 생김
-  await p.waitForTimeout(3500);
+  // (kfail2 11/17) 기록 쓰기 = probChanged → 0.4초 → 2.5초 뒤 올림이라 바쁜 컨테이너에선 3.5초를 넘김(main에서 재 보니 1.2~6.1초) — 정한 시간 대신 기록이 생길 때까지(최대 20초) 기다림 · 기대는 그대로
+  await p.waitForFunction(() => { const d = (window.__FS.prd_problems || {})['test__aladin_U215983411']; return !!(d && d.open); }, null, { timeout: 20000 }).catch(() => {});
   const r3 = await p.evaluate(async () => { const d = (window.__FS.prd_problems || {})['test__aladin_U215983411']; openProblems(); await new Promise((r) => setTimeout(r, 300)); const sh = document.getElementById('sheet'); return { d, cur: sh.querySelectorAll('.probcur').length, logs: sh.querySelectorAll('.problog').length, del: !!sh.querySelector('[data-probdel="aladin_U215983411"]'), unt: !!sh.querySelector('[data-probuntest="rt2"]') }; });
   console.log(JSON.stringify(r3));
   chk('기록 생김', r3.d && r3.d.open === true && (r3.d.log || []).some((x) => x.ev === 'open')); chk('문제 페이지', r3.cur === 2 && r3.logs >= 2 && r3.del && r3.unt);
   // 두 번 눌러 시험 표시 풀기(rt2) · 상품 삭제 상태로(rt1) → 풀림 · 원래대로
   const r4 = await p.evaluate(async () => { const b = document.querySelector('[data-probuntest="rt2"]'); b.click(); const armed = b.dataset.arm === '1'; const after1 = (window.__FS.reg_items.rt2 || {}).test; b.click(); await new Promise((r) => setTimeout(r, 600));
-    const l = S.plist.get('aladin_U215983411'); S.plist.set(l.id, { ...l, status: '삭제', active: false }); bump('p'); probChanged(); await new Promise((r) => setTimeout(r, 3600));
+    const l = S.plist.get('aladin_U215983411'); S.plist.set(l.id, { ...l, status: '삭제', active: false }); bump('p'); probChanged(); { const t = Date.now(); while (Date.now() - t < 20000) { const P0 = window.__FS.prd_problems || {}; const a = P0['test__aladin_U215983411'], b2 = P0['test__aladin_U215983415']; if (a && a.open === false && b2 && b2.open === false) break; await new Promise((r) => setTimeout(r, 100)); } await new Promise((r) => setTimeout(r, 300)); } // (kfail2 11/17) 풀림 기록도 정한 3.6초 대신 생길 때까지(최대 20초)
     const P = window.__FS.prd_problems; const all = [...S.plist.values()]; return { armed, after1, rt2: window.__FS.reg_items.rt2.test, d1: P['test__aladin_U215983411'], d2: P['test__aladin_U215983415'], prob: probAll().size, pin: probPin(all) === all, band: prodCard2(S.plist.get('aladin_U215983411')), page: document.querySelectorAll('#sheet .probcur').length }; });
   console.log(JSON.stringify({ ...r4, band: r4.band.slice(0, 0) }));
   chk('두 번 눌러야', r4.armed && r4.after1 === true && r4.rt2 === false); chk('풀림 기록(지움)', r4.d1 && r4.d1.open === false && /지워짐/.test(r4.d1.how || '') && r4.d1.log.some((x) => x.ev === 'close'));

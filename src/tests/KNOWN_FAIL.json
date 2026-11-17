@@ -2,80 +2,6 @@
  "about": "알려진 실패 장부 — 빠른 시험(QUICK.json)·딸린 시험 중 이미 실패 중인 것만 · 줄마다 test·items(실패 항목 글 일부 · 비우면 그 시험 전체)·why(까닭)·owner(담당 이름표)·until(기한 YYYY-MM-DD · 14일 안)·since · 기한이 지나면 ship-check ⑧이 push를 막음 · main에서도 실패로 넘기지 말고 여기에 올리고 리드에게 (rv2b 11/13)",
  "items": [
   {
-   "test": "tSHOP1111",
-   "items": [
-    "첫 화면을 띄워 두면 5분 뒤 조용히 다시 받아"
-   ],
-   "why": "(11/17 kfail2) 주문 처리 7항목은 기능 고침으로 통과해 뺌 · 남은 것: (11/17 17시 shelfload2) '첫 화면 5분 뒤 새 책' 항목 부하 중 흔들림 — 우리숍 0.2.19 판에서 3번 중 2번 실패·1번 통과, main 2번 통과 · 첫 화면(#/)은 서가 파일을 안 부름(shop.js 443줄 · #/shelf 열 때만) → 가짜 시계 뒤 5초 기다림이 부하(40~46)에 늦는 것으로 봄",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "tSHIPDAY",
-   "items": [],
-   "why": "오늘 출고 ⚙ PC 오류 알림 항목 — main(bf8400e0)에서도 같은 실패(spine3 11/17 test-gate 확인 · VM 부하 40~45) · 1.78.683은 이 화면 안 건드림 · 까닭 조사 전",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "tMJREG2_1112",
-   "items": [],
-   "why": "마진 등록 설명 글 시험 — main(35281535)에서도 실패(11/17 17시 shelfload2 test-gate --target origin/main · 요약 줄 ❌) · 우리숍 0.2.19 판에서는 다시 돌려 통과 · VM 부하 40~46 흔들림 의심 · 우리숍 서가는 이 화면 안 건드림 · 까닭 조사 전",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-24"
-  },
-  {
-   "test": "tY24REG",
-   "items": [
-    "'올라감 확인'(두 번 누르기) 뒤 여러 건이 열림"
-   ],
-   "why": "예스24 등록 시험 한 항목 — main 올림 시험(부하 40~46)에서 두 번 실패했으나 우리숍 0.2.19 판 따로 돌림·main 모두 통과(11/17 17시 shelfload2) → 부하 흔들림으로 봄 · 우리숍 서가는 이 화면 안 건드림 · 까닭 조사 전",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-24"
-  },
-  {
-   "test": "t72",
-   "items": [],
-   "why": "수집기 qEditRead·qtyChkCmd 원문을 readnow-collector.user.js(본체 로더)에서 떼어 쓰는데 그 함수들이 모듈로 옮겨져 본체에 없음 → '못 찾음   async function qEditRead(lid) {'로 시작도 못 함(통과 줄 없음) · 이 판(클라우드 0.35.282 headless2)은 수집기·t72를 안 건드림(git diff로 확인) · 시험이 cwd src 기준 '../readnow-collector.user.js'를 읽음 · 고칠 길: 함수가 옮겨 간 모듈 파일에서 떼도록 t72 경로 고침 · 담당 lead",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "tNOTE4",
-   "items": [],
-   "why": "(11/17 omniauto1 확인) main bf8400e0(omniauto1 판 앞)에서도 같이 실패 — test-gate --base origin/main~1 --target origin/main --only tNOTE4 · 항목은 다 ✓인데 끝 줄이 '❌ 1개 실패'(실패 항목 줄을 문지기가 못 읽음) · 노트 화면은 omniauto1 판이 건드리지 않음 · 까닭 조사 전",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-24"
-  },
-  {
-   "test": "tNOTE4",
-   "why": "노트 시험 — main 판 시험대에서도 '❌ 1개 실패'(드래그 판 2개) · 문지기 main 실행에선 첫 번 실패·다시 통과 · main(bf8400e0)에서도 같은·비슷한 실패(11/17 lead 일꾼 bkfold1이 test-gate --target origin/main과 시험대 두 곳(main 판·수동 일괄 드래그 판)을 나란히 돌려 확인) · 기계가 바쁠 때(부하 30~47) 실패 항목이 돌 때마다 바뀌어 시험 전체로 올림 · 수동 일괄 그룹 순서 ⠿ 드래그 판은 출고·노트 화면을 건드리지 않음",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "tSHIPUNI",
-   "why": "출고 ⚠ 사람이 볼 것 수 — 시험대에서는 두 판 모두 통과(2·2·2·2)지만 문지기 안(바쁜 기계)에서는 '📤 발송준비시작 — 맡긴 곳의 응답이 늦음'이 하나 더 잡혀 3·3·3·3으로 두 번 실패(시각에 기대는 항목) · main(bf8400e0)에서도 같은·비슷한 실패(11/17 lead 일꾼 bkfold1이 test-gate --target origin/main과 시험대 두 곳(main 판·수동 일괄 드래그 판)을 나란히 돌려 확인) · 기계가 바쁠 때(부하 30~47) 실패 항목이 돌 때마다 바뀌어 시험 전체로 올림 · 수동 일괄 그룹 순서 ⠿ 드래그 판은 출고·노트 화면을 건드리지 않음",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "t101",
-   "items": [],
-   "why": "📖 등록 백과 휴대폰 폭 단추(r.phone.btn)가 거짓 — 요약 줄만 ❌ · main 5c631aba에서도 같은 실패(11/17 18시 bkfold1이 test-gate --target origin/main --only t101로 확인) · bkfold1 판은 등록 백과를 건드리지 않음 · 까닭 조사 전",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
    "test": "tONESHOTc",
    "items": [
     "링크(href) 안 송장번호로 첫 건 검증 맞음 {}",
@@ -144,6 +70,14 @@
    "owner": "lead",
    "since": "2026-11-17",
    "until": "2026-11-30"
+  },
+  {
+   "test": "tshard",
+   "items": [],
+   "why": "판 ① 1.78.687(0750bd1e)부터 main에서 실패 — 묶음 실시간 받기(bkfListen)가 시험의 가짜 db에서 throw해 batchSlots가 멈춤(실제 Firestore는 문제 없음) · bkfold1이 판 ②에서 try로 감싸고 tshard를 harness 꼴로 옮겨 고침 · 판 ② 나가기 전까지만 임시 · 나간 뒤 다시 돌려 통과면 뺌 (bkfold1 보고 · kfail2 11/17 적음)",
+   "owner": "lead",
+   "since": "2026-11-17",
+   "until": "2026-11-24"
   }
  ]
 }

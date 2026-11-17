@@ -46,9 +46,10 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { document.activeElement && document.activeElement.blur(); rgenShow('code-sku'); }); await p.waitForTimeout(400);
   await p.keyboard.press('Escape'); await p.waitForTimeout(200); r.esc = await p.evaluate(() => !document.querySelector('.rgen') && !!(S.detail && S.detail.reg));
   await p.keyboard.press('Alt+KeyG'); await p.waitForTimeout(300); r.mem = await p.evaluate(() => RGEN.cur);
-  // ⑨ 등록 화면 다시 그려도 창·단추 그대로 · 바깥 눌러도 안 닫힘
-  await p.evaluate(() => { regRerender(); }); await p.waitForTimeout(600); const hp = await p.evaluate(() => { const b = document.querySelector('.rgsearch-h small').getBoundingClientRect(); return { x: b.left + 5, y: b.top + b.height / 2 }; }); await p.mouse.click(hp.x, hp.y); await p.waitForTimeout(200);
-  r.stay = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null);
+  // ⑨ 등록 화면 다시 그려도 창·단추 그대로 · (1.78.688 🫧 빈 곳 눌러 닫기 — 정범님 11/17 I-1117-1331-10 「모든 창·띠는 바깥을 누르면 닫힘」 · BGC_FL에 .rgen) 바깥을 누르면 닫힘 → 📖 단추로 다시 엶
+  await p.evaluate(() => { regRerender(); }); await p.waitForTimeout(600); const hp = await p.evaluate(() => { const b = document.querySelector('.rgsearch-h small').getBoundingClientRect(); return { x: b.left + 5, y: b.top + b.height / 2 }; }); const stayRe = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null); await p.mouse.click(hp.x, hp.y); await p.waitForTimeout(200);
+  const bgClose = await p.evaluate(() => !document.querySelector('.rgen')); await p.evaluate(() => document.querySelector('#sheet > .sh .rgenbtn').click()); await p.waitForTimeout(300);
+  const reopen = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null); r.stay = stayRe && bgClose && reopen; r.stayParts = { stayRe, bgClose, reopen };
   // ⑩ 띄우기 모드 · 끌어 옮기기
   await p.evaluate(() => document.querySelector('[data-rgen="mode"]').click()); await p.waitForTimeout(200);
   const hb = await p.evaluate(() => { const r0 = document.querySelector('.rgen-h > span').getBoundingClientRect(); return { x: r0.left + r0.width / 2, y: r0.top + r0.height / 2, m: RGEN.mode, dock: document.documentElement.classList.contains('rgen-dock') }; });
@@ -59,6 +60,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => history.back()); await p.waitForTimeout(700); r.closeWithSheet = await p.evaluate(() => !document.querySelector('.rgen') && !document.documentElement.classList.contains('rgen-dock'));
   // ⑫ 휴대폰 폭
   await p.setViewportSize({ width: 390, height: 800 }); await p.evaluate(() => { openRegister(); }); await p.waitForTimeout(900); await p.evaluate(() => rgenOpen('start-1')); await p.waitForTimeout(300);
+  await p.waitForFunction(() => !!document.querySelector('#sheet > .sh .rgenbtn'), null, { timeout: 5000 }).catch(() => {}); /* (kfail2 11/17) 📖 단추는 화면이 바뀐 뒤 60ms 조용해지면 붙음(kbBtnFill 미루기) — 휴대폰 폭에선 떠 있는 ☰ 단추가 '단추 n' 글을 매 화면 다시 써 조용해지지 않아 영영 안 붙던 것(앱에서 고침) · 바쁜 기계 대비로 붙을 때까지 기다림 · 기대 그대로 */
   r.phone = await p.evaluate(() => { const e = document.querySelector('.rgen'); const b = e.getBoundingClientRect(); const a = document.querySelector('.rgen-a'); return { m: RGEN.mode, w: Math.round(b.width), bottom: Math.round(window.innerHeight - b.bottom), hscroll: a.scrollWidth - a.clientWidth, sz: getComputedStyle(document.querySelector('.rgen-sz')).display !== 'none', btn: !!document.querySelector('#sheet > .sh .rgenbtn'), fig: !!document.querySelector('.rgen-fig svg') }; });
   await p.evaluate(() => document.querySelector('[data-rgen="toc"]').click()); r.phToc = await p.evaluate(() => getComputedStyle(document.querySelector('.rgen-toc')).display === 'block');
   await p.evaluate(() => document.querySelector('.rgen-toc button[data-rgenid="kbd-all"]').click()); r.phTocSel = await p.evaluate(() => RGEN.cur === 'kbd-all' && !document.querySelector('.rgen').classList.contains('tocon'));
