@@ -122,8 +122,8 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf) && !ctx.naver) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
     if (p.stop && p.stop.until && t >= p.stop.until && !p.stop.bad && !p.stop.human && !p.stop.blocked) { p.stop = null; p.fails = 0; save(); try { note(`🔐 ${(cred.PF[pf] || {}).name || pf} — 멈춘 지 정한 시간이 지나 스스로 다시 로그인을 다시 해 봄`); } catch (e) {} } /* (11/13 home2) '연속 실패'·'됨 뒤 금방 풀림' 멈춤은 정한 시간 뒤 저절로 풂(사람 손 없이 · 하루 몫은 그대로 계정 보호) */
     if (p.stop) return `멈춤 — ${p.stop.why}${p.stop.until ? ` (${hm(p.stop.until)}에 저절로 다시 해 봄)` : ' (⚙ › 🔐에서 [다시 해 보기])'}`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
-    if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; if (t - last < c.gapMin * 60e3) return `앞 시도 뒤 ${c.gapMin}분 기다림`;
-    { const bw = back(pf); if (bw && t < bw.until) return `끊긴 뒤 ${bw.n}번 연달아 금방 끊김 — ${bw.min}분 기다림(${hm(bw.until)}에 다시 · 다른 곳 세션과 서로 끊기 되풀이 막기)`; }
+    if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; const gm = ctx.urgent ? Math.min(c.gapMin, 2) : c.gapMin; if (t - last < gm * 60e3) return `앞 시도 뒤 ${gm}분 기다림`; /* (bunoe1 11/17) urgent = 문의 답이 로그인만 기다림 — 앞 시도 간격 2분까지 · 늘린 기다림 건너뜀 */
+    { const bw = ctx.urgent ? null : back(pf); if (bw && t < bw.until) return `끊긴 뒤 ${bw.n}번 연달아 금방 끊김 — ${bw.min}분 기다림(${hm(bw.until)}에 다시 · 다른 곳 세션과 서로 끊기 되풀이 막기)`; }
     if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `24시간에 ${c.perDay}번까지 — ${hm(p.tries[0] + 86400e3)}부터 다시`; /* (11/13 home2) '내일'이 아니라 셈은 지난 24시간 — 가장 오래된 시도가 빠지는 때 */ return null; }
   /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
   async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;

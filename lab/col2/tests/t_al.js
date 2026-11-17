@@ -81,7 +81,8 @@ const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.j
     const A1 = await attach(HOME); await A1.pg.waitForSelector('input[type=password]'); await A1.pg.fill('input[name=id]', 'seller'); await A1.pg.fill('input[type=password]', PW_SECRET); await A1.pg.check('input[name=keep]'); await A1.pg.click('button'); await A1.pg.waitForURL(/wmain/).catch(() => {});
     await wait(1500); s = await a(); ok(s.login === 'human', '정범님이 창을 닫기 전엔 번외가 그 창을 건드리지 않고 기다림', s.msg);
     await closeHuman(A1); /* 정범님이 창을 닫음(X) — 크롬이 점잖게 끝나며 쿠키를 씀 */
-    s = await until(async () => { const v = await a(); return v.login === 'ok' ? v : null; }, 80);
+    /* (11/17 bunoe2) 로그인 ok·숨김 뒤에 사람 창 기록(hu)이 남음 — 기록까지 기다린 뒤 견줌(시험 다툼 고침) */
+    s = await until(async () => { const v = await a(); return v.login === 'ok' && v.hu ? v : null; }, 80);
     if (process.env.DBG) console.log(JSON.stringify(F.S.log.slice(n0).map((x) => x.m + x.p + (x.auth ? '+' : '-'))), (await a()).msg, (await a()).loginMsg); ok(s && H.T.win().acts.includes('hide:col2-al-chrome'), '로그인하면 저절로 다시 숨김', s && s.msg);
     ok(s && s.hu && s.hu.ok && Array.isArray(s.hu.path) && s.hu.path.some((x) => /\/scm\/wmain/.test(x)) && s.hu.path.every((x) => !/[?#=]/.test(x) && !x.includes(PW_SECRET)) && /^--user-data-dir=…/.test(s.hu.cmd[0]) && /샵매니저 화면까지/.test(s.hu.stop || '') && s.hu.prof && s.hu.prof.blk === 0,
       '(11/12 login2) 사람 창 기록 — 띄운 인자·거친 길(호스트·경로만 · 물음표 뒤 값 없음)·멈춘 곳·프로필 상태가 상태(hu)에 남음', s && JSON.stringify(s.hu));

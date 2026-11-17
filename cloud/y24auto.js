@@ -27,6 +27,10 @@ const MKT_MAX = 120; /* 한 번에 시장 지표를 받는 책 수(웹앱 Y24E_M
  *   ① 문서를 아예 지움·Firebase 콘솔에서 사람이 손으로 바꿈(uploadedAt 그대로)은 통째 다시 읽기(FULL_MS)가 잡음 ② 그 사이엔 보내기 직전 한 권씩 새로 읽기(step 재확인 · downStep)가 그대로 막음
  *   ③ 바뀐 줄이 DELTA_CAP을 넘거나(수집기 몰아 쓰기) 바뀐 줄 읽기가 실패하면 그 자리에서 통째로 다시 읽음 · 근거: 없음(정범님 결정 전 첫 값) */
 const FULL_MS = 6 * 3600e3, DATA_MS = 10 * 60e3, LAP = 5 * 60e3, DELTA_CAP = 3000, ADM_SLOW = 45 * 60e3, FAIL_MS = 45 * 60e3; /* ADM_SLOW = 관리자 원문 '맨 위 한 줄 보기'가 안 되는(색인 없음) 때 예전처럼 45분마다 */
+/* (bunoe1 11/17 · 정범님 19.10 · A95 리드 결정) 올릴 후보가 0건인 동안엔 통째 읽기를 24시간마다(FULL_IDLE_MS) — 6시간마다 통째(하루 약 7.2만 읽기)가 후보 없을 때도 돌던 것
+ *  후보 수 = step이 마지막으로 센 y24AutoCand 수(PC마다 · 24시간 안에 본 값만) · 본 값이 없거나 한 PC라도 후보가 있으면 예전처럼 6시간 · ⚙ platforms.y24.read.fullH가 있으면 늘 그 값
+ *  그대로 둠: 팔린 책 판매중지 작은 켜(FRESH_MS 5분)·바뀐 줄 읽기(DATA_MS 10분) · 되돌림 = app_settings/platforms.y24.read.fullH = 6 */
+const FULL_IDLE_MS = 24 * 3600e3;
 const RD_COLS = ['app_settings', 'prd_listings', 'y24_listings', 'crm_orders', 'reg_items', 'crm_y24_raw']; /* 읽기 셈 칸(늘 같은 칸 — 장부 merge가 옛 칸을 남기지 않게) */
 /* (r1116-y24 · 합동 검토 「고친 뒤 내기」) 🛑 팔린 책 내림이 쓰는 알라딘 판매 상태만 작은 켜로 — 큰 켜(BIG_MS 45분)를 그대로 쓰면 주문 신호 없이 알라딘에서만 팔린 책의 예스24 판매중지가 최대 45분 늦었음(이중 판매 창)
  *  FRESH_MS마다 '지난번 뒤 바뀐 상품 줄'만 읽음(prd_listings.uploadedAt > 지난번 − FRESH_LAP · 클라우드 SKU·조회수 실험과 같은 길 · 칸은 L_FIELDS로 좁힘) → 큰 켜의 그 줄을 새 값으로 바꿈
@@ -68,7 +72,7 @@ function blockOf(src) { const t = cutBlock(String(src || '')); if (!t) return nu
 function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now || Date.now; const iso = () => new Date(now()).toISOString(); const FV = o.FV;
   const getText = o.getText || (async (f) => { const r = await o.coreFetch(f); if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); });
   const getUrl = o.getUrl || (async (u) => { const r = await fetch(u + (u.includes('?') ? '&' : '?') + 't=' + now()); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); });
-  const M = { mods: null, modsAt: 0, data: null, dataAt: 0, big: null, bigAt: 0, mkt: new Map(), nd: new Map(), reqd: new Map(), last: new Map(), why: new Map() };
+  const M = { mods: null, modsAt: 0, data: null, dataAt: 0, big: null, bigAt: 0, mkt: new Map(), nd: new Map(), reqd: new Map(), last: new Map(), why: new Map(), cand: new Map() }; /* cand = PC → { n: 마지막으로 센 올릴 후보 수, at } (bunoe1 — 통째 읽기 간격) */
   /* 공용 셈 받기(30분마다 새로) — ◆y24reg 덩어리 · ext-core · registry · shipping · SheetJS */
   async function mods() { if (M.mods && now() - M.modsAt < 30 * 60e3) return M.mods; const m = { ...(M.mods || {}) }; const err = [];
     try { m.B = blockOf(await getText('src/app.html')); } catch (e) { m.B = null; } if (!m.B) { try { m.B = blockOf(await getUrl(WEB_URL)); } catch (e) { err.push('웹앱 셈 덩어리: ' + e.message); } }
@@ -149,7 +153,8 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     B.last = { kind: 'delta', pl: nPl, y24: nY, other: n, at: iso(), ms: now() - t0 }; return B; }
   /* 기억 안 창 다듬기(주문 14일 · 등록 45일) — 읽기 없음 */
   const trim = (B) => { const oc = ordCut(), rc = regCut(); for (const [id, v] of B.ord) if (!(String(v.orderedAt || '') >= oc)) { B.ord.delete(id); chg('crm_orders', id, 'del'); } for (const [id, v] of B.reg) if (!(String(v.createdAt || '') >= rc)) { B.reg.delete(id); chg('reg_items', id, 'del'); } };
-  const fullMs = (plat) => { const h = +(((plat || {}).y24 || {}).read || {}).fullH; return isFinite(h) && h >= 1 ? Math.min(24, Math.round(h)) * 3600e3 : FULL_MS; };
+  const candIdle = () => { const t = now(); const v = [...M.cand.values()].filter((x) => t - x.at < FULL_IDLE_MS); return v.length > 0 && v.every((x) => !x.n); }; /* (bunoe1) 24시간 안에 센 후보가 모든 PC에서 0건 */
+  const fullMs = (plat) => { const h = +(((plat || {}).y24 || {}).read || {}).fullH; return isFinite(h) && h >= 1 ? Math.min(24, Math.round(h)) * 3600e3 : candIdle() ? FULL_IDLE_MS : FULL_MS; };
   async function data(force) { if (!force && M.data && now() - M.dataAt < DATA_MS) return M.data; const D = { at: now() };
     const [main, plat, ship, lk] = await Promise.all(['main', 'platforms', 'ship_auto', 'y24_link'].map((k) => doc('app_settings', k))); rdAdd(M.big ? 'delta' : 'full', 'app_settings', 4);
     D.main = main || {}; D.plat = plat || {}; D.ship = ship || {}; D.lk = { m: (lk && lk.m) || {}, x: (lk && lk.x) || {} }; const FM = fullMs(plat);
@@ -419,7 +424,7 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });
-    const bcOk = !!st.bc; const cand0 = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has); const cand = cand0.filter((r) => !r.bc || bcOk); /* (r1116-y24reg) 바코드 줄은 바코드를 아는 번외(state bc:1 · 0.1.71 뒤)에만 — 옛 번외는 ISBN 검사로 거절 → 멈춤이 되므로 */
+    const bcOk = !!st.bc; const cand0 = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has); const cand = cand0.filter((r) => !r.bc || bcOk); M.cand.set(pc, { n: cand0.length, at: now() }); /* (bunoe1) 후보 0건이면 통째 읽기 24시간마다 — fullMs */ /* (r1116-y24reg) 바코드 줄은 바코드를 아는 번외(state bc:1 · 0.1.71 뒤)에만 — 옛 번외는 ISBN 검사로 거절 → 멈춤이 되므로 */
     const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length, ...(cand0.length > cand.length ? { bcWait: cand0.length - cand.length } : {}) };
     for (const h of P.human.filter((x) => x.mkt).slice(0, 10)) { const i = String(h.row.isbn); const d = M.mkt.get(i); if ((d && d.reqAt && now() - Date.parse(d.reqAt) < 6 * 3600e3) || now() - (M.reqd.get(i) || 0) < 6 * 3600e3) continue; M.reqd.set(i, now());
       try { const at = iso(); await C('y24_mkt').doc(i).set({ isbn: i, req: { at, by: 'cloud y24auto', dev: pc, auto: true } }, { merge: true }); if (d) d.reqAt = at; } catch (e) {} } /* 웹앱 y24mReq(auto) — 클라우드 시장 읽기에 맡김 */
