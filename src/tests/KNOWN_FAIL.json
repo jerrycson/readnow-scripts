@@ -91,22 +91,6 @@
    "until": "2026-11-30"
   },
   {
-   "test": "tj143",
-   "items": [],
-   "why": "수집기 본체 시험 — 옛 작업 자리 경로를 박아 둠(/home/claude/w/out/ + process.argv[2] · 인자 없이 부르면 'out/undefined'를 읽어 바로 끝 코드 1) · main(879e73ed)에서도 같은 실패(11/17 lead 일꾼 y24reg5가 직접 돌려 확인) · 이번 판은 cloud/y24auto.js 돌려주는 줄(mods 이름이 든 줄)을 건드려 딸린 시험으로 뽑혔을 뿐 수집기는 그대로 · 시험이 빌드 자리를 찾게 고치면 이 줄을 지움",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
-   "test": "tlive",
-   "items": [],
-   "why": "빠른 업데이트 본체 시험 — 옛 작업 자리 /home/claude/w/out/readnow-collector.user.js와 /home/claude/readnow-scripts/를 박아 둠(이 컨테이너엔 그 빌드가 없음) · main(879e73ed)에서도 같은 실패(11/17 lead 일꾼 y24reg5 확인) · 이번 판은 수집기를 건드리지 않음(cloud/y24auto.js 돌려주는 줄 때문에 딸린 시험으로 뽑힘) · 시험이 빌드 자리를 찾게 고치면 이 줄을 지움",
-   "owner": "lead",
-   "since": "2026-11-17",
-   "until": "2026-11-30"
-  },
-  {
    "test": "tBENCH1109b",
    "items": [
     "① 새로고침·멈춤·테더링 끊김은 끝이 아님(resume)",
