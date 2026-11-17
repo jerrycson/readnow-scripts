@@ -22,7 +22,7 @@ const bodyAxes={ribWidth:'흉곽 폭',ribDepth:'흉곽 두께',breastWidth:'가�
 export const axes=id=>id==='W'?bodyAxes:faceAxes;
 export const zero=id=>Object.fromEntries(Object.keys(axes(id)).map(k=>[k,0]));
 export const defaultBase=id=>id==='F02'?'candidate':'prior';
-export const baseLabel=(id,key)=>key==='round48'?'48차 연구 후보':key==='round47'?'47차 원본 대조 후보':key==='history37'?(id==='F02'?'37차 페른 턱 .75':'37차 당시 기본') : key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
+export const baseLabel=(id,key)=>key==='round49'?(id==='W'?'49차 자세 시험 · 47차 연구 몸통':'49차 표정 시험 · 47차 중립'):key==='round48'?'48차 연구 후보':key==='round47'?'47차 원본 대조 후보':key==='history37'?(id==='F02'?'37차 페른 턱 .75':'37차 당시 기본') : key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
 export const presets=id=>id==='W'?[
   ['얕고 넓게',{ribWidth:22,breastWidth:50,projection:-50}],['하부를 낮게',{lower:-50,projection:20}]
 ]:[['턱밑 올림',{throat:55,chin:-15}],['볼 폭 줄임',{cheek:-52,jaw:-20}]];
@@ -171,15 +171,19 @@ export function surfaceZones(scene,id){
     return {key,label,xAxis,yAxis,indices:[...new Set([nearest(1),nearest(-1)])]};
   });
 }
-export function screenAnchors(frame,model,scene,view,zones){
+export function surfaceProjection(frame,model,scene,view){
   const camera=frame.projection?frame:renderPixels(model.settings,{sceneOverride:{...scene,parts:[]},portrait:'face',freeOrbit:true,
     yaw:view.yaw,pitch:view.pitch,cameraZoom:view.zoom*160/184,studyResolution:192});
   const yaw=camera.coordinates.yaw*Math.PI/180,pitch=camera.coordinates.pitch*Math.PI/180;
   const depth=([x,y,z])=>Math.sin(pitch)*y+Math.cos(pitch)*(Math.cos(yaw)*z-Math.sin(yaw)*x);
-  const root=scene.parts[0],ratio=frame.width/camera.width;
+  const ratio=frame.width/camera.width;
+  return {depth,point:p=>projectPoint(camera,p).map(q=>q*ratio)};
+}
+export function screenAnchors(frame,model,scene,view,zones){
+  const camera=surfaceProjection(frame,model,scene,view),root=scene.parts[0],depth=camera.depth;
   return zones.map(zone=>{
     const index=zone.indices.reduce((a,b)=>depth(root.vertices[a].p)>depth(root.vertices[b].p)?a:b);
-    const v=root.vertices[index],point=projectPoint(camera,v.p).map(q=>q*ratio);
+    const v=root.vertices[index],point=camera.point(v.p);
     return {...zone,index,point,front:depth(v.n)>-.05};
   });
 }

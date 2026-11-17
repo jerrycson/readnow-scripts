@@ -571,6 +571,52 @@
         "file": "studio-training48.json",
         "sha256": "a99c18d280cc5058b5582e28cad6e044b6a165d9c2565f0a39a4249806abd2b5"
       }
+    },
+    {
+      "id": "152344f0cea83934077707ec",
+      "project": "bookfriend",
+      "round": 49,
+      "cards": 353,
+      "sources": 342,
+      "chapters": 14,
+      "cardsSha": "ab28028d9240c30b391bbe62305cdd94caae943cdbdb394677f2b2eb15568a8a",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "d2547eddce00c1a748ee168d00f0e6b0a0493e197265e5b5438dea513ffe32f6",
+      "at": "2026-11-17T08:56:40.369Z",
+      "label": "49차 · 중립과 표정 · 실제로 손을 옮긴 두 자세 대조",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45",
+        "controller-note46",
+        "precedent-note46",
+        "face-note47",
+        "chest-note47",
+        "face-note48",
+        "chest-note48",
+        "face-note49",
+        "chest-note49"
+      ],
+      "supersedes": "838d8f6f712062ff0f53e050",
+      "learningEvidence": {
+        "file": "studio-training49.json",
+        "sha256": "d8f294f5994dcf3f4e5cd8c979be1bbcd5bd45c7f696de8f94971ce66cb43742"
+      }
     }
   ]
 }

@@ -1,13 +1,16 @@
 import {addRound47,displayedBase} from './studio-bases47.mjs';
-import {prepare48,poseComparison48} from './studio-bases48.mjs';
+import {prepare48} from './studio-bases48.mjs';
+import {prepare49,applyPose49} from './studio-bases49.mjs';
+import {neutralPerformance} from './performance49.mjs';
+import {mountMotion49,motionLabel} from './studio-motion49.mjs';
 import {mountStudy48} from './studio-study48.mjs';
 import {mountAngle46} from './studio-angle46.mjs';
 import {mountSurfaceControls} from './studio-surface-controls46.mjs';
 import {mountAngleComparison} from './studio-three-views46.mjs';
 import {mountMethodChoice} from './studio-method-view45.mjs';
 import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,displayScene,renderSculpt,
-  plateInfo,surfaceZones,screenAnchors,posed,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
-import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs?v=45';
+  plateInfo,surfaceZones,screenAnchors,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
+import {SculptSession,validatePreset,performanceFormat,observationSizes} from './studio-sculpt-settings.mjs?v=45';
 import {loadRig} from './rig32.mjs';
 import {mountSculptLearning44} from './studio-sculpt-learn44.mjs';
 import {photoControls} from './studio-photo-fit.mjs?v=44-lab';
@@ -21,8 +24,8 @@ const models=new Map(),sessions=new Map(),cache=new Map();
 let learning44, surfaceControls, angleDial, compareAngles;
 const sourceParams=new URL(location.href).searchParams;
 const studyRound=sourceParams.get('round');
-const inRound48=studyRound==='48', hasSourceComparison=inRound48||studyRound==='47';
-let study48;
+const inRound49=studyRound==='49',inRound48=studyRound==='48',hasSourceComparison=inRound49||inRound48||studyRound==='47';
+let study48,motion49;
 const savedCells=new Map();
 let id,session,model,assets,zones=[],selected,active=true,scheduled=false,dirty=false,sourceDirty=true;
 let raw,comparison,edited,valueKey,plate,plateKey,plateLeft,plateRight,plateTimer;
@@ -91,7 +94,7 @@ function updateValues(){
   el('pivot').value=p.view.pivot;
   const spec=pivotSpec(p.view.pivot);
   for(const node of [el('poseRange'),el('poseNum')]){node.min=spec.min;node.max=spec.max;node.value=p.view.angle;}
-  surfaceControls?.refresh();angleDial?.sync();
+  surfaceControls?.refresh();angleDial?.sync();motion49?.refresh(id);
   el('jointLimit').textContent=spec.label+' · '+spec.min+'° ~ '+spec.max+'° · '+(p.view.pivot==='arms.raise'?'34차 팔·어깨띠 동작':'32차 피봇과 가중치')+'를 양쪽에 적용합니다.';
 }
 function updateShape(values){session.preview(values);updateValues();schedule(true);}
@@ -129,6 +132,8 @@ function draw(){
     const shapeKey=JSON.stringify(values44)+localPhoto.key(id);
     const leftChoice=!hasSourceComparison||el('leftBase47').value==='same' ? p.base :
       el('leftBase47').value==='history37' ? 'history37' :
+      inRound49&&el('leftBase47').value==='current' ? 'round48' :
+      inRound49&&el('leftBase47').value==='round47' ? 'round47' :
       inRound48&&el('leftBase47').value==='current' ? 'round47' : id==='F02'?'candidate':'prior';
     comparison=displayedBase(model,leftChoice);
     const shape=displayedBase(model,p.base);
@@ -136,18 +141,22 @@ function draw(){
       raw=shape;zones=surfaceZones(raw,id);setupPins();valueKey=null;cache.clear();
     }
     if(valueKey!==shapeKey){edited=sculpt(localPhoto.shape(raw,id),id,values44);valueKey=shapeKey;cache.delete('edited');}
-    const poseKey=p.view.pivot+':'+p.view.angle;
-    function displayed(key,src,sourceBase){
+    const leftMotion=p.performance&&(p.performance.match||el('leftBase47').value==='same')?p.performance:null;
+    function displayed(key,src,sourceBase,motion){
+      const poseKey=p.view.pivot+':'+p.view.angle+':'+JSON.stringify(motion||null);
       let c=cache.get(key);
       if(!c||c.src!==src||c.base!==sourceBase||c.pose!==poseKey){
-        const scene=poseComparison48(model,sourceBase,posed(src,id,p.view),p.view);
+        const scene=applyPose49(model,sourceBase,src,p.view,motion);
         c={src,base:sourceBase,pose:poseKey,display:displayScene(model,sourceBase,scene)};cache.set(key,c);
       }
       const camera=JSON.stringify(p.view);
       if(c.camera!==camera){c.frame=renderSculpt(model,c.display,p.view);c.camera=camera;}
       return c;
     }
-    const left=displayed('start',comparison,leftChoice),right=edited===comparison&&p.base===leftChoice?left:displayed('edited',edited,p.base);
+    const left=displayed('start',comparison,leftChoice,leftMotion);
+    const same=edited===comparison&&p.base===leftChoice&&leftMotion===(p.performance||null);
+    const right=same?left:displayed('edited',edited,p.base,p.performance);
+    motion49?.locate(model,right,p.view);
     study48?.track(left,right);
     bitmap(el('before'),left.frame);bitmap(el('after'),right.frame);
     compareAngles.update(model,left.display,right.display,p.view,()=>active);
@@ -159,14 +168,19 @@ function draw(){
       n.style.left=(g.point[0]/p.view.size*100)+'%';n.style.top=(g.point[1]/p.view.size*100)+'%';
       n.hidden=g.point.some(q=>q<0||q>=p.view.size);
     }
-    el('leftTitle').textContent=baseLabel(id,leftChoice);
-    if(hasSourceComparison)el('rightTitle').textContent=baseLabel(id,p.base)+' · 교정';el('camera').textContent='좌우 '+p.view.yaw.toFixed(1)+'° · 상하 '+p.view.pitch.toFixed(1)+'° · '+p.view.zoom.toFixed(2)+'배 · '+p.view.size+' × '+p.view.size;
+    el('leftTitle').textContent=baseLabel(id,leftChoice)+(p.performance?' · '+motionLabel(id,leftMotion):'');
+    if(hasSourceComparison)el('rightTitle').textContent=baseLabel(id,p.base)+(p.performance?' · '+motionLabel(id,p.performance):' · 교정');el('camera').textContent='좌우 '+p.view.yaw.toFixed(1)+'° · 상하 '+p.view.pitch.toFixed(1)+'° · '+p.view.zoom.toFixed(2)+'배 · '+p.view.size+' × '+p.view.size;
     if(edited.sculptGain<.9999)el('camera').textContent+=' · 얇은 면의 접힘을 제한해 변위 '+(edited.sculptGain*100).toFixed(1)+'% 적용';
     const main=document.querySelector('main');main.dataset.case=id;main.dataset.render=String((+main.dataset.render||0)+1);main.dataset.ready='true';
     if(sourceDirty){clearTimeout(plateTimer);plateTimer=setTimeout(()=>{try{projection();}catch(e){status('원본 대조 오류 · '+e.message);console.error(e);}},90);}
   }catch(e){status('조형 화면 오류 · '+e.message);console.error(e);}
 }
-function view(delta){session.current={...session.current,view:{...session.current.view,...delta}};updateValues();schedule();}
+function view(delta){
+  if(id==='W'&&session.current.performance?.pose&&session.current.performance.pose!=='neutral'&&('angle' in delta||'pivot' in delta)){
+    session.apply({...session.current,performance:{...session.current.performance,pose:'neutral'}});
+  }
+  session.current={...session.current,view:{...session.current.view,...delta}};updateValues();schedule();
+}
 function sourceViews(){
   if(!hasSourceComparison)return assets.face.cases[id].views;
   return assets.face47.cases[id].views.map(item=>({...item,pose:item.registrations[0],
@@ -188,13 +202,17 @@ function changeCase(next){
   const freshSession=!sessions.has(id);
   if(freshSession){
     const fresh=new SculptSession(id);
-    if(hasSourceComparison){fresh.current.base=inRound48?'round48':'round47';fresh.current.view.size=48;}
+    if(hasSourceComparison){fresh.current.base=inRound49?'round49':inRound48?'round48':'round47';fresh.current.view.size=48;}
+    if(inRound49){
+      fresh.current.format=performanceFormat;fresh.current.performance=neutralPerformance(id);
+      if(id==='W'){fresh.current.performance.pose='waist';}
+    }
     if(inRound48&&id==='W')Object.assign(fresh.current.view,{pivot:'arms.raise',angle:90});
     sessions.set(id,fresh);
   }
   if(!models.has(id))models.set(id,addRound47(buildSculptBase(id,assets),assets));
-  session=sessions.get(id);model=models.get(id);if(inRound48)prepare48(model,assets);raw=null;valueKey=null;plateKey=null;cache.clear();
-  el('subject').value=id;options(el('basis'),(inRound48?['prior','candidate','round47','round48']:['prior','candidate','round47']).map(k=>[k,baseLabel(id,k)]));
+  session=sessions.get(id);model=models.get(id);if(inRound49)prepare49(model,assets);else if(inRound48)prepare48(model,assets);raw=null;valueKey=null;plateKey=null;cache.clear();
+  el('subject').value=id;options(el('basis'),(inRound49?['prior','candidate','round47','round48','round49']:inRound48?['prior','candidate','round47','round48']:['prior','candidate','round47']).map(k=>[k,baseLabel(id,k)]));
   options(el('preset'),presets(id).map(([label],i)=>[String(i),label]));
   options(el('pivot'),pivotChoices(id).map(k=>[k,pivotSpec(k).label]));
   options(el('plateSelect'),id==='W'?[['B3','B3 · 사선'],['S3','S3 · 측면'],['A5','A5 · 사선']]:[['side','설정화 3 · 측면'],['front','설정화 1 · 정면'],...sourceViews().map(v=>[v.key,v.key+' · '+v.role])]);
@@ -202,7 +220,7 @@ function changeCase(next){
     const cells=el('plateSelect');
     const wanted=savedCells.get(id)||sourceParams.get('cell')||(id==='F02'?'설정4':id==='M01'?'설정2':'B3');
     if([...cells.options].some(o=>o.value===wanted))cells.value=wanted;
-    if(freshSession)Object.assign(session.current.view,registeredCamera());
+    if(freshSession)Object.assign(session.current.view,inRound49&&id==='W'?{yaw:0,pitch:0}:registeredCamera());
   }
   el('axes').replaceChildren();
   for(const [key,label] of Object.entries(axes(id))){
@@ -217,16 +235,36 @@ function changeCase(next){
     el('axes').append(row);
   }
   const url=new URL(location.href);url.searchParams.set('case',id);if(hasSourceComparison)url.searchParams.set('cell',el('plateSelect').value);history.replaceState(null,'',url);if(parent!==self)parent.postMessage({type:'bookfriend:sculpt-case',case:id},location.origin);
-  study48?.show(id,sourceParams.get('cell'));
+  study48?.show(id,sourceParams.get('cell'));if(motion49)motion49.show(id);
   updateValues();schedule(true);status(subjects[id]+' · 조형 준비됨');
 }
 const storeKey=()=>[hasSourceComparison?'bookfriend.sculpt.'+studyRound:'bookfriend.sculpt.v1',id,el('slot').value].join('.');
-function put(p){const v=validatePreset(p);if(v.subject!==id)changeCase(v.subject);
+function enableMotion(){
+  if(motion49)return;
+  const host=el('motion49');el('angleComparison').after(host);
+  motion49=mountMotion49(host,{state:()=>session?.current.performance,evidence:assets.overlay49,
+    reproduce:(row,example)=>{
+      const performance=neutralPerformance(id);
+      if(id==='M01'){performance.corner=Math.round(example.input.corner*100);performance.opening=Math.round(example.input.opening*100);}
+      else performance.lid=example.input.lidSteps;
+      put({...session.current,format:performanceFormat,base:'round49',values:zero(id),performance,
+        view:{...defaultView(id),size:48,yaw:row.camera.yaw,pitch:row.camera.pitch,zoom:1}});
+    },
+    preview:values=>{session.previewPerformance(values);updateValues();schedule();},commit,view});
+}
+function put(p){let v=validatePreset(p);if(v.subject!==id)changeCase(v.subject);
+  if(inRound49&&!v.performance)v={...v,format:performanceFormat,performance:neutralPerformance(id)};
+  if(v.base==='round49'){
+    prepare49(model,assets);
+    if(![...el('basis').options].some(o=>o.value==='round49'))el('basis').add(new Option(baseLabel(id,'round49'),'round49'));
+  }
+  const needsControls=v.performance&&!motion49;
+  if(needsControls)enableMotion();
   if(v.base==='round48'){
     prepare48(model,assets);
     if(![...el('basis').options].some(o=>o.value==='round48'))el('basis').add(new Option(baseLabel(id,'round48'),'round48'));
   }
-  session.apply(v);updateValues();schedule(true);}
+  session.apply(v);if(needsControls)motion49.show(id);updateValues();schedule(true);}
 function hook(){
   surfaceControls=mountSurfaceControls({zone:()=>selected,labels:()=>axes(id),values:()=>session.current.values,preview:updateShape,commit});
   angleDial=mountAngle46({host:el('poseDial46'),range:el('poseRange'),number:el('poseNum'),joint:el('pivot')});
@@ -239,8 +277,11 @@ function hook(){
     const snap=button('원본 촬영각으로',matchPlate);
     snap.id='sourceView47';reference.querySelector('.refHead').append(snap);
     document.title=studyRound+'차 원형 대조 · 책방 친구';
-    document.querySelector('h1').textContent=studyRound+'차 · '+(inRound48?'눈·입과 팔 올림 비교':'원형 대조와 정밀 교정');
-    if(inRound48){
+    document.querySelector('h1').textContent=studyRound+'차 · '+(inRound49?'표정과 실제 자세의 비교':inRound48?'눈·입과 팔 올림 비교':'원형 대조와 정밀 교정');
+    if(inRound49){
+      options(el('leftBase47'),[['current','48차 후보'],['round47','47차 중립'],['history37','37차'],['original','초기 기준'],['same','오른쪽 편집 전 · 같은 동작']]);
+      enableMotion();
+    }else if(inRound48){
       options(el('leftBase47'),[['current','47차 후보'],['history37','37차'],['original','47차 교정 전 기준'],['same','오른쪽 편집 전']]);
       el('angleComparison').after(el('study48'));
       study48=mountStudy48(el('study48'),assets.overlay48,assets.orbits48,view);
@@ -265,9 +306,9 @@ function hook(){
   for(const [label,y,p] of [['정면',0,0],['왼쪽 사선',-45,0],['오른쪽 사선',45,0],['측면',90,0],['뒷면',180,0],['위',0,55],['아래',0,-55]]){
     el('angles').append(button(label,()=>view({yaw:y,pitch:p})));
   }
-  for(const size of [48,96,192]){const n=button(size+'px',()=>view({size}));n.dataset.size=size;el('sizes').append(n);}
+  for(const size of observationSizes){const n=button(size+'px',()=>view({size}));n.dataset.size=size;el('sizes').append(n);}
   const zoom=d=>view({zoom:clamp(Math.round((session.current.view.zoom+d)*100)/100,.5,2.5)});
-  el('zoomIn').onclick=()=>zoom(.1);el('zoomOut').onclick=()=>zoom(-.1);el('resetView').onclick=()=>view(defaultView(id));
+  el('zoomIn').onclick=()=>zoom(.1);el('zoomOut').onclick=()=>zoom(-.1);el('resetView').onclick=()=>{const {yaw,pitch,zoom}=defaultView(id);view({yaw,pitch,zoom});};
   for(const canvas of [el('before'),el('after')]){
     let start=null;const orbitAngle=v=>Math.round((((v+180)%360+360)%360-180)*100)/100;
     const orbit=(v,dx,dy)=>view({yaw:orbitAngle(v.yaw+dx),pitch:orbitAngle(v.pitch+dy)});
@@ -289,6 +330,7 @@ window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.
   active=e.data.active;if(active)schedule();else clearTimeout(plateTimer);});
 async function init(){
   const files={atlas:'atlas35',traces:'traces36',fit:'fit36',face:'face-eval42',chest:'chest-eval42'};
+  if(inRound49)files.overlay49='face-overlay49';
   if(inRound48){files.overlay48='face-overlay48';files.orbits48='orbit-eval48';}
   if(hasSourceComparison){files.face47='face-eval47';files.faceOverlay47='face-overlay47';}
   const [pairs]=await Promise.all([Promise.all(Object.entries(files).map(async([k,n])=>{const r=await fetch(n+'.json');if(!r.ok)throw Error(n+' 자료 없음');return [k,await r.json()];})),loadRig()]);
