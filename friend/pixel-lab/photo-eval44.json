@@ -1,0 +1,1983 @@
+{
+  "version": "photo-ridge44-v1",
+  "training": {
+    "syntheticHeads": 96,
+    "levels": 24,
+    "seed": 441031,
+    "ridge": 0.01,
+    "observations": 55296,
+    "measuredHeads": 0,
+    "userApprovedExamples": 0,
+    "weightsSha256": "98cd23b2e2fdf1227419b96c3945d2cbd07cadc280b4b04f7d17b13775a40635"
+  },
+  "test": {
+    "syntheticHeldSeeds": [
+      760001,
+      138861,
+      922023,
+      421009,
+      938873,
+      345991,
+      103791,
+      559003
+    ],
+    "measuredHeads": 1,
+    "userApprovedExamples": 0,
+    "head36Sha256": "dc9103c28b927ef5055ea359cd679dd9c72b23f92e461ff15610d13f68396649",
+    "captureDegrees": [
+      -5,
+      6,
+      -3,
+      5,
+      0
+    ],
+    "captureZoom": [
+      0.91,
+      1.03,
+      0.94,
+      1.05,
+      0.98
+    ],
+    "targetViews": [
+      [
+        13,
+        0
+      ],
+      [
+        23,
+        0
+      ],
+      [
+        62,
+        0
+      ],
+      [
+        112,
+        0
+      ],
+      [
+        -27,
+        -12
+      ],
+      [
+        -68,
+        18
+      ]
+    ],
+    "resolution": 128,
+    "upperRows": 69
+  },
+  "groups": {
+    "syntheticHeld": {
+      "subjects": 8,
+      "heldViews": 48,
+      "held": {
+        "before": {
+          "iou": 0.94273782,
+          "boundaryPx": 1.2312836,
+          "upperBoundaryPx": 1.2841854
+        },
+        "after": {
+          "iou": 0.96586655,
+          "boundaryPx": 0.75929126,
+          "upperBoundaryPx": 0.74044263
+        }
+      },
+      "aligned": {
+        "before": {
+          "iou": 0.99191503,
+          "boundaryPx": 0.18699738,
+          "upperBoundaryPx": 0.18366772
+        },
+        "after": {
+          "iou": 0.99155023,
+          "boundaryPx": 0.19540049,
+          "upperBoundaryPx": 0.1905897
+        }
+      },
+      "heldBoundaryWins": 24
+    },
+    "scanClean": {
+      "subjects": 1,
+      "heldViews": 6,
+      "held": {
+        "before": {
+          "iou": 0.93377726,
+          "boundaryPx": 1.02756232,
+          "upperBoundaryPx": 1.19989079
+        },
+        "after": {
+          "iou": 0.96744553,
+          "boundaryPx": 0.51407614,
+          "upperBoundaryPx": 0.4950694
+        }
+      },
+      "aligned": {
+        "before": {
+          "iou": 0.98522763,
+          "boundaryPx": 0.23452775,
+          "upperBoundaryPx": 0.16834858
+        },
+        "after": {
+          "iou": 0.98452936,
+          "boundaryPx": 0.24528718,
+          "upperBoundaryPx": 0.16979786
+        }
+      },
+      "heldBoundaryWins": 6
+    },
+    "scanTiltedBox": {
+      "subjects": 1,
+      "heldViews": 6,
+      "held": {
+        "before": {
+          "iou": 0.81850621,
+          "boundaryPx": 2.89825754,
+          "upperBoundaryPx": 3.5463115
+        },
+        "after": {
+          "iou": 0.80817185,
+          "boundaryPx": 3.02354536,
+          "upperBoundaryPx": 3.72488485
+        }
+      },
+      "aligned": {
+        "before": {
+          "iou": 0.85004088,
+          "boundaryPx": 2.37206147,
+          "upperBoundaryPx": 2.77548168
+        },
+        "after": {
+          "iou": 0.85282256,
+          "boundaryPx": 2.30748011,
+          "upperBoundaryPx": 2.69410837
+        }
+      },
+      "heldBoundaryWins": 2
+    },
+    "counterexample": {
+      "subjects": 1,
+      "heldViews": 6,
+      "held": {
+        "before": {
+          "iou": 0.98991558,
+          "boundaryPx": 0.23325013,
+          "upperBoundaryPx": 0.24301463
+        },
+        "after": {
+          "iou": 0.9300988,
+          "boundaryPx": 1.55874791,
+          "upperBoundaryPx": 1.6205138
+        }
+      },
+      "aligned": {
+        "before": {
+          "iou": 0.99164345,
+          "boundaryPx": 0.19354839,
+          "upperBoundaryPx": 0.17910448
+        },
+        "after": {
+          "iou": 0.99164345,
+          "boundaryPx": 0.19354839,
+          "upperBoundaryPx": 0.17910448
+        }
+      },
+      "heldBoundaryWins": 0
+    }
+  },
+  "cases": [
+    {
+      "group": "syntheticHeld",
+      "id": "760001",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.93963126,
+            "boundaryPx": 1.28648075,
+            "upperBoundaryPx": 1.24925193
+          },
+          "after": {
+            "iou": 0.97868349,
+            "boundaryPx": 0.49125465,
+            "upperBoundaryPx": 0.41481481
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.92147694,
+            "boundaryPx": 1.7002525,
+            "upperBoundaryPx": 1.58821508
+          },
+          "after": {
+            "iou": 0.9703527,
+            "boundaryPx": 0.64633224,
+            "upperBoundaryPx": 0.52987723
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.95994682,
+            "boundaryPx": 0.87210867,
+            "upperBoundaryPx": 0.93829416
+          },
+          "after": {
+            "iou": 0.95906132,
+            "boundaryPx": 0.90025775,
+            "upperBoundaryPx": 0.98431156
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.95959259,
+            "boundaryPx": 0.87239803,
+            "upperBoundaryPx": 0.96041777
+          },
+          "after": {
+            "iou": 0.95257803,
+            "boundaryPx": 1.02893329,
+            "upperBoundaryPx": 1.05593276
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.92883956,
+            "boundaryPx": 1.52373014,
+            "upperBoundaryPx": 1.42576776
+          },
+          "after": {
+            "iou": 0.97275998,
+            "boundaryPx": 0.59540211,
+            "upperBoundaryPx": 0.5325632
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.96738751,
+            "boundaryPx": 0.69404786,
+            "upperBoundaryPx": 0.80672947
+          },
+          "after": {
+            "iou": 0.96202078,
+            "boundaryPx": 0.81022686,
+            "upperBoundaryPx": 0.85401672
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99260406,
+            "boundaryPx": 0.17991632,
+            "upperBoundaryPx": 0.21481481
+          },
+          "after": {
+            "iou": 0.99260406,
+            "boundaryPx": 0.17991632,
+            "upperBoundaryPx": 0.21481481
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99203187,
+            "boundaryPx": 0.18699187,
+            "upperBoundaryPx": 0.17037037
+          },
+          "after": {
+            "iou": 0.99220239,
+            "boundaryPx": 0.18292683,
+            "upperBoundaryPx": 0.17777778
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99128661,
+            "boundaryPx": 0.19262295,
+            "upperBoundaryPx": 0.17692308
+          },
+          "after": {
+            "iou": 0.99128661,
+            "boundaryPx": 0.19262295,
+            "upperBoundaryPx": 0.17692308
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99167245,
+            "boundaryPx": 0.19512195,
+            "upperBoundaryPx": 0.18518519
+          },
+          "after": {
+            "iou": 0.99167245,
+            "boundaryPx": 0.19512195,
+            "upperBoundaryPx": 0.18518519
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99260406,
+            "boundaryPx": 0.17991632,
+            "upperBoundaryPx": 0.21481481
+          },
+          "after": {
+            "iou": 0.99260406,
+            "boundaryPx": 0.17991632,
+            "upperBoundaryPx": 0.21481481
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "138861",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.90888639,
+            "boundaryPx": 1.79966512,
+            "upperBoundaryPx": 1.84888426
+          },
+          "after": {
+            "iou": 0.97222222,
+            "boundaryPx": 0.54866266,
+            "upperBoundaryPx": 0.48486302
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.89059159,
+            "boundaryPx": 2.26422278,
+            "upperBoundaryPx": 2.32385679
+          },
+          "after": {
+            "iou": 0.96143463,
+            "boundaryPx": 0.79573752,
+            "upperBoundaryPx": 0.79625088
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97799709,
+            "boundaryPx": 0.49456479,
+            "upperBoundaryPx": 0.54818402
+          },
+          "after": {
+            "iou": 0.96638242,
+            "boundaryPx": 0.7783558,
+            "upperBoundaryPx": 0.80931025
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97630484,
+            "boundaryPx": 0.52776808,
+            "upperBoundaryPx": 0.58383121
+          },
+          "after": {
+            "iou": 0.96180725,
+            "boundaryPx": 0.88249298,
+            "upperBoundaryPx": 0.93527712
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.90215648,
+            "boundaryPx": 2.06149706,
+            "upperBoundaryPx": 2.08918579
+          },
+          "after": {
+            "iou": 0.95686051,
+            "boundaryPx": 0.90597276,
+            "upperBoundaryPx": 0.83515963
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.983419,
+            "boundaryPx": 0.36979362,
+            "upperBoundaryPx": 0.46402288
+          },
+          "after": {
+            "iou": 0.96897535,
+            "boundaryPx": 0.71082291,
+            "upperBoundaryPx": 0.78279763
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99039064,
+            "boundaryPx": 0.20087336,
+            "upperBoundaryPx": 0.19047619
+          },
+          "after": {
+            "iou": 0.99039064,
+            "boundaryPx": 0.20087336,
+            "upperBoundaryPx": 0.19047619
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99120956,
+            "boundaryPx": 0.20325203,
+            "upperBoundaryPx": 0.20149254
+          },
+          "after": {
+            "iou": 0.99085151,
+            "boundaryPx": 0.21138211,
+            "upperBoundaryPx": 0.23134328
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99192463,
+            "boundaryPx": 0.192,
+            "upperBoundaryPx": 0.18045113
+          },
+          "after": {
+            "iou": 0.99024062,
+            "boundaryPx": 0.22810998,
+            "upperBoundaryPx": 0.19548872
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99242691,
+            "boundaryPx": 0.17479675,
+            "upperBoundaryPx": 0.18656716
+          },
+          "after": {
+            "iou": 0.9918957,
+            "boundaryPx": 0.18699187,
+            "upperBoundaryPx": 0.20149254
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99039064,
+            "boundaryPx": 0.20087336,
+            "upperBoundaryPx": 0.19047619
+          },
+          "after": {
+            "iou": 0.99039064,
+            "boundaryPx": 0.20087336,
+            "upperBoundaryPx": 0.19047619
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "922023",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.93117617,
+            "boundaryPx": 1.43278852,
+            "upperBoundaryPx": 1.39790709
+          },
+          "after": {
+            "iou": 0.975821,
+            "boundaryPx": 0.527271,
+            "upperBoundaryPx": 0.43380639
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.91726439,
+            "boundaryPx": 1.79852205,
+            "upperBoundaryPx": 1.78116694
+          },
+          "after": {
+            "iou": 0.96688507,
+            "boundaryPx": 0.73382527,
+            "upperBoundaryPx": 0.62743533
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.96811498,
+            "boundaryPx": 0.68693122,
+            "upperBoundaryPx": 0.75082389
+          },
+          "after": {
+            "iou": 0.96345796,
+            "boundaryPx": 0.81520709,
+            "upperBoundaryPx": 0.90916626
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.96725649,
+            "boundaryPx": 0.69982708,
+            "upperBoundaryPx": 0.77556812
+          },
+          "after": {
+            "iou": 0.95824139,
+            "boundaryPx": 0.92163131,
+            "upperBoundaryPx": 0.96018255
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.92421442,
+            "boundaryPx": 1.64737539,
+            "upperBoundaryPx": 1.68262994
+          },
+          "after": {
+            "iou": 0.96936969,
+            "boundaryPx": 0.66991032,
+            "upperBoundaryPx": 0.57465005
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.97627177,
+            "boundaryPx": 0.51760951,
+            "upperBoundaryPx": 0.67487407
+          },
+          "after": {
+            "iou": 0.966568,
+            "boundaryPx": 0.73569682,
+            "upperBoundaryPx": 0.77730482
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99116185,
+            "boundaryPx": 0.20338983,
+            "upperBoundaryPx": 0.18181818
+          },
+          "after": {
+            "iou": 0.99116185,
+            "boundaryPx": 0.20338983,
+            "upperBoundaryPx": 0.18181818
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99271086,
+            "boundaryPx": 0.17142857,
+            "upperBoundaryPx": 0.17777778
+          },
+          "after": {
+            "iou": 0.99218886,
+            "boundaryPx": 0.18367347,
+            "upperBoundaryPx": 0.19259259
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99236502,
+            "boundaryPx": 0.17042771,
+            "upperBoundaryPx": 0.18006459
+          },
+          "after": {
+            "iou": 0.99236502,
+            "boundaryPx": 0.17042771,
+            "upperBoundaryPx": 0.18006459
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99203739,
+            "boundaryPx": 0.18699187,
+            "upperBoundaryPx": 0.18518519
+          },
+          "after": {
+            "iou": 0.99237963,
+            "boundaryPx": 0.17886179,
+            "upperBoundaryPx": 0.17777778
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99116185,
+            "boundaryPx": 0.20338983,
+            "upperBoundaryPx": 0.18181818
+          },
+          "after": {
+            "iou": 0.99116185,
+            "boundaryPx": 0.20338983,
+            "upperBoundaryPx": 0.18181818
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "421009",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.92618599,
+            "boundaryPx": 1.52715389,
+            "upperBoundaryPx": 1.52742061
+          },
+          "after": {
+            "iou": 0.97426604,
+            "boundaryPx": 0.55333732,
+            "upperBoundaryPx": 0.44563809
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.90936205,
+            "boundaryPx": 1.94592894,
+            "upperBoundaryPx": 1.98960022
+          },
+          "after": {
+            "iou": 0.96466431,
+            "boundaryPx": 0.75636109,
+            "upperBoundaryPx": 0.6463628
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97198655,
+            "boundaryPx": 0.60860447,
+            "upperBoundaryPx": 0.68484541
+          },
+          "after": {
+            "iou": 0.96600196,
+            "boundaryPx": 0.77843662,
+            "upperBoundaryPx": 0.81768186
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.96998244,
+            "boundaryPx": 0.65945471,
+            "upperBoundaryPx": 0.75983465
+          },
+          "after": {
+            "iou": 0.95996732,
+            "boundaryPx": 0.93121102,
+            "upperBoundaryPx": 0.95532129
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.91797005,
+            "boundaryPx": 1.79587587,
+            "upperBoundaryPx": 1.82411079
+          },
+          "after": {
+            "iou": 0.96690723,
+            "boundaryPx": 0.72995192,
+            "upperBoundaryPx": 0.66870251
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.97646669,
+            "boundaryPx": 0.51408236,
+            "upperBoundaryPx": 0.72623943
+          },
+          "after": {
+            "iou": 0.96391839,
+            "boundaryPx": 0.81200692,
+            "upperBoundaryPx": 0.82642188
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99125256,
+            "boundaryPx": 0.2,
+            "upperBoundaryPx": 0.2
+          },
+          "after": {
+            "iou": 0.99125256,
+            "boundaryPx": 0.2,
+            "upperBoundaryPx": 0.2
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9915168,
+            "boundaryPx": 0.19839357,
+            "upperBoundaryPx": 0.17647059
+          },
+          "after": {
+            "iou": 0.99184783,
+            "boundaryPx": 0.19037751,
+            "upperBoundaryPx": 0.16911765
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99239938,
+            "boundaryPx": 0.17741935,
+            "upperBoundaryPx": 0.16666667
+          },
+          "after": {
+            "iou": 0.98963552,
+            "boundaryPx": 0.2372114,
+            "upperBoundaryPx": 0.20454545
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99285593,
+            "boundaryPx": 0.16699864,
+            "upperBoundaryPx": 0.15866013
+          },
+          "after": {
+            "iou": 0.99183257,
+            "boundaryPx": 0.19277108,
+            "upperBoundaryPx": 0.17342048
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99125256,
+            "boundaryPx": 0.2,
+            "upperBoundaryPx": 0.2
+          },
+          "after": {
+            "iou": 0.99125256,
+            "boundaryPx": 0.2,
+            "upperBoundaryPx": 0.2
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "938873",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.90063061,
+            "boundaryPx": 1.95288985,
+            "upperBoundaryPx": 1.92402132
+          },
+          "after": {
+            "iou": 0.97029703,
+            "boundaryPx": 0.58499726,
+            "upperBoundaryPx": 0.50382627
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.88936937,
+            "boundaryPx": 2.28381703,
+            "upperBoundaryPx": 2.362412
+          },
+          "after": {
+            "iou": 0.96020289,
+            "boundaryPx": 0.81360584,
+            "upperBoundaryPx": 0.79054211
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97880539,
+            "boundaryPx": 0.48323584,
+            "upperBoundaryPx": 0.5310841
+          },
+          "after": {
+            "iou": 0.96985989,
+            "boundaryPx": 0.71263011,
+            "upperBoundaryPx": 0.77568345
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97431018,
+            "boundaryPx": 0.58229364,
+            "upperBoundaryPx": 0.64568547
+          },
+          "after": {
+            "iou": 0.96419355,
+            "boundaryPx": 0.81772584,
+            "upperBoundaryPx": 0.85517027
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.90467593,
+            "boundaryPx": 1.97130364,
+            "upperBoundaryPx": 2.03720953
+          },
+          "after": {
+            "iou": 0.96242775,
+            "boundaryPx": 0.77787443,
+            "upperBoundaryPx": 0.77951711
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.98005558,
+            "boundaryPx": 0.45004701,
+            "upperBoundaryPx": 0.55614455
+          },
+          "after": {
+            "iou": 0.97080776,
+            "boundaryPx": 0.66600651,
+            "upperBoundaryPx": 0.68270877
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98963283,
+            "boundaryPx": 0.21238938,
+            "upperBoundaryPx": 0.21259843
+          },
+          "after": {
+            "iou": 0.98963283,
+            "boundaryPx": 0.21238938,
+            "upperBoundaryPx": 0.21259843
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99162157,
+            "boundaryPx": 0.19591837,
+            "upperBoundaryPx": 0.15671642
+          },
+          "after": {
+            "iou": 0.99161279,
+            "boundaryPx": 0.19591837,
+            "upperBoundaryPx": 0.17910448
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99148723,
+            "boundaryPx": 0.20318725,
+            "upperBoundaryPx": 0.19402985
+          },
+          "after": {
+            "iou": 0.99148723,
+            "boundaryPx": 0.20318725,
+            "upperBoundaryPx": 0.19402985
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99248777,
+            "boundaryPx": 0.17479675,
+            "upperBoundaryPx": 0.17777778
+          },
+          "after": {
+            "iou": 0.99160986,
+            "boundaryPx": 0.19675126,
+            "upperBoundaryPx": 0.18518519
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98963283,
+            "boundaryPx": 0.21238938,
+            "upperBoundaryPx": 0.21259843
+          },
+          "after": {
+            "iou": 0.98963283,
+            "boundaryPx": 0.21238938,
+            "upperBoundaryPx": 0.21259843
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "345991",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.90322581,
+            "boundaryPx": 2.01152296,
+            "upperBoundaryPx": 2.01148646
+          },
+          "after": {
+            "iou": 0.97066061,
+            "boundaryPx": 0.61776213,
+            "upperBoundaryPx": 0.50017361
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.89640453,
+            "boundaryPx": 2.27103607,
+            "upperBoundaryPx": 2.34683804
+          },
+          "after": {
+            "iou": 0.96379127,
+            "boundaryPx": 0.79073969,
+            "upperBoundaryPx": 0.76302071
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98028777,
+            "boundaryPx": 0.47350692,
+            "upperBoundaryPx": 0.53058072
+          },
+          "after": {
+            "iou": 0.97113703,
+            "boundaryPx": 0.70792886,
+            "upperBoundaryPx": 0.76402782
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97754087,
+            "boundaryPx": 0.54147641,
+            "upperBoundaryPx": 0.61850772
+          },
+          "after": {
+            "iou": 0.96497045,
+            "boundaryPx": 0.86848386,
+            "upperBoundaryPx": 0.94614452
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.91562753,
+            "boundaryPx": 1.85176932,
+            "upperBoundaryPx": 1.95190702
+          },
+          "after": {
+            "iou": 0.96765313,
+            "boundaryPx": 0.71264734,
+            "upperBoundaryPx": 0.65236339
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.98368019,
+            "boundaryPx": 0.38770373,
+            "upperBoundaryPx": 0.52914531
+          },
+          "after": {
+            "iou": 0.97242424,
+            "boundaryPx": 0.66481624,
+            "upperBoundaryPx": 0.73745165
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99059247,
+            "boundaryPx": 0.20434783,
+            "upperBoundaryPx": 0.23255814
+          },
+          "after": {
+            "iou": 0.99059247,
+            "boundaryPx": 0.20434783,
+            "upperBoundaryPx": 0.23255814
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99387755,
+            "boundaryPx": 0.15354331,
+            "upperBoundaryPx": 0.16546763
+          },
+          "after": {
+            "iou": 0.99277525,
+            "boundaryPx": 0.18430118,
+            "upperBoundaryPx": 0.16546763
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99210957,
+            "boundaryPx": 0.2,
+            "upperBoundaryPx": 0.20143885
+          },
+          "after": {
+            "iou": 0.99047052,
+            "boundaryPx": 0.2400729,
+            "upperBoundaryPx": 0.22302158
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99277865,
+            "boundaryPx": 0.18039216,
+            "upperBoundaryPx": 0.17266187
+          },
+          "after": {
+            "iou": 0.99246113,
+            "boundaryPx": 0.18823529,
+            "upperBoundaryPx": 0.1942446
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99059247,
+            "boundaryPx": 0.20434783,
+            "upperBoundaryPx": 0.23255814
+          },
+          "after": {
+            "iou": 0.99059247,
+            "boundaryPx": 0.20434783,
+            "upperBoundaryPx": 0.23255814
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "103791",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.91828255,
+            "boundaryPx": 1.71577181,
+            "upperBoundaryPx": 1.69427201
+          },
+          "after": {
+            "iou": 0.97055576,
+            "boundaryPx": 0.63218251,
+            "upperBoundaryPx": 0.52278003
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.90650474,
+            "boundaryPx": 2.03537532,
+            "upperBoundaryPx": 2.04580186
+          },
+          "after": {
+            "iou": 0.9650935,
+            "boundaryPx": 0.76342324,
+            "upperBoundaryPx": 0.59089983
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97010228,
+            "boundaryPx": 0.66986346,
+            "upperBoundaryPx": 0.75705034
+          },
+          "after": {
+            "iou": 0.96672026,
+            "boundaryPx": 0.77650531,
+            "upperBoundaryPx": 0.81088966
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.96819677,
+            "boundaryPx": 0.69687586,
+            "upperBoundaryPx": 0.75205805
+          },
+          "after": {
+            "iou": 0.96121795,
+            "boundaryPx": 0.88790828,
+            "upperBoundaryPx": 0.86108978
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.92193246,
+            "boundaryPx": 1.70078969,
+            "upperBoundaryPx": 1.72076923
+          },
+          "after": {
+            "iou": 0.96819788,
+            "boundaryPx": 0.69197611,
+            "upperBoundaryPx": 0.53167307
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.97521063,
+            "boundaryPx": 0.55019965,
+            "upperBoundaryPx": 0.69064509
+          },
+          "after": {
+            "iou": 0.96898202,
+            "boundaryPx": 0.70157417,
+            "upperBoundaryPx": 0.73907156
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99332698,
+            "boundaryPx": 0.14830508,
+            "upperBoundaryPx": 0.13740458
+          },
+          "after": {
+            "iou": 0.99332698,
+            "boundaryPx": 0.14830508,
+            "upperBoundaryPx": 0.13740458
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99211674,
+            "boundaryPx": 0.18875502,
+            "upperBoundaryPx": 0.16911765
+          },
+          "after": {
+            "iou": 0.99211277,
+            "boundaryPx": 0.18875502,
+            "upperBoundaryPx": 0.16911765
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99207954,
+            "boundaryPx": 0.188,
+            "upperBoundaryPx": 0.18796992
+          },
+          "after": {
+            "iou": 0.99174111,
+            "boundaryPx": 0.196,
+            "upperBoundaryPx": 0.18045113
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99161215,
+            "boundaryPx": 0.20080321,
+            "upperBoundaryPx": 0.19852941
+          },
+          "after": {
+            "iou": 0.9909396,
+            "boundaryPx": 0.21686747,
+            "upperBoundaryPx": 0.22058824
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99332698,
+            "boundaryPx": 0.14830508,
+            "upperBoundaryPx": 0.13740458
+          },
+          "after": {
+            "iou": 0.99332698,
+            "boundaryPx": 0.14830508,
+            "upperBoundaryPx": 0.13740458
+          }
+        }
+      ]
+    },
+    {
+      "group": "syntheticHeld",
+      "id": "559003",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9161753,
+            "boundaryPx": 1.81375078,
+            "upperBoundaryPx": 1.75284517
+          },
+          "after": {
+            "iou": 0.97386286,
+            "boundaryPx": 0.57873562,
+            "upperBoundaryPx": 0.51516802
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.88833593,
+            "boundaryPx": 2.47989359,
+            "upperBoundaryPx": 2.42753928
+          },
+          "after": {
+            "iou": 0.96013457,
+            "boundaryPx": 0.87691452,
+            "upperBoundaryPx": 0.7836416
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97547004,
+            "boundaryPx": 0.57659657,
+            "upperBoundaryPx": 0.74045238
+          },
+          "after": {
+            "iou": 0.96148679,
+            "boundaryPx": 0.91435627,
+            "upperBoundaryPx": 0.96658133
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.97599769,
+            "boundaryPx": 0.5685313,
+            "upperBoundaryPx": 0.66637094
+          },
+          "after": {
+            "iou": 0.95575481,
+            "boundaryPx": 1.04906182,
+            "upperBoundaryPx": 1.11112394
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.89828912,
+            "boundaryPx": 2.263805,
+            "upperBoundaryPx": 2.29501329
+          },
+          "after": {
+            "iou": 0.95583068,
+            "boundaryPx": 0.97603769,
+            "upperBoundaryPx": 0.88097955
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.97982196,
+            "boundaryPx": 0.46887413,
+            "upperBoundaryPx": 0.65139699
+          },
+          "after": {
+            "iou": 0.96612466,
+            "boundaryPx": 0.80278873,
+            "upperBoundaryPx": 0.81886978
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99348311,
+            "boundaryPx": 0.15767635,
+            "upperBoundaryPx": 0.15441176
+          },
+          "after": {
+            "iou": 0.99348311,
+            "boundaryPx": 0.15767635,
+            "upperBoundaryPx": 0.15441176
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99222546,
+            "boundaryPx": 0.18886359,
+            "upperBoundaryPx": 0.17817095
+          },
+          "after": {
+            "iou": 0.99222546,
+            "boundaryPx": 0.18886359,
+            "upperBoundaryPx": 0.17817095
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9928176,
+            "boundaryPx": 0.18094941,
+            "upperBoundaryPx": 0.16244396
+          },
+          "after": {
+            "iou": 0.98922478,
+            "boundaryPx": 0.25834804,
+            "upperBoundaryPx": 0.23190748
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99206092,
+            "boundaryPx": 0.19444444,
+            "upperBoundaryPx": 0.1884058
+          },
+          "after": {
+            "iou": 0.99206092,
+            "boundaryPx": 0.19444444,
+            "upperBoundaryPx": 0.1884058
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99348311,
+            "boundaryPx": 0.15767635,
+            "upperBoundaryPx": 0.15441176
+          },
+          "after": {
+            "iou": 0.99348311,
+            "boundaryPx": 0.15767635,
+            "upperBoundaryPx": 0.15441176
+          }
+        }
+      ]
+    },
+    {
+      "group": "scan",
+      "id": "Lee Perry-Smith",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.94061166,
+            "boundaryPx": 0.91108621,
+            "upperBoundaryPx": 1.40196778
+          },
+          "after": {
+            "iou": 0.96756358,
+            "boundaryPx": 0.50533732,
+            "upperBoundaryPx": 0.63659658
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.92846975,
+            "boundaryPx": 1.10004664,
+            "upperBoundaryPx": 1.8144979
+          },
+          "after": {
+            "iou": 0.96705751,
+            "boundaryPx": 0.50878657,
+            "upperBoundaryPx": 0.6065321
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.93337196,
+            "boundaryPx": 1.00414753,
+            "upperBoundaryPx": 0.79076384
+          },
+          "after": {
+            "iou": 0.96749949,
+            "boundaryPx": 0.51829976,
+            "upperBoundaryPx": 0.45054208
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.92627893,
+            "boundaryPx": 1.12389084,
+            "upperBoundaryPx": 0.84234296
+          },
+          "after": {
+            "iou": 0.96595832,
+            "boundaryPx": 0.52633048,
+            "upperBoundaryPx": 0.38323458
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.9293534,
+            "boundaryPx": 1.10244629,
+            "upperBoundaryPx": 1.63845995
+          },
+          "after": {
+            "iou": 0.96083318,
+            "boundaryPx": 0.61558701,
+            "upperBoundaryPx": 0.61906596
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.94457787,
+            "boundaryPx": 0.92375642,
+            "upperBoundaryPx": 0.71131228
+          },
+          "after": {
+            "iou": 0.9757611,
+            "boundaryPx": 0.41011568,
+            "upperBoundaryPx": 0.27444509
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98426217,
+            "boundaryPx": 0.24193563,
+            "upperBoundaryPx": 0.15421095
+          },
+          "after": {
+            "iou": 0.98389187,
+            "boundaryPx": 0.24760153,
+            "upperBoundaryPx": 0.15421095
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98538866,
+            "boundaryPx": 0.23364486,
+            "upperBoundaryPx": 0.14715767
+          },
+          "after": {
+            "iou": 0.98421668,
+            "boundaryPx": 0.25116822,
+            "upperBoundaryPx": 0.14715767
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9862798,
+            "boundaryPx": 0.22961906,
+            "upperBoundaryPx": 0.21014493
+          },
+          "after": {
+            "iou": 0.98605174,
+            "boundaryPx": 0.23332282,
+            "upperBoundaryPx": 0.2173913
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98594532,
+            "boundaryPx": 0.22550357,
+            "upperBoundaryPx": 0.1760184
+          },
+          "after": {
+            "iou": 0.98459465,
+            "boundaryPx": 0.24674179,
+            "upperBoundaryPx": 0.1760184
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98426217,
+            "boundaryPx": 0.24193563,
+            "upperBoundaryPx": 0.15421095
+          },
+          "after": {
+            "iou": 0.98389187,
+            "boundaryPx": 0.24760153,
+            "upperBoundaryPx": 0.15421095
+          }
+        }
+      ]
+    },
+    {
+      "group": "scan",
+      "id": "Lee Perry-Smith",
+      "condition": "tiltedBox",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.87243376,
+            "boundaryPx": 1.91786213,
+            "upperBoundaryPx": 2.38551296
+          },
+          "after": {
+            "iou": 0.84748762,
+            "boundaryPx": 2.25725944,
+            "upperBoundaryPx": 2.96088614
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.81724846,
+            "boundaryPx": 2.83151591,
+            "upperBoundaryPx": 3.59472477
+          },
+          "after": {
+            "iou": 0.78659276,
+            "boundaryPx": 3.30124136,
+            "upperBoundaryPx": 4.48180742
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.77376391,
+            "boundaryPx": 3.6501055,
+            "upperBoundaryPx": 4.2413557
+          },
+          "after": {
+            "iou": 0.76924514,
+            "boundaryPx": 3.69041774,
+            "upperBoundaryPx": 3.89833662
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.80460204,
+            "boundaryPx": 3.1004255,
+            "upperBoundaryPx": 3.56433302
+          },
+          "after": {
+            "iou": 0.81775426,
+            "boundaryPx": 2.83531632,
+            "upperBoundaryPx": 3.1867203
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.82345234,
+            "boundaryPx": 2.82313808,
+            "upperBoundaryPx": 3.63602368
+          },
+          "after": {
+            "iou": 0.79973387,
+            "boundaryPx": 3.18646,
+            "upperBoundaryPx": 4.32579104
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.81953672,
+            "boundaryPx": 3.06649812,
+            "upperBoundaryPx": 3.85591884
+          },
+          "after": {
+            "iou": 0.82821746,
+            "boundaryPx": 2.87057729,
+            "upperBoundaryPx": 3.49576757
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9458806,
+            "boundaryPx": 0.79324963,
+            "upperBoundaryPx": 0.46873321
+          },
+          "after": {
+            "iou": 0.94271899,
+            "boundaryPx": 0.84118136,
+            "upperBoundaryPx": 0.49087614
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.71649485,
+            "boundaryPx": 4.62601921,
+            "upperBoundaryPx": 5.61116619
+          },
+          "after": {
+            "iou": 0.72624237,
+            "boundaryPx": 4.4264141,
+            "upperBoundaryPx": 5.3887457
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.89617978,
+            "boundaryPx": 1.55828221,
+            "upperBoundaryPx": 2.02801129
+          },
+          "after": {
+            "iou": 0.89390874,
+            "boundaryPx": 1.57566449,
+            "upperBoundaryPx": 2.04462849
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.74576857,
+            "boundaryPx": 4.08950667,
+            "upperBoundaryPx": 5.3007645
+          },
+          "after": {
+            "iou": 0.75852373,
+            "boundaryPx": 3.85295924,
+            "upperBoundaryPx": 5.05541539
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.9458806,
+            "boundaryPx": 0.79324963,
+            "upperBoundaryPx": 0.46873321
+          },
+          "after": {
+            "iou": 0.94271899,
+            "boundaryPx": 0.84118136,
+            "upperBoundaryPx": 0.49087614
+          }
+        }
+      ]
+    },
+    {
+      "group": "counterexample",
+      "id": "octagon",
+      "condition": "clean",
+      "held": [
+        {
+          "yaw": 13,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98758981,
+            "boundaryPx": 0.29129464,
+            "upperBoundaryPx": 0.2700341
+          },
+          "after": {
+            "iou": 0.93328973,
+            "boundaryPx": 1.48057175,
+            "upperBoundaryPx": 1.51905049
+          }
+        },
+        {
+          "yaw": 23,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98969072,
+            "boundaryPx": 0.23418803,
+            "upperBoundaryPx": 0.23172269
+          },
+          "after": {
+            "iou": 0.9223301,
+            "boundaryPx": 1.74985408,
+            "upperBoundaryPx": 1.82066894
+          }
+        },
+        {
+          "yaw": 62,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98577893,
+            "boundaryPx": 0.32796093,
+            "upperBoundaryPx": 0.37668067
+          },
+          "after": {
+            "iou": 0.92843201,
+            "boundaryPx": 1.60023874,
+            "upperBoundaryPx": 1.62985225
+          }
+        },
+        {
+          "yaw": 112,
+          "pitch": 0,
+          "before": {
+            "iou": 0.98969072,
+            "boundaryPx": 0.23418803,
+            "upperBoundaryPx": 0.23172269
+          },
+          "after": {
+            "iou": 0.9223301,
+            "boundaryPx": 1.74985408,
+            "upperBoundaryPx": 1.82066894
+          }
+        },
+        {
+          "yaw": -27,
+          "pitch": -12,
+          "before": {
+            "iou": 0.99374794,
+            "boundaryPx": 0.15536508,
+            "upperBoundaryPx": 0.18818083
+          },
+          "after": {
+            "iou": 0.93555849,
+            "boundaryPx": 1.40563774,
+            "upperBoundaryPx": 1.4653922
+          }
+        },
+        {
+          "yaw": -68,
+          "pitch": 18,
+          "before": {
+            "iou": 0.99299533,
+            "boundaryPx": 0.15650407,
+            "upperBoundaryPx": 0.15974679
+          },
+          "after": {
+            "iou": 0.93865236,
+            "boundaryPx": 1.36633108,
+            "upperBoundaryPx": 1.46745
+          }
+        }
+      ],
+      "aligned": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          },
+          "after": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          },
+          "after": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          },
+          "after": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          }
+        },
+        {
+          "yaw": 135,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          },
+          "after": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          }
+        },
+        {
+          "yaw": 180,
+          "pitch": 0,
+          "before": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          },
+          "after": {
+            "iou": 0.99164345,
+            "boundaryPx": 0.19354839,
+            "upperBoundaryPx": 0.17910448
+          }
+        }
+      ]
+    }
+  ]
+}

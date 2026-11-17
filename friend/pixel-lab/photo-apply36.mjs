@@ -1,10 +1,11 @@
-import {reconstruct,surfaceEdit} from './hull36.mjs';
+import {surfaceEdit} from './hull36.mjs';
+import {reconstructPhoto} from './photo-ml44.mjs';
 import {orientedSkin} from './skin-normals35.mjs';
 export async function readApplied(id=localStorage.getItem('bookfriend-face-fit36')){
  if(!id)return null;
  const db=await new Promise((ok,bad)=>{const q=indexedDB.open('bookfriend-photo-model',1);q.onupgradeneeded=()=>q.result.createObjectStore('versions',{keyPath:'id'});q.onsuccess=()=>ok(q.result);q.onerror=()=>bad(q.error);});
  try{const entry=await new Promise((ok,bad)=>{const r=db.transaction('versions').objectStore('versions').get(id);r.onsuccess=()=>ok(r.result);r.onerror=()=>bad(r.error);});if(!entry)return null;
- let mesh=reconstruct(entry.shots);for(const [k,[w,d]] of Object.entries(entry.tuning))if(mesh&&(w||d))mesh=surfaceEdit(mesh,k,w,d);return mesh;
+ let mesh=reconstructPhoto(entry.shots,entry.shapeModel);for(const [k,[w,d]] of Object.entries(entry.tuning))if(mesh&&(w||d))mesh=surfaceEdit(mesh,k,w,d);return mesh;
  }finally{db.close();}
 }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
