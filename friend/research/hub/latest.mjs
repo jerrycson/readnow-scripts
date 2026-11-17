@@ -12,7 +12,7 @@ async function refresh(){
    const row=latestPublished(releases);
    if(!row)throw Error('공개 회차 없음');
    link.href=row.round>=38?'../../pixel-lab/round'+row.round+'.html':'./';
-   link.textContent=row.label+' 열기 ↗';link.title=row.label;const stamp=Date.parse(row.at);last='자료 '+row.cards+'개'+(Number.isFinite(stamp)?' · '+date.format(stamp):'');status.textContent=last;viewer.hidden=row.round<38;
+   link.textContent=row.label+' 열기 ↗';link.title=row.label;const stamp=Date.parse(row.at);last='자료 '+row.cards+'개'+(Number.isFinite(stamp)?' · 기록 '+date.format(stamp):'');status.textContent=last;viewer.hidden=row.round<38;
  }catch{status.textContent=last?last+' · 최신판 재확인 중':'최신판 확인 대기 · 위 링크로 연구실을 열 수 있습니다.';}
  finally{busy=false;}
 }
