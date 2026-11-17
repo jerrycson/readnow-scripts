@@ -18852,8 +18852,9 @@ function renderProjects(m) { const sel = PHONE_THIN ? thinSel('projects') : null
   const bar = PHONE_THIN && !pick ? `<div class="thinbar">📱 고른 카드 ${sel.length}개만 보임 · 받는 자료 없음 <button class="linkbtn" id="thsec_edit">✎ 카드 고르기</button></div>` : '';
   const ref = (to, t) => `<button class="linkbtn pj-ref" data-pjref="${to}">↔ ${t}</button>`;
   const friend = `<div class="card pj-card" id="pj_friend"><div class="pj-h"><b>🐾 책방 친구 캐릭터·애니메이션 연구</b><span class="pj-own">담당: 🐾 책방 친구 방</span></div>
-    <div class="pj-what"><b>🐾 새로 시작 중(11/14)</b> — 틀(알림·말풍선·메시지·연결)은 그대로 두고 옛 캐릭터는 모두 내렸어요(보존 갈래 archive/friend-chars-2026-11-14 · 언제든 되살림). 새 캐릭터는 하나씩 새로 만들어요. 아래 연구 페이지는 그림 원리·근거 글(스타일·뼈대와 비율·얼굴·머리카락·몸·옷·애니메이션·표정 숫자)로 남겨 새 캐릭터에 근본 성질만 빌려 써요.</div>
-    <div class="pj-row"><a class="btn sm" href="${PJ_RESEARCH_URL}" target="_blank" rel="noopener" title="새 탭으로 엶 — 웹앱 메모리를 쓰지 않음">🎨 연구 페이지 열기 ↗</a><small class="hint">옛 캐릭터 연구 일지는 내림(보존 갈래에 있음)</small></div>
+    <div class="pj-what"><b>픽셀 캐릭터 기본형 연구</b> · 원화와 모델을 겹치고 같은 시점에서 회차별 변화를 비교합니다.</div>
+    <iframe title="책방 친구 최신 운영 회차" src="../friend/research/hub/latest.html" loading="lazy" referrerpolicy="no-referrer" style="border:0;width:100%;height:5.3rem;display:block"></iframe>
+    <div class="pj-row"><a class="btn sm" href="${PJ_RESEARCH_URL}" target="_blank" rel="noopener">🎨 연구 페이지 열기 ↗</a></div>
     <div class="pj-x"><b>↔ 서로 참고</b> 📖 동화 및 애니메이션 엔진이 이 연구(캐릭터 비율·움직임·그림 엔진 v2)를 함께 씀 · 원본은 책방 친구 방이 고침 ${ref('pj_story', '📖 동화 엔진 카드로')}</div></div>`;
   const story = `<div class="card pj-card" id="pj_story"><div class="pj-h"><b>📖 동화 및 애니메이션 엔진</b><span class="pj-own">담당: 📖 동화 엔진 방</span></div>
     <div class="pj-what">이야기 → 장면 → 캐릭터 연기로 동화(글+그림)·애니메이션을 만드는 엔진 연구 — 리드나우와 다른 프로젝트이고, 결과·작업 기록은 보관·참고용으로 이 탭에 둠</div>
