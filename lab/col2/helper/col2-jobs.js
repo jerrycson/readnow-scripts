@@ -66,6 +66,14 @@ function makeJobs(ctx) {
     if (!S.fxWait || S.fxWait.d !== kday()) S.fxWait = { d: kday(), at: now() }; return now() - S.fxWait.at >= (F.keyWaitMin == null ? 180 : +F.keyWaitMin) * 60e3; } /* col2.json jobs.fx { after, keyWaitMin }로 바꿈(시험은 00:00 · 0) */
   /* (11/11 col2rep3) 🔀 넘긴 일인가(이 PC로) */
   const handed = (k) => !!(ctx.handed && ctx.handed(k) && ctx.opOut);
+  /* (11/17 bunoe1 · 정범님 19.2 '하루 한두 번이면 되는 열쇠·API 값은 JS-MAIN 번외가 정해진 시각에 받아 공용 값에 올리고 웹앱·다른 PC는 그 값만') 💱 환율 정해진 시각
+   *  넘겨받은 PC: 하루 jobs.fx.at 시각마다 한 번(기본 11:35·15:05 — 수출입은행 고시가 한국 11시 무렵이라 그 앞 09시엔 전날 값뿐 · 둘째는 첫 번이 못 받은 날 다시) · 운영 키(eximKey)가 온 뒤에만
+   *    → 읽으면 소식(beat · 하루 두 번 → 30시간 한도 넉넉) · ext_fx/<고시일>은 없을 때만 씀(hoFx) · 웹앱은 이미 ext_fx만 읽음
+   *  다른 PC로 넘겼으면: 이 PC 번외는 환율을 받지 않음(그 값만 읽음) · 아무 데도 안 넘겼으면 예전 그림자 그대로(하루 한 번 11:35 뒤) */
+  const FX_AT = ['11:35', '15:05'];
+  const fxSlot = () => { const F = C().fx || {}; const L = (Array.isArray(F.at) && F.at.length ? F.at : FX_AT).map((x) => { const [h, m] = String(x).split(':').map(Number); return h * 60 + (m || 0); }).filter((x) => isFinite(x)).sort((a, b) => a - b); let i = -1; const m = kmin(); L.forEach((x, j) => { if (m >= x) i = j; }); return i; };
+  const fxKey = () => { if (kind() === 'logger' || !ctx.keysFor) return false; let k = {}; try { k = ctx.keysFor('fx') || {}; } catch (e) {} return !!k.eximKey; };
+  const fxElse = () => !handed('ext.fx') && !!(ctx.handedElse && ctx.handedElse('ext.fx'));
   /* (11/11 col2rep3) 🅣 알라딘 TTB '이 주소의 OpenAPI 서비스는 종료' — 11/11 두 PC 모두 41·34건 100% 같은 답(운영 ext_run.lastErr.ttb도 같은 글) = 책 문제가 아니라 알라딘 쪽 주소 문제
    *  → 못 읽음으로 세지 않고 '건너뜀(출처 서비스 끝)' · 그날은 더 묻지 않음(헛 요청 하루 수십 건 줄임) · 주소가 바뀌면 운영 공용 파일 고침 뒤 다음 날 다시 */
   /* (11/11 col2rep5) 🔀 넘긴 외부 정보(국중에서 모든 출처로 넓힘) — 운영처럼 다시 볼 날이 지난 책만 묻는다: 먼저 운영 문서(ext_<묶음>/<ISBN>)를 웹앱에서 받아 보고(바깥 요청 없음) · 10분 안에 못 받으면 그냥 읽음
@@ -135,7 +143,8 @@ function makeJobs(ctx) {
     if (BF && ((S.bf && S.bf.cur) || qOk('benchFull'))) { S.qLast = 'benchFull'; /* 읽던 숍은 끝까지(한 숍 최대 40장) */ let r = null; try { r = await BF.step(); } catch (e) { r = { did: false, rest: 10e3, why: '🎯 끝까지 읽기 ' + e.message }; } if (r && (r.did || !(S.q && Object.values(S.q).some((q) => q && q.length)))) return r; } /* (11/12 handoff3) 🎯 숍 목록 끝까지 — 차례가 있으면 먼저(다른 일이 쉴 때만 기다림) */
     if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); S.kpAt = now(); push('kpipa', { day: kday() }, kday()); }
     else if (inPlan('kpipa') && ctx.handed && ctx.handed('kpipa') && now() - (S.kpAt || 0) > 3 * 3600e3) { S.kpAt = now(); const key = kday() + '_' + new Date(now() + 9 * 3600e3).getUTCHours(); push('kpipa', { day: kday() }, key); } /* (11/11 col2rep2) 넘긴 뒤엔 운영처럼 3시간마다 최근 7일(공표 뒤 고쳐짐) */
-    if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C()) && fxReady()) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
+    if (inPlan('ext.fx') && handed('ext.fx')) { const i = fxSlot(); const key = kday() + '_' + i; if (i >= 0 && S.fxSlot !== key && fxKey()) { S.fxSlot = key; S.fxDay = kday(); push('ext.fx', { day: kday() }, key); } } /* (11/17 bunoe1) 넘겨받은 PC = 정해진 시각마다 */
+    else if (inPlan('ext.fx') && !fxElse() && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C()) && fxReady()) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); } /* 다른 PC로 넘겼으면 받지 않음(그 값만 읽음) */
     const L = plan().filter((k) => k !== 'product' && (S.q[k] || []).length);
     /* (11/10) 🗣 판매자 구매평·문의 글 모으기(로거만) — 몫(처음 큼 → 점점 다른 일과 같게)만큼 차례를 받음 · 속도 규칙은 같이 셈 */
     const V = ctx.voice; const vTurn = !!(V && V.wantTurn(L.length)) && qOk('voice'); /* (11/12 handoff4) ⚖ 하루 몫 나누기 */
@@ -263,7 +272,9 @@ function makeJobs(ctx) {
     const hist = { at: M.at || new Date().toISOString(), median: mk.median ?? null, low: mk.low ?? null, n: mk.n ?? null, our: (w.a && w.a.price) ?? null };
     if (ctx.opOut('nbMarket', 'prd_market_nobook', String(w.id), { main, vdoc: F.vdoc || null, sig, hist })) ctx.note(`🔀 넘긴 일 🔍 새상품 없는 시세 — 다시 본 시세를 운영 칸에 맡김(후보가 바뀌면 판 보관 · 시세가 바뀌면 history)`, { k: 'read', m: '🔀 넘김' }); }
   /* (11/11 col2rep3) 🔀 넘긴 환율 — 운영 extFx처럼 ext_fx/<고시일>이 없을 때만(웹앱이 다시 확인) · 수출입은행 출처만 */
-  function hoFx(w, v) { if (!handed('ext.fx') || v) return; const res = w.res || {}; if (!res.ok || !res.rates || res.src !== 'koreaexim') return; const id = String(res.date || w.id);
+  /* (11/17 bunoe1 · 정범님 'Tampermonkey 0') 운영 문서가 이미 있어도(그날 고시를 누가 먼저 썼든) 수출입은행 고시를 읽었으면 소식(beat) — 없으면 넘긴 뒤 첫날만 쓰고
+   *  다음 날부터 문서가 있어 소식이 끊김 → 30시간 뒤 운영 extFx가 다시 떠맡아 로거 Tampermonkey가 날마다 씀(진단 11/17 ext_fx 2026-11-17 by LOGGER · 넘김 beat null) · frankfurter로 읽은 날은 소식 없음(일을 못 한 것) */
+  function hoFx(w, v) { if (!handed('ext.fx')) return; const res = w.res || {}; if (!res.ok || !res.rates || res.src !== 'koreaexim') return; if (ctx.beat) ctx.beat('ext.fx'); if (v) return; const id = String(res.date || w.id);
     if (ctx.opOut('ext.fx', 'ext_fx', id, { date: id, rates: res.rates, src: res.src, warn: res.warn || null })) ctx.note(`🔀 넘긴 일 💱 환율 ${id} — 수출입은행 고시를 운영 칸에 맡김(없을 때만)`, { k: 'read', m: '🔀 넘김' }); }
   /* (11/12 handoff2 · 리드 '로거 고유 일 넘기는 길') 🔀 넘긴 로거 칸 일(👥 구매자 분포 · 🏪 숍 요약) — 운영 규칙으로 쓸 때만(운영 문서 v를 보고 30일·7일 · HOF.due) 읽은 값을 그대로 맡김
    *  실제 쓰기 규칙(운영 dynOne·rev6mJob)은 shadow/col2-handoff.js plan() 한 곳 — 웹앱·클라우드가 운영 문서를 다시 읽고 그 자리에서 셈 · 값이 같아도 맥박(beat)은 남김 */
