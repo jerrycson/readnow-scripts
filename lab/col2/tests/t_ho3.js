@@ -48,8 +48,30 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   else ok(!ran1, '한국 11:35 전엔 읽지 않음(수출입은행 고시 전 · 운영 extFx와 같음)', { ran1, kmin });
   if (ran1) { DB['ext_fx/2026-11-11'] = null; /* 웹앱이 '문서 없음'으로 넘김 */ await run(3); }
   { const J2 = makeJobs({ ...ctx, home: fs.mkdtempSync(path.join(os.tmpdir(), 'c2ho3b-')) }); const S = J2._S(); /* 넘김 쓰기만 따로 — 운영 문서가 없고 수출입은행이면 맡김 · frankfurter·있는 날은 안 맡김 */
-    const src = fs.readFileSync(path.join(L.ROOT, 'helper', 'col2-jobs.js'), 'utf8'); ok(/function hoFx\(w, v\) \{ if \(!handed\('ext\.fx'\) \|\| v\) return;/.test(src) && /res\.src !== 'koreaexim'\) return/.test(src), "환율 맡김: 운영 ext_fx 문서가 없을 때만 · 수출입은행(koreaexim)일 때만", S ? 'ok' : ''); }
+    const src = fs.readFileSync(path.join(L.ROOT, 'helper', 'col2-jobs.js'), 'utf8'); ok(/function hoFx\(w, v\) \{ if \(!handed\('ext\.fx'\)\) return;.*if \(ctx\.beat\) ctx\.beat\('ext\.fx'\); if \(v\) return;/.test(src) && /res\.src !== 'koreaexim'\) return/.test(src), "환율 맡김: 운영 ext_fx 문서가 없을 때만 · 수출입은행(koreaexim)일 때만", S ? 'ok' : ''); }
   if (ran1) { const fxo = ops.filter((o) => o.job === 'ext.fx'); ok(fxo.length === 1 && fxo[0].v.src === 'koreaexim' && fxo[0].id === '2026-11-11', '넘긴 환율: 수출입은행 고시를 운영 칸(ext_fx)에 맡김', fxo); }
+
+  { /* (11/17 bunoe1 · 정범님 'Tampermonkey 0') ③-2 운영 ext_fx 문서가 이미 있어도 수출입은행을 읽었으면 소식(beat) — 없으면 넘긴 뒤 다음 날부터 소식이 끊겨 30시간 뒤 운영(로거 Tampermonkey)이 다시 떠맡았음(진단 11/17) */
+    const kd = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const DB2 = { ['ext_fx/' + kd]: { date: kd, rates: { USD: 1343.3 }, src: 'koreaexim' }, 'ext_fx/2026-11-11': { date: '2026-11-11', rates: { USD: 1343.3 }, src: 'koreaexim' } };
+    const mk = (kk) => { const beats = [], ops2 = []; const J3 = makeJobs({ ...ctx, home: fs.mkdtempSync(path.join(os.tmpdir(), 'c2ho3c-')), cfg: () => ({ ...CFGJ, off: TK_OFF(['ext.fx']), fx: { after: '00:00', at: ['00:00'], keyWaitMin: 0 } }), keysFor: () => kk,
+      want: (c, id) => { const k = c + '/' + id; return k in DB2 ? { have: true, v: DB2[k] } : null; }, handed: (k) => k === 'ext.fx', opOut: (job, c, id, v) => { ops2.push({ job, c, id, v }); return true; }, beat: (k) => { beats.push(k); return true; } }); return { J3, beats, ops2 }; };
+    const A = mk({ eximKey: 'k' }); for (let i = 0; i < 4; i++) await A.J3.step();
+    ok(A.beats.includes('ext.fx') && !A.ops2.some((o) => o.job === 'ext.fx'), '운영 문서가 이미 있어도 수출입은행을 읽으면 소식(beat) · 쓰기는 안 함(없을 때만)', { beats: A.beats, ops: A.ops2 });
+    const B = mk({}); for (let i = 0; i < 4; i++) await B.J3.step();
+    ok(!B.beats.includes('ext.fx') && !B.ops2.length, 'frankfurter로 읽은 날은 소식 없음(일을 못 한 것 → 30시간 뒤 운영이 다시)', { beats: B.beats, ops: B.ops2 }); }
+  { /* (11/17 bunoe1 · 정범님 19.2) ③-3 💱 정해진 시각 — 넘겨받은 PC는 jobs.fx.at 시각마다 한 번(운영 키가 온 뒤) · 다른 PC로 넘겼으면 받지 않음(그 값만 읽음) · 안 넘겼으면 예전 그림자 */
+    const kd = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); let AT = ['00:00', '23:59']; let KK = {};
+    const mk = (o) => { const calls3 = [], beats = []; const X3 = { ...X, fxRun: async (q) => { calls3.push(q.day); return X.fxRun(q); } };
+      const J4 = makeJobs({ ...ctx, home: fs.mkdtempSync(path.join(os.tmpdir(), 'c2ho3d-')), ext: () => X3, cfg: () => ({ ...CFGJ, off: TK_OFF(['ext.fx']), fx: { after: '00:00', at: AT, keyWaitMin: 0 } }), keysFor: () => KK,
+        want: (c, id) => ({ have: true, v: { date: id, rates: { USD: 1343.3 }, src: 'koreaexim' } }), handed: (k) => !!o.mine && k === 'ext.fx', handedElse: (k) => !!o.other && k === 'ext.fx', opOut: () => true, beat: (k) => { beats.push(k); return true; } }); return { J4, calls3, beats }; };
+    const H1 = mk({ mine: true }); KK = {}; for (let i = 0; i < 3; i++) await H1.J4.step(); ok(!H1.calls3.length, '넘겨받은 PC — 운영 키가 오기 전엔 시각이 돼도 받지 않음', H1.calls3);
+    KK = { eximKey: 'k' }; for (let i = 0; i < 3; i++) await H1.J4.step(); ok(H1.calls3.length === 1 && H1.J4._S().fxSlot === kd + '_0' && H1.beats.includes('ext.fx'), '넘겨받은 PC — 첫 시각(00:00)에 한 번 받고 소식', { c: H1.calls3, s: H1.J4._S().fxSlot });
+    for (let i = 0; i < 3; i++) await H1.J4.step(); ok(H1.calls3.length === 1, '같은 시각 칸 안에선 다시 안 받음', H1.calls3);
+    AT = ['00:00', '00:01']; for (let i = 0; i < 3; i++) await H1.J4.step(); ok(H1.calls3.length === 2 && H1.J4._S().fxSlot === kd + '_1', '둘째 시각이 되면 한 번 더(하루 두 번)', { c: H1.calls3, s: H1.J4._S().fxSlot });
+    AT = ['23:59']; const H0 = mk({ mine: true }); for (let i = 0; i < 3; i++) await H0.J4.step(); const km = (() => { const t = new Date(Date.now() + 9 * 3600e3); return t.getUTCHours() * 60 + t.getUTCMinutes(); })(); if (km < 23 * 60 + 59) ok(!H0.calls3.length, '정한 시각 전엔 받지 않음', H0.calls3);
+    AT = ['00:00']; const H2 = mk({ other: true }); for (let i = 0; i < 3; i++) await H2.J4.step(); ok(!H2.calls3.length, '다른 PC(JS-MAIN)로 넘겼으면 이 PC 번외는 환율을 받지 않음(공용 값만 읽음)', H2.calls3);
+    const H3 = mk({}); for (let i = 0; i < 3; i++) await H3.J4.step(); ok(H3.calls3.length === 1, '아무 데도 안 넘겼으면 예전 그림자(하루 한 번)', H3.calls3);
+    const hs = fs.readFileSync(path.join(L.ROOT, 'helper', 'readnow-col2-helper.js'), 'utf8'); ok(/handedElse: \(k\) => hoElse\(k\)/.test(hs) && /const hoElse = \(k\) =>/.test(hs), '도우미가 다른 PC로 넘긴 일을 알려 줌(handedElse)'); }
 
   console.log('④ 시세 넘김 — 7일 안에 본 상품은 차례에 안 넣음');
   HAND = { nbMarket: true }; CFGJ = { ...CFGJ, off: TK_OFF(['nbMarket']) }; const n = J.feedNb([{ id: 'aladin_U1', v: { title: '가', usedCode: 'U1', at: new Date(Date.now() - 2 * 864e5).toISOString() } }, { id: 'aladin_U2', v: { title: '나', usedCode: 'U2', at: new Date(Date.now() - 9 * 864e5).toISOString() } }]);

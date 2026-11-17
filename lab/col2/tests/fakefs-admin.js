@@ -12,7 +12,7 @@ function apply(cur, v, merge) { const out = merge && isObj(cur) ? { ...cur } : {
 function makeDb() { const store = {}; const writes = [];
   const col = (c) => (store[c] = store[c] || {});
   const snap = (c, id) => ({ id, exists: col(c)[id] != null, data: () => (col(c)[id] == null ? undefined : cp(col(c)[id])), ref: docRef(c, id) });
-  function docRef(c, id) { return { id, _c: c, get: async () => snap(c, id), set: async (v, o) => { col(c)[id] = apply(col(c)[id], v, !!(o && o.merge)); writes.push({ c, id }); },
+  function docRef(c, id) { return { id, _c: c, get: async () => snap(c, id), set: async (v, o) => { if (o && Array.isArray(o.mergeFields)) { const out = isObj(col(c)[id]) ? cp(col(c)[id]) : {}; for (const fp of o.mergeFields) { const ks = String(fp).split('.'); let sv = v; for (const k of ks) sv = isObj(sv) ? sv[k] : undefined; let d = out; for (const k of ks.slice(0, -1)) d = (d[k] = isObj(d[k]) ? d[k] : {}); const last = ks[ks.length - 1]; if (sv === undefined) delete d[last]; else d[last] = isObj(sv) ? apply({}, sv, false) : cp(sv); } col(c)[id] = out; } else col(c)[id] = apply(col(c)[id], v, !!(o && o.merge)); writes.push({ c, id }); }, /* (bunoe1 11/17) mergeFields — 적은 칸 길만 통째로 바꿈(진짜 Firestore처럼) */
     update: async (v) => { if (col(c)[id] == null) throw Object.assign(new Error('없는 문서'), { code: 'not-found' }); col(c)[id] = apply(col(c)[id], v, true); writes.push({ c, id }); }, collection: (s) => colRef(c + '/' + id + '/' + s) }; }
   function query(c, f) { const q = { _f: f || { w: [], after: null, lim: 0 } };
     const nq = (p) => query(c, { ...q._f, ...p, w: p.w || q._f.w });
