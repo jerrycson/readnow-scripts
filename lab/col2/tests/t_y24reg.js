@@ -23,7 +23,7 @@ function fakeY24() { const S = { prods: [{ GOODS_NO: '100000001', EAN: '97889000
 <div class="btnarea_wrap_btm"><button type="button" class="btn btn-primary btn-lg" id="reg"> 등록 </button></div>
 <div class="layerPop" id="pop" style="display:none"><h1> 등록 완료 </h1><button type="button" class="close">×</button><ul><li>총 <span id="ns">0</span>개의 상품이 판매중으로 등록되었습니다.</li><li>총 <span>0</span>개의 상품이 미출간으로 등록되었습니다.</li></ul></div>
 <script>var LINES=[];document.getElementById('f').onchange=function(){if(!document.getElementById('r1').checked)return alert('바코드를 고르세요');var fr=new FileReader();fr.onload=function(){LINES=String(fr.result).trim().split('\\n');${'if(window.NOPV)return;if(window.GRIDONLY){var R=LINES.map(function(l){var a=l.split(",");return {BARCODE:a[0],ENTR_GOODS_CD:a[1],RSLT_MSG:""}});var gv={getDataSource:function(){return {getRowCount:function(){return R.length},getJsonRow:function(i){return R[i]}}},getItemIndex:function(i){return i}};document.getElementById("productGrid").__vue__={gridView:gv};return;}'}document.getElementById('productGrid').innerText=LINES.join(' | ')};fr.readAsText(this.files[0])};
-document.getElementById('reg').onclick=function(){if(!LINES.length)return alert('파일 없음');if(!confirm('선택한 상품을 등록하시겠습니까?'))return;api('/api/Product/BulkReg',{lines:LINES},function(t){var j=JSON.parse(t);document.getElementById('ns').innerText=j.n;document.getElementById('pop').style.display='block'})};
+document.getElementById('reg').onclick=function(){if(!LINES.length)return alert('파일 없음');if(!confirm('선택한 상품을 등록하시겠습니까?'))return;if(window.DONE_MODE==='noreg')return;api('/api/Product/BulkReg',{lines:LINES},function(t){var j=JSON.parse(t);if(window.DONE_MODE==='inform'){var d=document.createElement('div');d.className='modal';d.setAttribute('role','dialog');d.innerText='상품저장 '+j.n+'/'+j.n+'건의 상품이 등록 되었습니다.';document.body.appendChild(d);return}if(window.DONE_MODE==='silent')return;document.getElementById('ns').innerText=j.n;document.getElementById('pop').style.display='block'})};
 document.querySelector('#pop .close').onclick=function(){document.getElementById('pop').style.display='none'};</script>`);
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => { S.log.push({ m: q.method, p: u.pathname, body: b.slice(0, 300) });
       const H = (code, type, body) => { s.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); s.end(body); };
@@ -33,7 +33,7 @@ document.querySelector('#pop .close').onclick=function(){document.getElementById
       if (u.pathname === '/api/Product/DeleteAll') { S.prods = []; return H(200, 'application/json', '{}'); }
       if (u.pathname.startsWith('/api/')) return H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }));
       if (u.pathname === '/') return H(200, 'text/html', page('판매관리', '첫 화면'));
-      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : S.gridOnly ? '<body><script>window.GRIDONLY=1</script>' : '<body>').replace('</body>', S.vm ? VMJS(S.vm) + '</body>' : '</body>'));
+      if (u.pathname === '/Product/BulkRegistrationByExcel') return H(200, 'text/html', bulk().replace('<body>', S.noPreview ? '<body><script>window.NOPV=1</script>' : S.gridOnly ? '<body><script>window.GRIDONLY=1</script>' : '<body>').replace('</body>', S.vm ? VMJS(S.vm) + '</body>' : '</body>').replace('</head>', S.done ? `<script>window.DONE_MODE=${JSON.stringify(S.done)}</script></head>` : '</head>'));
       if (u.pathname === '/Product/ProductList') return H(200, 'text/html', page('등록상품', `<button type="button" onclick="api('/api/Product/ProductList',{SDATE:'2026-11-01',EDATE:'2026-11-10',goodsStatGb:'02',PAGE_NO:1,PAGE_SIZE:20})">조회</button>`));
       return H(200, 'text/html', page('기타', '없음')); }); });
   return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ srv, S, base: `http://127.0.0.1:${srv.address().port}` }))); }
@@ -97,6 +97,17 @@ const job = (id, rows) => ({ id, rows, xlsx: b64(rows), by: '시험 웹앱' });
     Y.S.vm = 'empty'; { const n7 = Y.S.regs.length, c7 = Y.S.chk.length; await H.api('POST', '/y24/reg/put', job('job-V3', [row(8)])); const xm = await resOf('job-V3');
       ok(xm && xm.state === 'fail' && xm.pre && xm.msg.startsWith(RG.PRE_HEAD) && /'바코드' 칸이 비어/.test(xm.msg) && /상품번호/.test(xm.msg) && Y.S.regs.length === n7 && Y.S.chk.length === c7, "엑셀 머리글이 달라 '바코드' 칸이 비면 읽은 칸 이름과 함께 멈춤", xm && xm.msg); }
     Y.S.vm = '';
+    console.log("⑥ (y24reg5 · 0.1.75 · HOME 11/17 00:08Z 블루레이) '등록 완료' 창이 없어도 등록상품 목록(자체코드)으로 확인 · 누르기는 늘지 않음");
+    Y.S.done = 'inform'; { const n8 = Y.S.regs.length, r8 = Y.S.log.filter((l) => l.p === '/api/Product/BulkReg').length; await H.api('POST', '/y24/reg/put', job('job-I1', [row(9)])); const xi = await resOf('job-I1');
+      ok(xi && xi.state === 'done' && xi.gno && xi.gno.aladin_U9 && xi.cnt && xi.cnt.sale === 1 && xi.cnt.tot === 1 && Y.S.regs.length === n8 + 1 && Y.S.log.filter((l) => l.p === '/api/Product/BulkReg').length === r8 + 1, "알림 창 「1/1건의 상품이 등록 되었습니다」(미출간 0일 때 예스24 원문) → 셈 읽고 목록에서 확인 → done", xi && xi.msg); }
+    Y.S.done = 'silent'; { const n9 = Y.S.regs.length; await H.api('POST', '/y24/reg/put', job('job-I2', [row(10)])); const xs = await resOf('job-I2', 200);
+      ok(xs && xs.state === 'done' && xs.gno && xs.gno.aladin_U10 && Y.S.regs.length === n9 + 1 && /못 봄/.test(xs.msg) && xs.raw && xs.raw.vl && xs.raw.vl.k === 1, "창·알림을 전혀 못 봐도 등록상품 목록에 자체코드가 있으면 done(예전엔 unsure로 멈춤)", xs && xs.msg); }
+    Y.S.done = 'noreg'; { const n10 = Y.S.regs.length, r10 = Y.S.log.filter((l) => l.p === '/api/Product/BulkReg').length; await H.api('POST', '/y24/reg/put', job('job-I3', [row(11)])); const xn = await resOf('job-I3', 200);
+      ok(xn && xn.state === 'unsure' && !Object.keys(xn.gno || {}).length && Y.S.regs.length === n10 && Y.S.log.filter((l) => l.p === '/api/Product/BulkReg').length === r10 && xn.todo && 'raw' in xn, '목록에도 없고 창도 없으면 unsure(다시 누르지 않음 · 사람/클라우드 확인)', xn && xn.msg); }
+    Y.S.done = '';
+    ok(JSON.stringify(RG.doneCounts('상품저장 1/1건의 상품이 등록 되었습니다.')) === '{"sale":1,"unpub":0,"tot":1,"fail":0}' && RG.doneCounts('2/3건의 상품이 등록 되었습니다. 상품[8809866320756] 등록에 실패했습니다.').fail === 1 && RG.doneCounts('', { tot: 1, pc: 1, un: 0, pub: 1 }).sale === 1 && RG.doneCounts('', { tot: 1, pc: 0, un: 0, pub: 0 }) === null, '알림 글·실패 글·화면 부품 셈 읽기');
+    ok(JSON.stringify(RG.mnoOf([{ lid: 'a', bc: '8809866320756', isbn: '8809866320756' }, { lid: 'b', isbn: '9788900000009' }], { rows: [{ bc: '8809866320756', no: '150109556' }, { bc: '9788900000009', no: '' }] })) === '{"a":"150109556"}', '카탈로그 상품번호(mno) 짝 — 번호가 있을 때만');
+    ok(JSON.stringify(RG.netIns([{ p: '/api/Product/InsertProductByExcel', st: 200, body: '{"RESULT_CODE":"S000","UNPUBLISHED_YN":"N","X":1}' }, { p: '/api/Product/ProductList', st: 200, body: '{}' }])) === '[{"st":200,"rc":"S000","un":"N"}]', '[등록] 응답은 결과 코드·미출간 표시만');
   } finally { try { await H.stop(); } catch (e) {} killDir(D); }
   Y.srv.close(); L.done('t_y24reg');
 })();
