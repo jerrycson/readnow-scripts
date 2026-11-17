@@ -101,13 +101,20 @@ details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } det
   <button class="big" id="b2"><span class="n">🔁</span><span class="t">② 윈도우 시작 때 자동<small id="b2s">로그온 뒤 20초 기다렸다 실행·배치</small></span><span class="sw" id="b2sw"></span></button>
   <button class="big pri" id="b3"><span class="n">▶</span><span class="t">③ 설정대로 지금 실행·배치<small id="b3s" style="color:#ffffffcc">켜고 · 뜨길 기다려 · 칸에 놓음</small></span></button>
   <button class="big" id="b4"><span class="n">🧹</span><span class="t">④ PC 정리<small>임시·캐시만 · 리드나우는 안 건드림</small></span></button>
+  <button class="big" id="b5"><span class="n">⛔</span><span class="t">전체 닫기<small id="b5s">작업 표시줄의 프로그램 모두 종료(수집기 포함) · 목록 본 뒤 한 번 더</small></span></button>
   <div id="last" class="mute">아직 실행·배치하지 않았습니다.</div>
   <div id="ask" class="ask" hidden>
     <b style="font-size:14px">▶ 지금 열린 프로그램을 어떻게 할까요?</b>
     <button id="askKeep" class="pri">📌 남겨 둔 채 설정대로 열기</button>
-    <button id="askClose">🧹 화면에 열린 프로그램 모두 닫고 설정대로 열기<small class="mute" style="display:block;font-size:11px">닫을 목록을 먼저 보여 드림 · 크롬·Claude·원격·출고·탐색기 셸은 절대 안 닫음</small></button>
+    <button id="askClose">🧹 화면에 열린 프로그램 모두 닫고 설정대로 열기<small class="mute" style="display:block;font-size:11px">닫을 목록을 먼저 보여 드림 · 고른 것만 닫음(크롬·수집기도 고를 수 있음) · 부탁 → 기다림 → 남으면 강제 종료</small></button>
     <button id="askNo">취소</button>
     <div id="askList"></div>
+  </div>
+  <div id="all" class="ask" hidden>
+    <b style="font-size:14px">⛔ 전체 닫기 — 지금 작업 표시줄에 뜬 프로그램</b>
+    <div class="mute" style="font-size:11.5px">고른 창의 프로그램을 닫습니다: 닫아 달라고 부탁(저장 안 한 문서는 그 프로그램이 물음) → 6초 기다림 → 남아 있으면 강제 종료 · 수집기(크롬)도 닫힘 · PC 배치 자신·윈도우 셸·시스템은 안 닫음</div>
+    <div id="allList"></div>
+    <button id="allNo">← 처음으로</button>
   </div>
 </div>
 
@@ -137,7 +144,7 @@ details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } det
       <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)" title="켜면 한 칸에 프로그램 둘 이상을 겹쳐 놓을 수 있음(나중 것이 위) · 끄면 겹친 배치는 저장 때 막힘"><input id="oOver" type="checkbox" style="width:auto"> 한 칸에 겹쳐 놓기 허용</label>
       <span>③ 창이 뜨길 최대 <input id="oWait" type="number" min="5" max="180" style="width:58px"> 초 기다림</span>
       <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oReuse" type="checkbox" style="width:auto"> 이미 떠 있는 프로그램은 새로 안 띄우고 자리만(크롬 빼고)</label>
-      <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)" title="③ 단추를 누를 때 배치에 놓은 프로그램(Claude·카카오톡·폴더 등)의 창을 먼저 닫고 새로 띄워 칸에 놓음 · 크롬 창은 뒤 탭에 수집기·알라딘 로그인이 있을 수 있어 언제나 안 닫음 · 번외·ALPS·PC 배치 창과 목록 밖 프로그램도 안 닫음 · 윈도우 시작 자동 실행 때는 하지 않음 · 기본 끔"><input id="oClose1" type="checkbox" style="width:auto"> ③ 때 목록의 프로그램은 먼저 닫고 새로 띄움(크롬·수집기·번외 창은 안 닫음 · 윈도우 시작 때는 안 함)</label>
+      <div id="oCloseApps" style="flex-basis:100%;font-size:12px" title="③ 단추를 누를 때 고른 프로그램의 창을 먼저 닫고(부탁 → 기다림 → 남으면 강제 종료) 새로 띄워 칸에 놓음 · 크롬·수집기·번외·Claude 모두 고를 수 있음(크롬을 고르면 뒤 탭의 수집기·알라딘 로그인도 닫힘) · 윈도우 시작 자동 실행 때는 하지 않음 · 기본 아무것도 안 고름"></div>
     </div>
   </div>
 </div>
@@ -187,10 +194,16 @@ function paintHome() { const c = S.cfg; const mw = !S.mons.length ? monWhy() || 
   $('#b1s').textContent = c.place.length ? `프로그램 ${c.apps.length}개 · 놓은 자리 ${c.place.length}곳 · 모니터 ${S.mons.length}대` : `아직 놓은 것 없음 · 모니터 ${S.mons.length}대`;
   if (S.last) paintLast(S.last); }
 const raw = (t) => t ? `<details class="raw"><summary>원문</summary><code>${esc(t)}</code></details>` : '';
+/* (0.1.9) 닫은 결과 줄 — closed(부탁으로 닫힘) · killed(남아서 강제 종료) · left(강제 종료도 안 됨) */
+const RES_T = { closed: '✓ 닫힘', killed: '⚠ 강제 종료', left: '✗ 남음' };
+const closeSum = (rows) => { const n = (k) => (rows || []).filter((c) => c.res === k).length; return `닫힘 ${n('closed')} · 강제 종료 ${n('killed')} · 남음 ${n('left')}`; };
+const closeRows = (rows) => (rows || []).map((c) => `<div class="${c.res === 'left' ? 'bad' : c.res === 'killed' ? 'warn' : ''}">${esc(RES_T[c.res] || c.res || '?')} — ${esc(c.proc)}${c.title ? ' · ' + esc(c.title) : ''}${c.why ? ' <span class="mute">(' + esc(c.why) + ')</span>' : ''}</div>`).join('');
 function paintLast(L) { const el = $('#last'); el.classList.remove('mute'); const t = new Date(L.at).toLocaleTimeString('ko-KR');
-  const cl = L.closed || []; const cOk = cl.filter((c) => c.ok);
+  const cl = L.closed || []; const pc = (L.pre && L.pre.closed) || [];
   el.innerHTML = `<div><b>${esc(t)} ${esc(L.by || '')}${L.mode === 'close' ? ' · 모두 닫고' : ''}</b> ${L.ok ? '<span class="ok">끝</span>' : '<span class="bad">' + esc(L.err || '안 됨') + '</span>'}${L.sec != null ? ' · ' + L.sec + '초' : ''}</div>` + raw(L.raw) +
-    (cl.length ? `<div>🧹 닫아 달라고 부탁 ${cOk.length}개 · 닫힘 ${cOk.filter((c) => c.gone).length}개${cOk.some((c) => !c.gone) ? ` · 아직 떠 있음 ${cOk.filter((c) => !c.gone).length}개(저장할지 묻는 중일 수 있음 — 그 창에서 골라 주세요)` : ''}</div>` + `<details class="raw"><summary>닫은 창</summary>${cl.map((c) => `<div>${c.ok ? (c.gone ? '✓' : '…') : '—'} ${esc(c.proc)} · ${esc(c.title)}${c.why ? ' (' + esc(c.why) + ')' : ''}</div>`).join('')}</details>` : '') +
+    (cl.length ? `<div>🧹 모두 닫기 — ${esc(closeSum(cl))}</div><details class="raw"${cl.some((c) => c.res === 'left') ? ' open' : ''}><summary>닫은 창</summary>${closeRows(cl)}</details>` : '') +
+    (pc.length ? `<div>🧹 먼저 닫기(고른 프로그램) — ${esc(closeSum(pc))}</div><details class="raw"${pc.some((c) => c.res === 'left') ? ' open' : ''}><summary>먼저 닫은 창</summary>${closeRows(pc)}</details>` : '') +
+    (L.closeErr ? `<div class="bad">${esc(L.closeErr)}</div>` : '') +
     (L.res || []).map((r) => `<div>${r.ok ? '✅' : '⚠'} ${r.ok ? esc(r.name) + ' — ' + esc(r.how) : esc(r.msg || (r.name + ' — ' + r.how))}</div>` + raw(r.raw)).join('') +
     (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)}: ${esc(s.why)}${s.todo ? ' → ' + esc(s.todo) : ''}</div>`).join(''); }
 $('#b1').onclick = () => openSet();
@@ -200,18 +213,36 @@ async function doRun(body) { $('#ask').hidden = true; const b = $('#b3'); b.disa
 $('#b3').onclick = () => { $('#askList').innerHTML = ''; $('#ask').hidden = false; };
 $('#askNo').onclick = () => { $('#ask').hidden = true; };
 $('#askKeep').onclick = () => doRun({ mode: 'keep' });
+/* (0.1.9) 닫을 창 목록 — 창마다 고르기(기본 모두 고름 · 걱정되는 창은 ⚠ 까닭) · 안 닫는 창(PC 배치 자신·윈도우 셸·시스템)은 따로 */
+function pickList(r, what) { return `<div class="list"><b>닫을 수 있는 창 ${r.close.length}개</b> <span class="mute">(고른 것만 ${esc(what)} · 부탁 → 기다림 → 남으면 강제 종료)</span>${r.close.map((w) => `<label class="row"><input type="checkbox" data-i="${+w.i}" checked><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)}</span>${w.warn ? `<div class="warn" style="font-size:11px">⚠ ${esc(w.warn)}</div>` : ''}</div></label>`).join('') || '<div class="mute">없음</div>'}</div>` +
+    `<details class="list"><summary><b>안 닫는 창 ${(r.never || []).length}개</b> <span class="mute">(PC 배치 자신·윈도우 셸·시스템)</span></summary>${(r.never || []).map((w) => `<div class="row"><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)} · ${esc(w.why)}</span></div></div>`).join('')}</details>`; }
+const picked = (box) => $$('input[data-i]', box).filter((x) => x.checked).map((x) => +x.dataset.i); /* 목록 차례 번호만(화면은 창 번호를 모름) */
 $('#askClose').onclick = async () => { const L = $('#askList'); L.innerHTML = '<div class="mute">떠 있는 창을 보는 중…</div>'; const r = await api('/api/closeplan', {}); if (!r.ok) { L.innerHTML = `<div class="bad">목록을 못 읽음: ${esc(r.err || '')}</div>`; return; }
-  L.innerHTML = `<div class="list"><b>닫을 창 ${r.close.length}개</b> <span class="mute">(닫아 달라고 부탁만 — 저장 안 한 문서는 그 프로그램이 물음 · 강제 종료 없음)</span>${r.close.map((w) => `<div class="row" data-close><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)}</span></div></div>`).join('') || '<div class="mute">없음 — 모두 지키는 창</div>'}</div>` +
-    `<details class="list"><summary><b>지키는 창 ${r.keep.length}개</b> <span class="mute">(절대 안 닫음)</span></summary>${r.keep.map((w) => `<div class="row" data-keep><div class="g">${esc(w.title)} <span class="mute">${esc(w.proc)} · ${esc(w.why)}</span></div></div>`).join('')}</details>` +
-    `<button id="askGo" class="pri">${r.close.length ? `🧹 ${r.close.length}개 닫고 설정대로 열기` : '닫을 것 없이 설정대로 열기'}</button>`;
-  $('#askGo').onclick = () => r.close.length ? twice($('#askGo'), `한 번 더 누르면 ${r.close.length}개 창을 닫고 엽니다`, () => doRun({ mode: 'close', token: r.token })) : doRun({ mode: 'keep' }); };
+  L.innerHTML = pickList(r, '닫고 설정대로 엶') + `<button id="askGo" class="pri"></button>`;
+  const go = $('#askGo'); const lab = () => { const n = picked(L).length; go.textContent = n ? `🧹 고른 ${n}개 닫고 설정대로 열기` : '닫을 것 없이 설정대로 열기'; }; lab(); $$('input[data-i]', L).forEach((x) => { x.onchange = lab; });
+  go.onclick = () => { const hs = picked(L); return hs.length ? twice(go, `한 번 더 누르면 ${hs.length}개 창을 닫고 엽니다`, () => doRun({ mode: 'close', token: r.token, pick: hs })) : doRun({ mode: 'keep' }); }; };
+/* (0.1.9 · 정범님 11/17 16:16) ⛔ 전체 닫기 — 첫 누름: 목록(모두 고름) · 두 번째 누름(「⛔ n개 모두 닫기」): 닫기 · 결과(닫힘·강제 종료·남음)를 그 자리에 · 브라우저 확인 창 없음 */
+$('#b5').onclick = async () => { const ov = $('#all'), L = $('#allList'); ov.hidden = false; L.innerHTML = '<div class="mute">떠 있는 창을 보는 중…</div>'; const r = await api('/api/closeall', {}); if (!r.ok) { L.innerHTML = `<div class="bad">목록을 못 읽음: ${esc(r.err || '')}</div>`; return; }
+  L.innerHTML = pickList(r, '닫음') + `<button id="allGo" class="pri" style="background:var(--bad);border-color:var(--bad)"></button>`;
+  const go = $('#allGo'); const lab = () => { const n = picked(L).length; go.disabled = !n; go.textContent = n ? `⛔ 고른 ${n}개 모두 닫기` : '고른 창이 없음'; }; lab(); $$('input[data-i]', L).forEach((x) => { x.onchange = lab; });
+  go.onclick = async () => { const hs = picked(L); if (!hs.length) return; go.disabled = true; go.textContent = `⛔ ${hs.length}개 닫는 중… (부탁 → 6초 기다림 → 남으면 강제 종료)`;
+    const x = await api('/api/closeall', { token: r.token, pick: hs }); if (!x.ok) { L.innerHTML = `<div class="bad">못 닫음: ${esc(x.err || '')}</div>`; return; }
+    L.innerHTML = `<div class="list"><b>⛔ 전체 닫기 끝 — ${esc(closeSum(x.rows))}</b>${x.sec != null ? ' <span class="mute">· ' + x.sec + '초</span>' : ''}${closeRows(x.rows)}</div>` + ((x.rows || []).some((c) => c.res === 'left') ? '<div class="warn">✗ 남음 = 강제 종료도 안 된 프로그램(관리자 권한으로 켠 것일 수 있음) — 그 창에서 직접 닫아 주세요</div>' : '');
+    $('#b5s').textContent = `마지막: ${closeSum(x.rows)}`; toast('⛔ 전체 닫기 — ' + closeSum(x.rows), 5000); }; };
+$('#allNo').onclick = () => { $('#all').hidden = true; };
 $('#b4').onclick = () => openClean();
 
 /* ── ① 설정 ── */
-function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; $('#oLate').value = C.auto.lateSec == null ? 180 : C.auto.lateSec; $('#oShowSelf').checked = C.auto.showSelf !== false; $('#oOver').checked = C.run.overlap === true; $('#oClose1').checked = C.run.closeFirst === true; const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
+function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; $('#oLate').value = C.auto.lateSec == null ? 180 : C.auto.lateSec; $('#oShowSelf').checked = C.auto.showSelf !== false; $('#oOver').checked = C.run.overlap === true;  const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
 window.addEventListener('resize', () => { if ($('#set').classList.contains('on')) paintSet(); });
 const monKey = (m) => m.id; const gridFor = (m) => G.gridOf(m, (C.mons[m.id] || {}).grid || 'auto', C.base);
-function paintSet() { paintApps(); paintMap(); paintMonOpts(); }
+function paintSet() { paintApps(); paintMap(); paintMonOpts(); paintCloseApps(); }
+/* (0.1.9 · 정범님 11/17 16:16 「모두 선택 가능하게 해서 실제로 전부 닫히게」) ③ 때 먼저 닫고 새로 띄울 프로그램 — 목록의 틀마다 고르기(PC 배치 자신만 뺌 · 기본 아무것도 안 고름) */
+const RISKY = { chrome: '수집기·알라딘 로그인 탭도 닫힘', web: '크롬 창 — 수집기 탭이 같은 창이면 함께 닫힘', crd: '원격 연결이 끊김', col2: '번외 수집기가 멈춤', alps: 'ALPS 일이 멈춤', claude: '하던 대화 창이 닫힘' };
+function paintCloseApps() { const el = $('#oCloseApps'); if (!el || !C) return; const on = new Set((C.run && C.run.closeApps) || []);
+  el.innerHTML = `<b>③ 때 먼저 닫고 새로 띄울 프로그램</b> <span class="mute">(고른 것만 · 부탁 → 기다림 → 남으면 강제 종료 · 윈도우 시작 때는 안 함)</span><div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px">` +
+    C.apps.filter((a) => a.kind !== 'self').map((a) => `<label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)" title="${esc(RISKY[a.kind] || '')}"><input type="checkbox" data-ca="${esc(a.id)}" style="width:auto"${on.has(a.id) ? ' checked' : ''}> ${esc(a.name)}${RISKY[a.kind] ? ` <span class="warn" style="font-size:10.5px">⚠ ${esc(RISKY[a.kind])}</span>` : ''}</label>`).join('') + '</div>';
+  $$('input[data-ca]', el).forEach((x) => { x.onchange = () => { C.run.closeApps = $$('input[data-ca]', el).filter((y) => y.checked).map((y) => y.dataset.ca); C.run.closeFirstV = 3; C.run.closeFirst = C.run.closeApps.length > 0; }; }); }
 function paintApps() { const el = $('#apps'); el.innerHTML = C.apps.map((a) => { const n = C.place.filter((p) => p.app === a.id).length; return `<div class="app${sel === a.id ? ' sel' : ''}" data-app="${esc(a.id)}"><span class="ic">${appIcon(a)}</span><span class="nm">${esc(a.name)}</span><span class="cnt">${n ? '📍' + n : ''}</span></div>`; }).join('');
   $$('.app', el).forEach((d) => { d.onpointerdown = (e) => startDrag(e, { kind: 'new', app: d.dataset.app }); }); }
 let V = null;
@@ -238,17 +269,20 @@ function regrid(id, a, b) { if (a.cols === b.cols && a.rows === b.rows) return; 
 function cellUnder(x, y) { return $$('.cell').find((c) => { const r = c.getBoundingClientRect(); return x >= r.left && x < r.right && y >= r.top && y < r.bottom; }) || null; }
 const isSelfP = (p) => C.apps.some((a) => a.id === p.app && a.kind === 'self'); /* (0.1.8) settings.js 검사와 같음 — PC 배치 창은 겹침 검사 밖 · run.overlap 켜면 겹쳐 놓기 허용 */
 const free = (np, skip) => (C.run && C.run.overlap === true) || isSelfP(np) || !C.place.some((p, i) => i !== skip && !isSelfP(p) && p.mon === np.mon && np.c < p.c + p.w && p.c < np.c + np.w && np.r < p.r + p.h && p.r < np.r + np.h);
+/* (0.1.9 · 정범님 11/17 16:16 「배치도에서 해당 영역을 클릭하면 레이어 상 해당 아이콘이 위로」) 누르거나 옮긴 덩이를 목록 끝으로 — 배치도는 끝에 있는 것이 위
+ *  이 차례는 「✔ 확인(저장)」 때 함께 저장(다시 열어도 그대로) · ③도 이 차례대로 놓아 겹친 칸에서는 위에 있는 것이 실제 화면에서도 위(나중에 놓음) */
+function raise(i) { if (i < 0 || i >= C.place.length - 1) return; const [pp] = C.place.splice(i, 1); C.place.push(pp); }
 /* 끌어 놓기(목록 → 칸 · 놓은 덩이 → 다른 칸) */
 function startDrag(e, D) { e.preventDefault(); const a = D.kind === 'new' ? C.apps.find((x) => x.id === D.app) : C.apps.find((x) => x.id === C.place[D.i].app); if (!a) return;
   const x0 = e.clientX, y0 = e.clientY; let g = null, hot = null, moved = false;
   const mv = (ev) => { if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return; if (!moved) { moved = true; g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = `<span class="ic">${appIcon(a)}</span>${esc(a.name)}`; document.body.appendChild(g); }
     g.style.left = ev.clientX + 8 + 'px'; g.style.top = ev.clientY + 8 + 'px'; const c = cellUnder(ev.clientX, ev.clientY); if (hot !== c) { if (hot) hot.classList.remove('hot'); hot = c; if (hot) hot.classList.add('hot'); } };
   const up = (ev) => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); if (g) g.remove(); if (hot) hot.classList.remove('hot');
-    if (!moved) { if (D.kind === 'new') { sel = D.app; selP = null; } else { selP = C.place[D.i].id; sel = null; } paintApps(); paintMap(); paintDetail(); return; }
+    if (!moved) { if (D.kind === 'new') { sel = D.app; selP = null; } else { selP = C.place[D.i].id; sel = null; raise(D.i); } paintApps(); paintMap(); paintDetail(); return; }
     const c = cellUnder(ev.clientX, ev.clientY); if (!c) return; const mon = c.dataset.mon, cc = +c.dataset.c, rr = +c.dataset.r; const m = S.mons.find((x) => x.id === mon); const gr = gridFor(m);
     if (D.kind === 'new' && a.kind === 'self' && C.place.some((p) => p.app === a.id)) return toast('PC 배치 작은 창은 한 곳에만 — 놓은 덩이를 끌어 옮겨 주세요');
     if (D.kind === 'new') { const n = C.place.filter((p) => p.app === a.id).length; const np = { id: newPid(), app: a.id, name: n ? `${a.name} ${n + 1}` : '', o: AP.newInstO(a), mon, c: cc, r: rr, w: 1, h: 1 }; if (!free(np, -1)) return toast('그 칸에는 이미 다른 것이 있습니다 — 한 칸에 하나'); C.place.push(np); selP = np.id; sel = null; }
-    else { const p = C.place[D.i]; const np = { ...p, mon, c: cc, r: rr, w: Math.min(p.w, gr.cols - cc), h: Math.min(p.h, gr.rows - rr) }; if (!free(np, D.i)) return toast('그 자리에는 이미 다른 것이 있습니다'); C.place[D.i] = np; }
+    else { const p = C.place[D.i]; const np = { ...p, mon, c: cc, r: rr, w: Math.min(p.w, gr.cols - cc), h: Math.min(p.h, gr.rows - rr) }; if (!free(np, D.i)) return toast('그 자리에는 이미 다른 것이 있습니다'); C.place[D.i] = np; raise(D.i); }
     paintSet(); paintDetail(); };
   document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); }
 /* 모서리 끌어 칸 늘리기·줄이기(같은 모니터 안 · 겹치면 멈춤) */
@@ -318,7 +352,7 @@ $('#base').onchange = () => { const [aw, ah] = $('#base').value.split(':').map(N
 $('#reMon').onclick = async () => { const b = $('#reMon'); b.disabled = true; b.textContent = '🔄 읽는 중…'; const r = await api('/api/screens', {}); b.disabled = false; b.textContent = '🔄 모니터 다시 읽기';
   if (Array.isArray(r.mons)) S.mons = r.mons; S.monErr = r.ok ? '' : (r.err || '까닭 모름'); paintSet(); if (!r.ok) return toast('모니터를 못 읽음: ' + monWhy(), 6000); toast(`모니터 ${S.mons.length}대를 읽었습니다`); };
 $('#setCancel').onclick = $('#setBack').onclick = () => { C = null; show('home'); fit('home'); };
-$('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; }; $('#oLate').onchange = () => { const v = $('#oLate').value; C.auto.lateSec = v === '' || !Number.isFinite(+v) ? 180 : Math.max(0, Math.min(600, Math.round(+v))); $('#oLate').value = C.auto.lateSec; }; $('#oShowSelf').onchange = () => { C.auto.showSelf = $('#oShowSelf').checked; }; $('#oOver').onchange = () => { C.run.overlap = $('#oOver').checked; }; $('#oClose1').onchange = () => { C.run.closeFirst = $('#oClose1').checked; C.run.closeFirstV = 2; };
+$('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; }; $('#oLate').onchange = () => { const v = $('#oLate').value; C.auto.lateSec = v === '' || !Number.isFinite(+v) ? 180 : Math.max(0, Math.min(600, Math.round(+v))); $('#oLate').value = C.auto.lateSec; }; $('#oShowSelf').onchange = () => { C.auto.showSelf = $('#oShowSelf').checked; }; $('#oOver').onchange = () => { C.run.overlap = $('#oOver').checked; };
 $('#setOk').onclick = async () => { for (const m of S.mons) { const g = gridFor(m); C.mons[m.id] = { ...(C.mons[m.id] || {}), grid: (C.mons[m.id] || {}).grid || 'auto', cols: g.cols, rows: g.rows, w: m.b.w, h: m.b.h }; }
   const r = await api('/api/save', { cfg: C }); if (!r.ok) return toast('저장 못 함:\n' + (r.errs || [r.err]).slice(0, 5).join('\n'), 6000);
   S.cfg = r.cfg; C = null; show('home'); fit('home'); paintHome(); toast('저장했습니다' + (r.warns && r.warns.length ? '\n' + r.warns.join('\n') : '')); };

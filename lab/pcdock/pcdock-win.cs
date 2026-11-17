@@ -41,6 +41,8 @@ public static class RnDock {
   [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint a, bool i, uint pid);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
   [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr h);
+  [DllImport("kernel32.dll")] static extern bool TerminateProcess(IntPtr h, uint code);
+  [DllImport("kernel32.dll")] static extern bool GetExitCodeProcess(IntPtr h, out uint code);
   [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
@@ -120,20 +122,7 @@ public static class RnDock {
       if (first == 0) first = w.H; }
     return hr != null ? -first : first; } // 제목 단서가 있는데 맞는 창이 없으면 음수(= 고를 창은 있지만 제목이 아직 안 맞음 · PowerShell이 몇 초 더 기다렸다가 그 창을 씀)
 
-  // (0.1.6 · 정범님 11/14 15:46 「③ 때 기존의 크롬·Claude 등 목록의 프로그램을 전부 닫을 수 있게 · 수집기만 열려 있으면 그것은 닫지 않게」)
-  //  먼저 닫기 판정 — null = 목록 밖 프로그램(손대지 않음 · 저장 안 한 글이 있을 수 있음) · "" = 닫음 · 그 밖 = 지키는 까닭
-  //  procs = 이번 배치에 놓을 프로그램의 프로세스 이름 · keepTitle = 수집기 창 제목(정규식 — 알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치)
-  public static string CloseWhy(Win w, string[] procs, string keepTitle) { if (w == null || string.IsNullOrEmpty(w.Proc)) return null;
-    bool mine = false; if (procs != null) foreach (var p in procs) if (!string.IsNullOrEmpty(p) && string.Equals(p, w.Proc, StringComparison.OrdinalIgnoreCase)) mine = true;
-    if (!mine) return null;
-    if (string.Equals(w.Proc, "explorer", StringComparison.OrdinalIgnoreCase) && w.Cls != "CabinetWClass") return "탐색기 셸(바탕 화면·작업 표시줄)";
-    System.Text.RegularExpressions.Regex kr = null; try { if (!string.IsNullOrEmpty(keepTitle)) kr = new System.Text.RegularExpressions.Regex(keepTitle, System.Text.RegularExpressions.RegexOptions.IgnoreCase); } catch (Exception) { kr = null; }
-    if (string.Equals(w.Proc, "chrome", StringComparison.OrdinalIgnoreCase)) {
-      if (w.Udd == null) return "크롬 프로필을 못 읽음(수집기 창일 수 있어 그대로)";
-      if (w.Udd.Length > 0) return "도우미·다른 프로필 크롬(수집기·번외·ALPS·PC 배치)";
-      return "평소 프로필 크롬(뒤 탭에 수집기·알라딘 로그인이 있을 수 있어 그대로)"; } // (11/16 점검 ④-2 🔴) 앞 탭 제목만 보여 뒤 탭 수집기를 못 알아봄 → 평소 프로필 크롬도 언제나 지킴(apps.js closeProcs도 크롬을 빼 두 겹)
-    if (kr != null && kr.IsMatch(w.Title ?? "")) return "수집기·도우미 창(제목)";
-    return ""; }
+  // (0.1.9) 옛 먼저 닫기 판정(CloseWhy — 크롬 창·수집기 제목을 늘 지켜 크롬 위주 배치에선 거의 아무것도 안 닫혔음)은 뺌 · 이제 PowerShell CloseSet(apps.js closeRules 규칙 · NeverWhy 지킴)
 
   // 칸에 놓기 — 돌려주는 값: 놓은 뒤 보이는 테두리 자리
   public static RECT Place(long hv, int x, int y, int w, int hh) { IntPtr h = new IntPtr(hv);
@@ -152,10 +141,16 @@ public static class RnDock {
   // 메모리 비우기 — 되면 true
   public static bool Trim(uint pid) { IntPtr p = OpenProcess(0x0100 | 0x0400, false, pid); if (p == IntPtr.Zero) return false; try { return EmptyWorkingSet(p); } finally { CloseHandle(p); } }
 
-  // 닫아 달라고 부탁(WM_CLOSE) — 강제 종료 없음
+  // 닫아 달라고 부탁(WM_CLOSE) — 강제 종료는 아래 Kill(남은 것만)
   public static bool Close(long hv) { IntPtr h = new IntPtr(hv); if (!IsWindow(h)) return false; return PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); }
   public static bool Exists(long hv) { return IsWindow(new IntPtr(hv)); }
   public static bool Visible(long hv) { return IsWindowVisible(new IntPtr(hv)); } // (0.1.6) 닫기 부탁 뒤 트레이로 숨는 프로그램(카카오톡·Claude)은 숨으면 닫힌 것으로 봄
+  // (0.1.9 · 정범님 11/17 16:16 「수집기든 뭐든 전부 닫게」) 닫아 달라고 부탁해도 남은 프로그램을 강제로 끝냄(TerminateProcess) — 끝냈다고 받아들여지면 true
+  //  PowerShell이 '그 프로세스가 가진 다른 창이 없고 · 셸·시스템·PC 배치 자신이 아님'을 확인한 뒤에만 부름
+  public static bool Kill(uint pid) { if (pid == 0) return false; IntPtr p = OpenProcess(0x0001, false, pid); if (p == IntPtr.Zero) return false; try { return TerminateProcess(p, 1); } finally { CloseHandle(p); } }
+  // (0.1.9) 프로세스가 아직 살아 있나 — 못 열면(이미 끝남·없음) false · 열었는데 끝 코드가 STILL_ACTIVE(259)면 true
+  //  (0.1.8까지는 창이 숨기만 해도 '닫힘'으로 봐서 트레이로 숨은 카카오톡·Claude가 그대로 살아 있었음)
+  public static bool Alive(uint pid) { if (pid == 0) return false; IntPtr p = OpenProcess(0x1000, false, pid); if (p == IntPtr.Zero) return false; try { uint c; if (!GetExitCodeProcess(p, out c)) return true; return c == 259; } finally { CloseHandle(p); } }
 
   static INPUT Kb(ushort vk, ushort scan, uint flags) { INPUT i = new INPUT(); i.type = 1; i.u.ki.wVk = vk; i.u.ki.wScan = scan; i.u.ki.dwFlags = flags; return i; }
   static void Send(List<INPUT> L) { if (L.Count == 0) return; SendInput((uint)L.Count, L.ToArray(), Marshal.SizeOf(typeof(INPUT))); }

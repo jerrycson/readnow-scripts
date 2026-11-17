@@ -27,16 +27,17 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
     console.log('② 실행 결과가 단계마다 진단에 · 먼저 닫기');
     const st = (await P('GET', '/api/state')).j; const cfg = JSON.parse(JSON.stringify(st.cfg));
     cfg.place = [{ id: 'a1', app: 'chrome', mon: '\\\\.\\DISPLAY1', c: 0, r: 0, w: 2, h: 3, name: '웹앱', o: { urls: ['https://readnow.kr/app/'] } }, { id: 'a2', app: 'kakao', mon: '\\\\.\\DISPLAY2', c: 4, r: 2, w: 1, h: 1 }, { id: 'a3', app: 'col2', mon: '\\\\.\\DISPLAY2', c: 0, r: 0, w: 1, h: 1 }];
-    r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === false && r.j.cfg.run.closeFirstV === 2, '(11/16) 저장 — 먼저 닫기 기본 끔', r.j);
+    r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === false && r.j.cfg.run.closeFirstV === 3 && r.j.cfg.run.closeApps.length === 0, '(11/16 · 0.1.9) 저장 — 먼저 닫기 기본 끔(아무것도 안 고름)', r.j);
     r = await P('POST', '/api/run', {}); const run0 = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(run0 && !run0.input.closeFirst, '(11/16) 기본(끔)이면 PowerShell에 먼저 닫기를 넘기지 않음', run0 && run0.input.closeFirst);
-    cfg.run.closeFirst = true; cfg.run.closeFirstV = 2; r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === true, '사람이 켜면(① 설정 체크) 켬으로 저장', r.j && r.j.cfg.run);
+    cfg.run.closeFirstV = 3; cfg.run.closeApps = ['chrome', 'kakao']; r = await P('POST', '/api/save', { cfg }); ok(r.j && r.j.ok && r.j.cfg.run.closeFirst === true && r.j.cfg.run.closeApps.join() === 'chrome,kakao', '(0.1.9) 사람이 고르면(① 설정 — 크롬·카카오톡) 저장', r.j && r.j.cfg.run);
     r = await P('POST', '/api/run', {}); const run = fakeLog(S.D).filter((x) => x.act === 'run').pop();
-    ok(run && run.input.closeFirst && !run.input.closeFirst.procs.includes('chrome') && run.input.closeFirst.procs.includes('KakaoTalk') && /알라딘/.test(run.input.closeFirst.keepTitle) && /작업 창/.test(run.input.closeFirst.keepTitle), 'PowerShell에 닫을 프로그램(카카오톡 · 크롬은 빠짐)·지킬 제목(알라딘 수집 탭·작업 창)', run && run.input.closeFirst);
-    ok(run && !run.input.closeFirst.procs.some((p) => /node|powershell/i.test(p)), '도우미 프로세스는 닫을 목록에 없음');
+    const RL = run && run.input.closeFirst && run.input.closeFirst.rules; ok(RL && RL.some((x) => x.procs.includes('chrome') && x.udd === '') && RL.some((x) => x.procs.includes('KakaoTalk')) && !RL.some((x) => /col2/.test(x.udd || '')), 'PowerShell에 닫을 규칙 — 고른 크롬(평소 프로필)·카카오톡 · 고르지 않은 번외는 없음', RL);
+    ok(RL && !RL.some((x) => x.procs.some((p) => /node|powershell/i.test(p))), '도우미 프로세스는 닫을 규칙에 없음');
+    r = await P('GET', '/api/diag', undefined, {}); ok(r.j.last && r.j.last.pre && r.j.last.pre.closed.length === 1 && r.j.last.pre.closed[0].p === 'chrome' && r.j.last.pre.closed[0].res === 'closed' && !r.j.last.pre.closed.some((x) => /PC 배치/.test(x.t)) && r.j.last.pre.kept.some((x) => x.p === 'claude' && x.why), '진단 dock.last.pre — 먼저 닫은 창(평소 크롬 · PC 배치 창은 아님)마다 결과(닫힘/강제 종료/남음) · 남긴 창은 까닭', r.j.last && r.j.last.pre);
     r = await P('GET', '/api/diag', undefined, {}); const L = r.j.last;
     ok(L && L.rows.length === 3 && L.rows.every((x) => x.n && typeof x.ok === 'boolean' && x.how && /^#\d /.test(x.at)), '진단 last.rows — 단계마다 이름·됨·어떻게·놓을 칸(모니터 #·칸)', L && L.rows);
     ok(L && L.rows[0].at === '#1 0,0 2×3' && L.rows[1].at === '#2 4,2 1×1', '칸 표시가 설정과 같음', L && L.rows.map((x) => x.at));
-    cfg.run.closeFirst = false; r = await P('POST', '/api/save', { cfg }); r = await P('POST', '/api/run', {}); const run2 = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(r.j.ok !== undefined && run2 && !run2.input.closeFirst, '설정에서 끄면 먼저 닫지 않음');
+    cfg.run.closeApps = []; r = await P('POST', '/api/save', { cfg }); r = await P('POST', '/api/run', {}); const run2 = fakeLog(S.D).filter((x) => x.act === 'run').pop(); ok(r.j.ok !== undefined && run2 && !run2.input.closeFirst, '설정에서 끄면 먼저 닫지 않음');
 
     { const js = fs.readFileSync(path.join(__dirname, '..', 'readnow-pcdock.js'), 'utf8'); ok(/if \(u\.pathname === '\/api\/show'\) \{ if \(ST\.update && !ST\.busy/.test(js) && /setInterval\(\(\) => \{ if \(!ST\.update\) checkUpdate\(\); \}, 30 \* 60e3\)/.test(js), '(0.1.6) 30분마다 새 판 확인 · 받아 둔 새 판이 있으면 아이콘을 다시 누를 때 바로 바꿈'); }
     console.log('③ 다시 켜도 마지막 결과가 남음(0.1.5는 메모리에만 있어 비었음)');

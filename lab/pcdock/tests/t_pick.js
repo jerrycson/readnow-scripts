@@ -17,7 +17,6 @@ public static class T { static string B(string x) { return x == "~" ? null : Enc
   static long[] L(string x) { var o = new List<long>(); foreach (var v in x.Split(',')) if (v.Length > 0) o.Add(long.Parse(v)); return o.ToArray(); }
   public static void Main() { string line; while ((line = Console.ReadLine()) != null) { if (line.Trim().Length == 0) continue;
       var p = line.Split('|');
-      if (p[0] == "C") { var cw = new RnDock.Win { H = long.Parse(p[3]), Proc = B(p[4]), Cls = B(p[5]), Title = B(p[6]) ?? "", Udd = B(p[7]) }; var why = RnDock.CloseWhy(cw, B(p[1]).Split(','), B(p[2])); Console.WriteLine(why == null ? "~" : Convert.ToBase64String(Encoding.UTF8.GetBytes(why))); continue; }
       var W = new List<RnDock.Win>();
       for (int i = 7; i + 3 < p.Length; i += 5) W.Add(new RnDock.Win { H = long.Parse(p[i]), Proc = B(p[i + 1]), Cls = B(p[i + 2]), Title = B(p[i + 3]) ?? "", Udd = B(p[i + 4]) });
       Console.WriteLine(RnDock.PickNew(W.ToArray(), L(p[0]), L(p[1]), B(p[2]), B(p[3]), B(p[4]), B(p[5]), B(p[6]))); } } }`;
@@ -80,24 +79,34 @@ console.log('④ 세션 되살림 창 섞임 · 제목 단서 · 이미 잡은 �
 { const W = [win(501, '리드나우(북스킹) - Chrome', null)]; const r = pickAll([[qOf(S('pw'), [], []), W]]); ok(r[0] === 501, '프로필을 못 읽은 창(null)은 프로필로 거르지 않음(0.1.5처럼)', r); }
 { const W = [{ h: 601, proc: 'msedge', cls: CH, title: 'readnow.kr', udd: '' }, { h: 602, proc: 'chrome', cls: 'Other', title: 'readnow.kr', udd: '' }]; const r = pickAll([[qOf(S('pw'), [], []), W]]); ok(r[0] === 0, '다른 프로그램(엣지)·다른 창 종류는 안 집음', r); }
 
-console.log('⑥ (정범님 11/14 15:46) ③ 때 목록의 프로그램은 먼저 닫고 새로 — 수집기·도우미 창은 지킴');
-{ const procs = A.closeProcs(plan.steps); const KT = A.KEEP_TITLE;
-  ok(!procs.includes('chrome') && procs.includes('KakaoTalk') && !procs.includes('node'), '닫을 프로그램 = 이번 배치의 프로세스(카카오톡 …) · (11/16) 크롬은 빠짐 · 도우미(node 등)는 없음', procs);
-  const C = (w) => { const r = cp.spawnSync('mono', [path.join(D, 'h.exe')], { input: ['C', b64([...procs, 'chrome'].join(',')), b64(KT), w.h, b64(w.proc), b64(w.cls), b64(w.title), b64(w.udd)].join('|') + '\n', encoding: 'utf8' }); const o = (r.stdout || '').trim(); return o === '~' ? null : Buffer.from(o, 'base64').toString('utf8'); };
-  const only = [win(1, '🪟 리드나우 작업 창 · 주문조회 : 알라딘'), win(2, '알라딘 중고 매장 관리 - Chrome'), win(3, '🖐 리드나우 손발 · 알라딘 - Chrome'), win(4, '📊 번외 수집기', 'c:\\users\\u\\readnow\\col2\\col2-stat-chrome'), win(5, '리드나우 PC 배치', 'c:\\users\\u\\appdata\\local\\readnow\\pcdock\\chrome'), win(6, 'ALPS 도우미 설정', 'c:\\users\\u\\readnow\\print\\chrome-alpswin'), win(7, '어떤 창 - Chrome', null)];
-  const why = only.map(C); ok(why.every((x) => x), '수집기 창만 있을 때 하나도 안 닫힘(작업 창·알라딘 수집 탭·손발·번외·PC 배치·ALPS·프로필 모름)', why);
-  /* (11/16 점검 ④-2 🔴) C#에 크롬이 닫을 목록으로 잘못 넘어와도(옛 Node) 평소 프로필 크롬은 지킴 — 앞 탭이 웹앱·Claude라도 뒤 탭에 샵매니저 수집기·알라딘 로그인이 있을 수 있음 */
-  const procsC = [...procs, 'chrome']; const CC = (w) => { const r = cp.spawnSync('mono', [path.join(D, 'h.exe')], { input: ['C', b64(procsC.join(',')), b64(KT), w.h, b64(w.proc), b64(w.cls), b64(w.title), b64(w.udd)].join('|') + '\n', encoding: 'utf8' }); const o = (r.stdout || '').trim(); return o === '~' ? null : Buffer.from(o, 'base64').toString('utf8'); };
-  const nc = [win(11, '리드나우(북스킹) - Chrome'), win(12, 'Claude - Chrome'), win(16, '정범 노트 - Chrome')].map(CC); ok(nc.every((x) => x && /평소 프로필 크롬/.test(x)), '(11/16) 평소 프로필 크롬(앞 탭 웹앱·Claude·노트 — 뒤 탭 수집기 모름)은 닫을 목록에 크롬이 있어도 안 닫음', nc);
-  const doClose = [{ h: 13, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude', udd: null }, { h: 14, proc: 'KakaoTalk', cls: 'EVA_Window_Dblclk', title: '카카오톡', udd: null }, { h: 15, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드', udd: null }];
-  const procs2 = [...procs, 'claude', 'explorer']; const C2 = (w) => { const r = cp.spawnSync('mono', [path.join(D, 'h.exe')], { input: ['C', b64(procs2.join(',')), b64(KT), w.h, b64(w.proc), b64(w.cls), b64(w.title), b64(w.udd)].join('|') + '\n', encoding: 'utf8' }); const o = (r.stdout || '').trim(); return o === '~' ? null : Buffer.from(o, 'base64').toString('utf8'); };
-  const w2 = doClose.map(C2); ok(w2.every((x) => x === ''), '목록의 Claude 앱·카카오톡·폴더 창은 닫음', w2);
-  const out = [{ h: 21, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장', udd: null }, { h: 22, proc: 'explorer', cls: 'Shell_TrayWnd', title: '작업 표시줄', udd: null }, { h: 23, proc: 'node', cls: 'ConsoleWindowClass', title: 'node', udd: null }].map(C2);
-  ok(out[0] === null && out[2] === null && /셸/.test(out[1]), '목록 밖(메모장 — 저장 안 한 글)·도우미(node)는 손대지 않음 · 탐색기 셸은 지킴', out); }
-{ const js = fs.readFileSync(path.join(R, 'readnow-pcdock.js'), 'utf8'); const ps = fs.readFileSync(path.join(R, 'pcdock.ps1'), 'utf8');
-  ok(/const closeFirst = A\.closeFirstFor\(cfg, plan\.steps, \{ auto: autoRun \}\)/.test(js) && /runLayout\('윈도우 시작', \{ mode: 'keep', auto: true \}\)/.test(js) && SET.defaults().run.closeFirst === false && SET.validate({ ...SET.defaults(), run: { waitSec: 40, closeFirst: true, closeFirstV: 2 } }, MONS).cfg.run.closeFirst === true && SET.validate({ ...SET.defaults(), run: { waitSec: 40, closeFirst: false } }, MONS).cfg.run.closeFirst === false, '(11/16) 설정 run.closeFirst(기본 끔 · 켤 수 있음) → closeFirstFor가 정함 · 윈도우 시작 자동 실행은 auto로 부름');
-  ok(/\[RnDock\]::CloseWhy\(\$cw, \$cfProcs, \$cfKeep\)/.test(ps) && /\[RnDock\]::Close\(\[int64\]\$cw\.H\)/.test(ps) && /\$out\.pre = @\{ closed = @\(\$pre1Closed\); kept = @\(\$pre1Kept\) \}/.test(ps) && /\$before = @\{\}; foreach \(\$bw in \[RnDock\]::Windows\(\)\)/.test(ps.slice(ps.indexOf('pre1Closed'))), 'PowerShell: CloseWhy로 고른 창만 WM_CLOSE · 닫은 것·지킨 것을 결과(pre)에 · 닫은 뒤 창 목록을 다시 적음');
-  ok(/pre: L\.pre \? \{ closed:/.test(js) && /kept:/.test(js), '진단 dock.last에 먼저 닫은 창·지킨 창(까닭)'); }
+console.log('⑥ (0.1.9 · 정범님 11/17 16:16 「닫고 실행 옵션이 무의미 — 모두 고를 수 있게 · 실제로 전부 닫히게」) ③ 먼저 닫기 = ①에서 고른 프로그램(크롬·수집기 포함)');
+/* PowerShell RuleHit과 같은 셈(이 상자엔 PowerShell이 없어 글로 옮김 — 아래 글자 검사로 PowerShell 쪽이 같은 꼴인지 봄) */
+const ruleHit = (w, rl) => { if ((rl.procs || []).length && !rl.procs.some((x) => String(w.proc).toLowerCase() === String(x).toLowerCase())) return false;
+  if (rl.cls && w.cls !== rl.cls) return false; if (rl.title && !new RegExp(rl.title).test(w.title)) return false;
+  if (rl.udd !== undefined && rl.udd !== null) { if (w.udd === null) return null; const ru = String(rl.udd).replace(/%USERPROFILE%/i, 'c:\\users\\u').replace(/\\$/, '').toLowerCase(); if (String(w.udd) !== ru) return false; }
+  return true; };
+const hitAny = (w, R) => { let unk = false; for (const r of R) { const h = ruleHit(w, r); if (h === true) return true; if (h === null) unk = true; } return unk ? null : false; };
+{ const c0 = JSON.parse(JSON.stringify(cfg)); c0.run.closeApps = [];
+  ok(A.closeFirstFor(c0, {}) === null && A.closeRules(c0).length === 0, '기본(아무것도 안 고름) = 먼저 닫지 않음');
+  const c1 = JSON.parse(JSON.stringify(cfg)); c1.run.closeApps = ['chrome', 'col2', 'kakao']; const R = A.closeRules(c1);
+  ok(A.closeFirstFor(c1, { auto: true }) === null, '윈도우 시작 자동 실행은 골라 둬도 닫지 않음(정범님이 PC 앞에 없을 때)');
+  ok(A.closeFirstFor(c1, {}) && A.closeFirstFor(c1, {}).rules.length === R.length && R.length >= 3, '고른 프로그램마다 닫을 규칙이 PowerShell로 감', R);
+  const W = [win(1, '리드나우(북스킹) - Chrome'), win(2, '🪟 리드나우 작업 창 · 주문조회 : 알라딘'), win(3, '📊 번외 수집기', 'c:\\users\\u\\readnow\\col2\\col2-stat-chrome'),
+    { h: 4, proc: 'KakaoTalk', cls: 'EVA_Window_Dblclk', title: '카카오톡', udd: null }, win(5, 'ALPS 도우미 설정', 'c:\\users\\u\\readnow\\print\\chrome-alpswin'), { h: 6, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장', udd: null }, win(7, '어떤 창 - Chrome', null)];
+  const hit = W.map((w) => hitAny(w, R));
+  ok(hit[0] === true && hit[1] === true, '(0.1.8까지 안 닫히던) 평소 크롬 창 — 웹앱·작업 창(수집기 제목)도 크롬을 고르면 닫음', hit);
+  ok(hit[2] === true, '(0.1.8까지 안 닫히던) 번외 수집기 창도 고르면 닫음', hit);
+  ok(hit[3] === true, '카카오톡 닫음', hit);
+  ok(hit[4] === false && hit[5] === false, '고르지 않은 것(ALPS·메모장)은 손대지 않음', hit);
+  ok(hit[6] === null, '크롬 프로필을 못 읽은 창은 어느 크롬인지 몰라 그대로(남김 까닭을 보여 줌)', hit);
+  const c2 = JSON.parse(JSON.stringify(cfg)); c2.run.closeApps = ['col2']; const R2 = A.closeRules(c2);
+  ok(hitAny(W[2], R2) === true && hitAny(W[0], R2) === false && hitAny(W[1], R2) === false, '번외 수집기만 고르면 평소 크롬은 그대로', R2); }
+{ const js = fs.readFileSync(path.join(R, 'readnow-pcdock.js'), 'utf8'); const ps = fs.readFileSync(path.join(R, 'pcdock.ps1'), 'utf8'); const cs = fs.readFileSync(path.join(R, 'pcdock-win.cs'), 'utf8');
+  ok(/const closeFirst = A\.closeFirstFor\(cfg, \{ auto: autoRun \}\)/.test(js) && /runLayout\('윈도우 시작', \{ mode: 'keep', auto: true \}\)/.test(js), '서버: closeFirstFor(설정에서 고른 것) · 윈도우 시작 자동 실행은 auto로 부름');
+  ok(SET.defaults().run.closeFirst === false && SET.defaults().run.closeApps.length === 0 && SET.defaults().run.closeFirstV === 3, '설정 기본 = 아무것도 안 고름(끔) · 꼴 표 3');
+  ok(/function RuleHit/.test(ps) && /RuleHit \$cw \$rl/.test(ps) && /CloseSet @\(\$cfT\) 8 \$sf/.test(ps) && /\$out\.pre = @\{ closed = @\(\$pre1Rows\); kept = @\(\$pre1Kept\) \}/.test(ps) && /\$before = @\{\}; foreach \(\$bw in \[RnDock\]::Windows\(\)\)/.test(ps.slice(ps.indexOf('pre1Rows'))), 'PowerShell: 규칙(RuleHit)에 맞는 창 → CloseSet(부탁 → 기다림 → 강제 종료) · 닫은 것·남은 것을 결과(pre)에 · 닫은 뒤 창 목록을 다시 적음');
+  ok(!/CloseWhy\(/.test(cs.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')) && !/KEEP_TITLE|closeProcs/.test(js), '(0.1.8까지) 크롬 창·수집기 제목을 두 겹으로 지키던 C# CloseWhy·KEEP_TITLE이 없어짐');
+  ok(/pre: L\.pre \? \{ closed:/.test(js) && /kept:/.test(js), '진단 dock.last에 먼저 닫은 창·남은 창(까닭)'); }
 
 console.log('⑤ PowerShell(pcdock.ps1)이 크롬 단계를 그 길로 부름(글자 검사)');
 { const ps = fs.readFileSync(path.join(R, 'pcdock.ps1'), 'utf8').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
@@ -105,7 +114,7 @@ console.log('⑤ PowerShell(pcdock.ps1)이 크롬 단계를 그 길로 부름(�
   ok(/if \(\$sp\.match\.seq\) \{ \$preK = @\(\[RnDock\]::Windows\(\) \| ForEach-Object \{ \[int64\]\$_\.H \}\); Launch \$st; if \(-not \$st\.err\) \{ SeqWait \$st \$preK \} \}/.test(run), '크롬 단계: 띄우기 바로 전 창 목록(preK) → 띄움 → 그 단계 창을 기다려 집은 뒤 다음 단계');
   ok(/function SeqWait/.test(run) && /PickFor \$st\.s \$wl \$preK/.test(run) && /\[RnDock\]::PickNew\(/.test(run) && /\$claimed\.Keys/.test(run), 'SeqWait → PickNew(띄우기 전 창·이미 잡은 창 뺌)');
   ok(/if \(\$st\.s\.match\.seq\) \{ \$hv = PickFor/.test(run), '늦게 뜬 크롬 창도 그 단계를 띄운 뒤 생긴 창 중에서만');
-  ok(/Get-CimInstance Win32_Process -Filter "Name='chrome\.exe'"/.test(run) && /--user-data-dir=/.test(run) && /\$w\.Udd = /.test(run), '창 주인 크롬의 프로필(--user-data-dir)을 명령 줄에서 읽어 창에 붙임');
+  ok(/Get-CimInstance Win32_Process -Filter "Name='chrome\.exe'"/.test(ps) && /--user-data-dir=/.test(ps) && /\$w\.Udd = /.test(ps) && /UddFill \$wl/.test(run), '창 주인 크롬의 프로필(--user-data-dir)을 명령 줄에서 읽어 창에 붙임');
   ok(/function Unhid/.test(run) && /\[RnDock\]::Hidden\(/.test(run) && /\[RnDock\]::Unhide\(/.test(run) && /elseif \(Unhid \$st\)/.test(run) && /match\.hidden -and/.test(run), '카카오톡: 떠 있지만 숨은 창이면 보이게 한 뒤 놓음(이미 떠 있을 때 · 켠 뒤에도 숨은 채일 때)');
   const cs = fs.readFileSync(path.join(R, 'pcdock-win.cs'), 'utf8'); ok(/public static List<Win> Hidden\(/.test(cs) && /if \(IsWindowVisible\(h\)\) return true;/.test(cs) && /ShowWindow\(h, 5\)/.test(cs), 'C# Hidden(숨은 창만) · Unhide(SW_SHOW)'); }
 try { fs.rmSync(D, { recursive: true, force: true }); } catch (e) {}
