@@ -90,5 +90,7 @@ const job = (id, qno, txt = '주문 확인했습니다. 오늘 보냅니다.') =
   /* 파일 — 결과 뒤엔 답 글이 남지 않음 */
   { const { q, HOME } = mk(); q.put(job('y24qa-900001-t1', 900001)); await q.once(); const t = fs.readFileSync(path.join(HOME, 'y24-qa.json'), 'utf8');
     ok(!/오늘 보냅니다/.test(t), '보낸 뒤 이 PC 파일에 답 글이 남지 않음'); }
+  /* 묶음 목록 — 새 도우미 파일이 bundle.json에 없으면 PC가 새 번외를 검사에서 걸러 옛 판으로 돎 */
+  ok(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files.includes('helper/col2-y24qa.js'), '번외 묶음 목록(bundle.json)에 col2-y24qa.js가 들어 있음');
   console.log(bad ? `✗ t_y24qa ${bad}/${n} 실패` : `✓ t_y24qa 모두 통과 (${n}개)`); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('✗ t_y24qa 오류 ' + e.stack); process.exit(1); });
