@@ -9,8 +9,10 @@ let bad = 0; const ok = (c, m, x) => { console.log((c ? '  ✓ ' : '  ❌ ') + m
 const src = fs.readFileSync(path.join(__dirname, '..', 'readnow-collector.user.js'), 'utf8'); const a = src.indexOf('  const CX_LAYER = '); const b = src.indexOf('  /* 알라딘 답변 화면(form1 · ASP.NET)을 받은 그대로 보내');
 if (a < 0 || b < 0) { console.log('❌ tCXPART1112 실패 — 코드 조각을 못 찾음'); process.exit(1); }
 const CODE = src.slice(a, b);
+/* (kfail2 11/17) 실행 도구(readnow-exec-core.js) — 89722362(11/15 담당권·결과 불명 재전송 막기)부터 부분 취소 뒤 다시 발송요청(rb_)이 EXC().requestHash로 실행 번호를 만듦 · 수집기 안에선 같은 함수 범위의 EXC(6706줄)가 보이지만 이 시험은 조각만 잘라 띄워 'EXC is not defined'로 떨어졌음(기능 고장 아님 · 시험 틀이 낡음) → 진짜 실행 도구를 불러 같은 이름으로 넘김 */
+const EXP = [path.join(__dirname, '..', '..', 'readnow-exec-core.js'), path.join(__dirname, '..', 'readnow-exec-core.js')].find((f) => fs.existsSync(f)); if (!EXP) { console.log('❌ tCXPART1112 실패 — readnow-exec-core.js를 못 찾음'); process.exit(1); } const EXS = fs.readFileSync(EXP, 'utf8');
 require('./harness.js')(async (p) => {
-  const R = await p.evaluate(async (CODE) => {
+  const R = await p.evaluate(async ({ CODE, EXS }) => { (0, eval)(EXS); const EXC = () => window.ReadnowExec;
     const ONO = '001-A870000088';
     const form = (ono, items) => `<html><head><title>취소</title></head><body><form id="layerReportNotSales" method="GET" action="ReportNotSalesLayer.aspx"><ul><li><input type="radio" name="cancelReason" value="1"></li><li><input type="radio" name="cancelReason" value="2"></li></ul><ul>${items.map((x) => `<li><input name="ordersItem" type="checkbox" value="${x}" checked></li>`).join('')}</ul><input type="hidden" name="rdUrl" value=""><input type="hidden" name="rnsAction" value="1"><input type="hidden" name="ono" value="1"></form></body></html>`;
     const page = (orders, tab, full) => `<html><body>${JSON.stringify({ orders, tabCounts: { [tab]: full === false ? orders.length + 3 : orders.length } })}</body></html>`;
@@ -20,8 +22,8 @@ require('./harness.js')(async (p) => {
       const db = { runTransaction: async (fn) => { const W = []; await fn({ get: (r) => r.get(), set: (r, v, o) => W.push([r, v, o]) }); for (const [r, v, o] of W) await r.set(v, o); } }; return { D, C, db }; };
     const build = (F, extra) => { const logs = []; const ran = []; const PACE = { wait: async () => {} }, sleep = async () => {}, AL = { decode: (buf) => new TextDecoder().decode(buf), looksLoggedOut: () => false }; const nowIso = () => new Date().toISOString(); const TS = () => 'ts';
       const SH = { parseDeliveryPage: (doc) => JSON.parse(doc.body.textContent) }; const W0 = { ReadnowShipping: SH, __rnFeat: () => true, ...(extra || {}) };
-      const fn = new Function('fetch', 'PACE', 'sleep', 'AL', 'nowIso', 'TS', 'PC_NAME', 'log', 'exBegin', 'exEnd', 'shipLiteRead', 'window', 'globalThis', 'C', 'db', 'runCmd', 'auth', 'PUBONLY', CODE + '\nreturn { cancelOrderCmd, rbScanPc, rbJudge };');
-      return { logs, ran, mk: (fetchF) => fn(fetchF, PACE, sleep, AL, nowIso, TS, 'TEST-PC', (m) => logs.push(m), async () => ({ ok: true }), async () => {}, async () => {}, W0, W0, F.C, F.db, async (id) => ran.push(id), { currentUser: { email: 't@x' } }, false) }; };
+      const fn = new Function('fetch', 'PACE', 'sleep', 'AL', 'nowIso', 'TS', 'PC_NAME', 'log', 'exBegin', 'exEnd', 'shipLiteRead', 'window', 'globalThis', 'C', 'db', 'runCmd', 'auth', 'PUBONLY', 'EXC', CODE + '\nreturn { cancelOrderCmd, rbScanPc, rbJudge };');
+      return { logs, ran, mk: (fetchF) => fn(fetchF, PACE, sleep, AL, nowIso, TS, 'TEST-PC', (m) => logs.push(m), async () => ({ ok: true }), async () => {}, async () => {}, W0, W0, F.C, F.db, async (id) => ran.push(id), { currentUser: { email: 't@x' } }, false, EXC) }; };
     async function runCx(sc) { const F = mkFs(sc.seed); const B = build(F); const sent = []; let dN = 0, cN = 0;
       const fetchF = async (url) => { const u = String(url); let html = '';
         if (/ReportNotSalesLayer\.aspx\?ono=/.test(u) && !/rnsAction/.test(u)) html = form(ONO, sc.have);
@@ -50,7 +52,7 @@ require('./harness.js')(async (p) => {
     out.S5 = await scan({ ['shp_cmds/h1']: SD(O2, ['501', '502']), ['shp_cmds/h2']: SD(O2, ['502'], 'queued') }, ord(O2, ['502']));
     out.S6 = await scan({ ['shp_cmds/auto_' + O2]: SD(O2, null), ['shp_auto/' + O2]: { state: 'sent', items: [{ lid: '501' }, { lid: '502' }] } }, ord(O2, ['501']));
     out.J = [build(mkFs()).mk(async () => ({})).rbJudge(['2'], ['1', '2']), build(mkFs()).mk(async () => ({})).rbJudge(['1', '2'], ['1', '2'])];
-    return out; }, CODE);
+    return out; }, { CODE, EXS });
   const A = R.A; ok(A.st === 'done' && A.r.state === 'done' && A.r.rebundled && A.r.partialDone && A.r.left.join() === '222' && A.r.learnedOpt === 'part' && A.sent === 1, '① 발송요청 부분 취소 → 주문확인요청에 남은 1권만 = 부분 취소 완료(다시 묶임)', { st: A.st, r: { s: A.r.state, rb: A.r.rebundled, left: A.r.left } });
   ok(A.rbIds.length === 1 && /rb_001-A870000088_1$/.test(A.rbIds[0]) && A.rb.type === 'startDelivery' && A.rb.auto === true && A.rb.lids['001-A870000088'].join() === '222' && A.rb.rebundle.src === 'cx' && A.rb.rebundle.gone.join() === '111' && A.ran.join() === 'rb_001-A870000088_1' && A.r.reSend && A.r.reSend.id === 'rb_001-A870000088_1', '  └ 남은 상품을 다시 발송요청으로: 맡긴 일 rb_{주문}_1(발송준비시작 · 자동) 만들고 바로 처리', { ids: A.rbIds, ran: A.ran, reSend: A.r.reSend });
   ok(R.B.st === 'done' && R.B.r.state === 'doneAll' && !R.B.rbIds.length, '① 두 목록 모두에 없음(다 읽음) → 주문 전체 취소(doneAll) · 다시 보내지 않음', { st: R.B.st, s: R.B.r.state });
