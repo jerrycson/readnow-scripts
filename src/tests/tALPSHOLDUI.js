@@ -17,7 +17,9 @@ ok(draw([]) === '' && draw(undefined) === '', '보류가 없으면(옛 도우미
   ok(/보류 3상자/.test(h) && /풀림 1상자 — 출력 대기/.test(h) && !/<b>x<\/b>/.test(h), '여러 날 합침 · 풀림 표시 · 글은 이스케이프'); }
 { const f = (app.match(/async function alpsInvAuto\([\s\S]*?\n(?=function alpsInvCount)/) || [])[0] || '';
   ok(f && /status: 'queued', items,/.test(f) && !/holiday|shipHoliday|isBizDay/.test(f), '알라딘 송장 입력 맡김은 휴일·평일 모두 바로 queued(예전 그대로)'); }
-{ const k = app.indexOf("const out = await alpsInvAuto(M, b.file || 'ALPS 자동 처리', b.alpsId, { force: true, os: r.id });"); const seg = app.slice(k, k + 400);
-  ok(k > 0 && /^const out = await alpsInvAuto\([^\n]*\n\s*if \(!out \|\| out === 'none'\) return osPut\(r\.id, \{ ph: 'Y24'/.test(seg), '원스톱 INV → Y24(예스24 발송처리)로 그대로 이어 감 — 휴일 멈춤 없음'); }
+/* (kfail2 11/17) 예전엔 부르는 줄을 글자 그대로({ force: true, os: r.id }) 찾았음 — 11/14 출고 묶음 판(main 60a0ade1부터)이 같은 부름에 맡김 문서 기록용 batch·cause·n(이번 묶음 알라딘 주문·까닭·건수 — shp_invoices 문서에만 적고 흐름은 그대로)을 더해 글자 찾기가 -1이 되어 실패
+   → 부름 앞부분(force·os)까지만 맞추고, 그 다음 줄이 그대로 Y24로 넘어가는지 + 이 갈래에 휴일 낱말이 없는지를 봄(정범님 11/14 17:26 뜻 그대로) */
+{ const k = app.indexOf("const out = await alpsInvAuto(M, b.file || 'ALPS 자동 처리', b.alpsId, { force: true, os: r.id"); const seg = app.slice(k, k + 700);
+  ok(k > 0 && /^const out = await alpsInvAuto\([^\n]*\n\s*if \(!out \|\| out === 'none'\) return osPut\(r\.id, \{ ph: 'Y24'/.test(seg) && !/holiday|shipHoliday|isBizDay|휴일/.test(seg.split('\n').slice(0, 3).join('\n')), '원스톱 INV → Y24(예스24 발송처리)로 그대로 이어 감 — 휴일 멈춤 없음'); }
 ok(!/holidayNoInput|invHolidayRelease|function shipHoliday/.test(app), "'휴일엔 송장 입력 안 함' 같은 설정·갈래가 없음(정범님 17:26)");
 console.log(bad ? `❌ tALPSHOLDUI 실패 ${bad}` : '✓ tALPSHOLDUI 통과'); process.exit(bad ? 1 : 0);

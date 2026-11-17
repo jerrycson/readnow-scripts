@@ -75,7 +75,7 @@ require('./harness.js')(async (p) => {
     await setShip([ord('A-05', '손님C', [{ listingId: '95', title: '초록 책', price: 5000, qty: 1, sku: 'GRNAAA' }])], [row('A-05', 'GRNAAA', '초록 책', '손님C')]);
     const af0 = alpsFetch; let trapped = 0; window.alpsFetch = alpsFetch = async (u, b) => { const x = await af0(u, b); if (u === '/alps/run' && !trapped) { trapped = 1; osStopDrive(); await new Promise(() => {}); } return x; };
     const nBefore = (await __H()).n; const id2 = await window.shipOneShot(); o.id2new = id2 !== id1; await until(() => trapped === 1, 40000); await W2(300);
-    o.pend = !!(runDoc().p1pend && runDoc().p1pend.file); window.alpsFetch = alpsFetch = af0; S.os.busy = 0; S._osReo = null; osReopen(S.os.doc);
+    o.pend = !!(runDoc().p1pend && runDoc().p1pend.file); window.alpsFetch = alpsFetch = af0; S.os.busy = 0; S._osReo = null; S.os.phaseLease = null; /* (kfail2 11/17) 꺼진 탭 흉내 — 1.78.671(#5)부터 한 단계 동안 담당권을 S.os.phaseLease에 쥐는데, 멈춘 채 끝나지 않은 단계(위 덫)가 그것을 쥔 채 남아 새 담당권으로 쓴 기록이 '담당권 바뀜'으로 막혔음 · 실제 새로 고침이면 메모리가 비므로 같이 비움 */ osReopen(S.os.doc);
     o.adopt = await until(() => (runDoc().bt || []).length === 1 && runDoc().ph !== 'P1', 30000); o.adoptLine = (runDoc().log || []).some((x) => /맡기는 순간 끊겼음/.test(x.m)); o.nAfter = (await __H()).n - nBefore; o.bt2 = (runDoc().bt || [])[0] || {};
     /* ③ 잠들었다 깸 — 그사이 다른 기기가 이어받음 → 깬 기기는 손 뗌 */
     await db.collection('shp_runs').doc(S.os.id).set({ owner: { tab: 'os_othertab', dev: 'OTHER', beat: new Date().toISOString() } }, { merge: true }); S.os.doc = { ...S.os.doc, owner: { tab: OS_TAB } }; S.os.beatOkAt = Date.now() - 120e3; S.os.drive = true; S.os.busy = 0; const phB = S.os.doc.ph; await osTick(); o.sleep = { drive: S.os.drive, owner: ((runDoc().owner || {}).tab) };
