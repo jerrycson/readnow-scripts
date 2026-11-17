@@ -12,10 +12,12 @@ const read = name => JSON.parse(fs.readFileSync(new URL(name,root),'utf8').repla
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const report = read('face-eval53.json');
 const assets = {atlas:read('atlas35.json'),traces:read('traces36.json'),fit:read('fit36.json')};
-const notes = read('face-note53.json');
+const notes = read('face-note53.json'),canonical=read('qa/face-source53.json');
 assert.equal(notes.length,2);
 for(const [filename,expected] of Object.entries(report.files)){
-  assert.equal(hash(fs.readFileSync(new URL(filename,root))),expected,filename);
+  const bytes=fs.readFileSync(new URL(filename,root));
+  if(filename.endsWith('.mjs')){assert.equal(canonical.files[filename]?.recorded,expected,filename+' 원문 지문');assert.equal(hash(bytes.toString('utf8').replaceAll('\r\n','\n')),canonical.files[filename]?.lf,filename+' LF 배포 지문');}
+  else assert.equal(hash(bytes),expected,filename);
 }
 function delta(a,b){
   let rgb8=0,alpha=0;
