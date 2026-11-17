@@ -6,9 +6,10 @@ const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([
+  ['definition','고해상도 원형 · 픽셀판'],
   ['latest-fern','최신 페른'],['latest-himmel','최신 힘멜'],['latest-chest','최신 몸통'],
   ['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
-  ['photo-engine36','내 참고그림'],['world','환경'],['learning','학습 기록'],
+  ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함']
 ]);
@@ -41,7 +42,7 @@ function pathFor(t){
   const u=new URL(t.id==='journal'&&edition?'round'+edition.round+'.html':targets.get(t.case)||t.path,location.href), q=new URL(location.href).searchParams;
   if(t.id==='sculpt'&&['chin','jaw','throat','mid','cheek','rib','breast','lower'].includes(q.get('zone')))u.searchParams.set('zone',q.get('zone'));
   if(t.id==='history')for(const k of ['a','b','av','bv'])if(q.has(k))u.searchParams.set(k,q.get(k));
-  if(['sculpt','all-around'].includes(t.id)&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
+  if(['sculpt','all-around','definition'].includes(t.id)&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
   return u.href;
 }
 function signal(f,on){f.contentWindow?.postMessage({type:'bookfriend:studio-active',active:on},location.origin);}
@@ -61,7 +62,7 @@ function routeFromChild(e){
   e.preventDefault();open(next,q.has('case')?{case:q.get('case'),zone:q.get('zone')}:undefined);
 }
 function open(id,context){
-  const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='latest-fern');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
+  const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='definition');current=t.id;setState(current,context||(t.case?{case:t.case,zone:null}:{}));
   let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);$('stages').append(f);f.onload=()=>{signal(f,!f.hidden);try{f.contentDocument?.addEventListener('click',routeFromChild);}catch{}};}
   else if(context&&['sculpt','all-around'].includes(id)&&f.src!==pathFor(t))f.src=pathFor(t);
   for(const [key,other] of frames){other.hidden=key!==current;signal(other,!other.hidden);}
