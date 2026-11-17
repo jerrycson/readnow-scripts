@@ -1,2 +1,2 @@
-mlx=S
-# 2685727791
+doc=app_settings/omni_auto
+# 1029014592

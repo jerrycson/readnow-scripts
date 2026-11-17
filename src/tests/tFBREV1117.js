@@ -176,5 +176,9 @@ require('./harness.js')(async (p) => { await p.waitForTimeout(300);
   ok(N.r1.n === 0 && N.n1 === 0 && (N.r1.skip || []).some((x) => /우리 사진 1장이 붙은 상품/.test(x)), "N '사진 상품 빼기'가 켜져 있으면 사진 붙은 상품은 맡겨져도 올리지 않음(대량 등록은 사진을 못 옮김)", N.r1);
   ok(N.r2.n === 1 && (N.r2.skip || []).some((x) => /사진 2장 중 1장만/.test(x)) && N.J.length === 1 && N.J[0][0] === 'aladin_U333' && N.J[0][1] === 'one' && N.J[0][2] === 2, 'N 저장소에 없는 사진이 있으면 올리지 않음 · 다 있으면 사진까지 다시 붙이는 길로', [N.r2, N.J]);
 
+  /* O. 백업 — 클라우드 목록을 못 받은 날에도 끌올 원본·평생 기록·고리·메모가 백업 칸 목록에 */
+  const O = await p.evaluate(() => { const keep = S.fbInv; S.fbInv = { ok: false }; const c = fbDataCols(); S.fbInv = keep; return ['prd_bump', 'prd_bump_snap', 'prd_bump_hist', 'prd_relinks', 'prd_notes', 'pur_matches', 'reg_items', 'prd_listings', 'prd_used_info'].filter((x) => !c.includes(x)); });
+  ok(O.length === 0, 'O 웹앱 백업 고정 목록에 끌올 원본(prd_bump_snap)·평생 기록(prd_bump_hist)·고리(prd_relinks)·일 장부·메모가 들어 있음(클라우드 목록 없이도)', O);
+
   const Z = await p.evaluate(() => window.TB.plW()); ok(Z === 0, '끝까지 — 웹앱이 상품 기록(prd_listings)에 쓴 것 0번(처음 등록일을 서버에서 덮지 않음)', Z);
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); });

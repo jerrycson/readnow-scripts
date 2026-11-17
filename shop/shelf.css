@@ -86,7 +86,7 @@
 @media (prefers-reduced-motion: reduce) { .sp .sk { transition: none; } }
 .sp.out .sk { transform: translateY(-9%) scale(1.06, 1.02); box-shadow: inset 2px 0 2px rgba(255, 255, 255, .25), inset -3px 0 4px rgba(0, 0, 0, .35), 0 10px 16px rgba(0, 0, 0, .45); z-index: 2; }
 /* (shelfload1 11/17) 화면 밖 책등은 안쪽 글 배치·칠하기를 건너뜀(content-visibility) — 휴대폰 첫 책장 229권 중 보이는 건 74권 · 그림자 자리는 overflow-clip-margin으로 남김 · 들어 올림·마우스·초점 땐 늘 그림 */
-.bqs-case .sp { content-visibility: auto; overflow-clip-margin: 24px; } .bqs-case .sp.lift, .bqs-case .sp.out, .bqs-case .sp:hover, .bqs-case .sp:focus-within { content-visibility: visible; }
+.bqs-case .sp { content-visibility: auto; overflow-clip-margin: 24px; } .bqs-case .sp.lift, .bqs-case .sp.out, .bqs-case .sp:hover, .bqs-case .sp:focus-within, .bqs-case .sp.fitn { content-visibility: visible; } /* fitn = 글을 맞추는 동안만(shelf.js fitSpines) */
 .sp:focus-visible { outline: none; } .sp:focus-visible .sk { outline: 3px solid #ffd54a; outline-offset: 2px; }
 .sp.tiltl .sk { transform: rotate(-3.5deg); transform-origin: 0 100%; } .sp.tiltr .sk { transform: rotate(3.5deg); transform-origin: 100% 100%; }
 /* (shelf3) 글 자리 = 디자인마다 장식이 없는 곳(--zt 위 · --zb 아래 · --zs 옆 % · shelf-core zoneOf) · 머리 장식·주문중·할인 띠가 있으면 그만큼 비킴 · 글 크기·줄 수는 shelf.js가 재서 맞춤 */

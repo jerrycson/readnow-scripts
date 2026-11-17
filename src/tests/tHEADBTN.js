@@ -107,7 +107,7 @@ const NEW = '8ab2f661d1d8afa8', OLD = '8559039d5a96110b';
     const disp = COL.split('\n').find((l) => l.includes("if (c.cmd === 'headget')")); ok(!!disp, '원격 명령 받기에 headget 있음');
     const acks = []; let called = 0; new Function('window', 'ctlAck', 'headgetNow', 'c', `${disp}`)({ __rnShipWait: () => true }, (id, cmd, s, m) => acks.push({ s, m }), () => called++, c0);
     ok(!called && acks[0] && acks[0].s === 'wait' && /출고 중/.test(acks[0].m), '그 PC가 출고 중이면 설치 화면을 미룸(출고가 끝나면 띄움)');
-    ok(/hwait: I\.hwait \|\| null, hsig: I\.hsig \|\| null, hg: 1 \}/.test(COL), '심장 신호 tm에 hg:1(머리 받기를 알아들음)'); }
+    ok(/hwait: I\.hwait \|\| null, hsig: I\.hsig \|\| null, hg: 1[,\s}]/.test(COL), '심장 신호 tm에 hg:1(머리 받기를 알아들음 · 1.89.344부터 뒤에 have 등이 붙음)'); }
 
   console.log('⑥ 팝업 없음');
   { const parts = [cut(APP, 'const PCCTL_LX', "const mgrAgo = (ms)"), cut(COL, '  /* ══════════ (11/10 headbtn', '  /* ══════════ (정범님 11/05) 🪟 수집 작업 창')];
