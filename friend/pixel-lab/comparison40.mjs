@@ -1,4 +1,4 @@
-import {launchRound39} from './comparison39.mjs';
+import {launchRound39} from './comparison39.mjs?v=40-navigation';
 import {pixelLoupe40} from './pixel-loupe40.mjs';
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
