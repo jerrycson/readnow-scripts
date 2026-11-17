@@ -105,7 +105,11 @@ export function library(rows,goDoc){
     const short=text('section',''),detail=text('section','');short.id='section-unit';detail.id='section-detail';
     short.append(text('h3','한 문단 요약'),paragraphs(r.unit));detail.append(text('h3','상세 설명'),paragraphs(r.detail));
     const links=text('div','','links');
-    if(r.noteId)links.append(link('A4 상세 연구 노트','../../pixel-lab/study-note35.html?id='+encodeURIComponent(r.noteId)));
+    if(r.noteId){
+      const paper=new URL('../../pixel-lab/study-note35.html',location.href);paper.searchParams.set('id',r.noteId);
+      if(get('rev'))paper.searchParams.set('rev',get('rev'));
+      links.append(link('A4 상세 연구 노트',paper.href));
+    }
     const orig=link('출처 열기 ↗',r.url),local=link('연구 원문·결과 보기',r.local);
     if(orig){orig.target='_blank';orig.rel='noopener';links.append(orig);}
     if(local){const target=studyTarget(new URL(local.href));if(target)local.onclick=e=>{if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey){e.preventDefault();goDoc(target);}};links.append(local);}

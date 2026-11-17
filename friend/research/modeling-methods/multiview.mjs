@@ -1,3 +1,5 @@
+import {compareDrawingPixels} from '../../pixel-lab/drawing-review.mjs';
+
 const cameras=[
   ['정면',0,0],['왼 45°',-45,0],['오른 45°',45,0],['왼 측면',-90,0],['오른 측면',90,0],
   ['왼 뒤 45°',-135,0],['뒤',180,0],['오른 뒤 45°',135,0],['위에서',0,30],['아래에서',0,-30]
@@ -20,7 +22,8 @@ export function mountMultiview(host,{render,openAngle}) {
       const pick=element('button'),caption=element('span',label);pick.type='button';pick.dataset.yaw=yaw;pick.dataset.pitch=pitch;
       pick.title=label+' 방향을 크게 보기';pick.onclick=()=>openAngle({yaw,pitch});
       const pair=[0,1].map(i=>{const c=element('canvas');c.width=c.height=48;c.setAttribute('aria-label',label+(i?' 교정':' 기준'));return c;});
-      pick.append(caption,...pair);grid.append(pick);return {yaw,pitch,pair};
+      const difference=element('small');
+      pick.append(caption,...pair,difference);grid.append(pick);return {yaw,pitch,pair,difference};
     });
   }
   const tick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
@@ -42,8 +45,13 @@ export function mountMultiview(host,{render,openAngle}) {
           }));
           if(i%3===2)await tick();
         }
-        if(version!==layoutVersion||visibleId!==model.id||ready.length!==rows.length)continue;
-        rows.forEach((row,i)=>row.pair.forEach((c,j)=>c.getContext('2d').putImageData(ready[i][j],0,0)));
+        if(pending || version!==layoutVersion||visibleId!==model.id||ready.length!==rows.length)continue;
+        rows.forEach((row,i)=>{
+          const diff=compareDrawingPixels(...ready[i]);
+          row.pair.forEach((c,j)=>c.getContext('2d').putImageData(ready[i][j],0,0));
+          row.difference.textContent='다른 화소 '+diff.changed+' · 외곽 '+diff.silhouette;
+          row.difference.title='40차 기준과 편집 그림의 48px 차이입니다. 원화와의 유사도는 별도로 확인합니다.';
+        });
         displayedKey=packet;grid.dataset.subject=model.id;grid.dataset.generation=String((+grid.dataset.generation||0)+1);
         grid.setAttribute('aria-busy','false');status.textContent=rows.length+'방향 갱신됨';
       }

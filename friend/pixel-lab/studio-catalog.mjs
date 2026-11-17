@@ -7,6 +7,15 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
+ tool('surface56','pose','56차 어깨 표면·복합 자세','같은 전신·카메라에서 어깨 표면보정 강도0~100%와 팔·골반·접지를 바꾸고 되돌립니다. 기본 시안은 남성8등신 오른팔 앞으로90°, 팔꿈치45°이며 수동 검토 후보입니다.','workbench.html?round=56&case=male-8&trial=surface56',['56','어깨','표면','복합','피부','강도','되돌리기'],56),
+ tool('photo-occlusion55','photo','가린 윤곽 편집','한 사진 전체나 왼쪽·오른쪽 윤곽에서 가린 구간을 표시하고 생성에 쓰는 외곽을 다시 비교합니다.','../research/photo-model/occlusion55.html',['사진','참고','윤곽','가림','복원','55'],55),
+ tool('shoulder54','pose','어깨와 겨드랑이','같은 전신에서 양팔이나 한 팔을 들고 겨드랑이와 위팔의 연결면을 비교합니다. 관절 탭에서 등신별 골반과 무릎으로도 전환할 수 있습니다.','workbench.html?round=54&case=female-8&trial=shoulder54',['팔','어깨','겨드랑이','쇄골','견갑','관절'],54),
+ tool('hip54','pose','골반과 무릎','다리 굽힘·벌림·보폭을 바꾸고 같은 전신의 어깨 자세와 함께 관찰합니다.','workbench.html?round=54&case=female-8&trial=hip54',['골반','다리','무릎','보행','관절'],54),
+ tool('ground55','pose','발 접지와 웅크리기','뒤꿈치와 앞발을 디딘 채 골반 내림, 발 간격과 발끝 방향을 바꾸고 옆·뒤에서 무릎과 볼기를 확인합니다.','workbench.html?round=55&case=female-8&trial=ground55',['접지','발','웅크리기','골반','무릎','발목'],55),
+ tool('round-plan','general','회차별 실행 계획','52~60차의 목적, 작업 배분, 다음 검토 장면과 계획 카드 번호를 살펴봅니다.','../research/hub/round-plan51.html',['계획','목표','검토','일정','다음 회차']),
+ tool('workbench','general','다중 시점 작업대','얼굴·가슴의 회차별 후보를 같은 각도로 비교합니다. 전신 14개에서 머리, 이목구비와 체형을 교체하고 초기화할 수 있습니다.','workbench.html',['다중','시점','1창','2창','4창','원형','픽셀','작업대']),
+ tool('definition','general','고해상도 원형 · 픽셀판','같은 형상을 1024·2048px 고해상도와 48·96px 픽셀 아트로 비교합니다.','definition.html',['고해상도','원형','픽셀','1024','2048','품질','두 버전']),
+ tool('acceptance','general','기본형 완성 기준과 결함','49차와 원본에서 확인한 결함, 14개 기본형과 체형 변형의 검토 순서·승인 조건을 봅니다.','../research/modeling-methods/acceptance.html',['기본형','완성','부족','결함','승인','계획','검수']),
  tool('all-around','sculpt','전방위 동시 교정','40차와 49차 연구형을 한 메시마다 10·26방향에서 동시에 비교하고 부위별로 교정합니다.','../research/modeling-methods/compare.html',['전방위','정면','양사선','교정','조작기','동시','49']),
  tool('learning','general','실험실 학습 기록','실험에 쓴 자료와 결과, 채택 또는 보류한 근거를 확인합니다.','../research/studio-engine/index.html',['학습','검증','일지','자기학습']),
  tool('photo-research','photo','내 참고그림 연구','사진 입력부터 윤곽 복원·학습까지 연구 내용과 적용 범위를 봅니다.','../research/photo-model/index.html',['사진','참고그림','원문','엔진']),
@@ -49,6 +58,7 @@ export const studioTools=Object.freeze([
  tool('motion35','motion','밑선·움직임 ·35','보존 도구. 밑면을 돌려 보며 형태별·팔 높이별 움직임을 재생합니다.','motion35.html?form=W',['밑면','밑선','가슴','팔','움직임','재생'],35),
  tool('sleep','motion','수면·호흡 5안','프로토타입. 잠든 몸의 다섯 호흡 후보를 같은 조건과 48~128px에서 비교합니다.','sleep-study.html',['잠','수면','호흡','숨','애니메이션','5안'],7),
  tool('contour36','photo','원본 윤곽 ·36','보존 도구. 원전/교정선과 같은 얼굴을 돌려 보고 내 사진을 두 기준점으로 정합합니다.','contour36.html?case=F02',['윤곽','원전','사진','정합','두 점','얼굴','360'],36),
+ tool('photo-engine50','photo','사진 외형 생성과 시점별 검증','다섯 입력으로 두 메시를 생성하고 별도 좌우 사선과 위아래 실루엣에서 악화와 가림을 확인합니다.','photo-engine50.html',['내 사진','모델링','원본','가림','검증','생성','학습']),
  tool('photo-engine36','photo','다섯 사진 조형','사진 조형 연구. 실제 두상 또는 권리가 있는 내 사진 5방향의 마스크·부피·폭·깊이를 편집하고 적용/제외·복원·OBJ를 시험합니다. 정밀 복원 완성이 아닙니다.','photo-engine36.html',['내 사진','모델링','조형','5방향','마스크','붓','부피','OBJ','복원','적용','제외'],36),
  tool('profile37','compare','사선 정합 ·37','보존 도구. 공식 원화2·4의 관측점과 35/36 가시선, 정합 방식·숨긴 점의 실패를 대조합니다.','profile37.html?case=F02&image=2',['사선','기준점','두 점','네 점','정합','숨긴 점','검증'],37),
  tool('chin37','compare','턱 교정 후보 ·37','보존 후보. 페른 턱 강도0.75의 실제 모델과 전후를 확인합니다. 채택판이 아닙니다.','contour36.html?case=F02&cell=side&variant=chin37',['턱','페른','후보','0.75','반례'],37),

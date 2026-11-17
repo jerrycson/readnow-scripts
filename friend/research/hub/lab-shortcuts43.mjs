@@ -41,8 +41,10 @@ function published(row) {
   }
   if (row.round >= 46) sculpt.textContent = '통합 조형 · 부위별 조작기';
   if (row.round >= 49) {
-    studio.textContent = '내 실험실 (통합) · 49차 결과 검토';
-    multi.href = '?lab=studio&tool=all-around&round=49';
+    const photoInput=shortcuts.querySelector('a[href*="tool=photo-engine36"]');
+    if(photoInput)photoInput.href='?lab=studio&tool=photo-engine50';
+    studio.textContent = '내 실험실 (통합) · '+row.round+'차 결과 검토';
+    multi.href = '?lab=studio&tool='+(row.round>=50?'workbench':'all-around')+'&round='+row.round;
     studio.after(multi);
     study.href = '?lab=studio&tool=learning';
     methods.href = '?lab=studio&tool=methods';

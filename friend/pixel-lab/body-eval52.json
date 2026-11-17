@@ -1,0 +1,4670 @@
+{
+  "round": 52,
+  "unit": "기본체 머리 1단위, 변형 수치 0~1",
+  "cases": {
+    "base": {
+      "muscularity": 0.35,
+      "adiposity": 0.35
+    },
+    "low": {
+      "muscularity": 0,
+      "adiposity": 0
+    },
+    "muscleLow": {
+      "muscularity": 0,
+      "adiposity": 0.35
+    },
+    "fatLow": {
+      "muscularity": 0.35,
+      "adiposity": 0
+    },
+    "muscle": {
+      "muscularity": 1,
+      "adiposity": 0.35
+    },
+    "fat": {
+      "muscularity": 0.35,
+      "adiposity": 1
+    },
+    "muscleLean": {
+      "muscularity": 1,
+      "adiposity": 0
+    },
+    "fatLowMuscle": {
+      "muscularity": 0,
+      "adiposity": 1
+    },
+    "both": {
+      "muscularity": 1,
+      "adiposity": 1
+    },
+    "manual": {
+      "muscularity": 0.63,
+      "adiposity": 0.27
+    },
+    "slender": {
+      "muscularity": 0.18,
+      "adiposity": 0.08
+    },
+    "muscular": {
+      "muscularity": 1,
+      "adiposity": 0.18
+    },
+    "full": {
+      "muscularity": 0.28,
+      "adiposity": 0.9
+    },
+    "powerful": {
+      "muscularity": 0.88,
+      "adiposity": 0.64
+    }
+  },
+  "views": [
+    {
+      "name": "정면",
+      "yaw": 0,
+      "pitch": 0
+    },
+    {
+      "name": "오른쪽",
+      "yaw": 90,
+      "pitch": 0
+    },
+    {
+      "name": "후면",
+      "yaw": 180,
+      "pitch": 0
+    },
+    {
+      "name": "왼쪽",
+      "yaw": -90,
+      "pitch": 0
+    },
+    {
+      "name": "별도-사선",
+      "yaw": -37,
+      "pitch": 21
+    }
+  ],
+  "models": [
+    {
+      "id": "female-2",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 568,
+          "changed": 0,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4405043,
+          "armMeanRadius": 0.1134097,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.6605389,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.4029137,
+          "armMeanRadius": 0.0869355,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7506051,
+          "protectedCount": 568,
+          "changed": 1445,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4331781,
+          "armMeanRadius": 0.0945794,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8427497,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.41024,
+          "armMeanRadius": 0.1057657,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9594221,
+          "protectedCount": 568,
+          "changed": 1457,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4541102,
+          "armMeanRadius": 0.1412501,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.8712226,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.5109562,
+          "armMeanRadius": 0.1245424,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.915434,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.4238459,
+          "armMeanRadius": 0.1336215,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8372256,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.50363,
+          "armMeanRadius": 0.1057097,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.8880413,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.5257041,
+          "armMeanRadius": 0.1525481,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9873561,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.588057,
+          "waistDepth": 0.4394478,
+          "armMeanRadius": 0.1235985,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7998435,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5826453,
+          "waistDepth": 0.4135991,
+          "armMeanRadius": 0.0983665,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.9752947,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5854936,
+          "waistDepth": 0.4394104,
+          "armMeanRadius": 0.1375445,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.8848284,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5917456,
+          "waistDepth": 0.4986522,
+          "armMeanRadius": 0.1190577,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9406194,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5910791,
+          "waistDepth": 0.4830308,
+          "armMeanRadius": 0.1410997,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 55,
+          "muscle": 48,
+          "fat": 33,
+          "both": 78,
+          "muscleLean": 41,
+          "fatLowMuscle": 26
+        },
+        "48-오른쪽": {
+          "low": 31,
+          "muscle": 31,
+          "fat": 32,
+          "both": 62,
+          "muscleLean": 18,
+          "fatLowMuscle": 21
+        },
+        "48-후면": {
+          "low": 60,
+          "muscle": 41,
+          "fat": 37,
+          "both": 78,
+          "muscleLean": 39,
+          "fatLowMuscle": 30
+        },
+        "48-왼쪽": {
+          "low": 27,
+          "muscle": 30,
+          "fat": 30,
+          "both": 59,
+          "muscleLean": 21,
+          "fatLowMuscle": 17
+        },
+        "48-별도-사선": {
+          "low": 47,
+          "muscle": 31,
+          "fat": 24,
+          "both": 62,
+          "muscleLean": 30,
+          "fatLowMuscle": 19
+        },
+        "96-정면": {
+          "low": 209,
+          "muscle": 181,
+          "fat": 144,
+          "both": 276,
+          "muscleLean": 153,
+          "fatLowMuscle": 98
+        },
+        "96-오른쪽": {
+          "low": 124,
+          "muscle": 109,
+          "fat": 132,
+          "both": 210,
+          "muscleLean": 96,
+          "fatLowMuscle": 87
+        },
+        "96-후면": {
+          "low": 210,
+          "muscle": 178,
+          "fat": 178,
+          "both": 308,
+          "muscleLean": 145,
+          "fatLowMuscle": 128
+        },
+        "96-왼쪽": {
+          "low": 137,
+          "muscle": 112,
+          "fat": 143,
+          "both": 215,
+          "muscleLean": 99,
+          "fatLowMuscle": 85
+        },
+        "96-별도-사선": {
+          "low": 189,
+          "muscle": 177,
+          "fat": 130,
+          "both": 273,
+          "muscleLean": 147,
+          "fatLowMuscle": 80
+        },
+        "128-정면": {
+          "base": "68bbed3002bf74a4278a5747d0c8a8af5a09cd511ee2224833465e339f728d99",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "9a09bc9f3784d02058bd442d02e1e98177792485a299d6c3da4ab7bc7f0cead0",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "0db1659d0bb865532fca6fdd2ed41f5d1e321c9197d363e0530e79d64c953022",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "d2c0506d100f340d27e51a0b3ced839923c1c41e52dd1245c0909bd36b6f01dc",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "78117c89fb57829e985844aadc3ebc417622ee33d42a82b7bba62e6f2831cb5c",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-3",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 583,
+          "changed": 0,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.502017,
+          "armMeanRadius": 0.1323113,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.723619,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.4587453,
+          "armMeanRadius": 0.1014247,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.799193,
+          "protectedCount": 583,
+          "changed": 1573,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.4929916,
+          "armMeanRadius": 0.1103426,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8934666,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.4672068,
+          "armMeanRadius": 0.1233933,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9940324,
+          "protectedCount": 583,
+          "changed": 1585,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.518814,
+          "armMeanRadius": 0.1647918,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.9478843,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.5838633,
+          "armMeanRadius": 0.1452994,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.9341808,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.482921,
+          "armMeanRadius": 0.1558917,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8495534,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.5742675,
+          "armMeanRadius": 0.123328,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.999895,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.602017,
+          "armMeanRadius": 0.1779727,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9931348,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7126886,
+          "waistDepth": 0.5008796,
+          "armMeanRadius": 0.1441982,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.8407245,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.704762,
+          "waistDepth": 0.4709246,
+          "armMeanRadius": 0.1147609,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.9865495,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7089004,
+          "waistDepth": 0.5010213,
+          "armMeanRadius": 0.1604686,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.9500497,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.718442,
+          "waistDepth": 0.5691214,
+          "armMeanRadius": 0.1389007,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9999532,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7174024,
+          "waistDepth": 0.5522322,
+          "armMeanRadius": 0.1646163,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 66,
+          "muscle": 52,
+          "fat": 50,
+          "both": 78,
+          "muscleLean": 39,
+          "fatLowMuscle": 41
+        },
+        "48-오른쪽": {
+          "low": 34,
+          "muscle": 25,
+          "fat": 39,
+          "both": 69,
+          "muscleLean": 24,
+          "fatLowMuscle": 26
+        },
+        "48-후면": {
+          "low": 57,
+          "muscle": 53,
+          "fat": 53,
+          "both": 91,
+          "muscleLean": 44,
+          "fatLowMuscle": 39
+        },
+        "48-왼쪽": {
+          "low": 35,
+          "muscle": 28,
+          "fat": 45,
+          "both": 72,
+          "muscleLean": 23,
+          "fatLowMuscle": 33
+        },
+        "48-별도-사선": {
+          "low": 35,
+          "muscle": 43,
+          "fat": 37,
+          "both": 72,
+          "muscleLean": 37,
+          "fatLowMuscle": 28
+        },
+        "96-정면": {
+          "low": 182,
+          "muscle": 196,
+          "fat": 169,
+          "both": 327,
+          "muscleLean": 169,
+          "fatLowMuscle": 84
+        },
+        "96-오른쪽": {
+          "low": 172,
+          "muscle": 128,
+          "fat": 150,
+          "both": 247,
+          "muscleLean": 126,
+          "fatLowMuscle": 96
+        },
+        "96-후면": {
+          "low": 192,
+          "muscle": 199,
+          "fat": 193,
+          "both": 344,
+          "muscleLean": 163,
+          "fatLowMuscle": 106
+        },
+        "96-왼쪽": {
+          "low": 170,
+          "muscle": 127,
+          "fat": 153,
+          "both": 257,
+          "muscleLean": 129,
+          "fatLowMuscle": 93
+        },
+        "96-별도-사선": {
+          "low": 182,
+          "muscle": 157,
+          "fat": 138,
+          "both": 295,
+          "muscleLean": 125,
+          "fatLowMuscle": 91
+        },
+        "128-정면": {
+          "base": "b1c55e1e631110f548158cfad6394d52c6bbae1be0abbc60c8c659d721de230d",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "1aa6c1c841768370a09ab65f582509c6040ba1bb8b294388baab1a41bb426829",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "f116d9c20f64c8ecaf590031b589db01af76f76e38cd646ab69c20051bbed526",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "2e001901d33a4fe721fdb20cf15f2315069d6a11094b30091ac62a3259c5cef8",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "01d87ef471175d5f116abc27d649f897dd2d137e78f20a499c6403767bc447df",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-4",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 589,
+          "changed": 0,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5685071,
+          "armMeanRadius": 0.151213,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.7382714,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5194841,
+          "armMeanRadius": 0.115914,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.8104791,
+          "protectedCount": 589,
+          "changed": 1601,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5584181,
+          "armMeanRadius": 0.1261059,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8929214,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5289337,
+          "armMeanRadius": 0.141021,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9972729,
+          "protectedCount": 589,
+          "changed": 1612,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5882346,
+          "armMeanRadius": 0.1883335,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.9897995,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6607449,
+          "armMeanRadius": 0.1660565,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.9337757,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5466523,
+          "armMeanRadius": 0.178162,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8522274,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6494873,
+          "armMeanRadius": 0.1409463,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.9999484,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6825507,
+          "armMeanRadius": 0.2033974,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9930432,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8375842,
+          "waistDepth": 0.5673002,
+          "armMeanRadius": 0.164798,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.8502204,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8278156,
+          "waistDepth": 0.533022,
+          "armMeanRadius": 0.1311553,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.987742,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8328235,
+          "waistDepth": 0.5675279,
+          "armMeanRadius": 0.1833927,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.9842704,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8444527,
+          "waistDepth": 0.644065,
+          "armMeanRadius": 0.1587437,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9999733,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8432116,
+          "waistDepth": 0.6258498,
+          "armMeanRadius": 0.1881329,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 47,
+          "muscle": 40,
+          "fat": 33,
+          "both": 78,
+          "muscleLean": 36,
+          "fatLowMuscle": 24
+        },
+        "48-오른쪽": {
+          "low": 27,
+          "muscle": 40,
+          "fat": 37,
+          "both": 67,
+          "muscleLean": 29,
+          "fatLowMuscle": 24
+        },
+        "48-후면": {
+          "low": 45,
+          "muscle": 42,
+          "fat": 31,
+          "both": 70,
+          "muscleLean": 39,
+          "fatLowMuscle": 24
+        },
+        "48-왼쪽": {
+          "low": 29,
+          "muscle": 40,
+          "fat": 38,
+          "both": 70,
+          "muscleLean": 31,
+          "fatLowMuscle": 25
+        },
+        "48-별도-사선": {
+          "low": 30,
+          "muscle": 36,
+          "fat": 26,
+          "both": 68,
+          "muscleLean": 27,
+          "fatLowMuscle": 17
+        },
+        "96-정면": {
+          "low": 212,
+          "muscle": 201,
+          "fat": 147,
+          "both": 315,
+          "muscleLean": 152,
+          "fatLowMuscle": 72
+        },
+        "96-오른쪽": {
+          "low": 153,
+          "muscle": 128,
+          "fat": 162,
+          "both": 253,
+          "muscleLean": 118,
+          "fatLowMuscle": 85
+        },
+        "96-후면": {
+          "low": 216,
+          "muscle": 207,
+          "fat": 151,
+          "both": 322,
+          "muscleLean": 163,
+          "fatLowMuscle": 79
+        },
+        "96-왼쪽": {
+          "low": 153,
+          "muscle": 132,
+          "fat": 182,
+          "both": 265,
+          "muscleLean": 112,
+          "fatLowMuscle": 106
+        },
+        "96-별도-사선": {
+          "low": 132,
+          "muscle": 153,
+          "fat": 142,
+          "both": 283,
+          "muscleLean": 114,
+          "fatLowMuscle": 82
+        },
+        "128-정면": {
+          "base": "b4bf76fd3e98cba84275d4816c0bc1ad3838fd7ee4fc4c8b34cccf8603054339",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "c69ebeb266ccd0aa74ecdf590532ccf1e2ada61816a61ad6c8ee387982be21c2",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "287dce51b3927c0f1922fb1fa4bdaf1462ad780584610c5c1eba487639126e77",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "33347f7e9c0310b19fed87cd640feadb3139b0c4a02cdcfd8a7d6d5dc22b39c6",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "565f80437a5bbaf0484ecef56a8f0703e7f63d39dc8eb5e4b44ff546d2122735",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-5",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 1595,
+          "changed": 0,
+          "waistWidth": 1.1425064,
+          "waistDepth": 0.6272061,
+          "armMeanRadius": 0.1600853,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.4188842,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.0409707,
+          "waistDepth": 0.5133941,
+          "armMeanRadius": 0.0845481,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.626817,
+          "protectedCount": 1595,
+          "changed": 8173,
+          "waistWidth": 1.1405244,
+          "waistDepth": 0.6053466,
+          "armMeanRadius": 0.11496,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7265355,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.0429527,
+          "waistDepth": 0.5303273,
+          "armMeanRadius": 0.1296737,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.915831,
+          "protectedCount": 1595,
+          "changed": 8174,
+          "waistWidth": 1.1428377,
+          "waistDepth": 0.6684322,
+          "armMeanRadius": 0.2329287,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.3725231,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.1596704,
+          "waistDepth": 0.8707556,
+          "armMeanRadius": 0.2037055,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.7967761,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.043284,
+          "waistDepth": 0.5641053,
+          "armMeanRadius": 0.2027008,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.3758118,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.1576883,
+          "waistDepth": 0.850399,
+          "armMeanRadius": 0.1586308,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.3281764,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.1600017,
+          "waistDepth": 0.9083343,
+          "armMeanRadius": 0.2773233,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.944165,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.119894,
+          "waistDepth": 0.6210571,
+          "armMeanRadius": 0.1843059,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.6199728,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.0647452,
+          "waistDepth": 0.5405107,
+          "armMeanRadius": 0.1147054,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8741883,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.0944831,
+          "waistDepth": 0.6177591,
+          "armMeanRadius": 0.2182395,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.4894177,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.1566334,
+          "waistDepth": 0.8288135,
+          "armMeanRadius": 0.1879342,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.7364283,
+          "protectedCount": 1595,
+          "changed": 8175,
+          "waistWidth": 1.1504343,
+          "waistDepth": 0.7662855,
+          "armMeanRadius": 0.2390813,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 94,
+          "muscle": 89,
+          "fat": 92,
+          "both": 154,
+          "muscleLean": 59,
+          "fatLowMuscle": 64
+        },
+        "48-오른쪽": {
+          "low": 52,
+          "muscle": 66,
+          "fat": 62,
+          "both": 106,
+          "muscleLean": 37,
+          "fatLowMuscle": 33
+        },
+        "48-후면": {
+          "low": 103,
+          "muscle": 96,
+          "fat": 87,
+          "both": 156,
+          "muscleLean": 71,
+          "fatLowMuscle": 53
+        },
+        "48-왼쪽": {
+          "low": 49,
+          "muscle": 64,
+          "fat": 62,
+          "both": 99,
+          "muscleLean": 38,
+          "fatLowMuscle": 32
+        },
+        "48-별도-사선": {
+          "low": 92,
+          "muscle": 74,
+          "fat": 79,
+          "both": 143,
+          "muscleLean": 55,
+          "fatLowMuscle": 48
+        },
+        "96-정면": {
+          "low": 437,
+          "muscle": 392,
+          "fat": 412,
+          "both": 570,
+          "muscleLean": 295,
+          "fatLowMuscle": 222
+        },
+        "96-오른쪽": {
+          "low": 219,
+          "muscle": 230,
+          "fat": 259,
+          "both": 370,
+          "muscleLean": 156,
+          "fatLowMuscle": 150
+        },
+        "96-후면": {
+          "low": 450,
+          "muscle": 402,
+          "fat": 416,
+          "both": 579,
+          "muscleLean": 294,
+          "fatLowMuscle": 230
+        },
+        "96-왼쪽": {
+          "low": 232,
+          "muscle": 221,
+          "fat": 252,
+          "both": 368,
+          "muscleLean": 152,
+          "fatLowMuscle": 155
+        },
+        "96-별도-사선": {
+          "low": 346,
+          "muscle": 357,
+          "fat": 334,
+          "both": 526,
+          "muscleLean": 251,
+          "fatLowMuscle": 183
+        },
+        "128-정면": {
+          "base": "0a4c0897d22977ffbbac58c0587eb359a966cf67d94cbc38e2be98f28b27d789",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "5cb4762c5f16068bbbe79192f43e9b5b733d915bee5a7b69e7cbcdd3c76ee1d6",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "21fe033a9336834bd2f9218de7c83cb03ffeacba3a0d92e927abf9b61d159ffd",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "11fb6c76ac6f5a6460a3e26a207f71a6f45cac0ad5fe4cf2cc75127d9986a014",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "75ab36c3a4d0ef5f0e0f83afa9f823ffb78ad22b1cbceb2680993a0e8d35cdba",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.166088,
+      "naiveHip": 0.054288,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-6",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 1609,
+          "changed": 0,
+          "waistWidth": 1.1878604,
+          "waistDepth": 0.6569001,
+          "armMeanRadius": 0.17152,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.5249576,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.0648041,
+          "waistDepth": 0.5367654,
+          "armMeanRadius": 0.0958157,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7065299,
+          "protectedCount": 1609,
+          "changed": 8361,
+          "waistWidth": 1.1840832,
+          "waistDepth": 0.633403,
+          "armMeanRadius": 0.1261892,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7273698,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.0685813,
+          "waistDepth": 0.5546849,
+          "armMeanRadius": 0.1411471,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9196503,
+          "protectedCount": 1609,
+          "changed": 8362,
+          "waistWidth": 1.1884917,
+          "waistDepth": 0.7007847,
+          "armMeanRadius": 0.2447077,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.4904471,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.2088358,
+          "waistDepth": 0.9239498,
+          "armMeanRadius": 0.2150468,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.792283,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.0692126,
+          "waistDepth": 0.5922923,
+          "armMeanRadius": 0.2145031,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.4825731,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.2050587,
+          "waistDepth": 0.9022308,
+          "armMeanRadius": 0.1697518,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.4640891,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.2094672,
+          "waistDepth": 0.9640885,
+          "armMeanRadius": 0.2889863,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9461763,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.1608685,
+          "waistDepth": 0.651006,
+          "armMeanRadius": 0.1959035,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7002402,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.0940105,
+          "waistDepth": 0.5651632,
+          "armMeanRadius": 0.1260699,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8788114,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.1305561,
+          "waistDepth": 0.6480884,
+          "armMeanRadius": 0.2300308,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.577457,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.2048534,
+          "waistDepth": 0.8779309,
+          "armMeanRadius": 0.199249,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.7789406,
+          "protectedCount": 1609,
+          "changed": 8364,
+          "waistWidth": 1.1977334,
+          "waistDepth": 0.8081698,
+          "armMeanRadius": 0.2507495,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 77,
+          "muscle": 75,
+          "fat": 86,
+          "both": 137,
+          "muscleLean": 63,
+          "fatLowMuscle": 54
+        },
+        "48-오른쪽": {
+          "low": 63,
+          "muscle": 47,
+          "fat": 54,
+          "both": 92,
+          "muscleLean": 20,
+          "fatLowMuscle": 30
+        },
+        "48-후면": {
+          "low": 86,
+          "muscle": 79,
+          "fat": 78,
+          "both": 134,
+          "muscleLean": 69,
+          "fatLowMuscle": 51
+        },
+        "48-왼쪽": {
+          "low": 69,
+          "muscle": 44,
+          "fat": 50,
+          "both": 91,
+          "muscleLean": 21,
+          "fatLowMuscle": 28
+        },
+        "48-별도-사선": {
+          "low": 64,
+          "muscle": 84,
+          "fat": 91,
+          "both": 128,
+          "muscleLean": 73,
+          "fatLowMuscle": 39
+        },
+        "96-정면": {
+          "low": 397,
+          "muscle": 331,
+          "fat": 364,
+          "both": 541,
+          "muscleLean": 257,
+          "fatLowMuscle": 211
+        },
+        "96-오른쪽": {
+          "low": 215,
+          "muscle": 207,
+          "fat": 241,
+          "both": 358,
+          "muscleLean": 144,
+          "fatLowMuscle": 145
+        },
+        "96-후면": {
+          "low": 423,
+          "muscle": 342,
+          "fat": 354,
+          "both": 547,
+          "muscleLean": 253,
+          "fatLowMuscle": 201
+        },
+        "96-왼쪽": {
+          "low": 218,
+          "muscle": 203,
+          "fat": 243,
+          "both": 354,
+          "muscleLean": 142,
+          "fatLowMuscle": 141
+        },
+        "96-별도-사선": {
+          "low": 318,
+          "muscle": 307,
+          "fat": 305,
+          "both": 497,
+          "muscleLean": 213,
+          "fatLowMuscle": 172
+        },
+        "128-정면": {
+          "base": "12504eb88ef7759d341dfb44f669151dde3b85e75adbd1458e218b77a76c9224",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "1aa45e158707da362704b99f575c79a41eda4a1b73934dcfa9af8fef9c25340f",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "ed1549c654161e8a401b55e6230b87ca0807fc8336cb66e7d423c8750ab4dd1c",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "55ce939180d56256e7ae1f6cd8993b41e0780fd86a418a03859272b9029042ee",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "bde1dc88b248a661a1305220c35f31ff2d5ae54ae76d5afcf07b5475baaad30d",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1719605,
+      "naiveHip": 0.058032,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-7",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 1611,
+          "changed": 0,
+          "waistWidth": 1.2510841,
+          "waistDepth": 0.6986822,
+          "armMeanRadius": 0.1829547,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.5648601,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.1151527,
+          "waistDepth": 0.5699728,
+          "armMeanRadius": 0.1070834,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7342125,
+          "protectedCount": 1611,
+          "changed": 8431,
+          "waistWidth": 1.2464823,
+          "waistDepth": 0.6734555,
+          "armMeanRadius": 0.1374184,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7274508,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.1197545,
+          "waistDepth": 0.5890046,
+          "armMeanRadius": 0.1526204,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9239085,
+          "protectedCount": 1611,
+          "changed": 8432,
+          "waistWidth": 1.2518533,
+          "waistDepth": 0.7455316,
+          "armMeanRadius": 0.2564907,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.5442403,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.274308,
+          "waistDepth": 0.986173,
+          "armMeanRadius": 0.2263904,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.7938113,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.1205237,
+          "waistDepth": 0.6308246,
+          "armMeanRadius": 0.2263117,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.5316314,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.2697062,
+          "waistDepth": 0.9626731,
+          "armMeanRadius": 0.1808776,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.5269476,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.2750772,
+          "waistDepth": 1.0296713,
+          "armMeanRadius": 0.3006567,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9468208,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.2213972,
+          "waistDepth": 0.6926447,
+          "armMeanRadius": 0.2075024,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7324231,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.1475375,
+          "waistDepth": 0.5998321,
+          "armMeanRadius": 0.1374344,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8805637,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.1880646,
+          "waistDepth": 0.6898168,
+          "armMeanRadius": 0.241827,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.6180091,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.2698147,
+          "waistDepth": 0.9364462,
+          "armMeanRadius": 0.2105658,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.7990592,
+          "protectedCount": 1611,
+          "changed": 8434,
+          "waistWidth": 1.2620727,
+          "waistDepth": 0.8609758,
+          "armMeanRadius": 0.2624223,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 97,
+          "muscle": 71,
+          "fat": 77,
+          "both": 123,
+          "muscleLean": 61,
+          "fatLowMuscle": 53
+        },
+        "48-오른쪽": {
+          "low": 64,
+          "muscle": 44,
+          "fat": 55,
+          "both": 96,
+          "muscleLean": 29,
+          "fatLowMuscle": 34
+        },
+        "48-후면": {
+          "low": 102,
+          "muscle": 74,
+          "fat": 74,
+          "both": 119,
+          "muscleLean": 66,
+          "fatLowMuscle": 48
+        },
+        "48-왼쪽": {
+          "low": 64,
+          "muscle": 45,
+          "fat": 54,
+          "both": 91,
+          "muscleLean": 31,
+          "fatLowMuscle": 38
+        },
+        "48-별도-사선": {
+          "low": 67,
+          "muscle": 60,
+          "fat": 60,
+          "both": 115,
+          "muscleLean": 45,
+          "fatLowMuscle": 33
+        },
+        "96-정면": {
+          "low": 338,
+          "muscle": 294,
+          "fat": 313,
+          "both": 488,
+          "muscleLean": 206,
+          "fatLowMuscle": 183
+        },
+        "96-오른쪽": {
+          "low": 199,
+          "muscle": 192,
+          "fat": 230,
+          "both": 334,
+          "muscleLean": 128,
+          "fatLowMuscle": 153
+        },
+        "96-후면": {
+          "low": 372,
+          "muscle": 293,
+          "fat": 302,
+          "both": 473,
+          "muscleLean": 213,
+          "fatLowMuscle": 172
+        },
+        "96-왼쪽": {
+          "low": 193,
+          "muscle": 207,
+          "fat": 238,
+          "both": 346,
+          "muscleLean": 124,
+          "fatLowMuscle": 166
+        },
+        "96-별도-사선": {
+          "low": 278,
+          "muscle": 264,
+          "fat": 251,
+          "both": 453,
+          "muscleLean": 175,
+          "fatLowMuscle": 140
+        },
+        "128-정면": {
+          "base": "e001b46633d4383a16dfa0e328f321bd4877fa02de358e7bc4e35810b7dbccee",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "2e985a1169808ca3dff7ec40fff88634a5d2a13209c97d0c2ca1769225678b30",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "5857a48528acee365aed4658e7aad5c31fb399984f4d225445a30d59e639e2e0",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "aaf375625bdca0068df4470a3b529442689f9349663cd4ca58bdcbc5c0588984",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "dd9f71b6545b72e08963d74d8e48d465e40296f93aea2a3d4a49ad7e61066ad8",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1778331,
+      "naiveHip": 0.061776,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "female-8",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 1604,
+          "changed": 0,
+          "waistWidth": 1.3105506,
+          "waistDepth": 0.7404948,
+          "armMeanRadius": 0.1943893,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.5943366,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.16065,
+          "waistDepth": 0.6050574,
+          "armMeanRadius": 0.118351,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.748108,
+          "protectedCount": 1604,
+          "changed": 8435,
+          "waistWidth": 1.3049806,
+          "waistDepth": 0.7137051,
+          "armMeanRadius": 0.1486475,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7340589,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.1662201,
+          "waistDepth": 0.6248032,
+          "armMeanRadius": 0.1640937,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9252909,
+          "protectedCount": 1604,
+          "changed": 8435,
+          "waistWidth": 1.3114816,
+          "waistDepth": 0.7902471,
+          "armMeanRadius": 0.2682771,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.5758259,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.3362205,
+          "waistDepth": 1.0481834,
+          "armMeanRadius": 0.237736,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.8011182,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.1671511,
+          "waistDepth": 0.669078,
+          "armMeanRadius": 0.2381256,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.561011,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.3306504,
+          "waistDepth": 1.0232068,
+          "armMeanRadius": 0.1920074,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.5649447,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.3371515,
+          "waistDepth": 1.0951883,
+          "armMeanRadius": 0.3123334,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9471175,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.2779618,
+          "waistDepth": 0.7342308,
+          "armMeanRadius": 0.2191024,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7527826,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.1965045,
+          "waistDepth": 0.6356456,
+          "armMeanRadius": 0.1487989,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8813097,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.2413782,
+          "waistDepth": 0.7313935,
+          "armMeanRadius": 0.2536274,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.6419152,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.3311573,
+          "waistDepth": 0.994756,
+          "armMeanRadius": 0.2218843,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.8126881,
+          "protectedCount": 1604,
+          "changed": 8437,
+          "waistWidth": 1.3227625,
+          "waistDepth": 0.913958,
+          "armMeanRadius": 0.2740991,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 71,
+          "muscle": 77,
+          "fat": 78,
+          "both": 120,
+          "muscleLean": 55,
+          "fatLowMuscle": 35
+        },
+        "48-오른쪽": {
+          "low": 66,
+          "muscle": 36,
+          "fat": 52,
+          "both": 80,
+          "muscleLean": 35,
+          "fatLowMuscle": 31
+        },
+        "48-후면": {
+          "low": 79,
+          "muscle": 85,
+          "fat": 87,
+          "both": 119,
+          "muscleLean": 58,
+          "fatLowMuscle": 42
+        },
+        "48-왼쪽": {
+          "low": 62,
+          "muscle": 35,
+          "fat": 53,
+          "both": 75,
+          "muscleLean": 40,
+          "fatLowMuscle": 34
+        },
+        "48-별도-사선": {
+          "low": 84,
+          "muscle": 57,
+          "fat": 70,
+          "both": 99,
+          "muscleLean": 45,
+          "fatLowMuscle": 44
+        },
+        "96-정면": {
+          "low": 352,
+          "muscle": 261,
+          "fat": 280,
+          "both": 454,
+          "muscleLean": 215,
+          "fatLowMuscle": 185
+        },
+        "96-오른쪽": {
+          "low": 192,
+          "muscle": 184,
+          "fat": 226,
+          "both": 321,
+          "muscleLean": 106,
+          "fatLowMuscle": 138
+        },
+        "96-후면": {
+          "low": 373,
+          "muscle": 272,
+          "fat": 281,
+          "both": 459,
+          "muscleLean": 224,
+          "fatLowMuscle": 185
+        },
+        "96-왼쪽": {
+          "low": 197,
+          "muscle": 178,
+          "fat": 226,
+          "both": 322,
+          "muscleLean": 104,
+          "fatLowMuscle": 141
+        },
+        "96-별도-사선": {
+          "low": 219,
+          "muscle": 246,
+          "fat": 257,
+          "both": 407,
+          "muscleLean": 180,
+          "fatLowMuscle": 142
+        },
+        "1024-정면": {
+          "base": "76f7f8cbf0d330c31fdb38ea354628cdc56d118e2fc466c36e88cc89c2e39496",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-오른쪽": {
+          "base": "3a5f54a7e0f43a42ff313c36fb56e2aaf3209548302de419a7a72da8d0e720c7",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-후면": {
+          "base": "f26bc0d8d05ce8893eea02300abf0376b1804c753f08046067339a0aa41fc8ab",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-왼쪽": {
+          "base": "2106a4468cb9a52aaaad072b521f5f1746c8a2f5ac809d6a2d2082679bd6ebbb",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-별도-사선": {
+          "base": "f4fd93b9fe118edf990cb3ede7b37e987c6597a9cd841103fdcf7e1a59bf9a67",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1837056,
+      "naiveHip": 0.06552,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-2",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 568,
+          "changed": 0,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4405043,
+          "armMeanRadius": 0.1134097,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.6605389,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.4029137,
+          "armMeanRadius": 0.0869355,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7506051,
+          "protectedCount": 568,
+          "changed": 1445,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4331781,
+          "armMeanRadius": 0.0945794,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8427497,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.41024,
+          "armMeanRadius": 0.1057657,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9594221,
+          "protectedCount": 568,
+          "changed": 1457,
+          "waistWidth": 0.5903357,
+          "waistDepth": 0.4541102,
+          "armMeanRadius": 0.1412501,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.8712226,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.5109562,
+          "armMeanRadius": 0.1245424,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.915434,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5803666,
+          "waistDepth": 0.4238459,
+          "armMeanRadius": 0.1336215,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8372256,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.50363,
+          "armMeanRadius": 0.1057097,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.8880413,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5920019,
+          "waistDepth": 0.5257041,
+          "armMeanRadius": 0.1525481,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9873561,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.588057,
+          "waistDepth": 0.4394478,
+          "armMeanRadius": 0.1235985,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7998435,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5826453,
+          "waistDepth": 0.4135991,
+          "armMeanRadius": 0.0983665,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.9752947,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5854936,
+          "waistDepth": 0.4394104,
+          "armMeanRadius": 0.1375445,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.8848284,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5917456,
+          "waistDepth": 0.4986522,
+          "armMeanRadius": 0.1190577,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9406194,
+          "protectedCount": 568,
+          "changed": 1493,
+          "waistWidth": 0.5910791,
+          "waistDepth": 0.4830308,
+          "armMeanRadius": 0.1410997,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 55,
+          "muscle": 48,
+          "fat": 33,
+          "both": 78,
+          "muscleLean": 41,
+          "fatLowMuscle": 26
+        },
+        "48-오른쪽": {
+          "low": 31,
+          "muscle": 31,
+          "fat": 32,
+          "both": 62,
+          "muscleLean": 18,
+          "fatLowMuscle": 21
+        },
+        "48-후면": {
+          "low": 60,
+          "muscle": 41,
+          "fat": 37,
+          "both": 78,
+          "muscleLean": 39,
+          "fatLowMuscle": 30
+        },
+        "48-왼쪽": {
+          "low": 27,
+          "muscle": 30,
+          "fat": 30,
+          "both": 59,
+          "muscleLean": 21,
+          "fatLowMuscle": 17
+        },
+        "48-별도-사선": {
+          "low": 47,
+          "muscle": 31,
+          "fat": 24,
+          "both": 62,
+          "muscleLean": 30,
+          "fatLowMuscle": 19
+        },
+        "96-정면": {
+          "low": 209,
+          "muscle": 181,
+          "fat": 144,
+          "both": 276,
+          "muscleLean": 153,
+          "fatLowMuscle": 98
+        },
+        "96-오른쪽": {
+          "low": 124,
+          "muscle": 109,
+          "fat": 132,
+          "both": 210,
+          "muscleLean": 96,
+          "fatLowMuscle": 87
+        },
+        "96-후면": {
+          "low": 210,
+          "muscle": 178,
+          "fat": 178,
+          "both": 308,
+          "muscleLean": 145,
+          "fatLowMuscle": 128
+        },
+        "96-왼쪽": {
+          "low": 137,
+          "muscle": 112,
+          "fat": 143,
+          "both": 215,
+          "muscleLean": 99,
+          "fatLowMuscle": 85
+        },
+        "96-별도-사선": {
+          "low": 189,
+          "muscle": 177,
+          "fat": 130,
+          "both": 273,
+          "muscleLean": 147,
+          "fatLowMuscle": 80
+        },
+        "128-정면": {
+          "base": "68efef8bd788685fe7725d1dd692947cbc28f2cc6ba8eeb59007f7a934c6a85f",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "5368f9c82c182ae0645d8cec63ebdd6b0b90b0ea20fd83c1fbc66c2a7e18fd63",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "0db1659d0bb865532fca6fdd2ed41f5d1e321c9197d363e0530e79d64c953022",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "3c135d96897defd3469b04da45e98dc651f034a5a71b4cf31cba7e8d8d5a74e0",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "893b0b56cfd65630a20fa9fbdfb1c1d9c20e8df2de8e2d06d64e8cba9867a929",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-3",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 583,
+          "changed": 0,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.502017,
+          "armMeanRadius": 0.1323113,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.723619,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.4587453,
+          "armMeanRadius": 0.1014247,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.799193,
+          "protectedCount": 583,
+          "changed": 1573,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.4929916,
+          "armMeanRadius": 0.1103426,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8934666,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.4672068,
+          "armMeanRadius": 0.1233933,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9940324,
+          "protectedCount": 583,
+          "changed": 1585,
+          "waistWidth": 0.7162428,
+          "waistDepth": 0.518814,
+          "armMeanRadius": 0.1647918,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.9478843,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.5838633,
+          "armMeanRadius": 0.1452994,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.9341808,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7014513,
+          "waistDepth": 0.482921,
+          "armMeanRadius": 0.1558917,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8495534,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.5742675,
+          "armMeanRadius": 0.123328,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.999895,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7188419,
+          "waistDepth": 0.602017,
+          "armMeanRadius": 0.1779727,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9931348,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7126886,
+          "waistDepth": 0.5008796,
+          "armMeanRadius": 0.1441982,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.8407245,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.704762,
+          "waistDepth": 0.4709246,
+          "armMeanRadius": 0.1147609,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.9865495,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7089004,
+          "waistDepth": 0.5010213,
+          "armMeanRadius": 0.1604686,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.9500497,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.718442,
+          "waistDepth": 0.5691214,
+          "armMeanRadius": 0.1389007,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9999532,
+          "protectedCount": 583,
+          "changed": 1616,
+          "waistWidth": 0.7174024,
+          "waistDepth": 0.5522322,
+          "armMeanRadius": 0.1646163,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 66,
+          "muscle": 52,
+          "fat": 50,
+          "both": 78,
+          "muscleLean": 39,
+          "fatLowMuscle": 41
+        },
+        "48-오른쪽": {
+          "low": 34,
+          "muscle": 25,
+          "fat": 39,
+          "both": 69,
+          "muscleLean": 24,
+          "fatLowMuscle": 26
+        },
+        "48-후면": {
+          "low": 57,
+          "muscle": 53,
+          "fat": 53,
+          "both": 91,
+          "muscleLean": 44,
+          "fatLowMuscle": 39
+        },
+        "48-왼쪽": {
+          "low": 35,
+          "muscle": 28,
+          "fat": 45,
+          "both": 72,
+          "muscleLean": 23,
+          "fatLowMuscle": 33
+        },
+        "48-별도-사선": {
+          "low": 35,
+          "muscle": 43,
+          "fat": 37,
+          "both": 72,
+          "muscleLean": 37,
+          "fatLowMuscle": 28
+        },
+        "96-정면": {
+          "low": 182,
+          "muscle": 196,
+          "fat": 169,
+          "both": 327,
+          "muscleLean": 169,
+          "fatLowMuscle": 84
+        },
+        "96-오른쪽": {
+          "low": 172,
+          "muscle": 128,
+          "fat": 150,
+          "both": 247,
+          "muscleLean": 126,
+          "fatLowMuscle": 96
+        },
+        "96-후면": {
+          "low": 192,
+          "muscle": 199,
+          "fat": 193,
+          "both": 344,
+          "muscleLean": 163,
+          "fatLowMuscle": 106
+        },
+        "96-왼쪽": {
+          "low": 170,
+          "muscle": 127,
+          "fat": 153,
+          "both": 257,
+          "muscleLean": 129,
+          "fatLowMuscle": 93
+        },
+        "96-별도-사선": {
+          "low": 182,
+          "muscle": 157,
+          "fat": 138,
+          "both": 295,
+          "muscleLean": 125,
+          "fatLowMuscle": 91
+        },
+        "128-정면": {
+          "base": "27710c2f2fb0bb0b55587c1caac6e91bbaf2395be08cac385d427c02eb5b67bc",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "c8cbe8786ad982768ab3545e1963608e7ee53a6182a0313d72ad8d8169324216",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "f116d9c20f64c8ecaf590031b589db01af76f76e38cd646ab69c20051bbed526",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "88c32d19433c48f2742ea4ae8b2b1d426a2b0e02ba43196da0d7022f08139e55",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "3e3b5dc430e02353ca8f64ed8b2ed596efbff23a091ea1d153c1037a528fe83d",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-4",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 589,
+          "changed": 0,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5685071,
+          "armMeanRadius": 0.151213,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.7382714,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5194841,
+          "armMeanRadius": 0.115914,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.8104791,
+          "protectedCount": 589,
+          "changed": 1601,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5584181,
+          "armMeanRadius": 0.1261059,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.8929214,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5289337,
+          "armMeanRadius": 0.141021,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9972729,
+          "protectedCount": 589,
+          "changed": 1612,
+          "waistWidth": 0.8418273,
+          "waistDepth": 0.5882346,
+          "armMeanRadius": 0.1883335,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.9897995,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6607449,
+          "armMeanRadius": 0.1660565,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.9337757,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8238093,
+          "waistDepth": 0.5466523,
+          "armMeanRadius": 0.178162,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.8522274,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6494873,
+          "armMeanRadius": 0.1409463,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.9999484,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8449301,
+          "waistDepth": 0.6825507,
+          "armMeanRadius": 0.2033974,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9930432,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8375842,
+          "waistDepth": 0.5673002,
+          "armMeanRadius": 0.164798,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.8502204,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8278156,
+          "waistDepth": 0.533022,
+          "armMeanRadius": 0.1311553,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.987742,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8328235,
+          "waistDepth": 0.5675279,
+          "armMeanRadius": 0.1833927,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.9842704,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8444527,
+          "waistDepth": 0.644065,
+          "armMeanRadius": 0.1587437,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.9999733,
+          "protectedCount": 589,
+          "changed": 1639,
+          "waistWidth": 0.8432116,
+          "waistDepth": 0.6258498,
+          "armMeanRadius": 0.1881329,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 47,
+          "muscle": 40,
+          "fat": 33,
+          "both": 78,
+          "muscleLean": 36,
+          "fatLowMuscle": 24
+        },
+        "48-오른쪽": {
+          "low": 27,
+          "muscle": 40,
+          "fat": 37,
+          "both": 67,
+          "muscleLean": 29,
+          "fatLowMuscle": 24
+        },
+        "48-후면": {
+          "low": 45,
+          "muscle": 42,
+          "fat": 31,
+          "both": 70,
+          "muscleLean": 39,
+          "fatLowMuscle": 24
+        },
+        "48-왼쪽": {
+          "low": 29,
+          "muscle": 40,
+          "fat": 38,
+          "both": 70,
+          "muscleLean": 31,
+          "fatLowMuscle": 25
+        },
+        "48-별도-사선": {
+          "low": 30,
+          "muscle": 36,
+          "fat": 26,
+          "both": 68,
+          "muscleLean": 27,
+          "fatLowMuscle": 17
+        },
+        "96-정면": {
+          "low": 212,
+          "muscle": 201,
+          "fat": 147,
+          "both": 315,
+          "muscleLean": 152,
+          "fatLowMuscle": 72
+        },
+        "96-오른쪽": {
+          "low": 153,
+          "muscle": 128,
+          "fat": 162,
+          "both": 253,
+          "muscleLean": 118,
+          "fatLowMuscle": 85
+        },
+        "96-후면": {
+          "low": 216,
+          "muscle": 207,
+          "fat": 151,
+          "both": 322,
+          "muscleLean": 163,
+          "fatLowMuscle": 79
+        },
+        "96-왼쪽": {
+          "low": 153,
+          "muscle": 132,
+          "fat": 182,
+          "both": 265,
+          "muscleLean": 112,
+          "fatLowMuscle": 106
+        },
+        "96-별도-사선": {
+          "low": 132,
+          "muscle": 153,
+          "fat": 142,
+          "both": 283,
+          "muscleLean": 114,
+          "fatLowMuscle": 82
+        },
+        "128-정면": {
+          "base": "daa456b2f6d993f4d292f4297016c7bbf6907e99913ae8459e50325f40100433",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "3a3582c98b6b721d419127f73526c89ef1e132f0dd015f8cfce082d6939bc36b",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "287dce51b3927c0f1922fb1fa4bdaf1462ad780584610c5c1eba487639126e77",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "e1cfeb334a40d0b760d07c7bcb54de471b227c65c35d7047cf1e86de8d2af9d8",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "deae466baf4c7a54af5ab37087a12040ff5b36a1096d19dffc7162973ea90b7b",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.078,
+      "naiveHip": 0,
+      "faceHair": {
+        "unchangedOtherMeshes": 139,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-5",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 567,
+          "changed": 0,
+          "waistWidth": 1.0261456,
+          "waistDepth": 0.6259429,
+          "armMeanRadius": 0.1943893,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.4240514,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 0.9300775,
+          "waistDepth": 0.5093495,
+          "armMeanRadius": 0.118351,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.6294631,
+          "protectedCount": 567,
+          "changed": 5582,
+          "waistWidth": 1.0235651,
+          "waistDepth": 0.6040321,
+          "armMeanRadius": 0.1486475,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.714007,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 0.9326579,
+          "waistDepth": 0.526629,
+          "armMeanRadius": 0.1640937,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9009663,
+          "protectedCount": 567,
+          "changed": 5583,
+          "waistWidth": 1.0278236,
+          "waistDepth": 0.6666418,
+          "armMeanRadius": 0.2682771,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.5008186,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.1049621,
+          "waistDepth": 0.8686812,
+          "armMeanRadius": 0.237736,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.8030232,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 0.934336,
+          "waistDepth": 0.5627493,
+          "armMeanRadius": 0.2381256,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.4916824,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.0960471,
+          "waistDepth": 0.8480396,
+          "armMeanRadius": 0.1920074,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.4597198,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.1138406,
+          "waistDepth": 0.906932,
+          "armMeanRadius": 0.3123334,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9409432,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.0054998,
+          "waistDepth": 0.6196712,
+          "armMeanRadius": 0.2191024,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.6252655,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 0.9527732,
+          "waistDepth": 0.5369762,
+          "armMeanRadius": 0.1487989,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8660635,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 0.9824153,
+          "waistDepth": 0.6161174,
+          "armMeanRadius": 0.2536274,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.5885964,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.0846206,
+          "waistDepth": 0.8269189,
+          "armMeanRadius": 0.2218843,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.7700886,
+          "protectedCount": 567,
+          "changed": 5584,
+          "waistWidth": 1.0556169,
+          "waistDepth": 0.7644395,
+          "armMeanRadius": 0.2740991,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 102,
+          "muscle": 94,
+          "fat": 100,
+          "both": 156,
+          "muscleLean": 62,
+          "fatLowMuscle": 54
+        },
+        "48-오른쪽": {
+          "low": 55,
+          "muscle": 62,
+          "fat": 56,
+          "both": 105,
+          "muscleLean": 29,
+          "fatLowMuscle": 31
+        },
+        "48-후면": {
+          "low": 112,
+          "muscle": 89,
+          "fat": 90,
+          "both": 155,
+          "muscleLean": 64,
+          "fatLowMuscle": 39
+        },
+        "48-왼쪽": {
+          "low": 56,
+          "muscle": 63,
+          "fat": 57,
+          "both": 106,
+          "muscleLean": 35,
+          "fatLowMuscle": 32
+        },
+        "48-별도-사선": {
+          "low": 97,
+          "muscle": 71,
+          "fat": 80,
+          "both": 140,
+          "muscleLean": 62,
+          "fatLowMuscle": 44
+        },
+        "96-정면": {
+          "low": 438,
+          "muscle": 400,
+          "fat": 395,
+          "both": 605,
+          "muscleLean": 297,
+          "fatLowMuscle": 292
+        },
+        "96-오른쪽": {
+          "low": 223,
+          "muscle": 228,
+          "fat": 249,
+          "both": 363,
+          "muscleLean": 139,
+          "fatLowMuscle": 132
+        },
+        "96-후면": {
+          "low": 451,
+          "muscle": 402,
+          "fat": 395,
+          "both": 594,
+          "muscleLean": 308,
+          "fatLowMuscle": 282
+        },
+        "96-왼쪽": {
+          "low": 235,
+          "muscle": 225,
+          "fat": 251,
+          "both": 363,
+          "muscleLean": 145,
+          "fatLowMuscle": 141
+        },
+        "96-별도-사선": {
+          "low": 375,
+          "muscle": 383,
+          "fat": 366,
+          "both": 550,
+          "muscleLean": 271,
+          "fatLowMuscle": 214
+        },
+        "128-정면": {
+          "base": "cd825d680a54dc0bddf7e4383b9b4e1e38135fe0895322baad1d898531ff4ef1",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "b4ddd8585337651c477b3b0ce7e04e062c789f627643412e56a3573b3d307d12",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "69c7fcd41c4f484266f40767ffda7a14739471c87807d7577535467c75073c88",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "d9b10b3984f41f25c6ca693aa62447e4842c7d9999bb7077289bac5fc2af0a1c",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "a6b9533303f62ac234c161835b16ec5b7c1c4a7f4f1a8080fdb60dbaf9be2d67",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1837056,
+      "naiveHip": 0.047736,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-6",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 573,
+          "changed": 0,
+          "waistWidth": 1.0845867,
+          "waistDepth": 0.6597531,
+          "armMeanRadius": 0.205824,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.5504306,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 0.9686256,
+          "waistDepth": 0.5372935,
+          "armMeanRadius": 0.1296187,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7177498,
+          "protectedCount": 573,
+          "changed": 5663,
+          "waistWidth": 1.0802634,
+          "waistDepth": 0.6361233,
+          "armMeanRadius": 0.1598767,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7338036,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 0.972949,
+          "waistDepth": 0.5554218,
+          "armMeanRadius": 0.1755671,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9021973,
+          "protectedCount": 573,
+          "changed": 5664,
+          "waistWidth": 1.0875419,
+          "waistDepth": 0.7038344,
+          "armMeanRadius": 0.2800663,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.5985647,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.1826405,
+          "waistDepth": 0.9261265,
+          "armMeanRadius": 0.2490832,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.8098588,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 0.9759042,
+          "waistDepth": 0.5949817,
+          "armMeanRadius": 0.2499441,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.5885266,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.1722692,
+          "waistDepth": 0.9048084,
+          "armMeanRadius": 0.2031404,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.5600204,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.1925199,
+          "waistDepth": 0.9675294,
+          "armMeanRadius": 0.3240157,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9415795,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.0603425,
+          "waistDepth": 0.6538614,
+          "armMeanRadius": 0.2307032,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.713488,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 0.9963663,
+          "waistDepth": 0.5658979,
+          "armMeanRadius": 0.1601634,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.8675478,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.0333179,
+          "waistDepth": 0.6509631,
+          "armMeanRadius": 0.2654314,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.6660268,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.1580736,
+          "waistDepth": 0.8803115,
+          "armMeanRadius": 0.2332042,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.8081023,
+          "protectedCount": 573,
+          "changed": 5666,
+          "waistWidth": 1.1228192,
+          "waistDepth": 0.8110567,
+          "armMeanRadius": 0.2857792,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 85,
+          "muscle": 86,
+          "fat": 95,
+          "both": 141,
+          "muscleLean": 66,
+          "fatLowMuscle": 48
+        },
+        "48-오른쪽": {
+          "low": 58,
+          "muscle": 40,
+          "fat": 47,
+          "both": 88,
+          "muscleLean": 20,
+          "fatLowMuscle": 31
+        },
+        "48-후면": {
+          "low": 91,
+          "muscle": 80,
+          "fat": 86,
+          "both": 131,
+          "muscleLean": 62,
+          "fatLowMuscle": 41
+        },
+        "48-왼쪽": {
+          "low": 64,
+          "muscle": 40,
+          "fat": 39,
+          "both": 88,
+          "muscleLean": 18,
+          "fatLowMuscle": 29
+        },
+        "48-별도-사선": {
+          "low": 76,
+          "muscle": 85,
+          "fat": 70,
+          "both": 126,
+          "muscleLean": 52,
+          "fatLowMuscle": 35
+        },
+        "96-정면": {
+          "low": 437,
+          "muscle": 341,
+          "fat": 366,
+          "both": 544,
+          "muscleLean": 254,
+          "fatLowMuscle": 237
+        },
+        "96-오른쪽": {
+          "low": 201,
+          "muscle": 214,
+          "fat": 239,
+          "both": 348,
+          "muscleLean": 154,
+          "fatLowMuscle": 137
+        },
+        "96-후면": {
+          "low": 451,
+          "muscle": 353,
+          "fat": 358,
+          "both": 551,
+          "muscleLean": 261,
+          "fatLowMuscle": 241
+        },
+        "96-왼쪽": {
+          "low": 208,
+          "muscle": 212,
+          "fat": 237,
+          "both": 349,
+          "muscleLean": 146,
+          "fatLowMuscle": 130
+        },
+        "96-별도-사선": {
+          "low": 315,
+          "muscle": 312,
+          "fat": 324,
+          "both": 512,
+          "muscleLean": 236,
+          "fatLowMuscle": 176
+        },
+        "128-정면": {
+          "base": "8cc34af332f4a4fe33d541415d120c30150ab5da3f64db0eebcdc13ad263f3cf",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "60cd9eb8209243cb9151060c87e74a28a31c47a46f42cc3f467f7990979ffe81",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "9065b024cc686935a8ec81fcbfe553e3254c75ba9f9c0f33818400f7e74cf0ef",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "214e9542f5c82e3d5be8cee707fc6140ef431c34416669dc0e9c7a062c9da60c",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "1908277d8bee1bd81ba12ebb8a971a9c73c51f4562dbfd09b5fdaa71a0f040e4",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1904171,
+      "naiveHip": 0.050856,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-7",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 576,
+          "changed": 0,
+          "waistWidth": 1.1428445,
+          "waistDepth": 0.6968021,
+          "armMeanRadius": 0.2172587,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.619308,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.0101191,
+          "waistDepth": 0.5698825,
+          "armMeanRadius": 0.1408863,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7648347,
+          "protectedCount": 576,
+          "changed": 5682,
+          "waistWidth": 1.1371116,
+          "waistDepth": 0.6716858,
+          "armMeanRadius": 0.1711059,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.7228946,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.015852,
+          "waistDepth": 0.5883419,
+          "armMeanRadius": 0.1870404,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9045035,
+          "protectedCount": 576,
+          "changed": 5683,
+          "waistWidth": 1.1469399,
+          "waistDepth": 0.7434484,
+          "armMeanRadius": 0.2918582,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.6739316,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.2568033,
+          "waistDepth": 0.9841233,
+          "armMeanRadius": 0.2604319,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.8004299,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.0199474,
+          "waistDepth": 0.6288397,
+          "armMeanRadius": 0.2617663,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.6629424,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.2453076,
+          "waistDepth": 0.9604114,
+          "armMeanRadius": 0.2142762,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.6318548,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.2678521,
+          "waistDepth": 1.0280008,
+          "armMeanRadius": 0.3357031,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.942472,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.1155818,
+          "waistDepth": 0.6906996,
+          "armMeanRadius": 0.2423048,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7591489,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.0420943,
+          "waistDepth": 0.5984992,
+          "armMeanRadius": 0.1715279,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.86965,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.0852579,
+          "waistDepth": 0.6877813,
+          "armMeanRadius": 0.2772384,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.7273872,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.2299051,
+          "waistDepth": 0.9345323,
+          "armMeanRadius": 0.2445255,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.8346863,
+          "protectedCount": 576,
+          "changed": 5685,
+          "waistWidth": 1.189143,
+          "waistDepth": 0.8584452,
+          "armMeanRadius": 0.2974624,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 86,
+          "muscle": 85,
+          "fat": 93,
+          "both": 122,
+          "muscleLean": 71,
+          "fatLowMuscle": 40
+        },
+        "48-오른쪽": {
+          "low": 61,
+          "muscle": 46,
+          "fat": 52,
+          "both": 89,
+          "muscleLean": 30,
+          "fatLowMuscle": 33
+        },
+        "48-후면": {
+          "low": 84,
+          "muscle": 78,
+          "fat": 86,
+          "both": 119,
+          "muscleLean": 69,
+          "fatLowMuscle": 37
+        },
+        "48-왼쪽": {
+          "low": 61,
+          "muscle": 47,
+          "fat": 51,
+          "both": 84,
+          "muscleLean": 35,
+          "fatLowMuscle": 38
+        },
+        "48-별도-사선": {
+          "low": 93,
+          "muscle": 66,
+          "fat": 69,
+          "both": 111,
+          "muscleLean": 50,
+          "fatLowMuscle": 38
+        },
+        "96-정면": {
+          "low": 377,
+          "muscle": 320,
+          "fat": 326,
+          "both": 503,
+          "muscleLean": 247,
+          "fatLowMuscle": 218
+        },
+        "96-오른쪽": {
+          "low": 200,
+          "muscle": 189,
+          "fat": 231,
+          "both": 338,
+          "muscleLean": 123,
+          "fatLowMuscle": 144
+        },
+        "96-후면": {
+          "low": 392,
+          "muscle": 326,
+          "fat": 323,
+          "both": 506,
+          "muscleLean": 256,
+          "fatLowMuscle": 196
+        },
+        "96-왼쪽": {
+          "low": 207,
+          "muscle": 189,
+          "fat": 227,
+          "both": 328,
+          "muscleLean": 129,
+          "fatLowMuscle": 131
+        },
+        "96-별도-사선": {
+          "low": 287,
+          "muscle": 285,
+          "fat": 307,
+          "both": 459,
+          "muscleLean": 219,
+          "fatLowMuscle": 161
+        },
+        "128-정면": {
+          "base": "fb8d52afd832f8e72bf692c882b46fcbd8743db354be3e80044816eb937cbd20",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-오른쪽": {
+          "base": "739cf7a0182c937d342c9f7a9f721607ef58b3a314c1da823e0f02e14767d081",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-후면": {
+          "base": "2466d21d3515718a75e6f654093f0591951d9bf1ca75fb40f3636e2538f9c3f2",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-왼쪽": {
+          "base": "0eab7a17c5f4beb37326daff321c4c7160c9c5985b3a9ac8fe7fe7a5bb540530",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "128-별도-사선": {
+          "base": "c387dbbc6897b1481e6778ea17043a80665ed4526a66dde5a78024b494c3d565",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.1971285,
+      "naiveHip": 0.053976,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    },
+    {
+      "id": "male-8",
+      "geometry": {
+        "base": {
+          "minProjectedArea": 1,
+          "protectedCount": 579,
+          "changed": 0,
+          "waistWidth": 1.2086499,
+          "waistDepth": 0.7477749,
+          "armMeanRadius": 0.2286933,
+          "minGain": 1
+        },
+        "low": {
+          "minProjectedArea": 0.6466075,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.0683647,
+          "waistDepth": 0.6065908,
+          "armMeanRadius": 0.152154,
+          "minGain": 1
+        },
+        "muscleLow": {
+          "minProjectedArea": 0.7794066,
+          "protectedCount": 579,
+          "changed": 5702,
+          "waistWidth": 1.2025993,
+          "waistDepth": 0.72068,
+          "armMeanRadius": 0.182335,
+          "minGain": 1
+        },
+        "fatLow": {
+          "minProjectedArea": 0.720246,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.0744153,
+          "waistDepth": 0.6270757,
+          "armMeanRadius": 0.1985137,
+          "minGain": 1
+        },
+        "muscle": {
+          "minProjectedArea": 0.9072891,
+          "protectedCount": 579,
+          "changed": 5702,
+          "waistWidth": 1.2129334,
+          "waistDepth": 0.7980961,
+          "armMeanRadius": 0.3036522,
+          "minGain": 1
+        },
+        "fat": {
+          "minProjectedArea": 0.7173622,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.3297243,
+          "waistDepth": 1.0544607,
+          "armMeanRadius": 0.2717818,
+          "minGain": 1
+        },
+        "muscleLean": {
+          "minProjectedArea": 0.7980405,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.0786988,
+          "waistDepth": 0.6761156,
+          "armMeanRadius": 0.2735919,
+          "minGain": 1
+        },
+        "fatLowMuscle": {
+          "minProjectedArea": 0.7120017,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.3177631,
+          "waistDepth": 1.0297912,
+          "armMeanRadius": 0.2254143,
+          "minGain": 1
+        },
+        "both": {
+          "minProjectedArea": 0.6981341,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.340988,
+          "waistDepth": 1.1024962,
+          "armMeanRadius": 0.3473948,
+          "minGain": 1
+        },
+        "manual": {
+          "minProjectedArea": 0.9435201,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.1798129,
+          "waistDepth": 0.7415705,
+          "armMeanRadius": 0.2539071,
+          "minGain": 1
+        },
+        "slender": {
+          "minProjectedArea": 0.7565692,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.1021586,
+          "waistDepth": 0.6405153,
+          "armMeanRadius": 0.1828924,
+          "minGain": 1
+        },
+        "muscular": {
+          "minProjectedArea": 0.87212,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.1477338,
+          "waistDepth": 0.7388484,
+          "armMeanRadius": 0.2890481,
+          "minGain": 1
+        },
+        "full": {
+          "minProjectedArea": 0.7637759,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.3010192,
+          "waistDepth": 1.0013319,
+          "armMeanRadius": 0.2558478,
+          "minGain": 1
+        },
+        "powerful": {
+          "minProjectedArea": 0.8610091,
+          "protectedCount": 579,
+          "changed": 5704,
+          "waistWidth": 1.2571419,
+          "waistDepth": 0.9210154,
+          "armMeanRadius": 0.3091481,
+          "minGain": 1
+        }
+      },
+      "pixels": {
+        "48-정면": {
+          "low": 86,
+          "muscle": 52,
+          "fat": 63,
+          "both": 112,
+          "muscleLean": 51,
+          "fatLowMuscle": 45
+        },
+        "48-오른쪽": {
+          "low": 56,
+          "muscle": 42,
+          "fat": 55,
+          "both": 84,
+          "muscleLean": 34,
+          "fatLowMuscle": 31
+        },
+        "48-후면": {
+          "low": 80,
+          "muscle": 59,
+          "fat": 69,
+          "both": 119,
+          "muscleLean": 58,
+          "fatLowMuscle": 42
+        },
+        "48-왼쪽": {
+          "low": 53,
+          "muscle": 44,
+          "fat": 52,
+          "both": 79,
+          "muscleLean": 31,
+          "fatLowMuscle": 30
+        },
+        "48-별도-사선": {
+          "low": 61,
+          "muscle": 69,
+          "fat": 62,
+          "both": 121,
+          "muscleLean": 49,
+          "fatLowMuscle": 37
+        },
+        "96-정면": {
+          "low": 331,
+          "muscle": 275,
+          "fat": 306,
+          "both": 466,
+          "muscleLean": 209,
+          "fatLowMuscle": 188
+        },
+        "96-오른쪽": {
+          "low": 191,
+          "muscle": 164,
+          "fat": 204,
+          "both": 314,
+          "muscleLean": 97,
+          "fatLowMuscle": 141
+        },
+        "96-후면": {
+          "low": 338,
+          "muscle": 298,
+          "fat": 304,
+          "both": 465,
+          "muscleLean": 234,
+          "fatLowMuscle": 189
+        },
+        "96-왼쪽": {
+          "low": 207,
+          "muscle": 168,
+          "fat": 201,
+          "both": 310,
+          "muscleLean": 97,
+          "fatLowMuscle": 134
+        },
+        "96-별도-사선": {
+          "low": 258,
+          "muscle": 265,
+          "fat": 288,
+          "both": 435,
+          "muscleLean": 206,
+          "fatLowMuscle": 175
+        },
+        "1024-정면": {
+          "base": "57e748703215fa1baa92a68c216af20f2ed72a5a61956a915404a02c5c04cfa8",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-오른쪽": {
+          "base": "076ad6405e2673000ff0de7591a04d3dc4bcd736154366397b482bb99cb8e4ef",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-후면": {
+          "base": "4dddd580705800ea2d26ef5a2aaa149941e8b64716937fd4ed759314910a6f46",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-왼쪽": {
+          "base": "be6e74bbe311204aed4132f0275c63bed0d571330eb646a7e083d65213779fda",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        },
+        "1024-별도-사선": {
+          "base": "176062eb16da55ae67b5cac72d8df75e1c7f21103ed5be7bb9e898dd407f1760",
+          "muscle": true,
+          "fat": true,
+          "both": true
+        }
+      },
+      "naiveShoulder": 0.20384,
+      "naiveHip": 0.057096,
+      "faceHair": {
+        "unchangedOtherMeshes": 143,
+        "faceDiffers": true,
+        "hair": "ponytail",
+        "restored": true
+      }
+    }
+  ],
+  "counts": {
+    "renders": 1400,
+    "geometryCases": 196
+  },
+  "limitations": [
+    "자세·체성분 계측 자료의 직접 정합 없음",
+    "0.08 면 투영 검사 외 다른 메시끼리의 전역 교차 검사는 미포함",
+    "두상 큰 2~4등신은 스타일화 원형",
+    "W·F02·M01 직접 적용 제외"
+  ],
+  "contactMethod": "중립. 정점 높이 (y-엉덩관절)/(어깨-엉덩 높이) 0.05~0.93. 몸통을 x축 평행선으로 투과하며 짝을 이룬 내부 구간에서 0.001 머리 단위 이상인 위팔·아래팔의 정점을 셈. 면 전체의 전역 교차 검사가 아니다.",
+  "contact": [
+    {
+      "id": "female-2",
+      "baseline": {
+        "tested": 172,
+        "hits": 10,
+        "maxDepth": 0.052792325954676506
+      },
+      "cases": {
+        "muscle": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05638811214778308
+        },
+        "fat": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05440394006152327
+        },
+        "both": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05800830936411444
+        },
+        "low": {
+          "tested": 174,
+          "hits": 4,
+          "newHits": 0,
+          "cleared": 6,
+          "maxDepth": 0.02344342975403038
+        }
+      },
+      "previousBoth": {
+        "tested": 168,
+        "hits": 20,
+        "newHits": 10,
+        "cleared": 0,
+        "maxDepth": 0.10256689900471899
+      }
+    },
+    {
+      "id": "female-3",
+      "baseline": {
+        "tested": 174,
+        "hits": 16,
+        "maxDepth": 0.06508196128933191
+      },
+      "cases": {
+        "muscle": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.06899954569451539
+        },
+        "fat": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.066825372219282
+        },
+        "both": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.07074330770933926
+        },
+        "low": {
+          "tested": 174,
+          "hits": 8,
+          "newHits": 0,
+          "cleared": 8,
+          "maxDepth": 0.03459805227874557
+        }
+      },
+      "previousBoth": {
+        "tested": 174,
+        "hits": 28,
+        "newHits": 12,
+        "cleared": 0,
+        "maxDepth": 0.1215799124764183
+      }
+    },
+    {
+      "id": "female-4",
+      "baseline": {
+        "tested": 148,
+        "hits": 14,
+        "maxDepth": 0.07733975185442588
+      },
+      "cases": {
+        "muscle": {
+          "tested": 148,
+          "hits": 14,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.081786117304334
+        },
+        "fat": {
+          "tested": 148,
+          "hits": 14,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.07930341259302265
+        },
+        "both": {
+          "tested": 148,
+          "hits": 16,
+          "newHits": 2,
+          "cleared": 0,
+          "maxDepth": 0.08375165316702282
+        },
+        "low": {
+          "tested": 148,
+          "hits": 8,
+          "newHits": 0,
+          "cleared": 6,
+          "maxDepth": 0.04296262221097785
+        }
+      },
+      "previousBoth": {
+        "tested": 148,
+        "hits": 28,
+        "newHits": 14,
+        "cleared": 0,
+        "maxDepth": 0.1413785871719812
+      }
+    },
+    {
+      "id": "female-5",
+      "baseline": {
+        "tested": 1648,
+        "hits": 144,
+        "maxDepth": 0.1695748955827983
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1648,
+          "hits": 118,
+          "newHits": 0,
+          "cleared": 26,
+          "maxDepth": 0.17037139488887226
+        },
+        "fat": {
+          "tested": 1646,
+          "hits": 134,
+          "newHits": 2,
+          "cleared": 12,
+          "maxDepth": 0.17014197694205974
+        },
+        "both": {
+          "tested": 1645,
+          "hits": 115,
+          "newHits": 0,
+          "cleared": 29,
+          "maxDepth": 0.17093816153926378
+        },
+        "low": {
+          "tested": 1647,
+          "hits": 100,
+          "newHits": 4,
+          "cleared": 48,
+          "maxDepth": 0.16222945645700731
+        }
+      },
+      "previousBoth": {
+        "tested": 1634,
+        "hits": 284,
+        "newHits": 150,
+        "cleared": 10,
+        "maxDepth": 0.2532604829990275
+      }
+    },
+    {
+      "id": "female-6",
+      "baseline": {
+        "tested": 1789,
+        "hits": 152,
+        "maxDepth": 0.18704771994200375
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1796,
+          "hits": 127,
+          "newHits": 3,
+          "cleared": 28,
+          "maxDepth": 0.19015685282661132
+        },
+        "fat": {
+          "tested": 1792,
+          "hits": 142,
+          "newHits": 4,
+          "cleared": 14,
+          "maxDepth": 0.1892657426844122
+        },
+        "both": {
+          "tested": 1798,
+          "hits": 124,
+          "newHits": 3,
+          "cleared": 31,
+          "maxDepth": 0.192374303743988
+        },
+        "low": {
+          "tested": 1789,
+          "hits": 110,
+          "newHits": 6,
+          "cleared": 48,
+          "maxDepth": 0.1583963217138069
+        }
+      },
+      "previousBoth": {
+        "tested": 1787,
+        "hits": 352,
+        "newHits": 212,
+        "cleared": 12,
+        "maxDepth": 0.29546451750027336
+      }
+    },
+    {
+      "id": "female-7",
+      "baseline": {
+        "tested": 1889,
+        "hits": 171,
+        "maxDepth": 0.2040250061983585
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1885,
+          "hits": 147,
+          "newHits": 3,
+          "cleared": 27,
+          "maxDepth": 0.20721421240132698
+        },
+        "fat": {
+          "tested": 1885,
+          "hits": 161,
+          "newHits": 4,
+          "cleared": 14,
+          "maxDepth": 0.20632151019001632
+        },
+        "both": {
+          "tested": 1885,
+          "hits": 154,
+          "newHits": 5,
+          "cleared": 22,
+          "maxDepth": 0.2095108458978967
+        },
+        "low": {
+          "tested": 1889,
+          "hits": 128,
+          "newHits": 8,
+          "cleared": 51,
+          "maxDepth": 0.17473714600559875
+        }
+      },
+      "previousBoth": {
+        "tested": 1874,
+        "hits": 402,
+        "newHits": 235,
+        "cleared": 4,
+        "maxDepth": 0.31990042961875853
+      }
+    },
+    {
+      "id": "female-8",
+      "baseline": {
+        "tested": 1935,
+        "hits": 188,
+        "maxDepth": 0.2190249418915956
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1935,
+          "hits": 169,
+          "newHits": 2,
+          "cleared": 21,
+          "maxDepth": 0.22223573719871492
+        },
+        "fat": {
+          "tested": 1935,
+          "hits": 186,
+          "newHits": 4,
+          "cleared": 6,
+          "maxDepth": 0.221347445862198
+        },
+        "both": {
+          "tested": 1935,
+          "hits": 174,
+          "newHits": 2,
+          "cleared": 16,
+          "maxDepth": 0.22457651952322233
+        },
+        "low": {
+          "tested": 1939,
+          "hits": 140,
+          "newHits": 6,
+          "cleared": 54,
+          "maxDepth": 0.18956375692324123
+        }
+      },
+      "previousBoth": {
+        "tested": 1935,
+        "hits": 456,
+        "newHits": 270,
+        "cleared": 2,
+        "maxDepth": 0.33989726503117634
+      }
+    },
+    {
+      "id": "male-2",
+      "baseline": {
+        "tested": 172,
+        "hits": 10,
+        "maxDepth": 0.052792325954676506
+      },
+      "cases": {
+        "muscle": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05638811214778308
+        },
+        "fat": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05440394006152327
+        },
+        "both": {
+          "tested": 168,
+          "hits": 10,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.05800830936411444
+        },
+        "low": {
+          "tested": 174,
+          "hits": 4,
+          "newHits": 0,
+          "cleared": 6,
+          "maxDepth": 0.02344342975403038
+        }
+      },
+      "previousBoth": {
+        "tested": 168,
+        "hits": 20,
+        "newHits": 10,
+        "cleared": 0,
+        "maxDepth": 0.10256689900471899
+      }
+    },
+    {
+      "id": "male-3",
+      "baseline": {
+        "tested": 174,
+        "hits": 16,
+        "maxDepth": 0.06508196128933191
+      },
+      "cases": {
+        "muscle": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.06899954569451539
+        },
+        "fat": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.066825372219282
+        },
+        "both": {
+          "tested": 174,
+          "hits": 16,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.07074330770933926
+        },
+        "low": {
+          "tested": 174,
+          "hits": 8,
+          "newHits": 0,
+          "cleared": 8,
+          "maxDepth": 0.03459805227874557
+        }
+      },
+      "previousBoth": {
+        "tested": 174,
+        "hits": 28,
+        "newHits": 12,
+        "cleared": 0,
+        "maxDepth": 0.1215799124764183
+      }
+    },
+    {
+      "id": "male-4",
+      "baseline": {
+        "tested": 148,
+        "hits": 14,
+        "maxDepth": 0.07733975185442588
+      },
+      "cases": {
+        "muscle": {
+          "tested": 148,
+          "hits": 14,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.081786117304334
+        },
+        "fat": {
+          "tested": 148,
+          "hits": 14,
+          "newHits": 0,
+          "cleared": 0,
+          "maxDepth": 0.07930341259302265
+        },
+        "both": {
+          "tested": 148,
+          "hits": 16,
+          "newHits": 2,
+          "cleared": 0,
+          "maxDepth": 0.08375165316702282
+        },
+        "low": {
+          "tested": 148,
+          "hits": 8,
+          "newHits": 0,
+          "cleared": 6,
+          "maxDepth": 0.04296262221097785
+        }
+      },
+      "previousBoth": {
+        "tested": 148,
+        "hits": 28,
+        "newHits": 14,
+        "cleared": 0,
+        "maxDepth": 0.1413785871719812
+      }
+    },
+    {
+      "id": "male-5",
+      "baseline": {
+        "tested": 1650,
+        "hits": 128,
+        "maxDepth": 0.20325833602270116
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1647,
+          "hits": 111,
+          "newHits": 3,
+          "cleared": 20,
+          "maxDepth": 0.20408748126163656
+        },
+        "fat": {
+          "tested": 1650,
+          "hits": 124,
+          "newHits": 4,
+          "cleared": 8,
+          "maxDepth": 0.20391683235371316
+        },
+        "both": {
+          "tested": 1641,
+          "hits": 107,
+          "newHits": 3,
+          "cleared": 24,
+          "maxDepth": 0.20480331089267245
+        },
+        "low": {
+          "tested": 1643,
+          "hits": 99,
+          "newHits": 6,
+          "cleared": 35,
+          "maxDepth": 0.19572103008814523
+        }
+      },
+      "previousBoth": {
+        "tested": 1628,
+        "hits": 191,
+        "newHits": 69,
+        "cleared": 6,
+        "maxDepth": 0.2634147256188117
+      }
+    },
+    {
+      "id": "male-6",
+      "baseline": {
+        "tested": 1785,
+        "hits": 139,
+        "maxDepth": 0.2242683239384511
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1796,
+          "hits": 115,
+          "newHits": 0,
+          "cleared": 24,
+          "maxDepth": 0.22749438589762916
+        },
+        "fat": {
+          "tested": 1796,
+          "hits": 137,
+          "newHits": 6,
+          "cleared": 8,
+          "maxDepth": 0.22671694936088616
+        },
+        "both": {
+          "tested": 1800,
+          "hits": 116,
+          "newHits": 3,
+          "cleared": 26,
+          "maxDepth": 0.22995673828465435
+        },
+        "low": {
+          "tested": 1789,
+          "hits": 114,
+          "newHits": 8,
+          "cleared": 33,
+          "maxDepth": 0.19495468279600459
+        }
+      },
+      "previousBoth": {
+        "tested": 1787,
+        "hits": 238,
+        "newHits": 109,
+        "cleared": 10,
+        "maxDepth": 0.3103378825594212
+      }
+    },
+    {
+      "id": "male-7",
+      "baseline": {
+        "tested": 1885,
+        "hits": 156,
+        "maxDepth": 0.24276363407358914
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1885,
+          "hits": 130,
+          "newHits": 0,
+          "cleared": 26,
+          "maxDepth": 0.24604443984890878
+        },
+        "fat": {
+          "tested": 1885,
+          "hits": 153,
+          "newHits": 5,
+          "cleared": 8,
+          "maxDepth": 0.24527605196072289
+        },
+        "both": {
+          "tested": 1885,
+          "hits": 128,
+          "newHits": 0,
+          "cleared": 28,
+          "maxDepth": 0.24862206281441068
+        },
+        "low": {
+          "tested": 1889,
+          "hits": 129,
+          "newHits": 10,
+          "cleared": 37,
+          "maxDepth": 0.2129489366393248
+        }
+      },
+      "previousBoth": {
+        "tested": 1874,
+        "hits": 259,
+        "newHits": 111,
+        "cleared": 8,
+        "maxDepth": 0.34005600829919713
+      }
+    },
+    {
+      "id": "male-8",
+      "baseline": {
+        "tested": 1935,
+        "hits": 164,
+        "maxDepth": 0.25897639293822794
+      },
+      "cases": {
+        "muscle": {
+          "tested": 1935,
+          "hits": 141,
+          "newHits": 3,
+          "cleared": 26,
+          "maxDepth": 0.2623167499019615
+        },
+        "fat": {
+          "tested": 1935,
+          "hits": 167,
+          "newHits": 9,
+          "cleared": 6,
+          "maxDepth": 0.2615529566386302
+        },
+        "both": {
+          "tested": 1935,
+          "hits": 143,
+          "newHits": 5,
+          "cleared": 26,
+          "maxDepth": 0.26493488637566653
+        },
+        "low": {
+          "tested": 1935,
+          "hits": 133,
+          "newHits": 10,
+          "cleared": 41,
+          "maxDepth": 0.22893400636094619
+        }
+      },
+      "previousBoth": {
+        "tested": 1935,
+        "hits": 279,
+        "newHits": 123,
+        "cleared": 8,
+        "maxDepth": 0.3639720342347271
+      }
+    }
+  ],
+  "abdomen": [
+    {
+      "id": "female-5",
+      "samples": [
+        {
+          "u": -0.05,
+          "frontZ": [
+            0.26495,
+            0.32294,
+            0.33989
+          ]
+        },
+        {
+          "u": 0,
+          "frontZ": [
+            0.28059,
+            0.34845,
+            0.36442
+          ]
+        },
+        {
+          "u": 0.05,
+          "frontZ": [
+            0.29537,
+            0.37834,
+            0.39162
+          ]
+        },
+        {
+          "u": 0.1,
+          "frontZ": [
+            0.30363,
+            0.40536,
+            0.41397
+          ]
+        },
+        {
+          "u": 0.15,
+          "frontZ": [
+            0.30725,
+            0.45726,
+            0.44967
+          ]
+        },
+        {
+          "u": 0.2,
+          "frontZ": [
+            0.30638,
+            0.50178,
+            0.45916
+          ]
+        },
+        {
+          "u": 0.25,
+          "frontZ": [
+            0.29971,
+            0.51925,
+            0.45108
+          ]
+        },
+        {
+          "u": 0.3,
+          "frontZ": [
+            0.29091,
+            0.51315,
+            0.40587
+          ]
+        },
+        {
+          "u": 0.35,
+          "frontZ": [
+            0.29683,
+            0.45395,
+            0.35506
+          ]
+        },
+        {
+          "u": 0.4,
+          "frontZ": [
+            0.29758,
+            0.39168,
+            0.33167
+          ]
+        },
+        {
+          "u": 0.45,
+          "frontZ": [
+            0.28878,
+            0.30945,
+            0.29587
+          ]
+        },
+        {
+          "u": 0.5,
+          "frontZ": [
+            0.29468,
+            0.29468,
+            0.29468
+          ]
+        }
+      ],
+      "peakChange": {
+        "early": 0.07343,
+        "final": 0.05673
+      }
+    },
+    {
+      "id": "female-8",
+      "samples": [
+        {
+          "u": -0.05,
+          "frontZ": [
+            0.34641,
+            0.46323,
+            0.44354
+          ]
+        },
+        {
+          "u": 0,
+          "frontZ": [
+            0.37411,
+            0.51152,
+            0.48398
+          ]
+        },
+        {
+          "u": 0.05,
+          "frontZ": [
+            0.3872,
+            0.58181,
+            0.52411
+          ]
+        },
+        {
+          "u": 0.1,
+          "frontZ": [
+            0.38823,
+            0.64368,
+            0.55199
+          ]
+        },
+        {
+          "u": 0.15,
+          "frontZ": [
+            0.38706,
+            0.72439,
+            0.57922
+          ]
+        },
+        {
+          "u": 0.2,
+          "frontZ": [
+            0.37994,
+            0.76846,
+            0.57982
+          ]
+        },
+        {
+          "u": 0.25,
+          "frontZ": [
+            0.37225,
+            0.787,
+            0.56357
+          ]
+        },
+        {
+          "u": 0.3,
+          "frontZ": [
+            0.36231,
+            0.77896,
+            0.50568
+          ]
+        },
+        {
+          "u": 0.35,
+          "frontZ": [
+            0.37075,
+            0.70619,
+            0.45721
+          ]
+        },
+        {
+          "u": 0.4,
+          "frontZ": [
+            0.36981,
+            0.51737,
+            0.40459
+          ]
+        },
+        {
+          "u": 0.45,
+          "frontZ": [
+            0.37264,
+            0.3874,
+            0.37324
+          ]
+        },
+        {
+          "u": 0.5,
+          "frontZ": [
+            0.37753,
+            0.37753,
+            0.37753
+          ]
+        }
+      ],
+      "peakChange": {
+        "early": 0.18788,
+        "final": 0.05691
+      }
+    },
+    {
+      "id": "male-5",
+      "samples": [
+        {
+          "u": -0.05,
+          "frontZ": [
+            0.26136,
+            0.31768,
+            0.33465
+          ]
+        },
+        {
+          "u": 0,
+          "frontZ": [
+            0.27862,
+            0.34474,
+            0.36097
+          ]
+        },
+        {
+          "u": 0.05,
+          "frontZ": [
+            0.2952,
+            0.37744,
+            0.3909
+          ]
+        },
+        {
+          "u": 0.1,
+          "frontZ": [
+            0.30251,
+            0.39816,
+            0.40846
+          ]
+        },
+        {
+          "u": 0.15,
+          "frontZ": [
+            0.30794,
+            0.4549,
+            0.44882
+          ]
+        },
+        {
+          "u": 0.2,
+          "frontZ": [
+            0.30615,
+            0.5039,
+            0.45907
+          ]
+        },
+        {
+          "u": 0.25,
+          "frontZ": [
+            0.29719,
+            0.51758,
+            0.44324
+          ]
+        },
+        {
+          "u": 0.3,
+          "frontZ": [
+            0.29061,
+            0.51506,
+            0.41355
+          ]
+        },
+        {
+          "u": 0.35,
+          "frontZ": [
+            0.29736,
+            0.45996,
+            0.35741
+          ]
+        },
+        {
+          "u": 0.4,
+          "frontZ": [
+            0.29609,
+            0.35894,
+            0.31826
+          ]
+        },
+        {
+          "u": 0.45,
+          "frontZ": [
+            0.28385,
+            0.28904,
+            0.28563
+          ]
+        },
+        {
+          "u": 0.5,
+          "frontZ": [
+            0.29364,
+            0.29364,
+            0.29364
+          ]
+        }
+      ],
+      "peakChange": {
+        "early": 0.09975,
+        "final": 0.06289
+      }
+    },
+    {
+      "id": "male-8",
+      "samples": [
+        {
+          "u": -0.05,
+          "frontZ": [
+            0.33557,
+            0.4498,
+            0.43013
+          ]
+        },
+        {
+          "u": 0,
+          "frontZ": [
+            0.36901,
+            0.49939,
+            0.4751
+          ]
+        },
+        {
+          "u": 0.05,
+          "frontZ": [
+            0.38539,
+            0.55668,
+            0.51175
+          ]
+        },
+        {
+          "u": 0.1,
+          "frontZ": [
+            0.38889,
+            0.65625,
+            0.55775
+          ]
+        },
+        {
+          "u": 0.15,
+          "frontZ": [
+            0.38622,
+            0.72288,
+            0.57983
+          ]
+        },
+        {
+          "u": 0.2,
+          "frontZ": [
+            0.37901,
+            0.77129,
+            0.57971
+          ]
+        },
+        {
+          "u": 0.25,
+          "frontZ": [
+            0.36996,
+            0.78813,
+            0.55507
+          ]
+        },
+        {
+          "u": 0.3,
+          "frontZ": [
+            0.36033,
+            0.77429,
+            0.49954
+          ]
+        },
+        {
+          "u": 0.35,
+          "frontZ": [
+            0.37047,
+            0.68988,
+            0.45135
+          ]
+        },
+        {
+          "u": 0.4,
+          "frontZ": [
+            0.37022,
+            0.53094,
+            0.4079
+          ]
+        },
+        {
+          "u": 0.45,
+          "frontZ": [
+            0.36831,
+            0.3797,
+            0.36872
+          ]
+        },
+        {
+          "u": 0.5,
+          "frontZ": [
+            0.37058,
+            0.37058,
+            0.37058
+          ]
+        }
+      ],
+      "peakChange": {
+        "early": 0.15869,
+        "final": 0.05833
+      }
+    }
+  ]
+}

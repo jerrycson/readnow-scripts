@@ -1,4 +1,6 @@
 // 두 연구의 결정·결과 서식을 묶는다. 입력은 수치와 공개 연구 식별자만 받는다.
+import {isWorkbenchSubject} from '../../pixel-lab/workbench-subjects50.mjs';
+import {diagnosticObservation57} from '../../pixel-lab/studio-observation57.mjs?v=57-diagnostic';
 export const definitions=Object.freeze({
  'friend-studio':{title:'정밀 조형',purpose:'얼굴·몸통 표점이 사용자가 찍은 화면 좌표에 닿도록 두 교정값을 제안한다.',
   metric:'목표 정점까지 거리 · 192px 환산, 작을수록 좋음',next:'같은 중립 표점·목표·시점을 고정하고 추천을 보기 전 사람의 직접 조작 결과를 별도로 잰다.',
@@ -8,7 +10,7 @@ export const definitions=Object.freeze({
   limits:'다른 머리, 기울어진 상자 및 각진 도형의 결과를 따로 확인한다.',target:'../photo-model/ridge44.html'}
 });
 export const stages=['후보','그림자 · 셈만','안내','작게 실제 적용','전부 적용'];
-const units=['px','ratio','step','none'],outcomes=['observed','measured','accepted','rejected','deferred','reverted'];
+const units=['px','ratio','step','none','deg','표식간거리비'],outcomes=['observed','measured','accepted','rejected','deferred','reverted'];
 const tasks=['surface','alignment','movement','comparison','repeatability'],methods=['direct','learned','baseline','photo','pose','archive','simulation'];
 const finite=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
 const fail=msg=>{throw new TypeError(msg);};
@@ -31,25 +33,27 @@ export function toFramework(row,{origin,at}){
  const t=iso(origin==='device'?row.at:at);
  if((row.metricBefore!=null||row.metricAfter!=null)&&(!finite(row.metricBefore)||!finite(row.metricAfter)))fail('전후 측정값 쌍이 불완전합니다.');
  if(row.outcome==='measured'&&(row.metricBefore==null||row.unit==='none'))fail('측정 기록에는 단위와 실제 수치가 필요합니다.');
- if(!['F02','M01','W','studio','world'].includes(row.subject))fail('등록되지 않은 대상입니다.');
+ if(!['F02','M01','W','studio','world'].includes(row.subject)&&!(origin==='release'&&isWorkbenchSubject(row.subject)))fail('등록되지 않은 대상입니다.');
  const engine=studyOf(row),type=evidenceType(row,origin),decisionId=engine+'/'+origin+'/'+row.id,entityId=engine+'/'+row.subject;
  const allowReview=origin==='device'&&['accepted','rejected','deferred','reverted'].includes(row.outcome);
  const src=origin==='release'?'release:'+String(row.source||'연구 공개본'):'device';
  const fv={};for(const key of ['yaw','pitch'])if(row[key]!=null){if(!Number.isFinite(row[key])||Math.abs(row[key])>360)fail('카메라 각도가 유효하지 않습니다.');fv[key]=row[key];}
  if(row.metricBefore!=null)fv.initialMetric=row.metricBefore;
  const attrs={subject:row.subject};if(typeof row.zone==='string'&&/^[a-zA-Z][a-zA-Z0-9_-]{0,30}$/.test(row.zone))attrs.zone=row.zone;
- const count=row.scope==='cohort'?row.count:1;if(!Number.isInteger(count)||count<1)fail('집계 표본 수 오류');
+ const observation=diagnosticObservation57(row);
+ if(observation&&origin!=='release')fail('진단 관측의 공개 원본을 확인하세요.');
+ const count=observation?null:row.scope==='cohort'?row.count:1;if(!observation&&(!Number.isInteger(count)||count<1))fail('집계 표본 수 오류');
  const numeric=row.metricAfter!=null;
  return {
   entity:{id:entityId,kind:'source',attrs,domain:'bookfriend'},
-  event:{entity:entityId,t,type:'snapshot',src,v:{task:row.task,method:row.method,outcome:row.outcome,origin,type,count,scope:row.scope==='cohort'?'cohort':'single',episode:row.episode,clock:origin==='device'?'recorded':'release'}},
+  event:{entity:entityId,t,type:'snapshot',src,v:{task:row.task,method:row.method,outcome:row.outcome,origin,type,count,scope:observation?'diagnostic':row.scope==='cohort'?'cohort':'single',episode:row.episode,clock:origin==='device'?'recorded':'release',...(observation?{observation,originalScope:row.scope}:{})}},
   feature:{entity:entityId,t,fset:'friend-observation-1',fv},
   decision:{id:decisionId,engine,engineVer:'44',modelId:origin==='release'?row.source||null:null,entity:entityId,t,
-   options:['record','hold'],pick:'record',why:[numeric?'관측한 전후 수치와 단위를 함께 기록':'도구 사용 또는 검토 선택을 기록','독립 사람 기준선이 없어 자동 실행 보류'],
+   options:['record','hold'],pick:'record',why:[...(observation?[observation.reason]:[]),numeric?'관측한 전후 수치와 단위를 함께 기록':'도구 사용 또는 검토 선택을 기록','독립 사람 기준선이 없어 자동 실행 보류'],
    conf:0,expect:{confidenceBasis:'자동 실행을 뒷받침하는 독립 사람 대조 미수집'},undo:{how:'append-correction',to:decisionId,until:null},
    human:allowReview?{pick:row.outcome,by:'device-review',t}:null,exp:null,act:'none'},
   outcome:{decision:decisionId,due:t,closedAt:t,y:{before:row.metricBefore??null,after:row.metricAfter??null,unit:row.unit,observed:row.outcome}},
-  feedback:{decision:decisionId,score:{engine:row.method==='learned'||row.method==='photo'?row.metricAfter??null:null,human:null,baseline:numeric?row.metricBefore:null},metric:row.unit,winner:null},
+  feedback:{decision:decisionId,score:{engine:!observation&&(row.method==='learned'||row.method==='photo')?row.metricAfter??null:null,human:null,baseline:!observation&&numeric?row.metricBefore:null},metric:row.unit,winner:null},
   experiment:{id:null,hypo:null,arms:[],assign:null,fence:{maxShare:0,dayLoss:null,stopIf:'사람 독립 대조 없음'},state:'unassigned',result:{effect:null,ci:null,n:0},proposedBy:null,approvedBy:null}
  };
 }
@@ -68,15 +72,16 @@ export function validateFramework(record){
  return r;
 }
 export function summarize(records){
- const groups={},score=[],episodes=new Set();let device=0,deviceMeasures=0,reviews=0,failures=0;
+ const groups={},score=[],diagnostics=[],episodes=new Set();let device=0,deviceMeasures=0,reviews=0,failures=0;
  for(const r of records){
   validateFramework(r);const v=r.event.v,y=r.outcome.y;
   groups[v.type]=(groups[v.type]||0)+1;
   if(v.origin==='device'){device++;episodes.add(v.episode);if(y.observed==='measured')deviceMeasures++;if(r.decision.human)reviews++;}
   if(y.observed==='measured'&&y.unit==='px'&&y.after>y.before)failures++;
+  if(v.scope==='diagnostic')diagnostics.push({decisionId:r.decision.id,...v.observation,before:y.before,after:y.after,unit:y.unit,worse:y.after>y.before});
   if(v.scope==='cohort'&&y.unit==='px')score.push({id:r.decision.id.split('/').at(-1),before:y.before,after:y.after,n:v.count});
  }
- return {records:records.length,groups,score,device,deviceMeasures,reviews,deviceEpisodes:episodes.size,humanPairs:0,failures};
+ return {records:records.length,groups,score,device,deviceMeasures,reviews,deviceEpisodes:episodes.size,humanPairs:0,failures,diagnostics};
 }
 // 일별 짝은 같은 대상·시점에서 추천을 보기 전 따로 측정한 경우만 입력할 수 있다.
 export function assessStage({previous=0,days=[],policy=null,stale=false,error=false,shadowSince=null,now}={}){

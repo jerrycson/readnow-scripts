@@ -4,7 +4,7 @@ import {eye40} from '../../pixel-lab/eye40.mjs';
 import {bindSurface} from '../../pixel-lab/surface35.mjs';
 import {candidateFace47} from '../../pixel-lab/face47.mjs';
 import {makeChest47} from '../../pixel-lab/chest47.mjs';
-import {mountMultiview} from './multiview.mjs';
+import {mountMultiview} from './multiview.mjs?ui=49-review-4c7e86d4';
 import {mountSurfaceControls} from '../../pixel-lab/studio-surface-controls46.mjs';
 import {mountAngle46} from '../../pixel-lab/studio-angle46.mjs';
 

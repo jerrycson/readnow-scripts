@@ -1,0 +1,4723 @@
+{
+  "round": 54,
+  "decisions": {
+    "F02": "원형 유지 · 수동 비교",
+    "M01": "원형 유지 · 수동 비교",
+    "others": "동일 기하 보존"
+  },
+  "units": {
+    "eye": "독립 정합 후 48 실화소 상안검 평균 px",
+    "mouth": "48 실화소 입선 양끝·중앙 평균 px",
+    "jaw": "248 기준 가시 피부선-접선 삼각모서리 거리 px",
+    "profile": "귀와 미간으로 등록한 248 좌표. 코끝·콧밑(인중 위)·윗입술·아랫입술·턱끝 또는 보이는 점",
+    "sensitivity": "yaw/pitch 각각 −8,0,+8°에서 같은 비목표 표점으로 배율과 화면 회전 재등록"
+  },
+  "files": {
+    "face-boundary54.mjs": "e89cf7d5fe8e9344c43185b9cefc6be3fd84274a6328a02542f8f5af62025cef",
+    "face-contour54.mjs": "1fbf41691fc5916853ae620fae5c88a2b77ebc822f52f7b5e67f8e7d4b1178fe",
+    "face-detail54.mjs": "3b2954eb78ba0229d989b73e8d378bbd1314b2a9f8ac0ea688e259f6d70f27aa",
+    "face-lips54.mjs": "229d4d096bb8db482cf72d1e9de98c43f8130f6a706e862136bfd440ef22c374",
+    "face-lower54.mjs": "9f007aaceb92f9af301c5e3d57b2e5558e849a0c39c7747ffdd32a54477cf359",
+    "face-normal54.mjs": "9eb6c4010a66ea0eae8be99dd4657aa4d4c5dec38f7b1c1b39aad090bdf29ecd",
+    "face-orientation54.mjs": "027f397e10c064b0fd96f0b956feaff2ff30bfe89b61f0cbfc52498834380828",
+    "face-support54.mjs": "42d2f23f6007b600e631fdd498e03d5fbf47505c6d1a70e7027240332910c20f",
+    "face54.mjs": "a2bdd07d93cb604abcfbe9d0d15168840592cc34723375580d81fff7223f8414",
+    "face-library54.png": "84b89d3a06585750c64e2d1db416dc73c499535183700539e0df716e2a6db0b6",
+    "face-pixels54.png": "078d633b837f2a3a75a6948c2c8f3a4f2369912bf8df5685050c98e5a300e140",
+    "face-plate54.png": "8770c482fe2bdf4a6ea5029d6f80a917533a42d12cbae75641769a46fcee5078"
+  },
+  "sources": [
+    {
+      "id": "F02",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face1.jpg",
+      "sha256": "c02add702836ef99ab72502877acd9bd31afa79a2e605473c1b1e80484b5be73",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F02",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face2.jpg",
+      "sha256": "0cff5f108aacb3778f60df6ba0a60cb70c615d920ace7ef7bdd41fce34ae3dc4",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F02",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face3.jpg",
+      "sha256": "a8b2eafbebc9c3099f1c4a47bcb3137c0f850765d44ef89f7ac17a8e9124f9ad",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F02",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-5/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face4.jpg",
+      "sha256": "88a030fc66af3ee01bd4966cac8e81eb16a020afe0d13a6f2267c3ccf3461efc",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M01",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face1.jpg",
+      "sha256": "d2b19d0317cbb92ced5edff04fc50c7d14b05cb36143571e7f4e97221b77b27c",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M01",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face2.jpg",
+      "sha256": "38e1ccbd2e0fb6935bdc7d4290a7f1f7ba91b36af9e2a7e0154580f8761812d7",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M01",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face3.jpg",
+      "sha256": "f4c463c1425ce14d5c3f244cab09974c1cb98be0072ff92b37134d14a64a3c4b",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M01",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-2/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face4.jpg",
+      "sha256": "8c87ebfacb41eb14359dd569f2d84f0a5e1693b16bdcbb10879d5bbd8924377d",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F01",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-1/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face1.jpg",
+      "sha256": "3535edcbb861db99ada73695a0b34a0d70315e5155489bc0c9b263ed0fdc152c",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F01",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-1/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face2.jpg",
+      "sha256": "da2e4463e101cd7ce30fb7826338b5aa9efc525eac43e637b73c309de4718e10",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F01",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-1/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face3.jpg",
+      "sha256": "a42522f5c53c25d5e34db11bace770737106a5c12d31d6897c1ff8b895224538",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F01",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-1/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara1_face4.jpg",
+      "sha256": "07f9a8d4d0d9ba6e5b47174f7946c5a7184a3f6b8921f296d6dc59ec5cdd7a30",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F03",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-7/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face1.jpg",
+      "sha256": "24b41f90c11195a6aa7429923c461ba184291d0870548fb07b5b0164c5d6149e",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F03",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-7/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face2.jpg",
+      "sha256": "572f8b4ef99773ce3e03d52e7e7b609047bb9596e452d340efaab2dd6dd2444a",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F03",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-7/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face3.jpg",
+      "sha256": "b7e4b8c25e1d358dd0baba88911ae55e5255ee32711a726d023195df4bf3dc66",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F03",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-7/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/chara7_face4.jpg",
+      "sha256": "1abfff93076bcabe02a6eed99e41c7cc6ff92b4733072266d7fcda973f737b07",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F05",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-25/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face1.jpg",
+      "sha256": "b6f4ee4804ad336ecd45c3b3134ca9d162c8d746f3667bdf91a88d6a547dfe00",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F05",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-25/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face2.jpg",
+      "sha256": "52c0446fbe4ef5a8bcf16145ead24d5c52bdbc205a0dd3fab58bf359010a4970",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F05",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-25/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face3.jpg",
+      "sha256": "0adbf8f447fb70aaeed5dbefcb7d4d477edb5c145b101a57ee231f50eb927604",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F05",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-25/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/chara16_face4.jpg",
+      "sha256": "f7b3402c7cc0d4695e20cec744cb1525c424102ae9c162e72310179bcb9fd508",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M02",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-3/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face1.jpg",
+      "sha256": "f598cf01cd5e4909771700c269e8b1af7d8f79d990aca7c95348c4e34a6f78f2",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M02",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-3/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face2.jpg",
+      "sha256": "3734dce502a82373425d29ba45b83f5b47705be5bcefa5e568a8b5eb6abfdd64",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M02",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-3/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face3.jpg",
+      "sha256": "edffc6ad1014e2846bd93949ac368a6fce71de9f7eebaa2e3290a1271d856b80",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M02",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-3/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara5_face4.jpg",
+      "sha256": "8b6707de2817e0f1ae234f85c41290d57e78dd87691bd9c555f57ddae7ae5cf1",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M03",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-6/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face1.jpg",
+      "sha256": "f122146c465dfb6dfc73bf9db723278989182fe7bcd3eec39f672a966212dda2",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M03",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-6/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face3.jpg",
+      "sha256": "c7c496f3d2ea9544907caf78ea6df39a850d548562c04719308e4217c327136c",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M03",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-6/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara3_face4.jpg",
+      "sha256": "66ba31ceee817506cd9fdb0843f65910cbbd7e9b17c1c5c35cf0972935263871",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M04",
+      "key": "설정1",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-10/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face1.jpg",
+      "sha256": "653be618dc411d9085477f8965739abb0cbbd9ceb48e2c920c8b8b4606223070",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M04",
+      "key": "설정2",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-10/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face2.jpg",
+      "sha256": "4b1a52d39c849d2ae63cffc0f89f9221488205a34776feda078d12c347ee54a3",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M04",
+      "key": "설정3",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-10/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara17_face3.jpg",
+      "sha256": "bf9810d540b6ce6bca6fd7ed628c9dff90429d134bfed841a3b7dae42ea79751",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "M04",
+      "key": "설정4",
+      "page": "https://frieren-anime.jp/character/chara_group1/1-10/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/11/chara1_face4.jpg",
+      "sha256": "56401c29a1e53b7a7645d838c544190258e7c4f917f4454731999896f3b35060",
+      "size": [
+        248,
+        248
+      ]
+    },
+    {
+      "id": "F02",
+      "key": "31-5",
+      "page": "https://frieren-anime.jp/story/2nd/ep31/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2026/01/31_5-1.jpg",
+      "sha256": "58da8dfa4f3f79d52ac5b04323f27d510e41de5922319b4df0974a94344ced27",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "F02",
+      "key": "31-3",
+      "page": "https://frieren-anime.jp/story/2nd/ep31/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2026/01/31_2.jpg",
+      "sha256": "2fdd0830790715e96802f80345d5f3b851ca9ed995e5236fa5fa08fc695c040a",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "F02",
+      "key": "37-7",
+      "page": "https://frieren-anime.jp/story/2nd/ep37/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2026/03/7-1.jpg",
+      "sha256": "51769476896f5d055941fa973d532c6a67a9cc5fbf069ce650db1cd29baf0d0c",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "F02",
+      "key": "24-10",
+      "page": "https://frieren-anime.jp/story/1st/ep24/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/01_05-4.jpg",
+      "sha256": "7874c07414defb071e2a7abbdc45d26fbaf4dd83ecef4085edec6da332ff0453",
+      "role": "이번 입 파라미터 선택에 사용하지 않은 기존 별도 장면"
+    },
+    {
+      "id": "F02",
+      "key": "28-7",
+      "page": "https://frieren-anime.jp/story/1st/ep28/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/03/01_02-4.jpg",
+      "sha256": "35da102ceda5fad13fd45d3eeb8bd2480c92563519a97a605c9a34af746de6ae",
+      "role": "54차 모형·강도를 고정한 뒤 계측. 이전 프로젝트 원전 보유 목록에 포함"
+    },
+    {
+      "id": "M01",
+      "key": "37-5",
+      "page": "https://frieren-anime.jp/story/2nd/ep37/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2026/03/5-2.jpg",
+      "sha256": "b6af154005829426f30b80df2766dcb6030104313d4d0716ddc406d210e73ac7",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "M01",
+      "key": "17-8",
+      "page": "https://frieren-anime.jp/story/1st/ep17/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/12/01_04-7.jpg",
+      "sha256": "e0396a5ec6e28d13495471826d5b1ccc17c320f414fc64933a37f556af7ff11c",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "M01",
+      "key": "14-10",
+      "page": "https://frieren-anime.jp/story/1st/ep14/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/12/01_05-1.jpg",
+      "sha256": "14282d54dd2915aab1514b3c008543844995f570850096cae3e9b105fed14457",
+      "role": "기존 53차 표식과 원전"
+    },
+    {
+      "id": "M01",
+      "key": "01-2",
+      "page": "https://frieren-anime.jp/story/1st/ep01/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/01_02.jpg",
+      "sha256": "53c125f425d58646083b4f5df26082ddda7871873ee56ad6480152dd4ec75694",
+      "role": "이번 입 파라미터 선택에 사용하지 않은 기존 별도 장면"
+    },
+    {
+      "id": "M01",
+      "key": "23-3",
+      "page": "https://frieren-anime.jp/story/1st/ep23/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2024/02/01_03-2.jpg",
+      "sha256": "29edf1fe01fbfe379f646da0d900b952647f4129d6506f88ec7a07c82442a832",
+      "role": "이번 입 파라미터 선택에 사용하지 않은 기존 별도 장면"
+    },
+    {
+      "id": "M01",
+      "key": "03-3",
+      "page": "https://frieren-anime.jp/story/1st/ep03/",
+      "url": "https://frieren-anime.jp/wp-content/uploads/2023/09/03_03-1.jpg",
+      "sha256": "7dfb0d76df6f3f848503d558b44b841f7aca4e8c6977f35d2dab1816a9dd71ae",
+      "role": "54차 모형·강도를 고정한 뒤 계측. 이전 프로젝트 원전 보유 목록에 포함"
+    }
+  ],
+  "cases": {
+    "F02": {
+      "same": false,
+      "geometry": {
+        "moved": 8956,
+        "under": 0,
+        "changedNormal": 9054,
+        "nan": 0,
+        "oldReversed": 18,
+        "newReversed": 0,
+        "repaired": 18,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8278,
+        "minAreaRatio": 0.124946
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 218,
+            "alpha": 7,
+            "base": "004054111f7022da613539c146e8b1926045cdd19209e8e23b8b2a5b9f8eb865",
+            "study": "2c2d93a51a8269ba17029fe21f0f1cffebf5c8e82e5b80bb0b9aaa6f30804032"
+          },
+          "96": {
+            "rgba8": 785,
+            "alpha": 25,
+            "base": "5f4dfef2abdc3d93ccdc5ddf9210ccfb47af31bd619a32320603f08bccb1b4d8",
+            "study": "733db50f14f0401a700f75f3863f5d17a7b79afb366c90f523f589ea636e6002"
+          },
+          "1024": {
+            "rgba8": 88220,
+            "alpha": 2608,
+            "base": "6202f640db7a9c7ea7ddea2bc7a761936efe8f04cae12839d3885799377543e9",
+            "study": "66632070fe93f3438d9f90f6abe8e2d860600fc68efc4ae72f37057ff983fe94"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 211,
+            "alpha": 13,
+            "base": "7f21dd0a6750b5f6e3669bd27aa0967918fc197b97b23fc30292759210c94648",
+            "study": "010c8cf4ac97cdf52ecfcc9bed5b8f55ad03856c1b21d4e4604681267b3fb7a0"
+          },
+          "96": {
+            "rgba8": 783,
+            "alpha": 62,
+            "base": "124dc32c1ee179817b7f00e5b6673604f84c3edaff95dbe71551654ea9c6778b",
+            "study": "553ab2134e99ce3181b45d40d853c37ef3dd42254c4ccbf8d56eeb7b3f5ad310"
+          },
+          "1024": {
+            "rgba8": 88121,
+            "alpha": 7861,
+            "base": "7ef766bc03cd1f71c97698ce8ff8b980aec1d1d9f58fd77a34481b3e74b4dd77",
+            "study": "934aecb1e88b0b0ae1129d6e6296149d880950824949d69e39adc436bd729c0b"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 176,
+            "alpha": 15,
+            "base": "54970a6200067668ac6ccc0aefb6e2ebaa07ed697455723a4d511a4e49643767",
+            "study": "9eb37454c727e2d6dfb4afabfa595a5cc84a2ae44a64f78c4cc5aca4918ff470"
+          },
+          "96": {
+            "rgba8": 633,
+            "alpha": 64,
+            "base": "89c106e958dba49bf2ac9b7c1673e7dc8bed8928f2e352eb8b07f17e2f8c56ad",
+            "study": "7975f0a8cd3b05830cba2c3e628cb854ac8316000eda837a02342019c8790b50"
+          },
+          "1024": {
+            "rgba8": 69078,
+            "alpha": 7772,
+            "base": "893a32504f55d1a21a2ab63ac15a7eac51686994570d6463cd5a7c452019f259",
+            "study": "de7ba2e902acb4c150d2efbc7ff8de9949b9b70fc2c0d95028c7390eecfde26a"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 151,
+            "alpha": 29,
+            "base": "7c1e21b23fad9ac4840e6c6ccf98d7d5856f26a538371d19aa9c9d8f00c38a05",
+            "study": "a43221a344aeb464c162be863be70d1eec1743d23be9629299aaa443bdcc8e79"
+          },
+          "96": {
+            "rgba8": 509,
+            "alpha": 104,
+            "base": "e69a2cf24f710bbbf34e336f10ac0e442d4bbf389fbb3ec8ee39720f683e7293",
+            "study": "89dbb0f5827cdb3922839889b7912f0b6f24a330a526900618218134ce9fcf37"
+          },
+          "1024": {
+            "rgba8": 54254,
+            "alpha": 12440,
+            "base": "c7cf22ac5e37557853b0aefb4c7e45c11556840443a6f39ff038cf2506355d46",
+            "study": "525c613a28830c7e322a8e033db66a299581c1cf716e885973ed73760dfc5d9f"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 152,
+            "alpha": 29,
+            "base": "b76fe56acd5d862f20dbe30070f7cacd5a8306f0a3c5ea1e345f662e6608e098",
+            "study": "4ae4642a4a8bb340ec6d806f724c9e42bfe82ea26c24db7073b43c1c1bc6832c"
+          },
+          "96": {
+            "rgba8": 510,
+            "alpha": 104,
+            "base": "217f538774a406d32b0c3e53845ff19312cfbe1e946272112ca385c6a2fe7b51",
+            "study": "9cbd1d6095d799b79f494b5916a66761c6f6f4bb848308f4fb02afa40ec551fa"
+          },
+          "1024": {
+            "rgba8": 56506,
+            "alpha": 12440,
+            "base": "84b378ada81367adeecd6c8c01349de1d8b60fd5d05359d056d4354f02b4f04a",
+            "study": "30dc6099c2bf0e34bacf32cee2ac463ee0cd87379ce373407a3e4f36c4a03df3"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 67,
+            "alpha": 15,
+            "base": "4caab5042c6cdb2cf868d5808aaa9a006dcc245e1d4c2d6e7200285fe20c5c23",
+            "study": "bd05ad27b5398e5a1e12a852513277b4581be7f4e8e2ff2854cbb6fde08a107e"
+          },
+          "96": {
+            "rgba8": 229,
+            "alpha": 64,
+            "base": "f0eff15789cca39d0d9b6509838357b506d7ec9ae7f73b9402e7da443f6aff30",
+            "study": "6f1ed0b072f796ae94c2cab93f031fa1adc8ab5ec2ac4a82078ebe7974d7ef57"
+          },
+          "1024": {
+            "rgba8": 21472,
+            "alpha": 7772,
+            "base": "af8d6dc67149d4507527bf51a6fbee15f00d0d953b50dc72cd69975fedf6143c",
+            "study": "9f5789098df041d25911ddb7e6337dc5f9b6a272232410eab51d7bcd54229459"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 60,
+            "alpha": 13,
+            "base": "0ea50c0e2bedaa32fef074e3720f7d871867b2dfdf18813d0653da58f3cf6c94",
+            "study": "9b0c8c4f00b161a97dc521eb834c62bdf27406ba8719a860f750225528c759d1"
+          },
+          "96": {
+            "rgba8": 188,
+            "alpha": 62,
+            "base": "cf38c57a13802e204c63b729b72d41339302f8a65d75b0dbfdef4f55c1dc3797",
+            "study": "201cbe7b00b9f69f0bb13208d6677af18457e48f31278a1186a170ca4c52a090"
+          },
+          "1024": {
+            "rgba8": 18656,
+            "alpha": 7861,
+            "base": "c2449f3603e44ec08292ed939a579570e72bd1f0d9b9e5fe4019e33cb4396e5b",
+            "study": "d742f68ff731e93d369b3b985a6194fc315f05a65cb8d15c3c87fb7f778dbc06"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 21,
+            "alpha": 7,
+            "base": "5a727bdfdd881716fbff8e1307c53c28708e938aea6e658ad9666e03a34b8251",
+            "study": "35b18d458f460d79aaf2477c7da670d17b7f9d88609b8b0bf95103a48c62ce77"
+          },
+          "96": {
+            "rgba8": 68,
+            "alpha": 25,
+            "base": "aeaaebbb9fe23f388ae8a6900e46b828beeb87fbcd203754000f646e494a1b83",
+            "study": "4efb464da05db3c88fee68e1f686933a67e7e4d6e4efef48e396835880542ee6"
+          },
+          "1024": {
+            "rgba8": 4932,
+            "alpha": 2608,
+            "base": "06e7040918fc846b4fb96b30def2bf7398a91e6805bff06dc35bc012869c83b0",
+            "study": "9546dbf6c48a507ba6460f77a762a057c89d157049bfc60304b774254615ea5e"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 197,
+            "alpha": 7,
+            "base": "ee01ed917dc47971b8b1f90343c4388cbc672b44e3c4f3f1b8c716deb0c3c8a8",
+            "study": "635a696ac8055a34f45b0b8451bd3bb6150920cf5d99042f10b66964ce6e0d5f"
+          },
+          "96": {
+            "rgba8": 703,
+            "alpha": 14,
+            "base": "85f956669cf54610e4c2dfe1a2934d7da98c7963610a12ba2da7c33c9b517cac",
+            "study": "468af1e3bbfe974dd9867e1df34b300770fcfcb758a6d93c8434c64e140bd9e6"
+          },
+          "1024": {
+            "rgba8": 81149,
+            "alpha": 1420,
+            "base": "91590140684ef825f4bc65c4a069d9f4b50f6705a18b3c759c83360c2c5569ae",
+            "study": "6ee3c28f1ad3701044501f8ef3516e9d025ff4c4f4247cc8bd2a84004a59921f"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 153,
+            "alpha": 8,
+            "base": "87a6856afc16c74c27d3b9caaf5a4e71ebdd79118b87442f3b55d231941397d4",
+            "study": "e4d1425c572499038428c2dd792a89bbcc6f3ea672ec075951a19084f2878252"
+          },
+          "96": {
+            "rgba8": 562,
+            "alpha": 40,
+            "base": "bff89b207bb569cecc3d0dfabced5ad959099843a4ac375a3e54bcfb9fcba51c",
+            "study": "178bc918e8897e033fd91826bade3f6e8a81de00e60f6f52c400de1a084a1199"
+          },
+          "1024": {
+            "rgba8": 60983,
+            "alpha": 4814,
+            "base": "c1c8c812edcea304c93dbe1f09c1bdde88a5fce09da194cf53ddcfff3b7d9b2e",
+            "study": "c53fdee1a9685faf58358bf84c12c324d9fb234eeac519dbf8ac1865010f5c47"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 166,
+            "alpha": 19,
+            "base": "53dd66cfb880df3c73e7aa500057f1efcce19ac5eb2f8e9fd9780ea3ff529ebe",
+            "study": "60da0baca7f457965c419747560d4634d22cf86d16def40c0c80c2e8973fa255"
+          },
+          "96": {
+            "rgba8": 572,
+            "alpha": 75,
+            "base": "52022a9354338fab337393dce8a7dd9655a769e1c0402f446034d79789d3c748",
+            "study": "d1079bb4c4d9cd6a6712986f3d51ce57c4b522ee60902be94ef09f603ee51c3b"
+          },
+          "1024": {
+            "rgba8": 62331,
+            "alpha": 7941,
+            "base": "7a05311d6560af3c901fe7c1116b02b091f27a9e19edc3dc62cfaf2c455d2f68",
+            "study": "effd11127230d18b0f7425813dcdd7ece446433d0ab5a463a7648af1d0c5efa7"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 181,
+            "alpha": 11,
+            "base": "dec8824f22552611ee8c2cfb5f2315a6b042032c8eccae79d993a0d680564b2f",
+            "study": "0af3038c47a253bc323cf03aa967e89361768f0cb76e27851336c233d0a80bb0"
+          },
+          "96": {
+            "rgba8": 617,
+            "alpha": 38,
+            "base": "44eb92542fda836036d0cac54d929c8faa9fd83163eeafc1603b36b2a9244fa2",
+            "study": "967e526b1059153bbdc634463412fec27cded5c5d60795b49e249f5ce32257e5"
+          },
+          "1024": {
+            "rgba8": 70027,
+            "alpha": 4142,
+            "base": "992d0a43711c9d81fe39d801e0118811672889146fcd69c6c2e3815223b3832e",
+            "study": "804bc0fd0348b4fcf2a3c075338202a5becd3e3086dc7ec0eb375a4ec25fe6e5"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ],
+      "observed": [
+        {
+          "key": "설정1",
+          "base": {
+            "eye": 1.454,
+            "jaw": 2.698
+          },
+          "prior53": {
+            "eye": 1.263,
+            "jaw": 1.793
+          },
+          "study": {
+            "eye": 0.95,
+            "jaw": 1.871
+          }
+        },
+        {
+          "key": "설정2",
+          "base": {
+            "eye": 1.329,
+            "jaw": 7.266
+          },
+          "prior53": {
+            "eye": 1.194,
+            "jaw": 7.184
+          },
+          "study": {
+            "eye": 0.476,
+            "jaw": 6.42
+          }
+        },
+        {
+          "key": "설정3",
+          "base": {
+            "eye": 0.833,
+            "jaw": 5.786
+          },
+          "prior53": {
+            "eye": 0.704,
+            "jaw": 5.712
+          },
+          "study": {
+            "eye": 0.882,
+            "jaw": 4.566
+          }
+        },
+        {
+          "key": "설정4",
+          "base": {
+            "eye": 1.618,
+            "jaw": 15.914
+          },
+          "prior53": {
+            "eye": 1.552,
+            "jaw": 16.579
+          },
+          "study": {
+            "eye": 1.016,
+            "jaw": 8.664
+          }
+        },
+        {
+          "key": "31-5",
+          "base": {
+            "eye": 1.628,
+            "jaw": null
+          },
+          "prior53": {
+            "eye": 1.572,
+            "jaw": null
+          },
+          "study": {
+            "eye": 0.679,
+            "jaw": null
+          }
+        },
+        {
+          "key": "31-3",
+          "base": {
+            "eye": 0.608,
+            "jaw": 5.033
+          },
+          "prior53": {
+            "eye": 0.629,
+            "jaw": 8.807
+          },
+          "study": {
+            "eye": 1.07,
+            "jaw": 5.103
+          }
+        },
+        {
+          "key": "37-7",
+          "base": {
+            "eye": 3.118,
+            "jaw": 7.265
+          },
+          "prior53": {
+            "eye": 3.118,
+            "jaw": 17.952
+          },
+          "study": {
+            "eye": 3.518,
+            "jaw": 6.14
+          }
+        }
+      ],
+      "mouth": [
+        {
+          "key": "set1",
+          "base": 0.804,
+          "prior53": 1.067,
+          "study": 0.999,
+          "visible": 5
+        },
+        {
+          "key": "set2",
+          "base": 0.902,
+          "prior53": 1.077,
+          "study": 1.462,
+          "visible": 5
+        },
+        {
+          "key": "set3",
+          "base": 0.913,
+          "prior53": null,
+          "study": 0.878,
+          "visible": 1
+        },
+        {
+          "key": "set4",
+          "base": 1.066,
+          "prior53": 1.207,
+          "study": 0.913,
+          "visible": 3
+        },
+        {
+          "key": "24-10",
+          "base": 0.624,
+          "prior53": 0.725,
+          "study": 1.055,
+          "visible": 6
+        }
+      ],
+      "profile": [
+        {
+          "key": "설정3",
+          "base": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  39.027,
+                  139.127
+                ],
+                "target": [
+                  37,
+                  130
+                ],
+                "error": 9.349,
+                "dx": 2.027,
+                "dy": 9.127
+              },
+              "base": {
+                "model": [
+                  51.165,
+                  155.745
+                ],
+                "target": [
+                  47,
+                  141
+                ],
+                "error": 15.322,
+                "dx": 4.165,
+                "dy": 14.745
+              },
+              "upper": {
+                "model": [
+                  54.619,
+                  160.609
+                ],
+                "target": [
+                  46.5,
+                  149.5
+                ],
+                "error": 13.76,
+                "dx": 8.119,
+                "dy": 11.109
+              },
+              "lower": {
+                "model": [
+                  57.358,
+                  165.014
+                ],
+                "target": [
+                  50,
+                  156
+                ],
+                "error": 11.636,
+                "dx": 7.358,
+                "dy": 9.014
+              },
+              "chin": {
+                "model": [
+                  72.762,
+                  186.727
+                ],
+                "target": [
+                  63,
+                  178
+                ],
+                "error": 13.094,
+                "dx": 9.762,
+                "dy": 8.727
+              }
+            },
+            "mean": 12.632
+          },
+          "prior53": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  42.48,
+                  136.905
+                ],
+                "target": [
+                  37,
+                  130
+                ],
+                "error": 8.815,
+                "dx": 5.48,
+                "dy": 6.905
+              },
+              "base": {
+                "model": [
+                  56.56,
+                  151.412
+                ],
+                "target": [
+                  47,
+                  141
+                ],
+                "error": 14.135,
+                "dx": 9.56,
+                "dy": 10.412
+              },
+              "upper": {
+                "model": [
+                  57.349,
+                  156.807
+                ],
+                "target": [
+                  46.5,
+                  149.5
+                ],
+                "error": 13.08,
+                "dx": 10.849,
+                "dy": 7.307
+              },
+              "lower": {
+                "model": [
+                  58.275,
+                  161.516
+                ],
+                "target": [
+                  50,
+                  156
+                ],
+                "error": 9.945,
+                "dx": 8.275,
+                "dy": 5.516
+              },
+              "chin": {
+                "model": [
+                  70.565,
+                  181.797
+                ],
+                "target": [
+                  63,
+                  178
+                ],
+                "error": 8.464,
+                "dx": 7.565,
+                "dy": 3.797
+              }
+            },
+            "mean": 10.888
+          },
+          "study": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  39.056,
+                  132.859
+                ],
+                "target": [
+                  37,
+                  130
+                ],
+                "error": 3.521,
+                "dx": 2.056,
+                "dy": 2.859
+              },
+              "base": {
+                "model": [
+                  55.941,
+                  150.165
+                ],
+                "target": [
+                  47,
+                  141
+                ],
+                "error": 12.804,
+                "dx": 8.941,
+                "dy": 9.165
+              },
+              "upper": {
+                "model": [
+                  60.525,
+                  157.339
+                ],
+                "target": [
+                  46.5,
+                  149.5
+                ],
+                "error": 16.067,
+                "dx": 14.025,
+                "dy": 7.839
+              },
+              "lower": {
+                "model": [
+                  63.684,
+                  162.392
+                ],
+                "target": [
+                  50,
+                  156
+                ],
+                "error": 15.103,
+                "dx": 13.684,
+                "dy": 6.392
+              },
+              "chin": {
+                "model": [
+                  82.055,
+                  179.803
+                ],
+                "target": [
+                  63,
+                  178
+                ],
+                "error": 19.14,
+                "dx": 19.055,
+                "dy": 1.803
+              }
+            },
+            "mean": 13.327
+          }
+        },
+        {
+          "key": "설정4",
+          "base": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  207.875,
+                  153.597
+                ],
+                "target": [
+                  209,
+                  150
+                ],
+                "error": 3.768,
+                "dx": -1.125,
+                "dy": 3.597
+              },
+              "mouth": {
+                "model": [
+                  199.946,
+                  180.92
+                ],
+                "target": [
+                  185,
+                  174
+                ],
+                "error": 16.471,
+                "dx": 14.946,
+                "dy": 6.92
+              },
+              "chin": {
+                "model": [
+                  182.729,
+                  209.087
+                ],
+                "target": [
+                  176,
+                  198
+                ],
+                "error": 12.969,
+                "dx": 6.729,
+                "dy": 11.087
+              }
+            },
+            "mean": 11.069
+          },
+          "prior53": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  207.095,
+                  152.06
+                ],
+                "target": [
+                  209,
+                  150
+                ],
+                "error": 2.806,
+                "dx": -1.905,
+                "dy": 2.06
+              },
+              "mouth": {
+                "model": [
+                  198.094,
+                  177.019
+                ],
+                "target": [
+                  185,
+                  174
+                ],
+                "error": 13.438,
+                "dx": 13.094,
+                "dy": 3.019
+              },
+              "chin": {
+                "model": [
+                  178.068,
+                  202.542
+                ],
+                "target": [
+                  176,
+                  198
+                ],
+                "error": 4.991,
+                "dx": 2.068,
+                "dy": 4.542
+              }
+            },
+            "mean": 7.078
+          },
+          "study": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  209.548,
+                  147.242
+                ],
+                "target": [
+                  209,
+                  150
+                ],
+                "error": 2.812,
+                "dx": 0.548,
+                "dy": -2.758
+              },
+              "mouth": {
+                "model": [
+                  195.69,
+                  178.622
+                ],
+                "target": [
+                  185,
+                  174
+                ],
+                "error": 11.647,
+                "dx": 10.69,
+                "dy": 4.622
+              },
+              "chin": {
+                "model": [
+                  169.83,
+                  202.245
+                ],
+                "target": [
+                  176,
+                  198
+                ],
+                "error": 7.49,
+                "dx": -6.17,
+                "dy": 4.245
+              }
+            },
+            "mean": 7.316
+          }
+        }
+      ],
+      "episodes": [
+        {
+          "key": "37-7",
+          "usage": "53차 반례이며 54차 윤곽 제작에 사용",
+          "crop": [
+            622,
+            95,
+            163
+          ],
+          "note": "아래에서 올려다보는 장면. 왼쪽 볼은 옆머리에 가려 턱끝 가까운 구간만 계측. 각도는 추정값.",
+          "sha256": "51769476896f5d055941fa973d532c6a67a9cc5fbf069ce650db1cd29baf0d0c",
+          "results": [
+            {
+              "yaw": 14,
+              "pitch": -29,
+              "rms": 6.211,
+              "roll": 9.396,
+              "models": {
+                "base": {
+                  "jaw": 8.925,
+                  "eye": 3.889,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 28.476,
+                  "eye": 3.852,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "study": {
+                  "jaw": 12.758,
+                  "eye": 4.002,
+                  "mouth": null,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": 14,
+              "pitch": -21,
+              "rms": 6.695,
+              "roll": 3.589,
+              "models": {
+                "base": {
+                  "jaw": 6.959,
+                  "eye": 2.794,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 24.518,
+                  "eye": 2.794,
+                  "mouth": null,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 9.932,
+                  "eye": 2.918,
+                  "mouth": null,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": 14,
+              "pitch": -13,
+              "rms": 9.321,
+              "roll": -2.067,
+              "models": {
+                "base": {
+                  "jaw": 4.803,
+                  "eye": 2.08,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 14.816,
+                  "eye": 2.08,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "study": {
+                  "jaw": 6.042,
+                  "eye": 2.683,
+                  "mouth": null,
+                  "mouthVisible": 7
+                }
+              }
+            },
+            {
+              "yaw": 22,
+              "pitch": -29,
+              "rms": 8.182,
+              "roll": 5.722,
+              "models": {
+                "base": {
+                  "jaw": 7.302,
+                  "eye": 3.723,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 20.729,
+                  "eye": 3.856,
+                  "mouth": null,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 9.195,
+                  "eye": 4.152,
+                  "mouth": null,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": 22,
+              "pitch": -21,
+              "rms": 8.496,
+              "roll": 1.137,
+              "models": {
+                "base": {
+                  "jaw": 7.265,
+                  "eye": 3.118,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 17.952,
+                  "eye": 3.118,
+                  "mouth": null,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 6.14,
+                  "eye": 3.518,
+                  "mouth": null,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": 22,
+              "pitch": -13,
+              "rms": 10.143,
+              "roll": -3.271,
+              "models": {
+                "base": {
+                  "jaw": 7.897,
+                  "eye": 2.474,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 11.503,
+                  "eye": 2.474,
+                  "mouth": null,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 7.386,
+                  "eye": 2.975,
+                  "mouth": null,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": 30,
+              "pitch": -29,
+              "rms": 9.919,
+              "roll": 2.255,
+              "models": {
+                "base": {
+                  "jaw": 11.665,
+                  "eye": 4.474,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 20.103,
+                  "eye": 4.365,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "study": {
+                  "jaw": 9.833,
+                  "eye": 4.72,
+                  "mouth": null,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": 30,
+              "pitch": -21,
+              "rms": 10.118,
+              "roll": -1.256,
+              "models": {
+                "base": {
+                  "jaw": 12.335,
+                  "eye": 4.015,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 19.962,
+                  "eye": 3.859,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "study": {
+                  "jaw": 10.341,
+                  "eye": 3.829,
+                  "mouth": null,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": 30,
+              "pitch": -13,
+              "rms": 11.173,
+              "roll": -4.58,
+              "models": {
+                "base": {
+                  "jaw": 12.911,
+                  "eye": 3.282,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 16.337,
+                  "eye": 3.31,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "study": {
+                  "jaw": 12.044,
+                  "eye": 3.635,
+                  "mouth": null,
+                  "mouthVisible": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "key": "28-7",
+          "usage": "54차 모형·강도를 고정한 뒤 계측. 이전 프로젝트 원전 보유 목록에 포함",
+          "crop": [
+            510,
+            166,
+            219
+          ],
+          "note": "양 눈동자와 코 앞면으로 고정. 왼쪽 위턱과 오른쪽 귀는 머리에 가려 제외. 두 눈 위 먹선과 다문 입이 보인다.",
+          "sha256": "35da102ceda5fad13fd45d3eeb8bd2480c92563519a97a605c9a34af746de6ae",
+          "results": [
+            {
+              "yaw": -18,
+              "pitch": -8,
+              "rms": 7.289,
+              "roll": -3.367,
+              "models": {
+                "base": {
+                  "jaw": 10.467,
+                  "eye": 0.817,
+                  "mouth": 0.406,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 7.52,
+                  "eye": 0.737,
+                  "mouth": 0.999,
+                  "mouthVisible": 3
+                },
+                "study": {
+                  "jaw": 8.723,
+                  "eye": 0.685,
+                  "mouth": 0.788,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": -18,
+              "pitch": 0,
+              "rms": 4.721,
+              "roll": -4.645,
+              "models": {
+                "base": {
+                  "jaw": 8.231,
+                  "eye": 0.701,
+                  "mouth": 0.456,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 6.087,
+                  "eye": 0.845,
+                  "mouth": 0.604,
+                  "mouthVisible": 3
+                },
+                "study": {
+                  "jaw": 3.961,
+                  "eye": 0.481,
+                  "mouth": 0.798,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": -18,
+              "pitch": 8,
+              "rms": 4.735,
+              "roll": -5.91,
+              "models": {
+                "base": {
+                  "jaw": 11.791,
+                  "eye": 1.004,
+                  "mouth": 0.865,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 6.925,
+                  "eye": 0.921,
+                  "mouth": 0.791,
+                  "mouthVisible": 5
+                },
+                "study": {
+                  "jaw": 7.735,
+                  "eye": 0.414,
+                  "mouth": 0.967,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": -10,
+              "pitch": -8,
+              "rms": 5.467,
+              "roll": -2.562,
+              "models": {
+                "base": {
+                  "jaw": 8.291,
+                  "eye": 0.673,
+                  "mouth": 0.765,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 6.818,
+                  "eye": 0.767,
+                  "mouth": 1.131,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 8.954,
+                  "eye": 0.647,
+                  "mouth": 0.851,
+                  "mouthVisible": 7
+                }
+              }
+            },
+            {
+              "yaw": -10,
+              "pitch": 0,
+              "rms": 1.524,
+              "roll": -2.898,
+              "models": {
+                "base": {
+                  "jaw": 6.159,
+                  "eye": 0.793,
+                  "mouth": 0.742,
+                  "mouthVisible": 6
+                },
+                "prior": {
+                  "jaw": 4.346,
+                  "eye": 0.815,
+                  "mouth": 0.867,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 3.28,
+                  "eye": 0.506,
+                  "mouth": 1.081,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": -10,
+              "pitch": 8,
+              "rms": 2.325,
+              "roll": -3.27,
+              "models": {
+                "base": {
+                  "jaw": 8.896,
+                  "eye": 0.826,
+                  "mouth": 0.659,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 5.752,
+                  "eye": 0.889,
+                  "mouth": 0.924,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 6.219,
+                  "eye": 0.39,
+                  "mouth": 1.057,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": -2,
+              "pitch": -8,
+              "rms": 6.249,
+              "roll": -1.709,
+              "models": {
+                "base": {
+                  "jaw": 8.553,
+                  "eye": 0.53,
+                  "mouth": 0.609,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 8.744,
+                  "eye": 0.669,
+                  "mouth": 1.033,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 9.947,
+                  "eye": 0.791,
+                  "mouth": 0.756,
+                  "mouthVisible": 7
+                }
+              }
+            },
+            {
+              "yaw": -2,
+              "pitch": 0,
+              "rms": 3.24,
+              "roll": -1.115,
+              "models": {
+                "base": {
+                  "jaw": 4.406,
+                  "eye": 0.431,
+                  "mouth": 0.759,
+                  "mouthVisible": 4
+                },
+                "prior": {
+                  "jaw": 5.335,
+                  "eye": 0.657,
+                  "mouth": 1.343,
+                  "mouthVisible": 5
+                },
+                "study": {
+                  "jaw": 5.29,
+                  "eye": 0.486,
+                  "mouth": 0.784,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": -2,
+              "pitch": 8,
+              "rms": 3.502,
+              "roll": -0.609,
+              "models": {
+                "base": {
+                  "jaw": 7.513,
+                  "eye": 0.792,
+                  "mouth": 0.741,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 6.386,
+                  "eye": 0.748,
+                  "mouth": 1.036,
+                  "mouthVisible": 4
+                },
+                "study": {
+                  "jaw": 7.726,
+                  "eye": 0.666,
+                  "mouth": 1.183,
+                  "mouthVisible": 6
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "M01": {
+      "same": false,
+      "geometry": {
+        "moved": 8901,
+        "under": 0,
+        "changedNormal": 9031,
+        "nan": 0,
+        "oldReversed": 41,
+        "newReversed": 1,
+        "repaired": 40,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8318,
+        "minAreaRatio": 0.031191
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 165,
+            "alpha": 6,
+            "base": "f4c103a844208d9a480f9494f4ca8a100eead2e5b60a7787cd8b6f45ff524802",
+            "study": "f830a014f96a363abe2c27b6ee84db0984d23b29c66a94d44497f9fb04e10e0c"
+          },
+          "96": {
+            "rgba8": 574,
+            "alpha": 15,
+            "base": "c8c5be081ec54914db0711b324e93df668034278e3cc821acd5dca10df54415b",
+            "study": "e8abff6b00c65f1fd4153aa0625bf2851ec268ad6901ae2bd8a26b61607c2f28"
+          },
+          "1024": {
+            "rgba8": 66287,
+            "alpha": 1757,
+            "base": "ffe3d5eb50324ac2d568d81cd9653da954ee07855ba6b452349402562dc4f8a6",
+            "study": "27d3fe6c88ab46f003cbdaf91f77f50f70cff6cf0df9a96f0ec07896f84ec50f"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 180,
+            "alpha": 12,
+            "base": "28d636063cf10c1e105b09fd90138b7d0b364881e7ac4c82b14d0b37945260fb",
+            "study": "dde7a7f36f6af22b05191eb487d1c1370d7e47f2d2b8996952f8ffe2e9376c57"
+          },
+          "96": {
+            "rgba8": 629,
+            "alpha": 44,
+            "base": "aa2414effb9d06a84fb81ee2529d9fdc71e8c6bca47dc8cae38c61cba3107a66",
+            "study": "bcc03f3ede14ea9e927a706b80e2b371b079fba1d1f6d8146712e6d4afc26bb8"
+          },
+          "1024": {
+            "rgba8": 69856,
+            "alpha": 4430,
+            "base": "6fc73facb04dc9499a2208efe05532ce500b279a00be9bcfa56300636b35826e",
+            "study": "5b240800454816490ddffe7fe7fa3d7800b59284a164365f28c25c7f1f2c3713"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 143,
+            "alpha": 12,
+            "base": "024fe0a30cfd7e10f54b0788448e5fb48f3374662bacc908684d23e9c547da8d",
+            "study": "4d8648ed4622a7d4ee704864fad2a3690e45bfee09803e324a066d9e059b7b15"
+          },
+          "96": {
+            "rgba8": 529,
+            "alpha": 56,
+            "base": "7267c0a51eca09bcd2725ab3ae5c024e5d9a977fe0224d1cf4bf9d64d4090ac2",
+            "study": "d7a3ce23b9b954319c8e61befe49958d782aedae5f5cd9b3c0f4048f5c471b12"
+          },
+          "1024": {
+            "rgba8": 57547,
+            "alpha": 5370,
+            "base": "93fcd73d17bfdf9f2f164f1cef41393817faef6eaf50313c62967897004f35a1",
+            "study": "0e9b101cbf1d3809b0fb46fae4158ee69760ccd7ad1f79586dbf8e9d8d04a96a"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 116,
+            "alpha": 16,
+            "base": "80f86a96302d932c2a262477fbcba9ee2851f581d82b03bb33427c52538f99d2",
+            "study": "97229d7218f65b8abc5b51ab8b9b2b2b9a0860e725b9d4a36386e0265299fb03"
+          },
+          "96": {
+            "rgba8": 388,
+            "alpha": 63,
+            "base": "df72b7c4368fac366bc6b28be88af5ce109526723da4d9fe6d4909749541e393",
+            "study": "2828d48a478b2cee4ed78393538cba855ef734f2577482670343e657df598b5b"
+          },
+          "1024": {
+            "rgba8": 43434,
+            "alpha": 6352,
+            "base": "0b581c157794b89fd3afb0b20eb92b446624731569aa2c9db1bf67d7cb10dd82",
+            "study": "fd4c0b1686a6d43ab1a0860c03fc768368d4065a056dc15f98e2145293b5f98e"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 127,
+            "alpha": 16,
+            "base": "6cc42f74e658ca0814e101dd992582797e48048759f8ce858a15c583e7be7ef8",
+            "study": "6d78e4f1193759d3f0de1d1637f55daf3748edaa63b612c3a8cae1a5b68d806f"
+          },
+          "96": {
+            "rgba8": 464,
+            "alpha": 63,
+            "base": "c320c6d37e5832ad14d5f29587dc83826c3dfa160afcbb9ea9a9528842f802f2",
+            "study": "588913b42602521081fc8c9ebc14aa19d28fc006f97591778fb0c7426f0a03c8"
+          },
+          "1024": {
+            "rgba8": 49349,
+            "alpha": 6352,
+            "base": "54c6eb613daddf3665c7266563c29ba4bd5926c2cc930bd2d1874ec18901977b",
+            "study": "77004bf5cf1e0fb6e6a06333a3771405a2baf69935c9f204195bf2e6b3cf5ddd"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 63,
+            "alpha": 12,
+            "base": "0dcd3a94f271f199e43aeae6297ebd20686fa49f3fa6e48e11b801a7904a0d0d",
+            "study": "969268ab6ada2aed954b9654b45b60378592a7396fefb776ce913595f2c2f7fe"
+          },
+          "96": {
+            "rgba8": 242,
+            "alpha": 56,
+            "base": "49731bd6d735b2664379d41ba0d7a9bca0d9ef820378dc9dc17a506dc5da0dc6",
+            "study": "6f8c99d758a80afb3f6790dcf32441caee59060d4fd24f80bb38c76aa42732a1"
+          },
+          "1024": {
+            "rgba8": 22932,
+            "alpha": 5370,
+            "base": "036a31ac2253fb8d31bfbbb7fad62a19643e64d1b941aa140baa542816bacaa3",
+            "study": "c2bbf39712d8c82636503fa3f9c846dc0de7968824cc757ad7a6e36360411a35"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 45,
+            "alpha": 12,
+            "base": "f5b3bd6fae4cf8c0258be0e6e0c25811b638125561040c97e397d919df6ddf38",
+            "study": "98c71212911503d76a1f32164ab8ddd0a3426e26fa0b1ecbabd246b8095b02d5"
+          },
+          "96": {
+            "rgba8": 122,
+            "alpha": 44,
+            "base": "3c99ca45d58d152d65f68067f59bc72db6c7f1a22b0f1d0918fe37ac180aa0fe",
+            "study": "d0301133451905b675a97249c1c787a302981d24ab7b23dc037ea52d7103c326"
+          },
+          "1024": {
+            "rgba8": 10332,
+            "alpha": 4430,
+            "base": "0d2d1264c4fb4e921bb49b40570c1fda41ed5bd57c0697bd0a902c9889af6031",
+            "study": "dd14cc9b90a9615a0909b201460014868b0f12ad2984f5a3b41a4f558b4e72ca"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 16,
+            "alpha": 6,
+            "base": "e6cd6d66182a5f16eea0575cbc3b3fa5dd73397d40fb6a3f8c552ed0c17a7e8c",
+            "study": "c2b0ab871a6963edcacfdcc59ac79f3c1048e017a647e6b2836a12992a6a9185"
+          },
+          "96": {
+            "rgba8": 41,
+            "alpha": 15,
+            "base": "d3521532cd7675e466c56885e895f49ff074e043688b66f581df41c456498f0f",
+            "study": "f70375492a7eb4ccb2369e2d1a2fb902397395eb0bde1baeeab2461e187e2770"
+          },
+          "1024": {
+            "rgba8": 2614,
+            "alpha": 1757,
+            "base": "f60dcb904050b7c1563ba03bdc6fe20b6f251c0323fcb9a7b0f4b99efb3b9cf4",
+            "study": "21618c0394e40fdfde44cd44d0496b83c24f375a27ae0a3ced1abe3593628bac"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 130,
+            "alpha": 1,
+            "base": "8900a5985d490554dbdd131f5af111094273ce0a415aee131f8bee0b336f46c4",
+            "study": "5e7db92fe9de3029b2970b9e6a602ed781577ced33fb297277dcb81a2fe4a465"
+          },
+          "96": {
+            "rgba8": 431,
+            "alpha": 8,
+            "base": "0dbce26a779e77f91546468cb86956b09b95c5bebeedd4d00f9c44b43b21054a",
+            "study": "dd966c21b3ecaa119a8dc151dd46126070444308362e2d857577f70f8e2e9e00"
+          },
+          "1024": {
+            "rgba8": 52312,
+            "alpha": 918,
+            "base": "ae95b6e07521280aed70e724f52f49b36a74ff61104e59c5c62f1a25ea392614",
+            "study": "f30c7dd900a4408883306087bf6c1276752bd3770af2be121af3ad5cc95f88a2"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 134,
+            "alpha": 6,
+            "base": "2fa71f259cdaab66a9415eada4b67de48b8d5f8e43a2cb391bebb81b4ce36749",
+            "study": "556444b11e9a06ec7281a37b335f4b91d463a1db168ed787c8fa804d9068339f"
+          },
+          "96": {
+            "rgba8": 493,
+            "alpha": 18,
+            "base": "7883c473cf9bcc372243fefaf1a660f7416d449b0005b9100191758c65af169a",
+            "study": "be34f92e61ad28ef4ac88a65c63d040a8a1aa2a291ebf4cb5416cbd45966e61e"
+          },
+          "1024": {
+            "rgba8": 54969,
+            "alpha": 2291,
+            "base": "0b4628e8445e23ee25bf551ebdfa48ac281e6d16571279eefa6e0dc61aa255a4",
+            "study": "febd89e4a2e67bc7ee1240a6c4b1e568b7ce4e695296d0ec249317d39672bf0f"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 141,
+            "alpha": 12,
+            "base": "6d64f99d6a890e2503a4db2bb6cae976ea7c0ed3c09d2bb5d0d0548a6b7411de",
+            "study": "c12ddca1fb3f1f6750620f87e4c607cbedcf55929ddd2db438f13bbe9728b662"
+          },
+          "96": {
+            "rgba8": 521,
+            "alpha": 44,
+            "base": "edc603f729d4bed9f23638079dfa7da84213f1f02ec74e12afc5d7e46d094d21",
+            "study": "f38a4c8a0d790ccde09f33da259e155d2ce9c8cdf34060cf96c23fce1c7d9b09"
+          },
+          "1024": {
+            "rgba8": 58969,
+            "alpha": 4896,
+            "base": "ff589ccacba3683219cc87c0cfa3d103744fb6c6287159ebebe7132d6ef47d41",
+            "study": "600b9926563250b18661ea2a058092864fe6194a322198e575e5e21080c993d1"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 140,
+            "alpha": 12,
+            "base": "68dc1970a9edd4633374bbfdeabba96db046cdf2805b0e77fbb865975cc5c146",
+            "study": "5ef7666f8a2f2a4540e634e884253e749e7103e30cfc1820b0fee92b0672d79b"
+          },
+          "96": {
+            "rgba8": 484,
+            "alpha": 40,
+            "base": "e295b660c76b871aa736464d109ef7655062883f9b11e7d785feb220785edd86",
+            "study": "cab35d1d1e2615ffdbb01d14f5e0545f91bf049d7267fed1e67dc6851852ecc6"
+          },
+          "1024": {
+            "rgba8": 53912,
+            "alpha": 4715,
+            "base": "045acd77770ddd9be4927e621f99d953a5ef3f34a6d2f81b13147a3c67d01e86",
+            "study": "c807fba1cf43724680f003fec60714beba17ff053b9c134f37bd5922c2b51420"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ],
+      "observed": [
+        {
+          "key": "설정1",
+          "base": {
+            "eye": 1.351,
+            "jaw": 2.734
+          },
+          "prior53": {
+            "eye": 1.394,
+            "jaw": 2.102
+          },
+          "study": {
+            "eye": 1.312,
+            "jaw": 2.561
+          }
+        },
+        {
+          "key": "설정2",
+          "base": {
+            "eye": 2.123,
+            "jaw": 5.793
+          },
+          "prior53": {
+            "eye": 2.233,
+            "jaw": 5.721
+          },
+          "study": {
+            "eye": 1.899,
+            "jaw": 4.248
+          }
+        },
+        {
+          "key": "설정3",
+          "base": {
+            "eye": 1.111,
+            "jaw": 13.439
+          },
+          "prior53": {
+            "eye": 1.111,
+            "jaw": 12.07
+          },
+          "study": {
+            "eye": 1.111,
+            "jaw": 9.807
+          }
+        },
+        {
+          "key": "설정4",
+          "base": {
+            "eye": 1.991,
+            "jaw": 5.189
+          },
+          "prior53": {
+            "eye": 2.154,
+            "jaw": 4.827
+          },
+          "study": {
+            "eye": 2.042,
+            "jaw": 4.088
+          }
+        },
+        {
+          "key": "37-5",
+          "base": {
+            "eye": 1.017,
+            "jaw": null
+          },
+          "prior53": {
+            "eye": 1.253,
+            "jaw": null
+          },
+          "study": {
+            "eye": 1.141,
+            "jaw": null
+          }
+        },
+        {
+          "key": "17-8",
+          "base": {
+            "eye": null,
+            "jaw": 7.816
+          },
+          "prior53": {
+            "eye": null,
+            "jaw": 4.267
+          },
+          "study": {
+            "eye": null,
+            "jaw": 3.888
+          }
+        },
+        {
+          "key": "14-10",
+          "base": {
+            "eye": null,
+            "jaw": 11.598
+          },
+          "prior53": {
+            "eye": null,
+            "jaw": 12.839
+          },
+          "study": {
+            "eye": null,
+            "jaw": 11.119
+          }
+        }
+      ],
+      "mouth": [
+        {
+          "key": "set1",
+          "base": 0.896,
+          "prior53": 0.327,
+          "study": 1,
+          "visible": 5
+        },
+        {
+          "key": "set2",
+          "base": 0.729,
+          "prior53": 1.127,
+          "study": 0.602,
+          "visible": 8
+        },
+        {
+          "key": "set3",
+          "base": 1.413,
+          "prior53": 2.119,
+          "study": 1.191,
+          "visible": 1
+        },
+        {
+          "key": "set4",
+          "base": 2.16,
+          "prior53": 2.062,
+          "study": 2.092,
+          "visible": 4
+        },
+        {
+          "key": "01-2",
+          "base": 1.335,
+          "prior53": 1.215,
+          "study": 1.215,
+          "visible": 6
+        },
+        {
+          "key": "23-3",
+          "base": 0.71,
+          "prior53": 0.708,
+          "study": 1.154,
+          "visible": 5
+        }
+      ],
+      "profile": [
+        {
+          "key": "설정3",
+          "base": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  35.053,
+                  160.039
+                ],
+                "target": [
+                  35.5,
+                  137
+                ],
+                "error": 23.043,
+                "dx": -0.447,
+                "dy": 23.039
+              },
+              "base": {
+                "model": [
+                  48.226,
+                  168.012
+                ],
+                "target": [
+                  49,
+                  148
+                ],
+                "error": 20.027,
+                "dx": -0.774,
+                "dy": 20.012
+              },
+              "upper": {
+                "model": [
+                  49.94,
+                  174.256
+                ],
+                "target": [
+                  49.7,
+                  154.4
+                ],
+                "error": 19.857,
+                "dx": 0.24,
+                "dy": 19.856
+              },
+              "lower": {
+                "model": [
+                  54.878,
+                  178.852
+                ],
+                "target": [
+                  53.5,
+                  162.1
+                ],
+                "error": 16.808,
+                "dx": 1.378,
+                "dy": 16.752
+              },
+              "chin": {
+                "model": [
+                  71.737,
+                  200.028
+                ],
+                "target": [
+                  63,
+                  184
+                ],
+                "error": 18.255,
+                "dx": 8.737,
+                "dy": 16.028
+              }
+            },
+            "mean": 19.598
+          },
+          "prior53": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  37.941,
+                  156.773
+                ],
+                "target": [
+                  35.5,
+                  137
+                ],
+                "error": 19.923,
+                "dx": 2.441,
+                "dy": 19.773
+              },
+              "base": {
+                "model": [
+                  54.346,
+                  164.894
+                ],
+                "target": [
+                  49,
+                  148
+                ],
+                "error": 17.72,
+                "dx": 5.346,
+                "dy": 16.894
+              },
+              "upper": {
+                "model": [
+                  53.078,
+                  171.948
+                ],
+                "target": [
+                  49.7,
+                  154.4
+                ],
+                "error": 17.87,
+                "dx": 3.378,
+                "dy": 17.548
+              },
+              "lower": {
+                "model": [
+                  55.971,
+                  176.771
+                ],
+                "target": [
+                  53.5,
+                  162.1
+                ],
+                "error": 14.877,
+                "dx": 2.471,
+                "dy": 14.671
+              },
+              "chin": {
+                "model": [
+                  71.387,
+                  197.829
+                ],
+                "target": [
+                  63,
+                  184
+                ],
+                "error": 16.173,
+                "dx": 8.387,
+                "dy": 13.829
+              }
+            },
+            "mean": 17.313
+          },
+          "study": {
+            "key": "설정3",
+            "points": {
+              "nose": {
+                "model": [
+                  33.566,
+                  152.005
+                ],
+                "target": [
+                  35.5,
+                  137
+                ],
+                "error": 15.129,
+                "dx": -1.934,
+                "dy": 15.005
+              },
+              "base": {
+                "model": [
+                  53.523,
+                  164.081
+                ],
+                "target": [
+                  49,
+                  148
+                ],
+                "error": 16.705,
+                "dx": 4.523,
+                "dy": 16.081
+              },
+              "upper": {
+                "model": [
+                  54.723,
+                  172.583
+                ],
+                "target": [
+                  49.7,
+                  154.4
+                ],
+                "error": 18.864,
+                "dx": 5.023,
+                "dy": 18.183
+              },
+              "lower": {
+                "model": [
+                  58.414,
+                  177.536
+                ],
+                "target": [
+                  53.5,
+                  162.1
+                ],
+                "error": 16.199,
+                "dx": 4.914,
+                "dy": 15.436
+              },
+              "chin": {
+                "model": [
+                  74.263,
+                  199.129
+                ],
+                "target": [
+                  63,
+                  184
+                ],
+                "error": 18.861,
+                "dx": 11.263,
+                "dy": 15.129
+              }
+            },
+            "mean": 17.152
+          }
+        },
+        {
+          "key": "설정4",
+          "base": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  205.372,
+                  155.508
+                ],
+                "target": [
+                  218.8,
+                  140.3
+                ],
+                "error": 20.288,
+                "dx": -13.428,
+                "dy": 15.208
+              },
+              "mouth": {
+                "model": [
+                  194.934,
+                  173.863
+                ],
+                "target": [
+                  188,
+                  156
+                ],
+                "error": 19.162,
+                "dx": 6.934,
+                "dy": 17.863
+              },
+              "chin": {
+                "model": [
+                  171.36,
+                  194.494
+                ],
+                "target": [
+                  183,
+                  198
+                ],
+                "error": 12.157,
+                "dx": -11.64,
+                "dy": -3.506
+              }
+            },
+            "mean": 17.202
+          },
+          "prior53": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  206.217,
+                  153.277
+                ],
+                "target": [
+                  218.8,
+                  140.3
+                ],
+                "error": 18.076,
+                "dx": -12.583,
+                "dy": 12.977
+              },
+              "mouth": {
+                "model": [
+                  193.54,
+                  171.518
+                ],
+                "target": [
+                  188,
+                  156
+                ],
+                "error": 16.477,
+                "dx": 5.54,
+                "dy": 15.518
+              },
+              "chin": {
+                "model": [
+                  171.501,
+                  192.086
+                ],
+                "target": [
+                  183,
+                  198
+                ],
+                "error": 12.93,
+                "dx": -11.499,
+                "dy": -5.914
+              }
+            },
+            "mean": 15.828
+          },
+          "study": {
+            "key": "설정4",
+            "points": {
+              "nose": {
+                "model": [
+                  210.455,
+                  148.711
+                ],
+                "target": [
+                  218.8,
+                  140.3
+                ],
+                "error": 11.848,
+                "dx": -8.345,
+                "dy": 8.411
+              },
+              "mouth": {
+                "model": [
+                  192.544,
+                  172.315
+                ],
+                "target": [
+                  188,
+                  156
+                ],
+                "error": 16.935,
+                "dx": 4.544,
+                "dy": 16.315
+              },
+              "chin": {
+                "model": [
+                  169.543,
+                  193.491
+                ],
+                "target": [
+                  183,
+                  198
+                ],
+                "error": 14.192,
+                "dx": -13.457,
+                "dy": -4.509
+              }
+            },
+            "mean": 14.325
+          }
+        }
+      ],
+      "episodes": [
+        {
+          "key": "14-10",
+          "usage": "53차 반례이며 54차 윤곽 제작에 사용",
+          "crop": [
+            457,
+            194,
+            94
+          ],
+          "note": "무릎 꿇고 숙인 측면. 원래 얼굴 폭 약 50화소, 눈은 거의 머리에 가려 점수 제외. 턱선과 목깃이 갈라지는 지점까지만 계측.",
+          "sha256": "14282d54dd2915aab1514b3c008543844995f570850096cae3e9b105fed14457",
+          "results": [
+            {
+              "yaw": -84,
+              "pitch": 9,
+              "rms": 11.113,
+              "roll": -27.609,
+              "models": {
+                "base": {
+                  "jaw": 8.244,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 9.537,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                },
+                "study": {
+                  "jaw": 7.601,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                }
+              }
+            },
+            {
+              "yaw": -84,
+              "pitch": 17,
+              "rms": 11.147,
+              "roll": -31.044,
+              "models": {
+                "base": {
+                  "jaw": 9.596,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "prior": {
+                  "jaw": 11.023,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                },
+                "study": {
+                  "jaw": 9.697,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                }
+              }
+            },
+            {
+              "yaw": -84,
+              "pitch": 25,
+              "rms": 11.912,
+              "roll": -34.728,
+              "models": {
+                "base": {
+                  "jaw": 12.031,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "prior": {
+                  "jaw": 13.163,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                },
+                "study": {
+                  "jaw": 12.351,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                }
+              }
+            },
+            {
+              "yaw": -76,
+              "pitch": 9,
+              "rms": 12.286,
+              "roll": -27.377,
+              "models": {
+                "base": {
+                  "jaw": 10.245,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "prior": {
+                  "jaw": 11.454,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                },
+                "study": {
+                  "jaw": 9.479,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                }
+              }
+            },
+            {
+              "yaw": -76,
+              "pitch": 17,
+              "rms": 12.504,
+              "roll": -29.791,
+              "models": {
+                "base": {
+                  "jaw": 11.598,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "prior": {
+                  "jaw": 12.839,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                },
+                "study": {
+                  "jaw": 11.119,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                }
+              }
+            },
+            {
+              "yaw": -76,
+              "pitch": 25,
+              "rms": 13.214,
+              "roll": -32.43,
+              "models": {
+                "base": {
+                  "jaw": 13.845,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "prior": {
+                  "jaw": 15.001,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "study": {
+                  "jaw": 13.393,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                }
+              }
+            },
+            {
+              "yaw": -68,
+              "pitch": 9,
+              "rms": 13.156,
+              "roll": -26.96,
+              "models": {
+                "base": {
+                  "jaw": 11.906,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 13.044,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "study": {
+                  "jaw": 10.993,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 1
+                }
+              }
+            },
+            {
+              "yaw": -68,
+              "pitch": 17,
+              "rms": 13.532,
+              "roll": -28.431,
+              "models": {
+                "base": {
+                  "jaw": 13.392,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 14.551,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "study": {
+                  "jaw": 12.643,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                }
+              }
+            },
+            {
+              "yaw": -68,
+              "pitch": 25,
+              "rms": 14.261,
+              "roll": -30.111,
+              "models": {
+                "base": {
+                  "jaw": 15.559,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                },
+                "prior": {
+                  "jaw": 16.333,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 2
+                },
+                "study": {
+                  "jaw": 14.623,
+                  "eye": null,
+                  "mouth": null,
+                  "mouthVisible": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "key": "03-3",
+          "usage": "54차 모형·강도를 고정한 뒤 계측. 이전 프로젝트 원전 보유 목록에 포함",
+          "crop": [
+            656,
+            111,
+            128
+          ],
+          "note": "눈을 감고 웃는다. 눈선 중간 두 곳을 눈 위치 대용으로 쓰고 코와 보이는 귀로 구도 고정. 상안검 성능을 매기지 않는다. 원본 얼굴 폭 약 95px.",
+          "sha256": "7dfb0d76df6f3f848503d558b44b841f7aca4e8c6977f35d2dab1816a9dd71ae",
+          "results": [
+            {
+              "yaw": -16,
+              "pitch": -4,
+              "rms": 12.419,
+              "roll": -5.931,
+              "models": {
+                "base": {
+                  "jaw": 12.384,
+                  "eye": null,
+                  "mouth": 0.971,
+                  "mouthVisible": 7
+                },
+                "prior": {
+                  "jaw": 9.206,
+                  "eye": null,
+                  "mouth": 0.84,
+                  "mouthVisible": 9
+                },
+                "study": {
+                  "jaw": 8.876,
+                  "eye": null,
+                  "mouth": 1.111,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": -16,
+              "pitch": 4,
+              "rms": 12.15,
+              "roll": -2.296,
+              "models": {
+                "base": {
+                  "jaw": 11.039,
+                  "eye": null,
+                  "mouth": 0.85,
+                  "mouthVisible": 7
+                },
+                "prior": {
+                  "jaw": 7.858,
+                  "eye": null,
+                  "mouth": 0.521,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 7.628,
+                  "eye": null,
+                  "mouth": 1.219,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": -16,
+              "pitch": 12,
+              "rms": 13.172,
+              "roll": 1.212,
+              "models": {
+                "base": {
+                  "jaw": 13.137,
+                  "eye": null,
+                  "mouth": 0.65,
+                  "mouthVisible": 6
+                },
+                "prior": {
+                  "jaw": 9.57,
+                  "eye": null,
+                  "mouth": 0.778,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 9.009,
+                  "eye": null,
+                  "mouth": 1.135,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": -8,
+              "pitch": -4,
+              "rms": 9.032,
+              "roll": -5.884,
+              "models": {
+                "base": {
+                  "jaw": 4.185,
+                  "eye": null,
+                  "mouth": 1.14,
+                  "mouthVisible": 6
+                },
+                "prior": {
+                  "jaw": 3.2,
+                  "eye": null,
+                  "mouth": 0.815,
+                  "mouthVisible": 9
+                },
+                "study": {
+                  "jaw": 3.729,
+                  "eye": null,
+                  "mouth": 1.14,
+                  "mouthVisible": 6
+                }
+              }
+            },
+            {
+              "yaw": -8,
+              "pitch": 4,
+              "rms": 8.805,
+              "roll": -0.926,
+              "models": {
+                "base": {
+                  "jaw": 4.866,
+                  "eye": null,
+                  "mouth": 0.586,
+                  "mouthVisible": 7
+                },
+                "prior": {
+                  "jaw": 2.213,
+                  "eye": null,
+                  "mouth": 0.58,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 2.823,
+                  "eye": null,
+                  "mouth": 0.676,
+                  "mouthVisible": 7
+                }
+              }
+            },
+            {
+              "yaw": -8,
+              "pitch": 12,
+              "rms": 10.79,
+              "roll": 3.828,
+              "models": {
+                "base": {
+                  "jaw": 9.287,
+                  "eye": null,
+                  "mouth": 0.804,
+                  "mouthVisible": 6
+                },
+                "prior": {
+                  "jaw": 4.357,
+                  "eye": null,
+                  "mouth": 0.765,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 4.29,
+                  "eye": null,
+                  "mouth": 1.201,
+                  "mouthVisible": 4
+                }
+              }
+            },
+            {
+              "yaw": 0,
+              "pitch": -4,
+              "rms": 5.889,
+              "roll": -5.816,
+              "models": {
+                "base": {
+                  "jaw": 5.911,
+                  "eye": null,
+                  "mouth": 1.673,
+                  "mouthVisible": 5
+                },
+                "prior": {
+                  "jaw": 10.543,
+                  "eye": null,
+                  "mouth": 1.071,
+                  "mouthVisible": 10
+                },
+                "study": {
+                  "jaw": 11.758,
+                  "eye": null,
+                  "mouth": 1.673,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": 0,
+              "pitch": 4,
+              "rms": 5.671,
+              "roll": 0.702,
+              "models": {
+                "base": {
+                  "jaw": 2.658,
+                  "eye": null,
+                  "mouth": 1.15,
+                  "mouthVisible": 7
+                },
+                "prior": {
+                  "jaw": 5.828,
+                  "eye": null,
+                  "mouth": 0.876,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 5.678,
+                  "eye": null,
+                  "mouth": 1.011,
+                  "mouthVisible": 5
+                }
+              }
+            },
+            {
+              "yaw": 0,
+              "pitch": 12,
+              "rms": 9.275,
+              "roll": 6.886,
+              "models": {
+                "base": {
+                  "jaw": 5.239,
+                  "eye": null,
+                  "mouth": 1.343,
+                  "mouthVisible": 6
+                },
+                "prior": {
+                  "jaw": 3.52,
+                  "eye": null,
+                  "mouth": 1.105,
+                  "mouthVisible": 6
+                },
+                "study": {
+                  "jaw": 4.355,
+                  "eye": null,
+                  "mouth": 1.336,
+                  "mouthVisible": 5
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "F01": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 48,
+        "newReversed": 48,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8278,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "b7b4fe6c0dcc29b9555717873931914c6acc5bfb492563a69996fa3432c84fe9",
+            "study": "b7b4fe6c0dcc29b9555717873931914c6acc5bfb492563a69996fa3432c84fe9"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "40717ed301cc3b91ec9f78f63403f8c51ea1e85ce2fc6371468da7d93dae60ab",
+            "study": "40717ed301cc3b91ec9f78f63403f8c51ea1e85ce2fc6371468da7d93dae60ab"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "0cc18d7f7fdb60c76f7e36aa82b5afd3a22a9415005ed863d6edcdfebf9e7100",
+            "study": "0cc18d7f7fdb60c76f7e36aa82b5afd3a22a9415005ed863d6edcdfebf9e7100"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "10e2a8759dc4fe6557a90415b08d7e729bb24e906eba2f114e286db98a891d79",
+            "study": "10e2a8759dc4fe6557a90415b08d7e729bb24e906eba2f114e286db98a891d79"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4f540cc1bc0821dfd5df936e7f547a870030297baaf0962e5777958c3e6109ef",
+            "study": "4f540cc1bc0821dfd5df936e7f547a870030297baaf0962e5777958c3e6109ef"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9771b45ce8654f5599ab5dfb129a4c046885fe64558a959c8734d116c5e62629",
+            "study": "9771b45ce8654f5599ab5dfb129a4c046885fe64558a959c8734d116c5e62629"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "892dd96d374ceaaedd6be90e2750dbb418d5cbd90edd67beab245cd9f723dd77",
+            "study": "892dd96d374ceaaedd6be90e2750dbb418d5cbd90edd67beab245cd9f723dd77"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "effc05175a3a2ff2443546964913523dbbdd5d7dd27ee76128bd2adbaa60567f",
+            "study": "effc05175a3a2ff2443546964913523dbbdd5d7dd27ee76128bd2adbaa60567f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "763f06ebe35dc1680f1f50d39181cd31a73c4ee8e0cbd5928ac9b60ea6c032c9",
+            "study": "763f06ebe35dc1680f1f50d39181cd31a73c4ee8e0cbd5928ac9b60ea6c032c9"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "80a2e1c520f3853416859f448bf00684ebf91ecd5721f849a6ff155d3cb215dd",
+            "study": "80a2e1c520f3853416859f448bf00684ebf91ecd5721f849a6ff155d3cb215dd"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9811a5bcf25f177a9dac5c82c6e3951bf53665447bed2eff9be2d35b7d49399f",
+            "study": "9811a5bcf25f177a9dac5c82c6e3951bf53665447bed2eff9be2d35b7d49399f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5a3c7a242c3722de5da05ab5f862fe11fafc01f647867a9b0ee4139832628647",
+            "study": "5a3c7a242c3722de5da05ab5f862fe11fafc01f647867a9b0ee4139832628647"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "cd4be4d6c75492260d3835c16632b56ea30a5b49d34c62f72dea08ac2f0350ef",
+            "study": "cd4be4d6c75492260d3835c16632b56ea30a5b49d34c62f72dea08ac2f0350ef"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "94fb5f50cefd63849ab04ea3ec6700c3825d6bbed4fe84838c2c0cc1ec7645e8",
+            "study": "94fb5f50cefd63849ab04ea3ec6700c3825d6bbed4fe84838c2c0cc1ec7645e8"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c871336810f1ef241cf04b3b7917f9c9a53988daa2d763287288ed2aaba03311",
+            "study": "c871336810f1ef241cf04b3b7917f9c9a53988daa2d763287288ed2aaba03311"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "aec12028e820ad4ada99410451fcce1f240b244818508dc17ca9924ac046a4ca",
+            "study": "aec12028e820ad4ada99410451fcce1f240b244818508dc17ca9924ac046a4ca"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7789802eea0cf9b60e62d836db0d08ed8689b729d6894a5fb938ef3210ac0d15",
+            "study": "7789802eea0cf9b60e62d836db0d08ed8689b729d6894a5fb938ef3210ac0d15"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5db817d39324a2f47226c6a8d487036de75c055131bf127efb16630ceba39fb7",
+            "study": "5db817d39324a2f47226c6a8d487036de75c055131bf127efb16630ceba39fb7"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "65b19686e9f9c2ba37e277842040265480e3e140004c0f1fb85a65c2ccf366fe",
+            "study": "65b19686e9f9c2ba37e277842040265480e3e140004c0f1fb85a65c2ccf366fe"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e71d1c7502c56fb6b633fae3313ffd7d48236816ea846d050ecf6e336a935f2f",
+            "study": "e71d1c7502c56fb6b633fae3313ffd7d48236816ea846d050ecf6e336a935f2f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d7684355ecccfdb76ad920d8ccfad66b7a35a1d344eb871de62ecbf93d61f1ef",
+            "study": "d7684355ecccfdb76ad920d8ccfad66b7a35a1d344eb871de62ecbf93d61f1ef"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "119eba8ddef72ae90f3f15be254ba4ed364911843b24c0f2cd82c75bd168f745",
+            "study": "119eba8ddef72ae90f3f15be254ba4ed364911843b24c0f2cd82c75bd168f745"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "154422ba78d4361f846745d09c28b210c3b7c8b117499068e18e910d1478fc25",
+            "study": "154422ba78d4361f846745d09c28b210c3b7c8b117499068e18e910d1478fc25"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "258984d5d76faadfc7bc83a1dd3c31d89d55911ca1b37734f0fd3ca078c1a13d",
+            "study": "258984d5d76faadfc7bc83a1dd3c31d89d55911ca1b37734f0fd3ca078c1a13d"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "17d72f6355cdad9e29f60af5312c1f22ade86da1da38aa130f5b56157b902910",
+            "study": "17d72f6355cdad9e29f60af5312c1f22ade86da1da38aa130f5b56157b902910"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "47677def481ee57152bd8411eb2cc2d791e40ef3992f1f4847bc24307daceac0",
+            "study": "47677def481ee57152bd8411eb2cc2d791e40ef3992f1f4847bc24307daceac0"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "94e3ddc9dbcd561b0161e9114d9dc13eec6cc4f6973b80247b5740281749f334",
+            "study": "94e3ddc9dbcd561b0161e9114d9dc13eec6cc4f6973b80247b5740281749f334"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4de8b97ca010903852227f54311e9af9a9ea2496ba12db461320629306664c10",
+            "study": "4de8b97ca010903852227f54311e9af9a9ea2496ba12db461320629306664c10"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "22844da11fa3044e3a895d887cc6f06aef4283b9cd694693c69f5a1c6ce19f24",
+            "study": "22844da11fa3044e3a895d887cc6f06aef4283b9cd694693c69f5a1c6ce19f24"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "39e0cb959f53e1a1e8966941f348e3e47edfe4e8bc56a6fd69b18c9972bddc10",
+            "study": "39e0cb959f53e1a1e8966941f348e3e47edfe4e8bc56a6fd69b18c9972bddc10"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "822efa4917a469a419f70d0914b1092d239878120efe6f6657d6079afa65e355",
+            "study": "822efa4917a469a419f70d0914b1092d239878120efe6f6657d6079afa65e355"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5786e42e9636be5efad472e4396278dc8673cf407dab163f1bd73597ddb7f318",
+            "study": "5786e42e9636be5efad472e4396278dc8673cf407dab163f1bd73597ddb7f318"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "bdb75210bd9926c4722eabaee786da6e324633786bbcacafb91f62853ac1db59",
+            "study": "bdb75210bd9926c4722eabaee786da6e324633786bbcacafb91f62853ac1db59"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a457246d7185c0f650de8ad9dbd0da686e8c972ee45e883b855fedee60d9bd3f",
+            "study": "a457246d7185c0f650de8ad9dbd0da686e8c972ee45e883b855fedee60d9bd3f"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "db27d5fadaf744da3798faf86791387e410f150c69ded08c58bef256360116f7",
+            "study": "db27d5fadaf744da3798faf86791387e410f150c69ded08c58bef256360116f7"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5e8b118a809a48db0e2aeb81a149f8006ba54e687925e05f54d61c73a2293fc7",
+            "study": "5e8b118a809a48db0e2aeb81a149f8006ba54e687925e05f54d61c73a2293fc7"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    },
+    "F03": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 5,
+        "newReversed": 5,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8278,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3c969b637c12d2f4928d49ad0e87aff5272d2ceac78c7494c79a8e2a97e2d1f2",
+            "study": "3c969b637c12d2f4928d49ad0e87aff5272d2ceac78c7494c79a8e2a97e2d1f2"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7fc727f1c80b21327145f506dbd6038f0f877affe9c53f03cb4d2581a7e0dc17",
+            "study": "7fc727f1c80b21327145f506dbd6038f0f877affe9c53f03cb4d2581a7e0dc17"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4dbc8b9c1ed70abf4e5dff0a24c72cf13be4b0902205e90844c1475fb3b2e976",
+            "study": "4dbc8b9c1ed70abf4e5dff0a24c72cf13be4b0902205e90844c1475fb3b2e976"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "380b151c4cc4573abad0637a7a74b1e1bd6bb7d9b5a0178050e86e79a17de41f",
+            "study": "380b151c4cc4573abad0637a7a74b1e1bd6bb7d9b5a0178050e86e79a17de41f"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1750cbf83b857313286cfc1613d0cb5d8c2716b8cb404682b5ef7a2c28d5ff9f",
+            "study": "1750cbf83b857313286cfc1613d0cb5d8c2716b8cb404682b5ef7a2c28d5ff9f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "09844eb7a89217b9190fe8b380c8ea172a7c55b4a5ff046a55e92579b6f8f240",
+            "study": "09844eb7a89217b9190fe8b380c8ea172a7c55b4a5ff046a55e92579b6f8f240"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "453a6d055a107710495dc5f2ff1d8766bc29f10b41800a5d144f4ce90f7e6231",
+            "study": "453a6d055a107710495dc5f2ff1d8766bc29f10b41800a5d144f4ce90f7e6231"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "cb2b010f44e6c1b7c687f285a59dbe4f2c4d110417ac5932758e0f1dafa04166",
+            "study": "cb2b010f44e6c1b7c687f285a59dbe4f2c4d110417ac5932758e0f1dafa04166"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4cf083d10f62ced1fbd51c98d14c66c5db16a0182fa2256859cc0596777f1204",
+            "study": "4cf083d10f62ced1fbd51c98d14c66c5db16a0182fa2256859cc0596777f1204"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "2633ec805608a22724c165c9038e4d34000c922c09c9230c6ab61a54d5302e36",
+            "study": "2633ec805608a22724c165c9038e4d34000c922c09c9230c6ab61a54d5302e36"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a0d1ba68a653abc871319f433018ef184c1fa7e7d6aa4bb47db44352643368cb",
+            "study": "a0d1ba68a653abc871319f433018ef184c1fa7e7d6aa4bb47db44352643368cb"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "0dfe54d8855bca716c993fddbe13409aa1ce3d027763a7cdf0e835a4fa06627b",
+            "study": "0dfe54d8855bca716c993fddbe13409aa1ce3d027763a7cdf0e835a4fa06627b"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7be14b2ae2d659e60bba06d02deb6394b5fde1a30712ed535eda8c7840d6a1c0",
+            "study": "7be14b2ae2d659e60bba06d02deb6394b5fde1a30712ed535eda8c7840d6a1c0"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a242489e23d89a7bdf6dca95ed6b8f5477b9e4d63c0b0909225b73447a95abf0",
+            "study": "a242489e23d89a7bdf6dca95ed6b8f5477b9e4d63c0b0909225b73447a95abf0"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a75e28d64d794a1ca83deb0bf61cd17bd97c05b089807e30ba4d29723a46cecd",
+            "study": "a75e28d64d794a1ca83deb0bf61cd17bd97c05b089807e30ba4d29723a46cecd"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1e92155d7c2e34ae939b17b79c781a819ab54e30d704ca1ee3fbab72c1e3df6e",
+            "study": "1e92155d7c2e34ae939b17b79c781a819ab54e30d704ca1ee3fbab72c1e3df6e"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7bfe219338f5b63d13ab29eb55c47fd5d94a9b0dce1f91eb370fab9501f03a8e",
+            "study": "7bfe219338f5b63d13ab29eb55c47fd5d94a9b0dce1f91eb370fab9501f03a8e"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "49711f9ed5f6c0946e213d71299dbaee8d97718439f4be0697c2ebef893517d9",
+            "study": "49711f9ed5f6c0946e213d71299dbaee8d97718439f4be0697c2ebef893517d9"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e89f8fb945a37e37bf98aa92f781e787c4c2370fab5cc0bbc5dcafbc4202c395",
+            "study": "e89f8fb945a37e37bf98aa92f781e787c4c2370fab5cc0bbc5dcafbc4202c395"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "741c7506145b5d0bb37dd330c23c730997846064e4ecef9f390f4df56a78e8b2",
+            "study": "741c7506145b5d0bb37dd330c23c730997846064e4ecef9f390f4df56a78e8b2"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e9d84da00c019e7480991fc6a9f5d587e75d44305b1e558d6e43f35a22176b4f",
+            "study": "e9d84da00c019e7480991fc6a9f5d587e75d44305b1e558d6e43f35a22176b4f"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6454acb5bf779e862602b1237096bf88324277cfba813c787dff5a332922173b",
+            "study": "6454acb5bf779e862602b1237096bf88324277cfba813c787dff5a332922173b"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4f3006a866d6513b8778ab74ff9d8cfa8815cbcdb7a9b190c298e3f3e24883c0",
+            "study": "4f3006a866d6513b8778ab74ff9d8cfa8815cbcdb7a9b190c298e3f3e24883c0"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1d240dc711e219d4ada1da8723b71e79b7c384b932d2a913f96445401d2575ee",
+            "study": "1d240dc711e219d4ada1da8723b71e79b7c384b932d2a913f96445401d2575ee"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "92903721c2f2c9e0621d2c6fc233342964ad7a6d89e9fdbb55644f451293b0a3",
+            "study": "92903721c2f2c9e0621d2c6fc233342964ad7a6d89e9fdbb55644f451293b0a3"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f1cbafd91e88245a486ade59e0064bb9d614b56a36ae6f5378062849e599f1bd",
+            "study": "f1cbafd91e88245a486ade59e0064bb9d614b56a36ae6f5378062849e599f1bd"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "123150a6d6ec56703a1497ab0c6a371dab3ebf8c2174afcb66fbb78196ea2448",
+            "study": "123150a6d6ec56703a1497ab0c6a371dab3ebf8c2174afcb66fbb78196ea2448"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f24e1126ef94ac17c1e9e86ab9f8623d460594af2c27354b3ced93d713159f89",
+            "study": "f24e1126ef94ac17c1e9e86ab9f8623d460594af2c27354b3ced93d713159f89"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3f77fbe2c38390b5bb33fa9a14f3e1ab66ec2c905b8b2530bb21c7d24489450b",
+            "study": "3f77fbe2c38390b5bb33fa9a14f3e1ab66ec2c905b8b2530bb21c7d24489450b"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "b74f345059045787f861ca5d6c75e0e313404398168d157336dda048b0d3cbf5",
+            "study": "b74f345059045787f861ca5d6c75e0e313404398168d157336dda048b0d3cbf5"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "bf1021bae504018801bfe65bb88dbec19a5f315cfbd5882d0038a1889d3837c0",
+            "study": "bf1021bae504018801bfe65bb88dbec19a5f315cfbd5882d0038a1889d3837c0"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "810d254471e33255b618f2718ba853a968daeb5d2ed18f64288e20c28a126feb",
+            "study": "810d254471e33255b618f2718ba853a968daeb5d2ed18f64288e20c28a126feb"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9627842d0d8a06f6e0388dc5a65df10b3d7bf5ffb8b85c55661a04672177b3c9",
+            "study": "9627842d0d8a06f6e0388dc5a65df10b3d7bf5ffb8b85c55661a04672177b3c9"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "ca07c9b0b8f61718f7b8304cf4a153c246ca1072f8489711126ab1d52470270d",
+            "study": "ca07c9b0b8f61718f7b8304cf4a153c246ca1072f8489711126ab1d52470270d"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9e08d733cc516cb74cb490de1abec53752350291c5665d882ad48565b8133952",
+            "study": "9e08d733cc516cb74cb490de1abec53752350291c5665d882ad48565b8133952"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d86793ae9886151b4532dfdaecab79278575e160029f641133c6e8bc8a98edbb",
+            "study": "d86793ae9886151b4532dfdaecab79278575e160029f641133c6e8bc8a98edbb"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    },
+    "F05": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 56,
+        "newReversed": 56,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8278,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a24c1c814d904c7da649e28ce14232c35bf0e166bd4d2171dedca1b4fc8b3031",
+            "study": "a24c1c814d904c7da649e28ce14232c35bf0e166bd4d2171dedca1b4fc8b3031"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "dba0395f00fd533e9a41352bdaf2b4db9d11da9c058dee0f0345e35a36436935",
+            "study": "dba0395f00fd533e9a41352bdaf2b4db9d11da9c058dee0f0345e35a36436935"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9e08e4b4992dc2d22784f09c843e64eda3425f4c4d6695d584fd0356f19b9d86",
+            "study": "9e08e4b4992dc2d22784f09c843e64eda3425f4c4d6695d584fd0356f19b9d86"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9823d132f74b7cd21cc9ff67c5f239a349cb5b9cc7f511acd7758ed22c97c8ca",
+            "study": "9823d132f74b7cd21cc9ff67c5f239a349cb5b9cc7f511acd7758ed22c97c8ca"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "cba929d53e628a5449fbdd34964f85501238c47758fcc2a2dd7389ad481aae9b",
+            "study": "cba929d53e628a5449fbdd34964f85501238c47758fcc2a2dd7389ad481aae9b"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "33631a5a488ebed5b92745766788af3a6417008bf9c64f39f2b3087759c111e8",
+            "study": "33631a5a488ebed5b92745766788af3a6417008bf9c64f39f2b3087759c111e8"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9e8f2638b316e1ab0e16fffd08a9c765e02b60ce92bf69c39e663b8f1ffe364a",
+            "study": "9e8f2638b316e1ab0e16fffd08a9c765e02b60ce92bf69c39e663b8f1ffe364a"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "40a51fbf78f629f8720227fcdc7c91df66c5fc96ba1ea6c11579c61005824cf6",
+            "study": "40a51fbf78f629f8720227fcdc7c91df66c5fc96ba1ea6c11579c61005824cf6"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3a517986944ce2bac937d52e13ca2e470c654a05340be551770ea394cc70d00f",
+            "study": "3a517986944ce2bac937d52e13ca2e470c654a05340be551770ea394cc70d00f"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "726e8839d152d497e7409c8097275f992c40a82a532b6fe86646c2d9e42f603d",
+            "study": "726e8839d152d497e7409c8097275f992c40a82a532b6fe86646c2d9e42f603d"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1c2be71c1223a278669df7a0a3feca9433664267099f1bed52296ac4ce673235",
+            "study": "1c2be71c1223a278669df7a0a3feca9433664267099f1bed52296ac4ce673235"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d766bee14a39771c8480dd4773da3e4ca76b068904d64a78b289d0e80286469b",
+            "study": "d766bee14a39771c8480dd4773da3e4ca76b068904d64a78b289d0e80286469b"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5236eecea01062a2b71b846050e3ad0189c8e4e56bcfa89f5adb6625c71fc38b",
+            "study": "5236eecea01062a2b71b846050e3ad0189c8e4e56bcfa89f5adb6625c71fc38b"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a8ca329828227f4179c24ccebbd564b24be5f8d65168bfa6db72b5f06d0e58a5",
+            "study": "a8ca329828227f4179c24ccebbd564b24be5f8d65168bfa6db72b5f06d0e58a5"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9bc6b306e5d0a71e1e1762f8caa56b3f36f22842792fcb2bdfcab6b8fcb55e18",
+            "study": "9bc6b306e5d0a71e1e1762f8caa56b3f36f22842792fcb2bdfcab6b8fcb55e18"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "de1bb3edaec7232047a6d0a75c6f6760a44fa53c850bf3ad74b49d6bac0ef118",
+            "study": "de1bb3edaec7232047a6d0a75c6f6760a44fa53c850bf3ad74b49d6bac0ef118"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3acc53f5e9fe847519138c1f2a3cc5ad3fa8794c16d00de96d9fd9ec772f0964",
+            "study": "3acc53f5e9fe847519138c1f2a3cc5ad3fa8794c16d00de96d9fd9ec772f0964"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5dfff1e0ad5f0b67c0c9ed55ba319f4df56288b27da2ca2ac63f02b517519e54",
+            "study": "5dfff1e0ad5f0b67c0c9ed55ba319f4df56288b27da2ca2ac63f02b517519e54"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "74ef0844416b6beb15550a6627a7a81b4359205969b2d63e621463def5afff75",
+            "study": "74ef0844416b6beb15550a6627a7a81b4359205969b2d63e621463def5afff75"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "048997baaad1c4f69572b22cb4aef3d627f1f9567482218300abacb9916aa569",
+            "study": "048997baaad1c4f69572b22cb4aef3d627f1f9567482218300abacb9916aa569"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "8cf88373cb2b3384a5b6d48ab080e55efc39f240d364fc8fb82f8abb088b92ab",
+            "study": "8cf88373cb2b3384a5b6d48ab080e55efc39f240d364fc8fb82f8abb088b92ab"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "01586d98ec77055f8b277ea470468d48f052e25b5839d4c25585be23a6229bdb",
+            "study": "01586d98ec77055f8b277ea470468d48f052e25b5839d4c25585be23a6229bdb"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e5a28a458670583f69ed486c2f865170bae0bfb7eecae837d27be32726ff1e7b",
+            "study": "e5a28a458670583f69ed486c2f865170bae0bfb7eecae837d27be32726ff1e7b"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "075702b407c06703f11db0fe8e6c3a01072e8b9fb011990089dca87114eac46d",
+            "study": "075702b407c06703f11db0fe8e6c3a01072e8b9fb011990089dca87114eac46d"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "95767931174a2ad7e81a958b711f92103edbe8ba53e79a113ba535656a23d7fa",
+            "study": "95767931174a2ad7e81a958b711f92103edbe8ba53e79a113ba535656a23d7fa"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "013c2fb157cca95c669ed7f3f2e9e8891dfe1278fd5c0777f8175aa9e3c548b0",
+            "study": "013c2fb157cca95c669ed7f3f2e9e8891dfe1278fd5c0777f8175aa9e3c548b0"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "218a701b89a27bf1df14e62fe6769fa55a3268864d306f98fa480fd6a2a0a13f",
+            "study": "218a701b89a27bf1df14e62fe6769fa55a3268864d306f98fa480fd6a2a0a13f"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9ca81af09fcb87fdf47a95850b1e948a2883b6c8cca20dcb706233a32a7a6378",
+            "study": "9ca81af09fcb87fdf47a95850b1e948a2883b6c8cca20dcb706233a32a7a6378"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d8292f650fa6a957ca76de1faa7f99e6c60fc47cea6fb8efd51c4d0540fd96ac",
+            "study": "d8292f650fa6a957ca76de1faa7f99e6c60fc47cea6fb8efd51c4d0540fd96ac"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "13ee2e1df6d1f88e2d656463dece42c8bf798b5c3b3fe7251518e05b7344d68b",
+            "study": "13ee2e1df6d1f88e2d656463dece42c8bf798b5c3b3fe7251518e05b7344d68b"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c69f537ea8280d6fbe321b5b4e60530a868ec8152f3784aa3a8df94ea8b82296",
+            "study": "c69f537ea8280d6fbe321b5b4e60530a868ec8152f3784aa3a8df94ea8b82296"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9bf48b13d7837cd8ea04a351ecc083c60aa513556b91bb1bb5f83adcabb2a814",
+            "study": "9bf48b13d7837cd8ea04a351ecc083c60aa513556b91bb1bb5f83adcabb2a814"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f7031bb8f75f90e2d83adc0e2c45db3a1f9164ac13b9f26c059a6ba87f80a0b8",
+            "study": "f7031bb8f75f90e2d83adc0e2c45db3a1f9164ac13b9f26c059a6ba87f80a0b8"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3c96ed87cfd3c875ee523437a59beb680166e6603de87a38014fbe56d234099a",
+            "study": "3c96ed87cfd3c875ee523437a59beb680166e6603de87a38014fbe56d234099a"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "b19b664cdd82dd9c695349f1e661763d832859fa8087838371a806a7b3d349fb",
+            "study": "b19b664cdd82dd9c695349f1e661763d832859fa8087838371a806a7b3d349fb"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e72f6efe980b93cbad7023602da1b8973ffdd0d921b531344c4e258f91c8ca02",
+            "study": "e72f6efe980b93cbad7023602da1b8973ffdd0d921b531344c4e258f91c8ca02"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    },
+    "M02": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 8,
+        "newReversed": 8,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8318,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "aa4cda9ccd66854f633b7c2e3fe28435fc91493643cb4c22d21dad7e4a334259",
+            "study": "aa4cda9ccd66854f633b7c2e3fe28435fc91493643cb4c22d21dad7e4a334259"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d369f6cc88fb57d347f12393bdbac14e2743f8307f03cd00fb70c2455919d517",
+            "study": "d369f6cc88fb57d347f12393bdbac14e2743f8307f03cd00fb70c2455919d517"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "50d24237b6a236c3675ba88b4056f6680ff3bc57942de0431486819f6a6ce3a3",
+            "study": "50d24237b6a236c3675ba88b4056f6680ff3bc57942de0431486819f6a6ce3a3"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "01f1959a28ed327c4ba4aa14f9e69f926dabebc583ec7c636401b08f10676a82",
+            "study": "01f1959a28ed327c4ba4aa14f9e69f926dabebc583ec7c636401b08f10676a82"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "10fd518caa088179d87c290344e38c477c62951bfb205151e931220c4cdcf00f",
+            "study": "10fd518caa088179d87c290344e38c477c62951bfb205151e931220c4cdcf00f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a54bd6db04817d015dd985ae4350dcd9775d4b65704d1bcf96bfe6dcd494660f",
+            "study": "a54bd6db04817d015dd985ae4350dcd9775d4b65704d1bcf96bfe6dcd494660f"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "721dbc772ddfc12df5d541c542dc7f1ca93d043187c52cef1c28f9b12c17ee87",
+            "study": "721dbc772ddfc12df5d541c542dc7f1ca93d043187c52cef1c28f9b12c17ee87"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9a367acde4536eff0abd5152add44d0034c8b3476cb6103c1c9f05a35d48c7c6",
+            "study": "9a367acde4536eff0abd5152add44d0034c8b3476cb6103c1c9f05a35d48c7c6"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9ddb6a5407aa2a5d9b508f7aa5b1793589a995944dcd11005ae25d3fb67fe5e0",
+            "study": "9ddb6a5407aa2a5d9b508f7aa5b1793589a995944dcd11005ae25d3fb67fe5e0"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7ef64577914d8c246a2e8909ef1f9014af80e19f7af485762f33432b68fd4809",
+            "study": "7ef64577914d8c246a2e8909ef1f9014af80e19f7af485762f33432b68fd4809"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "65dd764bff192e586a3bf2ef8e75a497590c946b20e513f91735bb32d60094bf",
+            "study": "65dd764bff192e586a3bf2ef8e75a497590c946b20e513f91735bb32d60094bf"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d7eb7af3a55b14e14d792c6c9c9e1515a78125c649e3cd8a14cc41851ad79e3b",
+            "study": "d7eb7af3a55b14e14d792c6c9c9e1515a78125c649e3cd8a14cc41851ad79e3b"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "075058613ad774f7515adb2ac735fe1dc270f2c2c9d3af43209d8755c2fb328d",
+            "study": "075058613ad774f7515adb2ac735fe1dc270f2c2c9d3af43209d8755c2fb328d"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "abd9e3690fd423073f390a3b1b844aaae2c0ac8302bf10ece2890dc7450d93f6",
+            "study": "abd9e3690fd423073f390a3b1b844aaae2c0ac8302bf10ece2890dc7450d93f6"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "ff1b0a264c8315f3107a9e9b5f71a238019232088918076e143d48721dc2addf",
+            "study": "ff1b0a264c8315f3107a9e9b5f71a238019232088918076e143d48721dc2addf"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "02b823ac066f08eb10602c25df356b7e3a3a7643268d04e016dca29039eacf91",
+            "study": "02b823ac066f08eb10602c25df356b7e3a3a7643268d04e016dca29039eacf91"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7f679ac15617e98d9575feb07683abd1cdef8e5bca5cbb5cd7c5a3414438f447",
+            "study": "7f679ac15617e98d9575feb07683abd1cdef8e5bca5cbb5cd7c5a3414438f447"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "02da6b15a6de51f72bf614ea3be9be0b898f0fe564d485b6d38e1e02243e0911",
+            "study": "02da6b15a6de51f72bf614ea3be9be0b898f0fe564d485b6d38e1e02243e0911"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "240c14b395b43bccec3387a82e9364ae00f66828ca977f2f74ca9d93a6aff0b9",
+            "study": "240c14b395b43bccec3387a82e9364ae00f66828ca977f2f74ca9d93a6aff0b9"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "2a3c0b1c0a52daf86ea1b306eb0a5aa4a5d438c974c7860dda385084e5e0e8d8",
+            "study": "2a3c0b1c0a52daf86ea1b306eb0a5aa4a5d438c974c7860dda385084e5e0e8d8"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f32bacf5fcc0d6ea0689f92a60560ac292c8d305d582ba192acdcee14313efe5",
+            "study": "f32bacf5fcc0d6ea0689f92a60560ac292c8d305d582ba192acdcee14313efe5"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "12bf43835553900f5e23dbb6f6905af2f578ca16f099b5b487041d4bdb1ed9c2",
+            "study": "12bf43835553900f5e23dbb6f6905af2f578ca16f099b5b487041d4bdb1ed9c2"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "ce5e17b5ee59fff055fbc54b980706907638533e2c543c1bc368110b7f32968d",
+            "study": "ce5e17b5ee59fff055fbc54b980706907638533e2c543c1bc368110b7f32968d"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a11946fd2bf6603cf5ef26a916747f1e8bea09adb44702909372d03c3b3d660c",
+            "study": "a11946fd2bf6603cf5ef26a916747f1e8bea09adb44702909372d03c3b3d660c"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "14174954579bc79db53afd0743b15c241e802ed885da14b26a039fd1ad03e75b",
+            "study": "14174954579bc79db53afd0743b15c241e802ed885da14b26a039fd1ad03e75b"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d3fe81c99e45769955404833ec31f843d3f5bf0f62758afcbed55c928efc6ed2",
+            "study": "d3fe81c99e45769955404833ec31f843d3f5bf0f62758afcbed55c928efc6ed2"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "941347776383f7554038a50729412f1813d65221a442dc4dbeb2b9a30f731aa2",
+            "study": "941347776383f7554038a50729412f1813d65221a442dc4dbeb2b9a30f731aa2"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9858fa29234fa7c4a4a5cd8dfc33306d8f157fe53a6b3767e622e5980c3fb6e1",
+            "study": "9858fa29234fa7c4a4a5cd8dfc33306d8f157fe53a6b3767e622e5980c3fb6e1"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c8c6469dc8ee4e6f7001110f537d99c9942c158e1a7f251ee368090a8cceb32d",
+            "study": "c8c6469dc8ee4e6f7001110f537d99c9942c158e1a7f251ee368090a8cceb32d"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "2894172060a9193c88cfa278bb12934e75fdfab29c2db90214473fcaa6c3426b",
+            "study": "2894172060a9193c88cfa278bb12934e75fdfab29c2db90214473fcaa6c3426b"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c5ab0aa9c9002f784c80d46507d1c67406c436ba4d5683092481da36228af512",
+            "study": "c5ab0aa9c9002f784c80d46507d1c67406c436ba4d5683092481da36228af512"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "635a1a54fbb4d8df08ea248317469135bedf2eb2f4e6cc6d926679ce21cc03a8",
+            "study": "635a1a54fbb4d8df08ea248317469135bedf2eb2f4e6cc6d926679ce21cc03a8"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "0cc8e982efa4bd03eaab8bf6166ca7cc7e5ffb91e31de8daeb4c9fc9b4e6ff12",
+            "study": "0cc8e982efa4bd03eaab8bf6166ca7cc7e5ffb91e31de8daeb4c9fc9b4e6ff12"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "bd2fc33b4d830e55183f1418954f7c23c4720fc260861910658f759471976302",
+            "study": "bd2fc33b4d830e55183f1418954f7c23c4720fc260861910658f759471976302"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "226ddd08baf4c380710c592ab41f7f248d9fdfc9c2a14e441a96bd97cc72aac2",
+            "study": "226ddd08baf4c380710c592ab41f7f248d9fdfc9c2a14e441a96bd97cc72aac2"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "7c1f2652a299af5e3f82c92217b702836db5e25a80c23d23110ee804f5bd8c0e",
+            "study": "7c1f2652a299af5e3f82c92217b702836db5e25a80c23d23110ee804f5bd8c0e"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    },
+    "M03": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 24,
+        "newReversed": 24,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8318,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6800a6187e1d9b6d760596325df671931f57f45b352dbab4e65acfaa6538598f",
+            "study": "6800a6187e1d9b6d760596325df671931f57f45b352dbab4e65acfaa6538598f"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6f76956fb0a34f90f308ecefd605d1cfc38c5b63f0cb08c5e7b6be67bfe69e8e",
+            "study": "6f76956fb0a34f90f308ecefd605d1cfc38c5b63f0cb08c5e7b6be67bfe69e8e"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9d1e1252df2377ff139e04a1e3b7b767a91c088a04fb1dba59f3881bf3deefd0",
+            "study": "9d1e1252df2377ff139e04a1e3b7b767a91c088a04fb1dba59f3881bf3deefd0"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d8bc2d7c4749118532640b36b70988205a5ae1db0520a3a7be014a6136bb7391",
+            "study": "d8bc2d7c4749118532640b36b70988205a5ae1db0520a3a7be014a6136bb7391"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "98f0188f2c68bce9898ca6d66b0ca5b9a8761ba119745be11b3741d8b599d1ff",
+            "study": "98f0188f2c68bce9898ca6d66b0ca5b9a8761ba119745be11b3741d8b599d1ff"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "942dfd0c90d5934220fa9408bb5ed74ebe8175a8857332116ad4f96c4067db74",
+            "study": "942dfd0c90d5934220fa9408bb5ed74ebe8175a8857332116ad4f96c4067db74"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "2e5c6492dcaa55c0037d399408d52748e898cbe9d990d5993634773a3634f91d",
+            "study": "2e5c6492dcaa55c0037d399408d52748e898cbe9d990d5993634773a3634f91d"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d4a8d87679e0902e3f52a56727c1e5f6ccdf3492eff69de65a7af3ab71fd35f1",
+            "study": "d4a8d87679e0902e3f52a56727c1e5f6ccdf3492eff69de65a7af3ab71fd35f1"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "ad5ce80639b8a87e4e9c0e9f072364aca724f294f0fa70be3ce01df833bf2640",
+            "study": "ad5ce80639b8a87e4e9c0e9f072364aca724f294f0fa70be3ce01df833bf2640"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "985862f99cdc7a2596f84fc190b8456d4d9c858f450f2ea7eaa5cb86a90f3e2e",
+            "study": "985862f99cdc7a2596f84fc190b8456d4d9c858f450f2ea7eaa5cb86a90f3e2e"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1639965227797b41c99579901c44a6e5d386f12c2d1992c03efb5a5575b700da",
+            "study": "1639965227797b41c99579901c44a6e5d386f12c2d1992c03efb5a5575b700da"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4eee93d4d8551a024682adf99ca9bcac6ffc3b2d2982ae904ac9cd5570b54a09",
+            "study": "4eee93d4d8551a024682adf99ca9bcac6ffc3b2d2982ae904ac9cd5570b54a09"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "657c5d2dedeb20f495c013514ec32b4647f23b9861dee4807ec627f7cc9a096b",
+            "study": "657c5d2dedeb20f495c013514ec32b4647f23b9861dee4807ec627f7cc9a096b"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c8635eb9eb76ec36c3e4135df9e97e8d763cfc8340a2fede818b5f541dff0cc4",
+            "study": "c8635eb9eb76ec36c3e4135df9e97e8d763cfc8340a2fede818b5f541dff0cc4"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9c14b8a0910bf07419d52fbde8128805d11d8f514c2fa7bf95ca0878222019ff",
+            "study": "9c14b8a0910bf07419d52fbde8128805d11d8f514c2fa7bf95ca0878222019ff"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9a2a6544f8cb48dcb726508dd8509ed17ddca97f90ac1403018986cdedda2809",
+            "study": "9a2a6544f8cb48dcb726508dd8509ed17ddca97f90ac1403018986cdedda2809"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f84f878dcd4f7ea518a04cc26911586ef23a52950897785aa397453ea7519d3c",
+            "study": "f84f878dcd4f7ea518a04cc26911586ef23a52950897785aa397453ea7519d3c"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4037095a37eb9119d459dc0acbd359808d3035e3b22516392e8068753c8970af",
+            "study": "4037095a37eb9119d459dc0acbd359808d3035e3b22516392e8068753c8970af"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "591d7990fe9b0ad5d57138601aea998139ec731078893ed35c748131740d5daa",
+            "study": "591d7990fe9b0ad5d57138601aea998139ec731078893ed35c748131740d5daa"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "c7155f69cccd55f3b46f9e00ee4bf358e5d0b68ba55d2beeec8374d483457603",
+            "study": "c7155f69cccd55f3b46f9e00ee4bf358e5d0b68ba55d2beeec8374d483457603"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "ac13ced0ab169fc46c60916a5321422b5e3c1162825ea5f952e51f0e43408aef",
+            "study": "ac13ced0ab169fc46c60916a5321422b5e3c1162825ea5f952e51f0e43408aef"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "40698084aa093fa869cec38c6502fc999c0ec89b5b818e7e25ba129ee2910eba",
+            "study": "40698084aa093fa869cec38c6502fc999c0ec89b5b818e7e25ba129ee2910eba"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4a7c41764879865c95bf310d204407eacc659d03c6764480bba76a693658b27d",
+            "study": "4a7c41764879865c95bf310d204407eacc659d03c6764480bba76a693658b27d"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5c66b6f69a1210cdb6aa9ac84beae4208d88b538551a93c8828ed33deabcb8ba",
+            "study": "5c66b6f69a1210cdb6aa9ac84beae4208d88b538551a93c8828ed33deabcb8ba"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "5e9f6b2728c88441f50d447819b7a86a9465690166dfaf12fc17aba38c52e44f",
+            "study": "5e9f6b2728c88441f50d447819b7a86a9465690166dfaf12fc17aba38c52e44f"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4eff93c1c6f37b19459b4fe4debf4c03511b2428f012ad418a95f7e66673c119",
+            "study": "4eff93c1c6f37b19459b4fe4debf4c03511b2428f012ad418a95f7e66673c119"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9c19d22172316bdd56842abf21f5cb159a62e60e9374ac6b74aa0e0e0d49db06",
+            "study": "9c19d22172316bdd56842abf21f5cb159a62e60e9374ac6b74aa0e0e0d49db06"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "37255b5fb1daceeb64a11834efa9f8df3e3688b338b919c1df5b4bdb9508d184",
+            "study": "37255b5fb1daceeb64a11834efa9f8df3e3688b338b919c1df5b4bdb9508d184"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d5f8232a9837796510dee97c9d096b68b5208886a7fc5b25433db6970ee01d4f",
+            "study": "d5f8232a9837796510dee97c9d096b68b5208886a7fc5b25433db6970ee01d4f"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "b75a882d36b67ae8fc3fd35d918c04267ed3d6929ac9c9e375b989f921f83642",
+            "study": "b75a882d36b67ae8fc3fd35d918c04267ed3d6929ac9c9e375b989f921f83642"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "f8c0275c743ddb32ac698ae98abc756443b1f72d7c1f578a8d408817c36211a9",
+            "study": "f8c0275c743ddb32ac698ae98abc756443b1f72d7c1f578a8d408817c36211a9"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6828e2691f2653b0b4e90833d73fd791064bfd7b61913e6eb51c7ad8504deed0",
+            "study": "6828e2691f2653b0b4e90833d73fd791064bfd7b61913e6eb51c7ad8504deed0"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d1e0d3196c4c625b46d67f156d9031f5097d7fa91b0ec6e2cc014b748483c16c",
+            "study": "d1e0d3196c4c625b46d67f156d9031f5097d7fa91b0ec6e2cc014b748483c16c"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "088fe1e53a148dacb4dc066174c4b46fb77f11e38546d678b902d75786f34fa0",
+            "study": "088fe1e53a148dacb4dc066174c4b46fb77f11e38546d678b902d75786f34fa0"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "cbfeae4411ace598ddfc59d205aecb41ea09bea05b8d502ef9be704903ddedf8",
+            "study": "cbfeae4411ace598ddfc59d205aecb41ea09bea05b8d502ef9be704903ddedf8"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9e57d14bfdb654ba2ee60d3740b344985a6041491e6837c2e5543cfb81b18df0",
+            "study": "9e57d14bfdb654ba2ee60d3740b344985a6041491e6837c2e5543cfb81b18df0"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    },
+    "M04": {
+      "same": true,
+      "geometry": {
+        "moved": 0,
+        "under": 0,
+        "changedNormal": 0,
+        "nan": 0,
+        "oldReversed": 8,
+        "newReversed": 8,
+        "repaired": 0,
+        "created": 0,
+        "zero": 0,
+        "triangles": 8318,
+        "minAreaRatio": 1
+      },
+      "renders": [
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3e723df7268057e9160463bdb862f4e85e1bc235bc3974a7fe6afcdc34fcd5f7",
+            "study": "3e723df7268057e9160463bdb862f4e85e1bc235bc3974a7fe6afcdc34fcd5f7"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "a4bc974eace03d42845c553287591ab9a9e2a77f01462fa05cc28469df3642a1",
+            "study": "a4bc974eace03d42845c553287591ab9a9e2a77f01462fa05cc28469df3642a1"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4e5b742481bf88cc46fc32ec125117cae82a759f864ad2e2de09d194a05fb9d5",
+            "study": "4e5b742481bf88cc46fc32ec125117cae82a759f864ad2e2de09d194a05fb9d5"
+          },
+          "yaw": 0,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "379aa3d5b02aadd91abbeef6d1a2b6cd02698f544f5246dc3f375d28326e2e0d",
+            "study": "379aa3d5b02aadd91abbeef6d1a2b6cd02698f544f5246dc3f375d28326e2e0d"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d87978fbbef66654386d7c3aaf743c9e51a2dd5b26f14c46c3590231c90cd435",
+            "study": "d87978fbbef66654386d7c3aaf743c9e51a2dd5b26f14c46c3590231c90cd435"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "8815ddad0165eb844227d9328974b2d24aabd18e871f90dc7fdb85d175146c29",
+            "study": "8815ddad0165eb844227d9328974b2d24aabd18e871f90dc7fdb85d175146c29"
+          },
+          "yaw": -45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "8dc65bea1bb591fd08ec28af6ad934a8c8bcf5a06dccf9754a956aa2b608a60a",
+            "study": "8dc65bea1bb591fd08ec28af6ad934a8c8bcf5a06dccf9754a956aa2b608a60a"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1b692234202f65ce11084170b426c8918c9e41535c2ef4ca7d1735f70ce87e27",
+            "study": "1b692234202f65ce11084170b426c8918c9e41535c2ef4ca7d1735f70ce87e27"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "62d093e9b96a5d56d2b196b2ad7d1f6c322d9b41e2437a0fbe1776edcb7810b1",
+            "study": "62d093e9b96a5d56d2b196b2ad7d1f6c322d9b41e2437a0fbe1776edcb7810b1"
+          },
+          "yaw": 45,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "528ded0fdbe1e0d9842082a8bc2d3528d4ef43e2ec28eaaa36007f8fc4dd2f36",
+            "study": "528ded0fdbe1e0d9842082a8bc2d3528d4ef43e2ec28eaaa36007f8fc4dd2f36"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4c7aa76bf1fc5dcae6fccf496f548205a7b650eb74180aefb483fbb7341878ba",
+            "study": "4c7aa76bf1fc5dcae6fccf496f548205a7b650eb74180aefb483fbb7341878ba"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "23d0535ba0f48f0666c9bff06da52de89b45a5909e4b514c36ff065014f93aad",
+            "study": "23d0535ba0f48f0666c9bff06da52de89b45a5909e4b514c36ff065014f93aad"
+          },
+          "yaw": -90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9491b0062f94b9818d72566168f68db23dda9ff775fe0d5e9097543014865d5f",
+            "study": "9491b0062f94b9818d72566168f68db23dda9ff775fe0d5e9097543014865d5f"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "cd0bcc1dc7e50fb31fddd7792e7a645bc4419cedd33ef26f4d8d681a0669cf76",
+            "study": "cd0bcc1dc7e50fb31fddd7792e7a645bc4419cedd33ef26f4d8d681a0669cf76"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3536e3e227415ce8400a0db2b5ea7faffb0444886bd8c2136f93b08d82431349",
+            "study": "3536e3e227415ce8400a0db2b5ea7faffb0444886bd8c2136f93b08d82431349"
+          },
+          "yaw": 90,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "33c19a787574d709acb0f97052f82917fa540a60b66d4bc7f6bd0081105c02d5",
+            "study": "33c19a787574d709acb0f97052f82917fa540a60b66d4bc7f6bd0081105c02d5"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9a3d56644c67bc41ace0c943139da852ccb5d35a3f7af94e2888d85316621476",
+            "study": "9a3d56644c67bc41ace0c943139da852ccb5d35a3f7af94e2888d85316621476"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "84c5824d3e38fb44907a6549a083246d2c1f53121f2c6ec10971655c07691b5b",
+            "study": "84c5824d3e38fb44907a6549a083246d2c1f53121f2c6ec10971655c07691b5b"
+          },
+          "yaw": -135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6a00502253f5124eef71cd8b54a8b637cd8be77d9357ac0731a6c250e0cc856c",
+            "study": "6a00502253f5124eef71cd8b54a8b637cd8be77d9357ac0731a6c250e0cc856c"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6564656c043b46db38b52847827da43c903a1caa6ef12fa38cbd716cbf424da6",
+            "study": "6564656c043b46db38b52847827da43c903a1caa6ef12fa38cbd716cbf424da6"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "3eb6dd4a3900414afb222f850411dfdc8cb734f53755ac36dfa15b09dd3f36f1",
+            "study": "3eb6dd4a3900414afb222f850411dfdc8cb734f53755ac36dfa15b09dd3f36f1"
+          },
+          "yaw": 135,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4336783287c4ea6d69aaf83843462a0b01206d04786ef7312a753522ef332379",
+            "study": "4336783287c4ea6d69aaf83843462a0b01206d04786ef7312a753522ef332379"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "e80c932017f9e3c5761471ca384ac0afd114af7a0af0ef6b544e6dc6119828c8",
+            "study": "e80c932017f9e3c5761471ca384ac0afd114af7a0af0ef6b544e6dc6119828c8"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "6559375c5e5f7d069f37ae1b4d9eaa68e1a6827c6af8ff38ac343f1602b96dc4",
+            "study": "6559375c5e5f7d069f37ae1b4d9eaa68e1a6827c6af8ff38ac343f1602b96dc4"
+          },
+          "yaw": 180,
+          "pitch": 0
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9861337872a06bf690e6509e04e7605c580f795fed7545fbc79ed73086915a98",
+            "study": "9861337872a06bf690e6509e04e7605c580f795fed7545fbc79ed73086915a98"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "315403d726da76471e6135f98ecccd14af1e1bec0044c4dd8ccee02128c3bd56",
+            "study": "315403d726da76471e6135f98ecccd14af1e1bec0044c4dd8ccee02128c3bd56"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "241cefe7ec2a74782521fa07848d8957fac1c820bcf780fa9d3ac005ff801d47",
+            "study": "241cefe7ec2a74782521fa07848d8957fac1c820bcf780fa9d3ac005ff801d47"
+          },
+          "yaw": 0,
+          "pitch": -30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "bb0c0dc378ac77147cba408bf22a736a48dab5371f6d9d5a104bb96a7203aea4",
+            "study": "bb0c0dc378ac77147cba408bf22a736a48dab5371f6d9d5a104bb96a7203aea4"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "8f0e8f489a1ec31c7a507fcf8b8c764dc35266483f54a7a3b015af5f9b9392bb",
+            "study": "8f0e8f489a1ec31c7a507fcf8b8c764dc35266483f54a7a3b015af5f9b9392bb"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "fc6096cdf2a813baa3599e8ef2da0ef9a00f027f405db7db9f4f84f92a47a02e",
+            "study": "fc6096cdf2a813baa3599e8ef2da0ef9a00f027f405db7db9f4f84f92a47a02e"
+          },
+          "yaw": 0,
+          "pitch": 30
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "08ae94a132d87fd862504312ac722376cb1d3d9c3f8de26f071ecca180df7c90",
+            "study": "08ae94a132d87fd862504312ac722376cb1d3d9c3f8de26f071ecca180df7c90"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "4f41914aedccf906564134d4b6789a6e9ae70a397c246a2988a29a788b5359e4",
+            "study": "4f41914aedccf906564134d4b6789a6e9ae70a397c246a2988a29a788b5359e4"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "9b7edf5e506a26d1da3cf12b7acf5720005393bcc5466a3fa2974e901722f01e",
+            "study": "9b7edf5e506a26d1da3cf12b7acf5720005393bcc5466a3fa2974e901722f01e"
+          },
+          "yaw": -76,
+          "pitch": 17
+        },
+        {
+          "48": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "1c2e56b8748f6a3e5c8cc6822200db4080725cef748875b09eb9764442228858",
+            "study": "1c2e56b8748f6a3e5c8cc6822200db4080725cef748875b09eb9764442228858"
+          },
+          "96": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "d4b78d9d48ecf94dc2c2a9c8bb155cb3582e597b6605f5c751d8d30f112a3eb4",
+            "study": "d4b78d9d48ecf94dc2c2a9c8bb155cb3582e597b6605f5c751d8d30f112a3eb4"
+          },
+          "1024": {
+            "rgba8": 0,
+            "alpha": 0,
+            "base": "516319f1956e2300373558a54258ab8db35bb8239e7746f7f2055eb6491e1df4",
+            "study": "516319f1956e2300373558a54258ab8db35bb8239e7746f7f2055eb6491e1df4"
+          },
+          "yaw": 22,
+          "pitch": -21
+        }
+      ]
+    }
+  },
+  "officialAudit": {
+    "responses": 42,
+    "byteEqual": 42,
+    "sha256": "9a150b049312e508b5128486a10cb9a1ffb4cb3a4e87d4af96ad3d0009e09178"
+  },
+  "fileHashMethod": "모듈은 Git의 LF 줄바꿈으로 정규화한 UTF-8, 그림은 원래 바이트의 SHA-256"
+}

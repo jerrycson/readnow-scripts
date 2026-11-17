@@ -145,7 +145,7 @@ export function renderSculpt(model,scene,view){
     yaw:view.yaw,pitch:view.pitch,freeOrbit:true,cameraZoom:view.zoom},view.size);
 }
 export function surfaceZones(scene,id){
-  const h=scene.landmarks.chin[1],f=scene.paperShape?.frame?.(1);
+  const h=id==='W'?0:scene.landmarks.chin[1],f=scene.paperShape?.frame?.(1);
   const defs=id==='W'?[
     ['rib','갈비우리','ribWidth','ribDepth',[.56,5.77,.32]],
     ['breast','가슴 앞면','breastWidth','projection',[f.c+.14,(f.foot+f.top)/2,.66]],

@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>고해상도 원형 · 픽셀판 | 책방 친구</title><link rel="stylesheet" href="../research/modeling-methods/methods.css"><link rel="stylesheet" href="definition.css"></head>
+<body><main class="board" data-case="F02"><h1>49차 · 고해상도 원형과 픽셀판</h1>
+<p>같은 형상·카메라·자세에서 두 판을 따로 그립니다. 그림을 끌어 회전하고 휠로 확대하세요.</p>
+<nav id="research" aria-label="49차 연구형"></nav><div class="families" id="families" aria-label="남녀 2~8등신 기존 전신 시안"></div>
+<div class="pair dual"><figure><figcaption><strong id="hdLabel">고해상도 원형 · 1024px</strong></figcaption><div id="loupe"><canvas id="hd" tabindex="0" aria-label="고해상도 원형 회전"></canvas></div></figure><figure><figcaption><strong id="pxLabel">픽셀판 · 48px 실제 크기</strong></figcaption><canvas id="px" tabindex="0" aria-label="픽셀판 회전"></canvas><p>원본 크기</p><canvas id="enlarged" aria-label="픽셀판 확대"></canvas></figure></div>
+<output id="status" role="status">모델을 불러오는 중</output>
+<div class="bar"><fieldset><legend>고해상도 원본</legend><div id="highSizes"></div></fieldset><fieldset><legend>픽셀 원본</legend><div id="pixelSizes"></div></fieldset><fieldset><legend>크게 보기</legend><button id="native" type="button" aria-pressed="false">고해상도 1:1</button><button id="save" type="button">고해상도 PNG</button><button id="savePx" type="button">픽셀 PNG</button></fieldset></div>
+<h2>같은 형상의 다른 방향</h2><p>각 칸에는 매끄러운 표면 128px와 픽셀판 48px를 함께 그립니다. 시점을 누르면 위의 두 원본이 그 방향으로 돌아갑니다.</p><div id="views" aria-label="전방위 그림"></div>
+<h2 id="editTitle">형태 교정</h2><div id="edits" class="bar"></div>
+<nav><a href="../research/hub/?lab=studio&amp;tool=all-around">이전 판과 전방위 교정</a><a href="../research/hub/?lab=studio&amp;tool=acceptance">기본형 완성 기준·결함</a></nav>
+</main><script type="module" src="definition.mjs"></script></body></html>

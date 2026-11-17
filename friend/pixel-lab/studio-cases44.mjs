@@ -1,3 +1,5 @@
+import {applyCorrections57} from './studio-corrections57.mjs?v=57-correction';
+import {applyObservations57} from './studio-observation57.mjs?v=57-diagnostic';
 // 공개 회차 레지스트리의 지문이 맞는 구조화 기록만 불러온다.
 export async function publishedEvidence(){
  const registry=new URL('../research/hub/releases.json',import.meta.url),resp=await fetch(registry,{cache:'no-store'});if(!resp.ok)throw Error('회차 목록 응답 '+resp.status);
@@ -8,6 +10,6 @@ export async function publishedEvidence(){
    const bytes=await response.arrayBuffer(),digest=await crypto.subtle.digest('SHA-256',bytes);const hex=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
    if(hex!==item.sha256)throw Error('학습 자료 지문 불일치');
    const rows=JSON.parse(new TextDecoder().decode(bytes));if(!Array.isArray(rows))throw Error('지원하지 않는 사례 데이터');
-   for(const r of rows){const prior=out.get(r.id);if(prior&&JSON.stringify(prior)!==JSON.stringify(r))throw Error('동일 식별자의 연구 기록이 다릅니다.');out.set(r.id,r);}
+   for(const r of applyObservations57(applyCorrections57(rows,item),item)){const prior=out.get(r.id);if(prior&&JSON.stringify(prior)!==JSON.stringify(r))throw Error('동일 식별자의 연구 기록이 다릅니다.');out.set(r.id,r);}
  }return [...out.values()];
 }

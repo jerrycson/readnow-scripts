@@ -1,5 +1,7 @@
 import {entries} from '../../pixel-lab/studio-evidence44.mjs';
-import {studyOf} from './standard.mjs';
+import {studyOf} from './standard.mjs?v=57-diagnostic';
+import {applyCorrections57} from '../../pixel-lab/studio-corrections57.mjs?v=57-correction';
+import {applyObservations57} from '../../pixel-lab/studio-observation57.mjs?v=57-diagnostic';
 const lab=new URL('../../pixel-lab/',import.meta.url);
 async function fetchJSON(url){
  const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw Error('자료 응답 '+res.status);
@@ -16,7 +18,7 @@ async function releaseRows(){
   const bytes=await res.arrayBuffer(),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
   if(hash!==file.sha256)throw Error('공개 사례 지문 불일치');
   const items=JSON.parse(new TextDecoder().decode(bytes));if(!Array.isArray(items))throw Error('공개 사례 목록 형식 오류');
-  for(const row of items){const old=rows.get(row.id);if(old&&JSON.stringify(row)!==JSON.stringify(old.row))throw Error('공개 기록 ID 충돌');if(!old)rows.set(row.id,{row,at:rel.at,origin:'release'});}
+  for(const row of applyObservations57(applyCorrections57(items,file),file)){const old=rows.get(row.id);if(old&&JSON.stringify(row)!==JSON.stringify(old.row))throw Error('공개 기록 ID 충돌');if(!old)rows.set(row.id,{row,at:rel.at,origin:'release'});}
  }
  return [...rows.values()];
 }

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "policy": "측정 원본 지문과 통계는 보존. 원본 파일이 그 기록 지문과 같음을 확인한 뒤 LF 정규 배포 지문을 별도로 기록. 바이너리는 원래 바이트 비교.",
+  "files": {
+    "face51.mjs": {
+      "recorded": "c15918d9945e4f570725b7c75280807aec93a302f58b7c26fb7d0762c91575d5",
+      "lf": "f886f90ce2ccc7a885ded0cb3a79c213ca4b9e87e0e6f08617ebf019497f2e6d"
+    },
+    "orbit-surface51.mjs": {
+      "recorded": "b0ce622a842dab4cd81b395f9254b402403d52deed4a670b95a51f7a218bd88f",
+      "lf": "b35e228f18b00a007c66de194ea0f366560b959393e68e016d4387924edf5f3b"
+    },
+    "orbit-guard51.mjs": {
+      "recorded": "31e255d8212cf58227cb683916810add5da68803b8c35d9250f705cd8ab4f2c9",
+      "lf": "3b1a351ab61500d571b91096d444a1a5b5770279320544baea697996fd3c460d"
+    },
+    "orbit-lid51.mjs": {
+      "recorded": "2322eeb649a576720c85e86dcc2d966778eb2144d679ae838b86be70aa84bdc8",
+      "lf": "7bde57b0acb654fe9c39be11c0946e10d7d5a9806dc7b198066d4357bf82b639"
+    }
+  }
+}

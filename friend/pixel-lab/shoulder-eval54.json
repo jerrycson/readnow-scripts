@@ -1,0 +1,1727 @@
+{
+  "round": 54,
+  "sources": {
+    "kinematics": "https://pubmed.ncbi.nlm.nih.gov/19181982/",
+    "dataset": "Spartacus-shoulder-kinematics-dataset/shoulder-kinematics",
+    "commit": "ec0677cf0b8b7522dd64e44f6e20a0127e412544",
+    "skin": "https://media.isbweb.org/images/conf/2009/data/pdf/410.pdf"
+  },
+  "comparison": {
+    "unit": "도",
+    "fitAngles": [
+      30,
+      60,
+      90,
+      120
+    ],
+    "note": "같은 연구 평균곡선에서 보간에 쓰지 않은 각도. 다른 사람·다른 실험 검증은 아님.",
+    "curves": [
+      {
+        "plane": "side",
+        "param": "clavicleElevation",
+        "heldout": 15,
+        "mae": 0.18888888888888786,
+        "max": 0.7666666666666657
+      },
+      {
+        "plane": "side",
+        "param": "retraction",
+        "heldout": 15,
+        "mae": 0.19444444444444522,
+        "max": 0.4000000000000057
+      },
+      {
+        "plane": "side",
+        "param": "upwardRotation",
+        "heldout": 15,
+        "mae": 0.09777777777777814,
+        "max": 0.30000000000000426
+      },
+      {
+        "plane": "side",
+        "param": "posteriorTilt",
+        "heldout": 15,
+        "mae": 0.13333333333333328,
+        "max": 0.5166666666666675
+      },
+      {
+        "plane": "scapular",
+        "param": "clavicleElevation",
+        "heldout": 15,
+        "mae": 0.2733333333333328,
+        "max": 0.8666666666666636
+      },
+      {
+        "plane": "scapular",
+        "param": "retraction",
+        "heldout": 15,
+        "mae": 0.32777777777777833,
+        "max": 1.18333333333333
+      },
+      {
+        "plane": "scapular",
+        "param": "upwardRotation",
+        "heldout": 15,
+        "mae": 0.20666666666666747,
+        "max": 0.38333333333333286
+      },
+      {
+        "plane": "scapular",
+        "param": "posteriorTilt",
+        "heldout": 15,
+        "mae": 0.21222222222222212,
+        "max": 0.6666666666666679
+      },
+      {
+        "plane": "front",
+        "param": "clavicleElevation",
+        "heldout": 15,
+        "mae": 0.13999999999999985,
+        "max": 0.7666666666666657
+      },
+      {
+        "plane": "front",
+        "param": "retraction",
+        "heldout": 15,
+        "mae": 0.4433333333333342,
+        "max": 1.7999999999999972
+      },
+      {
+        "plane": "front",
+        "param": "upwardRotation",
+        "heldout": 15,
+        "mae": 0.23111111111111146,
+        "max": 0.7333333333333272
+      },
+      {
+        "plane": "front",
+        "param": "posteriorTilt",
+        "heldout": 15,
+        "mae": 0.24222222222222237,
+        "max": 1.0333333333333332
+      }
+    ]
+  },
+  "boneLength": {
+    "poses": 6216,
+    "maxErrorHeadUnits": 8.881784197001252e-16
+  },
+  "surfaces": {
+    "unit": "두 이웃 삼각형이 이루는 각도가 125도를 넘은 모서리",
+    "versions": {
+      "3": {
+        "rest": {
+          "clear": 0,
+          "total": 42,
+          "max": 153
+        },
+        "side75": {
+          "clear": 38,
+          "total": 42,
+          "max": 1
+        },
+        "side140": {
+          "clear": 36,
+          "total": 42,
+          "max": 20
+        },
+        "front90": {
+          "clear": 0,
+          "total": 42,
+          "max": 92
+        },
+        "behind": {
+          "clear": 30,
+          "total": 42,
+          "max": 24
+        }
+      },
+      "4": {
+        "rest": {
+          "clear": 14,
+          "total": 42,
+          "max": 22
+        },
+        "side75": {
+          "clear": 40,
+          "total": 42,
+          "max": 1
+        },
+        "side140": {
+          "clear": 39,
+          "total": 42,
+          "max": 13
+        },
+        "front90": {
+          "clear": 0,
+          "total": 42,
+          "max": 28
+        },
+        "behind": {
+          "clear": 34,
+          "total": 42,
+          "max": 24
+        }
+      },
+      "5": {
+        "rest": {
+          "clear": 10,
+          "total": 42,
+          "max": 12
+        },
+        "side75": {
+          "clear": 41,
+          "total": 42,
+          "max": 1
+        },
+        "side140": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        },
+        "front90": {
+          "clear": 0,
+          "total": 42,
+          "max": 21
+        },
+        "behind": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        }
+      },
+      "7": {
+        "rest": {
+          "clear": 34,
+          "total": 42,
+          "max": 3
+        },
+        "side75": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        },
+        "side140": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        },
+        "front90": {
+          "clear": 18,
+          "total": 42,
+          "max": 12
+        },
+        "behind": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        }
+      },
+      "8": {
+        "rest": {
+          "clear": 32,
+          "total": 42,
+          "max": 3
+        },
+        "side75": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        },
+        "side140": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        },
+        "front90": {
+          "clear": 18,
+          "total": 42,
+          "max": 12
+        },
+        "behind": {
+          "clear": 42,
+          "total": 42,
+          "max": 0
+        }
+      }
+    },
+    "latest": [
+      {
+        "id": "female-2",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 97
+      },
+      {
+        "id": "female-2",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-2",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 58
+      },
+      {
+        "id": "female-2",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 109
+      },
+      {
+        "id": "female-2",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 40
+      },
+      {
+        "id": "female-2",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 73
+      },
+      {
+        "id": "female-2",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 29
+      },
+      {
+        "id": "female-2",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 72
+      },
+      {
+        "id": "female-2",
+        "index": 1,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 127
+      },
+      {
+        "id": "female-2",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 47
+      },
+      {
+        "id": "female-2",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 67
+      },
+      {
+        "id": "female-2",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "female-2",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 82
+      },
+      {
+        "id": "female-2",
+        "index": 2,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 133
+      },
+      {
+        "id": "female-2",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 61
+      },
+      {
+        "id": "female-3",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "female-3",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "female-3",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "female-3",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 40
+      },
+      {
+        "id": "female-3",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "female-3",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 31
+      },
+      {
+        "id": "female-3",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 31
+      },
+      {
+        "id": "female-3",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 21
+      },
+      {
+        "id": "female-3",
+        "index": 2,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-3",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 35
+      },
+      {
+        "id": "female-4",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-4",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "female-4",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "female-4",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-4",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "female-4",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-4",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "female-4",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "female-4",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 110
+      },
+      {
+        "id": "female-4",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-4",
+        "index": 2,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 178
+      },
+      {
+        "id": "female-4",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 37
+      },
+      {
+        "id": "female-4",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 18
+      },
+      {
+        "id": "female-4",
+        "index": 2,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 178
+      },
+      {
+        "id": "female-4",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "female-5",
+        "index": 0,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 177
+      },
+      {
+        "id": "female-5",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-5",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 22
+      },
+      {
+        "id": "female-5",
+        "index": 0,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 177
+      },
+      {
+        "id": "female-5",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 35
+      },
+      {
+        "id": "female-5",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 60
+      },
+      {
+        "id": "female-5",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "female-5",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 31
+      },
+      {
+        "id": "female-5",
+        "index": 1,
+        "label": "front90",
+        "sharp": 3,
+        "maxDegrees": 180
+      },
+      {
+        "id": "female-5",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 53
+      },
+      {
+        "id": "female-5",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 64
+      },
+      {
+        "id": "female-5",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 37
+      },
+      {
+        "id": "female-5",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 44
+      },
+      {
+        "id": "female-5",
+        "index": 2,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-5",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 99
+      },
+      {
+        "id": "female-6",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-6",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 67
+      },
+      {
+        "id": "female-6",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 19
+      },
+      {
+        "id": "female-6",
+        "index": 0,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 160
+      },
+      {
+        "id": "female-6",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 35
+      },
+      {
+        "id": "female-6",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-6",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "female-6",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 24
+      },
+      {
+        "id": "female-6",
+        "index": 1,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 152
+      },
+      {
+        "id": "female-6",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 36
+      },
+      {
+        "id": "female-6",
+        "index": 2,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 154
+      },
+      {
+        "id": "female-6",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 74
+      },
+      {
+        "id": "female-6",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "female-6",
+        "index": 2,
+        "label": "front90",
+        "sharp": 6,
+        "maxDegrees": 169
+      },
+      {
+        "id": "female-6",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 56
+      },
+      {
+        "id": "female-7",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-7",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-7",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 51
+      },
+      {
+        "id": "female-7",
+        "index": 0,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 150
+      },
+      {
+        "id": "female-7",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-7",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 124
+      },
+      {
+        "id": "female-7",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 38
+      },
+      {
+        "id": "female-7",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 23
+      },
+      {
+        "id": "female-7",
+        "index": 1,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 156
+      },
+      {
+        "id": "female-7",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 35
+      },
+      {
+        "id": "female-7",
+        "index": 2,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 132
+      },
+      {
+        "id": "female-7",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "female-7",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "female-7",
+        "index": 2,
+        "label": "front90",
+        "sharp": 6,
+        "maxDegrees": 141
+      },
+      {
+        "id": "female-7",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 44
+      },
+      {
+        "id": "female-8",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-8",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 41
+      },
+      {
+        "id": "female-8",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 25
+      },
+      {
+        "id": "female-8",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-8",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-8",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-8",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "female-8",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-8",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "female-8",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 29
+      },
+      {
+        "id": "female-8",
+        "index": 2,
+        "label": "rest",
+        "sharp": 1,
+        "maxDegrees": 131
+      },
+      {
+        "id": "female-8",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-8",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "female-8",
+        "index": 2,
+        "label": "front90",
+        "sharp": 12,
+        "maxDegrees": 165
+      },
+      {
+        "id": "female-8",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 42
+      },
+      {
+        "id": "male-2",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 97
+      },
+      {
+        "id": "male-2",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "male-2",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 58
+      },
+      {
+        "id": "male-2",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 109
+      },
+      {
+        "id": "male-2",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 40
+      },
+      {
+        "id": "male-2",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 73
+      },
+      {
+        "id": "male-2",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 29
+      },
+      {
+        "id": "male-2",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 72
+      },
+      {
+        "id": "male-2",
+        "index": 1,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 127
+      },
+      {
+        "id": "male-2",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 47
+      },
+      {
+        "id": "male-2",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 67
+      },
+      {
+        "id": "male-2",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "male-2",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 82
+      },
+      {
+        "id": "male-2",
+        "index": 2,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 133
+      },
+      {
+        "id": "male-2",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 61
+      },
+      {
+        "id": "male-3",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "male-3",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "male-3",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "male-3",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 40
+      },
+      {
+        "id": "male-3",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "male-3",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 31
+      },
+      {
+        "id": "male-3",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 31
+      },
+      {
+        "id": "male-3",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 21
+      },
+      {
+        "id": "male-3",
+        "index": 2,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-3",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 35
+      },
+      {
+        "id": "male-4",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-4",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "male-4",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "male-4",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-4",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "male-4",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-4",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "male-4",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "male-4",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 110
+      },
+      {
+        "id": "male-4",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 27
+      },
+      {
+        "id": "male-4",
+        "index": 2,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 178
+      },
+      {
+        "id": "male-4",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 37
+      },
+      {
+        "id": "male-4",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 18
+      },
+      {
+        "id": "male-4",
+        "index": 2,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 178
+      },
+      {
+        "id": "male-4",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "male-5",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-5",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 24
+      },
+      {
+        "id": "male-5",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 25
+      },
+      {
+        "id": "male-5",
+        "index": 0,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 130
+      },
+      {
+        "id": "male-5",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 48
+      },
+      {
+        "id": "male-5",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 58
+      },
+      {
+        "id": "male-5",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 25
+      },
+      {
+        "id": "male-5",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "male-5",
+        "index": 1,
+        "label": "front90",
+        "sharp": 1,
+        "maxDegrees": 160
+      },
+      {
+        "id": "male-5",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 61
+      },
+      {
+        "id": "male-5",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 48
+      },
+      {
+        "id": "male-5",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "male-5",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 32
+      },
+      {
+        "id": "male-5",
+        "index": 2,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 151
+      },
+      {
+        "id": "male-5",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-6",
+        "index": 0,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 163
+      },
+      {
+        "id": "male-6",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 30
+      },
+      {
+        "id": "male-6",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 23
+      },
+      {
+        "id": "male-6",
+        "index": 0,
+        "label": "front90",
+        "sharp": 3,
+        "maxDegrees": 169
+      },
+      {
+        "id": "male-6",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 34
+      },
+      {
+        "id": "male-6",
+        "index": 1,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 109
+      },
+      {
+        "id": "male-6",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 21
+      },
+      {
+        "id": "male-6",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 26
+      },
+      {
+        "id": "male-6",
+        "index": 1,
+        "label": "front90",
+        "sharp": 2,
+        "maxDegrees": 137
+      },
+      {
+        "id": "male-6",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 40
+      },
+      {
+        "id": "male-6",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-6",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 19
+      },
+      {
+        "id": "male-6",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 28
+      },
+      {
+        "id": "male-6",
+        "index": 2,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 176
+      },
+      {
+        "id": "male-6",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 45
+      },
+      {
+        "id": "male-7",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 108
+      },
+      {
+        "id": "male-7",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 33
+      },
+      {
+        "id": "male-7",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 21
+      },
+      {
+        "id": "male-7",
+        "index": 0,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 111
+      },
+      {
+        "id": "male-7",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 41
+      },
+      {
+        "id": "male-7",
+        "index": 1,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 166
+      },
+      {
+        "id": "male-7",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 22
+      },
+      {
+        "id": "male-7",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 24
+      },
+      {
+        "id": "male-7",
+        "index": 1,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 166
+      },
+      {
+        "id": "male-7",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 59
+      },
+      {
+        "id": "male-7",
+        "index": 2,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 115
+      },
+      {
+        "id": "male-7",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 19
+      },
+      {
+        "id": "male-7",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 25
+      },
+      {
+        "id": "male-7",
+        "index": 2,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 120
+      },
+      {
+        "id": "male-7",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 70
+      },
+      {
+        "id": "male-8",
+        "index": 0,
+        "label": "rest",
+        "sharp": 0,
+        "maxDegrees": 120
+      },
+      {
+        "id": "male-8",
+        "index": 0,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 37
+      },
+      {
+        "id": "male-8",
+        "index": 0,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "male-8",
+        "index": 0,
+        "label": "front90",
+        "sharp": 4,
+        "maxDegrees": 165
+      },
+      {
+        "id": "male-8",
+        "index": 0,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 33
+      },
+      {
+        "id": "male-8",
+        "index": 1,
+        "label": "rest",
+        "sharp": 2,
+        "maxDegrees": 136
+      },
+      {
+        "id": "male-8",
+        "index": 1,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 25
+      },
+      {
+        "id": "male-8",
+        "index": 1,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 21
+      },
+      {
+        "id": "male-8",
+        "index": 1,
+        "label": "front90",
+        "sharp": 0,
+        "maxDegrees": 111
+      },
+      {
+        "id": "male-8",
+        "index": 1,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 39
+      },
+      {
+        "id": "male-8",
+        "index": 2,
+        "label": "rest",
+        "sharp": 3,
+        "maxDegrees": 159
+      },
+      {
+        "id": "male-8",
+        "index": 2,
+        "label": "side75",
+        "sharp": 0,
+        "maxDegrees": 20
+      },
+      {
+        "id": "male-8",
+        "index": 2,
+        "label": "side140",
+        "sharp": 0,
+        "maxDegrees": 24
+      },
+      {
+        "id": "male-8",
+        "index": 2,
+        "label": "front90",
+        "sharp": 6,
+        "maxDegrees": 167
+      },
+      {
+        "id": "male-8",
+        "index": 2,
+        "label": "behind",
+        "sharp": 0,
+        "maxDegrees": 48
+      }
+    ]
+  },
+  "limits": [
+    "120도를 넘는 견갑대 운동은 외삽",
+    "어깨에서 측정한 피부 변형률과 일대일 대응 미검증",
+    "중립과 앞으로 드는 자세에서 국소 접힘 잔존",
+    "2~4등신에는 성인 인체의 실측 각도를 변형 원리로만 사용"
+  ]
+}
