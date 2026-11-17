@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.357의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.358의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.357' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.357', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.358' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.358', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -111,7 +111,8 @@
   const pcRoleOf = (n) => { const R = PCROLES && PCROLES.roles && typeof PCROLES.roles === 'object' ? PCROLES.roles : PCROLE_DEF; for (const [p, r] of Object.entries(R)) if (pcSame(p, n)) return r === 'reg' ? 'reg' : 'gen'; return 'gen'; };
   const REGPC = () => !PUBONLY && pcRoleOf(PC_NAME) === 'reg';
   const regKeepJob = (job) => { const j = String(job || ''); if (/^crm:/.test(j)) return true; const L = PCROLES && Array.isArray(PCROLES.keep) ? PCROLES.keep : REG_KEEP_DEF; return L.includes(j); };
-  const regSkipCmd = (type, x) => REGPC() && REG_SKIP_CMDS.has(type) && !(x && x.dev && pcSame(x.dev, PC_NAME)) && !(type === 'metrics' && x && Array.isArray(x.keys) && x.keys.length > 0 && x.keys.length <= 3);
+  const regSkipCmd = (type, x) => REGPC() && REG_SKIP_CMDS.has(type) && !(x && x.dev && pcSame(x.dev, PC_NAME)) && !(type === 'metrics' && x && Array.isArray(x.keys) && x.keys.length > 0 && x.keys.length <= 3) || (type === 'usedInfo' && !!x && !!x.manual && REGPC() && genPcOther()); /* (note2 · 정범님 11/17 I-1117-2027-23) 📝 사람이 카드에서 누른 '유의 사항 다시 읽기'(manual)는 등록 PC(MJ-MAIN)가 받지 않음 — 다른 일반 PC(로그인·살아 있음·공개 전용 아님)가 있을 때만(없으면 예전처럼 받음 · 자동 '중' 다시 읽기는 그대로) */
+  const genPcOther = () => { try { const P = (BEATS || {}).pcs || {}; return Object.entries(P).some(([n, b]) => !pcSame(n, PC_NAME) && pcRoleOf(n) !== 'reg' && b && b.ok !== false && !b.paused && !b.pubOnly && Date.now() - (+b.atMs || 0) < 3 * 60e3); } catch (e) { return false; } };
   /* 다른 등록 PC가 살아 있고(신호 3분 안·일시정지 아님) 바로 받을 수 있나 — 등록 일은 그 PC가 먼저 */
   const regPcOther = () => { try { const P = (BEATS || {}).pcs || {}; return Object.entries(P).some(([n, b]) => !pcSame(n, PC_NAME) && pcRoleOf(n) === 'reg' && b && !b.paused && !b.pubOnly && Date.now() - (+b.atMs || 0) < 3 * 60e3 && !b.regBusy); } catch (e) { return false; } };
   const pcRolesSub = () => { try { if (PCROLES_UN || !auth.currentUser) return; PCROLES_UN = C('app_settings').doc('pc_roles').onSnapshot((d) => { const was = REGPC(); PCROLES = d.exists ? d.data() || {} : {}; const now = REGPC(); if (was !== now || !pcRolesSub.said) { pcRolesSub.said = 1; try { window.__rnLog && window.__rnLog('수집기', 'info', now ? `📥 이 PC(${PC_NAME})는 등록 PC — 주요 수집(정기 상품 조회·벤치마킹·시장 지표·외부 정보·함께 하기)에서 빠지고 등록을 먼저 받음(웹앱 ⚙ 🖥 기기 운영 보고 › PC 역할에서 바꿈)` : `🖥 이 PC(${PC_NAME}) 역할: 일반`); } catch (e) {} } }, () => { PCROLES_UN = null; }); } catch (e) {} };
