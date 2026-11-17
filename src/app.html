@@ -8361,7 +8361,7 @@ async function osOwnedWrite(id, patch, lease) {
 }
 async function osRenewLease(id) {
   const lease = S.os.lease;
-  /* (kfail3 11/17) 맥박은 보낸 요청(inFlight)을 그대로 둔 채 씀 — 전엔 도우미 요청 응답을 기다리는 사이(부하 때 몇 초) 20초 맥박이 겹치면 「앞 요청의 처리 결과를 먼저 확인해야 함」 사람 몫으로 바뀌고, 응답이 와서 inFlight가 풀려도 그 멈춤이 남아 잘 돌던 출고가 멈췄음(tSHIPMIX0 ⑦·⑧이 부하 때 가끔 깨진 까닭) · 같은 탭·같은 담당권 확인은 그대로 */
+  /* (kfail3 11/17) 맥박은 보낸 요청(inFlight)을 그대로 둔 채 씀 — 전엔 도우미 요청 응답을 기다리는 사이(부하 때 몇 초) 20초 맥박이 겹치면 (옛 문구) 사람 몫 멈춤으로 바뀌고, 응답이 와서 inFlight가 풀려도 그 멈춤이 남아 잘 돌던 출고가 멈췄음(tSHIPMIX0 ⑦·⑧이 부하 때 가끔 깨진 까닭) · 같은 탭·같은 담당권 확인은 그대로 */
   const cur = await osOwnedWrite(id, (r) => ({ owner: { ...r.owner, beat: new Date().toISOString(), leftAt: null }, inFlight: r.inFlight || null }), lease);
   S.os.beatOkAt = Date.now(); if (S.os.id === id) S.os.doc = cur; return cur;
 }
