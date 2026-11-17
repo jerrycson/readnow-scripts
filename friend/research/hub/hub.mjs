@@ -1,3 +1,4 @@
+import {isPublishedRelease,latestPublished,publishHostedRelease,renderPublishedSummary} from './published-state.mjs';
 import {correctCitation} from '../../pixel-lab/citation37.mjs';
 import {mergeNotes35} from './round35.mjs';
 import {records34} from './round34.mjs';
@@ -22,6 +23,7 @@ async function get(path,expected){
 }
 const decode=bytes=>JSON.parse(new TextDecoder().decode(bytes));
 const node=(name,value)=>Object.assign(document.createElement(name),{textContent:value});
+function summary(){const requested=query('rev');renderPublishedSummary({published:latestPublished(latestHost),current:history.find(r=>r.id===selected),loadedCount:dataset.length,pinned:history.some(r=>r.id===requested),requested});}
 function draw(){
   library(dataset,target=>{tab='originals';route({tab,doc:target.doc,chapter:target.chapter,dq:null},true);documentTab();});
 }
@@ -76,20 +78,19 @@ async function select(id){
   const previous=query('group');
   el('group').replaceChildren(new Option('전체 분야',''),...[...new Set(dataset.map(x=>x.group))].map(x=>new Option(x,x)));
   if([...el('group').options].some(x=>x.value===previous))el('group').value=previous;
-  el('editionInfo').textContent=row.round+'차 · '+dataset.length+'개 자료';draw();documentTab();await openPrivate();
+  el('editionInfo').textContent=row.round+'차 · '+dataset.length+'개 자료';summary();draw();documentTab();await openPrivate();
 }
 async function refresh(){
   if(busy){refreshAgain=true;return;}busy=true;
   try{
-    try{latestHost=decode(await get('releases.json')).releases;}catch(e){if(!cloudRows.size)throw e;}
+    try{const rows=decode(await get('releases.json')).releases;if(!latestPublished(rows))throw Error('공개 목록에 유효한 책방 친구 회차가 없습니다.');latestHost=rows.filter(isPublishedRelease);publishHostedRelease(rows);}catch(e){if(!cloudRows.size)throw e;}
     const list=mergeHistory(latestHost,cloudRows);
     if(!list.length)throw Error('아직 등록된 회차가 없습니다.');
-    const follow=!selected||selected===history.at(-1)?.id;
-    history=list;const latest=list.at(-1);
+    history=list;const latest=latestPublished(list);if(!latest)throw Error('열 수 있는 책방 친구 회차가 없습니다.');
     releases.replaceChildren(...list.map((r,i)=>new Option((i+1)+' · '+r.label+' · '+r.at.slice(0,10),r.id)));
     const pinned=list.find(r=>r.id===query('rev'));
-    const desired=pinned?.id||((follow||!list.some(v=>v.id===selected))?latest.id:selected);
-    if(desired!==selected)await select(desired);else releases.value=selected;syncEditions();
+    const desired=pinned?.id||latest.id;
+    if(desired!==selected)await select(desired);else releases.value=selected;syncEditions();summary();
     el('connection').textContent=(blockReader?'Firestore 구독 · ':(['localhost','127.0.0.1'].includes(location.hostname)?'로컬 미리보기 · ':'웹 게시 자료 · '))+(latest.sources?latest.sources+'개 출처 · ':'')+'마지막 확인 '+new Date().toLocaleTimeString('ko-KR');
   }finally{busy=false;if(refreshAgain){refreshAgain=false;queueMicrotask(()=>refresh().catch(failure));}}
 }
@@ -130,16 +131,19 @@ const syncEditions=choices(releases,el('editions'),opt=>opt.text.match(/(\d+)차
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();(tab==='originals'?el('docSearch'):el('search')).focus();}});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;route({tab},true);documentTab();});
 el('search').oninput=el('group').onchange=()=>{route({q:el('search').value,group:el('group').value,card:null});el('reading').closest('.split').classList.remove('inspecting');draw();};
-releases.onchange=()=>{route({rev:releases.value,card:null},true);select(releases.value).catch(failure);};
+releases.onchange=()=>{const id=releases.value;route({rev:id===latestPublished(history)?.id?null:id,card:null},true);select(id).catch(failure);};
+el('followLatest').onclick=()=>{route({rev:null,card:null},true);summary();refresh().catch(failure);};
 window.addEventListener('popstate',async()=>{
   tab=validTab(query('tab'));el('search').value=query('q');el('group').value=query('group');
   el('reading').closest('.split').classList.toggle('inspecting',!!query('card'));el('originalBody').closest('.split').classList.toggle('inspecting',!!query('chapter'));
-  const id=query('rev')||history.at(-1)?.id;
-  if(id&&id!==selected&&history.some(r=>r.id===id))await select(id).catch(failure);else{draw();documentTab();}
+  const id=query('rev')||latestPublished(history)?.id;
+  if(id&&id!==selected&&history.some(r=>r.id===id))await select(id).catch(failure);else{draw();documentTab();}summary();
 });
 documentTab();
 setInterval(()=>{if(!document.hidden)refresh().catch(failure);},15000);
 el('search').value=new URLSearchParams(location.search).get('q')||'';
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh().catch(failure);});
+window.addEventListener('online',()=>refresh().catch(failure));
+window.addEventListener('pageshow',e=>{if(e.persisted)refresh().catch(failure);});
 refresh().catch(failure);
 
