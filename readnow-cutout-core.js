@@ -6,7 +6,7 @@
  *  웹앱: window.ReadnowCutout · 클라우드(노드): module.exports — 화면·Firestore·저장소를 모름(순수 셈 · 시험 tCUT1114) */
 (function (root, factory) { const m = factory(); if (typeof module === 'object' && module.exports) module.exports = m; else root.ReadnowCutout = m; })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.1.2';
+  const VERSION = '0.1.3';
   /* 설정 기본값 — 근거: 시험 그림(tCUT1114)과 휴대폰 사진 크기에서 정한 첫 값 · 근거 없는 값은 '첫 값'이라 적고 웹앱 설정·배우기로 바꿈 */
   const DEF = {
     side: 640,          // 가르기는 긴 변 640화소로 줄여서(휴대폰 4000화소 그대로 셈하면 느림 · 자르기는 원본에서)
@@ -368,5 +368,82 @@
     if (s === 2 && st.n >= 100 && st.acc >= C.target) return { stage: 3, why: `확인 ${st.n}건 · 맞힌 몫 ${Math.round(st.acc * 1000) / 10}% — 문턱 넘는 것만 저절로 적용 후보(켜기는 설정)` };
     return { stage: s, why: `그대로(확인 ${st.n}건 · 맞힌 몫 ${Math.round(st.acc * 1000) / 10}%)` }; }
 
-  return { VERSION, DEF, ncc, peaks, textMatch, textAssign, normTxt, down, bgOf, segment, order, assign, pairFB, sig, simil, colorSim, matchSet, spines, alignOrder, decide, learn, stageNext, eanOk, isIsbn, inBox, _t: { comps, morph, fillHoles, maskOf, splitBox, colEdge, straight, seedRanges, clusters, betaLo } };
+  /* ══ (0.1.3 · 일꾼 spine4 11/18 · 리드 결정 F57) 📚 책 한 권 옆 사진의 책등 · 펼친 한 장 쪼개기 — 돈 0(화소 셈만)
+   *  sideSpine: 비스듬히 세운 책 한 권 사진(왼쪽에 책등이 보임)에서 책등 띠 하나 → { ok, conf, box, why } · 오른쪽 책등(옛 세로쓰기 책)은 다루지 않음
+   *   잰 값(우리 'o' 사진 72장+옛 13장 · 사람 정답표 · reports/SPINE4_1118.md): 문턱 0.95에서 받아들임 7장 모두 맞음(7/7) · 책등 보이는 한 권 26장 중 7장 찾음(27%) · 책등 아닌 사진 53장 0장 넘음
+   *  splitSpread: 펼친 한 장(뒤표지|책등|앞표지)을 세로선 둘로 셋 → { ok, conf, back, spine, front, seams } · 앞·뒤 표지 폭이 같고 책등 경계는 위에서 아래까지 곧게 이어진다는 것만 씀
+   *   opt.ratio = 짐작 책등 폭 ÷ 펼친 폭(도서 크기 '가로x세로x두께' 또는 쪽수에서) — 주면 맞음이 크게 오름(합성 50장: 없이 31/50 · 있으면 43~44/50) · 그림자 단계(기록만) */
+  const SIDE = { side: 400, slope: 0.3, minRun: 0.38, edgeT: 14, gap: 0.03, auto: 0.95 };
+  const cdist = (d, i, c) => (Math.abs(d[i] - c[0]) + Math.abs(d[i + 1] - c[1]) + Math.abs(d[i + 2] - c[2])) / 3;
+  /* 책 테두리: 줄마다 왼쪽·오른쪽 가장자리 색과 3화소 잇달아 다른 첫 자리 */
+  function silh(D) { const W = D.w, H = D.h, d = D.d; const bw = Math.max(2, Math.round(W * 0.03)); const xl = new Int16Array(H).fill(-1), xr = new Int16Array(H).fill(-1);
+    for (let y = 0; y < H; y++) { const cl = [0, 0, 0], cr = [0, 0, 0]; for (let x = 0; x < bw; x++) { const i = (y * W + x) * 4, j = (y * W + W - 1 - x) * 4; for (let c = 0; c < 3; c++) { cl[c] += d[i + c] / bw; cr[c] += d[j + c] / bw; } }
+      for (let x = bw; x < W - 3; x++) { let k = 0; for (let t = 0; t < 3; t++) if (cdist(d, (y * W + x + t) * 4, cl) > 22) k++; if (k === 3) { xl[y] = x; break; } }
+      for (let x = W - 1 - bw; x > 3; x--) { let k = 0; for (let t = 0; t < 3; t++) if (cdist(d, (y * W + x - t) * 4, cr) > 22) k++; if (k === 3) { xr[y] = x; break; } } }
+    return { xl, xr }; }
+  /* 강건 곧은 줄 x = a + s·(y − 가운데) — 세 번 걸러 맞춤 */
+  function fitLine(P) { let pts = P.slice(); let a = 0, s = 0; for (let it = 0; it < 3; it++) { const n = pts.length; if (n < 5) return null; let sy = 0, sx = 0, syy = 0, sxy = 0; for (const [y, x] of pts) { sy += y; sx += x; syy += y * y; sxy += x * y; } const vy = syy - sy * sy / n; s = vy > 0 ? (sxy - sx * sy / n) / vy : 0; a = sx / n - s * sy / n; const r = pts.map(([y, x]) => Math.abs(x - (a + s * y))); const t = Math.max(2, med(r) * 2.5); pts = pts.filter((p, i) => r[i] <= t); } return { a, s, n: pts.length }; }
+  /* 세로(조금 기운) 곧은 줄 — x마다 기울기를 바꿔 가며 가장 길게 이어진 경계 · 이웃 3칸에서 가장 긴 것만 */
+  function vLines(D, o) { const W = D.w, H = D.h, d = D.d; const E = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 2; x < W - 2; x++) { const a = (y * W + x - 2) * 4, b = (y * W + x + 2) * 4; E[y * W + x] = (Math.abs(d[a] - d[b]) + Math.abs(d[a + 1] - d[b + 1]) + Math.abs(d[a + 2] - d[b + 2])) / 3 > o.edgeT ? 1 : 0; }
+    const gapN = Math.max(2, Math.round(H * o.gap)); const best = []; const hm = H / 2;
+    for (let x0 = 2; x0 < W - 2; x0++) { let bb = null;
+      for (let s = -o.slope; s <= o.slope + 1e-9; s += 0.015) { let run = 0, rs = -1, cs = -1, last = -1;
+        for (let y = 0; y < H; y++) { const x = Math.round(x0 + s * (y - hm)); if (x < 1 || x >= W - 1) continue; const j = y * W + x; if (E[j] || E[j - 1] || E[j + 1]) { if (cs < 0 || y - last > gapN) cs = y; last = y; const cur = last - cs + 1; if (cur > run) { run = cur; rs = cs; } } }
+        if (!bb || run > bb.run) bb = { x: x0, s, run, ys: rs, ye: rs + run - 1 }; }
+      best.push(bb); }
+    const L = []; for (let i = 0; i < best.length; i++) { const b = best[i]; if (b.run < o.minRun * H) continue; let pk = true; for (let j = Math.max(0, i - 3); j <= Math.min(best.length - 1, i + 3); j++) if (j !== i && (best[j].run > b.run || (best[j].run === b.run && j < i))) pk = false; if (pk) L.push(b); }
+    return L; }
+  function regionOf(D, xa, sa, xb, sb, y0, y1) { const W = D.w, d = D.d, hm = D.h / 2; let r = 0, g = 0, b = 0, n = 0; const Ls = [];
+    for (let y = Math.round(y0); y <= y1; y++) { const a = Math.round(xa + sa * (y - hm)), e = Math.round(xb + sb * (y - hm)); for (let x = Math.max(0, a); x <= Math.min(W - 1, e); x++) { const i = (y * W + x) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; Ls.push(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]); } }
+    if (!n) return null; const L = (0.299 * r + 0.587 * g + 0.114 * b) / n; let dev = 0, ink = 0; for (const v of Ls) { dev += Math.abs(v - L); if (v < L - 45) ink++; } const mx = Math.max(r, g, b) / n, mn = Math.min(r, g, b) / n; return { mean: [r / n, g / n, b / n], L, dev: dev / n, ink: ink / n, sat: mx ? (mx - mn) / mx : 0, n }; }
+  /* 책 테두리(왼·오른 곧은 줄 · 위·아래) — 둘이 같이 씀 */
+  function bookFrame(D, minRows, q) { const W = D.w, H = D.h, hm = H / 2; const { xl, xr } = silh(D); const rows = []; for (let y = 0; y < H; y++) if (xl[y] >= 0 && xr[y] > xl[y] + 0.3 * W) rows.push(y); if (rows.length < minRows * H) return null;
+    const top = rows[Math.floor(rows.length * q)], bot = rows[Math.floor(rows.length * (1 - q))]; const mid = rows.filter((y) => y > top + (bot - top) * 0.1 && y < bot - (bot - top) * 0.1);
+    const FL = fitLine(mid.map((y) => [y - hm, xl[y]])), FR = fitLine(mid.map((y) => [y - hm, xr[y]])); if (!FL || !FR) return null; return { xl, xr, top, bot, FL, FR, wb: FR.a - FL.a, bh: bot - top }; }
+  function sideSpine(img, opt) {
+    const o = Object.assign({}, SIDE, opt || {}); const D = down(img, o.side); const W = D.w, H = D.h, hm = H / 2, k = D.k;
+    const F = bookFrame(D, 0.4, 0.02); if (!F) return { ok: false, conf: 0, why: '책 테두리 못 찾음' }; const { xl, xr, top, bot, FL, FR, wb, bh } = F;
+    const inner = vLines(D, o).filter((c) => c.x > FL.a + 0.012 * W && c.x < FR.a - 0.012 * W && Math.abs(c.s - FL.s) < 0.12);
+    const full = inner.filter((c) => c.ye - c.ys > 0.6 * bh && Math.abs(c.ys - top) < 0.12 * bh && Math.abs(c.ye - bot) < 0.12 * bh);
+    const folds = full.filter((c) => c.x - FL.a > 0.015 * W && c.x - FL.a < 0.2 * wb); if (!folds.length) return { ok: false, conf: 0, why: '접힌 줄(책등과 표지 사이) 없음' };
+    const colM = (x, sl) => { let r = 0, g = 0, b = 0, n = 0; for (let y = Math.round(top + bh * 0.08); y <= bot - bh * 0.08; y++) { const xx = Math.round(x + sl * (y - hm)); if (xx < 0 || xx >= W) continue; const i = (y * W + xx) * 4; r += D.d[i]; g += D.d[i + 1]; b += D.d[i + 2]; n++; } return n ? [r / n, g / n, b / n] : [0, 0, 0]; };
+    const jump = (c) => { const a = [0, 0, 0], b = [0, 0, 0]; for (let t = 1; t <= 4; t++) { const p = colM(c.x - t - 1, c.s), q = colM(c.x + t + 1, c.s); for (let u = 0; u < 3; u++) { a[u] += p[u] / 4; b[u] += q[u] / 4; } } return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+    for (const c of folds) { c.j = jump(c); c.fs = (c.run / bh >= 0.7 ? 1 : 0.4) * c.j * (1 + 0.5 * Math.min(1, (c.x - FL.a) / (0.08 * wb))); }
+    const B = folds.reduce((p, q) => (q.fs > p.fs ? q : p)); const gw = B.x - FL.a; const y0 = top + bh * 0.1, y1 = bot - bh * 0.1;
+    const sp = regionOf(D, FL.a + gw * 0.2, FL.s, FL.a + gw * 0.8, B.s, y0, y1), cv = regionOf(D, B.x + 3, B.s, B.x + 3 + Math.min(wb * 0.5, gw * 4), B.s, y0, y1); if (!sp || !cv) return { ok: false, conf: 0, why: '띠가 비었음' };
+    const others = full.filter((c) => c !== B && c.x > B.x + gw * 0.8).length; /* 표지 안 다른 온 높이 줄 = 여러 권·틀 */
+    const hAt = (fx) => { let c = 0; for (let y = 0; y < H; y++) if (xl[y] >= 0 && xl[y] <= fx && xr[y] >= fx) c++; return c; }; const hL = hAt(B.x + 4), hR = hAt(FR.a - 4); const persp = (hL - hR) / Math.max(1, hL); /* 원근 — 책등 쪽이 가까워 더 높음 */
+    const dL = sp.L - cv.L; const paper = sp.L > 150 && sp.sat < 0.16 && sp.ink < 0.02 && sp.dev < 14; /* 종이 단면(책 배)은 밝고 무늬 없음 */
+    let sc = clamp(B.run / bh, 0, 1); sc *= paper ? 0.2 : 1; sc *= others ? 0.5 : 1; sc *= 0.55 + 0.45 * clamp(persp / 0.06, 0, 1); sc *= 0.6 + 0.4 * clamp(-dL / 25, 0, 1);
+    const xm = FL.a + gw / 2, s = (FL.s + B.s) / 2, ym = (top + bot) / 2; const box = { cx: (xm + s * (ym - hm)) / k, cy: ym / k, w: gw / k, h: bh * Math.sqrt(1 + s * s) / k, a: -Math.atan(s) };
+    return { ok: true, conf: round3(sc), auto: sc >= o.auto, box, side: 'L', why: { w: round3(gw / wb), line: round3(B.run / bh), j: Math.round(B.j), dL: Math.round(dL), persp: round3(persp), others, paper: paper ? 1 : 0 } };
+  }
+  function splitSpread(img, opt) {
+    const o = Object.assign({ side: 500, bands: 3, balT: 0.025, ratio: 0 }, opt || {}); const D = down(img, o.side); const W = D.w, H = D.h, hm = H / 2, k = D.k;
+    const F = bookFrame(D, 0.25, 0.03); if (!F) return { ok: false, conf: 0, why: '책 테두리 못 찾음' }; const { top, bot, FL, FR, wb, bh } = F; const s = (FL.s + FR.s) / 2;
+    if (wb < 0.3 * W) return { ok: false, conf: 0, why: '책 폭 좁음' }; if (wb / bh < 1.15 || wb / bh > 3) return { ok: false, conf: 0, why: `펼친 한 장 비율 아님(가로÷세로 ${round3(wb / bh)})` };
+    const n = Math.round(wb), Bn = o.bands; const Jb = [];
+    for (let b = 0; b < Bn; b++) { const y0 = Math.round(top + bh * (0.08 + 0.84 * b / Bn)), y1 = Math.round(top + bh * (0.08 + 0.84 * (b + 1) / Bn)); const M = new Float32Array(n * 3), E = new Float32Array(n);
+      for (let u = 0; u < n; u++) { let r = 0, g = 0, bl = 0, c = 0, e = 0; for (let y = y0; y < y1; y++) { const x = Math.round(FL.a + u + s * (y - hm)); if (x < 1 || x >= W - 1) continue; const i = (y * W + x) * 4; r += D.d[i]; g += D.d[i + 1]; bl += D.d[i + 2]; c++; if (cdist(D.d, i - 4, [D.d[i + 4], D.d[i + 5], D.d[i + 6]]) > 14) e++; } if (c) { M[u * 3] = r / c; M[u * 3 + 1] = g / c; M[u * 3 + 2] = bl / c; E[u] = e / c; } }
+      const J = new Float32Array(n); for (let u = 6; u < n - 6; u++) { const p = [0, 0, 0], q = [0, 0, 0]; for (let t = 2; t <= 5; t++) for (let z = 0; z < 3; z++) { p[z] += M[(u - t) * 3 + z] / 4; q[z] += M[(u + t) * 3 + z] / 4; } J[u] = Math.min(1, Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) / 60) * 0.6 + Math.max(E[u - 1], E[u], E[u + 1]) * 0.4; }
+      Jb.push(J); }
+    const Jm = (u) => { let m = 1; for (const J of Jb) { let v = 0; for (let t = -1; t <= 1; t++) v = Math.max(v, J[u + t] || 0); m = Math.min(m, v); } return m; }; /* 위·가운데·아래 셋 다에서 경계여야 함 */
+    const wmin = Math.max(3, 0.008 * wb), wmax = 0.2 * wb; const C = [];
+    for (let x1 = Math.round(0.38 * wb); x1 < 0.5 * wb; x1++) for (let x2 = Math.round(x1 + wmin); x2 <= x1 + wmax && x2 < 0.62 * wb; x2++) { const bal = Math.abs(x1 - (n - x2)) / wb; if (bal > o.balT) continue; let sc = Math.min(Jm(x1), Jm(x2)) * (1 - (bal / o.balT) * 0.5); if (o.ratio > 0) { const l = Math.log((x2 - x1) / (o.ratio * wb)); sc *= Math.exp(-(l * l) / (2 * 0.3 * 0.3)); } C.push({ x1, x2, sc }); }
+    if (!C.length) return { ok: false, conf: 0, why: '세로선 짝 없음' }; C.sort((p, q) => q.sc - p.sc); const best = C[0]; const sec = (C.find((c) => Math.abs(c.x1 - best.x1) > 3 || Math.abs(c.x2 - best.x2) > 3) || { sc: 0 }).sc;
+    const ym = (top + bot) / 2; const X = (u) => (FL.a + u + s * (ym - hm)) / k; const box = (u0, u1) => ({ cx: X((u0 + u1) / 2), cy: ym / k, w: (u1 - u0) / k, h: (bh * Math.sqrt(1 + s * s)) / k, a: -Math.atan(s) });
+    const conf = clamp(best.sc * 1.5, 0, 1) * clamp(((best.sc - sec) / Math.max(1e-6, best.sc)) * 4, 0, 1);
+    return { ok: true, conf: round3(conf), back: box(0, best.x1), spine: box(best.x1, best.x2), front: box(best.x2, n), seams: [X(best.x1), X(best.x2)], why: { sc: round3(best.sc), sec: round3(sec), w: round3((best.x2 - best.x1) / wb), prior: o.ratio > 0 ? round3(o.ratio) : null } };
+  }
+  /* 짐작 책등 몫(책등 폭 ÷ 펼친 폭) — 크기 '가로x세로x두께'(mm) 먼저 · 없으면 쪽수(한 쪽 약 0.06mm · 첫 값) · 모르면 0 */
+  function spineRatio(sz, pages) { const m = /^(\d{2,3})x(\d{2,3})(?:x(\d{1,3}))?$/.exec(String(sz || '')); const w = m ? +m[1] : 140; const d = m && m[3] ? +m[3] : pages > 0 ? pages * 0.06 + 1 : 0; return d > 0 ? round3(d / (2 * w + d)) : 0; }
+  /* 기운 상자를 원본에서 잘라 세운 그림(RGBA) — 책등 띠 저장용 · 겹선형 보간 */
+  function cropBox(img, b, maxH) { const sc = Math.min(1, (maxH || 1e9) / b.h); const w = Math.max(1, Math.round(b.w * sc)), h = Math.max(1, Math.round(b.h * sc)); const d = new Uint8ClampedArray(w * h * 4); const co = Math.cos(b.a), si = Math.sin(b.a);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const u = (x + 0.5) / sc - b.w / 2, v = (y + 0.5) / sc - b.h / 2; const X = b.cx + u * co - v * si - 0.5, Y = b.cy + u * si + v * co - 0.5; const x0 = Math.max(0, Math.min(img.w - 2, Math.floor(X))), y0 = Math.max(0, Math.min(img.h - 2, Math.floor(Y))); const fx = clamp(X - x0, 0, 1), fy = clamp(Y - y0, 0, 1); const o = (y * w + x) * 4;
+      for (let c = 0; c < 3; c++) { const p = (q, r) => img.d[((y0 + r) * img.w + x0 + q) * 4 + c]; d[o + c] = (p(0, 0) * (1 - fx) + p(1, 0) * fx) * (1 - fy) + (p(0, 1) * (1 - fx) + p(1, 1) * fx) * fy; } d[o + 3] = 255; }
+    return { w, h, d }; }
+
+
+  return { VERSION, DEF, ncc, peaks, textMatch, textAssign, normTxt, down, bgOf, segment, order, assign, pairFB, sig, simil, colorSim, matchSet, spines, alignOrder, decide, learn, stageNext, eanOk, isIsbn, inBox, sideSpine, splitSpread, spineRatio, cropBox, SIDE, _t: { silh, fitLine, vLines, bookFrame, comps, morph, fillHoles, maskOf, splitBox, colEdge, straight, seedRanges, clusters, betaLo } };
 });
