@@ -617,6 +617,55 @@
         "file": "studio-training49.json",
         "sha256": "d8f294f5994dcf3f4e5cd8c979be1bbcd5bd45c7f696de8f94971ce66cb43742"
       }
+    },
+    {
+      "id": "433d47cb32e2f5a28fa4d3f5",
+      "project": "bookfriend",
+      "round": 50,
+      "cards": 363,
+      "sources": 352,
+      "chapters": 14,
+      "cardsSha": "40781ce90f273f2139802a3b3b131e9640c49a1f9ff7a187228fff93dd3f3796",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "e3678c0a63f9d68c2e7daa50d1da9ed71423ded70b935861846d9e0ac85d2bde",
+      "at": "2026-11-17T12:44:13.753Z",
+      "label": "50차 · 다중 시점 작업대 · 얼굴 8개와 몸통 89개 선택",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45",
+        "controller-note46",
+        "precedent-note46",
+        "face-note47",
+        "chest-note47",
+        "face-note48",
+        "chest-note48",
+        "face-note49",
+        "chest-note49",
+        "workspace-note50",
+        "face-note50",
+        "chest-note50"
+      ],
+      "supersedes": "152344f0cea83934077707ec",
+      "learningEvidence": {
+        "file": "studio-training50.json",
+        "sha256": "204e6d7e47f6cde70ad326714b3e02aa2e8148cf6a33ac0a2ee24396deebadf0"
+      }
     }
   ]
 }
