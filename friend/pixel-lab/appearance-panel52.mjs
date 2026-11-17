@@ -3,8 +3,9 @@ import {HAIR_DESIGNS} from './hair-design.mjs';
 import {bodyDefault52,bodyPresets52,supportsBody52} from './body-composition52.mjs';
 import {facialGroups52,supportsAppearance52} from './appearance52.mjs';
 import {faceOptions50} from './face-options50.mjs';
+import {drawTorso53} from './torso-controls53.mjs';
 
-export function mountAppearance52(host,publish){
+export function mountAppearance52(host,publish,edition=52){
   let id,values={},group='hair';
   const node=(tag,text='')=>Object.assign(document.createElement(tag),{textContent:text});
   const tabs=node('div'),choices=node('div'),search=node('input'),tissue=node('div');
@@ -17,7 +18,11 @@ export function mountAppearance52(host,publish){
   const change=(delta,commit=true)=>{values={...values,...delta};publish(values,commit);};
   reset.onclick=()=>{values={};search.value='';publish(values,true);draw();};
   function paintOptions(){
-    choices.replaceChildren();search.hidden=group!=='hair';tissue.hidden=group!=='body';
+    choices.replaceChildren();search.hidden=group!=='hair';tissue.hidden=!['body','torso'].includes(group);
+    if(group==='torso'){
+      drawTorso53(choices,tissue,values,change,draw,choiceButton);
+      return;
+    }
     if(group==='head'){
       const sex=id.split('-')[0],current=values.researchFace||'native';
       const entries=[['native','이 몸의 기본 얼굴'],...faceOptions50.filter(x=>x.sex===sex).map(x=>[x.id,x.label])];
@@ -45,6 +50,7 @@ export function mountAppearance52(host,publish){
   function draw(){
     const native=supportsBody52(id),research=faceOptions50.some(x=>x.id===values.researchFace);
     const groups=[...(native?[['head','얼굴 교체']]:[]),['hair','머리'],...(native?[...(research?[]:Object.entries(facialGroups52)),['body','체형']]:[])];
+    if(native&&edition>=53)groups.push(['torso','허리·골반']);
     if(!groups.some(([key])=>key===group))group='hair';
     tabs.replaceChildren(...groups.map(([key,label])=>choiceButton(key,label,group===key,()=>{group=key;search.value='';draw();})));
     paintOptions();

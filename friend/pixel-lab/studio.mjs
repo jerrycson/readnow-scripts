@@ -15,7 +15,7 @@ const defaults=new Map([
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함'],['round-plan','회차별 계획']
 ]);
-const studioRound=52;
+const studioRound=53;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}

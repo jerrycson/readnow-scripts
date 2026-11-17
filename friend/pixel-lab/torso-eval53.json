@@ -1,0 +1,798 @@
+{
+  "round": 53,
+  "method": "배꼽 높이는 대전자·견봉 근사. 엉덩이 외측 최대너비와 뒤쪽 최대돌출 높이를 따로 측정. 허리와 골반 단면 및 연결면 평가.",
+  "cohorts": {
+    "female": {
+      "n": 1986,
+      "source": "https://tools.openlab.psu.edu/publicData/ANSUR_II_FEMALE_Public.csv",
+      "sha256": "ed7e800aa97a4d42f8286b988be2fe1883a2e789588169db959864b707d1757a",
+      "withinPersonRatio": {
+        "waistbreadth/hipbreadth": [
+          0.776298,
+          0.804109,
+          0.842334,
+          0.884491,
+          0.92988
+        ],
+        "waistdepth/buttockdepth": [
+          0.816867,
+          0.855609,
+          0.906758,
+          0.963091,
+          1.021818
+        ],
+        "waistdepth/waistbreadth": [
+          0.640138,
+          0.67065,
+          0.704797,
+          0.744737,
+          0.784831
+        ],
+        "chestdepth/chestbreadth": [
+          0.823742,
+          0.865717,
+          0.915562,
+          0.970964,
+          1.017247
+        ],
+        "buttockdepth/hipbreadth": [
+          0.6012,
+          0.625695,
+          0.653639,
+          0.687123,
+          0.717882
+        ],
+        "waistbreadth/chestbreadth": [
+          1.004158,
+          1.050367,
+          1.107003,
+          1.168488,
+          1.227182
+        ]
+      }
+    },
+    "male": {
+      "n": 4082,
+      "source": "https://tools.openlab.psu.edu/publicData/ANSUR_II_MALE_Public.csv",
+      "sha256": "0547aea0170e5293de519389981135e75803f02e6d40c77ace740decc0caac64",
+      "withinPersonRatio": {
+        "waistbreadth/hipbreadth": [
+          0.86902,
+          0.903646,
+          0.943121,
+          0.981914,
+          1.014957
+        ],
+        "waistdepth/buttockdepth": [
+          0.877126,
+          0.914016,
+          0.958333,
+          1.012539,
+          1.0625
+        ],
+        "waistdepth/waistbreadth": [
+          0.663531,
+          0.689578,
+          0.721078,
+          0.760454,
+          0.797193
+        ],
+        "chestdepth/chestbreadth": [
+          0.78125,
+          0.825342,
+          0.876254,
+          0.926261,
+          0.973676
+        ],
+        "buttockdepth/hipbreadth": [
+          0.645437,
+          0.677419,
+          0.709957,
+          0.743862,
+          0.774105
+        ],
+        "waistbreadth/chestbreadth": [
+          1.016858,
+          1.064748,
+          1.123693,
+          1.186425,
+          1.242067
+        ]
+      }
+    }
+  },
+  "percentiles": [
+    10,
+    25,
+    50,
+    75,
+    90
+  ],
+  "ratios": {
+    "waist": "허리 깊이/허리 폭",
+    "width": "허리 폭/엉덩이 최대 폭",
+    "pelvis": "엉덩이 깊이/엉덩이 최대 폭",
+    "depth": "허리 깊이/엉덩이 깊이"
+  },
+  "cases": [
+    {
+      "id": "female-2",
+      "original": {
+        "width": 0.9570619815233224,
+        "waist": 0.6936434648871083,
+        "pelvis": 0.6913777205940577,
+        "depth": 0.9601984113765566
+      },
+      "sections": {
+        "width": 0.9748635624364267,
+        "waist": 0.7482069390903849,
+        "pelvis": 0.741758474298078,
+        "depth": 0.9833385223829552
+      },
+      "joined": {
+        "width": 1.0143741623833438,
+        "waist": 0.7482069390903849,
+        "pelvis": 0.7696353636921252,
+        "depth": 0.9861316448458051
+      }
+    },
+    {
+      "id": "female-3",
+      "original": {
+        "width": 0.9435494027766389,
+        "waist": 0.669360883485224,
+        "pelvis": 0.6609197088266369,
+        "depth": 0.9556002846030913
+      },
+      "sections": {
+        "width": 0.9611489060280726,
+        "waist": 0.7221838258699502,
+        "pelvis": 0.7003213451256197,
+        "depth": 0.9911538453273364
+      },
+      "joined": {
+        "width": 0.9737474163986011,
+        "waist": 0.7221838258699502,
+        "pelvis": 0.6977362776006665,
+        "depth": 1.0078659476097873
+      }
+    },
+    {
+      "id": "female-4",
+      "original": {
+        "width": 0.9412980659438153,
+        "waist": 0.6524885529911135,
+        "pelvis": 0.642580397162889,
+        "depth": 0.9558122465185046
+      },
+      "sections": {
+        "width": 0.9587239173414511,
+        "waist": 0.7041959157149429,
+        "pelvis": 0.6777695038200362,
+        "depth": 0.9961048159955914
+      },
+      "joined": {
+        "width": 0.9699313455193034,
+        "waist": 0.7041959157149429,
+        "pelvis": 0.6658950738238667,
+        "depth": 1.0257196950209844
+      }
+    },
+    {
+      "id": "female-5",
+      "original": {
+        "width": 0.7455828084630083,
+        "waist": 0.5403773022531084,
+        "pelvis": 0.5184127178129316,
+        "depth": 0.7771723431926313
+      },
+      "sections": {
+        "width": 0.7972987546153875,
+        "waist": 0.6914597692887159,
+        "pelvis": 0.6290131729125352,
+        "depth": 0.8764522535638454
+      },
+      "joined": {
+        "width": 0.7421196337138802,
+        "waist": 0.6914597692887159,
+        "pelvis": 0.5821435681251083,
+        "depth": 0.8814764927577898
+      }
+    },
+    {
+      "id": "female-6",
+      "original": {
+        "width": 0.7342408198760939,
+        "waist": 0.5506026619620288,
+        "pelvis": 0.5283070504955752,
+        "depth": 0.7652272472338426
+      },
+      "sections": {
+        "width": 0.7851856776888627,
+        "waist": 0.7045880731484391,
+        "pelvis": 0.6225118280559028,
+        "depth": 0.8887099630448559
+      },
+      "joined": {
+        "width": 0.744263022264397,
+        "waist": 0.7045880731484391,
+        "pelvis": 0.5937185232488279,
+        "depth": 0.8832448849724188
+      }
+    },
+    {
+      "id": "female-7",
+      "original": {
+        "width": 0.7257025999587863,
+        "waist": 0.5636456807144997,
+        "pelvis": 0.5377591689670749,
+        "depth": 0.7606362839628242
+      },
+      "sections": {
+        "width": 0.7761685276041882,
+        "waist": 0.7216104544271307,
+        "pelvis": 0.6268053495111544,
+        "depth": 0.8935650028406912
+      },
+      "joined": {
+        "width": 0.748304412915392,
+        "waist": 0.7216104544271307,
+        "pelvis": 0.6083869026972973,
+        "depth": 0.8875672455466587
+      }
+    },
+    {
+      "id": "female-8",
+      "original": {
+        "width": 0.7190513185570557,
+        "waist": 0.5758681199340007,
+        "pelvis": 0.5462151981081201,
+        "depth": 0.7580871648898195
+      },
+      "sections": {
+        "width": 0.7689955907532179,
+        "waist": 0.7370799784942105,
+        "pelvis": 0.6363932216106711,
+        "depth": 0.8906619904906606
+      },
+      "joined": {
+        "width": 0.7472159759644844,
+        "waist": 0.7370799784942105,
+        "pelvis": 0.6179848525702615,
+        "depth": 0.891215914441551
+      }
+    },
+    {
+      "id": "male-2",
+      "original": {
+        "width": 0.9570619815233224,
+        "waist": 0.6936434648871083,
+        "pelvis": 0.6913777205940577,
+        "depth": 0.9601984113765566
+      },
+      "sections": {
+        "width": 0.9748635624364267,
+        "waist": 0.7482069390903849,
+        "pelvis": 0.741758474298078,
+        "depth": 0.9833385223829552
+      },
+      "joined": {
+        "width": 1.0143741623833438,
+        "waist": 0.7482069390903849,
+        "pelvis": 0.7696353636921252,
+        "depth": 0.9861316448458051
+      }
+    },
+    {
+      "id": "male-3",
+      "original": {
+        "width": 0.9435494027766389,
+        "waist": 0.669360883485224,
+        "pelvis": 0.6609197088266369,
+        "depth": 0.9556002846030913
+      },
+      "sections": {
+        "width": 0.9611489060280726,
+        "waist": 0.7221838258699502,
+        "pelvis": 0.7003213451256197,
+        "depth": 0.9911538453273364
+      },
+      "joined": {
+        "width": 0.9737474163986011,
+        "waist": 0.7221838258699502,
+        "pelvis": 0.6977362776006665,
+        "depth": 1.0078659476097873
+      }
+    },
+    {
+      "id": "male-4",
+      "original": {
+        "width": 0.9412980659438153,
+        "waist": 0.6524885529911135,
+        "pelvis": 0.642580397162889,
+        "depth": 0.9558122465185046
+      },
+      "sections": {
+        "width": 0.9587239173414511,
+        "waist": 0.7041959157149429,
+        "pelvis": 0.6777695038200362,
+        "depth": 0.9961048159955914
+      },
+      "joined": {
+        "width": 0.9699313455193034,
+        "waist": 0.7041959157149429,
+        "pelvis": 0.6658950738238667,
+        "depth": 1.0257196950209844
+      }
+    },
+    {
+      "id": "male-5",
+      "original": {
+        "width": 0.8800729878938597,
+        "waist": 0.5012432304262141,
+        "pelvis": 0.563376248937007,
+        "depth": 0.7830124686567911
+      },
+      "sections": {
+        "width": 0.9407413491055426,
+        "waist": 0.640599032627265,
+        "pelvis": 0.681329528512095,
+        "depth": 0.8845029797923704
+      },
+      "joined": {
+        "width": 0.88724960634403,
+        "waist": 0.640599032627265,
+        "pelvis": 0.6523395788880948,
+        "depth": 0.8712812435690159
+      }
+    },
+    {
+      "id": "male-6",
+      "original": {
+        "width": 0.8682270381203254,
+        "waist": 0.5111631868935513,
+        "pelvis": 0.580444475298233,
+        "depth": 0.764596302729398
+      },
+      "sections": {
+        "width": 0.9286194720540114,
+        "waist": 0.6544512026853919,
+        "pelvis": 0.6835790722221907,
+        "depth": 0.8890502284500639
+      },
+      "joined": {
+        "width": 0.8935758686675483,
+        "waist": 0.6544512026853919,
+        "pelvis": 0.6670291049974089,
+        "depth": 0.8767260642133337
+      }
+    },
+    {
+      "id": "male-7",
+      "original": {
+        "width": 0.8604831797971895,
+        "waist": 0.5250896226490525,
+        "pelvis": 0.5930320273625046,
+        "depth": 0.7618994714080946
+      },
+      "sections": {
+        "width": 0.9200457318596822,
+        "waist": 0.6716257144950704,
+        "pelvis": 0.6916005522683198,
+        "depth": 0.8934729302943969
+      },
+      "joined": {
+        "width": 0.9008732019570552,
+        "waist": 0.6716257144950704,
+        "pelvis": 0.6849154220283709,
+        "depth": 0.8833931730461259
+      }
+    },
+    {
+      "id": "male-8",
+      "original": {
+        "width": 0.8544365118141939,
+        "waist": 0.5373576200897211,
+        "pelvis": 0.6049665444178145,
+        "depth": 0.7589477050306748
+      },
+      "sections": {
+        "width": 0.9136006977032748,
+        "waist": 0.6873524133582523,
+        "pelvis": 0.7054170368661763,
+        "depth": 0.8902048172835093
+      },
+      "joined": {
+        "width": 0.8979031545298186,
+        "waist": 0.6873524133582523,
+        "pelvis": 0.6935645558285213,
+        "depth": 0.8898607851878906
+      }
+    }
+  ],
+  "qa": [
+    {
+      "id": "female-2",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 54
+    },
+    {
+      "id": "female-2",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 58
+    },
+    {
+      "id": "female-2",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 69
+    },
+    {
+      "id": "female-3",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 76
+    },
+    {
+      "id": "female-3",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 81
+    },
+    {
+      "id": "female-3",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 81
+    },
+    {
+      "id": "female-4",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 78
+    },
+    {
+      "id": "female-4",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 79
+    },
+    {
+      "id": "female-4",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 85
+    },
+    {
+      "id": "female-5",
+      "body": {},
+      "seams": 118,
+      "protectedCount": 2912,
+      "changed": 82
+    },
+    {
+      "id": "female-5",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 2912,
+      "changed": 75
+    },
+    {
+      "id": "female-5",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 2912,
+      "changed": 106
+    },
+    {
+      "id": "female-6",
+      "body": {},
+      "seams": 118,
+      "protectedCount": 2983,
+      "changed": 83
+    },
+    {
+      "id": "female-6",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 2983,
+      "changed": 71
+    },
+    {
+      "id": "female-6",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 2983,
+      "changed": 109
+    },
+    {
+      "id": "female-7",
+      "body": {},
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 84
+    },
+    {
+      "id": "female-7",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 77
+    },
+    {
+      "id": "female-7",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 114
+    },
+    {
+      "id": "female-8",
+      "body": {},
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 84
+    },
+    {
+      "id": "female-8",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 75
+    },
+    {
+      "id": "female-8",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 118,
+      "protectedCount": 3054,
+      "changed": 100
+    },
+    {
+      "id": "male-2",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 54
+    },
+    {
+      "id": "male-2",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 58
+    },
+    {
+      "id": "male-2",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 69
+    },
+    {
+      "id": "male-3",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 76
+    },
+    {
+      "id": "male-3",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 81
+    },
+    {
+      "id": "male-3",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 81
+    },
+    {
+      "id": "male-4",
+      "body": {},
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 78
+    },
+    {
+      "id": "male-4",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 79
+    },
+    {
+      "id": "male-4",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 64,
+      "protectedCount": 1149,
+      "changed": 85
+    },
+    {
+      "id": "male-5",
+      "body": {},
+      "seams": 88,
+      "protectedCount": 1026,
+      "changed": 84
+    },
+    {
+      "id": "male-5",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1026,
+      "changed": 77
+    },
+    {
+      "id": "male-5",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1026,
+      "changed": 104
+    },
+    {
+      "id": "male-6",
+      "body": {},
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 89
+    },
+    {
+      "id": "male-6",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 81
+    },
+    {
+      "id": "male-6",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 123
+    },
+    {
+      "id": "male-7",
+      "body": {},
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 85
+    },
+    {
+      "id": "male-7",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 88
+    },
+    {
+      "id": "male-7",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 104
+    },
+    {
+      "id": "male-8",
+      "body": {},
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 83
+    },
+    {
+      "id": "male-8",
+      "body": {
+        "adiposity": 0,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 82
+    },
+    {
+      "id": "male-8",
+      "body": {
+        "adiposity": 1,
+        "muscularity": 1
+      },
+      "seams": 88,
+      "protectedCount": 1067,
+      "changed": 106
+    }
+  ],
+  "limitations": [
+    "중립 자세. 골반 연결면의 관절 가중치와 동작은 별도 검증.",
+    "2~4등신에 성인 표본의 분포를 적합하지 않음.",
+    "배꼽의 관절 상대 높이는 모델 정의에 따른 근삿값. 같은 인물의 피부 스캔 정합이 아님."
+  ]
+}

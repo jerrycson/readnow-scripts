@@ -18,14 +18,15 @@ export function mark(host,key){
   for(const b of host.querySelectorAll('button[data-key]'))b.setAttribute('aria-pressed',String(b.dataset.key===String(key)));
 }
 import {chestFits51} from './chest-fits51.mjs';
-import {mountAppearance52} from './appearance-panel52.mjs';
+import {mountAppearance52} from './appearance-panel52.mjs?v=53';
+import {supportsChest53} from './chest53.mjs';
 export function editor(onEdit,edition=50){
   const records=new Map();
   const appearanceBox=document.createElement('section');appearanceBox.id='appearance52';appearanceBox.hidden=true;
   el('modelTab').append(appearanceBox);
   const drawAppearance=edition>=52?mountAppearance52(appearanceBox,(appearance,done)=>{
     edit={...edit,appearance:{...appearance}};if(done)commit();onEdit();
-  }):()=>{};
+  },edition):()=>{};
   let id, resolved=[], zoneKey=null, edit, last, back=[],forward=[], panel, dial;
   const kind=()=>isChestSubject(id)?'W':id;
   const region=()=>resolved.find(z=>z.key===zoneKey);
@@ -82,7 +83,7 @@ export function editor(onEdit,edition=50){
   }
   function selectVersion(version){
     edit={...edit,version};
-    if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52'].includes(version)&&markerLevels50[id]?'rebound':'source';
+    if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53'].includes(version)&&markerLevels50[id]?'rebound':'source';
     commit();drawControls();onEdit();
   }
   el('showNac').onchange=()=>marker({showNac:el('showNac').checked});
@@ -137,9 +138,14 @@ export function editor(onEdit,edition=50){
       }
       if(edition>=52&&id==='F02')options.push(['jawNormal52','52차 H2 턱 음영'],['jawBoth52','H2 턱 형상·음영 · 보류']);
       if(edition>=52&&id==='W')options.push(['lowerContact52','52차 안·바깥 접선'],['floor52','하부 낮추기 · 보류']);
+      if(edition>=53&&['F02','M01'].includes(id))options.push(['face53','53차 얼굴 표면 · 검토'],['field53','볼 지지면만 · 초기 시험']);
+      if(edition>=53&&supportsChest53(id))options.push(['tissue53','53차 윤곽과 안쪽 피부 · 검토']);
+      if(!saved&&!editable&&edition>=53&&trial==='pelvis53'){
+        edit.appearance={waistBreadth53:.58,waistDepth53:.84,seatDepth53:.60,pelvisJoin53:true};
+      }
       if(!saved&&editable&&options.some(([key])=>key===trial)){
         edit.version=trial;
-        if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52'].includes(trial)&&markerLevels50[id]?'rebound':'source';
+        if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53'].includes(trial)&&markerLevels50[id]?'rebound':'source';
       }
       buttons(el('versions'),options,selectVersion);
       el('versionsBox').hidden=!editable;el('surfaceOptions').hidden=!isChestSubject(id);

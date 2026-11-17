@@ -15,6 +15,9 @@ import {appearanceScene52} from './appearance52.mjs';
 import {bodyStudy52} from './chest52.mjs';
 import {candidateJawBand52} from './face-jaw52.mjs';
 import {fitResearchHead52} from './head-fit52.mjs';
+import {applyTorso53} from './torso53.mjs';
+import {candidateFace53} from './face53.mjs';
+import {editChest53} from './chest53.mjs';
 async function load(name){
   const response=await fetch(new URL(name+'.json',import.meta.url));
   if(!response.ok)throw new Error(name+' 자료 '+response.status);
@@ -39,10 +42,15 @@ self.onmessage=async ({data})=>{
     const key=JSON.stringify(edit||{});
     if(key!==editKey){
       if(loaded.entry){
-        if(edit?.version==='lower51')shape=editChest51(loaded,edit,editChestStudy50);
+        if(edit?.version==='tissue53')shape=editChest53(loaded,edit,editChestStudy50);
+        else if(edit?.version==='lower51')shape=editChest51(loaded,edit,editChestStudy50);
         else if(id==='W'&&['floor52','lowerContact52'].includes(edit?.version)){
           shape=editChestStudy50(bodyStudy52(loaded,edit.version),{...edit,version:'candidate'});
         }else shape=editChestStudy50(loaded,edit);
+      }else if(['F02','M01'].includes(id)&&['face53','field53'].includes(edit?.version)){
+        loaded.faces53??=new Map();
+        if(!loaded.faces53.has(edit.version))loaded.faces53.set(edit.version,candidateFace53(loaded.model.round49,id,loaded.settings,edit.version==='face53'?'study':'field'));
+        shape=definitionScene({...loaded,model:{...loaded.model,round49:loaded.faces53.get(edit.version)}},edit);
       }else if(id==='F02'&&['jawNormal52','jawBoth52'].includes(edit?.version)){
         loaded.cheek50??=cheekEnvelope50(loaded.model.round49,id,loaded.model.reg.before,.85,true);
         loaded.jaws52??=new Map();
@@ -86,6 +94,7 @@ self.onmessage=async ({data})=>{
           const body=appearanceScene52(loaded,shape,{muscularity:appearance.muscularity,adiposity:appearance.adiposity});
           shape=fitResearchHead52(loaded,body,head,hair);
         }else shape=appearanceScene52(loaded,shape,appearance);
+        shape=applyTorso53(loaded,shape,appearance);
       }
       editKey=key;
     }
