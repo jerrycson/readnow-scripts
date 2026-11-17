@@ -1,0 +1,552 @@
+{
+  "method": "화면의 눈·윗눈꺼풀·아랫눈꺼풀을 한쪽씩 숨긴 뒤 RGB 한 채널이라도 8 이상 달라진 원본 픽셀 수. 눈썹은 유지. 좌우는 모형의 x 부호이며 폭·미감 판정과 별도.",
+  "views": [
+    [
+      0,
+      0
+    ],
+    [
+      -45,
+      0
+    ],
+    [
+      45,
+      0
+    ],
+    [
+      -90,
+      0
+    ],
+    [
+      90,
+      0
+    ],
+    [
+      -105,
+      18
+    ],
+    [
+      60,
+      -16
+    ]
+  ],
+  "subjects": {
+    "F02": {
+      "48": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "prior": {
+            "hash": "f1c437bb4c77b25f7a1a74b4eb517c470b7821af23431c3beb1be502464a61f9",
+            "eyePixels": [
+              16,
+              18
+            ]
+          },
+          "next": {
+            "hash": "2c07f4895fbb5f59db1b06ee51e21609842a909a2e72344e526445e3b3725905",
+            "eyePixels": [
+              15,
+              16
+            ]
+          }
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "prior": {
+            "hash": "9028cb3aebaddec9334007dde048fdbb9e50d7535529efad0b81580a51a512b7",
+            "eyePixels": [
+              7,
+              19
+            ]
+          },
+          "next": {
+            "hash": "1070f5ec57ab640c2034ab6dc5486960ed91891e24a9141e3e11f1dd4b18772e",
+            "eyePixels": [
+              8,
+              17
+            ]
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "prior": {
+            "hash": "0e5d1392b7fa7d4efce72b80c8dd3a2d004226d0a32ce5b5483a96425865d446",
+            "eyePixels": [
+              18,
+              9
+            ]
+          },
+          "next": {
+            "hash": "357b9aeee7d9bb4a6ca25a6876c3ccd603b34cfa82c8348e84a8b2042b7e8da7",
+            "eyePixels": [
+              18,
+              8
+            ]
+          }
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "prior": {
+            "hash": "e88800a2b3e2582356a68a300dcbd051c3b5b50cf41b4c85476b9b0551d6110f",
+            "eyePixels": [
+              0,
+              10
+            ]
+          },
+          "next": {
+            "hash": "0629ddcd49b432a82a0189263b8228dacac38edd68530ef965ff616ea180973e",
+            "eyePixels": [
+              0,
+              9
+            ]
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "prior": {
+            "hash": "e196badaa773d4db1b1fb534b1500707c17f3350e7bafd0277aaf0edf66d12e8",
+            "eyePixels": [
+              12,
+              0
+            ]
+          },
+          "next": {
+            "hash": "64677251991ec27c7f3b46cde2e3372aa31cfaec4c029be1c1fe23c05854502f",
+            "eyePixels": [
+              11,
+              0
+            ]
+          }
+        },
+        {
+          "yaw": -105,
+          "pitch": 18,
+          "prior": {
+            "hash": "4d26853b64cef44b30c041411e19330c4d163dcca91b1272357eb52cd4bda3a4",
+            "eyePixels": [
+              0,
+              5
+            ]
+          },
+          "next": {
+            "hash": "4bd4fdb0edc73fdbbc4ae5b804146b65c52727f2b17a6115dddbaf204927a387",
+            "eyePixels": [
+              0,
+              6
+            ]
+          }
+        },
+        {
+          "yaw": 60,
+          "pitch": -16,
+          "prior": {
+            "hash": "528eec6acfa9869d637aa2d3fee32c4e14efb47b7f6c9183951dc5bbb560924a",
+            "eyePixels": [
+              17,
+              3
+            ]
+          },
+          "next": {
+            "hash": "7bb176756e2e8aecc284efb539b292859f7855be8774ea4d10ce362322107534",
+            "eyePixels": [
+              16,
+              2
+            ]
+          }
+        }
+      ],
+      "96": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "prior": {
+            "hash": "2020fe19eccacf25ba3804c869f97bd5b44c9097e9a7d15f9e5abaecf6e80336",
+            "eyePixels": [
+              54,
+              53
+            ]
+          },
+          "next": {
+            "hash": "f18d60366dc8f9016edb4e7d280d06a794f45e80a5558e2bbc302d63abd93f2c",
+            "eyePixels": [
+              49,
+              48
+            ]
+          }
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "prior": {
+            "hash": "6961ea95cc51481fdec25e28c9a5150c1eb92cd234bf75c9bd7b4fa0f6c26fe0",
+            "eyePixels": [
+              16,
+              57
+            ]
+          },
+          "next": {
+            "hash": "05cbc58312bbecc06e3605850d933ce7f19fd158caa5667d5433ebe3e7609002",
+            "eyePixels": [
+              15,
+              51
+            ]
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "prior": {
+            "hash": "dd7588772bdf95baf3e05568b190d264a8400a2f6bde1c0f16d6897da0c247f0",
+            "eyePixels": [
+              60,
+              18
+            ]
+          },
+          "next": {
+            "hash": "a73db9a6b6055bcf2c4169218580aff25e21b74099fb7ac92347eb9be064ce35",
+            "eyePixels": [
+              52,
+              17
+            ]
+          }
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "prior": {
+            "hash": "014a9bd9fd931898a05a9009175e8030e694a85d0bfeb1d73ca8bca0f4dadf4e",
+            "eyePixels": [
+              0,
+              32
+            ]
+          },
+          "next": {
+            "hash": "bade63a193c89f1c48caa772f521869b4ba84fbf2521f53055d78857f2d47163",
+            "eyePixels": [
+              0,
+              26
+            ]
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "prior": {
+            "hash": "52374260c8dfbdcb7887af0b22346b80b473b3a465598538b9cbf0fe54f99e23",
+            "eyePixels": [
+              32,
+              0
+            ]
+          },
+          "next": {
+            "hash": "6646e4a38b03d1f0a079e210f5add5b7d4958d5d680a1020c7ac7306ed560c24",
+            "eyePixels": [
+              26,
+              0
+            ]
+          }
+        },
+        {
+          "yaw": -105,
+          "pitch": 18,
+          "prior": {
+            "hash": "1e3615c35801acc99bc06f68d82f99bffa5fba2e94b5cd022711dd56241d7722",
+            "eyePixels": [
+              0,
+              11
+            ]
+          },
+          "next": {
+            "hash": "6f63dc03fe907b1b739ee2966458545ef631c28e961911b8308a058b7f099b7d",
+            "eyePixels": [
+              0,
+              9
+            ]
+          }
+        },
+        {
+          "yaw": 60,
+          "pitch": -16,
+          "prior": {
+            "hash": "e63f399cc7dfe81f23a38bb931728991e8ea0f7dd6938a1ff3d51568dfe84128",
+            "eyePixels": [
+              57,
+              8
+            ]
+          },
+          "next": {
+            "hash": "42d1a51eeff5538d0636ccf8e3caa65ce3cdacfe26abc4c41796127a8a6034bb",
+            "eyePixels": [
+              50,
+              10
+            ]
+          }
+        }
+      ]
+    },
+    "M01": {
+      "48": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "prior": {
+            "hash": "4b6644bb59ffb65df42656ed1f1c639e2d8bafd4e79710dd45450d8f5c20eca0",
+            "eyePixels": [
+              10,
+              11
+            ]
+          },
+          "next": {
+            "hash": "b715c47d66fa5212a72af2be15387bbb12e08f421e03213782c2b5b3b221374e",
+            "eyePixels": [
+              11,
+              11
+            ]
+          }
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "prior": {
+            "hash": "072b4f10dc63d715587441743716ce086864e983ef16f0856cf4366333dcb8af",
+            "eyePixels": [
+              4,
+              12
+            ]
+          },
+          "next": {
+            "hash": "50553d2dbfca0ad9751b5d155792c3b207005355ce2cf190df0344cb8cc7d7a9",
+            "eyePixels": [
+              5,
+              14
+            ]
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "prior": {
+            "hash": "b7340859c3b5dd56181af5a9235f1462c7d4d4463f78ca1dea26f392caf97397",
+            "eyePixels": [
+              14,
+              4
+            ]
+          },
+          "next": {
+            "hash": "4634ca84bc3471fa1256c9c8b7b0ec1983c9e24fb5f0e1e0587148619324fd54",
+            "eyePixels": [
+              14,
+              5
+            ]
+          }
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "prior": {
+            "hash": "6294cb0fcb383bf924b6fed0849e794f07f7a4de5aa576ad6f1b7fda3516892f",
+            "eyePixels": [
+              0,
+              8
+            ]
+          },
+          "next": {
+            "hash": "5c37728c91ecb2585983364b089ea7a6b59e7c0a1f8c495ba36b56854eb12204",
+            "eyePixels": [
+              0,
+              9
+            ]
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "prior": {
+            "hash": "1edcac8cb58793f951d7055d6f2955b6c924a4429070627aa33cae0c21615f5e",
+            "eyePixels": [
+              8,
+              0
+            ]
+          },
+          "next": {
+            "hash": "aaf585d7fa99625dd1f95e3c5503427931cee42f45d1cd35aa0439c4d9cefc2c",
+            "eyePixels": [
+              10,
+              0
+            ]
+          }
+        },
+        {
+          "yaw": -105,
+          "pitch": 18,
+          "prior": {
+            "hash": "a70257aa2e672f9f8b07d58c3e32aaff5b57393a0ac1046d8fa762430f2a6726",
+            "eyePixels": [
+              0,
+              6
+            ]
+          },
+          "next": {
+            "hash": "d93d0f04996e6afd28ed0510782f48e1b713808340c0d57b32a94d395f045a34",
+            "eyePixels": [
+              0,
+              5
+            ]
+          }
+        },
+        {
+          "yaw": 60,
+          "pitch": -16,
+          "prior": {
+            "hash": "56e69b65aa7238f0ccef39ec4a61615cfd12208a59765f69b2540939ef8be739",
+            "eyePixels": [
+              15,
+              0
+            ]
+          },
+          "next": {
+            "hash": "d06330dbc2c29ab005fc62ad44ab969941c16635286c33c1197a83fdbb0488f7",
+            "eyePixels": [
+              11,
+              0
+            ]
+          }
+        }
+      ],
+      "96": [
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "prior": {
+            "hash": "9ace7dd0140a59e180bdcf636b3b381aed559539e24a405ca087f87b06dae121",
+            "eyePixels": [
+              28,
+              37
+            ]
+          },
+          "next": {
+            "hash": "292a2094faf3d7b07ec88289d3946130577eaba7bfd733475e73bbebff2de132",
+            "eyePixels": [
+              31,
+              40
+            ]
+          }
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "prior": {
+            "hash": "b6473bcb4ffbf7dc3c8356b4e3907d0fbee16f34d34e8b65ab0c418b44a28c0c",
+            "eyePixels": [
+              6,
+              43
+            ]
+          },
+          "next": {
+            "hash": "977d4f39dded4e31637d47ddac77b99f2a53a9dfd65b901acba8525fc2fb6b91",
+            "eyePixels": [
+              9,
+              44
+            ]
+          }
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "prior": {
+            "hash": "12dc6e8c0896226e3d05f598b7690c93d737c73476aeafb01ee4c089711fddc0",
+            "eyePixels": [
+              35,
+              9
+            ]
+          },
+          "next": {
+            "hash": "6be503652075ed183ba44ef136be2f84bade3c8eaf21606d9ec0046c429e192b",
+            "eyePixels": [
+              38,
+              13
+            ]
+          }
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "prior": {
+            "hash": "e504046f65625c1fe7e906ce2f9d8e8b613ecb695b87d88ecc0f7a4dfd922e5c",
+            "eyePixels": [
+              0,
+              24
+            ]
+          },
+          "next": {
+            "hash": "da8653bcf296eb632e8fc81e03a826c5280ab4c511623b15a9ef71e407cc3716",
+            "eyePixels": [
+              0,
+              24
+            ]
+          }
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "prior": {
+            "hash": "4dd3ca019741e78ba539bb79e7a16079b5dd38f6420ec5b2d024a5fb562b1191",
+            "eyePixels": [
+              20,
+              0
+            ]
+          },
+          "next": {
+            "hash": "0d8fed23bfdba36c5a8f6d51371d2a2158a9a4c5aa26db82092ddfba5acaa7b3",
+            "eyePixels": [
+              20,
+              0
+            ]
+          }
+        },
+        {
+          "yaw": -105,
+          "pitch": 18,
+          "prior": {
+            "hash": "e96820923049c25c0fa40351ae51986e1ad8be5e89fea0a410c880eec1e39fa0",
+            "eyePixels": [
+              0,
+              11
+            ]
+          },
+          "next": {
+            "hash": "915f1c5b259c8e8fe8279e45fce8d888af0f7b3853709d349a1449e8e49bae4f",
+            "eyePixels": [
+              0,
+              9
+            ]
+          }
+        },
+        {
+          "yaw": 60,
+          "pitch": -16,
+          "prior": {
+            "hash": "862d5dd7d951aa7d02da8f17dfec84d24cc8a9aa2e36777f2d0ba65680bf5611",
+            "eyePixels": [
+              37,
+              0
+            ]
+          },
+          "next": {
+            "hash": "8057fc9d0755168c25497b2cc5eaccb2bc9506210213e23275a276fa4acf9a99",
+            "eyePixels": [
+              33,
+              0
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "candidateSha": "909b793b7e4271980690a7e939f90dbfa509006fd115fa0c7a05f91fc1af167d"
+}

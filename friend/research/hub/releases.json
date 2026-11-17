@@ -142,6 +142,27 @@
         "face-note39",
         "chest-note39"
       ]
+    },
+    {
+      "id": "18ab3b69c6f2c625e32a914f",
+      "project": "bookfriend",
+      "round": 40,
+      "cards": 323,
+      "sources": 312,
+      "chapters": 14,
+      "cardsSha": "8ab04e8b73d00d01057ebc416f34f2fe97f3f2238f54928ef6d8396c4e59eeb5",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "c3d24f11c4f6567aa73cea1d05a42db47a90ab756ab4120068f06ccce4e79786",
+      "at": "2026-11-17T02:55:00.000Z",
+      "label": "40차 · 작은 얼굴의 눈매와 측면의 밑선",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40"
+      ]
     }
   ]
 }
