@@ -24,3 +24,23 @@ const nk = fnOf('jusoNoKeyHtml'); assert(/⑱ 🌐 외부 정보 › 📮 도로
 assert(/collection\('app_secrets'\)\.doc\('juso'\)/.test(A), '저장 자리 app_secrets/juso'); ok('저장 자리 그대로(app_secrets/juso)');
 for (const f of [je, go, red, ext]) assert(!/\b(alert|confirm|prompt)\s*\(/.test(f), '팝업'); ok('팝업 없음');
 console.log('✅ tJUSOSET1117 통과');
+
+/* ② 화면(시험 문지기처럼 harness.js가 옆에 있고 RN_PORT가 있을 때만) — 🔍 기능 찾기로 가면 ⑱ 안에 #juso_ext · 따로 선 칸 없음 · 외부 정보 다시 그리기 뒤에도 적던 승인키 그대로 */
+if (process.env.RN_PORT && fs.existsSync(path.join(__dirname, 'harness.js'))) (async () => { let bad = 0; const ck = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 500)); } else console.log('  ✓', m); };
+  await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type()); d.dismiss().catch(() => {}); });
+    await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+    const R = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; localStorage.setItem('rn-device', 'TEST-PC'); S.devOk = true; S.app.adminDevices = [deviceName() || 'TEST-PC']; await W(300);
+      const f = featIndex().find((x) => /도로명주소 찾기/.test(x.t)); o.w = f && f.w; if (!f) return o; await featGo(f);
+      let j = null; for (let i = 0; i < 40 && !(j = document.querySelector('#juso_ext')); i++) await W(150);
+      o.has = !!j; o.inExt = !!(j && j.closest('details[data-sec="set_ext"]')); o.alone = !!document.querySelector('details[data-sec="set_juso"]'); o.extOpen = !!(j && j.closest('details').open);
+      o.hasKeyIn = !!document.querySelector('#juso_ext #juso_key');
+      const ki = document.getElementById('juso_key'); if (ki) { ki.value = 'TYPING-NOT-SAVED'; if (typeof extRedraw === 'function') extRedraw(); await W(300); o.kept = (document.getElementById('juso_key') || {}).value; o.extStill = !!document.querySelector('details[data-sec="set_ext"] #ext_set'); }
+      return o; });
+    ck(/⑱ 🌐 외부 정보 › 📮 도로명주소 찾기/.test(R.w || ''), '🔍 기능 찾기 길 = ⚙ 설정 › ⑱ 🌐 외부 정보 › 📮 도로명주소 찾기', R.w);
+    ck(R.has && R.inExt && R.extOpen, '가 보면 ⑱ 🌐 외부 정보 칸이 열리고 그 안에 📮 도로명주소 찾기', R);
+    ck(!R.alone, '따로 선 📮 칸 없음', R);
+    ck(R.hasKeyIn && R.kept === 'TYPING-NOT-SAVED' && R.extStill, '(관리자 기기) 승인키 칸이 ⑱ 안에 있고 · 외부 정보 다시 그리기 뒤에도 적던 승인키 그대로', R);
+    ck(!dlg.length, '브라우저 팝업 없음', dlg);
+  });
+  console.log(bad ? `❌ tJUSOSET1117 화면 실패 ${bad}` : '✅ tJUSOSET1117 화면 통과'); process.exit(bad ? 1 : 0);
+})().catch((e) => { console.log('❌ 시험 오류', e); process.exit(1); });

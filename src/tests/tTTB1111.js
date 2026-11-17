@@ -49,10 +49,10 @@ const cut = (s, a, b) => { const i = s.indexOf(a); const j = s.indexOf(b, i + a.
   const ut = cut(CSRC, 'async function utTick()', '\nasync function'); ok(/wsearchresult\.aspx\?SearchTarget=All&SearchWord=/.test(ut) && !/blTtb/.test(ut), "'전체 중고 (N)' 채우기 = ISBN → 상품 번호를 공개 검색 화면으로");
 
   console.log('③ 웹앱 ⑱ 외부 정보');
-  const code = cut(APP, 'function extSetHtml() {', '\n/* (정범님 11/10) 🌐 외부 연결 키');
+  const code = cut(APP, 'function extSetHtml() {', '\n/* (정범님 11/10) 🌐 외부 연결 키'); /* (road1 11/17) ⑱ 몸통 = extSetCore()(외부 정보 #ext_set) + 📮 도로명주소 — TTB 안내는 extSetCore 안 */
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const St = { ext: { cfg: {}, run: { last: { ttb: { ok: false, at: '2026-11-01T00:00:00Z', why: '999 종료' } } }, keys: { keys: { aladinTtb: 'OLDKEY9999', kakaoRest: 'KK1234' }, meta: {} }, keysErr: null, cmd: {}, runAt: Date.now() } };
-  const html = new Function('EXTF', 'extWatch', 'extRunLoad', 'extKeysLoad', 'isAdminDevice', 'S', 'esc', 'kTime', 'num', 'extMask', 'ebayDelHtml', 'extRedraw', code + '\nreturn extSetHtml();')(() => X, () => {}, () => {}, async () => {}, () => true, St, esc, (t) => String(t || ''), (n) => String(n), (v) => (v ? '저장됨 ••••' + String(v).slice(-4) : ''), () => '', () => {});
+  const html = new Function('EXTF', 'extWatch', 'extRunLoad', 'extKeysLoad', 'isAdminDevice', 'S', 'esc', 'kTime', 'num', 'extMask', 'ebayDelHtml', 'extRedraw', code + '\nreturn extSetCore();')(() => X, () => {}, () => {}, async () => {}, () => true, St, esc, (t) => String(t || ''), (n) => String(n), (v) => (v ? '저장됨 ••••' + String(v).slice(-4) : ''), () => '', () => {});
   ok(!/data-extkey="aladinTtb"/.test(html) && /data-extkeyend="aladinTtb"/.test(html) && /OpenAPI 종료\(10\/30\)/.test(html) && /종료됨 \(10\/30\)/.test(html) && /data-extdel="aladinTtb"/.test(html), "TTB 키 넣는 칸 없음 → '알라딘 OpenAPI 종료(10/30)' 안내 · 예전 키는 지우기만");
   ok(/data-extkey="kakaoRest"/.test(html) && /data-extkey="nlKey"/.test(html), '다른 키 칸은 그대로');
   const row = (html.match(/<tr data-extsrcend="ttb"[\s\S]*?<\/tr>/) || [''])[0]; ok(row && /종료됨 \(2026-10-30\)/.test(row) && /대체 출처: 알라딘 공개 상품 화면/.test(row) && !/999/.test(row) && !/data-extsrc="ttb"/.test(html), "출처 표 TTB 줄 = '종료됨 — 대체 출처'(실패 ✗ 기록 대신)", row.slice(0, 300));
