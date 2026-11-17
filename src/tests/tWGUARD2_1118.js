@@ -35,7 +35,7 @@ function mkStore(init) { const M = new Map(Object.entries(init || {}).map(([k, v
 (async () => {
   /* ━━━━━━━━━━ ① 클라우드 예스24 사라짐 상한 ━━━━━━━━━━ */
   console.log('① 클라우드 예스24 사라짐 상한 max(50, 10%)');
-  const CB = cutOf(CL, '/* (0.35.289 wguard2) 🛡 클라우드 쓰기 지킴이', 'setTimeout(() => y24ShopTick(), 4 * 60e3)');
+  const CB = cutOf(CL, '/* (0.35.292 wguard2) 🛡 클라우드 쓰기 지킴이', 'setTimeout(() => y24ShopTick(), 4 * 60e3)');
   ok(CB.length > 2000 && /async function y24ShopTick\(/.test(CB) && /const y24GoneCap = /.test(CB), '클라우드 묶음(y24GoneCap·wgAllowedCloud·wgNoteCloud·y24ShopTick) 떼어 냄');
   async function runShop({ live, shown, goneBefore, allow }) {
     const init = { 'app_settings/platforms': { y24: { req1021: true, req1029: true, off: false } } };
@@ -74,7 +74,7 @@ function mkStore(init) { const M = new Map(Object.entries(init || {}).map(([k, v
   /* ━━━━━━━━━━ ② 웹앱 가격 그룹 휴지통 ━━━━━━━━━━ */
   console.log('② 웹앱 수동 일괄 그룹 지우기 → 휴지통 · 되살리기');
   const BD = cutOf(APP, 'async function batchDelete(gs, btn) {', 'const batchDelAsk = ');
-  const WB = cutOf(APP, '/* (1.78.696 wguard2 · 리드 결정 F57)', "/* (정범님 10/27 '1.6GB 맞아?')");
+  const WB = cutOf(APP, '/* (1.78.703 wguard2 · 리드 결정 F57)', "/* (정범님 10/27 '1.6GB 맞아?')");
   ok(BD.length > 1000 && WB.length > 3000, '웹앱 batchDelete·쓰기 지킴이 묶음 떼어 냄');
   const ia = BD.indexOf("prd_price_batches_trash"), id1 = BD.indexOf('await d.ref.delete()');
   ok(ia > 0 && id1 > ia, '원본 순서 — 휴지통에 옮긴 뒤에 지움');
@@ -134,7 +134,7 @@ function mkStore(init) { const M = new Map(Object.entries(init || {}).map(([k, v
   const BA = cutOf(APP, 'function bizAlerts(B) {', 'try { pwhWatch();'); ok(/wgWatch\(\); const WS = wgStops\(S\.wg\)/.test(BA) && /add\('red', `🛡 쓰기 지킴이가 멈춤/.test(BA), '홈 알림(빨강) — 쓰기 지킴이 멈춤');
   ok(/const FB_COLLECTIONS = \[[^\]]*'prd_price_batches_trash'/.test(APP), 'Firebase 백업 목록에 휴지통 칸');
   ok(/doc\('wguard'\)/.test(COL) && /Date\.parse\(v\.allowUntil\) > Date\.now\(\)/.test(COL) && /Date\.parse\(v\.allowUntil \|\| ''\) > Date\.now\(\)/.test(CB) && /doc\('wguard'\)/.test(WB), '수집기·클라우드·웹앱이 같은 문서 prd_system/wguard · 같은 허락 규칙(allowUntil > 지금)');
-  ok(/const VER = '0\.35\.(\d+)'/.test(CL) && +CL.match(/const VER = '0\.35\.(\d+)'/)[1] >= 289, '클라우드 판 0.35.289 이상');
+  ok(/const VER = '0\.35\.(\d+)'/.test(CL) && +CL.match(/const VER = '0\.35\.(\d+)'/)[1] >= 292, '클라우드 판 0.35.292 이상');
   /* ━━━━━━━━━━ ⑤ Firestore 규칙 원본(에뮬레이터 시험은 firestore/rules.test.js — 도구 설치가 필요해 빠른 묶음 밖) ━━━━━━━━━━ */
   console.log('⑤ Firestore 규칙 원본');
   const RU = rd('firestore/firestore.rules'); const RUc = RU.replace(/\/\/.*$/gm, '');
