@@ -11,29 +11,31 @@ require('./harness.js')(async (p) => {
   p.on('dialog', (d) => d.accept());
   await p.evaluate(require('./seed.js'));
   const o = await p.evaluate(async () => { const o = {}; S.user = S.user || { email: 'tester@x' }; S.app = S.app || {};
+    /* (kfail3 11/17) 시험이 정하는 원스톱 설정은 저장소 설정 문서(app_settings/main)에도 같이 넣음 — 가짜 저장소는 어느 문서에 쓰든(웹앱 배경 쓰기 app_summary/alerts 등) 모든 구독을 다시 불러, 설정 구독이 S.app을 저장된 설정으로 통째로 바꿔 시험이 넣은 정한 시각이 사라졌음(⑤ 「끝난 뒤 바로 시작」이 가끔 깨진 까닭) · 기대는 그대로 */
+    const FS0 = window.__FS; FS0.app_settings = FS0.app_settings || {}; const keepMain = FS0.app_settings.main ? JSON.parse(JSON.stringify(FS0.app_settings.main)) : null; const setOS = (v) => { S.app.oneShot = v; FS0.app_settings.main = { ...(FS0.app_settings.main || {}), oneShot: JSON.parse(JSON.stringify(v)) }; };
     const puts = []; window.osPut = async (id, patch, line, lv) => { puts.push({ id, patch: JSON.parse(JSON.stringify(patch || {})), line, lv }); return true; };
     window.osPending = async () => ({ n: 2, al: ['A-91', 'A-92'], y24: 0, cash: 0 });
     const r = { id: 't_sess', status: 'run', ph: 'NEXT', loops: 0, cur: 0, bt: [{ n: 1, al: ['A-01'], chk: { fresh: true, left: 0 } }], warn: [], log: [] };
-    /* ① */ S.app.oneShot = { maxLoop: 5 }; o.cf0 = { loopOn: osCfg().loopOn, cutOn: osCfg().cutOn }; await OS_FN.NEXT(r); o.a = puts.slice(-1)[0];
-    /* ② */ S.app.oneShot = { loopOn: true, maxLoop: 3 }; await OS_FN.NEXT(r); o.b = puts.slice(-1)[0]; await OS_FN.NEXT({ ...r, loops: 2 }); o.b2 = puts.slice(-1)[0];
+    /* ① */ setOS({ maxLoop: 5 }); o.cf0 = { loopOn: osCfg().loopOn, cutOn: osCfg().cutOn }; await OS_FN.NEXT(r); o.a = puts.slice(-1)[0];
+    /* ② */ setOS({ loopOn: true, maxLoop: 3 }); await OS_FN.NEXT(r); o.b = puts.slice(-1)[0]; await OS_FN.NEXT({ ...r, loops: 2 }); o.b2 = puts.slice(-1)[0];
     /* ③ */ const calls = []; const keepShip = window.shipOneShot; window.shipOneShot = async (x) => { calls.push(JSON.parse(JSON.stringify(x || {}))); return 'x'; }; window.alpsFetch = async () => ({ ok: true });
     const keepOs = { drive: S.os.drive, lock: S.os.lock, doc: S.os.doc, cutNone: S.os.cutNone }; const FS = window.__FS;
     const prep = async () => { S.os.drive = null; S.os.lock = { n: { [osDay()]: 1 } }; S.os.doc = null; S.os.cutNone = null; if (FS.shp_runs && FS.shp_runs._lock) delete FS.shp_runs._lock.autoDay; try { await db.collection('shp_runs').doc('_lock').set({ autoDay: null }, { merge: true }); } catch (e) {} };
-    S.app.oneShot = {}; await prep(); await osCutoffTick(); await new Promise((res) => setTimeout(res, 300)); o.offCalls = calls.length;
-    S.app.oneShot = { cutOn: true, cutoff: '00:00' }; await prep(); await osCutoffTick(); await new Promise((res) => setTimeout(res, 300)); o.onCalls = calls.slice(); o.noAdm = typeof OS_ADMIN_START === 'undefined';
+    setOS({}); await prep(); await osCutoffTick(); await new Promise((res) => setTimeout(res, 300)); o.offCalls = calls.length;
+    setOS({ cutOn: true, cutoff: '00:00' }); await prep(); await osCutoffTick(); await new Promise((res) => setTimeout(res, 300)); o.onCalls = calls.slice(); o.noAdm = typeof OS_ADMIN_START === 'undefined';
     /* ⑤ */ { calls.length = 0; const hm = (d) => { const k = new Date(Date.now() + 9 * 3600e3 - d * 60e3); return String(k.getUTCHours()).padStart(2, '0') + ':' + String(k.getUTCMinutes()).padStart(2, '0'); }; const t1 = hm(1), t2 = hm(0), t3 = hm(3), t4 = hm(200);
       const sd = () => (((FS.shp_runs || {})._lock || {}).schedDone || {})[osDay()] || {}; if (FS.shp_runs && FS.shp_runs._lock) FS.shp_runs._lock.schedDone = {};
       const go = async (doc) => { S.os.drive = null; S.os.doc = doc || null; S.os.lock = { ...(((FS.shp_runs || {})._lock) || {}), n: {} }; await osSchedTick(); await new Promise((res) => setTimeout(res, 200)); };
       window.osPending = async () => ({ n: 2, al: ['A-91', 'A-92'], y24: 0, cash: 0 });
-      S.app.oneShot = { schedOn: false, schedAt: t1 }; await go(); o.s0 = calls.length;
-      S.app.oneShot = { schedOn: true, schedAt: t1 }; await go(); o.s1 = calls.slice(); o.s1d = sd()[t1];
+      setOS({ schedOn: false, schedAt: t1 }); await go(); o.s0 = calls.length;
+      setOS({ schedOn: true, schedAt: t1 }); await go(); o.s1 = calls.slice(); o.s1d = sd()[t1];
       await go(); o.s1b = calls.length;
-      S.app.oneShot = { schedOn: true, schedAt: [t1, t2].join(',') }; await go({ status: 'run' }); o.s2run = calls.length; await go({ status: 'done' }); o.s2 = calls.slice(-1)[0]; o.s2n = calls.length;
-      window.osPending = async () => ({ n: 0, al: [], y24: 0, cash: 0 }); S.app.oneShot = { schedOn: true, schedAt: t3 }; await go(); o.s3n = calls.length; o.s3d = sd()[t3];
-      window.osPending = async () => ({ n: 2, al: ['A-91'], y24: 0, cash: 0 }); S.app.oneShot = { schedOn: true, schedAt: t4 }; await go(); o.s4n = calls.length; o.s4d = sd()[t4]; o.t = [t1, t2, t3, t4];
-      S.app.oneShot = { schedOn: true, schedAt: t1, schedWd: [(new Date(Date.now() + 9 * 3600e3).getUTCDay() + 1) % 7] }; o.wdOff = osCfg().schedWd.length === 1; }
-    Object.assign(S.os, keepOs); window.shipOneShot = keepShip;
-    /* ④ */ S.app.oneShot = {}; const d = document.createElement('div'); d.innerHTML = shipOneShotHtml(); document.body.appendChild(d); d.querySelector('details') && (d.querySelector('details').open = true); const vis = (s) => { const e = d.querySelector(s); return !!e && e.offsetParent !== null; };
+      setOS({ schedOn: true, schedAt: [t1, t2].join(',') }); await go({ status: 'run' }); o.s2run = calls.length; await go({ status: 'done' }); o.s2 = calls.slice(-1)[0]; o.s2n = calls.length;
+      window.osPending = async () => ({ n: 0, al: [], y24: 0, cash: 0 }); setOS({ schedOn: true, schedAt: t3 }); await go(); o.s3n = calls.length; o.s3d = sd()[t3];
+      window.osPending = async () => ({ n: 2, al: ['A-91'], y24: 0, cash: 0 }); setOS({ schedOn: true, schedAt: t4 }); await go(); o.s4n = calls.length; o.s4d = sd()[t4]; o.t = [t1, t2, t3, t4];
+      setOS({ schedOn: true, schedAt: t1, schedWd: [(new Date(Date.now() + 9 * 3600e3).getUTCDay() + 1) % 7] }); o.wdOff = osCfg().schedWd.length === 1; }
+    Object.assign(S.os, keepOs); window.shipOneShot = keepShip; if (keepMain) FS0.app_settings.main = keepMain; else delete FS0.app_settings.main;
+    /* ④ */ setOS({}); const d = document.createElement('div'); d.innerHTML = shipOneShotHtml(); document.body.appendChild(d); d.querySelector('details') && (d.querySelector('details').open = true); const vis = (s) => { const e = d.querySelector(s); return !!e && e.offsetParent !== null; };
     o.vis = { cut: vis('#os_cut'), cuton: vis('#os_cuton'), loop: vis('#os_loop'), ml: vis('#os_ml'), loopChk: !!(d.querySelector('#os_loop') || {}).checked, cutChk: !!(d.querySelector('#os_cuton') || {}).checked }; o.setTxt = /세션마다 ▶ 단추 한 번이 기본/.test(d.textContent); d.remove();
     return o; });
   console.log(JSON.stringify(o).slice(0, 1500));

@@ -2,11 +2,12 @@
 const phone = process.argv[2] === 'phone';
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const errs = []; p.on('pageerror', (e) => errs.push(e.message)); const r = {};
+  const btnWait = () => p.waitForFunction(() => !!document.querySelector('#sheet > .sh .rgenbtn'), null, { timeout: 8000 }).catch(() => {}); /* (kfail3 11/17) 📖 단추는 화면이 바뀐 뒤 60ms 조용해지면 붙음(kbBtnFill 미루기) — 부하 때 정한 기다림 안에 안 붙어 null을 누르던 흔들림(시험 문지기 첫 번 실패) · 누르기 전에 붙을 때까지 기다림 · 기대 그대로 */
   await p.evaluate(async () => { localStorage.removeItem('rn-rgen'); S.regItems = S.regItems || new Map(); const t = new Date().toISOString();
     const mk = (id, stage, method, extra) => ({ id, stage, method, isbn: '979000000' + id.length + '777', info: { title: '백과시험 ' + id, isbn13: '9790000000777', itemId: '7' + id.length, categories: [{ path: ['국내도서', '소설'] }], page1: [{ price: 7000, grade: '상', sellerCode: '1' }], priceList: 10000, at: t }, grade: 2, qty: 1, price: 8000, by: S.user.email, ws: regWsCur(), createdAt: t, ...(extra || {}) });
     for (const d of [mk('s1', 'sel', 'bulk'), mk('p1', 'pick', 'bulk'), mk('p2', 'pick', 'one'), { id: 'q1', stage: 'q', q: '9788937460449', isbn: '9788937460449', by: S.user.email, ws: regWsCur(), createdAt: t }]) { await db.collection('reg_items').doc(d.id).set(d); S.regItems.set(d.id, d); }
     S.regT = 'sel'; openRegister(); });
-  await p.waitForTimeout(1800);
+  await p.waitForTimeout(1800); await btnWait();
   // ① 단추가 ⌨ 바로 옆
   r.btn = await p.evaluate(() => { const b = document.querySelector('#sheet > .sh .rgenbtn'); const kb = document.querySelector('#sheet > .sh .kbbtn'); return !!b && !!kb && kb.nextElementSibling === b; });
   // ② 누르면 열림 · 같은 단추로 닫힘
@@ -46,10 +47,16 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { document.activeElement && document.activeElement.blur(); rgenShow('code-sku'); }); await p.waitForTimeout(400);
   await p.keyboard.press('Escape'); await p.waitForTimeout(200); r.esc = await p.evaluate(() => !document.querySelector('.rgen') && !!(S.detail && S.detail.reg));
   await p.keyboard.press('Alt+KeyG'); await p.waitForTimeout(300); r.mem = await p.evaluate(() => RGEN.cur);
-  // ⑨ 등록 화면 다시 그려도 창·단추 그대로 · (1.78.688 🫧 빈 곳 눌러 닫기 — 정범님 11/17 I-1117-1331-10 「모든 창·띠는 바깥을 누르면 닫힘」 · BGC_FL에 .rgen) 바깥을 누르면 닫힘 → 📖 단추로 다시 엶
-  await p.evaluate(() => { regRerender(); }); await p.waitForTimeout(600); const hp = await p.evaluate(() => { const b = document.querySelector('.rgsearch-h small').getBoundingClientRect(); return { x: b.left + 5, y: b.top + b.height / 2 }; }); const stayRe = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null); await p.mouse.click(hp.x, hp.y); await p.waitForTimeout(200);
-  const bgClose = await p.evaluate(() => !document.querySelector('.rgen')); await p.evaluate(() => document.querySelector('#sheet > .sh .rgenbtn').click()); await p.waitForTimeout(300);
-  const reopen = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null); r.stay = stayRe && bgClose && reopen; r.stayParts = { stayRe, bgClose, reopen };
+  // ⑨ 등록 화면 다시 그려도 창·단추 그대로 · (1.78.688 🫧 빈 곳 눌러 닫기 — 정범님 11/17 I-1117-1331-10 · BGC_FL에 .rgen) 단 📌 오른쪽에 붙여 둔 창(m-dock)은 빈 곳을 눌러도 안 닫힘(kfail3 11/17 · 리드 정함 I-1117-2250-27 · F57) → 🪟 띄운 창은 바깥을 누르면 닫힘 → 📖 단추로 다시 엶 → 다시 📌 붙임
+  await p.evaluate(() => { regRerender(); }); await p.waitForTimeout(600); await btnWait(); const hpf = () => p.evaluate(() => { const b = document.querySelector('.rgsearch-h small').getBoundingClientRect(); return { x: b.left + 5, y: b.top + b.height / 2 }; }); const stayRe = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null);
+  let hp = await hpf(); await p.mouse.click(hp.x, hp.y); await p.waitForTimeout(250);
+  const pinStay = await p.evaluate(() => !!document.querySelector('.rgen.m-dock') && RGEN.mode === 'dock' && document.documentElement.classList.contains('rgen-dock'));
+  await p.evaluate(() => document.querySelector('[data-rgen="mode"]').click()); await p.waitForTimeout(250); const toFloat = await p.evaluate(() => RGEN.mode === 'float' && !!document.querySelector('.rgen.m-float'));
+  hp = await hpf(); await p.mouse.click(hp.x, hp.y); await p.waitForTimeout(250);
+  const bgClose = await p.evaluate(() => !document.querySelector('.rgen')); await btnWait(); await p.evaluate(() => document.querySelector('#sheet > .sh .rgenbtn').click()); await p.waitForTimeout(300);
+  const reopen = await p.evaluate(() => !!document.querySelector('.rgen') && document.querySelector('#sheet > .sh .rgenbtn.on') != null);
+  await p.evaluate(() => { const b = document.querySelector('[data-rgen="mode"]'); if (b && RGEN.mode === 'float') b.click(); }); await p.waitForTimeout(250); const reDock = await p.evaluate(() => RGEN.mode === 'dock' && !!document.querySelector('.rgen.m-dock'));
+  r.stay = stayRe && pinStay && toFloat && bgClose && reopen && reDock; r.stayParts = { stayRe, pinStay, toFloat, bgClose, reopen, reDock };
   // ⑩ 띄우기 모드 · 끌어 옮기기
   await p.evaluate(() => document.querySelector('[data-rgen="mode"]').click()); await p.waitForTimeout(200);
   const hb = await p.evaluate(() => { const r0 = document.querySelector('.rgen-h > span').getBoundingClientRect(); return { x: r0.left + r0.width / 2, y: r0.top + r0.height / 2, m: RGEN.mode, dock: document.documentElement.classList.contains('rgen-dock') }; });
