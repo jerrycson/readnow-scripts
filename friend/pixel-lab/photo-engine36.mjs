@@ -1,4 +1,5 @@
-import {SIZE as N,views,names,visibleWeight,foreground,camera,extent,signature,rankViews,reconstruct,surfaceEdit,obj} from './hull36.mjs';
+import {SIZE as N,views,names,visibleWeight,foreground,camera,extent,signature,rankViews,surfaceEdit,obj} from './hull36.mjs';
+import {MODEL_VERSION,acceptsFive,reconstructPhoto} from './photo-ml44.mjs';
 import {preview} from './projector36.mjs';
 import {scanImage} from './scan-view36.mjs';
 const $=id=>document.getElementById(id),button=(text,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=fn;return b;};
@@ -26,7 +27,20 @@ function menus(){
  choose('brushes',[['align','중심·크기 정렬'],['add','포함 붓'],['remove','제외 붓']],tool,k=>{tool=k;menus();});
  choose('regions',Object.entries(regions),region,k=>{region=k;menus();update();});
 }
-function rebuild(){mesh=reconstruct(shots);fitted=mesh;if(mesh)for(const [k,[w,d]] of Object.entries(tuning))if(w||d)fitted=surfaceEdit(fitted,k,w,d);update();}
+const learning=$('learnedShape44');
+function rebuild(){
+ const ready=acceptsFive(shots);
+ learning.disabled=!ready;
+ if(!ready)learning.checked=false;
+ mesh=reconstructPhoto(shots,learning.checked?MODEL_VERSION:null);
+ fitted=mesh;
+ if(mesh)for(const [k,[w,d]] of Object.entries(tuning))if(w||d)fitted=surfaceEdit(fitted,k,w,d);
+ $('learningState44').textContent=!ready?'정면부터 45°씩 돌아 찍은 다섯 방향을 채우면 보정을 비교할 수 있습니다.':
+   learning.checked?'학습 보정 v1 적용 중 · 체크를 풀면 같은 입력과 수동 조형값으로 기존 외피를 복원합니다.':
+   '기존 외피 · 정렬을 맞춘 다섯 장에서 보정을 켜고 사선으로 돌려 비교하세요.';
+ update();
+}
+learning.onchange=rebuild;
 function shotFrom(rgba,slot,tol=44){const mask=foreground(rgba,N,N,tol),c=camera(mask);if(!c)throw Error('전경을 찾을 수 없습니다. 단색 배경 또는 투명한 여백이 있는 사진을 사용하세요.');
  return {rgba,mask,camera:c,rows:extent(mask),yaw:views[slot],tolerance:tol};}
 function detected(s){return s?rankViews(s.mask,candidates):[];}
@@ -85,7 +99,7 @@ async function initial(){
  for(const yaw of [...views,-45,-90,-135]){const rgba=scanImage(head,yaw,0,N).data,mask=foreground(rgba,N,N,44);candidates.push({yaw,sig:signature(mask)});if(views.includes(yaw))demonstrations.push(rgba);}
  $('demo').disabled=false;update();
 }
-$('demo').disabled=true;$('demo').onclick=()=>{serial++;demonstrations.forEach((rgba,i)=>{shots[i]=shotFrom(rgba,i);
+$('demo').disabled=true;$('demo').onclick=()=>{serial++;learning.checked=false;demonstrations.forEach((rgba,i)=>{shots[i]=shotFrom(rgba,i);
   // 동일한 평행투영 장비로 만든 예시는 원래 교정을 사용한다.
   shots[i].camera={cx:N/2,cy:N/2,scale:N*.797};});tuning=edits();select(0);yaw=pitch=0;zoom=1;rebuild();send('동일 실측 두상의 다섯 시점을 불러왔습니다. 사진을 회전 모델에 투영할 수 있습니다.');};
 const openDB=()=>new Promise((resolve,reject)=>{const q=indexedDB.open('bookfriend-photo-model',1);q.onupgradeneeded=()=>q.result.createObjectStore('versions',{keyPath:'id'});q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
@@ -93,9 +107,9 @@ const request=q=>new Promise((resolve,reject)=>{q.onsuccess=()=>resolve(q.result
 let channel;
 async function versions(){if(!db)return;const keys=await request(db.transaction('versions').objectStore('versions').getAllKeys());$('saved').replaceChildren(...keys.reverse().map(k=>new Option(new Date(Number(k.split('-')[0])).toLocaleString('ko-KR'),k)));$('load').disabled=!keys.length;}
 async function save(){if(!db)throw Error('이 브라우저의 보존함을 열지 못했습니다.');const id=Date.now()+'-'+crypto.randomUUID(),tx=db.transaction('versions','readwrite');
- const done=new Promise((ok,bad)=>{tx.oncomplete=ok;tx.onerror=()=>bad(tx.error);tx.onabort=()=>bad(tx.error);});tx.objectStore('versions').add({id,shots:structuredClone(shots),tuning:structuredClone(tuning),pos});await done;await versions();channel?.postMessage({kind:'version',id});return id;}
+ const done=new Promise((ok,bad)=>{tx.oncomplete=ok;tx.onerror=()=>bad(tx.error);tx.onabort=()=>bad(tx.error);});tx.objectStore('versions').add({id,shots:structuredClone(shots),tuning:structuredClone(tuning),pos,shapeModel:learning.checked?MODEL_VERSION:null});await done;await versions();channel?.postMessage({kind:'version',id});return id;}
 $('save').onclick=async()=>{try{await save();send('이 기기에 새 판으로 저장했습니다. 같은 브라우저의 연구 페이지와 관찰창에서 열 수 있습니다.');}catch(e){send(e.message);}};
-$('load').onclick=async()=>{try{const v=await request(db.transaction('versions').objectStore('versions').get($('saved').value));if(!v)return;serial++;v.shots.forEach((s,i)=>shots[i]=s);tuning=v.tuning;select(v.pos);rebuild();send('선택한 보존판을 복원했습니다.');}catch(e){send(e.message);}};
+$('load').onclick=async()=>{try{const v=await request(db.transaction('versions').objectStore('versions').get($('saved').value));if(!v)return;serial++;v.shots.forEach((s,i)=>shots[i]=s);tuning=v.tuning;learning.checked=v.shapeModel===MODEL_VERSION;select(v.pos);rebuild();send('선택한 보존판을 복원했습니다.');}catch(e){send(e.message);}};
 $('apply').onclick=async()=>{if(!fitted||applying)return;applying=true;try{const id=await save();localStorage.setItem('bookfriend-face-fit36',id);localStorage.setItem('bookfriend-face-enabled36','1');channel?.postMessage({kind:'apply',id});
  if(parent!==window)parent.postMessage({type:'bookfriend-face-fit36',id},location.origin);
  send('이 기기에 얼굴 판을 저장했습니다. 정밀조형에서 같은 판을 고르고 오른쪽에 사진 외형 적용을 켜면 두 모델을 대조할 수 있습니다.');}catch(e){send(e.message);}finally{applying=false;}};

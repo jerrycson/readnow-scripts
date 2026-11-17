@@ -2,6 +2,7 @@ import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,
   plateInfo,surfaceZones,screenAnchors,posed,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
 import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs';
 import {loadRig} from './rig32.mjs';
+import {mountSculptLearning44} from './studio-sculpt-learn44.mjs';
 import {photoControls} from './studio-photo-fit.mjs';
 
 const el=id=>document.getElementById(id), clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -10,6 +11,7 @@ const button=(text,click)=>{const n=document.createElement('button');n.textConte
 const options=(node,entries)=>node.replaceChildren(...entries.map(([key,name])=>new Option(name,key)));
 let localPhoto;
 const models=new Map(),sessions=new Map(),cache=new Map();
+let learning44;
 let id,session,model,assets,zones=[],selected,active=true,scheduled=false,dirty=false,sourceDirty=true;
 let raw,edited,baseKey,valueKey,plate,plateKey,plateLeft,plateRight,plateTimer;
 const status=s=>{el('status').textContent=s;};
@@ -55,6 +57,7 @@ function layers(){
   for(const g of node.querySelectorAll('g'))g.style.display=el(g.dataset.layer).checked?'':'none';
 }
 function selectZone(key){
+  if(learning44)schedule();
   selected=zones.find(z=>z.key===key)||zones[0];el('region').value=selected.key;
   const labels=axes(id);
   el('handleHelp').textContent=selected.label+' · 가로 '+labels[selected.xAxis]+' / 위아래 '+labels[selected.yAxis];
@@ -104,11 +107,13 @@ function setupPins(){
 function draw(){
   scheduled=false;if(!active||!dirty||!model)return;dirty=false;
   try{
-    const p=session.current,shapeKey=JSON.stringify(p.values)+localPhoto.key(id);
+    const p=session.current,photo44=localPhoto.key(id)!=='original';
+    const values44=learning44?.values(p,selected?.key,photo44)||p.values;
+    const shapeKey=JSON.stringify(values44)+localPhoto.key(id);
     if(raw!==model[p.base==='candidate'?'next':'prior']){
       raw=model[p.base==='candidate'?'next':'prior'];zones=surfaceZones(raw,id);setupPins();valueKey=null;cache.clear();
     }
-    if(valueKey!==shapeKey){edited=sculpt(localPhoto.shape(raw,id),id,p.values);valueKey=shapeKey;cache.delete('edited');}
+    if(valueKey!==shapeKey){edited=sculpt(localPhoto.shape(raw,id),id,values44);valueKey=shapeKey;cache.delete('edited');}
     const poseKey=p.view.pivot+':'+p.view.angle;
     function displayed(key,src){
       let c=cache.get(key);
@@ -123,6 +128,7 @@ function draw(){
     bitmap(el('before'),left.frame);bitmap(el('after'),right.frame);
     localPhoto.draw(id,raw,right.frame,right.display,model,p.view);
     const guides=screenAnchors(right.frame,model,right.display,p.view,zones);
+    learning44?.observe({state:p,model,shown:right.display,frame:right.frame,zone:selected,guide:guides.find(g=>g.key===selected.key),photo:photo44});
     for(const g of guides){
       const n=el('handles').querySelector('[data-zone="'+g.key+'"]');n.dataset.vertex=g.index;n.dataset.front=g.front;
       n.style.left=(g.point[0]/p.view.size*100)+'%';n.style.top=(g.point[1]/p.view.size*100)+'%';
@@ -162,6 +168,7 @@ function changeCase(next){
 const storeKey=()=>['bookfriend.sculpt.v1',id,el('slot').value].join('.');
 function put(p){const v=validatePreset(p);if(v.subject!==id)changeCase(v.subject);session.apply(v);updateValues();schedule(true);}
 function hook(){
+  learning44=mountSculptLearning44({redraw:()=>schedule(true),apply:values=>put({...session.current,values})});
   el('subject').onchange=e=>changeCase(e.target.value);el('region').onchange=e=>selectZone(e.target.value);
   el('allAxes').onchange=()=>selectZone(selected.key);
   el('showHandles').onchange=()=>{el('handles').hidden=!el('showHandles').checked;};

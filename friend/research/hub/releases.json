@@ -240,6 +240,40 @@
         "chest-note42",
         "studio-notes43"
       ]
+    },
+    {
+      "id": "966056ebda914daa089f72af",
+      "project": "bookfriend",
+      "round": 44,
+      "cards": 339,
+      "sources": 328,
+      "chapters": 14,
+      "cardsSha": "36257f91989b5cd785945fceaf8311a268dfbd3dc06ce8487348238ddf53b033",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "0e984abe75bdfddf1cc2b5c346cb0a0308f44ca63221cac2995322e904ab98b3",
+      "at": "2026-11-17T06:24:43.658Z",
+      "label": "44차 · 내 실험실과 사진 엔진의 지도학습",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44"
+      ],
+      "learningEvidence": {
+        "file": "studio-training44.json",
+        "sha256": "6ca169e3f617a904e9bd7375720e31f186beda1ef5994bdafb537c0aecaed96e"
+      }
     }
   ]
 }

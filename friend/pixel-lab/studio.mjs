@@ -1,5 +1,6 @@
 import {studioTools,studioGroups} from './studio-catalog.mjs';
 import {latestPublished} from '../research/hub/published-state.mjs';
+import {startStudioRecord} from './studio-recorder44.mjs';
 const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
@@ -35,11 +36,12 @@ function pathFor(t){
   return u.href;
 }
 function signal(f,on){f.contentWindow?.postMessage({type:'bookfriend:studio-active',active:on},location.origin);}
+const observeTool=startStudioRecord(()=>tools.find(t=>t.id===current));
 function open(id){
   const t=tools.find(t=>t.id===id)||tools.find(t=>t.id==='latest-fern');current=t.id;setState(current);
   let f=frames.get(current);if(!f){f=document.createElement('iframe');f.title=t.label;f.src=pathFor(t);frames.set(current,f);$('stages').append(f);f.onload=()=>signal(f,!f.hidden);}
   for(const [key,other] of frames){other.hidden=key!==current;signal(other,!other.hidden);}
-  $('title').textContent=(t.case&&edition?edition.round+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();
+  $('title').textContent=(t.case&&edition?edition.round+'차 · ':'')+t.label;$('description').textContent=t.description;paintList();observeTool();
 }
 for(const [id,label] of defaults){const b=button(label,()=>open(id));b.dataset.id=id;$('quick').append(b);}
 $('onlyFav').onclick=()=>{onlyFav=!onlyFav;$('onlyFav').setAttribute('aria-pressed',String(onlyFav));paintList();};
