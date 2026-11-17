@@ -98,6 +98,7 @@ function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + 
   const xl = findXlsx(); if (xl) fs.copyFileSync(xl, path.join(P, 'xlsx.full.min.js'));
   const S = path.join(W, 'srv'); fs.mkdirSync(S); for (const d of ['app', 'friend']) ln(path.join(W, 'out', d), path.join(S, d)); for (const f of fs.readdirSync(W).filter((x) => /^readnow-.*\.js$/.test(x))) ln(path.join(W, f), path.join(S, f));
   ln(path.join(Q, 'shop'), path.join(S, 'shop')); ln(path.join(Q, 'cloud'), path.join(S, 'cloud')); /* (11/13 shopux1) 손님 화면 시험(tSHOP1111·tSHOPC1111 첫 화면)이 RN_PORT/shop/index.html을 엶 — 전엔 이 폴더가 없어 404로 '첫 화면' 실패(코드 탓 아님) */
+  if (fs.existsSync(path.join(Q, 'lab'))) ln(path.join(Q, 'lab'), path.join(S, 'lab')); /* (road1 11/17) 🔀 번외로 넘기기 시험(tHANDOFF2·3·4_1112)이 웹앱처럼 ../lab/col2/shadow/col2-handoff.js를 부름 — 시험 서버 뿌리에 lab이 없어 404로 '규칙 파일을 못 불러옴' 거짓 실패(main에서도 같음 · 이으면 셋 다 통과) */
   ln(path.join(W, 'research'), path.join(S, 'research')); ln(path.join(W, 'facts-docs'), path.join(S, 'facts-docs')); if (fs.existsSync(path.join(P, 'r15'))) ln(path.join(P, 'r15'), path.join(S, 'r15'));
   return { Q, W, P, S, xl };
 }
