@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bkfold1",
-   "why": "판 내기 기다림: bkfold1 수동 일괄 묶음 판 ②",
-   "first": "2026-11-17T21:00:01Z",
-   "at": "2026-11-17T23:32:43Z"
-  },
-  {
-   "who": "lead",
    "host": "bunoe4",
    "why": "판 내기 기다림: bunoe4 번외 판",
    "first": "2026-11-17T22:39:59Z",
@@ -80,16 +73,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bkfold1",
-  "why": "판 내기 기다림: bkfold1 수동 일괄 묶음 판 ②",
-  "at": "2026-11-17T23:32:43Z",
-  "first": "2026-11-17T21:00:01Z"
+  "host": "shipqA-lfcount1",
+  "why": "판 내기 기다림: 판 내기 기다림: lfcount1 서버 건수(shipqA)",
+  "at": "2026-11-17T23:33:32Z",
+  "first": "2026-11-17T21:00:02Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bkfold1",
+ "what": "bkfold1 수동 일괄 묶음 판 ②",
+ "since": "2026-11-17T23:33:45Z",
+ "beat": "2026-11-17T23:33:45Z",
  "last": {
   "who": "lead",
   "done": "plock2 판 냄 — 웹앱 1.78.699 · 클라우드 0.35.290 (4ae309cbc)",
