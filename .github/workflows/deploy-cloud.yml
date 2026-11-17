@@ -22,7 +22,9 @@ on:
       health_only: { description: '숫자 요약만(배포 안 함)', type: boolean, default: false }
       cb: { description: 'Cloud Build에 맡기기 — build(진짜 배포) · fail(일부러 실패 · 안 올림) · broken(깨진 파일 · 안 올림) · dry(검사만 · 안 올림) · 비우면 예전처럼 여기서 배포', type: string, default: '' }
   schedule:
-    - cron: '41 * * * *'  # (2026-10-22) 매시 41분 🔁 숫자 요약(@health 3시간·24시간)을 health-out 가지에 평문으로 — 예약 점검 세션이 push 없이 읽기만(예약 세션의 권한 검사가 진단 push를 막아 06:15 점검이 숫자를 못 본 것 · 쓰기 폭주를 못 잡은 까닭)
+    - cron: '41 22,4,10 * * *'  # (privzero1 11/17) 💸 매시 → 점검 직전만: 한국 07:41·13:41·19:41(하루 3번 점검 08·14·20시 13분 앞) + 아래 21:21(매일 정밀 점검 21:49 앞) — 열쇠 길 세션은 dg.sh '@health'로 바로 물어 이 가지가 없어도 됨
+    - cron: '21 12 * * *'
+    # 옛 설명 (2026-10-22) 매시 41분 🔁 숫자 요약(@health 3시간·24시간)을 health-out 가지에 평문으로 — 예약 점검 세션이 push 없이 읽기만(예약 세션의 권한 검사가 진단 push를 막아 06:15 점검이 숫자를 못 본 것 · 쓰기 폭주를 못 잡은 까닭)
 # (deployfix 11/12) 회차 전체 묶음은 없앰 — 예전엔 진단·숫자 요약 회차가 같은 'deploy-cloud' 묶음의 기다리던 배포를 '취소됨'으로 밀어냄(0.35.155·0.35.158·0.35.168). 묶음은 아래 작업마다 따로
 permissions: { contents: write, id-token: write }  # contents: write = 진단 결과(암호화)를 diag-out 가지에 올릴 때만
 env:
@@ -36,7 +38,7 @@ jobs:
     name: 무엇이 바뀌었나 (배포 · 진단)
     # (priv2 11/13) Cloud Build가 배포를 맡으면(변수) 진단(diag/q.txt)·수집기 새 판(pc-live.json)이 든 push에서만 돎 — 나머지 push는 작업 0개(분 0)
     if: vars.RN_CLOUD_DEPLOY != 'cloudbuild' || github.event_name != 'push' || contains(toJSON(github.event.commits), 'diag/q.txt') || contains(toJSON(github.event.commits), 'pc-live.json')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim  # (privzero1 11/17) 💸 1-core 가벼운 기계 — 분당 값 1/3(공개→비공개 뒤 Actions 무료 몫 지킴 · 최대 15분)
     timeout-minutes: 5
     outputs: { cb: '${{ steps.ch.outputs.cb }}', deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
     steps:
@@ -101,7 +103,7 @@ jobs:
     needs: what
     if: needs.what.outputs.cb != ''
     concurrency: { group: "cbsub-${{ needs.what.outputs.cb }}", cancel-in-progress: false }
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim  # (privzero1 11/17) 💸 1-core 가벼운 기계 — 분당 값 1/3(공개→비공개 뒤 Actions 무료 몫 지킴 · 최대 15분)
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
@@ -128,8 +130,8 @@ jobs:
     needs: what
     if: needs.what.outputs.diag == '1' || needs.what.outputs.pclive == '1' || needs.what.outputs.health == '1'
     concurrency: { group: "cloud-side-${{ needs.what.outputs.health == '1' && 'health' || 'diag' }}", cancel-in-progress: false }  # 배포 묶음과 따로 — 진단이 배포를 밀어내지 않음 · 매시 숫자 요약도 진단과 따로
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-slim  # (privzero1 11/17) 💸 1-core 가벼운 기계 — 분당 값 1/3(공개→비공개 뒤 Actions 무료 몫 지킴 · 최대 15분)
+    timeout-minutes: 15  # (privzero1) 30 → 15 (가벼운 기계 한도 · 지난 3일 가장 길었던 회차 168초)
     env: { DO_DIAG: '${{ needs.what.outputs.diag }}', DO_PCLIVE: '${{ needs.what.outputs.pclive }}', DO_HEALTH: '${{ needs.what.outputs.health }}' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0

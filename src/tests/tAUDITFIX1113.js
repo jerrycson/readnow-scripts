@@ -62,7 +62,9 @@ const cut = (S, a, b) => { const i = S.indexOf(a); const j = S.indexOf(b, i + 1)
   console.log('③ 🖥 웹앱 글자');
   ok(/async function ledY24Claim\(rows\)/.test(APP) && /const cl = await ledY24Claim\(rows\);/.test(APP) && /try \{ await y24PLoad\(true\); \} catch \(e\) \{\}/.test(cut(APP, 'async function ledY24Go(items, opt) {', '\n/*')), '예스24 맡기기 — 새로 읽기 + 보내기 직전 트랜잭션 표');
   ok(/w = await rcRedo\(x\.e, TD, got\);/.test(APP) && /다시 맡기기는 \$\{d1\}일 회차만/.test(APP) && /async function rcHumanWhy\(e, a\)/.test(APP), '사후 확인 — 첫 회차만 다시 맡김 · 사람 값 우선');
-  ok(/bqHoldFree\(x\.lid, no, at, '가게 취소 ' \+ no\)/.test(APP) && !/doc\(x\.lid\)\.set\(\{ on: 0, freeAt: at/.test(APP), '가게 취소 — 이 주문 잡음만 풂');
+  /* (ord5 11/17 · 우리숍 주문 묶음 5 #6) 가게 취소의 잡음 풀기가 취소 상태와 같은 거래(bqMove → bqStockApply)로 옮겨짐 — 규칙(이 주문 잡음만 · 팔림 표·다른 주문 그대로)은 cloud/shop-stock.js legacyRelease가 지킴 */
+  const SSTK = rd('cloud/shop-stock.js');
+  ok((/bqHoldFree\(x\.lid, no, at, '가게 취소 ' \+ no\)/.test(APP) || (/stock\.legacyRelease\(row\.h, no, at, '가게 취소 ' \+ no\)/.test(APP) && /patch\.st === 'cancel' \? await bqStockRead\(tx, o\)/.test(APP) && (!SSTK || /function legacyRelease\(h, no, at, why\) \{ if \(!h \|\| h\.schema === 2 \|\| h\.sold \|\| String\(h\.no \|\| ''\) !== String\(no\)\) return null;/.test(SSTK)))) && !/doc\(x\.lid\)\.set\(\{ on: 0, freeAt: at/.test(APP), '가게 취소 — 이 주문 잡음만 풂');
   ok(/body:has\(\.sheet\.on\) \.verbar:not\(\.mini\)\{display:none\}/.test(APP), '업데이트 띠 — 상세 화면이 열리면 숨김');
   ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(cut(APP, 'async function rcHumanWhy(e, a)', 'const RC_TICK_MS')) && !/\balert\(|\bconfirm\(/.test(cut(APP, 'const Y24GO_CLAIM_MS', 'async function ledY24Go(')), '새 코드에 브라우저 창 없음');
   if (!process.env.RN_PORT) { console.log(bad ? `❌ tAUDITFIX1113 ${bad}개 실패` : '✓ tAUDITFIX1113 순수·글자 검사 통과 (화면은 RN_PORT를 주면)'); process.exit(bad ? 1 : 0); }

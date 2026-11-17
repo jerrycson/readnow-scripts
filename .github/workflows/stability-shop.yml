@@ -1,0 +1,61 @@
+# 🛍 숍 손님 화면 브라우저 시험 — stability.yml에서 나눔 (privzero1 11/17 · 💸 비공개 뒤 Actions 분 아끼기)
+#  · 예전엔 src/**·cloud/** 아무 PR마다 크롬을 받아 돌림(지난 3일 55분 · 한 번 평균 156초) → 이 시험이 실제로 읽는 파일이 바뀐 PR에서만
+#  · (main 1.78.682에서 생긴 계정 브라우저 시험 account-browser도 같이 옮김)
+#  · 읽는 파일: shop/** · cloud/shop.js와 그것이 부르는 cloud/shop-*.js·bookinfo.js·aisum.js·cover3d.js · 시험 파일 자신
+#  · 꼭 통과해야 하는 검사(가지 보호)가 없어 건너뛰어도 PR이 막히지 않음 · 손으로 Run workflow도 됨
+name: stability-shop
+on:
+  pull_request:
+    paths:
+      - 'shop/**'
+      - 'cloud/shop*.js'
+      - 'cloud/bookinfo.js'
+      - 'cloud/aisum.js'
+      - 'cloud/cover3d.js'
+      - 'src/tests/tSHOPPAGE.js'
+      - 'src/tests/standalone/shop-page*'
+      - 'src/tests/standalone/shelf-browser.cjs'
+      - 'src/tests/tACCOUNTORDERS.js'
+      - 'src/tests/tSHOP9_*'
+      - 'src/tests/standalone/account-orders*'
+      - 'src/tests/standalone/order-attempt*'
+      - 'src/tests/standalone/stability.test.cjs'
+      - '.github/workflows/stability-shop.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: stability-shop-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  shop-browser:
+    runs-on: ubuntu-latest
+    container: node:22-bookworm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 고정된 브라우저 시험 도구 준비
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rn-browser" --no-save --ignore-scripts --package-lock=false playwright@1.62.1
+          node "$RUNNER_TEMP/rn-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: 가짜 자료로 손님 화면 전환 검사
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
+          RN_SHOP_UI=1 node src/tests/tSHOPPAGE.js
+          node src/tests/standalone/shelf-browser.cjs
+
+  account-browser:
+    runs-on: ubuntu-latest
+    container: node:22-bookworm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: 고정된 브라우저 시험 도구 준비
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rn-browser" --no-save --ignore-scripts --package-lock=false playwright@1.62.1
+          node "$RUNNER_TEMP/rn-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: 계정 목록 보존과 복구 화면 검사
+        run: |
+          export NODE_PATH="$RUNNER_TEMP/rn-browser/node_modules"
+          RN_ACCOUNT_UI=1 node src/tests/tACCOUNTORDERS.js
+          RN_UI=1 node src/tests/tSHOP9_1112.js

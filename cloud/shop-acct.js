@@ -13,6 +13,7 @@
  *  운영자(관리 웹앱 → 클라우드 /shop-admin · 로그인 허용 계정만): 시험 계정 만들기·목록·보관/숨김·비밀번호 다시 · 리뷰/밑줄 숨김·보이기 — 지우기 없음
  *  시험 계정(test:1): 별명 앞 🧪 · 실제 주문 못 넣음(매출 0) · 그 글은 본인 화면에만(공개 목록·별점 평균·첫 화면에서 빠짐) */
 'use strict';
+const ACCOUNT_ORDERS = require('./shop-account-orders.js');
 const crypto = require('crypto');
 const s = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n || 200);
 const sLong = (v, n) => String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').replace(/\n{4,}/g, '\n\n\n').trim().slice(0, n);
@@ -89,6 +90,54 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
   const E = (code, err, x) => [code, { ok: false, err, ...(x || {}) }]; const OK = (x) => [200, { ok: true, ...(x || {}) }];
   async function uGet(uid, fresh) { if (!UID_RE.test(String(uid || ''))) return null; const c = UC.get(uid); if (!fresh && c && Date.now() - c.at < 30e3) return c.d; const d = await C('shop_users').doc(uid).get(); const v = d.exists ? d.data() : null; UC.set(uid, { at: Date.now(), d: v }); if (UC.size > 3000) UC.clear(); return v; }
   async function uSet(uid, v) { await C('shop_users').doc(uid).set({ ...v, up: nowIso() }, { merge: true }); UC.delete(uid); PFC.delete(uid); }
+  // 이름 색인과 회원 본문은 같은 거래에서 확정한다. 캐시는 커밋 뒤에만 비운다.
+  const liveSession = (v, a) => !!(v && v.uid === a.uid && !v.gone && !v.arch && Array.isArray(v.sess) && v.sess.some(x => x && x.h === a.h && Date.parse(x.exp) > Date.now()));
+  async function profileSet(a, patch, requestedNick) {
+    const out = await db.runTransaction(async tx => {
+      const ref = C('shop_users').doc(a.uid), d = await tx.get(ref), v = d.exists ? d.data() : null;
+      if (!liveSession(v, a)) return E(401, '로그인이 필요합니다', { login: 1 });
+      const up = { ...patch }; if (up.goal) up.goal = { ...up.goal, y: goalOf(v).y };
+      let nextRef = null, previousRef = null;
+      if (requestedNick != null && requestedNick !== v.nick) {
+        const bad = v.test ? null : nickWhy(requestedNick); if (bad) return E(400, bad, { f: 'nick' });
+        if (typeof v.nick !== 'string' || !v.nick) return E(409, '기존 별명 기록을 확인해야 합니다 — 잠시 뒤 다시 확인해 주세요', { f: 'nick' });
+        const previousKey = nickKey(v.nick), nextKey = nickKey(requestedNick), nr = C('shop_users_nk').doc(nextKey);
+        const nd = await tx.get(nr), nextOwner = nd.exists ? (nd.data() || {}).uid : null;
+        if (nextOwner && nextOwner !== a.uid) return E(409, '이미 쓰이는 별명입니다', { f: 'nick' });
+        const oldRef = previousKey === nextKey ? nr : C('shop_users_nk').doc(previousKey);
+        const old = previousKey === nextKey ? nd : await tx.get(oldRef);
+        if (!old.exists || (old.data() || {}).uid !== a.uid) return E(409, '기존 별명 기록을 확인해야 합니다 — 잠시 뒤 다시 확인해 주세요', { f: 'nick' });
+        if (previousKey !== nextKey) { nextRef = nr; previousRef = oldRef; }
+        up.nick = requestedNick;
+      }
+      const t = nowIso();
+      if (nextRef) tx.set(nextRef, { uid: a.uid, at: t });
+      if (previousRef) tx.set(previousRef, { uid: null, freeAt: t }, { merge: true });
+      tx.set(ref, { ...up, up: t }, { merge: true });
+      const saved = { ...v, ...up }; if (up.notif) saved.notif = { ...(v.notif || {}), ...up.notif };
+      return OK({ me: meView(saved) });
+    });
+    UC.delete(a.uid); PFC.delete(a.uid); return out;
+  }
+  // 본문 정리가 끝난 뒤 최신 이름의 본인 소유권만 풀고 종료 상태를 함께 저장한다.
+  async function retireIdentity(uid, patch, check) {
+    const out = await db.runTransaction(async tx => {
+      const ref = C('shop_users').doc(uid), d = await tx.get(ref), v = d.exists ? d.data() : null;
+      const denied = check(v); if (denied) return denied;
+      const refs = []; if (v.em) refs.push(C('shop_users_em').doc(emKey(v.em))); if (v.nick) refs.push(C('shop_users_nk').doc(nickKey(v.nick)));
+      const owned = []; for (const r of refs) { const s0 = await tx.get(r); if (s0.exists && (s0.data() || {}).uid === uid) owned.push(r); }
+      const t = nowIso(); for (const r of owned) tx.set(r, { uid: null, freeAt: t }, { merge: true });
+      tx.set(ref, { ...patch, up: t }, { merge: true }); return OK();
+    });
+    UC.delete(uid); PFC.delete(uid); return out;
+  }
+  // 세션 변경은 최신 회원 문서를 읽은 거래 안에서만 한다. 결과 불명 때도 인증 캐시를 비운다.
+  async function sessionTxn(uid, change) {
+    try { return await db.runTransaction(async tx => {
+      const ref = C('shop_users').doc(uid), d = await tx.get(ref);
+      return change(d.exists ? d.data() : null, tx, ref);
+    }); } finally { UC.delete(uid); }
+  }
   /* 열쇠 = 손님 번호 + '.' + 무작위 32자 · 문서엔 해시만(sess) · 90일 · 기기 5대 */
   async function authOf(req) { const m = /^Bearer\s+(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String((req.headers && req.headers.authorization) || '')); if (!m) return null; const u = await uGet(m[1]); if (!u || u.gone || u.arch) return null;
     const h = H(m[1] + '.' + m[2]); const t = Date.now(); const ok = (u.sess || []).some((x) => x && x.h === h && Date.parse(x.exp) > t); return ok ? { uid: m[1], u, h } : null; }
@@ -108,19 +157,34 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     if (out && out[0] === 200) log && log(`👤 우리숍 ${test ? '시험 ' : ''}손님 가입 ${uid}`); return out; }
   async function login(b, req) { const ik = ipKey(req); const f = (FAIL.get(ik) || []).filter((x) => Date.now() - x < 600e3); if (f.length >= 10) return E(429, '로그인을 너무 많이 틀렸습니다 — 10분 뒤 다시 해 주세요');
     const em = String(b.em || '').trim().toLowerCase(); const fail = () => { f.push(Date.now()); FAIL.set(ik, f); if (FAIL.size > 5000) FAIL.clear(); return E(401, '메일 또는 비밀번호가 맞지 않습니다'); };
-    if (!EMAIL.test(em)) return fail(); const ed = await C('shop_users_em').doc(emKey(em)).get(); const uid = ed.exists ? (ed.data() || {}).uid : null; const u = uid ? await uGet(uid, true) : null; if (!u || u.gone || !pwOk(b.pw, u.pw)) return fail();
-    if (u.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)'); const S0 = sessNew(u); await uSet(uid, { sess: S0.sess, last: nowIso() }); return OK({ tok: S0.tok, me: meView({ ...u, sess: S0.sess }) }); }
+    if (!EMAIL.test(em)) return fail(); const er = C('shop_users_em').doc(emKey(em)), ed = await er.get(); const uid = ed.exists ? (ed.data() || {}).uid : null; const u = uid ? await uGet(uid, true) : null;
+    if (!u || u.uid !== uid || u.em !== em || u.gone || !pwOk(b.pw, u.pw)) return fail();
+    if (u.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)');
+    const out = await sessionTxn(uid, async (v, tx, ref) => {
+      const latestEmail = await tx.get(er);
+      if (!v || v.uid !== uid || v.gone || v.em !== em || v.pw !== u.pw || !latestEmail.exists || (latestEmail.data() || {}).uid !== uid) return E(401, '메일 또는 비밀번호가 맞지 않습니다');
+      if (v.arch) return E(403, '보관된 계정입니다(운영자가 쉬게 함)');
+      const S0 = sessNew(v), t = nowIso(); tx.set(ref, { sess: S0.sess, last: t, up: t }, { merge: true });
+      return OK({ tok: S0.tok, me: meView({ ...v, sess: S0.sess }) });
+    });
+    return out[0] === 401 ? fail() : out;
+  }
   /* ── (11/14 shopview2 · 작업판 v11 정범님 「손님 화면을 내가 직접 볼 수 있게」) 👀 손님 화면으로 보기 — 관리 웹앱 단추 하나로 🧪 시험 계정에 바로 들어감(결제만 막힘 — 주문 창구가 시험 계정을 403 · 손님 화면은 마지막 단추를 「🧪 결제는 하지 않습니다」로)
    *  관리자(asView)가 1회 열쇠(5분 · 문서엔 해시만)를 받아 booksqueen.com/?bqas=<손님 번호>.<열쇠> 로 엶 → 손님 화면이 asIn으로 바꿔 로그인 열쇠를 받음(열쇠는 한 번 쓰면 끝)
    *  ⚠ 시험 계정(시험 표시 + @test.booksqueen.invalid 메일 두 겹 · F37)만 — 진짜 손님 계정으로는 절대 들어가지 않음 */
   async function asIn(b, req) { const ik = ipKey(req); if (limitWait('asi' + ik, 20, 600e3)) return E(429, '잠시 뒤 다시 해 주세요');
     const m = /^(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String(b.c || '')); if (!m) return E(400, '들어가기 열쇠가 이상합니다');
-    const u = await uGet(m[1], true); const a = u && u.asv; const t = Date.now();
-    if (!isTestAcct(u) || u.gone || u.arch || !a || !a.h || a.h !== H(m[2]) || !(Date.parse(a.exp) > t)) return E(401, '들어가기 열쇠가 끝났습니다(5분 · 한 번만) — 관리 웹앱에서 「👀 손님 화면으로 보기」를 다시 눌러 주세요', { asv: 0 });
-    const hrs = Math.max(1, Math.min(720, Math.round(+a.hrs || 24))); const tok = u.uid + '.' + rnd(16);
-    const sess = [{ h: H(tok), exp: new Date(t + hrs * 3600e3).toISOString(), at: new Date(t).toISOString(), asv: 1 }, ...(u.sess || []).filter((x) => x && Date.parse(x.exp) > t)].slice(0, SESS_MAX);
-    await uSet(u.uid, { sess, last: nowIso(), asv: { ...a, h: null, used: nowIso() } }); /* 열쇠는 한 번만(해시를 비움) */
-    log && log(`👀 손님 화면으로 보기 — 시험 계정 ${u.uid} 들어감(${s(a.by, 80)})`); return OK({ tok, me: meView({ ...u, sess }), hrs }); }
+    const result = await sessionTxn(m[1], (u, tx, ref) => {
+      const a = u && u.asv, t = Date.now();
+      if (!isTestAcct(u) || u.uid !== m[1] || u.gone || u.arch || !a || !a.h || a.h !== H(m[2]) || !(Date.parse(a.exp) > t)) return { out: E(401, '들어가기 열쇠가 끝났습니다(5분 · 한 번만) — 관리 웹앱에서 「👀 손님 화면으로 보기」를 다시 눌러 주세요', { asv: 0 }) };
+      const hrs = Math.max(1, Math.min(720, Math.round(+a.hrs || 24))), tok = u.uid + '.' + rnd(16);
+      const sess = [{ h: H(tok), exp: new Date(t + hrs * 3600e3).toISOString(), at: new Date(t).toISOString(), asv: 1 }, ...(u.sess || []).filter(x => x && Date.parse(x.exp) > t)].slice(0, SESS_MAX);
+      const at = nowIso(); tx.set(ref, { sess, last: at, up: at, asv: { ...a, h: null, used: at } }, { merge: true });
+      return { out: OK({ tok, me: meView({ ...u, sess }), hrs }), by: a.by };
+    });
+    if (result.out[0] === 200) log && log('👀 손님 화면으로 보기 — 시험 계정 ' + m[1] + ' 들어감(' + s(result.by, 80) + ')');
+    return result.out;
+  }
   /* ── 구매 인증: 이 계정으로 한 주문 중 입금 확인 뒤(입금·출고·보냄·끝) 같은 책(ISBN 또는 그 실물) */
   async function buyOf(u, k) { const L = (u.ords || []).slice(0, 100).map((x) => x && x.no).filter(Boolean); if (!L.length) return null; const ds = await db.getAll(...L.map((no) => C('shop_orders').doc(no)));
     for (const d of ds) { const o = d.exists ? d.data() : null; if (!o || o.uid !== u.uid || !ORD_OK.has(o.st)) continue; const x = (o.items || []).find((y) => (y.isbn && 'i' + y.isbn === k) || 'd' + y.lid === k); if (x) return { t: x.t, im: x.im || null, id: x.lid }; } return null; }
@@ -141,19 +205,25 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     const A = await authOf(req); if (!A) return E(401, '로그인이 필요합니다', { login: 1 }); const { uid } = A; let u = A.u;
     if (limitWait('au' + uid, 300, 600e3)) return E(429, '잠시 뒤 다시 해 주세요');
     if (o === 'me') { if (Date.now() - Date.parse(u.last || 0) > 3600e3) uSet(uid, { last: nowIso() }).catch(() => {}); return OK({ me: meView(u) }); }
-    if (o === 'out') { await uSet(uid, { sess: (u.sess || []).filter((x) => x && x.h !== A.h) }); return OK(); }
+    if (o === 'out') return sessionTxn(uid, (v, tx, ref) => {
+      if (!liveSession(v, A)) return E(401, '로그인이 필요합니다', { login: 1 });
+      tx.set(ref, { sess: v.sess.filter(x => x && x.h !== A.h), up: nowIso() }, { merge: true }); return OK();
+    });
     if (o === 'set') { const up = {}; if (b.bio != null) { const bio = sLong(b.bio, 300).replace(/\n+/g, ' '); if ([...bio].length > 150) return E(400, '소개는 150자까지'); if (LINK.test(bio) || PHONEISH.test(bio)) return E(400, '소개에 주소·전화 번호는 넣지 않습니다'); up.bio = bio; }
-      if (b.notif && typeof b.notif === 'object') { up.notif = {}; for (const k of ['order', 'restock', 'price', 'follow', 'news']) if (k in b.notif) up.notif[k] = b.notif[k] ? 1 : 0; }
-      if (b.goal != null) { const n = Math.round(+b.goal); if (!(n >= 0 && n <= 1000)) return E(400, '독서 목표는 0~1,000권'); up.goal = { y: goalOf(u).y, n }; }
-      if (b.nick != null && nickNorm(b.nick) !== u.nick) { const nick = nickNorm(b.nick); const nE = u.test ? null : nickWhy(nick); if (nE) return E(400, nE, { f: 'nick' }); let bad = null;
-        await db.runTransaction(async (tx) => { bad = null; const nr = C('shop_users_nk').doc(nickKey(nick)); const nd = await tx.get(nr); if (nd.exists && (nd.data() || {}).uid && nd.data().uid !== uid) { bad = '이미 쓰이는 별명입니다'; return; } tx.set(nr, { uid, at: nowIso() }); tx.set(C('shop_users_nk').doc(nickKey(u.nick)), { uid: null, freeAt: nowIso() }, { merge: true }); });
-        if (bad) return E(409, bad, { f: 'nick' }); up.nick = nick; }
-      await uSet(uid, up); u = await uGet(uid, true); return OK({ me: meView(u) }); }
-    if (o === 'pw') { if (!pwOk(b.old, u.pw)) return E(400, '지금 비밀번호가 맞지 않습니다', { f: 'old' }); const w = pwWhy(b.nw); if (w) return E(400, w, { f: 'nw' }); const S0 = sessNew({ ...u, sess: [] }); await uSet(uid, { pw: pwHash(b.nw), sess: S0.sess }); return OK({ tok: S0.tok }); }
+      if (b.notif && typeof b.notif === 'object') { const notif = {}; for (const k of ['order', 'restock', 'price', 'follow', 'news']) if (k in b.notif) notif[k] = b.notif[k] ? 1 : 0; if (Object.keys(notif).length) up.notif = notif; }
+      if (b.goal != null) { const n = Math.round(+b.goal); if (!(n >= 0 && n <= 1000)) return E(400, '독서 목표는 0~1,000권'); up.goal = { n }; }
+      return profileSet(A, up, b.nick == null ? null : nickNorm(b.nick)); }
+    if (o === 'pw') { if (!pwOk(b.old, u.pw)) return E(400, '지금 비밀번호가 맞지 않습니다', { f: 'old' }); const w = pwWhy(b.nw); if (w) return E(400, w, { f: 'nw' }); const password = pwHash(b.nw);
+      return sessionTxn(uid, (v, tx, ref) => {
+        if (!liveSession(v, A) || v.pw !== u.pw) return E(401, '로그인 상태가 바뀌었습니다 — 다시 로그인해 주세요', { login: 1 });
+        const S0 = sessNew({ ...v, sess: [] }); tx.set(ref, { pw: password, sess: S0.sess, up: nowIso() }, { merge: true });
+        return OK({ tok: S0.tok });
+      });
+    }
     if (o === 'bye') { if (!pwOk(b.pw, u.pw)) return E(400, '비밀번호가 맞지 않습니다', { f: 'pw' }); /* 회원 탈퇴 — 메일·별명 묶음을 풀고 로그인 0 · 쓴 글은 화면에서 빠짐(개인정보 보호법 · 주문 기록은 전자상거래법 5년 그대로) */
-      const t = nowIso(); await C('shop_users_em').doc(emKey(u.em)).set({ uid: null, freeAt: t }, { merge: true }); await C('shop_users_nk').doc(nickKey(u.nick)).set({ uid: null, freeAt: t }, { merge: true });
+      const t = nowIso();
       for (const cn of ['shop_reviews', 'shop_quotes', 'shop_lists']) { const ss = await C(cn).where('uid', '==', uid).get(); const W = []; ss.forEach((d) => W.push(d.ref.set({ gone: 1 }, { merge: true }))); await Promise.all(W); } RVC.clear(); NEW.at = 0;
-      await uSet(uid, { gone: 1, goneAt: t, em: null, sess: [], wish: [], seen: [], alerts: {}, bio: '' }); return OK(); }
+      return retireIdentity(uid, { gone: 1, goneAt: t, em: null, sess: [], wish: [], seen: [], alerts: {}, bio: '' }, v => liveSession(v, A) && v.pw === u.pw ? null : E(401, '로그인이 필요합니다', { login: 1 })); }
     if (o === 'rd') { const k = String(b.k || ''); if (!K_RE.test(k)) return E(400, '책 번호가 이상함'); const st = b.s == null || b.s === '' ? null : String(b.s); if (st && !RD[st]) return E(400, '서재 칸이 이상함');
       if (st && !(u.rd || {})[k] && Object.keys(u.rd || {}).length >= 2000) return E(400, '서재는 2,000권까지'); const was = (u.rd || {})[k] || {}; const x = await bookOf(b.id, k); const bk = x ? bookMini(x) : bookMini(b.book || was);
       if (!bk.t) return E(400, '책 정보를 찾을 수 없음'); const v = st ? { s: st, ...bk, at: nowIso(), ...(st === 'done' ? { fin: was.fin && was.s === 'done' ? was.fin : nowIso() } : {}) } : null; await uSet(uid, { rd: { [k]: v } }); u = await uGet(uid, true); return OK({ rd: v, goal: goalOf(u) }); }
@@ -164,8 +234,8 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
       const key = kk + ':' + (kk === 'price' ? x.id : isbn); const on = !!b.on; if (on && !(u.alerts || {})[key] && Object.values(u.alerts || {}).filter(Boolean).length >= 100) return E(400, '알림 신청은 100개까지');
       const v = on ? { k: kk, id: x ? x.id : s(b.id, 80) || null, isbn, t: x ? x.t : s(b.t, 120), im: x ? x.im || null : null, p: x ? x.p : null, at: nowIso() } : null; await uSet(uid, { alerts: { [key]: v } }); return OK({ key, on }); }
     if (o === 'alerts') { await ready(); const st = alertState(u.alerts, await vw(), await held(), await soldX()); return OK({ L: st }); }
-    if (o === 'orders') { const L = (u.ords || []).slice(0, 100); if (!L.length) return OK({ L: [] }); const ds = await db.getAll(...L.map((x) => C('shop_orders').doc(x.no))); const out = [];
-      ds.forEach((d, i) => { const ob = d.exists ? d.data() : null; if (!ob || ob.uid !== uid) return; out.push({ ...view(ob), t: L[i].t || null }); }); return OK({ L: out }); }
+    if (o === 'orders') { let repairPending = false; try { await repairOrders(uid, b.recover); } catch (e) { repairPending = true; log && log('👤 기기 주문의 계정 연결을 나중에 다시 확인합니다'); } u = await uGet(uid, true); if (!u || u.gone || u.arch) return E(401, '로그인 상태를 확인해 주세요', { login: 1 }); const L = (u.ords || []).slice(0, 100); if (!L.length) return OK({ L: [], ...(repairPending ? { repairPending: 1 } : {}) }); const ds = await db.getAll(...L.map((x) => C('shop_orders').doc(x.no))); const out = [];
+      ds.forEach((d, i) => { const ob = d.exists ? d.data() : null; if (!ob || ob.uid !== uid) return; out.push({ ...view(ob), t: L[i].t || null }); }); return OK({ L: out, ...(repairPending ? { repairPending: 1 } : {}) }); }
     if (o === 'rv') { if (limitWait('arv' + uid, 20, 3600e3)) return E(429, '잠시 뒤 다시 해 주세요(짧은 시간에 리뷰가 많음)'); const k = String(b.k || ''); if (!K_RE.test(k)) return E(400, '책 번호가 이상함'); const c = rvCheck(b); if (c.err) return E(400, c.err);
       if (c.v.ph.some((n) => !n.startsWith('rv/' + uid + '/'))) return E(400, '사진이 이상함'); const x = await bookOf(b.id, k); const buy = await buyOf(u, k).catch(() => null); const rid = 'r_' + H(k + '|' + uid).slice(0, 20); let out = null;
       await db.runTransaction(async (tx) => { out = null; const ref = C('shop_reviews').doc(rid); const d = await tx.get(ref); const was = d.exists ? d.data() : null; const info = x ? { id: x.id, t: x.t, a: x.a || null, im: x.im || null } : was ? { id: was.id, t: was.t, a: was.a, im: was.im } : buy ? { id: buy.id, t: buy.t, a: null, im: buy.im } : null;
@@ -248,7 +318,9 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     if (path === '/shop/rvimg') return img(res, q);
     return false; }
   /* 주문이 계정과 이어짐(주문 접수 성공 뒤) — 마이페이지 주문 내역·구매 인증 */
-  async function addOrder(uid, rec) { const u = await uGet(uid, true); if (!u) return; await uSet(uid, { ords: [{ no: rec.no, t: rec.t, at: rec.at, total: rec.total, n: rec.n }, ...(u.ords || []).filter((x) => x && x.no !== rec.no)].slice(0, 200) }); }
+  function ordersChanged(uid) { UC.delete(uid); PFC.delete(uid); }
+  async function repairOrders(uid, records) { const changed = await ACCOUNT_ORDERS.repair(db, C, uid, records, nowIso()); if (changed) ordersChanged(uid); return changed; }
+  async function addOrder(uid, rec) { return repairOrders(uid, [rec]); }
   /* ── 운영자(관리 웹앱 · 클라우드 로그인 허용 계정) — 지우기 없음(보관·숨김만) */
   async function admin(b, who) { b = b || {}; const o = String(b.op || ''); const by = s(who && who.email, 80) || 'admin';
     if (o === 'mkTest') { const n = Math.max(1, Math.min(10, Math.round(+b.n || 3))); const tag = rnd(2); const out = []; for (let i = 1; i <= n; i++) { const T = mkTestOne(i, tag); const r = await join({ em: T.em, pw: T.pw, nick: T.nick }, { headers: {} }, true, by); if (r[0] === 200) out.push({ uid: r[1].me.uid, em: T.em, nick: T.nick, pw: T.pw }); }
@@ -264,8 +336,8 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
       { const ss = await C('shop_reviews').where('repBy', 'array-contains', me).get(); for (const dd of ss.docs) { const r = dd.data() || {}; const nb = (r.repBy || []).filter((x) => x !== me); rec.reps.push(r.rid); await dd.ref.set({ repBy: nb, rep: nb.length, ...(r.hid === 'rep' && nb.length < 3 ? { hid: 0 } : {}) }, { merge: true }); } }
       for (const f of rec.fol) { try { await db.runTransaction(async (tx) => { const fr = C('shop_users').doc(f); const fd = await tx.get(fr); if (fd.exists) tx.set(fr, { folN: Math.max(0, ((fd.data() || {}).folN || 0) - 1) }, { merge: true }); }); UC.delete(f); PFC.delete(f); } catch (e) {} }
       await C('shop_test_log').doc(uid + '_' + t.replace(/[^0-9]/g, '').slice(0, 14)).set({ ...rec, rv: rec.rv.slice(0, 300), q: rec.q.slice(0, 300), lists: rec.lists.slice(0, 100), likes: rec.likes.slice(0, 500), reps: rec.reps.slice(0, 300), kind: '시험 계정 행위 기록' }); /* 백오피스 기록 — 지우지 않음 */
-      await C('shop_users_em').doc(emKey(u.em)).set({ uid: null, freeAt: t }, { merge: true }); await C('shop_users_nk').doc(nickKey(u.nick)).set({ uid: null, freeAt: t }, { merge: true });
-      await uSet(uid, { gone: 1, goneAt: t, wipe: 'test', wipeBy: by, sess: [], wish: [], seen: [], rd: {}, fol: [], alerts: {}, bio: '', lists: [] }); UC.delete(uid); PFC.delete(uid); RVC.clear(); NEW.at = 0;
+      const retired = await retireIdentity(uid, { gone: 1, goneAt: t, wipe: 'test', wipeBy: by, sess: [], wish: [], seen: [], rd: {}, fol: [], alerts: {}, bio: '', lists: [] }, v => isTestAcct(v) && !v.gone ? null : E(409, '시험 계정 상태가 바뀌었습니다 — 다시 확인해 주세요'));
+      if (retired[0] !== 200) return { err: retired[1].err }; RVC.clear(); NEW.at = 0;
       log && log(`🧪 우리숍 시험 계정 지움 ${u.nick} — 리뷰 ${rec.rv.length} · 밑줄 ${rec.q.length} · 북리스트 ${rec.lists.length} · 좋아요 ${rec.likes.length} · 신고 ${rec.reps.length} · 팔로우 ${rec.fol.length}(${by})`);
       return { ok: 1, n: { rv: rec.rv.length, q: rec.q.length, lists: rec.lists.length, likes: rec.likes.length, reps: rec.reps.length, fol: rec.fol.length } }; }
     if (o === 'testLog') { const ss = await C('shop_test_log').orderBy('at', 'desc').limit(30).get().catch(() => null); const L = []; if (ss) ss.forEach((dd) => { const x = dd.data() || {}; L.push({ nick: x.nick, em: x.em, at: x.at, by: x.by, n: { rv: (x.rv || []).length, q: (x.q || []).length, lists: (x.lists || []).length, likes: (x.likes || []).length, reps: (x.reps || []).length, fol: (x.fol || []).length } }); }); return { L }; }
@@ -292,6 +364,6 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
   /* /b/ 검색용 화면 — 공개 리뷰 평균·수·대표 3개(구글 별점 표시 · 리뷰가 실제로 화면에 있을 때만) */
   async function seoRv(it) { const k = kOf(it); if (!k) return null; try { const R = await rvFor(k); const L = R.L.filter(rvShown); if (!L.length) return null; const S0 = rvStats(L); return { avg: S0.avg, n: S0.n, top: rvSort(L).slice(0, 3).map((r) => ({ nick: r.nick, st: r.st, s100: r.s100, at: r.at })) }; } catch (e) { return null; } }
   rsLoad();
-  return { handle, authOf, addOrder, admin, op, ratingOf, seoRv, rsLoad };
+  return { handle, authOf, addOrder, ordersChanged, admin, op, ratingOf, seoRv, rsLoad };
 }
 module.exports = { isTestAcct, TEST_EM, rvSummary, qaAcct, pwHash, pwOk, pwWhy, nickWhy, nickNorm, nickKey, emKey, kOf, K_RE, rvCheck, rvStats, rvShown, rvSort, rvPub, qCheck, RD, goalOf, alertState, mkTestOne, PH_RE, bookMini, makeAcct };

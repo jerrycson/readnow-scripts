@@ -102,6 +102,9 @@ function spineTake(L, have, ok, gen) { const out = []; const seen = new Set(); f
     if (!id || !m || +m[1] !== gen || seen.has(id) || !ok(id)) continue; const was = have.get(id); const wm = was && SPINE_RE.exec(was); if (wm && +wm[1] === gen) continue; seen.add(id); out.push([id, code]); } return out; }
 const shelfParts = (rows) => { const P = []; for (let i = 0; i < rows.length; i += SHELF_PART) P.push({ rows: rows.slice(i, i + SHELF_PART) }); if (!P.length) P.push({ rows: [] }); return P; };
 /* shop_holds 한 장이 지금 살아 있나 — until(다른 판매처 팔림 표시 · 하루)이 지나면 풂 */
+const STOCK = require('./shop-stock.js');
+const ATTEMPT = require('./shop-order-attempt.js');
+const ACCOUNT_ORDERS = require('./shop-account-orders.js');
 const holdOn = (h, now) => !!(h && h.on && !(h.until && Date.parse(h.until) < (now || Date.now())));
 const norm = (x) => String(x || '').toLowerCase().replace(/[\s\-_.,·:;!?'"()[\]{}<>/\\]+/g, '');
 /* 목록 거르기·정렬·쪽 — 순수 셈(시험 tSHOP1111) */
@@ -155,7 +158,7 @@ const shipFeeOf = (sum, cfg) => { const f = num((cfg || DEF).shipFee); const fo 
 const maskName = (n) => { const a = [...String(n || '')]; return a.length <= 1 ? '*' : a[0] + '*'.repeat(Math.max(1, a.length - 2)) + (a.length > 2 ? a[a.length - 1] : ''); };
 const B32 = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const orderNo = (now, rnd) => { const d = new Date(now + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, ''); const r = rnd || crypto.randomBytes(5); let x = ''; for (let i = 0; i < 5; i++) x += B32[r[i] % B32.length]; return 'BQ' + d + '-' + x; };
-const hashTok = (t) => crypto.createHash('sha256').update('bq|' + String(t || '')).digest('hex');
+const hashTok = ATTEMPT.hashToken;
 /* 공개해도 되는 가게 설정만 */
 /* (11/11 shelf1) 📚 서가 책장 설정(app_settings/shop.shelf) — 관리 웹앱이 shop/shelf-core.js 틀로 저장 · 여기선 꼴만 지킴(칸 이름 영문·숫자 · 값은 수·참거짓·짧은 글·글 목록) · 범위는 손님 화면 BQS.cfgOf가 다시 지킴 */
 function shelfPub(v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return {}; const o = {}; let n = 0;
@@ -168,7 +171,7 @@ function shelfPub(v) { if (!v || typeof v !== 'object' || Array.isArray(v)) retu
 function brandPub(c) { const u = c.brandUi && typeof c.brandUi === 'object' ? c.brandUi : {}; return { brandUi: { mode: ['full', 'icon', 'iconText'].includes(u.mode) ? u.mode : null, fav: typeof u.fav === 'boolean' ? u.fav : null } }; }
 function pubCfg(c, meta, promo) {
   c = { ...DEF, ...(c || {}) }; const bz = c.biz || {}; const bank = c.bank || {}; const bankOk = !!(bank.name && bank.acct && bank.holder);
-  return { open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
+  return { orderProtocol: 1, open: c.open ? 1 : 0, name: s(c.name, 20) || DEF.name, shipFee: num(c.shipFee), freeOver: num(c.freeOver), payDays: Math.max(1, Math.min(7, +c.payDays || DEF.payDays)), maxItems: Math.max(1, Math.min(50, +c.maxItems || DEF.maxItems)),
     pay: c.open && bankOk ? { how: 'bank', bank: s(bank.name, 20), acct: s(bank.acct, 30), holder: s(bank.holder, 20) } : { how: 'wait' }, pg: 0 /* 카드·간편결제(PG)는 계약 뒤 — 자리만 */,
     biz: { name: s(bz.name, 40) || null, ceo: s(bz.ceo, 20) || null, addr: s(bz.addr, 120) || null, tel: s(bz.tel, 20) || null, email: s(bz.email, 60) || null, no: s(bz.no, 20) || null, mo: s(bz.mo, 40) || null, cpo: s(bz.cpo, 20) || null, host: 'Google Firebase(구글)' },
     notice: s(c.notice, 300) || null, bnr: ANLX.bnrPub(c.anl && c.anl.bnr), trk: { ask: ANLX.cfgOf(c.anl).ask } /* (shopadm1) 📢 배너 · 💬 문의 단추 켬/끔 */, shelf: shelfPub(c.shelf), /* (11/13 shopux1) 🎨 꾸밈(app_settings/shop.look · shop/shop-look.js 틀 — 꼴만 지킴 · 범위는 손님 화면 BQL.cfgOf가 다시) · 👑 로고 시안 번호(q01~q10 · 빈 값 = 글자 로고) */ look: shelfPub(c.look), brandLogo: /^q(0[1-9]|10)(@v\d{1,2})?$/.test(String(c.brandLogo || '').trim().toLowerCase()) ? String(c.brandLogo).trim().toLowerCase() : '' /* (shoplogo1) 'q01@v2' = 그 판 고정 */, ...brandPub(c), n: meta ? meta.n : null, cats: meta ? meta.cats : [], kinds: meta && meta.kinds ? meta.kinds : [], at: meta ? meta.at : null, promo: BQP.pubPromo(promo || {}) };
@@ -271,15 +274,15 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
     const fix = SPN.uq.rebuild(L); for (const [id, code] of fix) { SPN.m.set(id, code); SPN.dirty.set(id, code); } if (fix.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); log && log('📚 겹친 책등 다시 정함', fix.length); } return fix.length; };
   const spinesFlush = async () => { SPN.t = null; const by = new Map(); for (const [id, code] of SPN.dirty) { const b = spineBucket(id); if (!by.has(b)) by.set(b, {}); by.get(b)[id] = code; } SPN.dirty.clear(); const at = new Date().toISOString();
     for (const [b, m] of by) { try { await C('shop_spines').doc(b).set({ m, at, uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' }, { merge: true }); } catch (e) { log && log('🛍 책등 모양 쓰기 실패', b, e.message); } } };
-  let CFG = { v: null, at: 0 }; let HELD = { v: new Set(), x: new Set(), at: 0 }; const RL = new Map();
+  let CFG = { v: null, at: 0 }; let HELD = { v: new Set(), x: new Set(), m: new Map(), at: 0 }; const RL = new Map();
   const cfg = async () => { if (CFG.v && Date.now() - CFG.at < 60e3) return CFG.v; try { const d = await C('app_settings').doc('shop').get(); CFG = { v: { ...DEF, ...(d.exists ? d.data() : {}) }, at: Date.now() }; } catch (e) { CFG = { v: CFG.v || { ...DEF }, at: Date.now() - 50e3 }; } return CFG.v; };
-  const held = async (force) => { if (!force && Date.now() - HELD.at < 20e3) return HELD.v; try { const ss = await C('shop_holds').where('on', '==', 1).get(); const v = new Set(); const x = new Set(); const now = Date.now(); ss.forEach((d) => { const h = d.data() || {}; if (!holdOn(h, now)) return; (h.sold ? x : v).add(d.id); }); HELD = { v, x, at: now }; } catch (e) { HELD.at = Date.now() - 10e3; } return HELD.v; };
+  const held = async (force) => { if (!force && Date.now() - HELD.at < 20e3) return HELD.v; try { const ss = await C('shop_holds').where('on', '==', 1).get(); const v = new Set(), x = new Set(), m = new Map(); const now = Date.now(), c = await cfg(); ss.forEach((d) => { const h = d.data() || {}; m.set(d.id, h); if (h.schema === 2) { const it = CAT.items.get(d.id); if (!STOCK.available(h, it ? it.q || 1 : 0, c.quantityReservations === true, now)) (h.sold ? x : v).add(d.id); } else if (holdOn(h, now)) (h.sold ? x : v).add(d.id); }); HELD = { v, x, m, at: now }; } catch (e) { HELD.at = Date.now() - 10e3; } return HELD.v; };
   const soldX = async () => { await held(); return HELD.x || new Set(); }; /* (11/11 shop2) 다른 판매처에서 팔림(🤖 자동 내림이 적음) */
   /* (11/11 shopc1) 🏷 판매가 규칙 — app_settings/shop_promo 1분 기억 · VIEW = 규칙을 얹은 공개 요약(목록이 바뀌거나 규칙이 바뀌거나 1분 지나면 다시 셈 — 기간 시작·끝이 1분 안에 반영) */
   let PROMO = { v: null, at: 0, ver: 0 }; const VIEW = { key: '', m: new Map() };
   const promo = async (force) => { if (!force && PROMO.v && Date.now() - PROMO.at < 60e3) return PROMO.v; try { const d = await C('app_settings').doc('shop_promo').get(); PROMO = { v: BQP.promoOf(d.exists ? d.data() : {}), at: Date.now(), ver: PROMO.ver + 1 }; } catch (e) { PROMO = { v: PROMO.v || BQP.promoOf({}), at: Date.now() - 50e3, ver: PROMO.ver + (PROMO.v ? 0 : 1) }; } return PROMO.v; };
-  const vw = async () => { const P = await promo(); const now = Date.now(); const key = [CAT.meta && CAT.meta.at, CAT.items.size, PROMO.ver, Math.floor(now / 60e3)].join('|'); if (VIEW.key === key) return VIEW.m;
-    const m = new Map(); for (const [k, x] of CAT.items) m.set(k, BQP.applyOne(x, CAT.pv.get(k), P, now)); VIEW.key = key; VIEW.m = m; return m; };
+  const vw = async () => { await held(); const c = await cfg(); const P = await promo(); const now = Date.now(); const key = [CAT.meta && CAT.meta.at, CAT.items.size, HELD.at, c.quantityReservations === true, PROMO.ver, Math.floor(now / 60e3)].join('|'); if (VIEW.key === key) return VIEW.m;
+    const m = new Map(); for (const [k, x] of CAT.items) m.set(k, BQP.applyOne({ ...x, q: STOCK.available(HELD.m.get(k), x.q || 1, c.quantityReservations === true, now) }, CAT.pv.get(k), P, now)); VIEW.key = key; VIEW.m = m; return m; };
   /* (shelf5) 서가 뒷일 — 표지 대표색(5분마다 300권 · 책등 없는 책·새 책 먼저) · 책등 규칙 주소(10분마다 40권) · 서가를 부를 때와 1분 시계 둘 다에서(손님이 없어도 돎) */
   const covKick = () => { if (!BG) { return COV ? COV.load().catch(() => {}) : null; } /* 숍 전용: 결과만 읽음(1시간에 한 번 · 서가는 이 읽기를 기다림) */ if (!COV || !CAT.items.size) return; const CV = require('./shop-cover.js'); if (Date.now() - (COV.state().runAt || 0) < CV.TICK_MS) return; const fx0 = String((CFG.v && CFG.v.shelf && CFG.v.shelf.setFix) || ''); const ids = new Set(fx0.split(/\n+/).map((ln) => { const p = ln.trim().split(/[\s,]+/); return p.length >= 2 && +p[1] >= 2 ? p[0] : null; }).filter(Boolean)); /* (shelfset2) 관리자가 세트로 바로잡은 상품도 뒤표지 셈 */
     COV.tick(CV.order([...CAT.items.values()]), CV.TICK_N, ids).catch(() => {}); };
@@ -335,36 +338,54 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
   const limited = (k, n, ms) => limitWait(k, n, ms) > 0;
 
   async function order(req, body) {
-    const c = await cfg(); if (!c.open) return [403, { ok: false, err: '아직 주문을 받지 않습니다 — 곧 문을 엽니다' }];
+    const attempt = ATTEMPT.parse(body && body.attempt); if (attempt && attempt.error) return [400, { ok: false, err: '주문 요청 번호를 다시 확인해 주세요' }];
+    const chk = checkOrder(body, { ...DEF, maxItems: Number.MAX_SAFE_INTEGER }); if (!chk.ok) return [400, chk]; const v = chk.v;
+    const au = await ACCT.authOf(req).catch(() => null); const hash = attempt ? ATTEMPT.requestHash(v, au && au.uid) : null;
+    if (attempt) { const prior = await ATTEMPT.read(C, attempt, hash); if (prior) return prior; }
+    const c = await cfg(); if (c.quantityReservations === true && !attempt) return [409, { ok: false, upgrade: 1, err: '주문 화면을 새로 고친 뒤 다시 진행해 주세요' }];
     const ik = ipKey(req); if (limited('o' + ik, 5, 3600e3)) return [429, { ok: false, err: '잠시 뒤 다시 해 주세요(짧은 시간에 주문이 많음)' }];
-    const chk = checkOrder(body, c); if (!chk.ok) return [400, chk]; const v = chk.v;
-    const au = await ACCT.authOf(req).catch(() => null); if (au && au.u.test) return [403, { ok: false, err: '🧪 시험 계정은 실제 주문을 넣지 않습니다(매출·재고에 섞이지 않게) — 둘러보기·리뷰·마이페이지만 써 보세요' }]; /* (11/12 shop9) 로그인한 손님 주문은 계정에 이어 둠(마이페이지·구매 인증) */
-    const refs = v.ids.map((id) => C('prd_listings').doc(id)); const now = Date.now(); const no = orderNo(now); const tok = crypto.randomBytes(16).toString('hex');
-    const pc = pubCfg(c, null); const due = new Date(now + pc.payDays * 864e5).toISOString();
-    const P = await promo(); if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) return [400, { ok: false, err: f.why, cp: 1 }]; } /* (11/11 shopc1) 쿠폰 번호가 틀리면 주문 전에 알림 */
-    let out = null;
-    await db.runTransaction(async (tx) => { out = null;
-      const ls = await tx.getAll(...refs); const hs = await tx.getAll(...v.ids.map((id) => C('shop_holds').doc(id)));
+    const checked = checkOrder(body, c); const refusal = !c.open ? [403, { ok: false, err: '아직 주문을 받지 않습니다 — 곧 문을 엽니다' }] : au && au.u.test ? [403, { ok: false, err: '🧪 시험 계정은 실제 주문을 넣지 않습니다(매출·재고에 섞이지 않게) — 둘러보기·리뷰·마이페이지만 써 보세요' }] : !checked.ok ? [400, checked] : null;
+    const refs = v.ids.map((id) => C('prd_listings').doc(id)); const now = Date.now(); const no = orderNo(now); const tok = attempt ? ATTEMPT.token(attempt, no) : crypto.randomBytes(16).toString('hex');
+    const pc = pubCfg(c, null); const due = new Date(now + pc.payDays * 864e5).toISOString(); const P = refusal ? {} : await promo();
+    let out = null, created = false;
+    await db.runTransaction(async (tx) => { out = null; created = false;
+      if (attempt) { const prior = await ATTEMPT.read(C, attempt, hash, tx); if (prior) { out = prior; return; } }
+      const finish = (result) => { out = result; if (attempt) { const saved = ATTEMPT.record(attempt, hash, result, new Date(now).toISOString()); tx.set(C('shop_order_attempts').doc(attempt.id), saved); out = ATTEMPT.reply(saved, attempt, hash); } };
+      if (refusal) { finish(refusal); return; }
+      if (v.cp) { const f = BQP.couponFind(P, v.cp, now); if (f.why) { finish([400, { ok: false, err: f.why, cp: 1 }]); return; } }
+      const account = au ? await ACCOUNT_ORDERS.read(tx, C, au.uid) : null;
+      if (account && !ACCOUNT_ORDERS.active(account.user)) { finish([403, { ok: false, login: 1, err: '계정 상태가 바뀌었습니다 — 로그인 상태를 확인한 뒤 다시 주문해 주세요' }]); return; }
+      const ls = await tx.getAll(...refs); const hs = await tx.getAll(...v.ids.map((id) => C('shop_holds').doc(id))); const rs = await Promise.all(hs.map((h, i) => h.exists && h.data().schema === 2 ? tx.get(C('shop_reservations').doc(STOCK.id(v.ids[i], no))) : Promise.resolve({ exists: false })));
+      const priorOrder = await tx.get(C('shop_orders').doc(no)); if (priorOrder.exists) { finish([409, { ok: false, err: '주문 번호를 다시 준비해야 합니다 — 잠시 뒤 다시 주문해 주세요' }]); return; }
       const bad = []; const lines = [];
       ls.forEach((d, i) => { const l = d.exists ? d.data() : null; const b = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(v.ids[i], l, b); const h = hs[i].exists ? hs[i].data() : null;
-        if (!it) return bad.push({ id: v.ids[i], why: '방금 팔렸거나 판매를 멈춘 책' }); if (holdOn(h, now)) return bad.push({ id: v.ids[i], t: it.t, why: h.sold ? '방금 다른 곳에서 팔린 책' : '다른 분이 먼저 주문한 책' });
+        if (!it) return bad.push({ id: v.ids[i], why: '방금 팔렸거나 판매를 멈춘 책' }); if (h && h.schema !== 2 && holdOn(h, now)) return bad.push({ id: v.ids[i], t: it.t, why: h.sold ? '방금 다른 곳에서 팔린 책' : '다른 분이 먼저 주문한 책' });
         const pv0 = CAT.pv.get(v.ids[i]) || {}; const sku = s(l.sku, 40); const ap = BQP.applyOne(it, { sku, cp: pv0.cp || '', k: BQP.kindOf(pv0.cp, sku) }, P, now); /* (shopc1) 손님 화면과 같은 규칙으로 값을 다시 셈 */
-        const want = (v.qty && v.qty[v.ids[i]]) || 1; const have = Math.max(1, Math.round(+l.qty || 1)); const MU = multiOf(c); if (want > 1 && !MU.on) return bad.push({ id: v.ids[i], t: it.t, why: '같은 책은 한 권씩만 주문할 수 있습니다' }); if (want > have) return bad.push({ id: v.ids[i], t: it.t, why: `남은 수량이 ${have}권입니다` }); if (want > MU.mx) return bad.push({ id: v.ids[i], t: it.t, why: `같은 책은 한 번에 ${MU.mx}권까지` });
+        const want = (v.qty && v.qty[v.ids[i]]) || 1; const have = STOCK.available(h, l.qty == null ? 1 : Math.max(0, Math.round(+l.qty || 0)), c.quantityReservations === true, now); const MU = multiOf(c); if (want > 1 && !MU.on) return bad.push({ id: v.ids[i], t: it.t, why: '같은 책은 한 권씩만 주문할 수 있습니다' }); if (want > have) return bad.push({ id: v.ids[i], t: it.t, why: `남은 수량이 ${have}권입니다` }); if (want > MU.mx) return bad.push({ id: v.ids[i], t: it.t, why: `같은 책은 한 번에 ${MU.mx}권까지` });
         lines.push({ lid: v.ids[i], t: it.t, g: it.g, p: ap.p, lp: it.lp, isbn: it.isbn, im: it.im, sku: sku || null, qty: want, ...(ap.p0 ? { p0: ap.p0, rid: ap.rid } : {}) }); }); /* (정범님 22:53) 한 상품 한 줄 · qty = 권 수(일반 숍처럼) · p = 한 권 값 */
-      if (bad.length) { out = [409, { ok: false, err: '주문할 수 없는 책이 있습니다', bad }]; return; }
-      const q = quoteQ(lines.map((x) => ({ id: x.lid, p: x.p, n: x.qty })), P, pc, v.cp, now); if (v.cp && q.cpErr) { out = [400, { ok: false, err: q.cpErr, cp: 1 }]; return; }
+      if (bad.length) { finish([409, { ok: false, err: '주문할 수 없는 책이 있습니다', bad }]); return; }
+      const q = quoteQ(lines.map((x) => ({ id: x.lid, p: x.p, n: x.qty })), P, pc, v.cp, now); if (v.cp && q.cpErr) { finish([400, { ok: false, err: q.cpErr, cp: 1 }]); return; }
       lines.forEach((x, i) => { if (q.per[i].p !== x.p) { x.pp = x.p; x.p = q.per[i].p; } }); /* 묶음 할인·쿠폰은 책마다 나눠 깎음(pp = 깎기 전 우리숍 판매가) — 책값 합 = 낸 책값 */
       const sum = q.sum; const fee = q.fee; const total = q.total;
-      if (v.expect != null && v.expect !== total) { out = [409, { ok: false, err: '그사이 값이 바뀌었습니다(할인 기간이 끝났거나 새로 시작) — 바뀐 값을 확인하고 다시 주문해 주세요', price: { items: lines.map((x) => ({ id: x.lid, p: x.pp || x.p })), sum, fee, total, disc: q.disc } }]; return; }
+      if (v.expect != null && v.expect !== total) { finish([409, { ok: false, err: '그사이 값이 바뀌었습니다(할인 기간이 끝났거나 새로 시작) — 바뀐 값을 확인하고 다시 주문해 주세요', price: { items: lines.map((x) => ({ id: x.lid, p: x.pp || x.p })), sum, fee, total, disc: q.disc } }]); return; }
       const ref = C('shop_orders').doc(no);
       tx.set(ref, { no, ch: 'shop', st: 'new', at: new Date(now).toISOString(), due, items: lines, sum, shipFee: fee, total, ...(q.disc ? { sum0: q.sum0, disc: { total: q.disc, bundle: q.bundle || 0, coupon: q.coupon || null } } : {}), pay: { how: pc.pay.how, ...(pc.pay.how === 'bank' ? { bank: pc.pay.bank, acct: pc.pay.acct, holder: pc.pay.holder } : {}) }, depositor: v.depositor,
         ...(au ? { uid: au.uid } : {}), buyer: v.buyer, rcv: v.rcv, agree: { privacy: new Date(now).toISOString(), terms: new Date(now).toISOString(), ver: '2026-11-11' }, tokH: hashTok(tok), ipk: ik, ua: s(req.headers['user-agent'], 120),
         hist: [{ at: new Date(now).toISOString(), by: '손님', what: `주문 접수 ${(() => { const m = {}; for (const x of lines) { const it = CAT.items.get(String(x.lid)); const u = SC.unitOf(it && it.cp, x.t); m[u] = (m[u] || 0) + (x.qty || 1); } return ['권', '세트', '장', '개'].filter((u) => m[u]).map((u) => m[u] + u).join(' · ') || '0권'; })()} · ${total}원` /* (shopmisc1) 📏 책 권 · 음반 장 … */ }], uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' });
-      for (const x of lines) { tx.set(C('shop_holds').doc(x.lid), { on: 1, no, at: new Date(now).toISOString(), t: x.t, uploadedAt: FV.serverTimestamp() }); } /* (shopux1) 같은 책 둘째 권부터는 같은 잡아 둠 — 한 번만 씀 */
-      out = [200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, disc: q.disc || 0, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p, ...(x.qty > 1 ? { n: x.qty } : {}) })) }]; });
-    if (au && out && out[0] === 200) await ACCT.addOrder(au.uid, { no, t: out[1].t, at: new Date(now).toISOString(), total: out[1].total, n: out[1].items.length }).catch((e) => log && log('👤 주문을 계정에 잇지 못함', no, e.message));
-    HELD.at = 0; if (out && out[0] === 200) log && log(`🛍 우리숍 주문 접수 ${no} · ${out[1].items.length}권`); return out || [500, { ok: false, err: '주문을 저장하지 못했습니다 — 잠시 뒤 다시' }];
+      for (const [i, x] of lines.entries()) { const h = hs[i].exists ? hs[i].data() : null; if (h && h.schema === 2) { const next = STOCK.reserve(h, rs[i].exists ? rs[i].data() : null, no, x.qty, ls[i].data().qty, true, new Date(now).toISOString()); tx.set(C('shop_holds').doc(x.lid), { ...next.hold, uploadedAt: FV.serverTimestamp() }); tx.set(C('shop_reservations').doc(STOCK.id(x.lid, no)), next.entry); } else tx.set(C('shop_holds').doc(x.lid), { on: 1, no, at: new Date(now).toISOString(), t: x.t, uploadedAt: FV.serverTimestamp() }); } /* (shopux1) 같은 책 둘째 권부터는 같은 잡아 둠 — 한 번만 씀 */
+      if (account) ACCOUNT_ORDERS.append(tx, account, [{ no, t: tok, at: new Date(now).toISOString(), total, n: lines.length }], new Date(now).toISOString());
+      finish([200, { ok: true, no, t: tok, total, sum, shipFee: fee, due, pay: pc.pay, disc: q.disc || 0, items: lines.map((x) => ({ id: x.lid, t: x.t, g: x.g, p: x.p, ...(x.qty > 1 ? { n: x.qty } : {}) })) }]); created = true; });
+    if (created && au) ACCT.ordersChanged(au.uid);
+    HELD.at = 0; if (created && out && out[0] === 200) log && log(`🛍 우리숍 주문 접수 ${no} · ${out[1].items.length}권`); return out || [500, { ok: false, err: '주문을 저장하지 못했습니다 — 잠시 뒤 다시' }];
   }
+  async function orderStatus(body) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
+    const out = await db.runTransaction(tx => ATTEMPT.read(C, attempt, null, tx)); if (!out) return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: 'absent' }];
+    if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
+  async function orderClose(body, req) { const attempt = ATTEMPT.parse(body && body.attempt); if (!attempt || attempt.error) return [400, { ok: false, err: '주문 확인 정보를 다시 확인해 주세요' }];
+    if (limited('oc' + ipKey(req), 10, 3600e3)) return [429, { ok: false, err: '요청 닫기를 잠시 기다려 주세요 — 처리 결과 조회는 계속할 수 있습니다' }];
+    const out = await db.runTransaction(async tx => { const prior = await ATTEMPT.read(C, attempt, null, tx); if (prior) return prior;
+      const saved = ATTEMPT.closedRecord(attempt, new Date().toISOString()); tx.set(C('shop_order_attempts').doc(attempt.id), saved); return ATTEMPT.reply(saved, attempt, null); });
+    if (!out[1].attemptState) return out; return [200, { ok: true, orderProtocol: 1, requestId: attempt.id, state: out[1].attemptState, result: { status: out[0], body: out[1] } }]; }
   async function lookup(no, tok) { no = s(no, 30); if (!/^BQ\d{8}-[A-Z0-9]{5}$/.test(no) || !/^[0-9a-f]{32}$/.test(String(tok || ''))) return null; const d = await C('shop_orders').doc(no).get(); if (!d.exists) return null; const o = d.data() || {};
     const a = Buffer.from(String(o.tokH || '')), b = Buffer.from(hashTok(tok)); if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null; return { ref: d.ref, o }; }
   const ST = { new: '주문 접수 — 입금을 기다립니다', paid: '입금 확인 — 포장 준비 중', ship: '출고 준비 중', sent: '보냈습니다', done: '끝', cancel: '취소됨' };
@@ -449,12 +470,16 @@ function makeShop({ db, C, FV, log, bucket, bg }) {
         uqSync(gen); const fix = []; const take = spineTake(body.L, SPN.m, (id) => CAT.items.has(id), gen); for (const [id, code0] of take) { const r = SPN.uq.claim(id, code0); const code = r.code; if (r.fixed) fix.push([id, code]); SPN.m.set(id, code); SPN.dirty.set(id, code); } if (take.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); } return send(200, { ok: true, n: take.length, gen, fix }); } /* (shelf7) 이미 다른 책이 쓴 조합이면 고친 모양을 돌려줌(손님 화면이 바로 바꿈) */
       { const r = await ANL.handle(req, res, path, q, send, readBody, ipKey); if (r) return r; } /* (11/13 shopadm1) 📊 /shop/t 방문 셈 · 💬 /shop/ask · 👀 /shop/pv */
       { const r = await ACCT.handle(req, res, path, q, send, readBody); if (r) return r; } /* (11/12 shop9) 👤 손님 계정·⭐ 리뷰·서재(cloud/shop-acct.js) */
+      if (path === '/shop/order-status') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderStatus(await readBody(req)); return send(code, obj); }
+      if (path === '/shop/order-close') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const [code, obj] = await orderClose(await readBody(req), req); return send(code, obj); }
+      if (path === '/shop/order-attempt') { if (req.method !== 'POST') return send(405, { ok: false, err: '지원하지 않는 요청' }); const body = await readBody(req), a = ATTEMPT.parse(body && body.attempt); if (!a || a.error) return send(400, { ok: false, err: '주문 요청 번호를 다시 확인해 주세요' }); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
       if (path === '/shop/cancel' && req.method === 'POST') { const body = await readBody(req); const r = await lookup(body.no, body.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다' });
-        let res2 = null; await db.runTransaction(async (tx) => { res2 = null; const d = await tx.get(r.ref); const o = d.data() || {}; if (o.st !== 'new') { res2 = [409, { ok: false, err: '입금 확인 뒤에는 화면에서 취소할 수 없습니다 — 가게로 연락 주세요' }]; return; }
+        let res2 = null; await db.runTransaction(async (tx) => { res2 = null; const d = await tx.get(r.ref); const o = d.data() || {}; if (o.st === 'cancel') { res2 = [200, { ok: true }]; return; } if (o.st !== 'new') { res2 = [409, { ok: false, err: '입금 확인 뒤에는 화면에서 취소할 수 없습니다 — 가게로 연락 주세요' }]; return; }
+          const holds = await tx.getAll(...(o.items || []).map(x => C('shop_holds').doc(x.lid))); const entries = await Promise.all(holds.map((h, i) => h.exists && h.data().schema === 2 ? tx.get(C('shop_reservations').doc(STOCK.id(o.items[i].lid, o.no))) : Promise.resolve({ exists: false })));
           const at = new Date().toISOString(); tx.set(r.ref, { st: 'cancel', cxl: { by: '손님', at, why: '손님이 취소' }, hist: FV.arrayUnion({ at, by: '손님', what: '손님 취소(입금 전)' }), uploadedAt: FV.serverTimestamp() }, { merge: true });
-          for (const x of o.items || []) tx.set(C('shop_holds').doc(x.lid), { on: 0, freeAt: at, freeWhy: '손님 취소 ' + o.no }, { merge: true }); res2 = [200, { ok: true }]; });
+          for (const [i, x] of (o.items || []).entries()) { const h = holds[i].exists ? holds[i].data() : null; if (h && h.schema === 2) { const next = STOCK.transition(h, entries[i].exists ? entries[i].data() : null, o.no, 'released', at); tx.set(C('shop_holds').doc(x.lid), next.hold); tx.set(C('shop_reservations').doc(STOCK.id(x.lid, o.no)), next.entry); } else { const free = STOCK.legacyRelease(h, o.no, at, '손님 취소 ' + o.no); if (free) tx.set(C('shop_holds').doc(x.lid), free, { merge: true }); } } res2 = [200, { ok: true }]; });
         HELD.at = 0; return send(res2[0], res2[1]); }
       return send(404, { ok: false, err: '없는 주소' });
     } catch (e) { log && log('🛍 우리숍 창구 오류', path, e.message); return send(e.code === 413 ? 413 : 500, { ok: false, err: '잠시 문제가 생겼습니다 — 잠시 뒤 다시 해 주세요' }); }
