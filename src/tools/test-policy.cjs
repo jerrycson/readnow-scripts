@@ -19,6 +19,7 @@ function requiredTests(files) {
   if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|cloud\/shop(?:-order-attempt)?\.js|src\/tests\/(?:tORDERINTEGRATED\.js|standalone\/order-contract-browser\.cjs))$/.test(f))) out.add('tORDERINTEGRATED');
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTAUTH(?:UI)?\.js|standalone\/account-auth(?:-browser|\.test)\.cjs))$/.test(f))) ['tACCOUNTAUTH', 'tACCOUNTAUTHUI', 'tACCOUNTSESSION', 'tORDERRETRY', 'tSHOP9_1112', 'tSHOPVIEW2_1114'].forEach(t => out.add(t));
   if (files.some(f => /^(shop\/(?:shop|shop-acct|order-journal)\.js|shop\/index\.html|cloud\/shop(?:-acct|-order-attempt|-account-orders|-stock)?\.js|src\/tests\/(?:tACCOUNTAUTHUI\.js|standalone\/(?:account-auth-browser|order-journal-browser|order-attempt\.test)\.cjs))$/.test(f))) out.add('tACCOUNTAUTHUI');
+  if (files.some((f) => /^(cloud\/edition\.js|src\/tests\/(?:tEDITION1114|tEDQ1118)\.js)$/.test(f))) ['tEDITION1114', 'tEDQ1118'].forEach((t) => out.add(t)); // (edq1 11/18) 📚 판본 추적 엔진 — 다시 보기 대기 칸·몫 새는 고리
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
