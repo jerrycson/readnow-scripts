@@ -87,9 +87,9 @@
  },
  "holder": "lead",
  "host": "shipqB-plock2",
- "what": "판 내기 기다림: plock2 잠금 2(shipqB)",
+ "what": "plock2 잠금 2(shipqB) 빌드·시험",
  "since": "2026-11-17T23:26:35Z",
- "beat": "2026-11-17T23:26:35Z",
+ "beat": "2026-11-17T23:30:57Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.698 ⬆ 앞 페이지 올리기 지킴·카드(fbrev1·fbcard1) 875175608",
