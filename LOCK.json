@@ -85,14 +85,14 @@
   "at": "2026-11-17T23:32:43Z",
   "first": "2026-11-17T21:00:01Z"
  },
- "holder": "lead",
- "host": "shipqB-plock2",
- "what": "plock2 잠금 2(shipqB) 빌드·시험",
- "since": "2026-11-17T23:26:35Z",
- "beat": "2026-11-17T23:30:57Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.698 ⬆ 앞 페이지 올리기 지킴·카드(fbrev1·fbcard1) 875175608",
-  "at": "2026-11-17T23:26:20Z"
+  "done": "plock2 판 냄 — 웹앱 1.78.699 · 클라우드 0.35.290 (4ae309cbc)",
+  "at": "2026-11-17T23:33:00Z"
  }
 }
