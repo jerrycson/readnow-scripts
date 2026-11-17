@@ -15,7 +15,7 @@ function memory(){
   const saved=new Map();
   const get=k=>({exists:saved.has(k)});
   const ref=k=>({id:k,get:async()=>get(k)});
-  return {saved,collection:n=>({doc:k=>ref(n+'/'+k)}),runTransaction:async fn=>{
+  return {saved,collection:n=>({doc:k=>ref(n+'/'+k),orderBy:()=>({limit:()=>({get:async()=>({docs:[]})})})}),runTransaction:async fn=>{
     const ops=[];const result=await fn({get:async r=>get(r.id),create:(r,v)=>ops.push([r.id,v])});
     for(const [k] of ops)assert(!saved.has(k));for(const [k,v] of ops)saved.set(k,v);return result;
   }};
@@ -39,4 +39,21 @@ test('잘못된 지문은 성공 표식을 쓰지 않고 같은 날 재시도할
 test('최신 자료가 없으면 성공 수치 0으로 위장되지 않는다',async()=>{
   const db=memory();const result=await runBookfriendDaily({db,readBytes:()=>Buffer.from('{"releases":[]}'),now:at});
   assert.equal(result.status,'source_error');assert.equal(db.saved.has('friend_engine_public/2026-11-17'),false);
+});
+
+test('실험자의 기준선과 분리한 선택 학습 및 무관한 전문 불허',async()=>{
+  const {preferenceScore}=await import('./friend-study/preference.mjs');
+  const {deviceCase}=await import('./friend-study/device-cases.mjs');
+  const items=[];
+  for(let i=0;i<4;i++){
+    const id='12345678-1234-1234-1234-12345678900'+i,record={id,episode:id,at:new Date(Date.parse(at)-i*1000).toISOString(),task:'surface',subject:'F02',method:'direct',outcome:'accepted',unit:'none',metricBefore:null,metricAfter:null};
+    const row=deviceCase({id,data:()=>record});items.push(row);
+    assert.throws(()=>deviceCase({id,data:()=>({...record,photo:'private'})}));
+  }
+  const db=memory(),result=await runBookfriendDaily({db,readBytes:fixture(),now:at,readDevices:()=>items});
+  assert.equal(result.studies.studioCount,5);const ledger=db.saved.get('eng_ledger/'+result.ledger);
+  assert.equal(ledger.preferences.pairs,4);assert.equal(ledger.preferences.episodes,4);
+  assert.equal(ledger.studies['friend-studio'].humanPairs,0);
+  const reversed={...items[0].row,at:'2026-11-17T02:00:00Z',outcome:'reverted'};
+  const scores=preferenceScore([...items.map(x=>x.row),reversed]);assert.equal(scores.pairs,4);assert(scores.groups['surface|F02|direct'].acceptance<ledger.preferences.groups['surface|F02|direct'].acceptance);
 });

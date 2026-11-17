@@ -1,6 +1,8 @@
 import {createHash} from 'node:crypto';
 import {evaluate,fit} from './friend-research-learning.mjs';
 import {runStandardRound} from './friend-study/standard-round.mjs';
+import {readDeviceCases} from './friend-study/device-cases.mjs';
+import {preferenceScore} from './friend-study/preference.mjs';
 import {studyOf} from './friend-study/standard.mjs';
 
 const origin='https://readnow.kr';
@@ -36,14 +38,18 @@ export async function getMaterial(readBytes=remoteBytes){
   if(!rows.size)throw Error('배포된 책방 친구 학습 사례가 없습니다.');
   return {rows:[...rows.values()],dataset:sha([...sets.keys()].sort().join(','))};
 }
-export async function runBookfriendDaily({db,now=new Date().toISOString(),readBytes=remoteBytes}){
+export async function runBookfriendDaily({db,now=new Date().toISOString(),readBytes=remoteBytes,readDevices=readDeviceCases}){
   const day=dayAt(now),dateRecord=db.collection('friend_engine_public').doc(day);
   const existing=await dateRecord.get();
   if(existing.exists)return {status:'already_recorded',day};
   let material,refresh,issue;
+  async function materialWithCases(){
+    const [published,device]=await Promise.all([getMaterial(readBytes),readDevices(db)]);
+    return {rows:[...published.rows,...device],dataset:sha(published.dataset+JSON.stringify(device.map(x=>x.row.id).sort()))};
+  }
   // 두 연구가 같은 원전과 재조회 요청을 함께 사용한다.
   const read=async(study,{retry})=>{
-    if(retry)refresh??=getMaterial(readBytes);else material??=getMaterial(readBytes);
+    if(retry)refresh??=materialWithCases();else material??=materialWithCases();
     const input=await (retry?refresh:material);
     const rows=input.rows.filter(x=>studyOf(x.row)===study);
     return {rows,materialTimes:rows.map(x=>x.at),reference:{dataset:input.dataset}};
@@ -58,9 +64,9 @@ export async function runBookfriendDaily({db,now=new Date().toISOString(),readBy
     // 원전의 소표본 묶음은 같은 사람의 독립 표본 수에 더하지 않는다.
     studies[key]={code:result.code,items:records.length,humanPairs:result.summary?.humanPairs??0,stage:result.log.stage,materialAt:result.log.materialAt,cohortScores:measures.filter(r=>r.count>1).slice(-32),measureGroups:measures.reduce((groups,r)=>{const group=groups[r.kind]??={records:0,improved:0,worsened:0};group.records++;if(r.candidate<r.baseline)group.improved++;if(r.candidate>r.baseline)group.worsened++;return groups;}, {})};
   }
-  let dataset=null,model=null,holdout=null;
+  let dataset=null,model=null,holdout=null,preferences=null;
   try{const source=await(refresh??material);dataset=source.dataset;
-    const input=source.rows.map(x=>x.row);model=fit(input);const {byEpisode,...scores}=evaluate(input);holdout=scores;
+    const input=source.rows.map(x=>x.row);model=fit(input);preferences=preferenceScore(input);const {byEpisode,...scores}=evaluate(input);holdout=scores;
   }catch{issue='source_error';}
   const brief={at:now,day,studioState:studies['friend-studio'].code,photoState:studies['friend-photo'].code,
     studioCount:studies['friend-studio'].items,photoCount:studies['friend-photo'].items,
@@ -73,7 +79,7 @@ export async function runBookfriendDaily({db,now=new Date().toISOString(),readBy
     const [prior,marker]=await Promise.all([t.get(ledger),t.get(dateRecord)]);
     if(marker.exists)return 'already_recorded';
     if(prior.exists)return issue?'source_error':'already_recorded';
-    t.create(ledger,{at:now,day,dataset,studies,logs,model,holdout,revision:1});
+    t.create(ledger,{at:now,day,dataset,studies,logs,model,holdout,preferences,deviceWindow:400,revision:2});
     if(!issue)t.create(dateRecord,brief);
     return issue?'source_error':'recorded';
   });
