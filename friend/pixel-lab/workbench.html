@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>다중 시점 작업대 · 내 실험실</title><link rel="stylesheet" href="workbench.css"></head>
+<body>
+<header><div class="wordmark"><h1>형태 작업대</h1><span id="subjectLabel"></span></div>
+<div class="segments" id="layouts" aria-label="창 배치"></div>
+<div class="actions"><button id="inspector" aria-pressed="true" aria-controls="dock">조작기</button><button id="fill" aria-pressed="false">화면 채우기</button></div></header>
+<main><section id="stage" aria-label="동일 형상의 시점들"><div id="panes"></div><div id="colSplit" role="separator" aria-label="좌우 창 너비" aria-orientation="vertical" tabindex="0"></div><div id="rowSplit" role="separator" aria-label="위아래 창 높이" aria-orientation="horizontal" tabindex="0"></div></section>
+<aside id="dock" aria-label="선택한 창의 조작기"><nav id="tabs" aria-label="조작기 종류"></nav>
+<div id="dockBody"><section id="viewTab"><h2>카메라 방향</h2><div id="directions" class="choices"></div>
+<h2>원본 해상도</h2><div id="resolutions" class="choices"></div>
+<h2>화면 배율</h2><div class="row"><button id="minus" aria-label="축소">−</button><output id="zoom"></output><button id="plus" aria-label="확대">＋</button><button id="fit">맞춤</button></div><label class="check"><input type="checkbox" id="linkZoom"> 모든 창 배율 함께</label>
+<h2>형상 비교</h2><button id="pin" aria-pressed="false">이 창의 형상 고정</button><button id="matchCamera">다른 창도 같은 방향</button></section>
+<section id="shapeTab" hidden><section id="versionsBox" hidden><h2>비교 원형</h2><div class="choices" id="versions"></div></section><h2>교정 부위</h2><div id="zones" class="choices"></div>
+<div id="surfaceControls"><h2 class="padTitle"></h2><div id="shapePad" tabindex="0" role="group"><i></i></div><div class="padValues"><span id="padX"></span><span id="padY"></span></div><div id="widthGroup" hidden><label id="widthValue"></label><div id="widthGauge" role="slider" aria-valuemin="-100" aria-valuemax="100" tabindex="0"><i></i></div></div>
+<div id="numbers"></div><button id="centerPad">두 축 원점</button></div>
+<section id="surfaceOptions" hidden><h2>피부 표식</h2><label class="check"><input type="checkbox" id="showNac"> 유두·유륜 표시</label><div id="markerControls"><div id="markerVersion" class="choices"></div><div id="markerAxes"></div><div id="tipShapes" class="choices"></div></div></section></section>
+<section id="poseTab" hidden><h2>관절</h2><div id="joints" class="choices"></div><div id="jointDial"></div><div class="row"><input type="range" id="angle" aria-label="관절 각도"><input type="number" id="angleNumber" aria-label="관절 각도 직접 입력"></div></section>
+<section id="modelTab" hidden><h2>교체할 모델</h2><div id="modelGroups" class="choices"></div><div id="models"></div><div id="chestLibrary" hidden><label for="findChest">가슴 유형 찾기</label><input type="search" id="findChest" placeholder="모양, 번호, 자료 이름"><div id="chestGroups" class="choices"></div><div id="chestList" class="choices"></div></div><div id="families" hidden></div><p id="modelNotes"></p></section></div>
+<div class="history"><button id="undo">되돌리기</button><button id="redo">다시 실행</button></div></aside></main>
+<footer><strong id="progress" role="status"></strong><span>드래그 회전 · 휠 확대 · 두 번 눌러 한 창 보기</span></footer>
+<template id="pane"><article class="pane"><div class="paneTitle"><button class="select" type="button"></button><span class="readout"></span><button class="solo" title="한 창으로 전환" aria-label="한 창으로 전환">⛶</button></div><canvas class="drawing" width="1" height="1" tabindex="0"></canvas></article></template>
+<script type="module" src="workbench.mjs"></script></body></html>

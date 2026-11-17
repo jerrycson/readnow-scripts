@@ -24,15 +24,20 @@ export function definitionScene(study,edit={}) {
   const view={...defaultView(id),pivot:edit.pivot||defaultView(id).pivot,angle:edit.angle||0};
   return displayScene(model,'round49',posed(edited,id,view));
 }
-export function renderDefinitionPair(study,scene,{yaw=0,pitch=0,zoom=1,highSize=1024,pixelSize=48}={}) {
-  if(![128,512,1024,2048].includes(highSize)||![48,96].includes(pixelSize))throw new RangeError('지원하지 않는 원본 크기입니다.');
+export function renderDefinitionView(study,scene,{yaw=0,pitch=0,zoom=1,size=1024}={}) {
+  if(![48,96,128,512,1024,2048].includes(size))throw new RangeError('지원하지 않는 원본 크기입니다.');
   const common={sceneOverride:scene,portrait:study.portrait,yaw,pitch,freeOrbit:true};
   // 렌더러의 고정 8px 여백을 보정해 판별 출력 크기와 관계없이 같은 시야를 사용한다.
   const field=1-8/48;
-  const hx=zoom*field/(1-8/highSize),px=zoom*field/(1-8/pixelSize);
+  const cameraZoom=zoom*field/(1-8/size);
+  if(size<=96)return portraitAtResolution(portraitPixels,study.settings,{...common,cameraZoom},size);
+  return renderPixels(study.settings,{...common,studyResolution:size,highDefinition:true,outline:false,cameraZoom});
+}
+export function renderDefinitionPair(study,scene,{yaw=0,pitch=0,zoom=1,highSize=1024,pixelSize=48}={}) {
+  if(![128,512,1024,2048].includes(highSize)||![48,96].includes(pixelSize))throw new RangeError('지원하지 않는 원본 크기입니다.');
   const start=performance.now();
-  const high=renderPixels(study.settings,{...common,studyResolution:highSize,highDefinition:true,outline:false,cameraZoom:hx});
+  const high=renderDefinitionView(study,scene,{yaw,pitch,zoom,size:highSize});
   const highMs=performance.now()-start, pixelStart=performance.now();
-  const pixel=portraitAtResolution(portraitPixels,study.settings,{...common,cameraZoom:px},pixelSize);
+  const pixel=renderDefinitionView(study,scene,{yaw,pitch,zoom,size:pixelSize});
   return {high,pixel,highMs,pixelMs:performance.now()-pixelStart};
 }
