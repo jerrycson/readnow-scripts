@@ -1,5 +1,5 @@
-export function drawScan(canvas,surface,yaw,pitch,zoom){
-  const n=surface.width,size=360,scale=size/263*zoom,yr=yaw*Math.PI/180,pr=pitch*Math.PI/180;
+export function drawScan(canvas,surface,yaw,pitch,zoom,size=360){
+  const n=surface.width,scale=size/263*zoom,yr=yaw*Math.PI/180,pr=pitch*Math.PI/180;
   const cy=Math.cos(yr),sy=Math.sin(yr),cp=Math.cos(pr),sp=Math.sin(pr);
   canvas.width=canvas.height=size;const g=canvas.getContext('2d');g.clearRect(0,0,size,size);
   const points=surface.grid.map((height,i)=>{

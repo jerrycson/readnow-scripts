@@ -1,4 +1,5 @@
 import {studyView} from './camera35.mjs';
+import {resolutionControl,portraitAtResolution} from './render-resolution.mjs';
 import {comparisonAngle,registerModel} from './overlay35.mjs';
 import {DEFAULTS} from './model.mjs';
 import {loadRig} from './rig32.mjs';
@@ -11,6 +12,7 @@ let editionNotes=[];
 import {drawScan} from './scan35.mjs';
 
 const el=id=>document.getElementById(id),make=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text});
+const resolution=resolutionControl(el('resolution35'),redraw);
 const svgNS='http://www.w3.org/2000/svg';
 function svgNode(tag,attrs){const node=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,v);return node;}
 const groups=[['F','여성 얼굴 20'],['M','남성 얼굴 20'],['chest','가슴 형태 20'],['scans','자세 실측 15쌍']];
@@ -101,7 +103,7 @@ function setGroup(next,id){
 function scanButtons(){buttons('scanIds',scans.cases.map(r=>[r.id,'사례 '+r.id]),scanId,k=>{scanId=k;setUrl();scanButtons();redraw();});}
 function draw(){
   if(group==='scans'){
-    const r=scans.cases.find(r=>r.id===scanId);for(const k of ['prone','supine'])drawScan(el(k),r[k],yaw,pitch,zoom);
+    const size=resolution.sync(360),r=scans.cases.find(r=>r.id===scanId);for(const k of ['prone','supine'])drawScan(el(k),r[k],yaw,pitch,zoom,size);
     el('scanText').textContent='공통 격자 '+r.overlap+'개 · 높이 차 절댓값의 중앙값 '+r.medianAbs+'mm · '+(r.prone.landmarkConventionInferred?'엎드림 표식의 두 축 반전을 추정 적용함. 원 좌표에서 최근접 '+r.prone.rawNearestMm+'mm, 정합 뒤 '+r.prone.usedNearestMm+'mm.':'원본 표식 좌표 사용.');return;
   }
   if(!rigReady||!caseRow)return;
@@ -114,8 +116,8 @@ function draw(){
   const cfg=sex==='female'?anatomy:{...surfaceDefaults,showNac:anatomy.showNac},bk=JSON.stringify([rk,cfg]);
   if(bk!==bindingKey){bindings=!face?bindSurface(rest[1],{...s,...cfg}):null;bindingKey=bk;}
   const decorated=bindings?{...posed[1],parts:[...posed[1].parts,...surfaceParts(bindings,posed[1].parts[0])]}:posed[1];
-  const size=drag?96:192;
-  [posed[0],decorated].forEach((scene,i)=>paint(el(i?'new':'old'),portraitPixels({...s,resolution:96},{...studyView(scene,face),yaw,pitch,freeOrbit:true,studyResolution:size===192?192:undefined,cameraZoom:zoom})));
+  const size=resolution.sync(192);
+  [posed[0],decorated].forEach((scene,i)=>paint(el(i?'new':'old'),portraitAtResolution(portraitPixels,{...s,resolution:96},{...studyView(scene,face),yaw,pitch,freeOrbit:true,cameraZoom:zoom},size)));
   if(face&&lastNative!==rk){lastNative=rk;el('native35').replaceChildren(make('span','실제 48px'));for(const a of [0,45,90]){const c=make('canvas','');c.setAttribute('aria-label',a+'도 · 실제 48픽셀');paint(c,portraitPixels({...s,resolution:48},{sceneOverride:rest[1],portrait:'face',yaw:a}));el('native35').append(c);}}
   el('position').textContent=heads+'등신 · 좌우 '+Math.round(yaw%360)+'° · 상하 '+Math.round(pitch%360)+'° · 확대 '+Math.round(zoom*100)+'%';
   const ok=[rk,index].join('/');

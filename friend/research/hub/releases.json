@@ -96,6 +96,20 @@
       "at": "2026-11-17T01:03:00.000Z",
       "label": "36차 · 얼굴·가슴 가시선과 다섯 사진 기반 얼굴 모델링",
       "hostSource": "81f099cf091d319f86602e22"
+    },
+    {
+      "id": "729cb56a71312f74d62fe48f",
+      "project": "bookfriend",
+      "round": 37,
+      "cards": 310,
+      "sources": 299,
+      "chapters": 14,
+      "cardsSha": "a3d92c10d5c8b641ff297e3f4818e9dc88f0e6414938dad43037eda6f7f9cdfd",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "7ed4c58ceba92b90babdcc237e741811010b985af0da6f1224ba81bb073d1570",
+      "at": "2026-11-17T01:25:00.000Z",
+      "label": "37차 · 사선 원화 네 컷과 페른 턱밑 후보",
+      "hostSource": "81f099cf091d319f86602e22"
     }
   ]
 }

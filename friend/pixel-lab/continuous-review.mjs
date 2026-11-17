@@ -92,7 +92,7 @@ function geometry(s){
 }
 function paint(id,r,silhouette){
   if(silhouette)for(let i=0;i<r.data.length;i+=4)if(r.data[i+3])r.data.set([40,53,47],i);
-  const c=el(id);c.width=r.width;c.height=r.height;c.getContext('2d').putImageData(new ImageData(r.data,r.width,r.height),0,0);
+  const c=el(id);if(c.width!==r.width)c.width=r.width;if(c.height!==r.height)c.height=r.height;c.getContext('2d').putImageData(new ImageData(r.data,r.width,r.height),0,0);
 }
 function showMarkers(r){
   const nodes=[],handles=el('handles').checked;
@@ -117,9 +117,9 @@ function showMarkers(r){
 
 function draw(){
   if(!ready)return;
-  const s=settings(),focus=el('focus').value,originalSize=+el('resolution').value;
-  geometry(s);camera=commonFrame(beforeScene,posed.scene,state.yaw,state.pitch);const size=drag||motionFrame?Math.min(originalSize,96):originalSize;
-  const options={yaw:state.yaw,pitch:state.pitch,freeOrbit:true,cameraZoom:state.zoom,screenOffset:state.offset,portrait:focus||false,studyResolution:size>128?size:undefined,castShadows:!drag&&!motionFrame&&el('castShadows').checked,isolateDetail:el('isolateDetail').checked&&['hand','foot'].includes(focus)};
+  const s=settings(),focus=el('focus').value,size=Number(el('resolution').value);
+  geometry(s);camera=commonFrame(beforeScene,posed.scene,state.yaw,state.pitch);
+  const options={yaw:state.yaw,pitch:state.pitch,freeOrbit:true,cameraZoom:state.zoom,screenOffset:state.offset,portrait:focus||false,studyResolution:size>128?size:undefined,castShadows:el('castShadows').checked,isolateDetail:el('isolateDetail').checked&&['hand','foot'].includes(focus)};
   s.resolution=Math.min(size,128);el('isolateDetail').disabled=!['hand','foot'].includes(focus);
   const sceneFor=sc=>focus?sc:{...sc,...camera};
   const beforeKey=JSON.stringify([modelKey,size,options,state.pose,camera,el('silhouette').checked]);
@@ -129,7 +129,7 @@ function draw(){
   const r=renderPixels(s,{...options,sceneOverride:sceneFor(strain?strainCache.scene:posed.scene)});
   paint('after',r,el('silhouette').checked&&!strain);showMarkers(r);
   el('beforeTitle').textContent=el('previous').selectedOptions[0].text;
-  el('status').textContent=s.heads+'등신 · 좌우 '+state.yaw.toFixed(1)+'° / 상하 '+state.pitch.toFixed(1)+'° · '+Math.round(state.zoom*100)+'% · '+originalSize+'px';
+  el('status').textContent=s.heads+'등신 · 좌우 '+state.yaw.toFixed(1)+'° / 상하 '+state.pitch.toFixed(1)+'° · '+Math.round(state.zoom*100)+'% · '+r.width+'px';
   el('strainStatus').hidden=!strain;if(strain)el('strainStatus').textContent='중립 대비 변 길이 ±25% 초과 '+strainCache.count.toLocaleString()+'면 · 주황 늘어남 / 파랑 눌림';
 }
 function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;draw();});}

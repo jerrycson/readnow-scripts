@@ -75,7 +75,7 @@ for(const id of ['before','after']){
  c.addEventListener('wheel',e=>{e.preventDefault();const rect=c.getBoundingClientRect(),old=st.zoom;st.zoom=Math.max(.5,Math.min(6,old*Math.exp(-e.deltaY*(e.deltaMode===1?.03:.0018))));const f=st.zoom/old;
  st.offset=[(e.clientX-rect.left)/rect.width-.5,(e.clientY-rect.top)/rect.height-.5].map((v,i)=>v-(v-st.offset[i])*f);drawSoon();},{passive:false});
 }
-function paint(c,r){c.width=r.width;c.height=r.height;c.getContext('2d').putImageData(new ImageData(r.data,r.width,r.height),0,0);}
+function paint(c,r){if(c.width!==r.width)c.width=r.width;if(c.height!==r.height)c.height=r.height;c.getContext('2d').putImageData(new ImageData(r.data,r.width,r.height),0,0);}
 function drawSoon(){if(ready&&!renderPending)renderPending=requestAnimationFrame(()=>{renderPending=0;draw();});}
 function draw(){
  const s={...DEFAULTS,sex:st.sex,heads:st.heads,designStyle:'manga',candidate:'B',resolution:Math.min(st.size,128)};
@@ -88,7 +88,7 @@ function draw(){
  legacy[side]=time>=2.2?0:4.7*(st.stim==='both'||st.stim===side?1:.12)*Math.exp(-decay*time)*Math.sin(w*time)/w;}
  scenes=[articulate(prior,pose,time?legacy:0).scene,pose34(base,pose,d).scene];poseKey=pk;}
  const cam=st.mode==='body'?commonFrame(...scenes,st.yaw,st.pitch):st.mode==='chest'?chestCamera(base):{};
- const size=drag||tick?Math.min(st.size,96):st.size;
+ const size=st.size;
  const display=scenes.slice();if(st.mode==='face'&&userHull&&el('fit34Toggle').checked){if(fittedUser?.source!==display[1])fittedUser={source:display[1],scene:reshapeHead(display[1],userHull)};display[1]=fittedUser.scene;}
  display.forEach((scene,i)=>paint(el(i?'after':'before'),portraitPixels({...s,resolution:Math.min(size,128)},{sceneOverride:{...scene,...cam},portrait:st.mode==='face'?'face':false,yaw:st.yaw,pitch:st.pitch,freeOrbit:true,studyResolution:size>128?size:undefined,cameraZoom:st.zoom,screenOffset:st.offset})));
  const nk=[st.sex,st.heads].join('/');if(st.mode==='face'&&nativeKey!==nk){nativeKey=nk;const host=el('trip');host.replaceChildren();for(const [n,scene] of [['33차',prior],['34차',base]]){host.append(node('span',n));for(const yaw of [0,45,90]){const c=node('canvas','');c.setAttribute('aria-label',n+' '+yaw+'도 48px');paint(c,portraitPixels({...s,resolution:48},{sceneOverride:scene,portrait:'face',yaw}));host.append(c);}}}

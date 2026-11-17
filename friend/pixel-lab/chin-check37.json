@@ -1,0 +1,130 @@
+{
+  "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face3.jpg",
+  "character": "페른",
+  "model": "36차 교정 메시에서 시작한 페른 한정 미승인 후보",
+  "method": "측면 원화 x마다 가장 낮은 y와 실제 피부선의 밑 y를 맞추고 밑턱 가까운 피부 정점만 수직으로 이동했다. 원화 2·4번의 턱점과 정면 윤곽은 변형의 입력으로 쓰지 않았다.",
+  "original": {
+    "strength": 0,
+    "numberMoved": 0,
+    "rangeHeadUnits": [],
+    "maxMove": 0,
+    "faces": {
+      "checked": 0,
+      "flipped": 0,
+      "minAreaRatio": null,
+      "minNormalCosine": null
+    },
+    "front": 4.121,
+    "side": 0.56,
+    "bottom": 3.376,
+    "rowFrontOnly": 3.538,
+    "maxRetreatInOnePx": 10.712,
+    "oldHoldOut": 8.485,
+    "visibleHoldOut": [
+      9.183,
+      8.26
+    ]
+  },
+  "variants": [
+    {
+      "strength": 0.25,
+      "numberMoved": 208,
+      "rangeHeadUnits": [
+        -0.1,
+        0.119
+      ],
+      "maxMove": 0.015,
+      "faces": {
+        "checked": 486,
+        "flipped": 0,
+        "minAreaRatio": 0.577,
+        "minNormalCosine": 0.417
+      },
+      "front": 4.121,
+      "side": 0.53,
+      "bottom": 2.761,
+      "rowFrontOnly": 2.878,
+      "maxRetreatInOnePx": 9.634,
+      "oldHoldOut": 8.485,
+      "visibleHoldOut": [
+        9.334,
+        8.257
+      ]
+    },
+    {
+      "strength": 0.5,
+      "numberMoved": 208,
+      "rangeHeadUnits": [
+        -0.1,
+        0.119
+      ],
+      "maxMove": 0.03,
+      "faces": {
+        "checked": 486,
+        "flipped": 0,
+        "minAreaRatio": 0.404,
+        "minNormalCosine": 0.295
+      },
+      "front": 4.121,
+      "side": 0.5,
+      "bottom": 2.097,
+      "rowFrontOnly": 2.329,
+      "maxRetreatInOnePx": 12.84,
+      "oldHoldOut": 8.485,
+      "visibleHoldOut": [
+        9.359,
+        8.254
+      ]
+    },
+    {
+      "strength": 0.75,
+      "numberMoved": 208,
+      "rangeHeadUnits": [
+        -0.1,
+        0.119
+      ],
+      "maxMove": 0.044,
+      "faces": {
+        "checked": 486,
+        "flipped": 0,
+        "minAreaRatio": 0.317,
+        "minNormalCosine": 0.206
+      },
+      "front": 4.121,
+      "side": 0.474,
+      "bottom": 2.261,
+      "rowFrontOnly": 2.464,
+      "maxRetreatInOnePx": 12.169,
+      "oldHoldOut": 8.485,
+      "visibleHoldOut": [
+        8.66,
+        8.251
+      ]
+    },
+    {
+      "strength": 1,
+      "numberMoved": 208,
+      "rangeHeadUnits": [
+        -0.1,
+        0.119
+      ],
+      "maxMove": 0.037,
+      "faces": {
+        "checked": 486,
+        "flipped": 0,
+        "minAreaRatio": 0.277,
+        "minNormalCosine": 0.216
+      },
+      "front": 4.121,
+      "side": 0.487,
+      "bottom": 2.103,
+      "rowFrontOnly": 3.061,
+      "maxRetreatInOnePx": 19.732,
+      "oldHoldOut": 8.485,
+      "visibleHoldOut": [
+        8.39,
+        8.249
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import {correctCitation} from '../../pixel-lab/citation37.mjs';
 import {mergeNotes35} from './round35.mjs';
 import {records34} from './round34.mjs';
 import {readBlocks,mergeHistory} from './archives.mjs';
@@ -56,6 +57,7 @@ async function hostedCards(row){
   const full={...data,cards:[...data.cards,...additions,...(row.round>=33?records33:[]),...(row.round>=34?records34:[])]};
   if(row.round>=35){const notes=decode(await get('../../pixel-lab/notes35.json'));full.cards=mergeNotes35(full.cards,notes);}
   if(row.round>=36){for(const name of ['notes36','engine-notes36'])full.cards.push(...decode(await get('../../pixel-lab/'+name+'.json')));}
+  if(row.round>=37){full.cards=full.cards.map(correctCitation);full.cards.push(...decode(await get('../../pixel-lab/notes37.json')));}
   if(await hash(new TextEncoder().encode(JSON.stringify(full)))!==row.cardsSha)throw Error('추가 연구의 지문이 다릅니다.');
   return full;
 }
