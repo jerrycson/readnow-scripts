@@ -6,7 +6,7 @@ const src = SRCS.filter((f) => fs.existsSync(f)).map((f) => fs.readFileSync(f, '
 const cut = (a, b) => { const i = src.indexOf(a); const j = src.indexOf(b, i); if (i < 0 || j < 0) throw new Error('못 찾음 ' + a); return src.slice(i, j); };
 const fnRead = cut('  async function qEditRead(lid) {', '  async function qchkQueue(');
 const fnCmd = cut('  async function qtyChkCmd(ref, v, id) {', '  async function qchkNext() {');
-const fnOps = cut('  function listingOps(row, source, seenAt) {', '  /* ───────── 파일 가져오기');
+const fnOps = cut('  function listingOps(row, source, seenAt) {', '\n  }\n') + '\n  }\n'; /* (kfail2 11/17) 함수 끝(두 칸 들여 쓴 닫는 줄)까지만 — 전엔 다음 칸 머리(파일 가져오기)까지 떼었는데 그 사이에 수집기 1.89.348 되돌리기 코드(PUBONLY 등)가 들어와 '정의 안 됨'으로 멈춤 */
 const decl = cut('const QCHK = { busy: false };', '\n');
 const { chromium } = require('playwright');
 (async () => { const b = await chromium.launch(); const p = await b.newPage();
