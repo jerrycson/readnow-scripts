@@ -22,7 +22,7 @@ const bodyAxes={ribWidth:'흉곽 폭',ribDepth:'흉곽 두께',breastWidth:'가�
 export const axes=id=>id==='W'?bodyAxes:faceAxes;
 export const zero=id=>Object.fromEntries(Object.keys(axes(id)).map(k=>[k,0]));
 export const defaultBase=id=>id==='F02'?'candidate':'prior';
-export const baseLabel=(id,key)=>key==='round47'?'47차 원본 대조 후보':key==='history37'?(id==='F02'?'37차 페른 턱 .75':'37차 당시 기본') : key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
+export const baseLabel=(id,key)=>key==='round48'?'48차 연구 후보':key==='round47'?'47차 원본 대조 후보':key==='history37'?(id==='F02'?'37차 페른 턱 .75':'37차 당시 기본') : key==='candidate'?(id==='F02'?'42차 측면 후보':'42차 연구 후보'):(id==='F02'?'41차 기준 · 40차 눈':id==='M01'?'현행 39차 기본':'현행 40차 기본');
 export const presets=id=>id==='W'?[
   ['얕고 넓게',{ribWidth:22,breastWidth:50,projection:-50}],['하부를 낮게',{lower:-50,projection:20}]
 ]:[['턱밑 올림',{throat:55,chin:-15}],['볼 폭 줄임',{cheek:-52,jaw:-20}]];

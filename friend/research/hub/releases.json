@@ -527,6 +527,50 @@
         "file": "studio-training47.json",
         "sha256": "d0caa740a97158294b365f2b8b21fc2f4a99597933287a4cc4810f177b4d958b"
       }
+    },
+    {
+      "id": "838d8f6f712062ff0f53e050",
+      "project": "bookfriend",
+      "round": 48,
+      "cards": 350,
+      "sources": 339,
+      "chapters": 14,
+      "cardsSha": "6b3e4cb7acbe8b1870c33b6563327e144667084c8c508b7246089fa0fbbeeee9",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "fb4077924c7e8906d91d4a23f7f78cb2409178c32bd91aba77eb348b095fd02d",
+      "at": "2026-11-17T08:31:33.973Z",
+      "label": "48차 · 눈꺼풀과 입선 실화소·팔 올림의 밑면",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45",
+        "controller-note46",
+        "precedent-note46",
+        "face-note47",
+        "chest-note47",
+        "face-note48",
+        "chest-note48"
+      ],
+      "supersedes": "406caf8c0722abd651c5aa47",
+      "learningEvidence": {
+        "file": "studio-training48.json",
+        "sha256": "a99c18d280cc5058b5582e28cad6e044b6a165d9c2565f0a39a4249806abd2b5"
+      }
     }
   ]
 }

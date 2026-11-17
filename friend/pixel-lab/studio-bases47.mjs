@@ -20,6 +20,6 @@ export function addRound47(model, assets) {
 export function displayedBase(model, choice) {
   if (choice === 'candidate') return model.next;
   if (choice === 'prior') return model.prior;
-  if (choice === 'history37' || choice === 'round47') return model[choice];
+  if (choice === 'history37' || choice === 'round47' || choice === 'round48') return model[choice];
   throw new Error('출발 모델을 확인해 주세요.');
 }
