@@ -100,4 +100,5 @@ r = N('x', 'status'); ok(/🔓 비어 있음/.test(r.out) && /🕘 마지막: le
 
 try { fs.rmSync(T, { recursive: true, force: true }); } catch (e) {}
 if (bad) { console.log(`❌ 순서표 줄 시험 ${bad}개 실패`); process.exit(1); }
+require('./tWORKLOCKRETRY1117'); // 대기 만료 후 동일 실행 재시도의 처음 순서 보존
 console.log('✅ 순서표 줄 시험 모두 통과');

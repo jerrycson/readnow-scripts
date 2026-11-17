@@ -9,7 +9,7 @@
 #   bash src/tools/worklock.sh ask <누구> "<까닭>"       # 기다리는 줄에 서기(이미 서 있으면 '처음 기다린 때'는 그대로 두고 '새로 함'만) — 종료 코드 0 · 몇 번째인지 보임
 #   bash src/tools/worklock.sh release <누구> "<한 일>"  # 놓기(push까지 끝낸 뒤) — last에 한 일·커밋을 남김
 #   bash src/tools/worklock.sh clearask <누구>            # 줄에서 내 칸만 빼기(남의 칸은 못 뺌)
-#   bash src/tools/worklock.sh wait <누구> "<하는 일>" [분=60] # 잡힐 때까지 1분마다 한 번: 잡을 수 있으면 잡고, 아니면 줄의 내 칸을 새로 함 — 못 잡으면 내 칸을 빼고 종료 코드 3
+#   bash src/tools/worklock.sh wait <누구> "<하는 일>" [분=60] # 잡힐 때까지 1분마다 한 번: 잡을 수 있으면 잡고, 아니면 줄의 내 칸을 새로 함 — 못 잡으면 활성 칸을 빼고 30분 재시도 메모에 first를 보존 · 종료 코드 3
 #
 # (2026-10-29 동시 작업 규칙 2) 이름표: lead(리드나우 방) · friend(책방 친구 방) · story(동화 엔진 방) · h4(점검) · daily(매일 정밀 점검) · kpsum · backup · gpt(지피티 Actions)
 #  · 같은 이름이라도 다른 세션(다른 컨테이너 = 다른 hostname · RN_LOCK_HOST)이면 남으로 봄 — 예전엔 두 점검이 같은 'auto-check'로 서로를 자기로 알고 함께 잡았음(10/29 판 번호 겹침의 원인)
@@ -38,14 +38,14 @@ if [ "$cmd" = wait ]; then  # 잡힐 때까지 기다림 — 1분마다 step 한
     if [ "$rc" = 0 ]; then echo "✅ 잡음(${i}번째 시도)"; bash "$0" get; exit 0; fi
     if [ "$i" = 1 ] || [ $(( i % 10 )) = 0 ]; then echo "⏳ 기다림 ${i}분째 — $(printf '%s\n' "$out" | grep -m1 '^줄 ' || echo '표를 못 고침(다시 해 봄)')"; [ "$i" = 1 ] && bash "$0" status || true; fi
     sleep 60; done
-  bash "$0" clearask "$who" >/dev/null 2>&1 || true  # 내 칸만 뺌(남의 칸은 그대로)
+  bash "$0" timeout "$who" "$what" >/dev/null 2>&1 || true  # 활성 칸은 빼되 같은 세션·작업 재시도의 first는 30분 보존
   echo "❌ ${mins}분 기다려도 못 잡음"; bash "$0" status || true; exit 3
 fi
 for attempt in 1 2 3 4 5 6 7 8; do
   if git fetch -q origin "+refs/heads/$BR:refs/remotes/origin/$BR" 2>/dev/null; then PARENT=$(git rev-parse "origin/$BR"); J=$(git show "origin/$BR:$F" 2>/dev/null || echo '{}'); else PARENT=""; J='{}'; fi
   case "$cmd" in
     get) printf '%s\n' "$J"; exit 0;;
-    status|take|step|beat|ask|release|clearask) ;;
+    status|take|step|beat|ask|release|clearask|timeout) ;;
     *) echo "모르는 명령: $cmd"; exit 2;;
   esac
   OUT=$(J="$J" CMD="$cmd" WHO="$who" WHAT="$what" NOW="$(now)" STALE=$STALE HOSTID="$HOSTID" python3 -I - <<'PY'
@@ -67,8 +67,13 @@ same2 = lambda a, b: a.get('who') == b.get('who') and hk(a) == hk(b)
 alive = bool(j.get('holder')) and fresh(j.get('beat') or j.get('since'))
 mine = j.get('holder') == who and j.get('host', host) == host  # (10/29) 이름 + 세션(hostname)이 같아야 '내 것'
 
+def retries():
+    return j.get('waitRetry') if isinstance(j.get('waitRetry'), list) else []
+
 def norm():
     """줄 정리 — 죽은 칸(30분)·잡은 쪽 칸 빼기 · 옛 ask 받아들이기 · 맨 앞을 ask 칸에 옛 꼴로 비추기"""
+    if isinstance(j.get('waitRetry'), list):
+        j['waitRetry'] = [e for e in j['waitRetry'] if isinstance(e, dict) and e.get('who') and fresh(e.get('at'))]
     q = [e for e in (j.get('queue') or []) if isinstance(e, dict) and e.get('who') and fresh(e.get('at'))]
     a = j.get('ask') if isinstance(j.get('ask'), dict) else None
     head = None
@@ -92,17 +97,22 @@ def norm():
 def drop_me():
     j['queue'] = [e for e in (j.get('queue') or []) if not me(e)]
     if me(j.get('ask')): j['ask'] = None
+    if isinstance(j.get('waitRetry'), list):
+        j['waitRetry'] = [e for e in j['waitRetry'] if isinstance(e, dict) and not same2(e, {'who': who, 'host': host})]
 
 def upsert(why):
     q = j.get('queue') or []
     e = next((x for x in q if isinstance(x, dict) and x.get('who') == who and hk(x) == host), None)
     if e is None:
         a = j.get('ask') if isinstance(j.get('ask'), dict) else {}
-        first = a.get('first') or a.get('at') if (a.get('who') == who and hk(a) == host and fresh(a.get('at'))) else now  # 옛 대본으로 남긴 내 ask가 있으면 그때부터
+        retry = next((r for r in retries() if isinstance(r, dict) and same2(r, {'who': who, 'host': host}) and r.get('why') == why and fresh(r.get('at'))), None)
+        first = a.get('first') or a.get('at') if (a.get('who') == who and hk(a) == host and fresh(a.get('at'))) else (retry.get('first') if retry else now)  # 같은 실제 세션·작업만 재개(다른 host는 상속 안 함)
         e = {'who': who, 'host': host, 'why': why, 'first': first or now, 'at': now}; q.append(e)
     else:
         e.update(at=now, why=why or e.get('why')); e.pop('old', None)
     j['queue'] = q
+    if isinstance(j.get('waitRetry'), list):
+        j['waitRetry'] = [r for r in j['waitRetry'] if isinstance(r, dict) and not same2(r, {'who': who, 'host': host})]
 
 def pos():
     q, head = norm()
@@ -153,8 +163,15 @@ elif cmd == 'beat':
 elif cmd == 'ask':
     if mine and alive: norm(); out('HOLDING', False, '내가 잡고 있음 — 줄에 설 까닭 없음')
     upsert(what); p, n = pos(); out('OK', True, '줄 %d번째/%d칸' % (p, n))
+elif cmd == 'timeout':
+    e = next((e for e in (j.get('queue') or []) if me(e)), None)
+    if e is None and me(j.get('ask')): e = j['ask']
+    if e is None: out('NONE', False, '줄에 내 칸 없음(남의 칸은 그대로)')
+    retry = {'who': who, 'host': host, 'why': e.get('why') or ('판 내기 기다림: ' + what), 'first': e.get('first') or e.get('at') or now, 'at': now}
+    drop_me(); j['waitRetry'] = retries() + [retry]; norm()
+    out('OK', True, '활성 칸을 뺌 · 같은 세션/작업 재시도의 처음 시각은 30분 보존')
 elif cmd == 'clearask':
-    had = any(me(e) for e in (j.get('queue') or [])) or me(j.get('ask'))
+    had = any(me(e) for e in (j.get('queue') or [])) or me(j.get('ask')) or any(isinstance(e, dict) and same2(e, {'who': who, 'host': host}) for e in retries())
     if not had: out('NONE', False, '줄에 내 칸 없음(남의 칸은 그대로)')
     drop_me(); norm(); out('OK', True, '내 칸을 뺌')
 elif cmd == 'release':
