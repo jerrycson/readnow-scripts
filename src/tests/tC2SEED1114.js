@@ -13,7 +13,7 @@ const F = S.SEED.find((s) => s.k === 'ext.fx');
 const DONE = { seeds: { 'rv5-1113-nl-home': { act: 'on' } }, jobs: { 'ext.nl': { on: true, pc: 'HOME' } } };
 
 console.log('① 둘째 줄');
-ok(S.SEED.length === 2 && S.SEED[1] === F, '차례표 둘째 줄 = 환율', S.SEED.map((s) => s.id));
+ok(S.SEED.length >= 2 && S.SEED[1] === F, '차례표 둘째 줄 = 환율', S.SEED.map((s) => s.id)); /* (11/17 bunoe1) 셋째 줄부터 tC2SEED1117 */
 ok(F && F.pc === 'HOME' && F.on === true && F.task === 'ext.fx' && F.needSame === 1, 'HOME · 켬 · 같은 값 1건 조건', F);
 ok(new Set(S.SEED.map((s) => s.id)).size === S.SEED.length, '줄 이름 겹침 없음');
 ok(S.SEED.every((s) => s.pc !== 'MJ-MAIN' && s.pc !== 'LOGGER'), '출고 PC·로거 줄 없음');
@@ -37,5 +37,5 @@ console.log('⑤ 첫 줄은 그대로');
 ok(S.decide(S.SEED[0], DONE, [], SOLO, NOW).act === 'done', '국중 줄 = 이미 한 줄');
 ok(S.decide(S.SEED[0], {}, [{ ...day(fxT()), tasks: { 'ext.nl': { n: 102, same: 102, pass: { can: true } } } }], SOLO, NOW).act === 'on', '첫 줄엔 같은 값 조건이 붙지 않음');
 const IX = fs.readFileSync(path.join(R, 'cloud/index.js'), 'utf8');
-ok(/const VER = '0\.35\.\d+'; \/\/ \(0\.35\.\d+ col2seed\)/.test(IX), '클라우드 판 설명에 col2seed');
+ok(/^const VER = '0\.35\.\d+';.*\(0\.35\.\d+ col2seed\)/m.test(IX), '클라우드 판 설명에 col2seed'); /* (11/17 bunoe1) 판 설명은 최신이 앞에 붙어 col2seed가 뒤로 밀림 — 같은 줄 안이면 됨 */
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
