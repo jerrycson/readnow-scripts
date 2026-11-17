@@ -1,0 +1,141 @@
+{
+  "round": 57,
+  "scope": "중립→극소 굽힘→중립 복귀와 기존 실측 스쿼트 표본",
+  "recommendation": "keep55",
+  "candidateStatus": "manual-research-only",
+  "supported": [
+    "male-5",
+    "female-6",
+    "male-7",
+    "male-8"
+  ],
+  "unSupported": "다른 열 기본형·실제 보행·접촉압력·생체 피부 주름",
+  "matrix": {
+    "bodies": 4,
+    "compositions": 5,
+    "states": 5,
+    "views": 10,
+    "resolutions": [
+      48,
+      96,
+      1024
+    ],
+    "pairs": 3000,
+    "renderCalls": 7200,
+    "counting": "4×5×5×10×3=3000쌍, 각2판6000회+첫굽힘600쌍의 중립2판 재렌더1200회. 동일 중립을 반복 계산한 호출 수이며 고유 상태 수가 아님.",
+    "first": 600,
+    "firstByResolution": [
+      {
+        "size": 48,
+        "pairs": 200,
+        "oldRgb8": 322,
+        "newRgb8": 19,
+        "worse": 2,
+        "oldMask": 0,
+        "newMask": 0
+      },
+      {
+        "size": 96,
+        "pairs": 200,
+        "oldRgb8": 1164,
+        "newRgb8": 62,
+        "worse": 0,
+        "oldMask": 89,
+        "newMask": 4
+      },
+      {
+        "size": 1024,
+        "pairs": 200,
+        "oldRgb8": 84386,
+        "newRgb8": 1338,
+        "worse": 0,
+        "oldMask": 11459,
+        "newMask": 1158
+      }
+    ],
+    "metric": "같은 카메라·빛에서 중립 대비 첫 굽힘 RGBA 채널 최대 차>=8인 화소 합계. 실사 오차·생체 압력 아님.",
+    "neutralMaskMax": 26,
+    "lightDeepExactPairs": 1200
+  },
+  "geometry": {
+    "states": 100,
+    "boundaryMissing": 0,
+    "overturned": 0,
+    "negativeJacobian": 0,
+    "minAreaRatio": 0.37028704791166706,
+    "minNormalAlignment": 0.8099941594691545,
+    "boneDifference": 0,
+    "neutralReturnExact": true,
+    "boneStates": 100,
+    "maxBoneNewVsOld": 0,
+    "maxBoneVsRest": 4.440892098500626e-16,
+    "boneUnit": "생성 장면 단위·실측 cm 아님"
+  },
+  "motion": {
+    "kind": "55차 CC BY4.0 스쿼트 유래 기울기",
+    "clips": 4,
+    "bodyCompositionClips": 80,
+    "sampledStates": 460,
+    "renderPairs": 720,
+    "allFrames": false,
+    "boundaryMissing": 0,
+    "bonesEqual": true
+  },
+  "manualRange": {
+    "additionalStates": 60,
+    "verticesNormalsFacesEqual": true,
+    "states": [
+      "equal",
+      "limit",
+      "asym"
+    ]
+  },
+  "counterexamples": [
+    {
+      "id": "male-5",
+      "form": "balanced",
+      "yaw": 0,
+      "pitch": -30,
+      "size": 48,
+      "oldJump": {
+        "changed": 0,
+        "mask": 0,
+        "rgb8": 0
+      },
+      "nextJump": {
+        "changed": 1,
+        "mask": 0,
+        "rgb8": 1
+      }
+    },
+    {
+      "id": "male-5",
+      "form": "muscular",
+      "yaw": 135,
+      "pitch": 0,
+      "size": 48,
+      "oldJump": {
+        "changed": 0,
+        "mask": 0,
+        "rgb8": 0
+      },
+      "nextJump": {
+        "changed": 1,
+        "mask": 0,
+        "rgb8": 1
+      }
+    }
+  ],
+  "limits": [
+    "중립 변경으로 보이는 부피가 달라질 수 있으므로 전신 승인 아님",
+    "48px 두 구도에서 0→1화소 악화",
+    "고정55 띠만 중립에 사용하는 A시안은 얇아 보이는 반례로 보류",
+    "행렬식/면적 검사는 물리 접촉·압력 검사가 아님"
+  ],
+  "sources": [
+    "https://skinning.org/direct-methods.pdf",
+    "https://www.skinning.org/example-based.pdf",
+    "https://doi.org/10.7274/28689221"
+  ],
+  "complete": true
+}
