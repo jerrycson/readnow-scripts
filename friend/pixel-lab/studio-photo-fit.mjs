@@ -1,4 +1,4 @@
-import {readApplied,reshapeHead} from './photo-apply36.mjs';
+import {readApplied,reshapeHead} from './photo-apply36.mjs?v=44-lab';
 import {SIZE,names} from './hull36.mjs';
 import {safeGain} from './studio-sculpt-model.mjs';
 import {renderPixels,projectPoint} from './renderer.mjs';

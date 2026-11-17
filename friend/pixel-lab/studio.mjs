@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};
 const tools=[historyTool,...studioTools], frames=new Map(), targets=new Map();
 const defaults=new Map([['latest-fern','최신 모델'],['history','판본 비교'],['sculpt','정밀 조형'],['photo-engine36','내 참고그림'],['world','환경 실험']]);
+const studioRound=44;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -26,7 +27,7 @@ function paintList(){
     for(const t of rows){const b=button(t.label,()=>open(t.id));b.setAttribute('aria-current',String(t.id===current));list.append(b);count++;}
   }
   $('count').textContent=count+'개';if(!count)list.textContent='일치하는 도구가 없습니다.';
-  for(const b of $('quick').children)b.setAttribute('aria-current',String(b.dataset.id===current||(b.dataset.id==='latest-fern'&&['latest-himmel','latest-chest'].includes(current))));
+  for(const b of $('quick').querySelectorAll('button'))b.setAttribute('aria-current',String(b.dataset.id===current||(b.dataset.id==='latest-fern'&&['latest-himmel','latest-chest'].includes(current))));
   $('star').setAttribute('aria-pressed',String(favorites.includes(current)));$('star').textContent=favorites.includes(current)?'★ 저장됨':'☆ 저장';
 }
 function pathFor(t){
@@ -62,7 +63,9 @@ async function refresh(){
     const path='round'+row.round+'.html',res=await fetch(path,{cache:'no-store'});if(!res.ok)throw Error();
     const doc=new DOMParser().parseFromString(await res.text(),'text/html'), found=new Map();
     for(const a of doc.querySelectorAll('a[href]')){const u=new URL(a.getAttribute('href'),new URL(path,location.href));const c=u.searchParams.get('case');if(u.origin===location.origin&&u.pathname.endsWith('/pixel-lab/contour36.html')&&u.searchParams.get('round')===String(row.round)&&['F02','M01','W'].includes(c)&&!found.has(c))found.set(c,u.href);}
-    if(found.size!==3)return;edition=row;
+    if(found.size!==3)return;
+    if(edition&&row.round>studioRound&&!document.getElementById('newStudio')){const a=document.createElement('a');a.id='newStudio';a.textContent=row.round+'차 새 실험실 열기 ↗';a.href='../research/hub/?lab=studio&tool='+encodeURIComponent(current||'latest-fern');a.target='_blank';a.rel='noopener';$('quick').prepend(a);}
+    edition=row;
     for(const [c,url] of found){targets.set(c,url);const t=tools.find(t=>t.case===c),f=frames.get(t.id);if(f&&f.src!==url)f.src=url;}
     if(tools.find(t=>t.id===current)?.case)open(current);
   }catch{if(!edition)say('회차 목록을 다시 확인합니다. 보존 관찰창을 열었습니다.');}finally{refreshing=false;}

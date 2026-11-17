@@ -3,7 +3,7 @@ import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,
 import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs';
 import {loadRig} from './rig32.mjs';
 import {mountSculptLearning44} from './studio-sculpt-learn44.mjs';
-import {photoControls} from './studio-photo-fit.mjs';
+import {photoControls} from './studio-photo-fit.mjs?v=44-lab';
 
 const el=id=>document.getElementById(id), clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const svg=(tag,attrs)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n;};
