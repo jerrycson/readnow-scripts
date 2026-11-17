@@ -82,6 +82,13 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     if (!m.XL) { m.XL = o.xlsx || xlsxPkg(); if (!m.XL) err.push('SheetJS: xlsx 모듈이 없음(cloud/package.json 의존 설치 필요)'); }
     m.err = err; if (m.B && m.X && m.X.y24PriceOf && m.R && m.R.skuFull && m.XL) { M.mods = m; M.modsAt = now(); } else M.mods = null; return m; }
   const doc = async (c, id) => { const d = await C(c).doc(id).get(); return d.exists ? d.data() || {} : null; };
+  /* (plock2 11/18) 🔒 상품 잠금(prd_locks/{상품 키} = { on, lid, … }) — 잠긴 상품은 예스24에 새로 올리지 않음 · 못 읽으면 잠긴 것으로(안전 쪽)
+   *  plkSetY: 잠긴 것 모두 한 번(on == true · 잠긴 것만이라 몇 건) → { k: 상품 키 Set, lid: 알라딘 상품 번호 Set } · 못 읽으면 null
+   *  plkHitY: 후보 한 줄(r.lid = 상품 키)이 잠겼나 — 키로, 또는 그 상품의 알라딘 상품 번호로
+   *  plkOneY: 올리기 직전 한 권 다시 읽기 → true 잠김 · false 안 잠김 · undefined 못 읽음 */
+  const plkSetY = async () => { try { const q = await C('prd_locks').where('on', '==', true).get(); rdAdd('doc', 'prd_locks', (q.docs || []).length); const k = new Set(), lid = new Set(); for (const d of q.docs || []) { const v = d.data() || {}; if (v.on !== true) continue; k.add(String(d.id)); if (v.lid != null && v.lid !== '') lid.add(String(v.lid)); } return { k, lid }; } catch (e) { return null; } };
+  const plkHitY = (S, key, D) => { if (!S) return true; if (S.k.has(String(key))) return true; const l = D && D.idx && D.idx.get(key); return !!(l && l.listingId != null && S.lid.has(String(l.listingId))); };
+  const plkOneY = async (key, lid) => { try { rdAdd('doc', 'prd_locks', 1); const d = await C('prd_locks').doc(String(key)).get(); if (d.exists && (d.data() || {}).on === true) return true; if (lid == null || lid === '') return false; const q = await C('prd_locks').where('lid', '==', String(lid)).get(); return (q.docs || []).some((x) => (x.data() || {}).on === true); } catch (e) { return undefined; } };
   /* 자료 모으기(10분마다) — 웹앱이 실시간으로 듣던 칸을 읽기만 */
   /* (r1116-y24 · 정밀 점검 11/14 위험 3 읽기 폭증) 자료 모으기를 두 켜로 —
    *  ① 작은 것(설정 문서 4 · 주문 14일)은 10분마다 — 팔림(주문)·설정은 빨리 봐야 함
@@ -424,25 +431,30 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const pickI = ok0.filter((x) => W.has(x.l.id) || cfg.autoAll).concat(!nLed && cfg.firstAny ? ok0.slice().sort((a, b) => a.L.price - b.L.price).slice(0, 60) : []).map((x) => x.L.isbn); /* 시장 지표를 받을 책 — 「🟦 예스24도」·판매중 전부(켰으면) · 처음 한 건은 값 싼 것부터 60권 */
     await mktLoad(pickI); const has = (i) => M.mkt.has(String(i)); const X = { ...X0, val: (L) => engVal(m, D, { ...(D.list.find((q) => q.id === L.id) || {}), price: L.price, grade: L.grade, isbn13: L.isbn }, M.mkt.get(String(L.isbn))) };
     const rows = L0.map((x) => { const j = has(x.L.isbn) ? m.B.y24RegJudge(x.L, X) : m.B.y24RegJudge(x.L, X0); return { k: j.ok ? 'ok' : 'no', why: j.why || '', row: j.row || null, lid: x.l.id, want: W.get(x.l.id) || null }; });
-    const bcOk = !!st.bc; const cand0 = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has); const cand = cand0.filter((r) => !r.bc || bcOk); M.cand.set(pc, { n: cand0.length, at: now() }); /* (bunoe1) 후보 0건이면 통째 읽기 24시간마다 — fullMs */ /* (r1116-y24reg) 바코드 줄은 바코드를 아는 번외(state bc:1 · 0.1.71 뒤)에만 — 옛 번외는 ISBN 검사로 거절 → 멈춤이 되므로 */
-    const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length, ...(cand0.length > cand.length ? { bcWait: cand0.length - cand.length } : {}) };
+    /* (plock2 11/18 · 정범님 I-1117-2027-23 「잠긴 상품은 판매 상태 말고 아무것도 안 바뀜」) 🔒 잠긴 상품(prd_locks · on)은 예스24에 새로 올리지 않음 — 후보에서 빼고 「🔒 잠금이라 건너뜀 N」 · 풀면 다음 차례에 저절로 후보 · 못 읽으면 이번엔 아무것도 올리지 않음(안전 쪽) */
+    const bcOk = !!st.bc; const cand00 = m.B.y24AutoCand(rows, cfg, nLed, (i) => mktGo(i, cfg), has);
+    const lkAll = cand00.length ? await plkSetY() : { k: new Set(), lid: new Set() }; if (!lkAll) return say('🔒 잠금 상태를 못 읽어 이번엔 예스24에 올리지 않음 — 다음 차례에 다시'); /* 후보가 있을 때만 읽음(잠긴 것만 · 몇 건) */
+    const plkC = cand00.filter((r) => plkHitY(lkAll, r.lid, D)); const cand0 = plkC.length ? cand00.filter((r) => !plkHitY(lkAll, r.lid, D)) : cand00; const cand = cand0.filter((r) => !r.bc || bcOk); M.cand.set(pc, { n: cand0.length, at: now() }); /* (bunoe1) 후보 0건이면 통째 읽기 24시간마다 — fullMs */ /* (r1116-y24reg) 바코드 줄은 바코드를 아는 번외(state bc:1 · 0.1.71 뒤)에만 — 옛 번외는 ISBN 검사로 거절 → 멈춤이 되므로 */
+    const P = m.B.y24AutoPlan(cand, led.r, Cd, iso(), cfg, kstDay(now())); out.plan = { mode: P.mode, max: P.max, nOk: P.nOk, human: P.human.length, cand: cand.length, ...(cand0.length > cand.length ? { bcWait: cand0.length - cand.length } : {}), ...(plkC.length ? { plk: plkC.length, plkLids: plkC.map((r) => r.lid).slice(0, 30) } : {}) }; const plkT = plkC.length ? ` · 🔒 잠금이라 건너뜀 ${plkC.length}` : ''; if (plkC.length) log('🔒 예스24 자동 올림 — 잠금이라 건너뜀', pc, plkC.length + '권');
     for (const h of P.human.filter((x) => x.mkt).slice(0, 10)) { const i = String(h.row.isbn); const d = M.mkt.get(i); if ((d && d.reqAt && now() - Date.parse(d.reqAt) < 6 * 3600e3) || now() - (M.reqd.get(i) || 0) < 6 * 3600e3) continue; M.reqd.set(i, now());
       try { const at = iso(); await C('y24_mkt').doc(i).set({ isbn: i, req: { at, by: 'cloud y24auto', dev: pc, auto: true } }, { merge: true }); if (d) d.reqAt = at; } catch (e) {} } /* 웹앱 y24mReq(auto) — 클라우드 시장 읽기에 맡김 */
     /* (r1116-y24) 보내기 직전 재확인 — 큰 자료가 묵었을 수 있으므로(바뀐 줄을 안 남긴 사람 손 바꿈·지움은 최대 FULL_MS) 올릴 책(한 차례 25권 이하)을 한 권씩 새로 읽음: 알라딘에서 팔렸거나(판매중 아님·수량 0) 값·등급이 바뀌었으면 이번엔 빼고(자료 개체도 새 값으로 바꿈 → 다음 차례엔 새 값으로 다시 셈) 다시 고름 */
-    let cand2 = cand, P2 = P, drop = 0;
+    let cand2 = cand, P2 = P, drop = 0, nLk = 0;
     for (let round = 0; round < 3 && P2.pick.length; round++) { const bad = new Set();
       for (const x of P2.pick) { let l = null; try { rdAdd('doc', 'prd_listings', 1); l = await doc('prd_listings', x.lid); } catch (e) { bad.add(x.lid); continue; } const before = D.idx && D.idx.get(x.lid);
         if (!l) { bad.add(x.lid); continue; } const chg = !!before && (+before.price !== +l.price || y24G(before.grade) !== y24G(l.grade));
         if (before) { for (const k of L_FIELDS) { if (l[k] === undefined) delete before[k]; else before[k] = l[k]; } } /* 큰 자료의 그 줄을 새 값으로(다른 길도 같은 값을 봄) */
-        if (!aladinLive(l) || chg) bad.add(x.lid); }
+        if (!aladinLive(l) || chg) { bad.add(x.lid); continue; }
+        const lk1 = await plkOneY(x.lid, l.listingId); if (lk1 !== false) { bad.add(x.lid); nLk++; } } /* (plock2 11/18) 🔒 올리기 직전 그 상품 잠금을 한 권씩 다시 읽음 — 차례 맨 앞 목록 뒤에 잠근 것도 바로 지킴 · 못 읽으면(undefined) 잠긴 것으로 */
       if (!bad.size) break; drop += bad.size; cand2 = cand2.filter((c) => !bad.has(c.lid)); P2 = m.B.y24AutoPlan(cand2, led.r, Cd, iso(), cfg, kstDay(now())); }
-    if (drop) { out.plan = { ...out.plan, drop }; log('🔁 예스24 올리기 직전 재확인에서 뺌', pc, drop + '권'); }
+    if (drop) { out.plan = { ...out.plan, drop, ...(nLk ? { plk: (out.plan.plk || 0) + nLk } : {}) }; log('🔁 예스24 올리기 직전 재확인에서 뺌', pc, drop + '권' + (nLk ? ` (🔒 잠김 ${nLk})` : '')); }
     if (!P2.pick.length && cand0.length > cand.length && !cand.length) return say(`🟦 바코드 상품 ${cand0.length - cand.length}건 — 이 PC 번외가 바코드를 아는 새 판(0.1.71 뒤)을 받으면 올림`);
-    if (!P2.pick.length) return say(drop ? `재확인에서 ${drop}권을 뺌(알라딘에서 팔렸거나 값이 바뀜) — 다음 차례에 새 값으로 다시 고름` : P.t);
+    const plkT2 = nLk ? ` · 🔒 잠금이라 건너뜀 ${(plkC.length || 0) + nLk}` : plkT;
+    if (!P2.pick.length) return say((drop ? `재확인에서 ${drop}권을 뺌(알라딘에서 팔렸거나 값이 바뀜${nLk ? ' · 잠김' : ''}) — 다음 차례에 새 값으로 다시 고름` : P.t) + plkT2);
     const jid = 'y24a' + iso().replace(/\D/g, '').slice(2, 14) + Math.random().toString(36).slice(2, 5); const r = await commit(m, cand2, Cd, jid, me, pc, cfg);
-    if (!r || !r.ok.length) return say(r && r.stop ? '⛔ 멈춤 — ' + r.stop.why : (r && r.plan && r.plan.t) || P.t);
+    if (!r || !r.ok.length) return say((r && r.stop ? '⛔ 멈춤 — ' + r.stop.why : (r && r.plan && r.plan.t) || P.t) + plkT2);
     const rows2 = rowsOf(r.ok); out.jobs.push({ id: jid, rows: rows2, xlsx: xlsxOf(m, rows2), by: 'cloud:' + pc }); log('🤖 예스24 자동 올림', pc, jid, rows2.length + '건 맡김');
-    return say(`🤖 ${rows2.length}건 번외에 맡김 — 예스24 대량 등록 중`); }
+    return say(`🤖 ${rows2.length}건 번외에 맡김 — 예스24 대량 등록 중` + plkT2); }
   return { step, mods, data, changes, _M: M, wantLids, regX, regC, engVal, mktGo, downStep, vfStep, hubOf };
 }
 module.exports = { makeY24Auto, blockOf, cutBlock, y24Isbn, y24AdmRow, aladinLive, BLOCK_NAMES, downCfg, holderOf, DOWN_DEF, DOWN_SRC };
