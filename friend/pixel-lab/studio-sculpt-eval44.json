@@ -1,0 +1,962 @@
+{
+  "version": 44,
+  "trainSamples": 4800,
+  "evaluated": 624,
+  "heldViews": [
+    [
+      -125,
+      16
+    ],
+    [
+      -37,
+      -11
+    ],
+    [
+      -8,
+      17
+    ],
+    [
+      16,
+      -4
+    ],
+    [
+      49,
+      13
+    ],
+    [
+      100,
+      31
+    ]
+  ],
+  "trainingInputs": [
+    [
+      45,
+      0
+    ],
+    [
+      -45,
+      0
+    ],
+    [
+      0,
+      45
+    ],
+    [
+      0,
+      -45
+    ],
+    [
+      32,
+      47
+    ],
+    [
+      -42,
+      28
+    ],
+    [
+      51,
+      -22
+    ],
+    [
+      -30,
+      -46
+    ]
+  ],
+  "testInputs": [
+    [
+      18,
+      -24
+    ],
+    [
+      -31,
+      42
+    ],
+    [
+      56,
+      19
+    ],
+    [
+      -44,
+      -27
+    ]
+  ],
+  "all": {
+    "count": 624,
+    "before": 1.913975,
+    "direct": 1.874983,
+    "learned": 0.047226,
+    "worseThanStart": 0,
+    "worseThanDirect": 0,
+    "offered": 360
+  },
+  "offered": {
+    "count": 360,
+    "before": 1.80302,
+    "direct": 1.763573,
+    "learned": 0.051534,
+    "worseThanStart": 0,
+    "worseThanDirect": 0,
+    "offered": 360
+  },
+  "reasons": {
+    "학습 구도 밖": 208,
+    "제시": 360,
+    "뒤를 향한 표점": 52,
+    "개선 폭이 작음": 2,
+    "목표 변위가 작음": 2
+  },
+  "results": {
+    "F02": {
+      "all": {
+        "count": 240,
+        "before": 2.161178,
+        "direct": 2.108563,
+        "learned": 0.037916,
+        "worseThanStart": 0,
+        "worseThanDirect": 0,
+        "offered": 136
+      },
+      "zones": {
+        "chin": {
+          "count": 48,
+          "before": 2.875831,
+          "direct": 2.780985,
+          "learned": 0.024253,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        },
+        "jaw": {
+          "count": 48,
+          "before": 1.23911,
+          "direct": 1.22966,
+          "learned": 0.03491,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        },
+        "throat": {
+          "count": 48,
+          "before": 2.090518,
+          "direct": 2.015782,
+          "learned": 0.045496,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        },
+        "mid": {
+          "count": 48,
+          "before": 2.730695,
+          "direct": 2.647113,
+          "learned": 0.02446,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 16
+        },
+        "cheek": {
+          "count": 48,
+          "before": 1.869733,
+          "direct": 1.869276,
+          "learned": 0.060462,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 24
+        }
+      }
+    },
+    "M01": {
+      "all": {
+        "count": 240,
+        "before": 2.058041,
+        "direct": 2.010672,
+        "learned": 0.040638,
+        "worseThanStart": 0,
+        "worseThanDirect": 0,
+        "offered": 132
+      },
+      "zones": {
+        "chin": {
+          "count": 48,
+          "before": 2.785049,
+          "direct": 2.697212,
+          "learned": 0.025037,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 16
+        },
+        "jaw": {
+          "count": 48,
+          "before": 1.010492,
+          "direct": 1.01249,
+          "learned": 0.042267,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 28
+        },
+        "throat": {
+          "count": 48,
+          "before": 2.066745,
+          "direct": 1.996192,
+          "learned": 0.046454,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        },
+        "mid": {
+          "count": 48,
+          "before": 2.654064,
+          "direct": 2.576922,
+          "learned": 0.027789,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 24
+        },
+        "cheek": {
+          "count": 48,
+          "before": 1.773856,
+          "direct": 1.770544,
+          "learned": 0.061645,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        }
+      }
+    },
+    "W": {
+      "all": {
+        "count": 144,
+        "before": 1.261861,
+        "direct": 1.259536,
+        "learned": 0.073722,
+        "worseThanStart": 0,
+        "worseThanDirect": 0,
+        "offered": 92
+      },
+      "zones": {
+        "rib": {
+          "count": 48,
+          "before": 2.322977,
+          "direct": 2.325647,
+          "learned": 0.055103,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 32
+        },
+        "breast": {
+          "count": 48,
+          "before": 0.709745,
+          "direct": 0.709007,
+          "learned": 0.089147,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 30
+        },
+        "lower": {
+          "count": 48,
+          "before": 0.752862,
+          "direct": 0.743955,
+          "learned": 0.076916,
+          "worseThanStart": 0,
+          "worseThanDirect": 0,
+          "offered": 30
+        }
+      }
+    }
+  },
+  "stress": {
+    "구역 전체 보류": {
+      "count": 104,
+      "before": 1.542879,
+      "direct": 1.514874,
+      "learned": 2.792833,
+      "worseThanStart": 92,
+      "worseThanDirect": 92,
+      "offered": 0
+    },
+    "학습하지 않은 관절": {
+      "count": 104,
+      "before": 1.415782,
+      "direct": 1.343958,
+      "learned": 0.575954,
+      "worseThanStart": 20,
+      "worseThanDirect": 20,
+      "offered": 0
+    }
+  },
+  "failedTransfers": [
+    {
+      "id": "F02",
+      "base": "prior",
+      "zone": "cheek",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "neck.turn",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        0
+      ],
+      "next": [
+        -100,
+        -41
+      ],
+      "before": 2.127473,
+      "directError": 2.012683,
+      "learnedError": 5.920894,
+      "status": "전이 보류"
+    },
+    {
+      "id": "F02",
+      "base": "candidate",
+      "zone": "cheek",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "neck.turn",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        0
+      ],
+      "next": [
+        -100,
+        -44
+      ],
+      "before": 2.127473,
+      "directError": 2.012683,
+      "learnedError": 5.918555,
+      "status": "전이 보류"
+    },
+    {
+      "id": "M01",
+      "base": "candidate",
+      "zone": "cheek",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "neck.turn",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        0
+      ],
+      "next": [
+        -100,
+        -40
+      ],
+      "before": 2.113969,
+      "directError": 1.99995,
+      "learnedError": 5.884345,
+      "status": "전이 보류"
+    },
+    {
+      "id": "M01",
+      "base": "prior",
+      "zone": "cheek",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "neck.turn",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        0
+      ],
+      "next": [
+        -100,
+        -46
+      ],
+      "before": 2.113969,
+      "directError": 1.99995,
+      "learnedError": 5.879938,
+      "status": "전이 보류"
+    },
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "rib",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "arms.raise",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        -1
+      ],
+      "next": [
+        -100,
+        -100
+      ],
+      "before": 2.450033,
+      "directError": 2.297667,
+      "learnedError": 6.153928,
+      "status": "전이 보류"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "rib",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "arms.raise",
+      "angle": 0,
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        3,
+        -1
+      ],
+      "next": [
+        -100,
+        -100
+      ],
+      "before": 2.450033,
+      "directError": 2.297667,
+      "learnedError": 6.153928,
+      "status": "전이 보류"
+    },
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "rib",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "arms.raise",
+      "angle": 0,
+      "target": [
+        -31,
+        42
+      ],
+      "direct": [
+        -2,
+        0
+      ],
+      "next": [
+        100,
+        100
+      ],
+      "before": 1.951439,
+      "directError": 1.857892,
+      "learnedError": 5.590156,
+      "status": "전이 보류"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "rib",
+      "mode": "구역 전체 보류",
+      "yaw": -37,
+      "pitch": 17,
+      "pivot": "arms.raise",
+      "angle": 0,
+      "target": [
+        -31,
+        42
+      ],
+      "direct": [
+        -2,
+        0
+      ],
+      "next": [
+        100,
+        100
+      ],
+      "before": 1.951439,
+      "directError": 1.857892,
+      "learnedError": 5.590156,
+      "status": "전이 보류"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "lower",
+      "index": 8526,
+      "yaw": -8,
+      "pitch": 17,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        11,
+        7
+      ],
+      "before": 0.144637,
+      "directError": 0.144637,
+      "learnedError": 0.097801,
+      "condition": 0.013213,
+      "status": "목표 변위가 작음"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "lower",
+      "index": 8526,
+      "yaw": -8,
+      "pitch": 17,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        11,
+        7
+      ],
+      "before": 0.144637,
+      "directError": 0.144637,
+      "learnedError": 0.097801,
+      "condition": 0.013213,
+      "status": "목표 변위가 작음"
+    },
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "breast",
+      "index": 1374,
+      "yaw": 49,
+      "pitch": 13,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        21,
+        7
+      ],
+      "before": 0.184572,
+      "directError": 0.184572,
+      "learnedError": 0.115354,
+      "condition": 0.020409,
+      "status": "개선 폭이 작음"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "breast",
+      "index": 1374,
+      "yaw": 49,
+      "pitch": 13,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        56,
+        19
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        21,
+        7
+      ],
+      "before": 0.184572,
+      "directError": 0.184572,
+      "learnedError": 0.115354,
+      "condition": 0.020409,
+      "status": "개선 폭이 작음"
+    },
+    {
+      "id": "M01",
+      "base": "candidate",
+      "zone": "jaw",
+      "index": 741,
+      "yaw": 100,
+      "pitch": 31,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        16,
+        0
+      ],
+      "before": 0.215977,
+      "directError": 0.215977,
+      "learnedError": 0.023997,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "M01",
+      "base": "prior",
+      "zone": "jaw",
+      "index": 741,
+      "yaw": 100,
+      "pitch": 31,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        16,
+        0
+      ],
+      "before": 0.221705,
+      "directError": 0.221705,
+      "learnedError": 0.024634,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "F02",
+      "base": "candidate",
+      "zone": "jaw",
+      "index": 1001,
+      "yaw": 100,
+      "pitch": 31,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.2513,
+      "directError": 0.2513,
+      "learnedError": 0.013961,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "F02",
+      "base": "prior",
+      "zone": "jaw",
+      "index": 1001,
+      "yaw": 100,
+      "pitch": 31,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.26045,
+      "directError": 0.26045,
+      "learnedError": 0.014469,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "M01",
+      "base": "candidate",
+      "zone": "jaw",
+      "index": 7597,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.308651,
+      "directError": 0.308651,
+      "learnedError": 0.017147,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "rib",
+      "index": 10642,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        16,
+        -19
+      ],
+      "before": 0.370485,
+      "directError": 0.370485,
+      "learnedError": 0.045413,
+      "condition": 0.043085,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "rib",
+      "index": 10642,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        16,
+        -19
+      ],
+      "before": 0.370485,
+      "directError": 0.370485,
+      "learnedError": 0.045413,
+      "condition": 0.043085,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "M01",
+      "base": "prior",
+      "zone": "jaw",
+      "index": 7460,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.392467,
+      "directError": 0.392467,
+      "learnedError": 0.021804,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "W",
+      "base": "prior",
+      "zone": "breast",
+      "index": 8066,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        5,
+        -20
+      ],
+      "before": 0.425217,
+      "directError": 0.425217,
+      "learnedError": 0.049705,
+      "condition": 0.023864,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "W",
+      "base": "candidate",
+      "zone": "breast",
+      "index": 8066,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        5,
+        -20
+      ],
+      "before": 0.425217,
+      "directError": 0.425217,
+      "learnedError": 0.049705,
+      "condition": 0.023864,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "F02",
+      "base": "candidate",
+      "zone": "jaw",
+      "index": 7459,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.400272,
+      "directError": 0.400272,
+      "learnedError": 0.022237,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    },
+    {
+      "id": "F02",
+      "base": "prior",
+      "zone": "jaw",
+      "index": 7459,
+      "yaw": -125,
+      "pitch": 16,
+      "start": [
+        0,
+        0
+      ],
+      "target": [
+        18,
+        -24
+      ],
+      "direct": [
+        0,
+        0
+      ],
+      "next": [
+        17,
+        0
+      ],
+      "before": 0.41608,
+      "directError": 0.41608,
+      "learnedError": 0.023116,
+      "condition": 0,
+      "status": "학습 구도 밖"
+    }
+  ]
+}

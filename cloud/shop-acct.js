@@ -139,8 +139,11 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
     }); } finally { UC.delete(uid); }
   }
   /* 열쇠 = 손님 번호 + '.' + 무작위 32자 · 문서엔 해시만(sess) · 90일 · 기기 5대 */
-  async function authOf(req) { const m = /^Bearer\s+(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String((req.headers && req.headers.authorization) || '')); if (!m) return null; const u = await uGet(m[1]); if (!u || u.gone || u.arch) return null;
-    const h = H(m[1] + '.' + m[2]); const t = Date.now(); const ok = (u.sess || []).some((x) => x && x.h === h && Date.parse(x.exp) > t); return ok ? { uid: m[1], u, h } : null; }
+  async function authOf(req) { const m = /^Bearer\s+(u_[0-9a-f]{16})\.([0-9a-f]{32})$/.exec(String((req.headers && req.headers.authorization) || '')); if (!m) return null;
+    // 다른 서버의 로그아웃·보관·암호 교체를 반영한다. 인증에는 회원 표시용 캐시를 쓰지 않는다.
+    const u = await uGet(m[1], true), a = { uid: m[1], h: H(m[1] + '.' + m[2]) };
+    return liveSession(u, a) ? { ...a, u } : null;
+  }
   const sessNew = (u) => { const tok = u.uid + '.' + rnd(16); const t = Date.now(); const sess = [{ h: H(tok), exp: new Date(t + SESS_DAYS * 864e5).toISOString(), at: new Date(t).toISOString() }, ...(u.sess || []).filter((x) => x && Date.parse(x.exp) > t)].slice(0, SESS_MAX); return { tok, sess }; };
   const rdList = (u) => Object.entries((u && u.rd) || {}).filter(([, r]) => r && r.s).map(([k, r]) => ({ k, ...r })).sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   function meView(u) { const rd = rdList(u); const cnt = { want: 0, ing: 0, done: 0 }; rd.forEach((r) => { if (cnt[r.s] != null) cnt[r.s]++; });
@@ -364,6 +367,6 @@ function makeAcct({ db, C, FV, log, bucket, ready, vw, held, soldX, ipKey, limit
   /* /b/ 검색용 화면 — 공개 리뷰 평균·수·대표 3개(구글 별점 표시 · 리뷰가 실제로 화면에 있을 때만) */
   async function seoRv(it) { const k = kOf(it); if (!k) return null; try { const R = await rvFor(k); const L = R.L.filter(rvShown); if (!L.length) return null; const S0 = rvStats(L); return { avg: S0.avg, n: S0.n, top: rvSort(L).slice(0, 3).map((r) => ({ nick: r.nick, st: r.st, s100: r.s100, at: r.at })) }; } catch (e) { return null; } }
   rsLoad();
-  return { handle, authOf, addOrder, ordersChanged, admin, op, ratingOf, seoRv, rsLoad };
+  return { handle, authOf, liveSession, addOrder, ordersChanged, admin, op, ratingOf, seoRv, rsLoad };
 }
 module.exports = { isTestAcct, TEST_EM, rvSummary, qaAcct, pwHash, pwOk, pwWhy, nickWhy, nickNorm, nickKey, emKey, kOf, K_RE, rvCheck, rvStats, rvShown, rvSort, rvPub, qCheck, RD, goalOf, alertState, mkTestOne, PH_RE, bookMini, makeAcct };

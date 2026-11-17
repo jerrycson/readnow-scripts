@@ -1,4 +1,4 @@
-import {readApplied,reshapeHead} from './photo-apply36.mjs';
+import {readApplied,reshapeHead} from './photo-apply36.mjs?v=44-lab';
 import {DEFAULTS} from './model.mjs';
 import {portraitPixels} from './portrait48.mjs';
 import {morphForm,chestParams} from './morph33.mjs';
