@@ -1,6 +1,6 @@
-import {definitions,stages} from './standard.mjs';
-import {runStandardRound} from './standard-round.mjs';
-import {appendRound,rounds,createReader} from './standard-source.mjs';
+import {definitions,stages} from './standard.mjs?v=57-diagnostic';
+import {runStandardRound} from './standard-round.mjs?v=57-diagnostic';
+import {appendRound,rounds,createReader} from './standard-source.mjs?v=57-diagnostic';
 import {publicHeartbeat} from './standard-heartbeat.mjs';
 const q=id=>document.getElementById(id),node=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text??''});
 const versions=Object.keys(definitions);let study='friend-studio',latest={},history=[],central=null,running=false,again=false;
@@ -44,6 +44,12 @@ function paint(){
  }
  q('standard-journal-count').textContent='이 브라우저에 보존된 회차 '+book.length+'건 · 최근 30건 표시. 원자료 시각 '+time(r?.log?.materialAt);
  q('standard-fix').textContent=r?.log?.fix||'확인된 회차를 기다립니다.';
+ for(const correction of s?.excluded||[])q('standard-fix').append(node('span',' '+correction.reason+' 원 기록과 7칸 장부는 보존합니다.'));
+ if(s?.diagnostics?.length){
+  const details=node('details'),summary=node('summary','집계 관측 '+s.diagnostics.length+'건: 보존·열람, 학습/평균점수·승격 제외');details.append(summary);
+  for(const d of s.diagnostics)details.append(node('p',d.rowId+' · '+d.label+' · '+d.before+' → '+d.after+' '+d.unit+(d.worse?' · 원 관측 악화':'')+' · '+d.reason));
+  q('standard-fix').append(details);
+ }
  q('standard-difficulty').textContent=def.limits;q('standard-next').textContent=def.next;
  q('standard-alert').textContent=r&&!r.ok?'확인 필요 · '+(r.error||r.code):'';
  const sample=q('standard-record');sample.replaceChildren();

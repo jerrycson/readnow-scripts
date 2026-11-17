@@ -2,7 +2,7 @@ import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
 import {studioTools,studioGroups} from './studio-catalog.mjs?ui=56';
 import {latestPublished} from '../research/hub/published-state.mjs';
-import {startStudioRecord} from './studio-recorder44.mjs';
+import {startStudioRecord} from './studio-recorder44.mjs?v=57-diagnostic';
 import {mountCaseSync} from './studio-case-sync45.mjs';
 const $=id=>document.getElementById(id);
 const historyTool={id:'history',group:'compare',label:'모든 판본 비교',description:'두 회차를 독립적으로 선택해 당시 보존한 모델·결과 그림을 나란히 봅니다.',path:'studio-versions.html',keywords:['이전','역사','판본','버전','전체']};

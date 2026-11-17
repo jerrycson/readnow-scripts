@@ -1,8 +1,9 @@
 import {record,observeEvidence,entries,archiveModel} from './studio-evidence44.mjs';
-import {fit,evaluate} from './studio-learning44.mjs';
-import {publishedEvidence} from './studio-cases44.mjs';
+import {fit,evaluate} from './studio-learning44.mjs?v=57-correction';
+import {publishedEvidence} from './studio-cases44.mjs?v=57-diagnostic';
+import {learningCorrection} from './studio-corrections57.mjs?v=57-correction';
 const broadcaster=typeof BroadcastChannel==='undefined'?null:new BroadcastChannel('bookfriend-lab-evidence');
-export async function refreshLearning(seeds,local,models){const rows=[...seeds,...local],report=evaluate(rows);const signatureData=rows.filter(r=>r.outcome==='measured').map(r=>[r.id,r.episode,r.metricBefore,r.metricAfter]).sort((a,b)=>a[0].localeCompare(b[0]));
+export async function refreshLearning(seeds,local,models){const rows=[...seeds,...local],report=evaluate(rows);const signatureData=rows.filter(r=>r.outcome==='measured').map(r=>{const data=[r.id,r.episode,r.metricBefore,r.metricAfter],correction=learningCorrection(r);return correction?[...data,correction.id,correction.sourceSha256]:data;}).sort((a,b)=>a[0].localeCompare(b[0]));
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(signatureData))),signature=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
  if(!models.some(m=>m.signature===signature)){try{await archiveModel({schema:1,signature,report,parameters:fit(rows)});}catch(e){if(e.name!=='ConstraintError')throw e;}}return report;
 }
