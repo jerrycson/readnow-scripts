@@ -1,3 +1,4 @@
+import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
 import {studioTools,studioGroups} from './studio-catalog.mjs?ui=50-panes';
 import {latestPublished} from '../research/hub/published-state.mjs';
@@ -14,7 +15,7 @@ const defaults=new Map([
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
   ['acceptance','기본형 완성 기준·결함']
 ]);
-const studioRound=49;
+const studioRound=50;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -43,6 +44,7 @@ function pathFor(t){
   const u=new URL(t.id==='journal'&&edition?'round'+edition.round+'.html':targets.get(t.case)||t.path,location.href), q=new URL(location.href).searchParams;
   if(t.id==='sculpt'&&['chin','jaw','throat','mid','cheek','rib','breast','lower'].includes(q.get('zone')))u.searchParams.set('zone',q.get('zone'));
   if(t.id==='history')for(const k of ['a','b','av','bv'])if(q.has(k))u.searchParams.set(k,q.get(k));
+  if(t.id==='workbench'&&isWorkbenchSubject(q.get('case')))u.searchParams.set('case',q.get('case'));
   if(['sculpt','all-around','definition'].includes(t.id)&&['F02','M01','W'].includes(q.get('case')))u.searchParams.set('case',q.get('case'));
   return u.href;
 }
@@ -78,6 +80,7 @@ function focusMode(on){document.body.classList.toggle('focus',on);$('focus').tex
 $('focus').onclick=()=>focusMode(!document.body.classList.contains('focus'));focusMode(matchMedia('(max-width:760px)').matches);
 $('copy').onclick=async()=>{const u=new URL('../research/hub/',location.href);u.search=location.search;u.searchParams.set('lab','studio');try{await navigator.clipboard.writeText(u.href);say('현재 작업 링크를 복사했습니다.');}catch{say('현재 작업 링크: '+u.href);}};
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;
+  if(e.source===frames.get('workbench')?.contentWindow&&current==='workbench'&&workspace.isMainVisible()&&!frames.get('workbench').hidden&&e.data?.type==='bookfriend:workbench-case'&&isWorkbenchSubject(e.data.id))setState('workbench',{case:e.data.id});
   if(e.source===frames.get('history')?.contentWindow&&e.data?.type==='bookfriend:version-selection'&&current==='history'){
     const next={};for(const k of ['a','b','av','bv']) if(typeof e.data[k]==='string'&&e.data[k].length<150)next[k]=e.data[k];setState('history',next);
   }
