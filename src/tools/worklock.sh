@@ -8,8 +8,9 @@
 #   bash src/tools/worklock.sh beat <누구> "<하는 일>"   # 살아 있음 알리기(10분마다 · 하는 일 바꿀 때)
 #   bash src/tools/worklock.sh ask <누구> "<까닭>"       # 기다리는 줄에 서기(이미 서 있으면 '처음 기다린 때'는 그대로 두고 '새로 함'만) — 종료 코드 0 · 몇 번째인지 보임
 #   bash src/tools/worklock.sh release <누구> "<한 일>"  # 놓기(push까지 끝낸 뒤) — last에 한 일·커밋을 남김
-#   bash src/tools/worklock.sh clearask <누구>            # 줄에서 내 칸만 빼기(남의 칸은 못 뺌)
-#   bash src/tools/worklock.sh wait <누구> "<하는 일>" [분=60] # 잡힐 때까지 1분마다 한 번: 잡을 수 있으면 잡고, 아니면 줄의 내 칸을 새로 함 — 못 잡으면 내 칸을 빼고 종료 코드 3
+#   bash src/tools/worklock.sh clearask <누구>            # 옛 꼴 부탁(ask 칸)만 지움 — 줄(queue)의 내 칸은 그대로(처음 기다린 때를 잃지 않게 · 11/17 리드 F57)
+#   bash src/tools/worklock.sh leave <누구>               # 줄에서 내 칸을 바로 빼기(남의 칸은 못 뺌) — 안 빼도 30분 안에 새로 하지 않으면 저절로 빠짐
+#   bash src/tools/worklock.sh wait <누구> "<하는 일>" [분=60] # 잡힐 때까지 1분마다 한 번: 잡을 수 있으면 잡고, 아니면 줄의 내 칸을 새로 함 — 못 잡으면 종료 코드 3(줄의 내 칸은 남음 → 30분 안에 다시 wait 하면 처음 기다린 때 그대로)
 #   (11/17 wake1) take·step·wait·ask는 작업 폴더의 이 파일이 origin/main 판과 다르면 main 판으로 저절로 다시 실행(옛 판으로 차례를 앞지르지 않게 · 끄기 RN_WL_FRESH=1)
 #   (11/17 wake1) who=gpt(지피티)는 저절로 먼저 섬 — 줄에서 보통 칸보다 앞 · 정범님이 급하다 하신 판은 RN_LOCK_PRIO=1
 #
@@ -48,7 +49,7 @@ wl_main() {  # 다르면 main 판 경로를 찍음
   local t="${TMPDIR:-/tmp}/rn-worklock-main-${b:0:12}.sh"
   [ -s "$t" ] || { git cat-file blob "$b" > "$t.$$" 2>/dev/null && mv -f "$t.$$" "$t"; } || return 1
   printf '%s\n' "$t"; }
-case "$cmd" in take|step|wait|ask) if [ -z "${RN_WL_FRESH:-}" ] && T0=$(wl_main); then
+case "$cmd" in take|step|wait|ask|clearask) if [ -z "${RN_WL_FRESH:-}" ] && T0=$(wl_main); then
   echo "⚠ 이 순서표 도구($0)가 main 판과 다름 — main 판($T0)으로 다시 실행" >&2; RN_WL_FRESH=1 exec bash "$T0" "$@"; fi;; esac
 export RN_WL_FRESH=1  # 이 아래에서 부르는 자식(wait의 step)은 다시 보지 않음(1분마다 main을 받지 않게)
 if [ "$cmd" = wait ]; then  # 잡힐 때까지 기다림 — 1분마다 step 한 번(잡거나, 줄의 내 칸을 새로 함)
@@ -60,14 +61,14 @@ if [ "$cmd" = wait ]; then  # 잡힐 때까지 기다림 — 1분마다 step 한
     if [ "$rc" = 0 ]; then echo "✅ 잡음(${i}번째 시도)"; bash "$0" get; exit 0; fi
     if [ "$i" = 1 ] || [ $(( i % 10 )) = 0 ]; then echo "⏳ 기다림 ${i}분째 — $(printf '%s\n' "$out" | grep -m1 '^줄 ' || echo '표를 못 고침(다시 해 봄)')"; [ "$i" = 1 ] && bash "$0" status || true; fi
     sleep "${RN_WL_SLEEP:-60}"; done  # RN_WL_SLEEP = 시험용(기본 60초)
-  bash "$0" clearask "$who" >/dev/null 2>&1 || true  # 내 칸만 뺌(남의 칸은 그대로)
-  echo "❌ ${mins}분 기다려도 못 잡음"; bash "$0" status || true; exit 3
+  # (11/17 리드 F57) 끝에서 clearask로 내 칸을 빼던 것을 없앰 — 빼면 다시 기다릴 때 처음 기다린 때가 새로 매겨져 줄 뒤로 밀림(lfcount1 1번째→10번째) · 칸은 30분 안에 새로 하지 않으면 저절로 빠짐
+  echo "❌ ${mins}분 기다려도 못 잡음 — 줄의 내 칸은 30분 동안 남음(다시 wait 하면 처음 기다린 때 그대로 · 바로 빼려면 leave)"; bash "$0" status || true; exit 3
 fi
 for attempt in 1 2 3 4 5 6 7 8; do
   if git fetch -q origin "+refs/heads/$BR:refs/remotes/origin/$BR" 2>/dev/null; then PARENT=$(git rev-parse "origin/$BR"); J=$(git show "origin/$BR:$F" 2>/dev/null || echo '{}'); else PARENT=""; J='{}'; fi
   case "$cmd" in
     get) printf '%s\n' "$J"; exit 0;;
-    status|take|step|beat|ask|release|clearask) ;;
+    status|take|step|beat|ask|release|clearask|leave) ;;
     *) echo "모르는 명령: $cmd"; exit 2;;
   esac
   OUT=$(J="$J" CMD="$cmd" WHO="$who" WHAT="$what" NOW="$(now)" STALE=$STALE HOSTID="$HOSTID" PRIO="${RN_LOCK_PRIO:-}" python3 -I - <<'PY'
@@ -185,7 +186,13 @@ elif cmd == 'beat':
 elif cmd == 'ask':
     if mine and alive: norm(); out('HOLDING', False, '내가 잡고 있음 — 줄에 설 까닭 없음')
     upsert(what); p, n = pos(); out('OK', True, '줄 %d번째/%d칸' % (p, n))
-elif cmd == 'clearask':
+elif cmd == 'clearask':  # (11/17 리드 F57) 옛 꼴 부탁(ask 칸)만 — 줄의 내 칸은 건드리지 않음(옛 wait가 끝에서 부르는 clearask에 처음 기다린 때를 잃지 않게)
+    a = j.get('ask') if isinstance(j.get('ask'), dict) else None
+    inq = any(isinstance(e, dict) and me(e) and not e.get('old') for e in (j.get('queue') or []))
+    if not me(a) and not inq: out('NONE', False, '줄에 내 칸 없음(남의 칸은 그대로)')
+    if me(a) and not inq: j['ask'] = None  # 옛 대본이 적은 내 한 칸 부탁 → 지움(줄의 옛 칸도 따라 빠짐)
+    norm(); out('OK', True, '옛 꼴 부탁만 지움 · 줄의 내 칸은 그대로(30분 안에 새로 하지 않으면 저절로 빠짐 · 바로 빼려면 leave)' if inq else '내 옛 꼴 부탁을 지움')
+elif cmd == 'leave':  # 줄에서 내 칸을 바로 뺌(예전 clearask)
     had = any(me(e) for e in (j.get('queue') or [])) or me(j.get('ask'))
     if not had: out('NONE', False, '줄에 내 칸 없음(남의 칸은 그대로)')
     drop_me(); norm(); out('OK', True, '내 칸을 뺌')
@@ -210,7 +217,7 @@ PY
   if git push -q origin "$C:refs/heads/$BR" 2>/dev/null; then
     [ -n "$MSG" ] && printf '%s\n' "$MSG"
     [ "$TOK" = QUEUED ] && exit 3
-    [ "$cmd" = ask ] || [ "$cmd" = clearask ] || printf '%s\n' "$NEW"
+    [ "$cmd" = ask ] || [ "$cmd" = clearask ] || [ "$cmd" = leave ] || printf '%s\n' "$NEW"
     exit 0
   fi
   sleep $(( attempt * 2 + RANDOM % 3 ))   # 그사이 다른 쪽이 바꿈(앞으로만 가지 않음) → 다시 읽고 다시

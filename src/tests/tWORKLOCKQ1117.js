@@ -7,7 +7,7 @@
  *  ③ 30분 넘게 새로 하지 않은 칸은 무시
  *  ④ 옛 대본은 새 줄 맨 앞(ask 비춤)을 보고 비키고 · 덮지 않고 · 지우지 못함
  *  ⑤ 새 대본은 옛 대본의 ask를 망가뜨리지 않음 · 옛 대본이 그 ask를 지우면 줄에서도 빠짐
- *  ⑥ step(wait의 1분 한 번)은 내 칸의 at만 새로 하고 first는 그대로 · clearask는 남의 칸을 못 뺌 · status 출력
+ *  ⑥ step(wait의 1분 한 번)은 내 칸의 at만 새로 하고 first는 그대로 · clearask는 옛 꼴 부탁만(줄 칸 그대로 · 리드 F57) · leave는 내 칸만 뺌 · status 출력
  *  ⑦ who=gpt·RN_LOCK_PRIO=1은 저절로 먼저 섬(wake1 · 정범님 I-1117-1827-20) — ①② 셋째 칸은 그래서 friend로 씀
  * node · git만 씀 · 몇십 초 */
 'use strict';
@@ -47,7 +47,7 @@ r = N('actions-1', 'take', 'friend', 'PR 45'); ok(r.code === 3, '놓인 순간 �
 r = N('vm-b', 'step', 'lead', '판 B'); ok(r.code === 0, 'B가 step으로 잡음', r.out);
 r = N('vm-b', 'release', 'lead', '한 일 B'); r = N('vm-c', 'step', 'lead', '새로 옴'); ok(r.code === 3 && /줄 2번째/.test(r.out), '새로 온 C는 step으로 줄 2번째(친구 방 뒤)', r.out);
 r = N('actions-1', 'step', 'friend', 'PR 45'); ok(r.code === 0, '먼저 기다린 친구 방이 잡음', r.out);
-N('actions-1', 'release', 'friend', '한 일'); N('vm-c', 'clearask', 'lead');
+N('actions-1', 'release', 'friend', '한 일'); N('vm-c', 'leave', 'lead');
 
 console.log('② 옛 한 칸 ask 객체를 줄 맨 앞으로');
 setLock({ holder: 'lead', host: 'vm-k', what: '다른 판', since: iso(300), beat: iso(60), ask: { who: 'lead', host: 'vm-old', why: '옛 대본 부탁', at: iso(120) }, last: null });
@@ -84,16 +84,17 @@ r = N('vm-i', 'take', 'lead', 'I'); ok(r.code === 3, 'I는 H 차례를 지킴', 
 r = O('vm-h', 'clearask', 'lead'); ok(r.code === 0, '옛 대본 H가 그만두며 ask를 지움', r.out);
 r = N('vm-i', 'take', 'lead', 'I'); j = get(); ok(r.code === 0 && !(j.queue || []).length, '옛 H 칸도 줄에서 빠지고 I가 잡음', r.out + JSON.stringify(j)); N('vm-i', 'release', 'lead', 'I');
 
-console.log('⑥ step은 at만 새로 · clearask는 내 칸만 · status');
+console.log('⑥ step은 at만 새로 · clearask는 옛 꼴 부탁만 · leave는 내 칸만 · status');
 const f0 = iso(900);
 setLock({ holder: 'lead', host: 'vm-k', since: iso(100), beat: iso(10), queue: [{ who: 'gpt', host: 'actions-3', why: 'PR', first: f0, at: iso(600) }, { who: 'lead', host: 'vm-j', why: 'J', first: iso(300), at: iso(200) }], ask: { who: 'gpt', host: 'actions-3', why: 'PR', at: iso(600), first: f0 } });
 r = N('actions-3', 'step', 'gpt', 'PR'); j = get(); const g = j.queue.find((e) => e.host === 'actions-3');
 ok(r.code === 3 && /줄 1번째/.test(r.out) && g.first === f0 && Date.now() / 1000 - Date.parse(g.at) / 1000 < 30 && j.ask.at === g.at, 'step: first 그대로 · at 새로 · ask 비춤도 새로', JSON.stringify(j));
-r = N('vm-j', 'clearask', 'gpt'); j = get(); ok(r.code === 0 && j.queue.length === 2, '이름이 다르면 남의 칸을 못 뺌', JSON.stringify(j.queue));
-r = N('vm-x', 'clearask', 'lead'); j = get(); ok(r.code === 0 && j.queue.length === 2, '세션(host)이 다르면 같은 이름표라도 남의 칸을 못 뺌', JSON.stringify(j.queue));
-r = N('vm-j', 'clearask', 'lead'); j = get(); ok(r.code === 0 && JSON.stringify(qs(j)) === JSON.stringify(['gpt@actions-3']), '내 칸만 뺌', JSON.stringify(j.queue));
+r = N('vm-j', 'leave', 'gpt'); j = get(); ok(r.code === 0 && j.queue.length === 2, '이름이 다르면 남의 칸을 못 뺌', JSON.stringify(j.queue));
+r = N('vm-x', 'leave', 'lead'); j = get(); ok(r.code === 0 && j.queue.length === 2, '세션(host)이 다르면 같은 이름표라도 남의 칸을 못 뺌', JSON.stringify(j.queue));
+r = N('vm-j', 'clearask', 'lead'); j = get(); ok(r.code === 0 && j.queue.length === 2, 'clearask는 줄의 내 칸을 건드리지 않음(옛 꼴 부탁만 · 리드 F57)', JSON.stringify(j.queue));
+r = N('vm-j', 'leave', 'lead'); j = get(); ok(r.code === 0 && JSON.stringify(qs(j)) === JSON.stringify(['gpt@actions-3']), 'leave: 내 칸만 뺌', JSON.stringify(j.queue));
 r = N('vm-q', 'release', 'lead', '남의 표'); ok(r.code === 4, '남의 표는 놓지 못함(4)', r.out);
-N('actions-3', 'clearask', 'gpt'); setLock({ ...get(), holder: null, host: null, beat: null, since: null });
+N('actions-3', 'leave', 'gpt'); setLock({ ...get(), holder: null, host: null, beat: null, since: null });
 r = N('vm-w', 'wait', 'lead', '판 W', '1'); j = get(); ok(r.code === 0 && /✅ 잡음/.test(r.out) && j.holder === 'lead' && j.host === 'vm-w' && !j.ask, 'wait: 표가 비고 줄이 없으면 첫 번에 잡음', r.out);
 r = N('x', 'status'); ok(/🔒 잡은 쪽: lead \(vm-w\)/.test(r.out) && /기다리는 줄 없음/.test(r.out), 'status: 잡은 쪽·빈 줄', r.out);
 ok(j.what === '판 W', 'wait로 잡으면 하는 일은 그대로(앞말 없음)', j.what); N('vm-w', 'release', 'lead', '한 일 W');
@@ -111,8 +112,8 @@ r = N('x', 'status'); ok(/1\. gpt \(actions-9\).*먼저 섬/.test(r.out) && /2\.
 r = N('actions-9', 'take', 'gpt', 'PR 50'); ok(r.code === 0, '지피티가 잡음', r.out); N('actions-9', 'release', 'gpt', '한 일');
 wait1(); r = NP('vm-p', 'ask', 'lead', '급한 판'); ok(r.code === 0 && /줄 1번째/.test(r.out), 'RN_LOCK_PRIO=1이면 줄 1번째', r.out);
 r = N('vm-p', 'step', 'lead', '급한 판'); j = get(); const pe = (j.queue || []).find((e) => e.host === 'vm-p');
-ok(r.code === 3 && pe && !pe.prio, 'RN_LOCK_PRIO 없이 다시 서면 먼저 섬이 풀리고 먼저 기다린 차례로 돌아감', JSON.stringify(j)); N('vm-p', 'clearask', 'lead');
-r = N('vm-a', 'take', 'lead', '판 A'); ok(r.code === 0, '그다음 먼저 기다린 A가 잡음', r.out); N('vm-a', 'release', 'lead', 'A'); N('vm-b', 'clearask', 'lead');
+ok(r.code === 3 && pe && !pe.prio, 'RN_LOCK_PRIO 없이 다시 서면 먼저 섬이 풀리고 먼저 기다린 차례로 돌아감', JSON.stringify(j)); N('vm-p', 'leave', 'lead');
+r = N('vm-a', 'take', 'lead', '판 A'); ok(r.code === 0, '그다음 먼저 기다린 A가 잡음', r.out); N('vm-a', 'release', 'lead', 'A'); N('vm-b', 'leave', 'lead');
 
 try { fs.rmSync(T, { recursive: true, force: true }); } catch (e) {}
 if (bad) { console.log(`❌ 순서표 줄 시험 ${bad}개 실패`); process.exit(1); }

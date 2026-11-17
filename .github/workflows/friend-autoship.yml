@@ -136,7 +136,7 @@ jobs:
         name: 순서표 잡기 (worklock · 이름표 gpt · 25분까지 기다림)
         env: { RN_LOCK_HOST: 'actions-${{ github.run_id }}' }
         run: |
-          if bash src/tools/worklock.sh wait gpt "책방 친구 연구 PR #$PRN 자동 반영" 25; then echo "locked=true" >> "$GITHUB_OUTPUT"; else echo "locked=false" >> "$GITHUB_OUTPUT"; exit 1; fi
+          if bash src/tools/worklock.sh wait gpt "책방 친구 연구 PR #$PRN 자동 반영" 25; then echo "locked=true" >> "$GITHUB_OUTPUT"; else echo "locked=false" >> "$GITHUB_OUTPUT"; bash src/tools/worklock.sh leave gpt || true; exit 1; fi  # 실행마다 host가 달라 칸을 다시 쓰지 않음 → 못 잡으면 바로 뺌(먼저 설 칸이 30분 동안 줄 맨 앞을 막지 않게)
       - id: merge
         name: 머리 커밋이 검사한 것과 같을 때만 squash 합침
         env: { GH_TOKEN: '${{ github.token }}', SHA: '${{ needs.gate.outputs.sha }}' }
