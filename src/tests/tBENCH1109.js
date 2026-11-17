@@ -26,7 +26,9 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
     const PUB = { st: { shop: { mode: 'anon', last: null } }, read: async (k, url, fn) => { const g = docOf(url); return { ...g, ...fn(g) }; } }; const getDoc = async (url) => docOf(url);
     window.__rnStatus = {};
     eval(code + '; window.__b = { benchOne, benchJob, benchFinish, kDayB, benchXnowClaim, benchXnowEnd, BXN };');
-    const B = window.__b; const day = B.kDayB(); const H = 3600e3; const iso = (ms) => new Date(ms).toISOString(); const D0 = Date.parse(day + 'T00:00:00+09:00'); const NOW = Date.now();
+    const B = window.__b; /* (kfail2 11/17) ⚡ 임시 회차(benchXnow_1109b)는 11/10 06:00 기한이 박힌 한 번짜리라 그 뒤 날짜엔 '기한 지남'으로 끝나는 것이 맞는 동작 — 시험이 그 기한 안에서만 돌게 짜여 11/10 뒤 늘 실패했음 · 먼저 기한 지남 동작을 확인하고, 아래 ③은 기한 안(지금+하루)으로 옮겨 그 동작을 그대로 시험 */
+    const expC = await B.benchXnowClaim('logger', { netOk: true }); window.__bxExp = { expC, gone: !!(store.prd_jobs && store.prd_jobs[B.BXN.id]) }; B.BXN.until = Date.now() + 24 * 3600e3;
+    const day = B.kDayB(); const H = 3600e3; const iso = (ms) => new Date(ms).toISOString(); const D0 = Date.parse(day + 'T00:00:00+09:00'); const NOW = Date.now();
     const ids = (base, n) => Array.from({ length: n }, (_, i) => String(base + i));
     const BIG = '100', S1 = '200', S2 = '300';
     const stFull = (st, en, lp) => ({ day: iso(st).slice(0, 10), runAt: iso(st), endAt: iso(en), completeEndAt: iso(en), okEndAt: iso(en), okRunAt: iso(st), readEndAt: iso(en), chunks: 0, lastPage: lp, rows: { size: ROWS, at: nowIso() } });
@@ -58,7 +60,7 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
     reset(); col('prd_jobs')['benchForce'] = { startedAt: iso(D0 - 24 * H + 5 * 60e3), list: [BIG, S1, S2], done: true, doneAt: iso(D0 - 20 * H), by: 'LOGGER', fin: {}, failed: [] }; col('bench_state')[S1] = stFull(D0 - 6 * H, D0 - 5 * H, 2); col('bench_state')[S2] = stFull(D0 - 6 * H, D0 - 5 * H, 2); col('bench_state')[BIG] = { ...stFull(D0 - 8 * H, D0 - 4 * H, 40), prog: { startedAt: T0big, page: 11, at: nowIso() } }; /* 🩺 30시간에 안 걸리게 */
     const rn = await B.benchJob({ force: true, resume: true }); const nrd = READS.length; READS.length = 0;
     const rx = await B.benchJob({ force: true, resume: true, xnow: true }); { const first = []; for (const [sc] of READS) if (!first.includes(sc)) first.push(sc); out.x = { rn, nrd, rx: rx === undefined ? 'done' : rx, first, bigFrom1: READS.filter(([sc, pg]) => sc === BIG && pg === 1).length, title: (window.__rnStatus.ms || {}).title || null }; }
-    return out; }, { code });
+    out.exp = window.__bxExp; return out; }, { code });
   console.log(JSON.stringify(R, null, 1).slice(0, 5000));
   ok(R.a1.r === 'partial' && !R.a1.done && R.a1.page === 11 && R.a1.days === 0 && R.a1.last && R.a1.last.fail, `①-1 자리 찾기 중 쪽을 못 받으면 회차를 끝내지 않고 11쪽 자리 그대로(${R.a1.r} · ${R.a1.page}쪽 · 회차 기록 ${R.a1.days})`);
   ok(R.a2.r === 'partial' && !R.a2.done && R.a2.page === 11 && R.a2.days === 0 && R.a2.last && R.a2.last.net && !R.a2.last.lost, `①-2 찾는 동안 테더링 길이 막혔으면 '못 찾음'으로 끝내지 않음(${R.a2.r} · ${R.a2.last && R.a2.last.net})`);
@@ -72,4 +74,5 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
   ok(R.x.rn === 'skip' && R.x.nrd === 0, `③ (비교) 평소 이어 읽기는 어제 바퀴가 끝났으면 바로 끝(${R.x.rn})`);
   ok(R.x.rx === 'done' && R.x.first.join(',') === '200,300,100' && R.x.bigFrom1 === 0, `③ 임시 회차는 오늘 못 읽은 판매자 모두 — 작은숍1 → 작은숍2 → 큰 숍(저장된 자리부터) · ⏭ 건너뛰기 무시(${R.x.first.join(' → ')})`);
   ok(/임시 회차/.test(R.x.title || ''), `③ 수집기 진행 표시 제목: ${R.x.title}`);
+  ok(R.exp && !R.exp.expC.go && R.exp.expC.final && /기한/.test(R.exp.expC.why) && !R.exp.gone, `③ 기한(11/10 06:00)이 지난 뒤엔 임시 회차를 잡지 않고 끝(문서도 안 만듦 · ${JSON.stringify(R.exp)})`);
   await br.close(); console.log(bad ? `❌ tBENCH1109 실패 ${bad}` : '✓ tBENCH1109 통과'); process.exit(bad ? 1 : 0); })();

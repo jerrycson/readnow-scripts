@@ -281,7 +281,7 @@ await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) 
   const up2 = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const sh = document.getElementById('sheet'); const cmds = () => Object.values(window.__FS.shp_cmds || {}).filter((x) => x.type === 'prdEdit' && x.listingKey === window.__lid && x.ch && x.ch.state === '판매중');
     sh.querySelector('[data-bqupal]').click(); await Wt(600); o.once = cmds().length === 0; sh.querySelector('[data-bqupal]').click(); await Wt(800); o.cmd = cmds().length === 1;
     localStorage.setItem('rn-c2seen', '1'); localStorage.setItem('rn-device', 'HOME'); /* (rel4b · y24ops4) 예스24를 맡은 PC(기본 HOME)에서 = 이 PC 번외로 */ openLedger(); await Wt(500); const by = document.querySelector('[data-bqupy]'); o.alPend = /다시 판매중 반영 기다림/.test((document.querySelector('#bqup_card') || {}).textContent || ''); by.click(); await Wt(600); document.querySelector('[data-bqupy]').click(); await Wt(900);
-    o.run = /번외 수집기가 판매재개하는 중/.test((document.querySelector('#bqup_card') || {}).textContent || ''); return o; });
+    /* (kfail2 11/17) 공용 맡긴 일 줄(pend2 · y24PRid)이 있으면 그 줄이 먼저 그려져 ledY24RunHtml의 같은 진행 글 「번외 수집기가 예스24에서 고치는 중」이 나옴(옛 이 기기 전용 글 「…판매재개하는 중」은 공용 줄이 없을 때만) — 둘 다 ⏳ 진행 줄 */ o.run = /번외 수집기가 (판매재개하는|예스24에서 고치는) 중/.test((document.querySelector('#bqup_card') || {}).textContent || ''); return o; });
   const put = C2.puts[0] && C2.puts[0].rows[0];
   ok(up.alert && up.card && up.order && up.btns, '🔁 입금 전 취소 → 홈 알림 「다시 올릴 일 1건」 · 🧾 🛠 처리할 일(🤖 자동 내림 카드 아래)에 카드 · 알라딘·예스24 단추', up);
   ok(up2.once && up2.cmd && up2.alPend, '🟥 알라딘 다시 판매중: 한 번은 아무것도 안 함 · 두 번째에 샵매니저 판매중 맡김(shp_cmds prdEdit) → ⏳ 반영 기다림', up2);

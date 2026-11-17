@@ -27,7 +27,7 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
     const PUB = { st: { shop: { mode: 'anon', last: null } }, read: async (k, url, fn) => { const g = docOf(url); return { ...g, ...fn(g) }; } }; const getDoc = async (url) => docOf(url);
     window.__rnStatus = {};
     eval(code + '; window.__b = { benchOne, benchJob, benchFinish, kDayB, benchXnowClaim, benchXnowEnd, BXN, benchXnowAfter, benchAwayStep, setCfg: (c) => { BENCH_CFG = c; } };');
-    const B = window.__b; const day = B.kDayB(); const H = 3600e3; const iso = (ms) => new Date(ms).toISOString(); const D0 = Date.parse(day + 'T00:00:00+09:00'); const NOW = Date.now();
+    const B = window.__b; B.BXN.until = Date.now() + 24 * 3600e3; /* (kfail2 11/17) 임시 회차는 11/10 06:00 기한이 박힌 한 번짜리라 그 뒤 날짜엔 모두 '기한 지남'이 맞는 동작 — 시험이 기한 안에서만 돌게 짜여 11/10 뒤 ①의 3항목이 늘 실패했음 · 기한 안(지금+하루)으로 옮겨 같은 동작을 시험(기한 지남 판정은 아래 late 항목과 tBENCH1109가 따로 확인) */ const day = B.kDayB(); const H = 3600e3; const iso = (ms) => new Date(ms).toISOString(); const D0 = Date.parse(day + 'T00:00:00+09:00'); const NOW = Date.now();
     const ids = (base, n) => Array.from({ length: n }, (_, i) => String(base + i));
     const BIG = '100', S1 = '200', S2 = '300';
     const stFull = (st, en, lp) => ({ day: iso(st).slice(0, 10), runAt: iso(st), endAt: iso(en), completeEndAt: iso(en), okEndAt: iso(en), okRunAt: iso(st), readEndAt: iso(en), chunks: 0, lastPage: lp, rows: { size: ROWS, at: nowIso() } });
