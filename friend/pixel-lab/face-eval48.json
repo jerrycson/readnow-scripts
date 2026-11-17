@@ -1,0 +1,1569 @@
+{
+  "round": 48,
+  "frozen": "d8c2a553f88e20b5d1d3102418e436d78963499ce4cc47588c04882f118adab1",
+  "unit": "실제 48px 좌표 거리. 위눈꺼풀 또는 입선만 제거해 색 채널 차이가 8 이상인 화소 중심을 취했다. 눈·입 정합은 부위마다 다르다.",
+  "cases": {
+    "F02": {
+      "parameters": {
+        "width": 1.12,
+        "tilt": -0.12,
+        "wrap": 0.65
+      },
+      "quality": {
+        "parts": 2,
+        "vertices": 360,
+        "triangles": 528,
+        "flips": 0,
+        "minArea": 1,
+        "minOrientation": 0.999,
+        "skin": true
+      },
+      "trialCount": 18,
+      "training": {
+        "params": {
+          "width": 1.12,
+          "tilt": -0.12,
+          "wrap": 0.65
+        },
+        "rows": [
+          {
+            "key": "설정2",
+            "errors": [
+              0.384,
+              1.04,
+              1.074
+            ],
+            "width": 0.321,
+            "count": 11,
+            "score": 1.0895
+          },
+          {
+            "key": "설정2",
+            "errors": [
+              0.472,
+              1.131,
+              1.213
+            ],
+            "width": 0.526,
+            "count": 9,
+            "score": 1.3595
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              0.987,
+              0.636,
+              0.876
+            ],
+            "width": 0.138,
+            "count": 10,
+            "score": 0.9434
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              0.393,
+              1.151,
+              0.957
+            ],
+            "width": 0.776,
+            "count": 10,
+            "score": 1.4545
+          }
+        ],
+        "meanChange": -0.6693,
+        "worst": 0.1314,
+        "objective": -0.6167
+      },
+      "worstTrial": {
+        "params": {
+          "width": 1.36,
+          "tilt": 0,
+          "wrap": 0.65
+        },
+        "rows": [
+          {
+            "key": "설정2",
+            "errors": [
+              1.457,
+              1.04,
+              0.979
+            ],
+            "width": 2.23,
+            "count": 14,
+            "score": 2.9427
+          },
+          {
+            "key": "설정2",
+            "errors": [
+              2.364,
+              1.183,
+              1.223
+            ],
+            "width": 3.501,
+            "count": 14,
+            "score": 4.3908
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              2.1,
+              0.636,
+              0.64
+            ],
+            "width": 2.233,
+            "count": 14,
+            "score": 2.9117
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              1.326,
+              1.151,
+              1.881
+            ],
+            "width": 2.87,
+            "count": 14,
+            "score": 3.7487
+          }
+        ],
+        "meanChange": 1.6175,
+        "worst": 3.1627,
+        "objective": 2.8826
+      },
+      "views": [
+        {
+          "key": "설정2",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face2.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "used": true,
+          "newAfterFreeze": false,
+          "target": "eyes",
+          "near": 0,
+          "expression": "다문 입·가운데가 약간 높음",
+          "eyes": {
+            "camera": {
+              "yaw": 6,
+              "pitch": 3.5,
+              "roll": 4.806,
+              "scale": 195.887,
+              "rms": 5.427,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 눈꺼풀과 먼 눈 미사용"
+            },
+            "before": [
+              {
+                "pixels": 9,
+                "errors": [
+                  1.142,
+                  0.788,
+                  1.074
+                ],
+                "mean": 1.001,
+                "spanError": -0.759,
+                "span": 4.07,
+                "targetSpan": 4.829,
+                "riseError": -0.163
+              },
+              {
+                "pixels": 9,
+                "errors": [
+                  1.616,
+                  1.599,
+                  1.665
+                ],
+                "mean": 1.627,
+                "spanError": -0.429,
+                "span": 3.986,
+                "targetSpan": 4.415,
+                "riseError": 0.006
+              }
+            ],
+            "after": [
+              {
+                "pixels": 11,
+                "errors": [
+                  0.384,
+                  1.04,
+                  1.074
+                ],
+                "mean": 0.833,
+                "spanError": 0.321,
+                "span": 5.15,
+                "targetSpan": 4.829,
+                "riseError": -1.076
+              },
+              {
+                "pixels": 7,
+                "errors": [
+                  1.616,
+                  1.599,
+                  1.205
+                ],
+                "mean": 1.473,
+                "spanError": -0.513,
+                "span": 3.902,
+                "targetSpan": 4.415,
+                "riseError": 0.504
+              }
+            ]
+          },
+          "pixelsChanged": 10,
+          "outlineChanged": 0,
+          "mouth": {
+            "camera": {
+              "yaw": 6.75,
+              "pitch": 3.5,
+              "roll": 4.602,
+              "scale": 192.703,
+              "rms": 5.296,
+              "method": "두 홍채·코·턱·귀/양턱, 입 제외"
+            },
+            "before": {
+              "pixels": 4,
+              "errors": [
+                0.919,
+                1.447,
+                1.805
+              ],
+              "mean": 1.39,
+              "spanError": 0.887,
+              "span": 2.99,
+              "targetSpan": 2.104,
+              "riseError": 0.1
+            },
+            "after": {
+              "pixels": 4,
+              "errors": [
+                0.919,
+                1.447,
+                1.805
+              ],
+              "mean": 1.39,
+              "spanError": 0.887,
+              "span": 2.99,
+              "targetSpan": 2.104,
+              "riseError": 0.1
+            }
+          },
+          "otherRegistration": {
+            "camera": {
+              "yaw": 22.25,
+              "pitch": -11,
+              "roll": 7.318,
+              "scale": 201.758,
+              "rms": 5.178,
+              "method": "두 홍채·코·입중앙으로 맞춘 이전 구도"
+            },
+            "before": {
+              "pixels": 9,
+              "errors": [
+                0.885,
+                1.131,
+                0.713
+              ],
+              "mean": 0.91,
+              "spanError": 0.398,
+              "span": 5.087,
+              "targetSpan": 4.689,
+              "riseError": 0.141
+            },
+            "after": {
+              "pixels": 9,
+              "errors": [
+                0.472,
+                1.131,
+                1.213
+              ],
+              "mean": 0.939,
+              "spanError": 0.526,
+              "span": 5.214,
+              "targetSpan": 4.689,
+              "riseError": -0.851
+            }
+          }
+        },
+        {
+          "key": "설정4",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face4.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "used": true,
+          "newAfterFreeze": false,
+          "target": "eyes",
+          "near": 0,
+          "expression": "다문 짧은 입",
+          "eyes": {
+            "camera": {
+              "yaw": 47,
+              "pitch": -5.25,
+              "roll": -6.06,
+              "scale": 151.134,
+              "rms": 10.021,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 회전 탐색 경계라 기존 구도 고정"
+            },
+            "before": [
+              {
+                "pixels": 8,
+                "errors": [
+                  1.065,
+                  0.636,
+                  1.983
+                ],
+                "mean": 1.228,
+                "spanError": -1.745,
+                "span": 3.978,
+                "targetSpan": 5.723,
+                "riseError": 0.193
+              },
+              {
+                "pixels": 2,
+                "errors": [
+                  1.794,
+                  2.307,
+                  2.886
+                ],
+                "mean": 2.329,
+                "spanError": -1.152,
+                "span": 0.994,
+                "targetSpan": 2.146,
+                "riseError": 1.146
+              }
+            ],
+            "after": [
+              {
+                "pixels": 10,
+                "errors": [
+                  0.987,
+                  0.636,
+                  0.876
+                ],
+                "mean": 0.833,
+                "spanError": 0.138,
+                "span": 5.861,
+                "targetSpan": 5.723,
+                "riseError": -0.018
+              },
+              {
+                "pixels": 2,
+                "errors": [
+                  1.794,
+                  2.307,
+                  2.886
+                ],
+                "mean": 2.329,
+                "spanError": -1.152,
+                "span": 0.994,
+                "targetSpan": 2.146,
+                "riseError": 1.146
+              }
+            ]
+          },
+          "pixelsChanged": 7,
+          "outlineChanged": 0,
+          "mouth": {
+            "camera": {
+              "yaw": 51.75,
+              "pitch": 6.5,
+              "roll": 0.737,
+              "scale": 158.579,
+              "rms": 8.516,
+              "method": "두 홍채·코·턱·귀/양턱, 입 제외"
+            },
+            "before": {
+              "pixels": 2,
+              "errors": [
+                0.901,
+                0.688,
+                0.571
+              ],
+              "mean": 0.72,
+              "spanError": -0.364,
+              "span": 1,
+              "targetSpan": 1.363,
+              "riseError": 0.524
+            },
+            "after": {
+              "pixels": 2,
+              "errors": [
+                0.901,
+                0.688,
+                0.571
+              ],
+              "mean": 0.72,
+              "spanError": -0.364,
+              "span": 1,
+              "targetSpan": 1.363,
+              "riseError": 0.524
+            }
+          },
+          "otherRegistration": {
+            "camera": {
+              "yaw": 47,
+              "pitch": -5.25,
+              "roll": -6.06,
+              "scale": 170.071,
+              "rms": 7.164,
+              "method": "두 홍채·코·입중앙으로 맞춘 이전 구도"
+            },
+            "before": {
+              "pixels": 8,
+              "errors": [
+                1.355,
+                1.151,
+                1.025
+              ],
+              "mean": 1.177,
+              "spanError": -1.108,
+              "span": 3.978,
+              "targetSpan": 5.085,
+              "riseError": 0.014
+            },
+            "after": {
+              "pixels": 10,
+              "errors": [
+                0.393,
+                1.151,
+                0.957
+              ],
+              "mean": 0.834,
+              "spanError": 0.776,
+              "span": 5.861,
+              "targetSpan": 5.085,
+              "riseError": -0.198
+            }
+          }
+        },
+        {
+          "key": "설정3",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara2_face3.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-5/",
+          "used": false,
+          "newAfterFreeze": false,
+          "target": "eyes",
+          "near": 1,
+          "expression": "다문 측면 입",
+          "eyes": {
+            "camera": {
+              "yaw": -94,
+              "pitch": 4.5,
+              "roll": -2.022,
+              "scale": 164.088,
+              "rms": 1.381,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 눈꺼풀과 먼 눈 미사용"
+            },
+            "before": [
+              null,
+              {
+                "pixels": 6,
+                "errors": [
+                  0.89,
+                  0.407,
+                  1.288
+                ],
+                "mean": 0.862,
+                "spanError": -1.39,
+                "span": 2.069,
+                "targetSpan": 3.459,
+                "riseError": 0.27
+              }
+            ],
+            "after": [
+              null,
+              {
+                "pixels": 7,
+                "errors": [
+                  0.89,
+                  0.407,
+                  0.892
+                ],
+                "mean": 0.73,
+                "spanError": -0.355,
+                "span": 3.104,
+                "targetSpan": 3.459,
+                "riseError": 1.734
+              }
+            ]
+          },
+          "pixelsChanged": 6,
+          "outlineChanged": 0,
+          "mouth": {
+            "camera": {
+              "yaw": -94.5,
+              "pitch": 4.75,
+              "roll": -2.139,
+              "scale": 164.446,
+              "rms": 1.406,
+              "method": "보이는 홍채·코·턱·귀, 입 제외"
+            },
+            "before": {
+              "pixels": 1,
+              "errors": [
+                0.8,
+                0.799,
+                0.979
+              ],
+              "mean": 0.859,
+              "spanError": -0.986,
+              "span": 0,
+              "targetSpan": 0.986,
+              "riseError": -0.329
+            },
+            "after": {
+              "pixels": 1,
+              "errors": [
+                0.8,
+                0.799,
+                0.979
+              ],
+              "mean": 0.859,
+              "spanError": -0.986,
+              "span": 0,
+              "targetSpan": 0.986,
+              "riseError": -0.329
+            }
+          },
+          "otherRegistration": {
+            "camera": {
+              "yaw": -90,
+              "pitch": 0,
+              "roll": 0,
+              "scale": 155.244,
+              "rms": 2.264,
+              "method": "원화 쪽 정측면 고정"
+            },
+            "before": {
+              "pixels": 6,
+              "errors": [
+                0.614,
+                0.204,
+                0.704
+              ],
+              "mean": 0.507,
+              "spanError": -0.656,
+              "span": 3,
+              "targetSpan": 3.656,
+              "riseError": -0.196
+            },
+            "after": {
+              "pixels": 8,
+              "errors": [
+                1.044,
+                0.204,
+                0.823
+              ],
+              "mean": 0.69,
+              "spanError": 0.344,
+              "span": 4,
+              "targetSpan": 3.656,
+              "riseError": 1.304
+            }
+          }
+        },
+        {
+          "key": "2-2",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/09/02_02.jpg",
+          "sourcePage": "https://frieren-anime.jp/story/1st/ep02/",
+          "used": false,
+          "newAfterFreeze": true,
+          "target": "eyes",
+          "near": 1,
+          "expression": "입을 살짝 연 낮은 사선",
+          "eyes": {
+            "camera": {
+              "yaw": -9,
+              "pitch": -10,
+              "roll": -0.46,
+              "scale": 257.256,
+              "rms": 6.949,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 눈꺼풀과 먼 눈 미사용"
+            },
+            "before": [
+              {
+                "pixels": 7,
+                "errors": [
+                  1.855,
+                  0.985,
+                  0.297
+                ],
+                "mean": 1.046,
+                "spanError": -1.663,
+                "span": 3,
+                "targetSpan": 4.663,
+                "riseError": 0.985
+              },
+              {
+                "pixels": 10,
+                "errors": [
+                  0.231,
+                  0.303,
+                  0.491
+                ],
+                "mean": 0.342,
+                "spanError": -0.135,
+                "span": 5.008,
+                "targetSpan": 5.143,
+                "riseError": 0.548
+              }
+            ],
+            "after": [
+              {
+                "pixels": 11,
+                "errors": [
+                  0.474,
+                  0.985,
+                  0.795
+                ],
+                "mean": 0.751,
+                "spanError": 0.329,
+                "span": 4.992,
+                "targetSpan": 4.663,
+                "riseError": -0.031
+              },
+              {
+                "pixels": 10,
+                "errors": [
+                  1.173,
+                  0.79,
+                  1.55
+                ],
+                "mean": 1.171,
+                "spanError": 0.881,
+                "span": 6.024,
+                "targetSpan": 5.143,
+                "riseError": 2.54
+              }
+            ]
+          },
+          "pixelsChanged": 14,
+          "outlineChanged": 0,
+          "mouth": {
+            "camera": {
+              "yaw": -9.5,
+              "pitch": -9.5,
+              "roll": -0.342,
+              "scale": 260.251,
+              "rms": 6.889,
+              "method": "두 홍채·코·턱·귀/양턱, 입 제외"
+            },
+            "before": {
+              "pixels": 5,
+              "errors": [
+                0.616,
+                0.544,
+                0.19
+              ],
+              "mean": 0.45,
+              "spanError": 0.424,
+              "span": 3,
+              "targetSpan": 2.575,
+              "riseError": -0.086
+            },
+            "after": {
+              "pixels": 5,
+              "errors": [
+                0.616,
+                0.544,
+                0.19
+              ],
+              "mean": 0.45,
+              "spanError": 0.424,
+              "span": 3,
+              "targetSpan": 2.575,
+              "riseError": -0.086
+            }
+          },
+          "otherRegistration": {
+            "camera": {
+              "yaw": -3.5,
+              "pitch": -1,
+              "roll": -4.717,
+              "scale": 257.107,
+              "rms": 2.255,
+              "method": "두 홍채·코·입중앙으로 맞춘 이전 구도"
+            },
+            "before": {
+              "pixels": 7,
+              "errors": [
+                1.577,
+                0.644,
+                1.446
+              ],
+              "mean": 1.222,
+              "spanError": -0.08,
+              "span": 5.065,
+              "targetSpan": 5.146,
+              "riseError": 0.173
+            },
+            "after": {
+              "pixels": 9,
+              "errors": [
+                1.577,
+                0.557,
+                0.632
+              ],
+              "mean": 0.922,
+              "spanError": 0.999,
+              "span": 6.144,
+              "targetSpan": 5.146,
+              "riseError": 1.088
+            }
+          }
+        }
+      ],
+      "fixedViews": [
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 5,
+          "outline": 0
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 192,
+          "changed": 22,
+          "outline": 0
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 10,
+          "outline": 0
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 192,
+          "changed": 51,
+          "outline": 0
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 12,
+          "outline": 0
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 192,
+          "changed": 67,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 6,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 192,
+          "changed": 47,
+          "outline": 0
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 4,
+          "outline": 0
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 192,
+          "changed": 21,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": -23,
+          "size": 48,
+          "changed": 10,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": -23,
+          "size": 192,
+          "changed": 45,
+          "outline": 1
+        }
+      ]
+    },
+    "M01": {
+      "parameters": {
+        "width": 1.32,
+        "smile": 0.005,
+        "curve": 0.4
+      },
+      "quality": {
+        "parts": 3,
+        "vertices": 585,
+        "triangles": 912,
+        "flips": 0,
+        "minArea": 1,
+        "minOrientation": 0.993,
+        "skin": true
+      },
+      "trialCount": 18,
+      "training": {
+        "params": {
+          "width": 1.32,
+          "smile": 0.005,
+          "curve": 0.4
+        },
+        "rows": [
+          {
+            "key": "설정2",
+            "errors": [
+              1.336,
+              0.073,
+              1.106
+            ],
+            "width": 0.614,
+            "count": 8,
+            "score": 1.3295
+          },
+          {
+            "key": "설정2",
+            "errors": [
+              1.634,
+              1.789,
+              1.547
+            ],
+            "width": 0.27,
+            "count": 6,
+            "score": 1.8727
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              2.299,
+              1.954,
+              2.071
+            ],
+            "width": -0.331,
+            "count": 7,
+            "score": 2.3728
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              2.028,
+              1.37,
+              1.05
+            ],
+            "width": -1.255,
+            "count": 6,
+            "score": 2.4867
+          }
+        ],
+        "meanChange": -0.6603,
+        "worst": 0.0546,
+        "objective": -0.6385
+      },
+      "worstTrial": {
+        "params": {
+          "width": 1.5,
+          "smile": -0.004,
+          "curve": 0.4
+        },
+        "rows": [
+          {
+            "key": "설정2",
+            "errors": [
+              2.598,
+              0.813,
+              0.736
+            ],
+            "width": 3.236,
+            "count": 10,
+            "score": 3.9711
+          },
+          {
+            "key": "설정2",
+            "errors": [
+              2.015,
+              1.789,
+              1.547
+            ],
+            "width": 0.635,
+            "count": 7,
+            "score": 2.2917
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              2.299,
+              1.954,
+              2.071
+            ],
+            "width": -0.331,
+            "count": 7,
+            "score": 2.3728
+          },
+          {
+            "key": "설정4",
+            "errors": [
+              2.849,
+              2.003,
+              1.05
+            ],
+            "width": -1.971,
+            "count": 5,
+            "score": 3.5441
+          }
+        ],
+        "meanChange": 0.3692,
+        "worst": 2.3374,
+        "objective": 1.3042
+      },
+      "views": [
+        {
+          "key": "설정2",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face2.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "used": true,
+          "newAfterFreeze": false,
+          "target": "mouth",
+          "near": 1,
+          "expression": "이를 보이며 열린 웃음",
+          "eyes": {
+            "camera": {
+              "yaw": -41,
+              "pitch": 6.5,
+              "roll": 21.406,
+              "scale": 127.515,
+              "rms": 10.631,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 회전 탐색 경계라 기존 구도 고정"
+            },
+            "before": [
+              {
+                "pixels": 1,
+                "errors": [
+                  2.667,
+                  2.36,
+                  0.234
+                ],
+                "mean": 1.754,
+                "spanError": -2.755,
+                "span": 0,
+                "targetSpan": 2.755,
+                "riseError": 0.424
+              },
+              {
+                "pixels": 8,
+                "errors": [
+                  1.471,
+                  0.96,
+                  0.322
+                ],
+                "mean": 0.918,
+                "spanError": 0.44,
+                "span": 5.951,
+                "targetSpan": 5.511,
+                "riseError": -1.073
+              }
+            ],
+            "after": [
+              {
+                "pixels": 1,
+                "errors": [
+                  2.667,
+                  2.36,
+                  0.234
+                ],
+                "mean": 1.754,
+                "spanError": -2.755,
+                "span": 0,
+                "targetSpan": 2.755,
+                "riseError": 0.424
+              },
+              {
+                "pixels": 8,
+                "errors": [
+                  1.471,
+                  0.96,
+                  0.322
+                ],
+                "mean": 0.918,
+                "spanError": 0.44,
+                "span": 5.951,
+                "targetSpan": 5.511,
+                "riseError": -1.073
+              }
+            ]
+          },
+          "mouth": {
+            "camera": {
+              "yaw": -19.75,
+              "pitch": -5,
+              "roll": 15.53,
+              "scale": 151.108,
+              "rms": 9.113,
+              "method": "두 홍채·코·턱·귀/양턱, 입 제외"
+            },
+            "before": {
+              "pixels": 6,
+              "errors": [
+                1.336,
+                0.813,
+                1.269
+              ],
+              "mean": 1.139,
+              "spanError": -0.618,
+              "span": 3.854,
+              "targetSpan": 4.471,
+              "riseError": -1.612
+            },
+            "after": {
+              "pixels": 8,
+              "errors": [
+                1.336,
+                0.073,
+                1.106
+              ],
+              "mean": 0.838,
+              "spanError": 0.614,
+              "span": 5.085,
+              "targetSpan": 4.471,
+              "riseError": -2.308
+            }
+          },
+          "pixelsChanged": 9,
+          "outlineChanged": 0,
+          "otherRegistration": {
+            "camera": {
+              "yaw": -41,
+              "pitch": 6.5,
+              "roll": 21.406,
+              "scale": 168.067,
+              "rms": 5.221,
+              "method": "두 홍채·코·입중앙으로 맞춘 이전 구도"
+            },
+            "before": {
+              "pixels": 5,
+              "errors": [
+                1.788,
+                1.409,
+                1.547
+              ],
+              "mean": 1.581,
+              "spanError": -0.296,
+              "span": 3.724,
+              "targetSpan": 4.02,
+              "riseError": -0.952
+            },
+            "after": {
+              "pixels": 6,
+              "errors": [
+                1.634,
+                1.789,
+                1.547
+              ],
+              "mean": 1.657,
+              "spanError": 0.27,
+              "span": 4.29,
+              "targetSpan": 4.02,
+              "riseError": -0.304
+            }
+          }
+        },
+        {
+          "key": "설정4",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face4.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "used": true,
+          "newAfterFreeze": false,
+          "target": "mouth",
+          "near": 0,
+          "expression": "열린 웃음·비스듬한 입축",
+          "eyes": {
+            "camera": {
+              "yaw": 56.5,
+              "pitch": -17,
+              "roll": 14.597,
+              "scale": 151.954,
+              "rms": 11.4,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 회전 탐색 경계라 기존 구도 고정"
+            },
+            "before": [
+              {
+                "pixels": 9,
+                "errors": [
+                  1.786,
+                  1.669,
+                  2.055
+                ],
+                "mean": 1.837,
+                "spanError": 2.071,
+                "span": 5.806,
+                "targetSpan": 3.735,
+                "riseError": 0.04
+              },
+              {
+                "pixels": 2,
+                "errors": [
+                  0.957,
+                  1.312,
+                  1.688
+                ],
+                "mean": 1.319,
+                "spanError": -1.527,
+                "span": 0.252,
+                "targetSpan": 1.779,
+                "riseError": -1.067
+              }
+            ],
+            "after": [
+              {
+                "pixels": 9,
+                "errors": [
+                  1.786,
+                  1.669,
+                  2.055
+                ],
+                "mean": 1.837,
+                "spanError": 2.071,
+                "span": 5.806,
+                "targetSpan": 3.735,
+                "riseError": 0.04
+              },
+              {
+                "pixels": 2,
+                "errors": [
+                  0.957,
+                  1.312,
+                  1.688
+                ],
+                "mean": 1.319,
+                "spanError": -1.527,
+                "span": 0.252,
+                "targetSpan": 1.779,
+                "riseError": -1.067
+              }
+            ]
+          },
+          "mouth": {
+            "camera": {
+              "yaw": 43,
+              "pitch": -14,
+              "roll": 12.435,
+              "scale": 162.222,
+              "rms": 9.015,
+              "method": "두 홍채·코·턱·귀/양턱, 입 제외"
+            },
+            "before": {
+              "pixels": 5,
+              "errors": [
+                3.246,
+                1.954,
+                0.955
+              ],
+              "mean": 2.052,
+              "spanError": -2.069,
+              "span": 2.93,
+              "targetSpan": 4.998,
+              "riseError": -0.865
+            },
+            "after": {
+              "pixels": 7,
+              "errors": [
+                2.299,
+                1.954,
+                2.071
+              ],
+              "mean": 2.108,
+              "spanError": -0.331,
+              "span": 4.667,
+              "targetSpan": 4.998,
+              "riseError": 0.054
+            }
+          },
+          "pixelsChanged": 5,
+          "outlineChanged": 0,
+          "otherRegistration": {
+            "camera": {
+              "yaw": 56.5,
+              "pitch": -17,
+              "roll": 14.597,
+              "scale": 175.414,
+              "rms": 3.58,
+              "method": "두 홍채·코·입중앙으로 맞춘 이전 구도"
+            },
+            "before": {
+              "pixels": 5,
+              "errors": [
+                2.849,
+                2.003,
+                1.05
+              ],
+              "mean": 1.967,
+              "spanError": -1.971,
+              "span": 2.651,
+              "targetSpan": 4.622,
+              "riseError": -0.125
+            },
+            "after": {
+              "pixels": 6,
+              "errors": [
+                2.028,
+                1.37,
+                1.05
+              ],
+              "mean": 1.483,
+              "spanError": -1.255,
+              "span": 3.367,
+              "targetSpan": 4.622,
+              "riseError": 1.095
+            }
+          }
+        },
+        {
+          "key": "설정3",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/08/chara4_face3.jpg",
+          "sourcePage": "https://frieren-anime.jp/character/chara_group1/1-2/",
+          "used": false,
+          "newAfterFreeze": false,
+          "target": "mouth",
+          "near": 1,
+          "expression": "다문 측면 입",
+          "eyes": {
+            "camera": {
+              "yaw": -90,
+              "pitch": 0,
+              "roll": 0,
+              "scale": 138.151,
+              "rms": 6.234,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 회전 탐색 경계라 기존 구도 고정"
+            },
+            "before": [
+              null,
+              {
+                "pixels": 6,
+                "errors": [
+                  0.467,
+                  0.497,
+                  0.821
+                ],
+                "mean": 0.595,
+                "spanError": -0.108,
+                "span": 4,
+                "targetSpan": 4.108,
+                "riseError": 0.369
+              }
+            ],
+            "after": [
+              null,
+              {
+                "pixels": 6,
+                "errors": [
+                  0.467,
+                  0.497,
+                  0.821
+                ],
+                "mean": 0.595,
+                "spanError": -0.108,
+                "span": 4,
+                "targetSpan": 4.108,
+                "riseError": 0.369
+              }
+            ]
+          },
+          "mouth": {
+            "camera": {
+              "yaw": -100,
+              "pitch": -0.5,
+              "roll": -2.465,
+              "scale": 152.691,
+              "rms": 3.563,
+              "method": "보이는 홍채·코·턱·귀, 입 제외"
+            },
+            "before": {
+              "pixels": 2,
+              "errors": [
+                0.564,
+                1.32,
+                2.29
+              ],
+              "mean": 1.391,
+              "spanError": -1.656,
+              "span": 0.999,
+              "targetSpan": 2.655,
+              "riseError": 0.488
+            },
+            "after": {
+              "pixels": 1,
+              "errors": [
+                0.564,
+                1.814,
+                3.271
+              ],
+              "mean": 1.883,
+              "spanError": -2.655,
+              "span": 0,
+              "targetSpan": 2.655,
+              "riseError": 0.531
+            }
+          },
+          "pixelsChanged": 2,
+          "outlineChanged": 0,
+          "otherRegistration": {
+            "camera": {
+              "yaw": -90,
+              "pitch": 0,
+              "roll": 0,
+              "scale": 139.723,
+              "rms": 5.902,
+              "method": "원화 쪽 정측면 고정"
+            },
+            "before": {
+              "pixels": 2,
+              "errors": [
+                0.973,
+                1.763,
+                2.81
+              ],
+              "mean": 1.849,
+              "spanError": -1.902,
+              "span": 1,
+              "targetSpan": 2.902,
+              "riseError": 0.58
+            },
+            "after": {
+              "pixels": 2,
+              "errors": [
+                0.973,
+                1.763,
+                2.81
+              ],
+              "mean": 1.849,
+              "spanError": -1.902,
+              "span": 1,
+              "targetSpan": 2.902,
+              "riseError": 0.58
+            }
+          }
+        },
+        {
+          "key": "2-9",
+          "source": "https://frieren-anime.jp/wp-content/uploads/2023/09/02_09.jpg",
+          "sourcePage": "https://frieren-anime.jp/story/1st/ep02/",
+          "used": false,
+          "newAfterFreeze": true,
+          "target": "mouth",
+          "near": 0,
+          "expression": "입을 닫은 반대쪽 측면",
+          "eyes": {
+            "camera": {
+              "yaw": 96.25,
+              "pitch": 2.25,
+              "roll": 4.435,
+              "scale": 290.779,
+              "rms": 3.796,
+              "method": "가까운 홍채·코·입중앙·턱·귀/양턱, 눈꺼풀과 먼 눈 미사용"
+            },
+            "before": [
+              {
+                "pixels": 5,
+                "errors": [
+                  1.205,
+                  0.867,
+                  1.089
+                ],
+                "mean": 1.054,
+                "spanError": -0.034,
+                "span": 2.991,
+                "targetSpan": 3.025,
+                "riseError": -0.71
+              },
+              null
+            ],
+            "after": [
+              {
+                "pixels": 5,
+                "errors": [
+                  1.205,
+                  0.867,
+                  1.089
+                ],
+                "mean": 1.054,
+                "spanError": -0.034,
+                "span": 2.991,
+                "targetSpan": 3.025,
+                "riseError": -0.71
+              },
+              null
+            ]
+          },
+          "mouth": {
+            "camera": {
+              "yaw": 97,
+              "pitch": 1.5,
+              "roll": 4.167,
+              "scale": 292.001,
+              "rms": 3.915,
+              "method": "보이는 홍채·코·턱·귀, 입 제외"
+            },
+            "before": {
+              "pixels": 2,
+              "errors": [
+                0.342,
+                0.33,
+                0.709
+              ],
+              "mean": 0.46,
+              "spanError": -0.725,
+              "span": 0.925,
+              "targetSpan": 1.649,
+              "riseError": 0.712
+            },
+            "after": {
+              "pixels": 2,
+              "errors": [
+                0.342,
+                0.33,
+                0.709
+              ],
+              "mean": 0.46,
+              "spanError": -0.725,
+              "span": 0.925,
+              "targetSpan": 1.649,
+              "riseError": 0.712
+            }
+          },
+          "pixelsChanged": 1,
+          "outlineChanged": 0,
+          "otherRegistration": {
+            "camera": {
+              "yaw": 90,
+              "pitch": 0,
+              "roll": 0,
+              "scale": 273.865,
+              "rms": 8.744,
+              "method": "원화 쪽 정측면 고정"
+            },
+            "before": {
+              "pixels": 2,
+              "errors": [
+                0.915,
+                0.613,
+                0.171
+              ],
+              "mean": 0.566,
+              "spanError": -0.759,
+              "span": 1,
+              "targetSpan": 1.759,
+              "riseError": -0.382
+            },
+            "after": {
+              "pixels": 2,
+              "errors": [
+                0.858,
+                0.39,
+                0.171
+              ],
+              "mean": 0.473,
+              "spanError": -0.759,
+              "span": 1,
+              "targetSpan": 1.759,
+              "riseError": 0.618
+            }
+          }
+        }
+      ],
+      "fixedViews": [
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 0,
+          "outline": 0
+        },
+        {
+          "yaw": -90,
+          "pitch": 0,
+          "size": 192,
+          "changed": 5,
+          "outline": 0
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 3,
+          "outline": 0
+        },
+        {
+          "yaw": -45,
+          "pitch": 0,
+          "size": 192,
+          "changed": 35,
+          "outline": 0
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 48,
+          "changed": 7,
+          "outline": 0
+        },
+        {
+          "yaw": 0,
+          "pitch": 0,
+          "size": 192,
+          "changed": 58,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 48,
+          "changed": 7,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": 0,
+          "size": 192,
+          "changed": 57,
+          "outline": 2
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 48,
+          "changed": 2,
+          "outline": 0
+        },
+        {
+          "yaw": 90,
+          "pitch": 0,
+          "size": 192,
+          "changed": 7,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": -23,
+          "size": 48,
+          "changed": 7,
+          "outline": 0
+        },
+        {
+          "yaw": 45,
+          "pitch": -23,
+          "size": 192,
+          "changed": 61,
+          "outline": 0
+        }
+      ]
+    }
+  }
+}

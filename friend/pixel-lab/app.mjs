@@ -1,3 +1,4 @@
+import {tabRoute as studioTabRoute} from './studio-tab-route.mjs';
 import {paperForms} from './paperforms35.mjs';
 import {surfaceAxes,tipShapes} from './surface-settings35.mjs';
 import {ANGLES,HEADS,CANDIDATES,SPECIES,ACTIONS,APPEARANCE,createProfile,validateSettings,validName,recordExperience,experienceText,baseSamples,rotationStates,normalizeAngle,walkPosition,groundHeight} from './model.mjs';
@@ -71,7 +72,8 @@ function refresh(){
  if(tab==='bodies')renderBodies();if(tab==='angles')renderAngles();if(tab==='journal')renderJournal().catch(e=>message(e.message,true));if(presence.activeId)lifePaint();
 }
 function setAngles(y,p){yaw=normalizeAngle(y);pitch=normalizeAngle(p);refresh();}
-function changeTab(next){animationPlaying=false;$('#play').textContent='동작 재생';tab=next;renderToken++;stopAuto();$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===tab)));$$('.panel').forEach(p=>p.hidden=p.id!==tab);refresh();}
+const studioRoute=studioTabRoute({allowed:['turn','bodies','angles','catalog','animation','life','journal'],fallback:'turn',onPop:next=>{if(profile)changeTab(next,false);}});
+function changeTab(next,write=true){animationPlaying=false;$('#play').textContent='동작 재생';tab=next;renderToken++;stopAuto();$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===tab)));$$('.panel').forEach(p=>p.hidden=p.id!==tab);refresh();if(write)studioRoute.write(tab);}
 function renderCandidates(){const grid=$('#candidate-grid');grid.replaceChildren();for(const [id,title]of Object.entries(CANDIDATES)){
  const b=document.createElement('button');b.className='candidate';b.setAttribute('aria-label',title+' 채택');b.setAttribute('aria-pressed',String(settings().candidate===id));const c=document.createElement('canvas'),label=document.createElement('small');label.textContent=title;b.append(c,label);grid.append(b);paint(c,{...settings(),candidate:id,resolution:64},{yaw,pitch},1);
  b.onclick=safe(()=>commit({...profile,settings:{...settings(),candidate:id}},`구조 시안 ${id} 선택 · 수평 ${yaw}° / 수직 ${pitch}°`));
@@ -132,6 +134,7 @@ async function start(){
  if(!profiles.length){for(const [id,name,sex]of [['study-male','기본형 하나','male'],['study-female','기본형 둘','female']]){try{await store.commit(createProfile(id,name,sex),null,'새 기본형 연구 시작');}catch(e){if(e.name!=='ConflictError')throw e;}}profiles=await store.profiles();}
  const id=sessionStorage.getItem('readnow-pixel-selected');await loadProfile(profiles.some(p=>p.id===id)?id:profiles[0].id);$('#saved').textContent=`브라우저에 보관 중 · 연구 친구 ${profiles.length}명`;
  requestAnimationFrame(loop);
+ if(studioRoute.read()!=='turn')changeTab(studioRoute.read(),false);
  if(host.available)message('프로그램 통로를 감지했습니다. 이 화면은 연구 미리보기로 실행됩니다.');
 }
 start().catch(e=>{$('#saved').textContent='연구실을 시작하지 못했습니다';message(e.message,true);$$('button,select').forEach(b=>b.disabled=true);});

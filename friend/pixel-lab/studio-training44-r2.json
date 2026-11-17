@@ -1,0 +1,17 @@
+[
+  {
+    "id": "r44-face-oof-four-fold",
+    "episode": "r44-face-oof-four-fold",
+    "scope": "cohort",
+    "count": 96,
+    "source": "photo-oof44.json",
+    "task": "alignment",
+    "subject": "studio",
+    "method": "photo",
+    "unit": "px",
+    "metricBefore": 1.95470385,
+    "metricAfter": 0.32095886,
+    "note": "합성 96두상 4분할 · 55,296점 단면 지지거리 · 128px 환산",
+    "outcome": "measured"
+  }
+]

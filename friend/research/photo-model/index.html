@@ -7,12 +7,14 @@
   <style>
     :root{font-family:system-ui,"Malgun Gothic",sans-serif;color:#233a35;background:#f3f4ef;line-height:1.75}*{box-sizing:border-box}body{margin:0}main{max-width:1200px;margin:auto;padding:32px 24px 70px}a{color:#215d4e;text-underline-offset:3px}h1,h2,h3{line-height:1.4}h1{font-size:clamp(28px,4vw,42px);margin:12px 0}h2{font-size:25px;margin-top:0}h3{font-size:19px}p{margin:10px 0 18px}.eyebrow{font-size:14px;letter-spacing:.08em;color:#5b7068}.intro{max-width:800px;font-size:18px}.links,.steps{display:flex;gap:10px;flex-wrap:wrap}.links a,.steps a{border:1px solid #bacbc1;border-radius:8px;background:#fff;padding:8px 14px;text-decoration:none}.links .primary{background:#235c4c;color:white}.panel{margin-top:26px;padding:24px;background:#fff;border:1px solid #d8dfd5;border-radius:12px}.status{color:#5d6653;font-size:14px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px}.columns section{min-width:0}.engine{width:100%;height:920px;border:1px solid #bccac0;background:#f3f4ef;border-radius:8px}.journal{border-left:3px solid #85a08b;padding-left:20px}.journal time{font-size:14px;color:#526458}li{margin:8px 0}.paper{max-width:760px;white-space:pre-line}.source{font-size:14px}.research-note{border-top:1px solid #d9e0d7;padding-top:18px;margin-top:20px}details summary{cursor:pointer;font-weight:650}details[open] summary{margin-bottom:16px}.hint{border-left:3px solid #b19d6d;padding-left:16px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}@media(max-width:700px){main{padding:20px 14px 40px}.panel{padding:16px}.columns{grid-template-columns:1fr}.engine{height:1550px}.links a{flex-grow:1;text-align:center}}@media print{html,body,main{background:#fff!important}main>:not(#sources){display:none}#sources>:not(#notes){display:none}body{background:white;font-size:10pt;line-height:1.6}p{margin:7px 0 10px}h4{margin:12px 0 5px}.source{font-size:9pt}.eyebrow{font-size:9pt}.status{font-size:9pt}main{max-width:none;padding:0}.no-print,.engine{display:none}.panel{border:0;padding:0;margin:18pt 0}.paper{max-width:none}.research-note{break-before:page;border:0;margin:0;padding:0}.research-note h3{font-size:16pt}.research-note details{display:contents}.research-note summary{display:none}.research-note .paper{display:block!important}.columns{display:block}a{color:inherit}.journal{border-color:#777}h2,h3{break-after:avoid}@page{size:A4;margin:18mm 20mm}}
   </style>
+<style media="print">#sources>#studio-photo-local{display:block}</style>
+<link rel="stylesheet" href="photo-scores.css"><script type="module" src="photo-scores.mjs"></script>
 </head>
 <body>
 <main>
   <header>
     <a href="../hub/">연구실 목록</a> · <a href="../../pixel-lab/profile37.html">37차 · 사진 기준점과 사선 검증 일지</a>
-    <p class="eyebrow">책방 친구 · 사진 기반 모델링 · 36차</p>
+    <p class="eyebrow">책방 친구 · 36차 사진 작업대 · 44차 외형 학습</p>
     <h1>사진에서 입체로</h1>
     <p class="intro">같은 대상의 다섯 방향 사진을 맞추고, 보이는 외곽을 입체 표면으로 연결합니다. 얼굴부터 관찰하고 검증한 뒤 상체·하체·전신으로 넓힙니다.</p>
     <p class="status">현재 범위: 얼굴 외곽 · 교정 정사영 · 사진 투영. 얼굴 내부의 정밀 입체와 실제 카메라 추정은 연구 예정입니다.</p>
@@ -36,8 +38,16 @@
     <p class="hint">사진의 색이 입혀져 닮아 보여도 눈구멍·입술의 깊이까지 복원된 것은 아닙니다. 실측 두상 예시는 같은 실측 메시를 다섯 방향으로 그린 입력입니다. 독립적인 실사 촬영 다섯 장의 정확도 시험과 구별합니다.</p>
   </section>
 
+  <section class="panel" id="photo-ridge44"><h2>다섯 윤곽 사이의 사선 · 44차</h2>
+    <p><strong>목적</strong>은 정렬한 다섯 얼굴 윤곽으로 입력 사이의 사선에서 보이는 부피를 추정하는 것입니다. <strong>지금 단계는 0 · 후보</strong>입니다. 기본은 기존 외피이며, 사용자가 보정을 선택하면 같은 모델에서 두 결과를 비교할 수 있습니다.</p>
+    <p>사람이 같은 다섯 입력을 보고 독립적으로 조형한 기준선은 0건입니다. 인물 한 명의 공개 실측 메시를 렌더해 검사했고 실제 카메라 촬영 사진의 성능은 미검증입니다.</p>
+    <h3>기존 외피와 후보의 점수</h3><div data-photo-scores>교정한 실측의 전체 윤곽 거리 1.028 → 0.514px. 기울기·상자 정렬에서는 2.898 → 3.024px.</div>
+    <nav class="links"><a href="#photoEngine">실제 모델로 연습하기</a><a href="ridge44.html#study-log">일지·고친 점·다음 한 수</a><a href="ridge44.html">보류 조건별 표와 A4 원고</a><a href="photo-oof44.json">OOF 원자료</a><a href="../studio-engine/">내 실험실 엔진 연구</a></nav>
+  </section>
   <section id="photoEngine" class="panel" aria-labelledby="engineTitle">
     <h2 id="engineTitle">직접 모델링하고 같은 얼굴에 적용하기</h2>
+    <p>얼굴 판을 이 브라우저에 저장한 뒤 정밀조형에서 페른이나 힘멜의 원형과 나란히 볼 수 있습니다. 사진 시점을 맞춰 마스크 안의 입력 전경을 겹치고, 불투명도를 바꾸거나 사진 외형을 꺼서 원형으로 돌아갈 수 있습니다. 임의 사진의 가려진 얼굴 깊이와 상체·하체·전신은 자동 복원 대상에 포함되지 않습니다.</p>
+    <nav class="links" aria-label="사진 적용 비교"><a href="../../pixel-lab/studio-sculpt.html?case=F02#localReference">페른 정밀조형</a><a href="../../pixel-lab/studio-sculpt.html?case=M01#localReference">힘멜 정밀조형</a></nav>
     <p>이 페이지와 기존 관찰창은 <a href="../../pixel-lab/photo-engine36.html">같은 사진 모델링 엔진</a>을 엽니다. 「실제 두상 다섯 방향 불러오기」로 시험하거나 사용할 권리가 있는 프로젝트 사진을 방향별로 넣어 보세요. 보존판은 현재 브라우저에 저장됩니다.</p>
     <iframe class="engine" src="../../pixel-lab/photo-engine36.html" title="다섯 방향 사진 기반 얼굴 모델링 작업대"></iframe>
     <p class="source">좁은 화면에서 조작하기 어려우면 <a href="../../pixel-lab/photo-engine36.html" target="_blank" rel="noopener">작업대만 넓게 열기</a>를 이용하세요.</p>
@@ -45,6 +55,11 @@
 
   <section id="journal" class="panel" aria-labelledby="journalTitle">
     <h2 id="journalTitle">새 진전마다 남기는 일지</h2>
+    <article class="journal"><time datetime="2026-11-17">2026년 11월 17일 · 44차</time><h3>사선 단면 보정과 카메라 정렬</h3>
+      <p><strong>고친 점.</strong> 다섯 윤곽을 교차한 외피에 학습한 중간각의 경계를 더하고, 기기 판마다 적용한 버전을 기록했습니다. 별도 실측 메시의 교정 렌더 6개 모두에서 외곽 오차가 줄었습니다.</p>
+      <p><strong>남은 어려움.</strong> 같은 실측이라도 사진마다 기울기·배율이 다르면 전체 윤곽 거리 2.898 → 3.024px로 악화했습니다. 실제 촬영 입력에서 사람과 비교한 사례가 없습니다.</p>
+      <p><strong>다음 한 수.</strong> 촬영 위치와 렌즈를 교정한 다섯 실사진으로 사람이 독립 조형한 결과와 엔진 결과를 같은 보류 각도에서 채점합니다. <a href="ridge44.html#study-log">44차 판정과 실험 기록</a></p>
+    </article>
     <p>연구 원리에서 무엇을 가져왔고 실제로 무엇이 달라졌는지 함께 남깁니다. 앞으로의 실험은 결과가 나온 날짜에 추가하며, 실패·이전 판도 보존합니다.</p>
     <article class="journal"><time datetime="2026-11-17">2026-11-17 · 42차</time><h3>턱밑과 흉벽의 경계는 다른 원본에서도 맞는가</h3><p>페른의 측면 턱밑 후보를 새로운 두 작화에서 대조하고, 힘멜은 구도에 따라 개선 방향이 바뀌는 반례를 남겼습니다. 가슴은 흉벽으로 돌아가는 연결을 유지한 채 앞쪽 밑면을 조정하고, 같은 카메라와 팔 자세에서 관측선과 명암 경계를 따로 확인합니다. 기본형 자동 채택과 정밀 모델 완성으로 세지 않습니다.</p><a href="../../pixel-lab/round42.html#results">42차 실제 측정·원전·A4 원고</a> · <a href="../../pixel-lab/contour36.html?round=42&amp;case=F02">페른 턱밑 대조</a> · <a href="../../pixel-lab/contour36.html?round=42&amp;case=M01">힘멜 현행 기본과 반례</a> · <a href="../../pixel-lab/contour36.html?round=42&amp;case=W&amp;cell=B3">가슴 B3와 팔 자세</a></article>
     <article class="journal"><time datetime="2026-11-17">2026-11-17 · 41차</time><h3>코와 턱으로 맞춘 카메라에서 반대편 눈을 확인하기</h3><p>힘멜의 같은 얼굴을 고정하고 카메라를 다시 맞춘 뒤, 카메라를 고정하고 눈 주위 형상을 바꾸었습니다. 설정화에서 보이던 개선이 12화 측면에서는 되풀이되지 않았습니다. 얼굴 관찰창에서는 원화의 앞머리로 가려진 영역을 켜고 끌 수 있습니다. 가슴 관찰창은 사선과 측면의 모델 밑면을 원도판의 같은 위치에 겹칩니다.</p><a href="../../pixel-lab/round41.html#results">41차 측정과 채택 판단</a> · <a href="../../pixel-lab/contour36.html?round=41&amp;case=M01&amp;cell=%EC%84%A4%EC%A0%954">힘멜 4번 원화에서 카메라와 눈 형상 대조</a> · <a href="../../pixel-lab/contour36.html?round=41&amp;case=W&amp;cell=B3">가슴 B3 밑선 대조</a></article>
@@ -72,6 +87,15 @@
     <h2 id="sourcesTitle">원전 → 우리 적용 → 아직 모르는 것</h2>
     <p>각 자료에 한 줄, 한 문단, A4 한 페이지용 상세 원고를 붙였습니다. 상세 원고를 펼치거나 인쇄할 수 있습니다. 원전의 주장과 이번 구현·시험을 구분합니다.</p>
     <button id="print" class="no-print" type="button">상세 원고 인쇄 미리보기</button>
+    <article class="research-note" id="studio-photo-local"><p class="eyebrow">통합 실험실 · 입력 얼굴 외형</p><h3>내 참고그림을 정밀조형의 얼굴에 겹쳐 보기</h3><h4>한 줄 요약</h4><p>이 기기에 저장한 다섯 방향 얼굴 외형을 페른·힘멜의 오른쪽 모델에 적용하고, 입력 사진의 방향과 불투명도를 맞춰 원형과 비교할 수 있다.</p><h4>한 문단 요약</h4><p>Laurentini는 같은 시점에서 같은 윤곽을 만드는 물체들이 어떤 부분을 공유하는지 물었다. 외곽선으로 구한 입체 껍질과 실제 표면이 일치하는 부분을 식별할 수 있고, 보이는 윤곽에 영향을 주지 않는 오목한 곳은 구별할 수 없다고 설명했다. Matusik 등은 여러 영상의 윤곽에서 입체 껍질을 계산하고 그 표면을 입력 영상으로 표시했다. 이번 작업대는 브라우저가 저장한 외형을 정밀조형의 실제 얼굴 메시로 옮기고, 입력 전경은 촬영 방향이 맞을 때 별도의 겹침 층으로 보여 준다. 사진을 끄고 원형으로 돌아갈 수 있어 사진색이 주는 인상과 피부 좌표의 변화를 각각 시험할 수 있다.</p><details><summary>A4 한 페이지용 상세 원고</summary><h4>상세 설명</h4><div class="paper">정면에서는 윤곽이 같은 두 얼굴도 옆면에서 턱이 나오거나 들어가 보일 수 있다. 정면과 측면의 외곽이 모두 같아도 눈확이나 입술 사이 깊이가 다를 수 있다. Laurentini의 연구가 다루는 대상은 실루엣의 제약을 모두 만족하는 입체 껍질이다. Matusik 등은 색과 밝기를 가진 입력 영상에서 껍질을 그리는 방법을 제시했다. 여기서 얻을 수 있는 근거는 관측한 방향과 표면으로 확인 가능한 범위다. 사용자가 고른 임의 사진 다섯 장으로 동일 인물의 정밀 형상이나 촬영 렌즈를 알아냈다는 판정은 할 수 없다.
+
+기존 작업대는 얼굴의 정면·앞 사선·측면·뒤 사선·뒷면을 받아 128×128 전경 마스크를 구한다. 사용자는 중심·축척·각도를 조절하고 붓으로 마스크를 정정한다. 같은 높이에서 각 마스크가 허용하는 폭을 교차해 외형을 만들고, 붓 편집과 OBJ 내보내기로 이어진다. 이번에는 사진 투영 농도를 0~100%로 바꿀 수 있게 기존 깊이 검사를 거치는 표면 투영기에 연결했다. 같은 방향에서 투영을 껐을 때도 입체 외형은 계속 보인다. 사진 판은 같은 브라우저의 보존함에 두고, 저장 시각과 판을 골라 적용한다.
+
+정밀조형에서는 왼쪽의 기준 또는 후보 메시를 그대로 두고 오른쪽에서만 사진 외형을 적용한다. 머리 높이에 맞춰 각 띠의 둘레가 바뀌는 양을 옮긴 뒤, 원래 삼각면이 뒤집히지 않게 허용 변위 비율을 계산한다. 그 뒤에 기존 턱·볼 조형값과 목·턱 자세를 적용한다. 사용자가 사진 적용을 끄면 당시 선택한 기본형과 수동 조형값을 그대로 다시 렌더한다. 수동 편집을 공유하는 JSON에는 입력 사진과 기기 보존판을 넣지 않는다.
+
+입력 사진의 전경을 겹칠 때는 저장된 촬영 방위와 중심·축척을 읽고, 모델의 턱·정수리 높이와 머리 중심에 맞춰 정사영 화면에 놓는다. 사진 한 장이 입체의 반대쪽이나 고개를 꺾은 자세에도 딱 맞는 듯 보이지 않도록, 좌우·상하 각도나 목·턱 자세가 다르면 겹침 층은 숨긴다. «사진 시점 맞추기»를 누르면 양쪽 모델이 같은 방향과 중립 자세로 돌아온다. 이 등록은 눈구석이나 콧방울의 다점 재보정과 렌즈 왜곡 보정까지 수행하지 않는다. 상체·하체·전신으로의 자동 복원과 다른 기기로의 사진 복원은 지원하지 않는다.
+
+검증에는 사람이 찍힌 사진을 쓰지 않았다. 브라우저 안에서 방향마다 폭이 다른 타원과 색 표지를 그려 다섯 개의 합성 입력을 만들고, 실제 파일 입력·보존·형상 적용·끄기를 거쳤다. 오른쪽 메시가 달라지는 동안 왼쪽 캔버스의 화소가 동일한지, 적용을 끄면 두 캔버스가 다시 일치하는지, 카메라를 돌리면 사진만 숨는지 비교했다. 192×192 화면에서 같은 시점의 원형과 달라진 화소는 페른 3,835개, 힘멜 2,395개였다. 얇은 삼각면의 접힘을 제한한 뒤 허용된 사진 변위는 페른 19.4%, 힘멜 11.6%였다. 두 얼굴 모두 사진 외형을 끄면 원형 화소와 다시 일치했다. 합성 시험은 동작의 재현성을 확인한다. 실제 인물 다섯 촬영의 닮음이나 내부 구조 오차는 별도 실측이 필요하다. 원전의 도판이나 임의 사용자의 사진은 전재하지 않았다.</div></details><p class="source"><a href="https://doi.org/10.1109/34.273735">Laurentini, 1994</a> · <a href="https://doi.org/10.1145/344779.344951">Matusik 등, 2000</a></p></article>
     <div id="notes" aria-live="polite">연구 원고를 불러오는 중입니다.</div>
     <p class="source"><a href="../../pixel-lab/engine-notes36.json">연구 원고 데이터</a></p>
   </section>
