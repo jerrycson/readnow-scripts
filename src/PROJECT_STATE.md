@@ -20,7 +20,8 @@
 ## 동시 작업 규칙 (정범님 지시 2026-10-15 22:42 — 대화 세션과 예약 점검이 서로 덮지 않게)
 - **(2026-10-29) claude.ai/code 작업·세션도 고친 것은 언제나 main에 직접 push**(Claude Code의 기본값인 `claude/…` 가지 아님 — Pages·클라우드 배포·진단 길은 main만 봄). 저장소가 이미 받아져 있으면 clone 대신 pull.
 - 같은 저장소를 고치는 쪽은 둘 이상일 수 있음: 정범님과 실시간으로 하는 **대화 세션(chat)**, 매일 21:49 **전체 점검(auto-check)**, 주간 백업(backup) 등. 결과물은 늘 '방금 올라온 최신 판'을 녹여 내야 함.
-- 순서표 = `work-lock` 가지의 LOCK.json · 도구 `bash src/tools/worklock.sh get|take|beat|ask|clearask|release` (git push로만 바꿈 — 동시에 잡으면 하나만 성공).
+- 순서표 = `work-lock` 가지의 LOCK.json · 도구 `bash src/tools/worklock.sh get|status|take|beat|ask|clearask|release` (git push로만 바꿈 — 동시에 잡으면 하나만 성공).
+- **(11/17 lockq1) 기다리는 줄**: 부탁은 한 칸이 아니라 줄(LOCK.json `queue` — 칸마다 who·host·why·first 처음 기다린 때·at 마지막 새로 함). 표가 비면 줄 맨 앞(first가 가장 이른 살아 있는 칸 · 30분 넘게 새로 안 한 칸은 빠짐)만 잡음 — 늦게 온 쪽은 YIELD. `wait`는 1분마다 잡거나 내 칸의 at만 새로 함(first 그대로). `ask` 칸은 줄 맨 앞을 옛 꼴로 비춰 옛 대본도 그 차례를 지키고, 옛 대본이 적은 ask는 줄 맨 앞으로 받아들임. 사람 말로 보기 = `worklock.sh status`. 남의 차례를 뺏거나 남의 표를 놓는 길은 없음. 시험 tWORKLOCKQ1117.
 - 고치기 전에 `take <누구> "<하는 일>"` · 10분마다 `beat` · push까지 끝나면 `release <누구> "<한 일 · 커밋>"`. 30분 넘게 beat가 없으면 죽은 것으로 보고 넘겨받음.
 - **대화 세션이 먼저**: 점검이 잡고 있으면 대화 세션은 `ask chat "<까닭>"`을 남기고 정범님께 '점검이 ○○ 하는 중 — 마무리하면 바로 이어서 함'을 알림(그사이 읽기·준비만). 점검은 커밋 전·10분마다 `get`으로 ask를 보고, 있으면 지금 고치던 것만 마무리해 push·release한 뒤 대화 세션이 놓을 때까지 5분마다 get하며 읽기만 함(놓이면 다시 take · git pull 뒤 이어감). 대화 세션이 20분 넘게 못 받으면 최신을 pull해 녹여 내며 진행.
 - 점검이 잡고 있는데 대화 세션이 할 일이 점검과 다른 파일이면 기다리지 않고 해도 됨(push 전 rebase만 지킴).
