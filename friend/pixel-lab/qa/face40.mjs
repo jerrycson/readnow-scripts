@@ -19,6 +19,20 @@ function geometryFingerprint(scene){
  }
  return hash.digest('hex');
 }
+// Transcendental functions can differ in their last bits across JS runtimes.
+// Quantize only this cross-runtime fingerprint. The exact renderer and pixel tests run below.
+function portableGeometry(scene){
+ const seen=new Set(),hash=createHash('sha256');
+ for(const part of scene.parts){
+   if(seen.has(part.vertices))continue;seen.add(part.vertices);
+   const bytes=Buffer.alloc(part.vertices.length*24);
+   part.vertices.forEach((v,i)=>[...v.p,...v.n].forEach((value,j)=>{
+     bytes.writeInt32LE(Math.round(value*1e6+0.0001),i*24+j*4);
+   }));
+   hash.update(bytes);
+ }
+ return hash.digest('hex');
+}
 function difference(a,b){
  let count=0;for(let i=0;i<a.length;i+=4)if(Math.max(Math.abs(a[i]-b[i]),Math.abs(a[i+1]-b[i+1]),Math.abs(a[i+2]-b[i+2]))>=8)count++;
  return count;
@@ -29,7 +43,8 @@ for(const id of ['F02','M01']){
  const model=face36(s,atlas.find(v=>v.id===id),ref),s37=id==='F02'?correctFernChin(model.after,id,model,ref,.75):model.after;
  const sc=jaw39(face38(s37,id,model,ref),id,model),fingerprint=geometryFingerprint(sc),next=eye40(sc,id),record=data.cases[id],chin=sc.landmarks.chin[1];
  assert.equal(geometryFingerprint(sc),fingerprint);
- assert.equal(geometryFingerprint(next),record.candidateModelSha256);
+ const portable={"F02":"d124061298ed4c7d4d6e59c68bd2aa4ae3b71826a922bb36a0401821cf18f7e1","M01":"f080e00781ec1a9e5f5afe3552591559fba7da3914b094950aaf7e0b5b340ad1"};
+ assert.equal(portableGeometry(next),portable[id]);
  assert.strictEqual(eye40(sc,'F03'),sc);assert.equal(eye40Cases[id].strength,record.strength);
  assert(sc.parts.every((m,i)=>m.faces===next.parts[i].faces));
  assert(sc.parts[0].vertices.every((v,i)=>v.p[1]>=chin+.29||v===next.parts[0].vertices[i]));
