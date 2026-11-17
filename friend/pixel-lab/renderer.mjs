@@ -4,7 +4,7 @@ import {validateSettings,normalizeAngle} from './model.mjs';
 import {humanScene} from './anatomy.mjs';
 import {creatureScene} from './creatures.mjs';
 import {norm} from './geometry.mjs';
-import {materialLibrary,shade} from './materials.mjs';
+import {materialLibrary,shade} from './materials.mjs?ui=49-review-4c7e86d4';
 export function bodyParts(settings,phase=0,action='idle',study={}){const s=validateSettings(settings);return s.species==='human'?humanScene(s,phase,action,study):creatureScene(s,phase,action);}
 function rotation(yaw,pitch){
  const y=yaw*Math.PI/180,p=pitch*Math.PI/180,cy=Math.cos(y),sy=Math.sin(y),cp=Math.cos(p),sp=Math.sin(p);

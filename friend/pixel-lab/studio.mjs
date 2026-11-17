@@ -1,4 +1,4 @@
-import {studioTools,studioGroups} from './studio-catalog.mjs';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=49-review-4c7e86d4';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -100,4 +100,5 @@ async function refresh(){
     if(tools.find(t=>t.id===current)?.case)open(current);
   }catch{if(!edition)say('회차 목록을 다시 확인합니다. 보존 관찰창을 열었습니다.');}finally{refreshing=false;}
 }
+document.getElementById('buildReview').onclick=()=>open('acceptance');
 open(new URL(location.href).searchParams.get('tool'));refresh();document.addEventListener('visibilitychange',refresh);addEventListener('online',refresh);setInterval(refresh,15000);
