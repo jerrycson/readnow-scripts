@@ -18,6 +18,10 @@ import {fitResearchHead52} from './head-fit52.mjs';
 import {applyTorso53} from './torso53.mjs';
 import {candidateFace53} from './face53.mjs';
 import {editChest53} from './chest53.mjs';
+import {poseShoulders54} from './shoulder-rig54.mjs';
+import {poseJoinedPelvis53} from './pelvis-pose53.mjs';
+import {candidateFace54} from './face54.mjs';
+import {editChest54,poseReference54} from './chest54.mjs';
 async function load(name){
   const response=await fetch(new URL(name+'.json',import.meta.url));
   if(!response.ok)throw new Error(name+' 자료 '+response.status);
@@ -42,11 +46,17 @@ self.onmessage=async ({data})=>{
     const key=JSON.stringify(edit||{});
     if(key!==editKey){
       if(loaded.entry){
-        if(edit?.version==='tissue53')shape=editChest53(loaded,edit,editChestStudy50);
+        if(edit?.version==='tissue54')shape=editChest54(loaded,edit,editChestStudy50);
+        else if(edit?.version==='matched53')shape=poseReference54(loaded,edit,editChestStudy50);
+        else if(edit?.version==='tissue53')shape=editChest53(loaded,edit,editChestStudy50);
         else if(edit?.version==='lower51')shape=editChest51(loaded,edit,editChestStudy50);
         else if(id==='W'&&['floor52','lowerContact52'].includes(edit?.version)){
           shape=editChestStudy50(bodyStudy52(loaded,edit.version),{...edit,version:'candidate'});
         }else shape=editChestStudy50(loaded,edit);
+      }else if(['F02','M01'].includes(id)&&['face54','support54'].includes(edit?.version)){
+        loaded.faces54??=new Map();
+        if(!loaded.faces54.has(edit.version))loaded.faces54.set(edit.version,candidateFace54(loaded.model.round49,id,loaded.settings,edit.version==='face54'?'study':'support'));
+        shape=definitionScene({...loaded,model:{...loaded.model,round49:loaded.faces54.get(edit.version)}},edit);
       }else if(['F02','M01'].includes(id)&&['face53','field53'].includes(edit?.version)){
         loaded.faces53??=new Map();
         if(!loaded.faces53.has(edit.version))loaded.faces53.set(edit.version,candidateFace53(loaded.model.round49,id,loaded.settings,edit.version==='face53'?'study':'field'));
@@ -90,12 +100,20 @@ self.onmessage=async ({data})=>{
           loaded.researchHeads??=new Map();
           if(!loaded.researchHeads.has(donor.id))loaded.researchHeads.set(donor.id,createFaceStudy50(donor.id,{atlas,traces,fit}));
           const head=loaded.researchHeads.get(donor.id);
-          const hair=appearanceScene52(head,head.scene,{hair:appearance.hair});
+          let selectedHead=head.scene;
+          if(appearance.researchFaceVersion==='face54'&&['F02','M01'].includes(donor.id)){
+            head.candidate54??=candidateFace54(head.scene,donor.id,head.settings,'study');
+            selectedHead=head.candidate54;
+          }
+          const hair=appearanceScene52(head,selectedHead,{hair:appearance.hair});
           const body=appearanceScene52(loaded,shape,{muscularity:appearance.muscularity,adiposity:appearance.adiposity});
           shape=fitResearchHead52(loaded,body,head,hair);
         }else shape=appearanceScene52(loaded,shape,appearance);
-        shape=applyTorso53(loaded,shape,appearance);
+        shape=applyTorso53(loaded,shape,edit?.nativeHip?{...appearance,pelvisJoin53:true}:appearance);
       }
+      if(edit?.nativeHip&&!edit.appearance)shape=applyTorso53(loaded,shape,{pelvisJoin53:true});
+      if(edit?.nativeShoulder)shape=poseShoulders54(shape,edit.nativeShoulder);
+      if(edit?.nativeHip)shape=poseJoinedPelvis53(shape,edit.nativeHip);
       editKey=key;
     }
     if(data.single){

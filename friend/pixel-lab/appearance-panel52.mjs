@@ -27,6 +27,13 @@ export function mountAppearance52(host,publish,edition=52){
       const sex=id.split('-')[0],current=values.researchFace||'native';
       const entries=[['native','이 몸의 기본 얼굴'],...faceOptions50.filter(x=>x.sex===sex).map(x=>[x.id,x.label])];
       for(const [key,label] of entries)choices.append(choiceButton(key,label,key===current,()=>{change({researchFace:key});draw();}));
+      if(edition>=54&&['F02','M01'].includes(current)){
+        const controls=node('div');controls.className='choices';
+        for(const [key,label] of [['source','기존 얼굴'],['face54','54차 얼굴 시안']]){
+          controls.append(choiceButton(key,label,(values.researchFaceVersion||'source')===key,()=>{change({researchFaceVersion:key});draw();}));
+        }
+        choices.append(controls);
+      }
       return;
     }
     if(group==='body'){

@@ -18,8 +18,11 @@ export function mark(host,key){
   for(const b of host.querySelectorAll('button[data-key]'))b.setAttribute('aria-pressed',String(b.dataset.key===String(key)));
 }
 import {chestFits51} from './chest-fits51.mjs';
-import {mountAppearance52} from './appearance-panel52.mjs?v=53';
+import {mountAppearance52} from './appearance-panel52.mjs?v=54';
 import {supportsChest53} from './chest53.mjs';
+import {mountShoulder54} from './shoulder-panel54.mjs';
+import {mountHip54} from './hip-panel54.mjs';
+import {supportsChest54} from './chest54.mjs';
 export function editor(onEdit,edition=50){
   const records=new Map();
   const appearanceBox=document.createElement('section');appearanceBox.id='appearance52';appearanceBox.hidden=true;
@@ -28,6 +31,20 @@ export function editor(onEdit,edition=50){
     edit={...edit,appearance:{...appearance}};if(done)commit();onEdit();
   },edition):()=>{};
   let id, resolved=[], zoneKey=null, edit, last, back=[],forward=[], panel, dial;
+  const drawShoulder=edition>=54?mountShoulder54(el('nativeShoulder54'),(nativeShoulder,done)=>{
+    edit={...edit,nativeShoulder};if(done)commit();onEdit();
+  }):()=>{};
+  const drawHip=edition>=54?mountHip54(el('nativeHip54'),(nativeHip,done)=>{
+    edit={...edit,nativeHip};if(done)commit();onEdit();
+  }):()=>{};
+  let nativeGroup='shoulder';
+  function bodyJointGroup(key){
+    nativeGroup=key;mark(el('nativeJoints54'),key);
+    el('nativeShoulder54').hidden=el('nativeJoints54').hidden||key!=='shoulder';
+    el('nativeHip54').hidden=el('nativeJoints54').hidden||key!=='hip';
+    if(edit){drawShoulder(edit.nativeShoulder);drawHip(edit.nativeHip);}
+  }
+  if(edition>=54)buttons(el('nativeJoints54'),[['shoulder','어깨·팔'],['hip','골반·무릎']],bodyJointGroup);
   const kind=()=>isChestSubject(id)?'W':id;
   const region=()=>resolved.find(z=>z.key===zoneKey);
   const clone=x=>structuredClone(x);
@@ -39,6 +56,8 @@ export function editor(onEdit,edition=50){
     history();
   }
   function drawControls(){
+    if(!el('nativeShoulder54').hidden)drawShoulder(edit.nativeShoulder);
+    if(!el('nativeHip54').hidden)drawHip(edit.nativeHip);
     const z=region();el('surfaceControls').hidden=!z;
     if(z){
       panel.refresh();const labels=axes(kind());
@@ -83,7 +102,7 @@ export function editor(onEdit,edition=50){
   }
   function selectVersion(version){
     edit={...edit,version};
-    if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53'].includes(version)&&markerLevels50[id]?'rebound':'source';
+    if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53','matched53','tissue54'].includes(version)&&markerLevels50[id]?'rebound':'source';
     commit();drawControls();onEdit();
   }
   el('showNac').onchange=()=>marker({showNac:el('showNac').checked});
@@ -140,12 +159,19 @@ export function editor(onEdit,edition=50){
       if(edition>=52&&id==='W')options.push(['lowerContact52','52차 안·바깥 접선'],['floor52','하부 낮추기 · 보류']);
       if(edition>=53&&['F02','M01'].includes(id))options.push(['face53','53차 얼굴 표면 · 검토'],['field53','볼 지지면만 · 초기 시험']);
       if(edition>=53&&supportsChest53(id))options.push(['tissue53','53차 윤곽과 안쪽 피부 · 검토']);
+      if(edition>=54&&['F02','M01'].includes(id))options.push(['face54','54차 눈·입과 턱 비교'],['support54','54차 하관만']);
+      if(edition>=54&&supportsChest54(id))options.push(['matched53','53차 형상 · 같은 자세'],['tissue54','54차 겨드랑이 주름']);
       if(!saved&&!editable&&edition>=53&&trial==='pelvis53'){
         edit.appearance={waistBreadth53:.58,waistDepth53:.84,seatDepth53:.60,pelvisJoin53:true};
       }
+      el('nativeJoints54').hidden=editable||edition<54;
+      el('researchJoints').hidden=!editable;
+      if(!saved&&!editable&&edition>=54&&trial==='shoulder54')edit.nativeShoulder={elevation:90};
+      if(!saved&&!editable&&edition>=54&&trial==='hip54')edit.nativeHip={right:{flex:60,knee:40}};
+      bodyJointGroup(trial==='hip54'?'hip':trial==='shoulder54'?'shoulder':nativeGroup);
       if(!saved&&editable&&options.some(([key])=>key===trial)){
         edit.version=trial;
-        if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53'].includes(trial)&&markerLevels50[id]?'rebound':'source';
+        if(isChestSubject(id))edit.markerVersion=['candidate','lower51','lowerContact52','floor52','tissue53','matched53','tissue54'].includes(trial)&&markerLevels50[id]?'rebound':'source';
       }
       buttons(el('versions'),options,selectVersion);
       el('versionsBox').hidden=!editable;el('surfaceOptions').hidden=!isChestSubject(id);

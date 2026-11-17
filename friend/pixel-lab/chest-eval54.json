@@ -1,0 +1,6256 @@
+{
+  "round": 54,
+  "case": "성인 W와 53차 선택 15형의 겨드랑이 자세 표면",
+  "trial": "tissue54",
+  "comparison": "matched53",
+  "plate": "chest-plate54.png",
+  "method": {
+    "sourceUnit": "양쪽 유두 사이 거리 = 1. 53차 투영 기준점을 양 판에 고정. 외곽과 피부 내부 명암을 분리.",
+    "near": "지정선 좌우 0.10 범위. 3개 간격에서 명암 봉우리 일치, 검색 경계 0.02 제외. paired는 공통 유효행만 비교.",
+    "broad": "좌우 0.42 범위. 다른 피부 특징이 검출될 수 있어 가까운 주름의 증거와 구분.",
+    "size": "고정한 원래 앞 피부 삼각형을 z=0으로 투영한 부피의 비율. 세분 추가면을 따로 더하지 않은 대용값.",
+    "bend": "중립에서 같은 두 삼각형 사이의 각도 변화 절댓값. 앞·뒤·옆 재료면별 95백분위(도). 해부 구조와 일대일 대응 미확인.",
+    "comparison": "대조와 시험에 같은 관절 자세와 고정 카메라. 53차 15형에서 빠졌던 양손 자세를 대조에도 소급 적용했다.",
+    "cameras": [
+      [
+        0,
+        0
+      ],
+      [
+        45,
+        0
+      ],
+      [
+        90,
+        0
+      ],
+      [
+        155,
+        -12
+      ]
+    ],
+    "poses": [
+      0,
+      90,
+      113,
+      178,
+      "behindHead",
+      67,
+      146,
+      "waist"
+    ],
+    "resolutions": [
+      48,
+      1024
+    ]
+  },
+  "summary": {
+    "types": 16,
+    "poses": 128,
+    "rgbaFrames": 2048,
+    "routes": 89,
+    "oldNamedNeutral": 15,
+    "raisedViewPairs48": 448,
+    "visiblePairs48": 436,
+    "preservedWaist": [
+      {
+        "id": "atlas:B09",
+        "initial": {
+          "before": 68.545311,
+          "after": 83.486779
+        },
+        "final": {
+          "before": 68.545311,
+          "after": 68.545311
+        }
+      },
+      {
+        "id": "atlas:B14",
+        "initial": {
+          "before": 44.841241,
+          "after": 56.425333
+        },
+        "final": {
+          "before": 44.841241,
+          "after": 44.841241
+        }
+      },
+      {
+        "id": "atlas:B46",
+        "initial": {
+          "before": 75.613163,
+          "after": 87.288055
+        },
+        "final": {
+          "before": 75.613163,
+          "after": 75.613163
+        }
+      }
+    ],
+    "guards": {
+      "maxOriginalTurns90": 0,
+      "minOriginalAreaRatio": 0.510849,
+      "minSubFaceProjectedAreaRatio": 0.400018,
+      "maxLowerDisplacement": 0,
+      "maxProjectedVolumeDriftBeforeGuard": 0.068168,
+      "maxProjectedVolumeDrift": 0.012
+    }
+  },
+  "sources": [
+    {
+      "panel": "5b",
+      "role": "양손 허리 실사진",
+      "yaw": 0,
+      "pitch": 0,
+      "outline": {
+        "n": 8,
+        "before": 0.424606,
+        "after": 0.421579
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 0,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "panel": "5b",
+      "role": "양손 허리 실사진",
+      "yaw": -7,
+      "pitch": 0,
+      "outline": {
+        "n": 9,
+        "before": 0.481819,
+        "after": 0.480657
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 0,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "panel": "5b",
+      "role": "양손 허리 실사진",
+      "yaw": 7,
+      "pitch": 0,
+      "outline": {
+        "n": 9,
+        "before": 0.437761,
+        "after": 0.436598
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 0,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "panel": "5b",
+      "role": "양손 허리 실사진",
+      "yaw": 0,
+      "pitch": -7,
+      "outline": {
+        "n": 12,
+        "before": 0.485483,
+        "after": 0.484907
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 0,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "panel": "5b",
+      "role": "양손 허리 실사진",
+      "yaw": 0,
+      "pitch": 7,
+      "outline": {
+        "n": 7,
+        "before": 0.43033,
+        "after": 0.427364
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 0,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 0,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "panel": "5c",
+      "role": "양손 뒤통수 실사진",
+      "yaw": 0,
+      "pitch": 0,
+      "outline": {
+        "n": 17,
+        "before": 0.343753,
+        "after": 0.29766
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 13,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 9,
+          "total": 13,
+          "mae": 0.01977,
+          "signed": 0.006083
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 7,
+        "before": 0.343639,
+        "after": 0.275204
+      }
+    },
+    {
+      "panel": "5c",
+      "role": "양손 뒤통수 실사진",
+      "yaw": -7,
+      "pitch": 0,
+      "outline": {
+        "n": 17,
+        "before": 0.328691,
+        "after": 0.283063
+      },
+      "near": {
+        "before": {
+          "n": 6,
+          "total": 13,
+          "mae": 0.027579,
+          "signed": 0.027579
+        },
+        "after": {
+          "n": 5,
+          "total": 13,
+          "mae": 0.059985,
+          "signed": 0.033785
+        },
+        "paired": {
+          "n": 1,
+          "before": 0.065501,
+          "after": 0.065501
+        }
+      },
+      "broad": {
+        "n": 9,
+        "before": 0.309119,
+        "after": 0.243235
+      }
+    },
+    {
+      "panel": "5c",
+      "role": "양손 뒤통수 실사진",
+      "yaw": 7,
+      "pitch": 0,
+      "outline": {
+        "n": 17,
+        "before": 0.366815,
+        "after": 0.322201
+      },
+      "near": {
+        "before": {
+          "n": 2,
+          "total": 13,
+          "mae": 0.031027,
+          "signed": 0.031027
+        },
+        "after": {
+          "n": 8,
+          "total": 13,
+          "mae": 0.06033,
+          "signed": 0.040507
+        },
+        "paired": {
+          "n": 2,
+          "before": 0.031027,
+          "after": 0.039645
+        }
+      },
+      "broad": {
+        "n": 1,
+        "before": 0.027579,
+        "after": 0.041369
+      }
+    },
+    {
+      "panel": "5c",
+      "role": "양손 뒤통수 실사진",
+      "yaw": 0,
+      "pitch": -7,
+      "outline": {
+        "n": 15,
+        "before": 0.41341,
+        "after": 0.375314
+      },
+      "near": {
+        "before": {
+          "n": 3,
+          "total": 13,
+          "mae": 0.058169,
+          "signed": 0.023952
+        },
+        "after": {
+          "n": 11,
+          "total": 13,
+          "mae": 0.035773,
+          "signed": 0.032662
+        },
+        "paired": {
+          "n": 3,
+          "before": 0.058169,
+          "after": 0.033077
+        }
+      },
+      "broad": {
+        "n": 9,
+        "before": 0.348255,
+        "after": 0.266894
+      }
+    },
+    {
+      "panel": "5c",
+      "role": "양손 뒤통수 실사진",
+      "yaw": 0,
+      "pitch": 7,
+      "outline": {
+        "n": 17,
+        "before": 0.289408,
+        "after": 0.231037
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 13,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 6,
+          "total": 13,
+          "mae": 0.03935,
+          "signed": 0.003992
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 6,
+        "before": 0.35643,
+        "after": 0.301682
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": 0,
+      "pitch": 0,
+      "outline": {
+        "n": 7,
+        "before": 0.343883,
+        "after": 0.295002
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 2,
+        "before": 0.343883,
+        "after": 0.374679
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": 0,
+      "pitch": -7,
+      "outline": {
+        "n": 7,
+        "before": 0.416717,
+        "after": 0.349749
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 4,
+        "before": 0.325064,
+        "after": 0.271172
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": 0,
+      "pitch": -15,
+      "outline": {
+        "n": 7,
+        "before": 0.512037,
+        "after": 0.482219
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 10,
+        "before": 0.215226,
+        "after": 0.225149
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": 0,
+      "pitch": -25,
+      "outline": {
+        "n": 7,
+        "before": 0.731516,
+        "after": 0.728583
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 11,
+        "before": 0.298001,
+        "after": 0.286492
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": -7,
+      "pitch": -15,
+      "outline": {
+        "n": 7,
+        "before": 0.511457,
+        "after": 0.470109
+      },
+      "near": {
+        "before": {
+          "n": 7,
+          "total": 38,
+          "mae": 0.039871,
+          "signed": -0.033965
+        },
+        "after": {
+          "n": 7,
+          "total": 38,
+          "mae": 0.039871,
+          "signed": -0.033965
+        },
+        "paired": {
+          "n": 7,
+          "before": 0.039871,
+          "after": 0.039871
+        }
+      },
+      "broad": {
+        "n": 16,
+        "before": 0.193389,
+        "after": 0.159363
+      }
+    },
+    {
+      "panel": "6c",
+      "role": "별도 참여자 3 · 뒤통수 자세 아래쪽 원스캔",
+      "yaw": 7,
+      "pitch": -15,
+      "outline": {
+        "n": 7,
+        "before": 0.552806,
+        "after": 0.512442
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 38,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 11,
+        "before": 0.231487,
+        "after": 0.216765
+      }
+    },
+    {
+      "panel": "6e",
+      "role": "6c와 같은 참여자 · 구멍 보간 후 표면",
+      "yaw": 0,
+      "pitch": 0,
+      "outline": {
+        "n": 14,
+        "before": 0.508738,
+        "after": 0.45839
+      },
+      "near": {
+        "before": {
+          "n": 2,
+          "total": 53,
+          "mae": 0.056458,
+          "signed": -0.056458
+        },
+        "after": {
+          "n": 2,
+          "total": 53,
+          "mae": 0.056458,
+          "signed": -0.056458
+        },
+        "paired": {
+          "n": 2,
+          "before": 0.056458,
+          "after": 0.056458
+        }
+      },
+      "broad": {
+        "n": 20,
+        "before": 0.275107,
+        "after": 0.237981
+      }
+    },
+    {
+      "panel": "6e",
+      "role": "6c와 같은 참여자 · 구멍 보간 후 표면",
+      "yaw": -7,
+      "pitch": 0,
+      "outline": {
+        "n": 14,
+        "before": 0.465596,
+        "after": 0.413392
+      },
+      "near": {
+        "before": {
+          "n": 2,
+          "total": 53,
+          "mae": 0.058606,
+          "signed": 0.006895
+        },
+        "after": {
+          "n": 4,
+          "total": 53,
+          "mae": 0.043093,
+          "signed": 0.017237
+        },
+        "paired": {
+          "n": 2,
+          "before": 0.058606,
+          "after": 0.058606
+        }
+      },
+      "broad": {
+        "n": 29,
+        "before": 0.257487,
+        "after": 0.267948
+      }
+    },
+    {
+      "panel": "6e",
+      "role": "6c와 같은 참여자 · 구멍 보간 후 표면",
+      "yaw": 7,
+      "pitch": 0,
+      "outline": {
+        "n": 14,
+        "before": 0.55843,
+        "after": 0.514599
+      },
+      "near": {
+        "before": {
+          "n": 3,
+          "total": 53,
+          "mae": 0.017237,
+          "signed": 0.001149
+        },
+        "after": {
+          "n": 3,
+          "total": 53,
+          "mae": 0.017237,
+          "signed": 0.001149
+        },
+        "paired": {
+          "n": 3,
+          "before": 0.017237,
+          "after": 0.017237
+        }
+      },
+      "broad": {
+        "n": 16,
+        "before": 0.161167,
+        "after": 0.213525
+      }
+    },
+    {
+      "panel": "6e",
+      "role": "6c와 같은 참여자 · 구멍 보간 후 표면",
+      "yaw": 0,
+      "pitch": -7,
+      "outline": {
+        "n": 13,
+        "before": 0.562095,
+        "after": 0.519719
+      },
+      "near": {
+        "before": {
+          "n": 0,
+          "total": 53,
+          "mae": null,
+          "signed": null
+        },
+        "after": {
+          "n": 0,
+          "total": 53,
+          "mae": null,
+          "signed": null
+        },
+        "paired": {
+          "n": 0,
+          "before": null,
+          "after": null
+        }
+      },
+      "broad": {
+        "n": 17,
+        "before": 0.290847,
+        "after": 0.279172
+      }
+    },
+    {
+      "panel": "6e",
+      "role": "6c와 같은 참여자 · 구멍 보간 후 표면",
+      "yaw": 0,
+      "pitch": 7,
+      "outline": {
+        "n": 14,
+        "before": 0.453502,
+        "after": 0.396799
+      },
+      "near": {
+        "before": {
+          "n": 2,
+          "total": 53,
+          "mae": 0.070145,
+          "signed": -0.070145
+        },
+        "after": {
+          "n": 2,
+          "total": 53,
+          "mae": 0.070145,
+          "signed": -0.070145
+        },
+        "paired": {
+          "n": 2,
+          "before": 0.070145,
+          "after": 0.070145
+        }
+      },
+      "broad": {
+        "n": 16,
+        "before": 0.297904,
+        "after": 0.258982
+      }
+    }
+  ],
+  "types": [
+    {
+      "id": "W",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.037762,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.688075,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.972857,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 53.318349,
+              "after": 59.613393
+            },
+            "posterior": {
+              "before": 29.193166,
+              "after": 29.344601
+            },
+            "side": {
+              "before": 63.016184,
+              "after": 65.514152
+            }
+          },
+          "changedPixels48": [
+            84,
+            107,
+            47,
+            63
+          ],
+          "changedPixels1024": [
+            87726,
+            85157,
+            42806,
+            58605
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.048388,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.643113,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.930565,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 59.480447,
+              "after": 59.928014
+            },
+            "posterior": {
+              "before": 29.912068,
+              "after": 29.339292
+            },
+            "side": {
+              "before": 63.34972,
+              "after": 66.225424
+            }
+          },
+          "changedPixels48": [
+            113,
+            133,
+            44,
+            84
+          ],
+          "changedPixels1024": [
+            96500,
+            94453,
+            50940,
+            67523
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.991664,
+          "markerMaxShift": 0.05885,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.660983,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.700834,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.607317,
+              "after": 77.023707
+            },
+            "posterior": {
+              "before": 34.749555,
+              "after": 33.453865
+            },
+            "side": {
+              "before": 58.034574,
+              "after": 58.757143
+            }
+          },
+          "changedPixels48": [
+            167,
+            184,
+            106,
+            98
+          ],
+          "changedPixels1024": [
+            112503,
+            136750,
+            98904,
+            73050
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988044,
+          "markerMaxShift": 0.055795,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.545328,
+          "detail": {
+            "gain": 0.894642,
+            "minProjected": 0.400018,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 73.380057,
+              "after": 76.051462
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 39.279158
+            },
+            "side": {
+              "before": 85.328653,
+              "after": 81.086363
+            }
+          },
+          "changedPixels48": [
+            237,
+            221,
+            69,
+            112
+          ],
+          "changedPixels1024": [
+            138918,
+            133088,
+            54941,
+            68379
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.990428,
+          "markerMaxShift": 0.049261,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.565688,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.989465,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 47.027461,
+              "after": 46.19672
+            },
+            "posterior": {
+              "before": 26.603948,
+              "after": 26.605201
+            },
+            "side": {
+              "before": 60.760616,
+              "after": 61.532434
+            }
+          },
+          "changedPixels48": [
+            85,
+            97,
+            35,
+            42
+          ],
+          "changedPixels1024": [
+            89136,
+            82472,
+            37480,
+            49212
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.991179,
+          "markerMaxShift": 0.058762,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.619715,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.783428,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 66.402843,
+              "after": 69.374335
+            },
+            "posterior": {
+              "before": 32.82535,
+              "after": 31.928776
+            },
+            "side": {
+              "before": 61.326442,
+              "after": 63.498103
+            }
+          },
+          "changedPixels48": [
+            140,
+            179,
+            95,
+            101
+          ],
+          "changedPixels1024": [
+            104479,
+            116247,
+            78632,
+            70474
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 223,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1.00002,
+          "markerMaxShift": 0.000285,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.745652,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.58873,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 76.443017,
+              "after": 76.965541
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 33.518781
+            },
+            "side": {
+              "before": 74.580721,
+              "after": 71.356956
+            }
+          },
+          "changedPixels48": [
+            14,
+            18,
+            15,
+            60
+          ],
+          "changedPixels1024": [
+            36722,
+            22930,
+            27798,
+            78294
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B09",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988,
+          "markerMaxShift": 0.042759,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.784169,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.985586,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 58.04522,
+              "after": 56.950225
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.741575
+            },
+            "side": {
+              "before": 82.944562,
+              "after": 77.651084
+            }
+          },
+          "changedPixels48": [
+            136,
+            159,
+            103,
+            103
+          ],
+          "changedPixels1024": [
+            123075,
+            134482,
+            96348,
+            89057
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.036699,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.833913,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.977063,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 63.649674,
+              "after": 62.223008
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.990469
+            },
+            "side": {
+              "before": 91.935695,
+              "after": 88.271263
+            }
+          },
+          "changedPixels48": [
+            142,
+            161,
+            92,
+            117
+          ],
+          "changedPixels1024": [
+            124500,
+            140436,
+            101027,
+            91939
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.054927,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.739919,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.907378,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 61.231567,
+              "after": 58.943016
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.195673
+            },
+            "side": {
+              "before": 91.902341,
+              "after": 92.27012
+            }
+          },
+          "changedPixels48": [
+            203,
+            229,
+            168,
+            153
+          ],
+          "changedPixels1024": [
+            150514,
+            184884,
+            156547,
+            103596
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.028731,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.834068,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.888307,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 63.742551,
+              "after": 63.658984
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 43.086339
+            },
+            "side": {
+              "before": 105.710419,
+              "after": 105.384461
+            }
+          },
+          "changedPixels48": [
+            201,
+            181,
+            82,
+            104
+          ],
+          "changedPixels1024": [
+            145311,
+            168801,
+            102924,
+            88333
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.070476,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.599901,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.993124,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 47.689186,
+              "after": 53.302086
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.277379
+            },
+            "side": {
+              "before": 67.807667,
+              "after": 56.983937
+            }
+          },
+          "changedPixels48": [
+            168,
+            168,
+            111,
+            73
+          ],
+          "changedPixels1024": [
+            127414,
+            133919,
+            87356,
+            84472
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.040008,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.813521,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.947406,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 57.92051,
+              "after": 59.857411
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.161174
+            },
+            "side": {
+              "before": 100.725779,
+              "after": 100.104685
+            }
+          },
+          "changedPixels48": [
+            172,
+            200,
+            121,
+            127
+          ],
+          "changedPixels1024": [
+            131704,
+            166482,
+            132293,
+            95513
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "preserve53",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 73.726389,
+              "after": 73.726389
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 33.726702
+            },
+            "side": {
+              "before": 68.545311,
+              "after": 68.545311
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B11",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.027382,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.85166,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.978298,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 64.731197,
+              "after": 64.149682
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.693738
+            },
+            "side": {
+              "before": 85.284905,
+              "after": 82.115037
+            }
+          },
+          "changedPixels48": [
+            101,
+            120,
+            84,
+            78
+          ],
+          "changedPixels1024": [
+            113921,
+            125869,
+            102992,
+            90039
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.024371,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.878262,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.971811,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.393038,
+              "after": 69.370552
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 29.799057
+            },
+            "side": {
+              "before": 101.687983,
+              "after": 100.409276
+            }
+          },
+          "changedPixels48": [
+            100,
+            115,
+            66,
+            97
+          ],
+          "changedPixels1024": [
+            113160,
+            133145,
+            105230,
+            94805
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.031656,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.82698,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.911424,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 75.374113,
+              "after": 75.185585
+            },
+            "posterior": {
+              "before": 35.391196,
+              "after": 35.919421
+            },
+            "side": {
+              "before": 96.129085,
+              "after": 96.02058
+            }
+          },
+          "changedPixels48": [
+            153,
+            179,
+            95,
+            114
+          ],
+          "changedPixels1024": [
+            137667,
+            176654,
+            157670,
+            103728
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988006,
+          "markerMaxShift": 0.019147,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.893279,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.887579,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 71.70489,
+              "after": 71.181226
+            },
+            "posterior": {
+              "before": 39.555419,
+              "after": 40.35376
+            },
+            "side": {
+              "before": 94.949476,
+              "after": 95.046192
+            }
+          },
+          "changedPixels48": [
+            162,
+            142,
+            61,
+            79
+          ],
+          "changedPixels1024": [
+            143719,
+            165184,
+            105827,
+            92635
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.040523,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.772487,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.995242,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 60.063354,
+              "after": 57.933499
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 27.172795
+            },
+            "side": {
+              "before": 69.185723,
+              "after": 63.319076
+            }
+          },
+          "changedPixels48": [
+            127,
+            108,
+            86,
+            66
+          ],
+          "changedPixels1024": [
+            121694,
+            127555,
+            96155,
+            80546
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.026143,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.874301,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.949255,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 74.18799,
+              "after": 74.589953
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.496415
+            },
+            "side": {
+              "before": 102.35246,
+              "after": 102.610685
+            }
+          },
+          "changedPixels48": [
+            122,
+            168,
+            93,
+            106
+          ],
+          "changedPixels1024": [
+            123106,
+            160244,
+            132852,
+            99104
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.999405,
+          "markerMaxShift": 0.009484,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.510849,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.615818,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 61.277766,
+              "after": 64.249145
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 32.491699
+            },
+            "side": {
+              "before": 90.613912,
+              "after": 83.297776
+            }
+          },
+          "changedPixels48": [
+            57,
+            43,
+            47,
+            116
+          ],
+          "changedPixels1024": [
+            71578,
+            57246,
+            78876,
+            108972
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B14",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988353,
+          "markerMaxShift": 0.074256,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.644131,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.984131,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 39.118005,
+              "after": 39.133142
+            },
+            "posterior": {
+              "before": 29.789209,
+              "after": 29.72211
+            },
+            "side": {
+              "before": 85.948469,
+              "after": 76.899479
+            }
+          },
+          "changedPixels48": [
+            156,
+            167,
+            115,
+            125
+          ],
+          "changedPixels1024": [
+            112431,
+            112688,
+            80985,
+            88108
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.989279,
+          "markerMaxShift": 0.074323,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.66757,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.969062,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 42.688294,
+              "after": 42.194891
+            },
+            "posterior": {
+              "before": 29.96105,
+              "after": 30.092027
+            },
+            "side": {
+              "before": 95.841777,
+              "after": 92.352258
+            }
+          },
+          "changedPixels48": [
+            188,
+            197,
+            123,
+            153
+          ],
+          "changedPixels1024": [
+            117333,
+            125593,
+            87919,
+            93120
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.995273,
+          "markerMaxShift": 0.074666,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.663166,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.936231,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 42.498475,
+              "after": 46.098794
+            },
+            "posterior": {
+              "before": 35.391196,
+              "after": 36.39309
+            },
+            "side": {
+              "before": 95.774677,
+              "after": 97.101749
+            }
+          },
+          "changedPixels48": [
+            192,
+            248,
+            158,
+            128
+          ],
+          "changedPixels1024": [
+            124320,
+            154968,
+            132986,
+            88320
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.042478,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.800936,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.891051,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 48.76148,
+              "after": 46.894782
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 43.321511
+            },
+            "side": {
+              "before": 91.130295,
+              "after": 92.264881
+            }
+          },
+          "changedPixels48": [
+            192,
+            192,
+            108,
+            96
+          ],
+          "changedPixels1024": [
+            135207,
+            142291,
+            87257,
+            65560
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.992994,
+          "markerMaxShift": 0.074105,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.599343,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.991222,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 35.624,
+              "after": 34.127518
+            },
+            "posterior": {
+              "before": 27.761256,
+              "after": 26.758147
+            },
+            "side": {
+              "before": 68.970751,
+              "after": 57.953795
+            }
+          },
+          "changedPixels48": [
+            141,
+            139,
+            88,
+            67
+          ],
+          "changedPixels1024": [
+            105121,
+            102642,
+            65358,
+            76346
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.993931,
+          "markerMaxShift": 0.074394,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.597217,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.936476,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 40.588935,
+              "after": 43.917871
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.582538
+            },
+            "side": {
+              "before": 100.74255,
+              "after": 102.480703
+            }
+          },
+          "changedPixels48": [
+            194,
+            242,
+            158,
+            151
+          ],
+          "changedPixels1024": [
+            120809,
+            145468,
+            116778,
+            92367
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "preserve53",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 53.843614,
+              "after": 53.843614
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 32.120237
+            },
+            "side": {
+              "before": 44.841241,
+              "after": 44.841241
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B15",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.028908,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.846649,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.979968,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.439582,
+              "after": 70.452273
+            },
+            "posterior": {
+              "before": 31.52743,
+              "after": 32.099571
+            },
+            "side": {
+              "before": 92.577005,
+              "after": 91.2559
+            }
+          },
+          "changedPixels48": [
+            109,
+            120,
+            78,
+            93
+          ],
+          "changedPixels1024": [
+            123542,
+            133462,
+            101261,
+            92629
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.024906,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.876864,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.972078,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 72.166065,
+              "after": 73.042368
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.839321
+            },
+            "side": {
+              "before": 98.090716,
+              "after": 101.557633
+            }
+          },
+          "changedPixels48": [
+            112,
+            120,
+            61,
+            109
+          ],
+          "changedPixels1024": [
+            124400,
+            139347,
+            103541,
+            97234
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.052591,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.745995,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.905167,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 78.691559,
+              "after": 78.781282
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.288481
+            },
+            "side": {
+              "before": 87.695407,
+              "after": 85.850953
+            }
+          },
+          "changedPixels48": [
+            231,
+            226,
+            169,
+            178
+          ],
+          "changedPixels1024": [
+            166566,
+            196107,
+            167502,
+            118889
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988011,
+          "markerMaxShift": 0.020886,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.883585,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.88768,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.196571,
+              "after": 69.089078
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 43.074973
+            },
+            "side": {
+              "before": 103.554627,
+              "after": 103.210347
+            }
+          },
+          "changedPixels48": [
+            162,
+            169,
+            71,
+            101
+          ],
+          "changedPixels1024": [
+            147552,
+            171599,
+            105593,
+            97093
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988005,
+          "markerMaxShift": 0.044749,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.771286,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.994921,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 63.308657,
+              "after": 63.206232
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.255624
+            },
+            "side": {
+              "before": 69.0406,
+              "after": 63.033677
+            }
+          },
+          "changedPixels48": [
+            146,
+            135,
+            97,
+            82
+          ],
+          "changedPixels1024": [
+            128287,
+            135603,
+            94463,
+            83723
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.026451,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.884647,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.949223,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 75.630867,
+              "after": 77.185091
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.467965
+            },
+            "side": {
+              "before": 96.922671,
+              "after": 97.303677
+            }
+          },
+          "changedPixels48": [
+            147,
+            169,
+            97,
+            107
+          ],
+          "changedPixels1024": [
+            132211,
+            164918,
+            132157,
+            100790
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.009761,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.816335,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.611496,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 86.089554,
+              "after": 83.053002
+            },
+            "posterior": {
+              "before": 34.059101,
+              "after": 32.491963
+            },
+            "side": {
+              "before": 75.442121,
+              "after": 84.240534
+            }
+          },
+          "changedPixels48": [
+            71,
+            41,
+            42,
+            122
+          ],
+          "changedPixels1024": [
+            78661,
+            59123,
+            77243,
+            109596
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B21",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.992092,
+          "markerMaxShift": 0.074898,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.664125,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.985139,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 32.690434,
+              "after": 32.531438
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.719303
+            },
+            "side": {
+              "before": 82.193464,
+              "after": 75.169972
+            }
+          },
+          "changedPixels48": [
+            154,
+            170,
+            122,
+            117
+          ],
+          "changedPixels1024": [
+            110139,
+            112500,
+            83775,
+            86436
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.992488,
+          "markerMaxShift": 0.074855,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.643746,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.968913,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 34.759792,
+              "after": 38.613226
+            },
+            "posterior": {
+              "before": 30.071908,
+              "after": 30.517207
+            },
+            "side": {
+              "before": 92.730174,
+              "after": 87.047906
+            }
+          },
+          "changedPixels48": [
+            194,
+            185,
+            139,
+            146
+          ],
+          "changedPixels1024": [
+            115349,
+            125558,
+            90591,
+            91407
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.996142,
+          "markerMaxShift": 0.074764,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.599972,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.932367,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 41.044598,
+              "after": 41.536209
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.417153
+            },
+            "side": {
+              "before": 86.090348,
+              "after": 87.192349
+            }
+          },
+          "changedPixels48": [
+            162,
+            217,
+            156,
+            128
+          ],
+          "changedPixels1024": [
+            122521,
+            152874,
+            134183,
+            85813
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.04889,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.642073,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.890481,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 33.882444,
+              "after": 39.084067
+            },
+            "posterior": {
+              "before": 40.309886,
+              "after": 41.314468
+            },
+            "side": {
+              "before": 80.2125,
+              "after": 81.675308
+            }
+          },
+          "changedPixels48": [
+            193,
+            203,
+            110,
+            103
+          ],
+          "changedPixels1024": [
+            133245,
+            143775,
+            92926,
+            65660
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.99647,
+          "markerMaxShift": 0.074977,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.604601,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.991631,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 29.949945,
+              "after": 27.921583
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.219001
+            },
+            "side": {
+              "before": 64.577653,
+              "after": 56.018123
+            }
+          },
+          "changedPixels48": [
+            135,
+            129,
+            94,
+            64
+          ],
+          "changedPixels1024": [
+            101915,
+            103209,
+            67579,
+            75209
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.995523,
+          "markerMaxShift": 0.074808,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.566475,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.93541,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 40.065851,
+              "after": 39.711203
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.318248
+            },
+            "side": {
+              "before": 93.532477,
+              "after": 95.589716
+            }
+          },
+          "changedPixels48": [
+            191,
+            231,
+            160,
+            153
+          ],
+          "changedPixels1024": [
+            119079,
+            144483,
+            117785,
+            89875
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 74,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.00448,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.763318,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.604315,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 48.346332,
+              "after": 44.844102
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 31.231545
+            },
+            "side": {
+              "before": 32.670583,
+              "after": 27.194193
+            }
+          },
+          "changedPixels48": [
+            55,
+            42,
+            33,
+            113
+          ],
+          "changedPixels1024": [
+            52065,
+            45727,
+            56303,
+            102344
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B22",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.033367,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.827623,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.98037,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 61.017306,
+              "after": 60.896174
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.709319
+            },
+            "side": {
+              "before": 85.200014,
+              "after": 81.360779
+            }
+          },
+          "changedPixels48": [
+            127,
+            126,
+            85,
+            95
+          ],
+          "changedPixels1024": [
+            114243,
+            128086,
+            102236,
+            89965
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.029212,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.871713,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.973273,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 64.850143,
+              "after": 65.756058
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 29.79497
+            },
+            "side": {
+              "before": 99.463622,
+              "after": 97.64473
+            }
+          },
+          "changedPixels48": [
+            109,
+            130,
+            67,
+            104
+          ],
+          "changedPixels1024": [
+            112129,
+            133412,
+            105250,
+            93848
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.98805,
+          "markerMaxShift": 0.038477,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.749227,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.908128,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 71.570614,
+              "after": 71.560731
+            },
+            "posterior": {
+              "before": 35.391196,
+              "after": 36.013215
+            },
+            "side": {
+              "before": 95.971943,
+              "after": 95.933979
+            }
+          },
+          "changedPixels48": [
+            156,
+            178,
+            104,
+            122
+          ],
+          "changedPixels1024": [
+            136069,
+            177806,
+            157227,
+            100614
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.98801,
+          "markerMaxShift": 0.022402,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.840048,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.8871,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 68.165654,
+              "after": 67.116248
+            },
+            "posterior": {
+              "before": 39.555419,
+              "after": 41.941235
+            },
+            "side": {
+              "before": 92.608018,
+              "after": 92.779748
+            }
+          },
+          "changedPixels48": [
+            153,
+            162,
+            59,
+            84
+          ],
+          "changedPixels1024": [
+            142476,
+            165979,
+            103987,
+            88573
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.051772,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.683444,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.99457,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 56.700899,
+              "after": 54.570718
+            },
+            "posterior": {
+              "before": 26.883305,
+              "after": 26.752809
+            },
+            "side": {
+              "before": 68.972263,
+              "after": 61.48855
+            }
+          },
+          "changedPixels48": [
+            129,
+            136,
+            92,
+            73
+          ],
+          "changedPixels1024": [
+            121653,
+            130495,
+            94095,
+            82912
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988019,
+          "markerMaxShift": 0.031288,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.850548,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.947066,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 68.750155,
+              "after": 70.526379
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.672591
+            },
+            "side": {
+              "before": 101.493785,
+              "after": 101.83382
+            }
+          },
+          "changedPixels48": [
+            147,
+            170,
+            94,
+            114
+          ],
+          "changedPixels1024": [
+            121886,
+            158390,
+            133767,
+            97988
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.006764,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.626107,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.614167,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 58.095913,
+              "after": 57.040942
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 31.6876
+            },
+            "side": {
+              "before": 85.144888,
+              "after": 92.908576
+            }
+          },
+          "changedPixels48": [
+            64,
+            37,
+            38,
+            114
+          ],
+          "changedPixels1024": [
+            67412,
+            52371,
+            71578,
+            106942
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B24",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988658,
+          "markerMaxShift": 0.072005,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.567304,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.984712,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 38.932871,
+              "after": 40.748472
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.786361
+            },
+            "side": {
+              "before": 82.963276,
+              "after": 75.849541
+            }
+          },
+          "changedPixels48": [
+            164,
+            171,
+            117,
+            125
+          ],
+          "changedPixels1024": [
+            113979,
+            116039,
+            83661,
+            87378
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988658,
+          "markerMaxShift": 0.073861,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.560208,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.968909,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 39.949388,
+              "after": 43.870758
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.820286
+            },
+            "side": {
+              "before": 93.243865,
+              "after": 88.028469
+            }
+          },
+          "changedPixels48": [
+            182,
+            205,
+            128,
+            162
+          ],
+          "changedPixels1024": [
+            120316,
+            129655,
+            90924,
+            93091
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.994753,
+          "markerMaxShift": 0.074538,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.58099,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.936413,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 44.529312,
+              "after": 44.36564
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.490133
+            },
+            "side": {
+              "before": 90.077778,
+              "after": 91.118257
+            }
+          },
+          "changedPixels48": [
+            198,
+            252,
+            166,
+            141
+          ],
+          "changedPixels1024": [
+            128280,
+            158984,
+            136266,
+            89815
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988044,
+          "markerMaxShift": 0.03918,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.676923,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.890962,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 42.528329,
+              "after": 42.871846
+            },
+            "posterior": {
+              "before": 43.283758,
+              "after": 41.745886
+            },
+            "side": {
+              "before": 100.937558,
+              "after": 100.498593
+            }
+          },
+          "changedPixels48": [
+            188,
+            185,
+            104,
+            90
+          ],
+          "changedPixels1024": [
+            134843,
+            146373,
+            90818,
+            66623
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.99347,
+          "markerMaxShift": 0.074,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.535267,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.991479,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 37.246262,
+              "after": 35.144607
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.231517
+            },
+            "side": {
+              "before": 65.831128,
+              "after": 56.361763
+            }
+          },
+          "changedPixels48": [
+            139,
+            137,
+            94,
+            74
+          ],
+          "changedPixels1024": [
+            106636,
+            106864,
+            68224,
+            76135
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.992665,
+          "markerMaxShift": 0.074323,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.566085,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.936362,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 42.131021,
+              "after": 42.779074
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.341904
+            },
+            "side": {
+              "before": 97.759801,
+              "after": 99.734444
+            }
+          },
+          "changedPixels48": [
+            196,
+            244,
+            154,
+            158
+          ],
+          "changedPixels1024": [
+            123446,
+            149584,
+            119164,
+            93031
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.000984,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.715967,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.604688,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 62.472712,
+              "after": 59.899461
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 32.459881
+            },
+            "side": {
+              "before": 37.831141,
+              "after": 42.496294
+            }
+          },
+          "changedPixels48": [
+            46,
+            35,
+            26,
+            110
+          ],
+          "changedPixels1024": [
+            50776,
+            40083,
+            50173,
+            101822
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B25",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.05464,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.718658,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.985886,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 41.750475,
+              "after": 41.661693
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.748552
+            },
+            "side": {
+              "before": 83.684596,
+              "after": 77.308301
+            }
+          },
+          "changedPixels48": [
+            144,
+            147,
+            120,
+            108
+          ],
+          "changedPixels1024": [
+            112823,
+            117485,
+            90059,
+            83624
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.05359,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.749355,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.974554,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 44.536786,
+              "after": 45.022791
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.783654
+            },
+            "side": {
+              "before": 94.261766,
+              "after": 89.363812
+            }
+          },
+          "changedPixels48": [
+            174,
+            176,
+            128,
+            142
+          ],
+          "changedPixels1024": [
+            117398,
+            128424,
+            96102,
+            88928
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.073899,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.653703,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.93625,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 44.915636,
+              "after": 46.12186
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.472547
+            },
+            "side": {
+              "before": 87.658636,
+              "after": 88.555596
+            }
+          },
+          "changedPixels48": [
+            190,
+            234,
+            171,
+            146
+          ],
+          "changedPixels1024": [
+            133638,
+            163454,
+            145409,
+            93537
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.029821,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.850809,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.890561,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 50.417931,
+              "after": 48.880142
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 42.587309
+            },
+            "side": {
+              "before": 102.430453,
+              "after": 101.819098
+            }
+          },
+          "changedPixels48": [
+            176,
+            175,
+            85,
+            84
+          ],
+          "changedPixels1024": [
+            133888,
+            145985,
+            95558,
+            67793
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.989312,
+          "markerMaxShift": 0.074007,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.570772,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.991564,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 40.242578,
+              "after": 35.3528
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.241078
+            },
+            "side": {
+              "before": 66.694283,
+              "after": 55.431421
+            }
+          },
+          "changedPixels48": [
+            144,
+            134,
+            109,
+            72
+          ],
+          "changedPixels1024": [
+            111557,
+            111999,
+            76698,
+            77212
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.066072,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.691999,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.939855,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 46.338009,
+              "after": 52.12061
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.299385
+            },
+            "side": {
+              "before": 95.690106,
+              "after": 97.327606
+            }
+          },
+          "changedPixels48": [
+            190,
+            236,
+            161,
+            155
+          ],
+          "changedPixels1024": [
+            125703,
+            152171,
+            126508,
+            94236
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 84,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.001565,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.76621,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.606071,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 58.575418,
+              "after": 56.625534
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 32.491955
+            },
+            "side": {
+              "before": 40.504017,
+              "after": 44.583895
+            }
+          },
+          "changedPixels48": [
+            52,
+            32,
+            33,
+            106
+          ],
+          "changedPixels1024": [
+            53301,
+            40646,
+            53624,
+            102221
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B41",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988005,
+          "markerMaxShift": 0.035327,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.832373,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.983384,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 64.791546,
+              "after": 64.12357
+            },
+            "posterior": {
+              "before": 29.789209,
+              "after": 30.292658
+            },
+            "side": {
+              "before": 85.292284,
+              "after": 81.223242
+            }
+          },
+          "changedPixels48": [
+            129,
+            141,
+            85,
+            97
+          ],
+          "changedPixels1024": [
+            120096,
+            132507,
+            104859,
+            90943
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.031243,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.792266,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.975616,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.429144,
+              "after": 67.980812
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 29.78218
+            },
+            "side": {
+              "before": 102.813207,
+              "after": 101.371825
+            }
+          },
+          "changedPixels48": [
+            138,
+            137,
+            81,
+            104
+          ],
+          "changedPixels1024": [
+            119949,
+            139594,
+            108466,
+            94866
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.039813,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.776097,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.910074,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 72.240611,
+              "after": 72.467234
+            },
+            "posterior": {
+              "before": 35.391196,
+              "after": 36.051143
+            },
+            "side": {
+              "before": 94.644428,
+              "after": 94.618594
+            }
+          },
+          "changedPixels48": [
+            175,
+            187,
+            121,
+            120
+          ],
+          "changedPixels1024": [
+            142426,
+            179304,
+            159749,
+            102254
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.022161,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.861519,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.88755,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.874374,
+              "after": 68.081858
+            },
+            "posterior": {
+              "before": 43.422321,
+              "after": 42.858938
+            },
+            "side": {
+              "before": 97.02874,
+              "after": 96.506277
+            }
+          },
+          "changedPixels48": [
+            175,
+            162,
+            79,
+            92
+          ],
+          "changedPixels1024": [
+            144170,
+            168453,
+            107906,
+            88784
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.054713,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.701901,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.994479,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 60.2781,
+              "after": 56.965037
+            },
+            "posterior": {
+              "before": 26.87957,
+              "after": 26.709081
+            },
+            "side": {
+              "before": 68.10086,
+              "after": 60.112869
+            }
+          },
+          "changedPixels48": [
+            149,
+            148,
+            100,
+            71
+          ],
+          "changedPixels1024": [
+            124474,
+            132658,
+            96035,
+            83777
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.033795,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.821348,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.947963,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 70.896148,
+              "after": 72.393849
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.777146
+            },
+            "side": {
+              "before": 104.61293,
+              "after": 105.055002
+            }
+          },
+          "changedPixels48": [
+            150,
+            189,
+            113,
+            115
+          ],
+          "changedPixels1024": [
+            128118,
+            163768,
+            138868,
+            98909
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.00312,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.625652,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.613259,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 71.869076,
+              "after": 69.115961
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 31.727153
+            },
+            "side": {
+              "before": 93.27606,
+              "after": 86.586079
+            }
+          },
+          "changedPixels48": [
+            59,
+            36,
+            32,
+            116
+          ],
+          "changedPixels1024": [
+            64496,
+            47810,
+            67285,
+            106621
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B42",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988005,
+          "markerMaxShift": 0.03648,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.801585,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.984164,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 64.303547,
+              "after": 63.3056
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.719737
+            },
+            "side": {
+              "before": 81.591483,
+              "after": 77.102645
+            }
+          },
+          "changedPixels48": [
+            140,
+            149,
+            92,
+            89
+          ],
+          "changedPixels1024": [
+            118288,
+            126716,
+            97085,
+            87516
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.032429,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.854692,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.976418,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.922112,
+              "after": 67.89641
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.849898
+            },
+            "side": {
+              "before": 90.946497,
+              "after": 87.705719
+            }
+          },
+          "changedPixels48": [
+            135,
+            149,
+            78,
+            110
+          ],
+          "changedPixels1024": [
+            118393,
+            132538,
+            101120,
+            90640
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.044157,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.797194,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.909948,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 72.56668,
+              "after": 73.500275
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.335616
+            },
+            "side": {
+              "before": 92.339568,
+              "after": 92.651091
+            }
+          },
+          "changedPixels48": [
+            183,
+            199,
+            123,
+            126
+          ],
+          "changedPixels1024": [
+            141348,
+            174433,
+            154270,
+            99014
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988009,
+          "markerMaxShift": 0.023835,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.862188,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.887683,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 64.174142,
+              "after": 64.165665
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 42.633475
+            },
+            "side": {
+              "before": 107.180975,
+              "after": 106.577829
+            }
+          },
+          "changedPixels48": [
+            170,
+            173,
+            77,
+            100
+          ],
+          "changedPixels1024": [
+            143169,
+            162695,
+            101743,
+            85797
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.055778,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.657567,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.994376,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 60.078773,
+              "after": 56.852758
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.253899
+            },
+            "side": {
+              "before": 66.031132,
+              "after": 57.676982
+            }
+          },
+          "changedPixels48": [
+            150,
+            137,
+            95,
+            78
+          ],
+          "changedPixels1024": [
+            122044,
+            127784,
+            88080,
+            80192
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.035272,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.839121,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.94838,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 71.210314,
+              "after": 72.317348
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.253721
+            },
+            "side": {
+              "before": 101.402256,
+              "after": 100.289228
+            }
+          },
+          "changedPixels48": [
+            144,
+            191,
+            112,
+            107
+          ],
+          "changedPixels1024": [
+            125165,
+            157160,
+            132179,
+            94016
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.010259,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.735333,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.612077,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 81.495327,
+              "after": 71.186791
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 32.49088
+            },
+            "side": {
+              "before": 66.933172,
+              "after": 75.904374
+            }
+          },
+          "changedPixels48": [
+            64,
+            42,
+            39,
+            115
+          ],
+          "changedPixels1024": [
+            71092,
+            54778,
+            74507,
+            105516
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B43",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.039135,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.807522,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.986049,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 62.894169,
+              "after": 59.666115
+            },
+            "posterior": {
+              "before": 30.819118,
+              "after": 31.728105
+            },
+            "side": {
+              "before": 81.993357,
+              "after": 77.208763
+            }
+          },
+          "changedPixels48": [
+            143,
+            147,
+            104,
+            99
+          ],
+          "changedPixels1024": [
+            122015,
+            130921,
+            95145,
+            88884
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.034482,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.746833,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.978782,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 66.578793,
+              "after": 65.196843
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.918985
+            },
+            "side": {
+              "before": 91.179335,
+              "after": 87.791531
+            }
+          },
+          "changedPixels48": [
+            158,
+            149,
+            79,
+            110
+          ],
+          "changedPixels1024": [
+            123731,
+            138012,
+            99397,
+            91845
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.049206,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.781455,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.902407,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 71.537095,
+              "after": 72.400605
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.285938
+            },
+            "side": {
+              "before": 88.578169,
+              "after": 88.897276
+            }
+          },
+          "changedPixels48": [
+            205,
+            225,
+            150,
+            141
+          ],
+          "changedPixels1024": [
+            149839,
+            178061,
+            151465,
+            101193
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.02632,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.85853,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.886842,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 61.729158,
+              "after": 60.872792
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 42.816545
+            },
+            "side": {
+              "before": 102.84037,
+              "after": 102.112188
+            }
+          },
+          "changedPixels48": [
+            177,
+            178,
+            74,
+            104
+          ],
+          "changedPixels1024": [
+            146040,
+            163260,
+            100418,
+            86410
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.06152,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.655219,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.993936,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 58.261852,
+              "after": 53.358328
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.264704
+            },
+            "side": {
+              "before": 66.565806,
+              "after": 57.289845
+            }
+          },
+          "changedPixels48": [
+            154,
+            153,
+            103,
+            75
+          ],
+          "changedPixels1024": [
+            124615,
+            130528,
+            85877,
+            82033
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988,
+          "markerMaxShift": 0.037875,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.832252,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.944118,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.64189,
+              "after": 70.114508
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.210495
+            },
+            "side": {
+              "before": 97.527924,
+              "after": 98.221657
+            }
+          },
+          "changedPixels48": [
+            159,
+            191,
+            120,
+            117
+          ],
+          "changedPixels1024": [
+            132745,
+            161169,
+            129919,
+            95131
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.007043,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.818952,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.607858,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 81.908867,
+              "after": 80.196817
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 32.491659
+            },
+            "side": {
+              "before": 65.518094,
+              "after": 72.400536
+            }
+          },
+          "changedPixels48": [
+            75,
+            38,
+            45,
+            115
+          ],
+          "changedPixels1024": [
+            70879,
+            53701,
+            70222,
+            104757
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atlas:B46",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.030792,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.847823,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.980621,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.156882,
+              "after": 66.704237
+            },
+            "posterior": {
+              "before": 31.111656,
+              "after": 31.930217
+            },
+            "side": {
+              "before": 90.084311,
+              "after": 88.361196
+            }
+          },
+          "changedPixels48": [
+            125,
+            114,
+            68,
+            102
+          ],
+          "changedPixels1024": [
+            119482,
+            127986,
+            93461,
+            88558
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988006,
+          "markerMaxShift": 0.026317,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.878818,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.972862,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.737043,
+              "after": 68.304044
+            },
+            "posterior": {
+              "before": 30.399303,
+              "after": 30.855773
+            },
+            "side": {
+              "before": 99.787578,
+              "after": 99.005166
+            }
+          },
+          "changedPixels48": [
+            118,
+            122,
+            67,
+            99
+          ],
+          "changedPixels1024": [
+            119698,
+            134336,
+            96100,
+            91841
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.989414,
+          "markerMaxShift": 0.079859,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.618209,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.895631,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 76.051615,
+              "after": 75.777768
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 35.738107
+            },
+            "side": {
+              "before": 90.238033,
+              "after": 86.055687
+            }
+          },
+          "changedPixels48": [
+            249,
+            281,
+            227,
+            187
+          ],
+          "changedPixels1024": [
+            175182,
+            199340,
+            167875,
+            118902
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.022478,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.873926,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.887529,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 69.381153,
+              "after": 68.987147
+            },
+            "posterior": {
+              "before": 43.551334,
+              "after": 42.837026
+            },
+            "side": {
+              "before": 102.747646,
+              "after": 101.152121
+            }
+          },
+          "changedPixels48": [
+            170,
+            179,
+            60,
+            114
+          ],
+          "changedPixels1024": [
+            145299,
+            166607,
+            99952,
+            92636
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.048532,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.731577,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.994577,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 63.295735,
+              "after": 60.880741
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.256759
+            },
+            "side": {
+              "before": 67.079385,
+              "after": 59.772138
+            }
+          },
+          "changedPixels48": [
+            143,
+            144,
+            83,
+            77
+          ],
+          "changedPixels1024": [
+            124845,
+            129945,
+            86726,
+            81281
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.028231,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.866374,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.948288,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 74.956486,
+              "after": 75.16742
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.417611
+            },
+            "side": {
+              "before": 99.373982,
+              "after": 99.390561
+            }
+          },
+          "changedPixels48": [
+            143,
+            149,
+            99,
+            102
+          ],
+          "changedPixels1024": [
+            127877,
+            160388,
+            125526,
+            95032
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "preserve53",
+          "lowerPoints": 98,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 74.844725,
+              "after": 74.844725
+            },
+            "posterior": {
+              "before": 33.726702,
+              "after": 33.726702
+            },
+            "side": {
+              "before": 75.613163,
+              "after": 75.613163
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paper:R05",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988003,
+          "markerMaxShift": 0.006749,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.754472,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.971453,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 56.779923,
+              "after": 48.776384
+            },
+            "posterior": {
+              "before": 29.193166,
+              "after": 28.80125
+            },
+            "side": {
+              "before": 85.489692,
+              "after": 83.336482
+            }
+          },
+          "changedPixels48": [
+            78,
+            92,
+            47,
+            71
+          ],
+          "changedPixels1024": [
+            80579,
+            87128,
+            50765,
+            65839
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.990628,
+          "markerMaxShift": 0.007152,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.672615,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.936978,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 63.783769,
+              "after": 59.03551
+            },
+            "posterior": {
+              "before": 29.912068,
+              "after": 28.780702
+            },
+            "side": {
+              "before": 94.378484,
+              "after": 93.564565
+            }
+          },
+          "changedPixels48": [
+            113,
+            116,
+            40,
+            79
+          ],
+          "changedPixels1024": [
+            86686,
+            95361,
+            56721,
+            72073
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.999346,
+          "markerMaxShift": 0.0127,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.572918,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.690377,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 68.134833,
+              "after": 71.674295
+            },
+            "posterior": {
+              "before": 34.749555,
+              "after": 34.041884
+            },
+            "side": {
+              "before": 77.492913,
+              "after": 75.88936
+            }
+          },
+          "changedPixels48": [
+            148,
+            179,
+            105,
+            102
+          ],
+          "changedPixels1024": [
+            106190,
+            145109,
+            119349,
+            78365
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988005,
+          "markerMaxShift": 0.006405,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.704076,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.50349,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 73.114008,
+              "after": 72.320305
+            },
+            "posterior": {
+              "before": 44.724536,
+              "after": 42.572918
+            },
+            "side": {
+              "before": 88.933446,
+              "after": 90.196157
+            }
+          },
+          "changedPixels48": [
+            158,
+            160,
+            56,
+            82
+          ],
+          "changedPixels1024": [
+            125974,
+            135625,
+            61472,
+            70261
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.008603,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.726524,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.990035,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 46.615854,
+              "after": 42.21229
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.240807
+            },
+            "side": {
+              "before": 66.887188,
+              "after": 63.31377
+            }
+          },
+          "changedPixels48": [
+            83,
+            84,
+            44,
+            47
+          ],
+          "changedPixels1024": [
+            81222,
+            84706,
+            40282,
+            55143
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.993991,
+          "markerMaxShift": 0.008483,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.569169,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.797202,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 67.512005,
+              "after": 66.038396
+            },
+            "posterior": {
+              "before": 33.020585,
+              "after": 32.523866
+            },
+            "side": {
+              "before": 85.280549,
+              "after": 83.543202
+            }
+          },
+          "changedPixels48": [
+            123,
+            168,
+            82,
+            78
+          ],
+          "changedPixels1024": [
+            95416,
+            123990,
+            92624,
+            73593
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 82,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.000439,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.727089,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.698342,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 55.859621,
+              "after": 55.370409
+            },
+            "posterior": {
+              "before": 32.9138,
+              "after": 32.462825
+            },
+            "side": {
+              "before": 91.640134,
+              "after": 87.576788
+            }
+          },
+          "changedPixels48": [
+            40,
+            26,
+            22,
+            95
+          ],
+          "changedPixels1024": [
+            53164,
+            34796,
+            41610,
+            102513
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review:R03",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988,
+          "markerMaxShift": 0.013294,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.79501,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.988188,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 32.048013,
+              "after": 29.793228
+            },
+            "posterior": {
+              "before": 29.813432,
+              "after": 29.507944
+            },
+            "side": {
+              "before": 89.993451,
+              "after": 86.068793
+            }
+          },
+          "changedPixels48": [
+            112,
+            119,
+            78,
+            79
+          ],
+          "changedPixels1024": [
+            83779,
+            85970,
+            59442,
+            71021
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.015896,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.760448,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.953741,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 33.618592,
+              "after": 34.910207
+            },
+            "posterior": {
+              "before": 29.96105,
+              "after": 28.344333
+            },
+            "side": {
+              "before": 101.082952,
+              "after": 97.373432
+            }
+          },
+          "changedPixels48": [
+            153,
+            138,
+            84,
+            105
+          ],
+          "changedPixels1024": [
+            91533,
+            98517,
+            66780,
+            78679
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.014632,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.743289,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.864479,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 39.014214,
+              "after": 41.9494
+            },
+            "posterior": {
+              "before": 34.749555,
+              "after": 33.49535
+            },
+            "side": {
+              "before": 109.327078,
+              "after": 110.189045
+            }
+          },
+          "changedPixels48": [
+            140,
+            176,
+            85,
+            91
+          ],
+          "changedPixels1024": [
+            99949,
+            128849,
+            108005,
+            73669
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988005,
+          "markerMaxShift": 0.005234,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.873148,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.870163,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 38.566498,
+              "after": 39.854305
+            },
+            "posterior": {
+              "before": 39.555419,
+              "after": 39.210812
+            },
+            "side": {
+              "before": 115.911217,
+              "after": 115.373996
+            }
+          },
+          "changedPixels48": [
+            121,
+            115,
+            48,
+            43
+          ],
+          "changedPixels1024": [
+            101871,
+            109834,
+            58567,
+            48358
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.015943,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.784369,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.997469,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 27.006292,
+              "after": 26.194382
+            },
+            "posterior": {
+              "before": 28.16731,
+              "after": 28.266292
+            },
+            "side": {
+              "before": 71.629157,
+              "after": 64.734017
+            }
+          },
+          "changedPixels48": [
+            114,
+            104,
+            55,
+            57
+          ],
+          "changedPixels1024": [
+            81244,
+            81479,
+            44410,
+            60807
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.989104,
+          "markerMaxShift": 0.019705,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.71971,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.89917,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 37.644287,
+              "after": 40.055063
+            },
+            "posterior": {
+              "before": 32.82535,
+              "after": 32.229852
+            },
+            "side": {
+              "before": 113.520544,
+              "after": 110.488409
+            }
+          },
+          "changedPixels48": [
+            171,
+            203,
+            117,
+            116
+          ],
+          "changedPixels1024": [
+            98112,
+            122395,
+            93885,
+            80650
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0.006158,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.538937,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.487545,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 47.009432,
+              "after": 52.212479
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 32.477655
+            },
+            "side": {
+              "before": 36.792293,
+              "after": 40.291147
+            }
+          },
+          "changedPixels48": [
+            56,
+            50,
+            36,
+            100
+          ],
+          "changedPixels1024": [
+            49792,
+            49008,
+            48985,
+            93627
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review:R05",
+      "poses": [
+        {
+          "pose": 0,
+          "mode": "neutral",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 1,
+          "markerMaxShift": 0,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 1,
+          "detail": null,
+          "creases": {
+            "anterior": {
+              "before": 0,
+              "after": 0
+            },
+            "posterior": {
+              "before": 0,
+              "after": 0
+            },
+            "side": {
+              "before": 0,
+              "after": 0
+            }
+          },
+          "changedPixels48": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "changedPixels1024": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pose": 90,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988006,
+          "markerMaxShift": 0.005878,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.829451,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.99045,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 31.155421,
+              "after": 30.989719
+            },
+            "posterior": {
+              "before": 29.789209,
+              "after": 29.256146
+            },
+            "side": {
+              "before": 93.310552,
+              "after": 91.639561
+            }
+          },
+          "changedPixels48": [
+            86,
+            90,
+            46,
+            59
+          ],
+          "changedPixels1024": [
+            73753,
+            77250,
+            53606,
+            62395
+          ]
+        },
+        {
+          "pose": 113,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988006,
+          "markerMaxShift": 0.006083,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.820892,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.959292,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 34.296715,
+              "after": 33.783772
+            },
+            "posterior": {
+              "before": 29.96105,
+              "after": 28.880117
+            },
+            "side": {
+              "before": 105.496262,
+              "after": 104.503002
+            }
+          },
+          "changedPixels48": [
+            117,
+            97,
+            50,
+            72
+          ],
+          "changedPixels1024": [
+            80040,
+            86729,
+            59270,
+            68263
+          ]
+        },
+        {
+          "pose": 178,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988001,
+          "markerMaxShift": 0.007966,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.738002,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.867108,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 36.773544,
+              "after": 39.192238
+            },
+            "posterior": {
+              "before": 34.9529,
+              "after": 34.333214
+            },
+            "side": {
+              "before": 107.948668,
+              "after": 108.576942
+            }
+          },
+          "changedPixels48": [
+            129,
+            162,
+            83,
+            74
+          ],
+          "changedPixels1024": [
+            94004,
+            122275,
+            101750,
+            68981
+          ]
+        },
+        {
+          "pose": "behindHead",
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988007,
+          "markerMaxShift": 0.003917,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.839915,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.870011,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 38.969498,
+              "after": 38.260236
+            },
+            "posterior": {
+              "before": 39.66945,
+              "after": 40.149259
+            },
+            "side": {
+              "before": 116.308439,
+              "after": 116.381812
+            }
+          },
+          "changedPixels48": [
+            116,
+            115,
+            50,
+            38
+          ],
+          "changedPixels1024": [
+            102578,
+            108413,
+            59185,
+            49740
+          ]
+        },
+        {
+          "pose": 67,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988002,
+          "markerMaxShift": 0.007556,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.772549,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.998566,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 26.609463,
+              "after": 25.663429
+            },
+            "posterior": {
+              "before": 26.953677,
+              "after": 26.470834
+            },
+            "side": {
+              "before": 75.587106,
+              "after": 71.97545
+            }
+          },
+          "changedPixels48": [
+            93,
+            71,
+            42,
+            42
+          ],
+          "changedPixels1024": [
+            71933,
+            74093,
+            40043,
+            52183
+          ]
+        },
+        {
+          "pose": 146,
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.988004,
+          "markerMaxShift": 0.007552,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.76094,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.904603,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 33.561831,
+              "after": 34.630499
+            },
+            "posterior": {
+              "before": 32.82535,
+              "after": 32.175771
+            },
+            "side": {
+              "before": 116.373754,
+              "after": 116.211989
+            }
+          },
+          "changedPixels48": [
+            133,
+            157,
+            76,
+            75
+          ],
+          "changedPixels1024": [
+            87320,
+            110703,
+            84690,
+            70493
+          ]
+        },
+        {
+          "pose": "waist",
+          "mode": "surface",
+          "lowerPoints": 66,
+          "lowerMaxShift": 0,
+          "projectedVolumeRatio": 0.999668,
+          "markerMaxShift": 0.010522,
+          "originalTurns90": 0,
+          "originalMinAreaRatio": 0.528685,
+          "detail": {
+            "gain": 1,
+            "minProjected": 0.487282,
+            "addedVertices": 1366,
+            "addedFaces": 2732
+          },
+          "creases": {
+            "anterior": {
+              "before": 42.54755,
+              "after": 44.798785
+            },
+            "posterior": {
+              "before": 32.120237,
+              "after": 31.170445
+            },
+            "side": {
+              "before": 39.292355,
+              "after": 45.761584
+            }
+          },
+          "changedPixels48": [
+            63,
+            50,
+            43,
+            102
+          ],
+          "changedPixels1024": [
+            51794,
+            50432,
+            49089,
+            94161
+          ]
+        }
+      ]
+    }
+  ],
+  "learningEvidence": [
+    {
+      "episode": "54-W-5c-outline",
+      "unit": "ratio",
+      "before": 0.343753,
+      "after": 0.29766,
+      "note": "뒤통수 자세 외곽 동일 17행. 양쪽 유두 사이 거리에 대한 평균 절대오차."
+    },
+    {
+      "episode": "54-W-5c-near-rows",
+      "unit": "step",
+      "before": 0,
+      "after": 9,
+      "note": "앞주름 관측 13행 중 피부 안에 대응한 행 수. 큰 값이 높은 검출률. 53차 오차 평균은 산출할 수 없다."
+    },
+    {
+      "episode": "54-W-6c-outline",
+      "unit": "ratio",
+      "before": 0.343883,
+      "after": 0.295002,
+      "note": "별도 참여자의 아래쪽 원스캔 외곽 7행. 카메라 정면 근사."
+    },
+    {
+      "episode": "54-W-6c-near-rows",
+      "unit": "step",
+      "before": 0,
+      "after": 0,
+      "note": "원스캔 근처 앞주름 38행. 두 판 모두 고정 정면 근사에서 대응행이 없다."
+    },
+    {
+      "episode": "54-projected-volume-limit",
+      "unit": "ratio",
+      "before": 0.068168,
+      "after": 0.012,
+      "note": "16형 8자세의 앞면 투영 부피 대용지표 최대 절대편차. 제한 전 시안과 최종 시안의 비교."
+    },
+    {
+      "episode": "54-W-behind-rear-bend",
+      "unit": "ratio",
+      "before": 0.241952,
+      "after": 0.218218,
+      "note": "모형 뒤쪽 재료면의 굽힘 변화 95백분위/180도. 정면 원도에서 뒤주름은 볼 수 없다."
+    },
+    {
+      "episode": "54-W-178-front-bend",
+      "unit": "ratio",
+      "before": 0.386707,
+      "after": 0.427909,
+      "note": "양팔 178도 원래 앞 재료면의 굽힘 변화 95백분위/180도. 굽힘이 더 커진 반례."
+    }
+  ],
+  "sha256": {
+    "plate": "df73ab180abe37434fbd6601a33e7601f72cb19dfa930ee56b2fba7ff34e7e35",
+    "module": "af62a4124952a3366e49dee2b6be95819aa319fe1c3afdbb1f1f7250ddd299be",
+    "sourceMetrics": "e58fff618575bc47cdbac0e3404cb8ec55d8b1184feb98f5db62981e4bf32f77",
+    "officialGate": "79d30d74d5a964c01f6e165fac988974470d1c8e17c4f1adc3041fa2d3f6d626"
+  }
+}

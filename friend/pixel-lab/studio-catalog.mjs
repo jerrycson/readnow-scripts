@@ -7,6 +7,8 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
+ tool('shoulder54','pose','어깨와 겨드랑이','같은 전신에서 양팔이나 한 팔을 들고 겨드랑이와 위팔의 연결면을 비교합니다. 관절 탭에서 등신별 골반과 무릎으로도 전환할 수 있습니다.','workbench.html?round=54&case=female-8&trial=shoulder54',['팔','어깨','겨드랑이','쇄골','견갑','관절'],54),
+ tool('hip54','pose','골반과 무릎','다리 굽힘·벌림·보폭을 바꾸고 같은 전신의 어깨 자세와 함께 관찰합니다.','workbench.html?round=54&case=female-8&trial=hip54',['골반','다리','무릎','보행','관절'],54),
  tool('round-plan','general','회차별 실행 계획','52~60차의 목적, 작업 배분, 다음 검토 장면과 계획 카드 번호를 살펴봅니다.','../research/hub/round-plan51.html',['계획','목표','검토','일정','다음 회차']),
  tool('workbench','general','다중 시점 작업대','얼굴·가슴의 회차별 후보를 같은 각도로 비교합니다. 전신 14개에서 머리, 이목구비와 체형을 교체하고 초기화할 수 있습니다.','workbench.html',['다중','시점','1창','2창','4창','원형','픽셀','작업대']),
  tool('definition','general','고해상도 원형 · 픽셀판','같은 형상을 1024·2048px 고해상도와 48·96px 픽셀 아트로 비교합니다.','definition.html',['고해상도','원형','픽셀','1024','2048','품질','두 버전']),
