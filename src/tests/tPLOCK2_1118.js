@@ -5,6 +5,7 @@
 //   ④ 잠금을 못 읽으면 이번엔 아무것도 올리지 않음(안전 쪽)
 //   ⑤ 클라우드 조회수 실험(pxExpRun) — 바퀴 중간에 잠근 상품은 유의 사항을 고치지 않고 건너뜀(plk:1)
 //   ⑥ 웹앱 y24AutoTick — 실시간 잠금으로 거르고 올리기 직전 plkLockedIds로 다시 읽음 · 못 읽으면 멈춤 · 건너뜀 띠
+//   ⑦ (리드 결정 F57) 손으로 누르는 예스24 새로 올리기(📤 1건 미리 보기 확정·여러 건)도 잠긴 상품은 등록하지 않음 · 알림 글만(팝업 없음)
 // 실행: node src/tests/tPLOCK2_1118.js · 지어낸 자료(손님 정보 없음) · 실제 Firebase·예스24에 아무것도 안 함
 const fs = require('fs'); const path = require('path'); const os = require('os');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 700)); } else console.log('  ✓', m); };
@@ -89,6 +90,15 @@ function world(wrapC) { let T = Date.parse('2026-11-18T01:00:00Z'); const clk = 
     const fn = new Function('S', 'Y24A', 'plkSkipped', A.slice(f0, f1) + '\nreturn y24AutoPlk;')(S, Y24A, (k, w) => calls.push([k.length, w]));
     fn(['aladin_A4', 'aladin_A1']); fn(['aladin_A1', 'aladin_A4']); fn(['aladin_A4']); fn([]);
     ok(calls.length === 2 && calls[0][1] === '예스24 자동 올림' && Y24A.plk.n === 0, '⑥ 같은 상품이면 띠를 다시 띄우지 않음 · 바뀌면 띄움', { calls, plk: Y24A.plk }); }
+  /* ⑦ (리드 결정 F57) 손으로 누르는 예스24 새로 올리기(📤 1건 미리 보기 확정·여러 건)도 잠긴 상품은 장부에 안 적고 「🔒 잠긴 상품 — 잠금을 풀면 등록됩니다」 · 못 읽으면 올리지 않음 */
+  { const A = rd('src/app.html'); const i = A.indexOf('async function y24RegLockCut('); const endS = "toast('예스24 올리기 실패: ' + errKo(e)); } }"; const j = A.indexOf(endS, i);
+    const mk = (lk) => { const T = [], C = [], K = []; const S = { plist: new Map([['aladin_A1', { listingId: 9001 }], ['aladin_A4', { listingId: 9004 }]]), _y24Pick: new Set() };
+      const go = new Function('S', 'plkLockedIds', 'plkSkipped', 'toast', 'y24RegCommit', 'errKo', A.slice(i, j + endS.length) + '\nreturn y24RegGo;')(S, async () => lk, (k, w) => K.push([k, w]), (m) => T.push(m), async (rows) => { C.push(rows.map((r) => r.lid)); return { ok: rows, skip: [] }; }, (e) => String(e)); return { go, T, C, K }; };
+    let w = mk(new Set(['9004'])); await w.go([{ lid: 'aladin_A4' }]);
+    ok(i > 0 && j > i && !w.C.length && w.T[0] === '🔒 잠긴 상품 — 잠금을 풀면 등록됩니다' && w.K[0] && w.K[0][1] === '예스24 새로 올리기', '⑦ 손 등록(1건 미리 보기 확정) — 잠긴 상품(알라딘 상품 번호로 잠금)은 장부에 안 적고 「🔒 잠긴 상품 — 잠금을 풀면 등록됩니다」', { T: w.T, C: w.C, K: w.K });
+    w = mk(new Set(['aladin_A4'])); await w.go([{ lid: 'aladin_A4' }, { lid: 'aladin_A1' }]); ok(w.C.length === 1 && w.C[0].join() === 'aladin_A1' && /빼고 올림/.test(w.T[0]), '⑦ 여러 건이면 잠긴 것만 빼고 나머지는 올림', { T: w.T, C: w.C });
+    w = mk(null); await w.go([{ lid: 'aladin_A1' }]); ok(!w.C.length && /못 읽어/.test(w.T[0]), '⑦ 잠금을 못 읽으면 손 등록도 하지 않음(안전 쪽)', { T: w.T });
+    const P = A.slice(A.indexOf('function y24RegPop('), A.indexOf('function y24RegPop(') + 600); ok(/plkOn\(lid\) \|\| \(l0 && plkOnLid\(l0\.listingId\)\)\) return toast\('🔒 잠긴 상품 — 잠금을 풀면 등록됩니다'/.test(P), '⑦ 1건 미리 보기 판은 잠긴 상품이면 열지 않고 알림(팝업 없음)'); }
   for (const h of HOMES) { try { fs.rmSync(h, { recursive: true, force: true }); } catch (e) {} }
   console.log(bad ? `❌ tPLOCK2_1118 실패 ${bad}` : '✓ tPLOCK2_1118 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ tPLOCK2_1118 오류', e && e.stack); process.exit(1); });
