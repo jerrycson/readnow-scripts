@@ -32,6 +32,16 @@ const err = async (p) => { try { await p; return null; } catch (e) { return e; }
       ok(f.o && f.o.method === 'POST' && f.o.headers.Authorization === 'Bearer TOKEN-지어낸', '① POST · 로그인 토큰(Bearer)', f.o && f.o.headers);
       ok(bd.structuredAggregationQuery && bd.structuredAggregationQuery.structuredQuery.from[0].collectionId === 'prd_listings' && bd.structuredAggregationQuery.aggregations[0].count, '① 몸 = 그 모음 전체 count 집계', bd);
       ok(W.calls.gm.length === 0, '① fetch가 되면 GM 요청 안 함'); }
+    /* (리드 11/18 · h4 소견) 진짜 compat SDK 꼴 — @firebase/firestore-compat 0.3.32 dist/src/api/database.d.ts의 Query·CollectionReference 메서드 목록 그대로(count 없음) */
+    { const QM = ['where', 'orderBy', 'limit', 'limitToLast', 'startAt', 'startAfter', 'endBefore', 'endAt', 'isEqual', 'get', 'onSnapshot', 'withConverter'];
+      const CM = ['doc', 'add', 'isEqual', 'withConverter'];
+      class Query { constructor(fs) { this.firestore = fs; } } for (const m of QM) Query.prototype[m] = function () { if (m === 'get') return Promise.reject(new Error('통째로 받으면 안 됨')); return this; };
+      class CollectionReference extends Query { constructor(fs, id) { super(fs); this._id = id; } get id() { return this._id; } get path() { return this._id; } get parent() { return null; } }
+      for (const m of CM) if (m !== 'doc') CollectionReference.prototype[m] = Query.prototype[m] || function () { return this; };
+      CollectionReference.prototype.doc = function (id) { return { id, set: async () => {} }; };
+      const W = mk(); const fsObj = { collection: (c) => new CollectionReference(fsObj, c) }; W.ctx.firebase.firestore = () => fsObj;
+      const probe = fsObj.collection('prd_listings'); ok(typeof probe.count === 'undefined' && QM.every((m) => typeof probe[m] === 'function'), '① 가짜 compat Query = 0.3.32 메서드 목록 그대로(count 없음)');
+      const n = await W.srv('prd_listings'); ok(n === 26710 && W.calls.fetch.length === 1, '① 진짜 compat 꼴(Query 클래스·CollectionReference 상속)에서도 REST 길로 건수', { n, f: W.calls.fetch.length }); }
     { const W = mk({ hasCount: true }); const n = await W.srv('crm_orders'); ok(n === 4321 && W.calls.count === 1 && W.calls.fetch.length === 0, '① count()가 함수면 그것을 씀(REST 안 부름)', { n, c: W.calls }); }
     { const W = mk({ n: 0 }); const n = await W.srv('x'); ok(n === 0, '① 빈 모음은 0(오류 아님)', n); }
     { const W = mk({ fetchThrow: true }); const n = await W.srv('prd_listings'); ok(n === 777 && W.calls.gm.length === 1 && W.calls.gm[0].anonymous === true, '① fetch가 막히면 GM 요청(@connect googleapis.com · 쿠키 안 보냄)으로', { n, gm: W.calls.gm.length }); }
