@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.353의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.354의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.353' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.353', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.354' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.354', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3678,6 +3678,9 @@
     if (!(t === 2 && complete)) { try { const ed = await delEditGone(lid); if (ed === 'gone') return { found: null, sure: true, why: '상품 번호로 정보수정 화면을 열어도 상품이 없음(지워짐)' }; } catch (e) {} } /* (1.89.94) 정범님 10/26 '321321': ISBN 없는 상품은 상품명으로만 찾아 '확인 못 함'으로 끝나 6일째 '확인 중'이던 것 — 상품 번호로 정보수정 화면을 열어 상품이 없으면 확실히 지워진 것 */
     return { found: null, sure: t === 2 && complete, why: t === 2 ? (complete ? 'ISBN으로 모든 상태 목록을 찾아도 없음' : '검색 결과가 너무 많아 끝까지 못 봄') : '상품명으로만 찾음 — 없다고 단정하지 않음' }; }
   async function delEditGone(lid) { const r = await fetch('/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid), { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) throw new Error('로그인 풀림'); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); if (looksLoggedOut(r.url, d)) throw new Error('로그인 풀림'); const f = d.getElementById('frmRecord'); const uid = String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''); if (!f) return /샵매니저|판매자 매니저|scm/i.test(h) ? 'gone' : 'unknown'; return uid === String(lid) ? 'there' : 'unknown'; }
+  /* (plock1 · 정범님 11/17) 🔒 상품 잠금 — 잠긴 상품(prd_locks/{키}.on)은 판매 상태(·팔려서 줄어드는 수량) 말고 아무것도 안 바꿈 · 알라딘을 고치기 직전 다시 읽음 · 웹앱·클라우드·가격 감시기와 같은 plkBlock */
+  const plkBlock = (lk, ks, down) => { ks = (ks || []).slice(); if (!lk || lk.on !== true) return { keep: ks, drop: [] }; const keep = ks.filter((k) => k === 'state' || (k === 'qty' && !!down)); return { keep, drop: ks.filter((k) => !keep.includes(k)) }; };
+  async function plkReadPc(v) { try { const k = v.listingKey ? String(v.listingKey) : ''; if (k) { const d = await C('prd_locks').doc(k).get(); if (d.exists) return d.data() || null; } const lid = String(v.listingId || ''); if (lid) { const q = await C('prd_locks').where('lid', '==', lid).limit(1).get(); if (!q.empty) return q.docs[0].data() || null; } return null; } catch (e) { return undefined; } } /* undefined = 못 읽음 → 잠긴 것으로(안전 쪽) */
   async function regDelCmd(ref, v) { ref = regTrailRef(ref, v, true); const mode = v.mode === 'listing' ? 'listing' : 'reg'; const items = (Array.isArray(v.items) ? v.items : []).filter((x) => x && x.listingId).slice(0, 200); const res = { ...(v.results || {}) }; const key = `${ref.id}#${v.tries || 1}`; const kOf = (it) => it.regItem || it.listingKey || it.listingId;
     const gate = await exBegin('regDel', key, { n: items.length, mode }); if (!gate.ok) { await ref.set({ status: 'fail', msg: '같은 삭제를 이미 시작했던 일 — 알라딘 상품 조회에서 확인 (' + (gate.why || '') + ')', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
     let st = 'failed', why = null; LOOK_PRIO++; const sentL = [];
@@ -3692,6 +3695,7 @@
           if (it.cmdId) { if (!(it.cmdId in cmdBase)) { try { const cd = (await C('shp_cmds').doc(it.cmdId).get()).data() || {}; cmdBase[it.cmdId] = +((cd.verify || {}).base || cd.base || 0); } catch (e) { cmdBase[it.cmdId] = 0; } } const b = cmdBase[it.cmdId]; if (b && !(+lid > b)) { refuse(it, `상품 번호 ${lid}가 이 등록을 시작하기 전 번호(${b})보다 작음 — 이전 상품`); continue; } }
           okItems.push(it); }
       else okItems.push(...items);
+      { const keep = []; for (const it of okItems) { const lk = await plkReadPc({ listingKey: it.listingKey || (it.usedCode ? 'aladin_' + it.usedCode : ''), listingId: it.listingId }); if (lk === undefined || (lk && lk.on === true)) { refuse(it, lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽)' : '🔒 잠김 — 건너뜀'); log(`🔒 잠김 — 건너뜀: ${it.title || it.usedCode || it.listingId}`); continue; } keep.push(it); } okItems.splice(0, okItems.length, ...keep); } /* (plock1) 잠긴 상품은 지우지 않음(앞 페이지 올리기 포함) */
       const by = new Map(); let k0 = 0;
       for (const it of okItems) { k0++; { /* (1.89.5) ⏸·⏹ 웹앱 요청(정범님 10/20) — 찾는 단계는 아직 알라딘에 아무것도 안 보냈으므로 다음 상품 전에 멈춤 · 다시 시작하면 처음부터 다시 찾음(읽기만) */ const cur = ((await ref.get().catch(() => null)) || { data: () => ({}) }).data() || {}; if (cur.pauseReq || cur.stopReq) { const stop = !!cur.stopReq; await ref.set({ status: stop ? 'cancelled' : 'paused', step: 1, msg: `${stop ? '⏹ 중단' : '⏸ 일시정지'} — ${k0 - 1}/${okItems.length} 찾은 뒤 멈춤 · 알라딘에는 아무것도 보내지 않음`, results: res, pauseReq: null, stopReq: null, claim: null, ...(stop ? { doneAt: nowIso() } : { pausedAt: nowIso() }), uploadedAt: TS() }, { merge: true }); st = 'cancelled'; why = stop ? '중단' : '일시정지'; log(`🗑 알라딘 삭제 ${why} (웹앱 요청 · ${k0 - 1}/${okItems.length} 찾음 · 보낸 것 없음)`); return; } }
         await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
