@@ -17,6 +17,7 @@ const okName=v=>typeof v==='string'&&v.length>0&&v.length<160&&!/[\r\n<>]/.test(
 export function studyOf(row){return row.task==='alignment'||row.method==='photo'?'friend-photo':'friend-studio';}
 export function evidenceType(r,origin){
  if(origin==='device')return 'device';
+ if(r.source==='photo-oof44.json'&&r.id==='r44-face-oof-four-fold')return 'synthetic-oof';
  if(r.source==='photo-eval44.json'){
   const group=r.id.replace(/^r44-/,'');if(group==='scanClean'||group==='scanTiltedBox')return 'scan';
   if(group==='counterexample')return 'counterexample';if(group==='syntheticHeld')return 'synthetic';
@@ -55,6 +56,11 @@ export function toFramework(row,{origin,at}){
 export function validateFramework(record){
  const r=record;const keys=['entity','event','feature','decision','outcome','feedback','experiment'];
  if(!r||Object.keys(r).length!==7||keys.some(k=>!r[k]))fail('공통 일곱 칸 누락');
+ const required={entity:['id','kind','attrs','domain'],event:['entity','t','type','v','src'],feature:['entity','t','fv','fset'],
+  decision:['id','engine','engineVer','modelId','entity','t','options','pick','why','conf','expect','undo','human','exp','act'],
+  outcome:['decision','due','y','closedAt'],feedback:['decision','score','metric','winner'],
+  experiment:['id','hypo','arms','assign','fence','state','result','proposedBy','approvedBy']};
+ for(const [k,fields] of Object.entries(required))if(fields.some(field=>!Object.hasOwn(r[k],field)))fail(k+' 필수 필드 누락');
  const d=r.decision;
  if(!Object.hasOwn(definitions,d.engine)||!okName(d.id)||!d.why?.length||d.why.some(s=>!okName(s))||!Number.isFinite(d.conf)||d.conf<0||d.conf>1||!d.undo?.how)fail('판정 근거·확신·복원 정보 누락');
  if(d.entity!==r.entity.id||r.event.entity!==r.entity.id||r.feature.entity!==r.entity.id||r.outcome.decision!==d.id||r.feedback.decision!==d.id)fail('서로 다른 대상 또는 결정이 연결됐습니다.');
@@ -75,7 +81,8 @@ export function summarize(records){
 // 일별 짝은 같은 대상·시점에서 추천을 보기 전 따로 측정한 경우만 입력할 수 있다.
 export function assessStage({previous=0,days=[],policy=null,stale=false,error=false,shadowSince=null,now}={}){
  if(!Number.isInteger(previous)||previous<0||previous>4)fail('이전 단계 범위 오류');
- if(error||stale)return {stage:Math.min(previous,1),reason:error?'원자료 오류 · 자동 적용 보류':'자료 36시간 초과 · 다시 읽기와 확인 필요'};
+ if(error)return {stage:Math.max(0,previous-1),reason:'원자료 오류 · 자동 적용 보류'};
+ if(stale)return {stage:Math.min(previous,1),reason:'자료 36시간 초과 · 다시 읽기와 확인 필요'};
  if(!policy||!Number.isInteger(policy.minPairs)||policy.minPairs<1||!Number.isInteger(policy.kDays)||policy.kDays<1||!finite(policy.minGain))return {stage:previous,reason:'연구별 최소 독립 짝 수·연속 일수의 승인 기준 미등록'};
  const sorted=[...days].sort((a,b)=>a.day.localeCompare(b.day));
  if(sorted.some((v,i)=>!/^\d{4}-\d\d-\d\d$/.test(v.day)||!Number.isFinite(Date.parse(v.day))||v.day>iso(now).slice(0,10)||!Number.isInteger(v.pairs)||v.pairs<1||!finite(v.engine)||!finite(v.human)||v.human===0||v.independent!==true||v.sameCondition!==true||(i&&sorted[i-1].day===v.day)))fail('독립 일별 대조 자료 오류');

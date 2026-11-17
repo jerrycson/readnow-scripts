@@ -18,7 +18,7 @@ function unpack(study,packet,now){
  return {records:[...adapted.values()],materialAt:times.sort().at(-1)||null,reference:packet.reference||null};
 }
 export async function runStandardRound({study,read,append,previous=null,now=new Date().toISOString(),trigger='manual',policy=null,days=[],shadowSince=null}){
- if(!Object.hasOwn(definitions,study)||typeof read!=='function'||typeof append!=='function'||!asTime(now))return {ok:false,code:'invalid_input',error:'연구 ID·원본 읽기·일지 저장·시각을 확인하세요.'};
+ if(!Object.hasOwn(definitions,study)||typeof read!=='function'||typeof append!=='function'||!asTime(now)||(previous?.stage!=null&&(!Number.isInteger(previous.stage)||previous.stage<0||previous.stage>4)))return {ok:false,code:'invalid_input',error:'연구 ID·이전 단계·원본 읽기·일지 저장·시각을 확인하세요.'};
  const at=asTime(now),id=crypto.randomUUID();let data,retried=false,summary=null,error=null,state='ok',stage;
  const stale=d=>!d.materialAt||Date.parse(at)-Date.parse(d.materialAt)>staleMs;
  try{
@@ -37,6 +37,6 @@ export async function runStandardRound({study,read,append,previous=null,now=new 
   saw:summary?{records:summary.records,deviceMeasures:summary.deviceMeasures,device:summary.device,reviews:summary.reviews,humanPairs:summary.humanPairs,failures:summary.failures}:null,
   action:state==='source_error'?'읽기 오류 기록':retried?'원자료를 다시 읽고 최신 시각을 대조':'원자료를 읽고 공통 칸으로 채점',
   fix:state==='source_error'?'원본 읽기와 지문을 복구한 뒤 재시도':state==='stalled'?'다시 읽은 뒤에도 새 재료 없음 · 정체 알림':summary?.failures?'악화된 기록을 다음 대조 재료로 유지':'독립 사람 대조 수집 대기',error};
- try{await append(log);}catch(e){return {ok:false,code:'ledger_error',error:e.message,log,summary,records:data?.records??[],reference:data?.reference??null};}
+ try{await append(log,data?.records??[]);}catch(e){return {ok:false,code:'ledger_error',error:e.message,log,summary,records:data?.records??[],reference:data?.reference??null};}
  return {ok:state==='ok',code:state,error:state==='stalled'?'36시간 정체 · 원본 재조회 후에도 새 재료가 없습니다.':error,log,summary,records:data?.records??[],reference:data?.reference??null};
 }

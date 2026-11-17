@@ -21,7 +21,7 @@ export async function getMaterial(readBytes=remoteBytes){
   const sets=new Map(),rows=new Map();
   for(const r of [...index.releases].filter(r=>r.project==='bookfriend'&&r.learningEvidence).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))){
     const {file,sha256}=r.learningEvidence;
-    if(!/^studio-training[0-9]+\.json$/.test(file)||!/^[a-f0-9]{64}$/.test(sha256)||!Number.isFinite(Date.parse(r.at)))throw Error('학습 자료 식별자 오류');
+    if(!/^studio-training[0-9]+(?:-r[1-9][0-9]*)?\.json$/.test(file)||!/^[a-f0-9]{64}$/.test(sha256)||!Number.isFinite(Date.parse(r.at)))throw Error('학습 자료 식별자 오류');
     if(sets.has(sha256))continue;
     const bytes=await readBytes('/friend/pixel-lab/'+file);
     if(sha(bytes)!==sha256)throw Error('학습 자료 지문 불일치');
