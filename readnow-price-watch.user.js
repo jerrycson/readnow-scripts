@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.52
+// @version      0.10.53
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -201,6 +201,10 @@
   }
   const CTRLG = new Map(); /* (10/30 위험 4) 비교군 그룹이 살아 있는지 — 10분 기억 */
   async function ctrlAlive(gid) { if (!gid) return false; const c0 = CTRLG.get(gid); if (c0 && Date.now() - c0.at < 600000) return c0.v; let v = false; try { const g = (await C('prd_price_batches').doc(gid).get()).data(); v = !!(g && !g.archived && !(SET.batchOff || {})[gid]); } catch (e) { v = true; /* 못 읽으면 지키는 쪽 */ } CTRLG.set(gid, { at: Date.now(), v }); return v; }
+  /* (0.10.53 plock1 · 정범님 11/17) 🔒 상품 잠금 — 잠긴 상품(prd_locks/{키}.on)은 판매 상태 말고 아무것도 안 바꿈(판매가·판매보류풀 포함) · 웹앱·수집기·클라우드와 같은 plkBlock */
+  const plkBlock = (lk, ks, down) => { ks = (ks || []).slice(); if (!lk || lk.on !== true) return { keep: ks, drop: [] }; const keep = ks.filter((k) => k === 'state' || (k === 'qty' && !!down)); return { keep, drop: ks.filter((k) => !keep.includes(k)) }; };
+  let PLKC = { t: 0, S: new Set() }; async function plkSetW() { if (Date.now() - PLKC.t > 120e3) { try { const q = await C('prd_locks').where('on', '==', true).get(); PLKC = { t: Date.now(), S: new Set(q.docs.map((d) => d.id)) }; } catch (e) {} } return PLKC.S; } /* 판정용(자동 승인을 만들지 않게) — 반영 직전에는 따로 바로 읽음 */
+  async function plkReadW(x) { try { const d = await C('prd_locks').doc(String(x.key || '')).get(); if (d.exists) return d.data() || null; if (x.listingId) { const q = await C('prd_locks').where('lid', '==', String(x.listingId)).limit(1).get(); if (!q.empty) return q.docs[0].data() || null; } return null; } catch (e) { return undefined; } } /* undefined = 못 읽음 → 잠긴 것으로(안전 쪽) */
   async function processOne(l) {
     const key = 'aladin_' + l.usedCode; const now = new Date().toISOString();
     const decRef = C('prd_price_decisions').doc(key); const prevD = (await decRef.get()).data() || {};
@@ -262,7 +266,7 @@
       const batchHoldW = !!(prevD.approval && prevD.approval.decision === 'batch' && Date.now() - Date.parse(prevD.approval.at || 0) < 7 * 864e5 && (String(prevD.approval.batchId || '') !== String(wg.id) || wg.watch.mode !== 'semi')); /* (10/30 정범님 '세 기능 연계 만전' · 위험 1) 감시 그룹에 든 상품이라도 수동 일괄로 확정한 지 7일 안이면 감시는 판정만 기록 — 예전엔 감시(자동 · 엔진 설정)가 일괄 확정가를 다음 판정에서 되돌려 가격이 왔다 갔다 함 */
       const keepW = waitingExec || prevD.approvalState === 'applying' || batchHoldW; if (batchHoldW && chg) rec.reasons = ['수동 일괄 확정 7일 보호 — 감시 판정은 기록만(가격 바꾸지 않음)', ...(rec.reasons || [])].slice(0, 12);
       /* (11/10 fence4 · 정범님 11/09 밤 '감시 그룹 자동 반영과 추격자는 내가 결정해서 할 일 — 기능을 왜 꺼?') 🔒 연구 잠금(등록 3개월 안·사람 손댐 14일)은 여기 안 씀 — 정범님이 그룹에 정한 설정(자동 반영 한도·하한·제외)대로 예전처럼 */
-      if (!keepW) { if (chg) { const why = []; const pct = Math.abs(J.target - cur) / cur * 100; if (wg.watch.apply !== 'auto') why.push('관리자 승인 그룹'); else { if (pct > sg) why.push(`변경 ${pct.toFixed(1)}% > 자동 반영 한도 ${sg}%`); if (J.floor && J.target < J.floor) why.push('하한 아래'); if (PR.isExcluded(listing, engineSettings())) why.push('자동 제외 상품'); }
+      if (!keepW) { if (chg) { const why = []; const pct = Math.abs(J.target - cur) / cur * 100; if (wg.watch.apply !== 'auto') why.push('관리자 승인 그룹'); else { if (pct > sg) why.push(`변경 ${pct.toFixed(1)}% > 자동 반영 한도 ${sg}%`); if (J.floor && J.target < J.floor) why.push('하한 아래'); if (PR.isExcluded(listing, engineSettings())) why.push('자동 제외 상품'); } if ((await plkSetW()).has(key)) why.push('🔒 잠긴 상품 — 판매 상태 말고는 바꾸지 않음');
           if (!why.length) Object.assign(rec, { approvalState: 'approved', approval: { decision: 'auto', by: 'engine:' + wg.id, gid: wg.id, at: now, price: J.target, expectPrice: cur, reasons: J.reasons.slice(0, 6) }, autoBlock: [] });
           else Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: why }); }
         else { Object.assign(rec, { approvalState: prevD.approvalState === 'pending' ? null : prevD.approvalState || null }); if (prevD.approvalState !== 'pending') delete rec.approval; } }
@@ -468,6 +472,7 @@
       // ↓ 맡은(반영 중) 뒤에 확인 — 확인하다 막을 때도 그 사이 바뀐 다른 결정을 덮지 않음
       if (!x.listingId) { await d.ref.set({ approvalState: 'blocked', execNote: '샵매니저 상품번호(ItemId)가 없음', ...W() }, { merge: true }); continue; }
       if (x.group === 'control') { await d.ref.set({ approvalState: 'blocked', execNote: '비교 묶음은 바꾸지 않음(효과 측정용)', ...W() }, { merge: true }); continue; }
+      { const lk = await plkReadW(x); if (lk === undefined || plkBlock(lk, ['price']).drop.length) { await d.ref.set({ approvalState: 'blocked', execNote: lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽) — 다시 결정하면 다시 봄' : '🔒 잠금이라 건너뜀 (잠긴 상품은 판매 상태 말고는 바꾸지 않음 · 판매보류풀 포함)', ...W() }, { merge: true }); log(`🔒 잠김 — 건너뜀: ${x.title || x.usedCode}`); continue; } } /* (0.10.53 plock1) 판매가·관리코드(보류풀) 모두 — 맡은 뒤 바로 읽음 */
       if (kind === 'approved') { // 엔진 제안 승인: 옛 엔진·오래된 판정이면 반영하지 않음 (관리자가 직접 정한 가격·보류풀은 그대로 반영)
         if (x.engine !== PR.VERSION) { await d.ref.set({ approvalState: 'stale', execNote: `옛 판정 엔진(${x.engine || '?'})의 제안 — 새 판정 후 다시 결정`, ...W() }, { merge: true }); continue; }
         if (Date.now() - Date.parse(x.at) > 48 * 3600e3) { await d.ref.set({ approvalState: 'stale', execNote: '판정이 48시간 넘게 지남 — 다시 판정 후 결정', ...W() }, { merge: true }); continue; }
