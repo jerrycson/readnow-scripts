@@ -10,6 +10,8 @@
 #   bash src/tools/worklock.sh release <누구> "<한 일>"  # 놓기(push까지 끝낸 뒤) — last에 한 일·커밋을 남김
 #   bash src/tools/worklock.sh clearask <누구>            # 줄에서 내 칸만 빼기(남의 칸은 못 뺌)
 #   bash src/tools/worklock.sh wait <누구> "<하는 일>" [분=60] # 잡힐 때까지 1분마다 한 번: 잡을 수 있으면 잡고, 아니면 줄의 내 칸을 새로 함 — 못 잡으면 내 칸을 빼고 종료 코드 3
+#   (11/17 wake1) take·step·wait·ask는 작업 폴더의 이 파일이 origin/main 판과 다르면 main 판으로 저절로 다시 실행(옛 판으로 차례를 앞지르지 않게 · 끄기 RN_WL_FRESH=1)
+#   (11/17 wake1) who=gpt(지피티)는 저절로 먼저 섬 — 줄에서 보통 칸보다 앞 · 정범님이 급하다 하신 판은 RN_LOCK_PRIO=1
 #
 # (2026-10-29 동시 작업 규칙 2) 이름표: lead(리드나우 방) · friend(책방 친구 방) · story(동화 엔진 방) · h4(점검) · daily(매일 정밀 점검) · kpsum · backup · gpt(지피티 Actions)
 #  · 같은 이름이라도 다른 세션(다른 컨테이너 = 다른 hostname · RN_LOCK_HOST)이면 남으로 봄 — 예전엔 두 점검이 같은 'auto-check'로 서로를 자기로 알고 함께 잡았음(10/29 판 번호 겹침의 원인)
@@ -23,6 +25,9 @@
 #    · 예전엔 ask가 한 칸뿐이고 wait가 10분마다만 남겨서, 먼저 기다린 쪽(지피티 Actions 19:45~)이 칸이 비는 순간 늦게 온 일꾼에게 몇 번이고 밀렸음
 #    · wait는 1분마다 내 칸의 at만 새로 함(first는 그대로) → 끊김 없음 · 30분 넘게 새로 하지 않은 칸은 죽은 것으로 보고 뺌
 #    · 남의 차례를 강제로 뺏거나 남의 표를 강제로 놓는 길은 없음 — 남의 칸은 30분이 지나야만 빠짐
+#  · (11/17 정범님 「지피티 배포 요청이 오면 항상 우선시해서 올려」 · wake1) 먼저 설 칸(prio): who=gpt이거나 RN_LOCK_PRIO=1이면 칸에 prio=1
+#    · 줄 차례 = 먼저 설 칸(먼저 기다린 차례) → 보통 칸(먼저 기다린 차례) · 맨 앞이 보통 칸이어도 먼저 설 칸이 오면 그쪽이 맨 앞
+#    · 먼저 설 칸끼리는 먼저 기다린 쪽 · 잡은 표를 뺏지는 않음(지금 잡은 쪽은 끝까지)
 #  · (옛 대본과 함께 돌 때) ask 칸은 그대로 '줄 맨 앞'을 옛 꼴({who,host,why,at})로 비춤 — 옛 대본(한 칸 ask)은 그것만 보고 비키거나 자기 차례를 압니다
 #    · 옛 대본이 적은 ask(줄에 없는 칸)는 줄 맨 앞으로 받아들임 · 옛 대본이 그 ask를 지우면(잡았거나 그만둠) 줄에서도 뺌 · 옛 대본이 쓴 queue는 그대로 남음(옛 대본은 JSON 전체를 다시 씀)
 #  · push 전에는 언제나 git pull --rebase → 다른 쪽이 같은 원본(src/…)을 고쳤으면 내 바뀜을 최신 위에 다시 얹고(판 번호는 최신보다 하나 위로) 다시 빌드·시험
@@ -32,12 +37,29 @@ export GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-jerrycson} GIT_AUTHOR_EMAIL=${GIT_AUTH
 export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 cmd=${1:-get}; who=${2:-}; what=${3:-}; HOSTID=${RN_LOCK_HOST:-$(hostname 2>/dev/null || echo h)}
+# (11/17 wake1 · 옛 판 막기) take·step·wait·ask는 origin/main의 이 파일과 내용이 다르면 main 판을 임시 파일로 꺼내 그것으로 다시 실행
+#  · 까닭: 일꾼 셋이 각자 작업 폴더의 옛 판(차례 비킴 규칙이 없는 판)으로 잡아 지피티 부탁을 앞지름
+#  · 무한 반복 막기: 다시 실행한 쪽은 RN_WL_FRESH=1 — 그 안(wait의 step 포함)에서는 다시 보지 않음 · 끄기도 RN_WL_FRESH=1
+#  · main을 못 받으면(오프라인·저장소 밖) 지금 판 그대로
+wl_main() {  # 다르면 main 판 경로를 찍음
+  git fetch -q origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null || return 1
+  local b m; b=$(git rev-parse -q --verify "origin/main:src/tools/worklock.sh" 2>/dev/null) || return 1
+  m=$(git hash-object --no-filters "$0" 2>/dev/null) || return 1; [ "$b" = "$m" ] && return 1
+  local t="${TMPDIR:-/tmp}/rn-worklock-main-${b:0:12}.sh"
+  [ -s "$t" ] || { git cat-file blob "$b" > "$t.$$" 2>/dev/null && mv -f "$t.$$" "$t"; } || return 1
+  printf '%s\n' "$t"; }
+case "$cmd" in take|step|wait|ask) if [ -z "${RN_WL_FRESH:-}" ] && T0=$(wl_main); then
+  echo "⚠ 이 순서표 도구($0)가 main 판과 다름 — main 판($T0)으로 다시 실행" >&2; RN_WL_FRESH=1 exec bash "$T0" "$@"; fi;; esac
+export RN_WL_FRESH=1  # 이 아래에서 부르는 자식(wait의 step)은 다시 보지 않음(1분마다 main을 받지 않게)
 if [ "$cmd" = wait ]; then  # 잡힐 때까지 기다림 — 1분마다 step 한 번(잡거나, 줄의 내 칸을 새로 함)
   mins=${4:-60}; for i in $(seq 1 "$mins"); do
+    # (11/17 wake1) 오래 기다리는 사이 main 순서표가 바뀌면 남은 시간으로 새 판으로 다시 실행(줄의 내 칸은 그대로 · 처음 기다린 때도 그대로)
+    if [ "$i" -gt 1 ] && [ $(( (i - 1) % 10 )) = 0 ] && T0=$(wl_main); then
+      echo "⚠ 기다리는 사이 main 순서표가 바뀜 — 새 판($T0)으로 남은 $((mins - i + 1))분 이어 기다림" >&2; RN_WL_FRESH=1 exec bash "$T0" wait "$who" "$what" "$((mins - i + 1))"; fi
     rc=0; out=$(bash "$0" step "$who" "$what" 2>&1) || rc=$?
     if [ "$rc" = 0 ]; then echo "✅ 잡음(${i}번째 시도)"; bash "$0" get; exit 0; fi
     if [ "$i" = 1 ] || [ $(( i % 10 )) = 0 ]; then echo "⏳ 기다림 ${i}분째 — $(printf '%s\n' "$out" | grep -m1 '^줄 ' || echo '표를 못 고침(다시 해 봄)')"; [ "$i" = 1 ] && bash "$0" status || true; fi
-    sleep 60; done
+    sleep "${RN_WL_SLEEP:-60}"; done  # RN_WL_SLEEP = 시험용(기본 60초)
   bash "$0" clearask "$who" >/dev/null 2>&1 || true  # 내 칸만 뺌(남의 칸은 그대로)
   echo "❌ ${mins}분 기다려도 못 잡음"; bash "$0" status || true; exit 3
 fi
@@ -48,13 +70,14 @@ for attempt in 1 2 3 4 5 6 7 8; do
     status|take|step|beat|ask|release|clearask) ;;
     *) echo "모르는 명령: $cmd"; exit 2;;
   esac
-  OUT=$(J="$J" CMD="$cmd" WHO="$who" WHAT="$what" NOW="$(now)" STALE=$STALE HOSTID="$HOSTID" python3 -I - <<'PY'
+  OUT=$(J="$J" CMD="$cmd" WHO="$who" WHAT="$what" NOW="$(now)" STALE=$STALE HOSTID="$HOSTID" PRIO="${RN_LOCK_PRIO:-}" python3 -I - <<'PY'
 import json, os, sys, datetime
 try: j = json.loads(os.environ['J'] or '{}')
 except Exception: j = {}
 if not isinstance(j, dict): j = {}
 cmd, who, what, now, host = os.environ['CMD'], os.environ['WHO'], os.environ['WHAT'], os.environ['NOW'], os.environ['HOSTID']
 STALE = int(os.environ['STALE'])
+PRIO = who == 'gpt' or os.environ.get('PRIO') == '1'  # (11/17 wake1) 먼저 설 칸 — 지피티 배포·정범님이 급하다 하신 판
 def ts(s):
     try: return datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc).timestamp()
     except Exception: return 0
@@ -84,10 +107,15 @@ def norm():
         hd = {'who': j.get('holder'), 'host': j.get('host')}
         q = [e for e in q if not same2(e, hd)]
     if head is not None and not any(e is head for e in q): head = None
-    if head is None and q: head = min(q, key=lambda e: (ts(e.get('first') or e.get('at')),))  # 같은 때면 줄에 먼저 선 쪽(min은 앞의 것)
+    if head is not None and a and a.get('prio') and not head.get('prio') and not head.get('old'): head = None  # (11/17 wake1) 먼저 섬으로 맨 앞이던 칸이 그것을 풀면 차례를 다시 셈
+    if head is None and q: head = min(q, key=key)  # 같은 때면 줄에 먼저 선 쪽(min은 앞의 것)
+    if head is not None and not head.get('prio') and any(e.get('prio') for e in q): head = min([e for e in q if e.get('prio')], key=key)  # (11/17 wake1) 먼저 설 칸이 오면 보통 칸 맨 앞을 앞지름
     j['queue'] = q
     j['ask'] = {'who': head['who'], 'host': head.get('host'), 'why': head.get('why'), 'at': head['at'], 'first': head.get('first')} if head else None
+    if head is not None and head.get('prio'): j['ask']['prio'] = 1
     return q, head
+
+key = lambda e: (0 if e.get('prio') else 1, ts(e.get('first') or e.get('at')))  # 줄 차례 = 먼저 설 칸 → 보통 칸, 그 안에서 먼저 기다린 쪽
 
 def drop_me():
     j['queue'] = [e for e in (j.get('queue') or []) if not me(e)]
@@ -102,12 +130,14 @@ def upsert(why):
         e = {'who': who, 'host': host, 'why': why, 'first': first or now, 'at': now}; q.append(e)
     else:
         e.update(at=now, why=why or e.get('why')); e.pop('old', None)
+    if PRIO: e['prio'] = 1
+    else: e.pop('prio', None)
     j['queue'] = q
 
 def pos():
     q, head = norm()
     if head is not None and me(head): return 1, len(q)
-    rest = sorted([e for e in q if e is not head], key=lambda e: ts(e.get('first') or e.get('at')))
+    rest = sorted([e for e in q if e is not head], key=key)
     for i, e in enumerate(rest):
         if me(e): return i + (2 if head is not None else 1), len(q)
     return 0, len(q)
@@ -120,11 +150,11 @@ def status():
     raw = [e for e in (j.get('queue') or []) if isinstance(e, dict) and e.get('who')]
     gone = [e for e in raw if not fresh(e.get('at'))]
     q, head = norm()
-    order = ([head] if head is not None else []) + sorted([e for e in q if e is not head], key=lambda e: ts(e.get('first') or e.get('at')))
+    order = ([head] if head is not None else []) + sorted([e for e in q if e is not head], key=key)
     if order:
         L.append('⏳ 기다리는 줄 %d칸(먼저 기다린 차례):' % len(order))
         for i, e in enumerate(order):
-            L.append('  %d. %s (%s) · 처음 %s KST · 새로 함 %s · %s%s%s' % (i + 1, e['who'], e.get('host') or '-', kst(e.get('first') or e.get('at')), ago(e.get('at')), (e.get('why') or '')[:80], ' · 옛 대본' if e.get('old') else '', ' ← 다음 차례' if i == 0 else ''))
+            L.append('  %d. %s (%s) · 처음 %s KST · 새로 함 %s · %s%s%s' % (i + 1, e['who'], e.get('host') or '-', kst(e.get('first') or e.get('at')), ago(e.get('at')), (e.get('why') or '')[:80], (' · 옛 대본' if e.get('old') else '') + (' · 먼저 섬' if e.get('prio') else ''), ' ← 다음 차례' if i == 0 else ''))
     else: L.append('⏳ 기다리는 줄 없음')
     if gone: L.append('  (30분 넘게 새로 하지 않아 빠질 칸 %d개: %s)' % (len(gone), ', '.join('%s(%s)' % (e['who'], e.get('host') or '-') for e in gone)))
     if isinstance(j.get('last'), dict): L.append('🕘 마지막: %s · %s · %s KST' % (j['last'].get('who'), (j['last'].get('done') or '')[:100], kst(j['last'].get('at'))))
@@ -142,6 +172,8 @@ if cmd in ('take', 'step'):
     if alive:
         if cmd == 'take': out('BUSY', False)
         upsert(qwhy); p, n = pos(); out('QUEUED', True, '줄 %d번째/%d칸 · 잡은 쪽 %s(%s)' % (p, n, j.get('holder'), j.get('host')))
+    for x in (j.get('queue') or []):  # (11/17 wake1) 이번에 부른 쪽의 먼저 섬 여부를 따름(RN_LOCK_PRIO 없이 다시 부르면 풀림)
+        if isinstance(x, dict) and me(x): x.update(prio=1) if PRIO else x.pop('prio', None)
     q, head = norm()
     if head is not None and not me(head):
         if cmd == 'take': out('YIELD', False, '줄 맨 앞: %s(%s) · 처음 %s KST' % (head['who'], head.get('host'), kst(head.get('first'))))

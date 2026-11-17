@@ -60,6 +60,9 @@ if [ -n "$add" ]; then
 fi
 # ⑦ (11/12 perf9) 🪶 무게 — 웹앱 본문 크기·되풀이 타이머·실시간 듣기 수를 app/weigh.json 기준선(앞 판)과 견줌 · 경고만(멈추지 않음) · 판 낼 때 node src/tools/weigh.js --save
 W7=$(dirname "$0")/weigh.js; command -v node >/dev/null && [ -f "$W7" ] && timeout 20 node "$W7" --quick 2>/dev/null | head -2
+# (11/17 wake1) 순서표 도구가 바뀌면 그 시험(가짜 원격 · 약 25초)을 돌림 — 차례 규칙(지피티 먼저·비킴)과 옛 판 막기가 깨지면 막음
+if printf '%s\n' "$changed" | grep -qE '^src/tools/worklock(\.test)?\.sh$' && [ -f "$(dirname "$0")/worklock.test.sh" ]; then
+  bash "$(dirname "$0")/worklock.test.sh" >/tmp/rn-wltest.$$ 2>&1 && echo "✓ 순서표 시험 통과($(tail -1 /tmp/rn-wltest.$$))" || { tail -25 /tmp/rn-wltest.$$; say "순서표 시험(src/tools/worklock.test.sh) 실패"; }; rm -f /tmp/rn-wltest.$$; fi
 # ⑧⑨⑩ 시험 문지기 (11/13 rv2b)
 G8=$(dirname "$0")/test-gate.js
 if [ ! -f "$G8" ]; then say "시험 문지기(src/tools/test-gate.js)가 없음 — 최신 main을 받을 것"
