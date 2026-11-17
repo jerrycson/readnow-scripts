@@ -4,6 +4,7 @@
 # 보는 것: ① 먼저 설 칸(지피티·RN_LOCK_PRIO=1) 아홉 경우 ② 옛 판 막기(main 판과 다르면 main 판으로 다시 실행 · 무한 반복 없음 · 끄기 · get은 안 함)
 #          ③ 오래 기다리는 사이 main 판이 바뀌면 새 판으로 이어 기다림 · 못 잡고 끝나도 줄 칸은 남아 다시 기다리면 first 그대로(리드 F57) · leave
 #          ④ 지킴: git hook 안처럼 GIT_DIR이 바깥 저장소로 잡힌 채 돌려도 진짜 원격을 건드리지 않음(11/18 hook 안에서 진짜 work-lock을 덮은 일 뒤)
+#          ⑤ ship-check의 빠른 시험 묶음 전체도 GIT_* 를 지우고(NOGIT) 돌림 — 묶음 안 시험이 hook 흉내 GIT_DIR을 받아도 바깥 원격·HEAD 그대로
 set -uo pipefail
 # ── 지킴 1: hook(pre-push 등)이 넘긴 GIT_* 를 모두 지움 — 남아 있으면 cd 해도 git이 바깥(진짜) 저장소·원격으로 감
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX GIT_QUARANTINE_PATH
@@ -93,5 +94,21 @@ R0=$(refs); OH=$(command git -C "$O" rev-parse HEAD); [ -n "$R0" ]; ok $? "(준�
 [ "$r" != 0 ] && grep -q "시험 지킴" "$D/gerr" && [ "$(refs)" = "$R0" ] && [ -e "$D/GUARD_TRIPPED" ]; g=$?; rm -f "$D/GUARD_TRIPPED"; ok $g "origin이 가짜 원격이 아니면 push를 막고 시험을 멈출 표시를 남김"
 ( cd "$A" && GIT_DIR="$O/.git" git fetch -q origin ) 2>"$D/gerr"; r=$?
 [ "$r" != 0 ] && grep -q "시험 지킴" "$D/gerr"; g=$?; rm -f "$D/GUARD_TRIPPED"; ok $g "시험 안에서 GIT_DIR을 다시 잡아도 막음"
+
+echo "⑤ 판 검사(ship-check)의 시험 묶음 — hook이 넘긴 GIT_* 를 지우고 돌림"
+SC=$(dirname "$WL")/ship-check.sh; NL=$(grep -m1 '^NOGIT=(env ' "$SC")
+[ -n "$NL" ] && [ -z "$(grep -nE 'node "\$G8"|/worklock\.test\.sh" >' "$SC" | grep -v 'NOGIT\[@\]' | grep -v '^[0-9]*: *#')" ] && [ "$(grep -cE '"\$\{NOGIT\[@\]\}" (node "\$G8"|bash .*/worklock\.test\.sh" >)' "$SC")" = 4 ]; ok $? "ship-check의 빠른 시험 묶음(⑧ 세 곳)과 순서표 시험이 모두 NOGIT 안에서 돎"
+eval "$NL"
+cat > "$D/fakebundle.sh" <<'FB'
+# 묶음 안 시험 흉내: 임시 저장소를 만들어 커밋하고 그 저장소의 가짜 원격으로 push (진짜 git — 지킴 함수 안 씀 · 한 줄이 실패해도 다음 줄로 감)
+T=$(mktemp -d); cd "$T"; command git init -q --bare r.git; command git init -q w; cd w; command git remote add origin "$T/r.git"
+command git -c user.email=t@t -c user.name=t commit -q --allow-empty -m 가짜; command git push -q origin HEAD:refs/heads/work-lock
+FB
+O2=$D/outer2; command git clone -q --bare "$D/real.git" "$D/real2.git"; command git clone -q "$D/real2.git" "$O2" 2>/dev/null;   # 대조는 따로 떼어 낸 바깥·원격에서
+ R2=$(command git --git-dir="$D/real2.git" for-each-ref --format='%(refname) %(objectname)')
+( cd "$O2" && GIT_DIR="$O2/.git" GIT_WORK_TREE="$O2" GIT_INDEX_FILE="$O2/.git/index" bash "$D/fakebundle.sh" ) >/dev/null 2>&1
+[ "$(command git --git-dir="$D/real2.git" for-each-ref --format='%(refname) %(objectname)')" != "$R2" ]; ok $? "(대조) 감싸지 않으면 묶음 안 시험이 바깥 저장소를 건드림 — 이 시험이 진짜 탈을 잡는지 확인"
+( cd "$O" && GIT_DIR="$O/.git" GIT_WORK_TREE="$O" GIT_INDEX_FILE="$O/.git/index" "${NOGIT[@]}" bash "$D/fakebundle.sh" ) >/dev/null 2>&1; r=$?
+[ "$r" = 0 ] && [ "$(refs)" = "$R0" ] && [ "$(command git -C "$O" rev-parse HEAD)" = "$OH" ] && [ -z "$(command git -C "$O" status --porcelain)" ] && [ -z "$(command git -C "$O" for-each-ref refs/heads/work-lock)" ]; ok $? "NOGIT 안에서는 묶음 안 시험이 hook 흉내 GIT_DIR을 받아도 바깥 원격 가지·HEAD·작업 폴더 그대로(시험 자체는 통과)"
 
 echo "— 통과 $pass · 실패 $fail"; [ "$fail" = 0 ]
