@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "shipqB-plock2",
-   "why": "판 내기 기다림: 판 내기 기다림: plock2 잠금 2(shipqB)",
-   "first": "2026-11-17T21:00:00Z",
-   "at": "2026-11-17T23:25:33Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bkfold1",
    "why": "판 내기 기다림: bkfold1 수동 일괄 묶음 판 ②",
    "first": "2026-11-17T21:00:01Z",
@@ -87,16 +80,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "shipqB-plock2",
-  "why": "판 내기 기다림: 판 내기 기다림: plock2 잠금 2(shipqB)",
-  "at": "2026-11-17T23:25:33Z",
-  "first": "2026-11-17T21:00:00Z"
+  "host": "vm-bkfold1",
+  "why": "판 내기 기다림: bkfold1 수동 일괄 묶음 판 ②",
+  "at": "2026-11-17T23:26:14Z",
+  "first": "2026-11-17T21:00:01Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "shipqB-plock2",
+ "what": "판 내기 기다림: plock2 잠금 2(shipqB)",
+ "since": "2026-11-17T23:26:35Z",
+ "beat": "2026-11-17T23:26:35Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.698 ⬆ 앞 페이지 올리기 지킴·카드(fbrev1·fbcard1) 875175608",
