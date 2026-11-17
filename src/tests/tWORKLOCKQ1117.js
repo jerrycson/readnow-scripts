@@ -18,10 +18,14 @@ const OLD = find(path.join(__dirname, 'ship', 'worklock_old_1117.sh'));
 let bad = 0; const ok = (c, m, x) => { if (c) console.log('  ✓ ' + m); else { bad++; console.log('  ❌ ' + m + (x ? ' — ' + String(x).slice(0, 300) : '')); } };
 if (!NEW || !OLD) { console.log('❌ 대본을 못 찾음 ' + JSON.stringify({ NEW, OLD })); process.exit(1); }
 const T = fs.mkdtempSync(path.join(os.tmpdir(), 'rn-wlq-'));
-const env0 = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', GIT_CONFIG_NOSYSTEM: '1', HOME: T };
+const env0 = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^GIT_(DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES|COMMON_DIR|NAMESPACE|PREFIX|QUARANTINE_PATH)$/.test(k))); // hook 안에서 넘어온 GIT_* 는 빼고(진짜 저장소·원격으로 가지 않게 · 11/18)
+Object.assign(env0, { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', GIT_CONFIG_NOSYSTEM: '1', HOME: T, GIT_CEILING_DIRECTORIES: T });
 const sh = (c, o = {}) => cp.execSync(c, { cwd: o.cwd || T, env: { ...env0, ...(o.env || {}) }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: '/bin/bash' });
 sh('git init -q --bare origin.git && git init -q w && cd w && git remote add origin ../origin.git && git commit -q --allow-empty -m 시작 && git push -q origin HEAD:refs/heads/main');
 const W = path.join(T, 'w');
+{ // 지킴: 시험 저장소가 임시 폴더 안이고 origin이 임시 맨 저장소일 때만 이어 감(아니면 진짜 원격을 건드리기 전에 멈춤)
+  const u = sh('git remote get-url origin', { cwd: W }).trim(), g = fs.realpathSync(sh('git rev-parse --absolute-git-dir', { cwd: W }).trim());
+  if (u !== '../origin.git' || !g.startsWith(fs.realpathSync(T) + path.sep) || env0.GIT_DIR) { console.log('⛔ 시험 지킴: 가짜 원격이 아님 — 멈춤 ' + JSON.stringify({ u, g })); process.exit(1); } }
 fs.mkdirSync(path.join(W, 'src', 'tools'), { recursive: true }); fs.copyFileSync(NEW, path.join(W, 'src', 'tools', 'worklock.sh')); fs.copyFileSync(OLD, path.join(W, 'old.sh'));
 const run = (script, host, ...args) => { const r = cp.spawnSync('bash', [script, ...args], { cwd: W, env: { ...env0, RN_LOCK_HOST: host }, encoding: 'utf8' }); return { code: r.status, out: (r.stdout || '') + (r.stderr || '') }; };
 const N = (host, ...a) => run('src/tools/worklock.sh', host, ...a); const O = (host, ...a) => run('old.sh', host, ...a);

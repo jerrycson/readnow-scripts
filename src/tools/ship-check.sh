@@ -62,7 +62,8 @@ fi
 W7=$(dirname "$0")/weigh.js; command -v node >/dev/null && [ -f "$W7" ] && timeout 20 node "$W7" --quick 2>/dev/null | head -2
 # (11/17 wake1) 순서표 도구가 바뀌면 그 시험(가짜 원격 · 약 25초)을 돌림 — 차례 규칙(지피티 먼저·비킴)과 옛 판 막기가 깨지면 막음
 if printf '%s\n' "$changed" | grep -qE '^src/tools/worklock(\.test)?\.sh$' && [ -f "$(dirname "$0")/worklock.test.sh" ]; then
-  bash "$(dirname "$0")/worklock.test.sh" >/tmp/rn-wltest.$$ 2>&1 && echo "✓ 순서표 시험 통과($(tail -1 /tmp/rn-wltest.$$))" || { tail -25 /tmp/rn-wltest.$$; say "순서표 시험(src/tools/worklock.test.sh) 실패"; }; rm -f /tmp/rn-wltest.$$; fi
+  # hook 안에서는 GIT_DIR 등이 바깥(진짜) 저장소로 잡혀 있어 시험의 가짜 원격 대신 진짜 origin으로 갈 수 있음(11/18 work-lock 덮인 일) → 지우고 돌림
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_COMMON_DIR -u GIT_NAMESPACE -u GIT_PREFIX -u GIT_QUARANTINE_PATH bash "$(dirname "$0")/worklock.test.sh" >/tmp/rn-wltest.$$ 2>&1 && echo "✓ 순서표 시험 통과($(tail -1 /tmp/rn-wltest.$$))" || { tail -25 /tmp/rn-wltest.$$; say "순서표 시험(src/tools/worklock.test.sh) 실패"; }; rm -f /tmp/rn-wltest.$$; fi
 # ⑧⑨⑩ 시험 문지기 (11/13 rv2b)
 G8=$(dirname "$0")/test-gate.js
 if [ ! -f "$G8" ]; then say "시험 문지기(src/tools/test-gate.js)가 없음 — 최신 main을 받을 것"
