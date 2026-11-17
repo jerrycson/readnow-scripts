@@ -96,6 +96,7 @@ async function refresh(){
     if(found.size!==3)return;
     if(edition&&row.round>studioRound&&!document.getElementById('newStudio')){const a=document.createElement('a');a.id='newStudio';a.textContent=row.round+'차 새 실험실 열기 ↗';a.href='../research/hub/?lab=studio&tool='+encodeURIComponent(current||'latest-fern');a.target='_blank';a.rel='noopener';$('quick').prepend(a);}
     edition=row;
+    const build=$('uiBuild');if(build){build.firstChild.textContent='50차 작업대 · 공개 원본 '+row.round+'차 ';build.dataset.publishedRound=String(row.round);}
     for(const t of tools.filter(t=>t.case)){
       const b=$('quick').querySelector('[data-id="'+t.id+'"]');
       if(b)b.textContent=row.round+'차 '+({F02:'페른',M01:'힘멜',W:'몸통'})[t.case];
