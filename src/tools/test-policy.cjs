@@ -14,6 +14,10 @@ function requiredTests(files) {
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTIDENTITY\.js|standalone\/account-identity\.test\.cjs))$/.test(f))) ['tACCOUNTIDENTITY', 'tSHOP9_1112'].forEach(t => out.add(t));
   if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTSESSION\.js|tSHOPVIEW2_1114\.js|standalone\/account-session\.test\.cjs))$/.test(f))) ['tACCOUNTSESSION', 'tSHOP9_1112', 'tSHOPVIEW2_1114'].forEach(t => out.add(t));
   if (files.some((f) => /^src\/(?:tools\/worklock\.sh|tests\/(?:tWORKLOCKQ1117\.js|ship\/worklock_old_1117\.sh))$/.test(f))) out.add('tWORKLOCKQ1117'); // (lockq1 11/17) 순서표 기다리는 줄 · 옛 대본과 함께
+  if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|src\/tests\/(?:tORDERCLIENT\.js|standalone\/order-journal-browser\.cjs))$/.test(f))) out.add('tORDERCLIENT');
+  if (files.some(f => /^(shop\/(?:shop\.js|order-journal\.js|index\.html)|cloud\/shop(?:-order-attempt)?\.js|src\/tests\/(?:tORDERINTEGRATED\.js|standalone\/order-contract-browser\.cjs))$/.test(f))) out.add('tORDERINTEGRATED');
+  if (files.some(f => /^(cloud\/shop(?:-acct)?\.js|src\/tests\/(?:tACCOUNTAUTH(?:UI)?\.js|standalone\/account-auth(?:-browser|\.test)\.cjs))$/.test(f))) ['tACCOUNTAUTH', 'tACCOUNTAUTHUI', 'tACCOUNTSESSION', 'tORDERRETRY', 'tSHOP9_1112', 'tSHOPVIEW2_1114'].forEach(t => out.add(t));
+  if (files.some(f => /^(shop\/(?:shop|shop-acct|order-journal)\.js|shop\/index\.html|cloud\/shop(?:-acct|-order-attempt|-account-orders|-stock)?\.js|src\/tests\/(?:tACCOUNTAUTHUI\.js|standalone\/(?:account-auth-browser|order-journal-browser|order-attempt\.test)\.cjs))$/.test(f))) out.add('tACCOUNTAUTHUI');
   return [...out];
 }
 module.exports = { CODE_RE, requiredTests };
