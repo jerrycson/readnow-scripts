@@ -1,26 +1,29 @@
-import {createRenderQueue} from './workbench-render.mjs';
-import {buttons,mark,editor} from './workbench-controls.mjs';
+import {createRenderQueue} from './workbench-render.mjs?v=51';
+import {buttons,mark,editor} from './workbench-controls.mjs?v=51';
 import {faceOptions50} from './face-options50.mjs';
 import {modelNames,isWorkbenchSubject,isChestSubject} from './workbench-subjects50.mjs';
 import {chestOptions50} from './chest-options50.mjs';
 import {libraryChecks50} from './face-library-cheek50.mjs';
+import {chestFits51} from './chest-fits51.mjs';
 const el=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const wrap=n=>((n+180)%360+360)%360-180;
 const directions=[['정면',0,0],['왼 45°',-45,0],['오른 45°',45,0],['왼 측면',-90,0],['오른 측면',90,0],['뒤 45°',135,0],['뒷면',-180,0],['위',0,90],['아래',0,-90]];
 const sizes=[48,96,512,1024,2048];
+const framings=[['model','모델 기본'],['face','얼굴'],['upper','상체'],['body','전신']];
 const pref='bookfriend-workbench-layout-1';
 let prefs={};
 try{prefs=JSON.parse(localStorage.getItem(pref))||{};}catch{}
 let count=[1,2,4].includes(prefs.count)?prefs.count:4;
 let x=clamp(Number(prefs.x)||50,15,85),y=clamp(Number(prefs.y)||50,15,85);
 function save(){try{localStorage.setItem(pref,JSON.stringify({count,x,y}));}catch{}}
-const requested=new URL(location.href).searchParams.get('case');
+const params=new URL(location.href).searchParams;
+const requested=params.get('case'), edition=params.get('round')==='50'?50:51;
 let id=isWorkbenchSubject(requested)?requested:'F02',active=0,solo=null,revision=0,tab='view',visible=true;
-const cameras=[0,-45,-90,135].map(yaw=>({yaw,pitch:0,zoom:1,size:1024}));
+const cameras=[0,-45,-90,135].map(yaw=>({yaw,pitch:0,zoom:1,size:1024,framing:'model'}));
 const items=[],versions=[0,0,0,0],ready=[-1,-1,-1,-1],pins=[null,null,null,null];
 const visiblePanes=()=>solo===null?Array.from({length:count},(_,i)=>i):[solo];
-const edits=editor(()=>{revision++;request(visiblePanes().filter(i=>!pins[i]));});
+const edits=editor(()=>{revision++;request(visiblePanes().filter(i=>!pins[i]));},edition);
 const queue=createRenderQueue({requestFor(index){
   if(!visiblePanes().includes(index))return null;
   const scene=pins[index]||{id,edit:edits.current(),revision};
@@ -32,7 +35,7 @@ const queue=createRenderQueue({requestFor(index){
   canvas.width=canvas.height=data.size;
   canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(data.buffer),data.size,data.size),0,0);
   canvas.dataset.pixel=String(data.size<=96);canvas.dataset.revision=job.revision;canvas.dataset.case=job.id;
-  canvas.dataset.yaw=job.view.yaw;canvas.dataset.pitch=job.view.pitch;
+  canvas.dataset.yaw=job.view.yaw;canvas.dataset.pitch=job.view.pitch;canvas.dataset.framing=job.view.framing;
   canvas.dataset.version=job.edit?.version||'source';
   if(index===active)showModelStatus();
   ready[index]=job.version;
@@ -71,18 +74,21 @@ function showModelStatus(){
   const label=modelNames[key]||((key.startsWith('female')?'여성':'남성')+' '+key.split('-')[1]+'등신');
   const kind=canvas.dataset.version;
   const trial={height:'턱 높이 시험',candidate:'50차 시험',smooth:'깊이선 시험',half:'깊이선 절반',ablation:'깊이항 제외',C:'입술 C · 보류',D:'입술 D · 보류',E:'입술 E · 보류'};
-  el('subjectLabel').textContent=label+(trial[kind]?' · '+trial[kind]:isWorkbenchSubject(key)&&!key.includes('-')?' · 보존 원형':'');
+  const current51={orbit51:'51차 안와',contact51:'51차 눈꺼풀 접촉 시험',lower51:'51차 하부 곡선'};
+  const version=current51[kind]||trial[kind];
+  el('subjectLabel').textContent=label+(version?' · '+version:isWorkbenchSubject(key)&&!key.includes('-')?' · 보존 원형':'');
 }
 function refreshViews(){
   for(let i=0;i<items.length;i++){
     const {root,label,readout,canvas,soloButton}=items[i],v=cameras[i];
     root.hidden=!visiblePanes().includes(i);root.dataset.active=String(i===active);
     label.textContent=(i+1)+' · '+currentViewName(v)+(pins[i]?' · '+(modelNames[pins[i].id]||'전신')+' 고정':'');label.setAttribute('aria-pressed',String(i===active));
-    readout.textContent=v.size+'px';canvas.ariaLabel=label.textContent+' 회전';
+    readout.textContent=(v.framing==='model'?'':framings.find(([key])=>key===v.framing)[1]+' · ')+v.size+'px';canvas.ariaLabel=label.textContent+' 회전';
     canvas.title=Number(v.yaw.toFixed(1))+'° / '+Number(v.pitch.toFixed(1))+'° · '+Math.round(v.zoom*100)+'%';
     soloButton.ariaLabel=solo===i?'분할로 돌아가기':'이 창 크게 보기';soloButton.title=soloButton.ariaLabel;
   }
   const v=cameras[active];mark(el('directions'),currentViewName(v));mark(el('resolutions'),v.size);
+  mark(el('framings'),v.framing);
   el('zoom').textContent=Math.round(v.zoom*100)+'%';
   el('pin').setAttribute('aria-pressed',String(!!pins[active]));
   el('pin').textContent=pins[active]?'형상 고정 풀기':'이 창의 형상 고정';
@@ -161,6 +167,10 @@ function splitter(tag,horizontal){
 }
 splitter('colSplit',false);splitter('rowSplit',true);
 buttons(el('layouts'),[1,2,4].map(n=>[n,n+'창']),rememberMode);
+buttons(el('framings'),framings,framing=>{
+  cameras[active].framing=framing;
+  refreshViews();request([active]);
+});
 buttons(el('directions'),directions.map(a=>[a[0],a[0]]),name=>{
   const [,yaw,pitch]=directions.find(d=>d[0]===name);Object.assign(cameras[active],{yaw,pitch});refreshViews();request([active]);
 });
@@ -211,6 +221,8 @@ function selectModel(key){
   if(chest){
     group=chest.group;el('modelNotes').textContent=chest.group+' · '+chest.coverage;
   }
+  if(edition===51&&face)el('modelNotes').append(' 51차 안와 후보와 눈 주위 원형을 부위 탭에서 바꿔 볼 수 있습니다.'+(id==='M01'?' 힘멜은 측면 눈꺼풀 오차가 커져 보류했습니다.':''));
+  if(edition===51&&chest)el('modelNotes').append(chestFits51[id]?' 51차 하부 곡선과 50차 교정 시험을 직접 비교할 수 있습니다.':' 51차 검토에서 50차 형상을 유지했습니다.');
   showCategory(face?'face':chest?'chest':'body');
   if(visiblePanes().every(i=>pins[i]))pins[active]=null;
   for(const [i,{canvas}] of items.entries())if(!pins[i])canvas.width=canvas.height=1;

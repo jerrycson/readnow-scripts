@@ -1,6 +1,6 @@
 import {isWorkbenchSubject} from './workbench-subjects50.mjs';
 import {mountStudioPanes} from './studio-panes50.mjs';
-import {studioTools,studioGroups} from './studio-catalog.mjs?ui=50-panes';
+import {studioTools,studioGroups} from './studio-catalog.mjs?ui=51';
 import {latestPublished} from '../research/hub/published-state.mjs';
 import {startStudioRecord} from './studio-recorder44.mjs';
 import {mountCaseSync} from './studio-case-sync45.mjs';
@@ -13,9 +13,9 @@ const defaults=new Map([
   ['all-around','전방위 교정'],['sculpt','부위·관절'],['bust-morph34','바스트 모핑'],
   ['photo-engine50','내 참고그림 · 다중 시점 검수'],['photo-engine36','내 참고그림 · 이전 작업대'],['world','환경'],['learning','학습 기록'],
   ['history','모든 판 비교'],['journal','최신 결과·과정'],['methods','모델링 기법'],['photo-research','사진 연구'],
-  ['acceptance','기본형 완성 기준·결함']
+  ['acceptance','기본형 완성 기준·결함'],['round-plan','회차별 계획']
 ]);
-const studioRound=50;
+const studioRound=51;
 let current, favorites=[], onlyFav=false, edition, refreshing=false, toastTimer;
 try{const saved=JSON.parse(localStorage.getItem('bookfriend-studio-favorites')||'[]');if(Array.isArray(saved))favorites=saved;}catch{}
 function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
@@ -96,7 +96,7 @@ async function refresh(){
     if(found.size!==3)return;
     if(edition&&row.round>studioRound&&!document.getElementById('newStudio')){const a=document.createElement('a');a.id='newStudio';a.textContent=row.round+'차 새 실험실 열기 ↗';a.href='../research/hub/?lab=studio&tool='+encodeURIComponent(current||'latest-fern');a.target='_blank';a.rel='noopener';$('quick').prepend(a);}
     edition=row;
-    const build=$('uiBuild');if(build){build.firstChild.textContent='50차 작업대 · 실제 공개 '+row.round+'차 ';build.dataset.publishedRound=String(row.round);}
+    const build=$('uiBuild');if(build){build.firstChild.textContent=studioRound+'차 작업대 · 실제 공개 '+row.round+'차 ';build.dataset.publishedRound=String(row.round);}
     for(const t of tools.filter(t=>t.case)){
       const b=$('quick').querySelector('[data-id="'+t.id+'"]');
       if(b)b.textContent=row.round+'차 '+({F02:'페른',M01:'힘멜',W:'몸통'})[t.case];

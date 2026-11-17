@@ -1,4 +1,4 @@
-import {prepareDefinition,definitionScene,renderDefinitionPair,renderDefinitionView} from './definition-model.mjs?v=50-multiview';
+import {prepareDefinition,definitionScene,renderDefinitionPair,renderDefinitionView} from './definition-model.mjs?v=51-framing';
 import {loadRig} from './rig32.mjs';
 import {surfaceZones} from './studio-sculpt-model.mjs?v=50-zones';
 import {createFaceStudy50,faceOptions50} from './face-library50.mjs';
@@ -9,6 +9,8 @@ import {candidateLibraryFace50,libraryChecks50} from './face-library-cheek50.mjs
 import {candidateLibraryHeight50,libraryHeightChecks50} from './face-library-height50.mjs';
 import {candidateFaceSurface50,variants50} from './face-surface50.mjs';
 import {candidateLibraryProfile50} from './face-library-profile50.mjs';
+import {candidateOrbit51} from './face51.mjs';
+import {editChest51} from './chest51.mjs';
 async function load(name){
   const response=await fetch(new URL(name+'.json',import.meta.url));
   if(!response.ok)throw new Error(name+' 자료 '+response.status);
@@ -32,7 +34,11 @@ self.onmessage=async ({data})=>{
     }
     const key=JSON.stringify(edit||{});
     if(key!==editKey){
-      if(loaded.entry)shape=editChestStudy50(loaded,edit);
+      if(loaded.entry)shape=edit?.version==='lower51'?editChest51(loaded,edit,editChestStudy50):editChestStudy50(loaded,edit);
+      else if(['orbit51','contact51'].includes(edit?.version)){
+        const base=candidateOrbit51(loaded.model.round49,id,loaded.settings,edit.version==='contact51'?'contact':'study');
+        shape=definitionScene({...loaded,model:{...loaded.model,round49:base}},edit);
+      }
       else if(['F01','F05','M03'].includes(id)&&['smooth','half','ablation'].includes(edit?.version)){
         loaded.depthShapes??=new Map();
         if(!loaded.depthShapes.has(edit.version)){

@@ -24,9 +24,20 @@ export function definitionScene(study,edit={}) {
   const view={...defaultView(id),pivot:edit.pivot||defaultView(id).pivot,angle:edit.angle||0};
   return displayScene(model,'round49',posed(edited,id,view));
 }
-export function renderDefinitionView(study,scene,{yaw=0,pitch=0,zoom=1,size=1024}={}) {
+export function renderDefinitionView(study,scene,{yaw=0,pitch=0,zoom=1,size=1024,framing='model'}={}) {
   if(![48,96,128,512,1024,2048].includes(size))throw new RangeError('지원하지 않는 원본 크기입니다.');
-  const common={sceneOverride:scene,portrait:study.portrait,yaw,pitch,freeOrbit:true};
+  let portrait=study.portrait, cameraScene=scene;
+  if(framing==='face')portrait='face';
+  if(framing==='upper'||framing==='body'){
+    const rest=study.raw??study.model?.round49??study.scene;
+    const height=rest.height, hip=rest.joints.right.hip[1];
+    // 8등신 원형은 양팔 178°에서 손끝이 정수리보다 0.27신장 위로 간다.
+    const centerY=framing==='body'?height*.625:(height+hip)*.5;
+    const frame=framing==='body'?height*1.14:(height-hip)*1.17;
+    cameraScene={...scene,frame,cameraCenter:[0,centerY,0]};
+    portrait=false;
+  }
+  const common={sceneOverride:cameraScene,portrait,yaw,pitch,freeOrbit:true};
   // 렌더러의 고정 8px 여백을 보정해 판별 출력 크기와 관계없이 같은 시야를 사용한다.
   const field=1-8/48;
   const cameraZoom=zoom*field/(1-8/size);

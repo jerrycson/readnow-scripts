@@ -27,7 +27,11 @@ function summary(){const requested=query('rev');renderPublishedSummary({publishe
 function draw(){
   library(dataset,target=>{tab='originals';route({tab,doc:target.doc,chapter:target.chapter,dq:null},true);documentTab();});
 }
+const roundPlan=node('a','52~60차 회차별 실행 계획 · 목적과 검토 장면');
+roundPlan.href='round-plan51.html';roundPlan.hidden=true;
+el('privateTitle').after(roundPlan);
 function documentTab(){
+  roundPlan.hidden=tab!=='board';
   el('library').hidden=tab!=='library';el('originals').hidden=tab!=='originals';el('private').hidden=!['report','board'].includes(tab);
   document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===tab)));
   if(tab==='originals'){originals().catch(showError);return;}if(tab==='library')return;

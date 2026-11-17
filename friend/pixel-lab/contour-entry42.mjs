@@ -1,6 +1,6 @@
 // 기존 관찰창 주소를 유지하며 42차만 전용 화면으로 보낸다. 이전 회차 엔진은 그대로 읽는다.
 const url=new URL(location.href);
-if(url.searchParams.get('round')==='50'){
+if(['50','51'].includes(url.searchParams.get('round'))){
   const target=new URL('workbench.html',url);
   target.search=url.search;target.hash=url.hash;location.replace(target.href);
 }else if(['46','47','48','49'].includes(url.searchParams.get('round'))){

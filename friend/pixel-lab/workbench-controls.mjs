@@ -17,7 +17,8 @@ export function buttons(host,entries,choose){
 export function mark(host,key){
   for(const b of host.querySelectorAll('button[data-key]'))b.setAttribute('aria-pressed',String(b.dataset.key===String(key)));
 }
-export function editor(onEdit){
+import {chestFits51} from './chest-fits51.mjs';
+export function editor(onEdit,edition=50){
   const records=new Map();
   let id, resolved=[], zoneKey=null, edit, last, back=[],forward=[], panel, dial;
   const kind=()=>isChestSubject(id)?'W':id;
@@ -75,7 +76,7 @@ export function editor(onEdit){
   }
   function selectVersion(version){
     edit={...edit,version};
-    if(isChestSubject(id))edit.markerVersion=version==='candidate'&&markerLevels50[id]?'rebound':'source';
+    if(isChestSubject(id))edit.markerVersion=['candidate','lower51'].includes(version)&&markerLevels50[id]?'rebound':'source';
     commit();drawControls();onEdit();
   }
   el('showNac').onchange=()=>marker({showNac:el('showNac').checked});
@@ -116,6 +117,18 @@ export function editor(onEdit){
       if(Object.hasOwn(libraryHeightChecks50,id))options.push(['height','턱 높이 시험']);
       if(['F01','F05','M03'].includes(id))options.push(['smooth','깊이선 다듬기'],['half','깊이선 절반'],['ablation','깊이항 제외']);
       if(id==='F02'||id==='M01')options.push(['C','입술 C'],['D','입술 D'],['E','입술 E']);
+      if(edition>=51&&editable){
+        if(isChestSubject(id)){
+          if(chestFits51[id]){
+            options.push(['lower51','51차 하부 곡선']);
+            if(!saved)edit.version='lower51';
+          }
+        }else{
+          options.push(['orbit51','51차 안와 교정']);
+          if(['F02','M01'].includes(id))options.push(['contact51','51차 눈꺼풀 접촉 시험']);
+          if(!saved&&id==='F02')edit.version='orbit51';
+        }
+      }
       buttons(el('versions'),options,selectVersion);
       el('versionsBox').hidden=!editable;el('surfaceOptions').hidden=!isChestSubject(id);
       el('posePresets').hidden=!isChestSubject(id);

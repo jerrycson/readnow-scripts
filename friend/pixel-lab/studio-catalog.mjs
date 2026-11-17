@@ -7,6 +7,7 @@ export const studioGroups=Object.freeze([
 ]);
 const tool=(id,group,label,description,path,keywords,round)=>({id,group,label,description,path,keywords,...(round?{round}:{})});
 export const studioTools=Object.freeze([
+ tool('round-plan','general','회차별 실행 계획','52~60차의 목적, 작업 배분, 다음 검토 장면과 계획 카드 번호를 살펴봅니다.','../research/hub/round-plan51.html',['계획','목표','검토','일정','다음 회차']),
  tool('workbench','general','다중 시점 작업대','한 메시의 원형·픽셀판을 같은 조건의 여러 방향으로 봅니다. 바깥 작업창은 다른 도구를 함께 엽니다.','workbench.html',['다중','시점','1창','2창','4창','원형','픽셀','작업대']),
  tool('definition','general','고해상도 원형 · 픽셀판','같은 형상을 1024·2048px 고해상도와 48·96px 픽셀 아트로 비교합니다.','definition.html',['고해상도','원형','픽셀','1024','2048','품질','두 버전']),
  tool('acceptance','general','기본형 완성 기준과 결함','49차와 원본에서 확인한 결함, 14개 기본형과 체형 변형의 검토 순서·승인 조건을 봅니다.','../research/modeling-methods/acceptance.html',['기본형','완성','부족','결함','승인','계획','검수']),
