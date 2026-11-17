@@ -163,6 +163,30 @@
         "chest-note40",
         "native-note40"
       ]
+    },
+    {
+      "id": "4fba47dad534fda86c410753",
+      "project": "bookfriend",
+      "round": 41,
+      "cards": 328,
+      "sources": 317,
+      "chapters": 14,
+      "cardsSha": "d38ae60e71d2bd289b868770e073b81204f04264da76315959f0ab8206d1af02",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "5b932ce9313ed311d50722248561dec75cce469b722b1724723f6376abf401a1",
+      "at": "2026-11-17T04:19:17.601Z",
+      "label": "41차 · 얼굴 구도와 가슴 밑선",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41"
+      ]
     }
   ]
 }

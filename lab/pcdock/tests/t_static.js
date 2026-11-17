@@ -47,8 +47,14 @@ console.log('②-2 PowerShell 5.1 함정(0.1.0 ③ \'op_Addition\' 오류의 까
   { const glued = ['pcdock.ps1', 'install-pcdock.ps1'].flatMap((f) => rd(f).split('\n').filter((l) => !/^\s*#/.test(l)).flatMap((l) => l.match(/\$[A-Za-z_][A-Za-z0-9_]*[\uAC00-\uD7A3]/g) || []));
     ok(!glued.length, '글 안에서 변수 바로 뒤에 한글을 붙이지 않음($wait초는 $wait초라는 빈 변수 — $($wait)초로)', glued); }
   ok(!/\?\?|\?\.|\bForEach-Object -Parallel|\bclean\s*\{|\$\w+\s*\?\s/.test(ps), 'PowerShell 7 문법(?? · ?. · -Parallel · 삼항) 없음 — 5.1만');
-  ok(/WM_CLOSE|\[RnDock\]::Close/.test(ps) && !/Stop-Process[^\n]*\$ci|Kill\(/.test(run), '모두 닫기는 WM_CLOSE(부탁)만 · 강제 종료 없음');
-  ok(/chrome\|claude/.test(run) && /CabinetWClass/.test(run), 'PowerShell에서도 닫기 직전 크롬·Claude·탐색기 셸을 한 번 더 거절(두 겹)');
+  /* (0.1.9 · 정범님 11/17 16:16 「전체 닫기 · 닫기 옵션이 실제로 닫히게」) 닫기는 CloseSet 하나 — 부탁(WM_CLOSE) → 기다림 → 남으면 강제 종료 · 강제 종료는 CloseSet 안에서만 */
+  { const cs0 = ps.indexOf('function CloseSet('), cs1 = ps.indexOf('function RowsOut('); const CS = ps.slice(cs0, cs1); const outside = ps.slice(0, cs0) + ps.slice(cs1);
+    ok(cs0 > 0 && cs1 > cs0 && CS.indexOf('[RnDock]::Close(') > 0 && CS.indexOf('Start-Sleep') > CS.indexOf('[RnDock]::Close(') && CS.indexOf('[RnDock]::Kill(') > CS.indexOf('Start-Sleep'), '닫기 차례 = 부탁(WM_CLOSE) → 기다림 → 남으면 강제 종료(CloseSet)');
+    const acts = ps.slice(ps.indexOf("'closeall' {"), ps.indexOf("{ $_ -eq 'cleanscan'")); /* 전체 닫기 · 실행·배치(모두 닫고 · 먼저 닫기) */
+    ok(acts.length > 500 && !/\[RnDock\]::Kill\(|Stop-Process/.test(acts) && (outside.match(/\[RnDock\]::Kill\(/g) || []).length === 0, '닫기 일(전체 닫기·③)의 강제 종료는 CloseSet 안에서만');
+    ok(/\$busy\.ContainsKey/.test(CS) && /noKill/.test(CS) && /IsSelf \$p/.test(CS), '강제 종료 안 함 — 같은 프로그램의 다른 창이 열려 있음 · 탐색기·윈도우 앱 틀 · PC 배치 자신');
+    ok(/function NeverWhy[\s\S]*PC 배치 자신[\s\S]*PC 배치 창[\s\S]*윈도우 셸[\s\S]*윈도우 시스템/.test(ps) && /CabinetWClass/.test(ps), '절대 안 닫음(NeverWhy) — PC 배치 자신·PC 배치 창·윈도우 셸(탐색기는 폴더 창만 닫음)·윈도우 시스템');
+    ok(!/chrome\|claude\|msedgewebview2/.test(ps), '(0.1.8까지) 크롬·Claude를 PowerShell이 한 번 더 거절하던 막이 없어짐 — 고른 것은 실제로 닫힘'); }
   ok(/KakaoTalk\.exe'/.test(rd('apps.js')) && /%LOCALAPPDATA%\\\\Kakao\\\\KakaoTalk\\\\KakaoTalk\.exe/.test(rd('apps.js')) && /Uninstall/.test(ps), '카카오톡 찾기 — %LOCALAPPDATA%\\Kakao · Program Files (x86) · 설치 목록 · 시작 메뉴');
   const cs = rd('pcdock-win.cs'); ok(/public static bool Close\(/.test(cs) && /public static string ExplorerTab\(/.test(cs) && /GetForegroundWindow\(\) != h/.test(cs), 'C# — 닫기(WM_CLOSE) · 탐색기 탭(창이 맨 앞일 때만 글자를 침)'); }
 

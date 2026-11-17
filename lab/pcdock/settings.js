@@ -6,7 +6,7 @@
  *     apps:[{ id, kind, name, icon, … 종류별 칸 }],             ← 목록의 '틀'(놓을 때 처음 값)
  *     place:[{ id, app, name, o:{ 종류별 칸 }, mon, c, r, w, h }],  ← 배치(인스턴스) — 배치마다 자기 설정 o · 칸 자리(왼쪽 위 c·r · 너비 w · 높이 h) · 한 칸에 하나
  *   0.1.0의 v:1(배치에 자기 설정이 없음)은 읽을 때 틀의 값을 배치마다 복사해 v:2로 옮김(migrated) — 예전 파일은 old\에 남김(지우지 않음)
- *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeFirst(기본 끔), closeFirstV:2(11/16 뒤에 고른 값이라는 표) },  clean:{ keep:[프로세스 이름] },
+ *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeApps:[③ 때 먼저 닫을 틀 이름표 — 기본 빈 것](0.1.9) · closeFirst(= closeApps가 있음) · closeFirstV:3(0.1.9 꼴이라는 표 · 2 = 11/16 꼴) },  clean:{ keep:[프로세스 이름] },
  *     selfAdded:true, selfV:2 } ← (0.1.7·0.1.8) PC 배치 작은 창을 목록·칸에 한 번 넣었음(사람이 빼면 다시 안 넣음) */
 (function (root, factory) { const M = factory(root); if (typeof module === 'object' && module.exports) module.exports = M; else root.PDSet = M; })(typeof self !== 'undefined' ? self : this, function (root) {
   'use strict';
@@ -15,7 +15,7 @@
   const MAX_BYTES = 200 * 1024;
   const SECRET = /pass(word)?|passwd|비밀번호|token|secret|cookie|cred|api[_-]?key/i;
   const KIND_FIELDS = A.KIND_FIELDS;
-  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20, lateSec: 180, showSelf: true }, run: { waitSec: 40, reuse: true, closeFirst: false, closeFirstV: 2, overlap: false }, clean: { keep: [] } }; }
+  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20, lateSec: 180, showSelf: true }, run: { waitSec: 40, reuse: true, closeFirst: false, closeFirstV: 3, closeApps: [], overlap: false }, clean: { keep: [] } }; }
   const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n || 400);
   const okPath = (p) => !p || (/^([a-zA-Z]:\\|\\\\)[^<>"|?*]*$/.test(p) && !/\.\.(\\|$)/.test(p));
   const okUrl = (u) => /^https?:\/\/[^\s"<>]{3,}$/.test(u);
@@ -43,7 +43,7 @@
         lateSec: (() => { const v = input.auto && input.auto.lateSec; return v === '' || v == null || !Number.isFinite(+v) ? 180 : Math.max(0, Math.min(600, Math.round(+v))); })(),
         /* (0.1.8) 윈도우 시작 배치 끝에 PC 배치 작은 창을 열어 제 칸에 놓음(끄면 안 엶) */
         showSelf: !(input.auto && input.auto.showSelf === false) },
-      run: { waitSec: Math.max(5, Math.min(180, Math.round(+(input.run && input.run.waitSec)) || 40)), reuse: !(input.run && input.run.reuse === false), closeFirst: !!(input.run && input.run.closeFirst === true && +input.run.closeFirstV === 2), closeFirstV: 2,
+      run: { waitSec: Math.max(5, Math.min(180, Math.round(+(input.run && input.run.waitSec)) || 40)), reuse: !(input.run && input.run.reuse === false), closeFirst: false, closeFirstV: 3, closeApps: [], /* (0.1.9) 아래 '먼저 닫을 프로그램'에서 채움 */
         /* (0.1.8 · 정범님 11/16 15:28) 칸 겹쳐 놓기 허용 — 켜면 한 칸에 여럿(창이 겹침) · 끄면 예전처럼 한 칸에 하나 */
         overlap: !!(input.run && input.run.overlap === true) },
       /* (0.1.6) ③ 때 목록의 프로그램 창을 먼저 닫고 새로 · (11/16 점검 ④-2 🔴) 기본 끔으로 바꿈
@@ -90,6 +90,13 @@
     /* 겹침 검사 — 자기 창은 언제나 빼고(작은 창이라 다른 칸 위에 떠도 됨) · 겹쳐 놓기를 켜면 알림만 */
     const isSelf = (p) => cfg.apps.some((a) => a.id === p.app && a.kind === 'self');
     for (const [i, j] of G.overlaps(cfg.place)) { if (isSelf(cfg.place[i]) || isSelf(cfg.place[j])) continue; if (cfg.run.overlap) continue; errs.push(`한 칸에 둘(${cfg.place[i].name || cfg.place[i].app} · ${cfg.place[j].name || cfg.place[j].app}) — 한 칸에 하나만(겹쳐 놓으려면 ① 설정 「칸 겹쳐 놓기 허용」을 켭니다)`); }
+    /* (0.1.9 · 정범님 11/17 16:16 「닫고 실행 옵션이 무의미 — 모두 선택 가능하게 · 실제로 전부 닫히게」) ③ 때 먼저 닫을 프로그램 = 목록의 틀 이름표(closeApps) — 크롬·수집기·Claude 등 모두 고를 수 있음(PC 배치 자신만 뺌)
+     *  기본 = 아무것도 안 고름(끔) · 0.1.8 표(closeFirstV:2)로 켜 둔 파일은 그때 실제로 닫던 것(Claude·프로그램·폴더 — 크롬 종류는 뺐었음)을 고른 것으로 옮김 · 표가 없는 더 옛 파일은 끔
+     *  closeFirst = 고른 것이 하나라도 있으면 true(진단·옛 화면용) */
+    { const okIds = new Set(cfg.apps.filter((a) => a.kind !== 'self').map((a) => a.id)); const r0 = input.run || {}; let L = [];
+      if (+r0.closeFirstV === 3 && Array.isArray(r0.closeApps)) L = r0.closeApps.map((x) => str(x, 40)).filter((x) => okIds.has(x));
+      else if (+r0.closeFirstV === 2 && r0.closeFirst === true) L = cfg.place.map((p) => cfg.apps.find((a) => a.id === p.app)).filter((a) => a && /^(claude|exe|folder)$/.test(a.kind)).map((a) => a.id);
+      cfg.run.closeApps = [...new Set(L)].slice(0, 60); cfg.run.closeFirst = cfg.run.closeApps.length > 0; }
     if (v1 && Array.isArray(input.apps) && input.apps.some((a) => a && a.kind === 'folder' && a.path)) migrated = true;
     cfg.migrated = migrated || (v1 && !!input.v);
     const mg = cfg.migrated; delete cfg.migrated; const sn = !!cfg.selfNew; delete cfg.selfNew; return { ok: !errs.length, errs, warns, cfg, migrated: !!mg, selfNew: sn }; }

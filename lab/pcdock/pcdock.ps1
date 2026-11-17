@@ -1,7 +1,7 @@
 param([string]$Act = 'screens', [string]$DockHome = '', [int]$On = -1, [string]$CsFile = '')
 # pcdock.ps1 — 🖥 PC 배치 도우미의 윈도우 일(readnow-pcdock.js가 부름 · 넘길 값은 표준 입력 JSON · 결과는 맨 끝 한 줄 JSON)
 #  (0.1.7) find = 실행 파일 '증거'(떠 있는 프로세스·바로 가기·레지스트리·흔한 자리·시작 메뉴 앱)만 모음 — 고르기는 apps.js pickExe · fit rect = 그 자리로
-#  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · front(이 도우미 창을 앞으로 · 0.1.4) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리)
+#  Act: screens(모니터) · stopold(새 판이 옛 판 서버를 넘겨받음 · 0.1.3) · front(이 도우미 창을 앞으로 · 0.1.4) · windows(떠 있는 창) · find(실행 파일 찾기) · lnk(바로가기 풀기) · startup(윈도우 시작 자동 켜기/끄기/보기) · run(실행·배치) · cleanscan(정리 미리보기) · cleanrun(정리) · closeall(⛔ 전체 닫기 — plan이면 목록만 · 닫기는 CloseSet · 0.1.9)
 #  ⚠ PowerShell 변수 이름은 대소문자를 가리지 않음 — $S와 $s는 같은 변수(0.1.0 '③ Claude만 되고 나머지 안 됨'의 까닭: foreach ($s …)가 결과 목록 $S를 덮어 $S += 가 PSObject 더하기로 터짐)
 #     → 대소문자만 다른 변수 이름을 쓰지 않음 · 목록은 ArrayList.Add로 쌓음(tests/t_static이 검사)
 #  (윈도우 PowerShell 5.1은 BOM 없는 파일을 한국어로 못 읽어서 readnow-pcdock.js가 BOM·CRLF를 붙인 사본을 <DockHome>에 두고 그것을 부름)
@@ -111,10 +111,92 @@ function FindEv($h) { $cl = New-Object System.Collections.ArrayList; $seenP = @{
       if ($real -match '^[A-Za-z]:\\.*\.exe$') { Add1 'start' $real $sa.n } elseif ($aid -match '!') { Add1 'start' "shell:AppsFolder\$aid" $sa.n } } }
   return @{ c = @($cl); look = $look } }
 
+# (0.1.6) 크롬 프로필(--user-data-dir) — 창 주인(크롬 본 프로세스)의 명령 줄에서 · 평소 크롬은 '' · 못 읽으면 $null(그 창은 프로필로 거르지 않음) · (0.1.9) 전체 닫기도 쓰려고 run 밖으로
+$script:uddMap = @{}
+function UddOf($cmdl) { if ($null -eq $cmdl) { return $null }; if ("$cmdl" -match '--user-data-dir=(?:"([^"]+)"|(\S+))') { $ud = $(if ($Matches[1]) { $Matches[1] } else { $Matches[2] }); return (Exp $ud).Trim('"').TrimEnd('\').ToLower() }; return '' }
+function UddFill($wl) { $miss = @($wl | Where-Object { $_.Proc -ieq 'chrome' -and -not $script:uddMap.ContainsKey([int64]$_.Pid) })
+  if ($miss.Count) { try { foreach ($pr in @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction Stop)) { $script:uddMap[[int64]$pr.ProcessId] = (UddOf $pr.CommandLine) } } catch {}
+    foreach ($w in $miss) { if (-not $script:uddMap.ContainsKey([int64]$w.Pid)) { $script:uddMap[[int64]$w.Pid] = $null } } }
+  foreach ($w in $wl) { if ($w.Proc -ieq 'chrome' -and $script:uddMap.ContainsKey([int64]$w.Pid)) { $w.Udd = $script:uddMap[[int64]$w.Pid] } } }
+# (0.1.9 · 정범님 11/17 16:16 「전체 닫기 — 수집기든 뭐든 전부 닫게 · ③ 닫기 옵션도 실제로 전부 닫히게」) 창 닫기 차례 하나(CloseSet) — 전체 닫기 · ③ 모두 닫고 · ③ 먼저 닫기가 같이 씀
+#  ① WM_CLOSE(닫아 달라는 부탁 — 저장 안 한 문서는 그 프로그램이 물음) → ② 몇 초 기다림 → ③ 창이 안 닫혔거나 창만 숨고 프로세스가 남으면(트레이 — 카카오톡·Claude) 그 프로세스를 강제 종료
+#  절대 안 닫음(NeverWhy): PC 배치 자신(이 PowerShell·Node 서버·PC 배치 창) · 윈도우 셸(바탕 화면·작업 표시줄·시작 메뉴) · 윈도우 시스템 프로세스
+#  강제 종료 안 함: 같은 프로세스에 닫을 목록 밖의 다른 창이 열려 있을 때(그 창까지 죽지 않게) · 탐색기·윈도우 앱 틀(noKill — 죽이면 작업 표시줄까지 꺼짐)
+$script:shellCls = '^(Progman|WorkerW|Shell_TrayWnd|Shell_SecondaryTrayWnd|NotifyIconOverflowWindow|Windows\.UI\.Core\.CoreWindow)$'
+$script:sysProc = '^(?i)(csrss|winlogon|dwm|lsass|services|smss|wininit|svchost|sihost|ShellExperienceHost|StartMenuExperienceHost|SearchHost|SearchApp|SearchUI|TextInputHost|LockApp|ctfmon|fontdrvhost|LogonUI|Idle|System)$'
+$script:noKill = '^(?i)(explorer|ApplicationFrameHost|SystemSettings)$'
+function IsSelf($p, $selfPids) { if ([int64]$p -eq [int64]$PID) { return $true }; foreach ($sp0 in @($selfPids)) { if ($null -ne $sp0 -and [int64]$sp0 -eq [int64]$p) { return $true } }; return $false }
+function NeverWhy($w, $selfPids) { $pn = "$($w.Proc)"; if (-not $pn) { return '프로세스 이름을 못 읽음' }
+  if ([int64]$w.Pid -le 4 -or (IsSelf $w.Pid $selfPids)) { return 'PC 배치 자신' }
+  if ("$($w.Title)" -eq '리드나우 PC 배치' -or "$($w.Udd)" -like '*\readnow\pcdock\*') { return 'PC 배치 창' }
+  if ("$($w.Cls)" -match $script:shellCls -or ($pn -ieq 'explorer' -and "$($w.Cls)" -ne 'CabinetWClass')) { return '윈도우 셸(바탕 화면·작업 표시줄)' }
+  if ($pn -match $script:sysProc) { return '윈도우 시스템' }
+  return '' }
+function PidAlive($p) { $al = $false; try { $al = [bool][RnDock]::Alive([uint32]$p) } catch {}; if ($al) { return $true }
+  $gp = $null; try { $gp = Get-Process -Id ([int]$p) -ErrorAction Stop } catch {}; if (-not $gp) { return $false }
+  try { return (-not $gp.HasExited) } catch { return $true } }
+function ShortT($t) { $tt = "$t"; return $tt.Substring(0, [Math]::Min(60, $tt.Length)) }
+# 닫을 규칙 하나에 맞나(③ 먼저 닫기 · apps.js closeRules) — 참 · 거짓 · $null(크롬 프로필을 못 읽어 모름)
+function RuleHit($w, $rl) {
+  if ((Arr $rl.procs).Count -and -not (@(Arr $rl.procs) | Where-Object { "$($w.Proc)" -ieq "$_" })) { return $false }
+  if ("$($rl.cls)" -and "$($w.Cls)" -ne "$($rl.cls)") { return $false }
+  if ("$($rl.title)" -and -not ("$($w.Title)" -match "$($rl.title)")) { return $false }
+  if ($null -ne $rl.udd) { if ($null -eq $w.Udd) { return $null }; $ru = "$($rl.udd)"; if ($ru) { $ru = (Exp $ru).Trim('"').TrimEnd('\').ToLower() }; if ("$($w.Udd)" -ne $ru) { return $false } }
+  return $true }
+# tg = 닫을 창(RnDock.Win) 목록 · 돌려줌 = 줄마다 @{ h; pid; proc; title; res = closed(닫힘)|killed(강제 종료)|left(남음); why }
+function CloseSet($tg, $waitSec, $selfPids) { $rows = New-Object System.Collections.ArrayList; $tgH = @{}
+  foreach ($w in @($tg)) { if ($null -eq $w) { continue }; $hk = [int64]$w.H; if ($tgH.ContainsKey($hk)) { continue }; $tgH[$hk] = 1
+    $row = @{ h = $hk; pid = [int64]$w.Pid; proc = "$($w.Proc)"; title = (ShortT $w.Title); res = 'left'; why = ''; asked = $false }
+    $nv = NeverWhy $w $selfPids
+    if ($nv) { $row.why = $nv }
+    elseif (-not [RnDock]::Exists($hk)) { $row.res = 'closed'; $row.why = '이미 닫힘' }
+    else { try { if ([RnDock]::Close($hk)) { $row.asked = $true } else { $row.why = '닫기 부탁을 못 보냄' } } catch { $row.why = "닫기 부탁 실패: $($_.Exception.Message)" } }
+    [void]$rows.Add($row) }
+  $asked = @($rows | Where-Object { $_.asked }); if (-not $asked.Count) { return ,$rows }
+  # ② 기다림 — 부탁한 창이 다 닫히거나(숨어도 닫힌 것으로) waitSec초까지
+  $endW = [DateTime]::Now.AddSeconds([Math]::Max(1, [int]$waitSec))
+  while ([DateTime]::Now -lt $endW -and @($asked | Where-Object { [RnDock]::Exists([int64]$_.h) -and [RnDock]::Visible([int64]$_.h) }).Count) { Start-Sleep -Milliseconds 300 }
+  # 같은 프로세스가 닫을 목록 밖의 다른 창을 띄우고 있나(그 프로세스는 강제 종료하지 않음)
+  $busy = @{}; foreach ($ow in [RnDock]::Windows()) { if (-not $tgH.ContainsKey([int64]$ow.H)) { $busy[[int64]$ow.Pid] = 1 } }
+  # 창은 닫혔는데 프로세스가 아직 끝나는 중일 수 있어 3초 더(트레이로 숨는 프로그램은 그대로 남음)
+  $endG = [DateTime]::Now.AddSeconds(3)
+  while ([DateTime]::Now -lt $endG -and @($asked | Where-Object { -not $busy.ContainsKey([int64]$_.pid) -and (PidAlive $_.pid) }).Count) { Start-Sleep -Milliseconds 300 }
+  # ③ 남은 것 — 강제 종료(프로세스마다 한 번)
+  $killed = @{}
+  foreach ($row in $asked) { $p = [int64]$row.pid; $open = [RnDock]::Exists([int64]$row.h) -and [RnDock]::Visible([int64]$row.h)
+    if (-not (PidAlive $p)) { $row.res = 'closed'; continue }
+    if ($busy.ContainsKey($p)) { if ($open) { $row.why = '같은 프로그램의 다른 창이 열려 있어 강제 종료 안 함' } else { $row.res = 'closed'; $row.why = '창만 닫힘(같은 프로그램의 다른 창은 그대로)' }; continue }
+    if ($row.proc -match $script:noKill) { if ($open) { $row.why = '닫기 부탁에 답하지 않음(탐색기·윈도우 앱은 강제 종료 안 함)' } else { $row.res = 'closed' }; continue }
+    if (IsSelf $p $selfPids) { $row.why = 'PC 배치 자신'; continue }
+    $why1 = $(if ($open) { '닫아 달라는 부탁에 답하지 않아 강제 종료' } else { '창은 숨었지만 트레이에 남아 강제 종료' })
+    if ($killed.ContainsKey($p)) { if ($killed[$p]) { $row.res = 'killed'; $row.why = $why1 } else { $row.why = '강제 종료 실패(관리자 권한 프로그램일 수 있음)' }; continue }
+    $kOk = $false; try { $kOk = [bool][RnDock]::Kill([uint32]$p) } catch {}
+    if (-not $kOk) { try { Stop-Process -Id ([int]$p) -Force -ErrorAction Stop; $kOk = $true } catch {} }
+    $killed[$p] = $kOk; if ($kOk) { $row.res = 'killed'; $row.why = $why1 } else { $row.why = '강제 종료 실패(관리자 권한 프로그램일 수 있음)' } }
+  # 강제 종료한 프로세스가 정말 끝났나(3초까지)
+  if ($killed.Count) { $endK = [DateTime]::Now.AddSeconds(3)
+    while ([DateTime]::Now -lt $endK -and @($killed.Keys | Where-Object { $killed[$_] -and (PidAlive $_) }).Count) { Start-Sleep -Milliseconds 300 }
+    foreach ($row in $asked) { if ($row.res -eq 'killed' -and (PidAlive $row.pid)) { $row.res = 'left'; $row.why = '강제 종료했지만 아직 남음' } } }
+  return ,$rows }
+# 줄 정리(화면·기록에 넘길 칸만)
+function RowsOut($rows) { return @(@($rows) | ForEach-Object { @{ h = $_.h; pid = $_.pid; proc = $_.proc; title = $_.title; res = $_.res; why = $_.why } }) }
+
 try {
 switch ($Act) {
   'screens' { $out.mons = @(Mons); $out.build = (WinBuild); Done $out }
   'windows' { $out.wins = @([RnDock]::Windows() | Select-Object -First 300 | ForEach-Object { WinInfo $_ }); $out.mons = @(Mons); Done $out }
+  'closeall' { # (0.1.9 · 정범님 11/17 16:16) 「⛔ 전체 닫기」 — plan: 작업 표시줄에 뜬 창 목록(닫을 것·절대 안 닫는 것 까닭) · 아니면 wins(화면이 보여 준 창 중 고른 것)를 CloseSet 차례로
+    $sf = @(Arr $In.selfPids)
+    if ($In.plan) { $wl = @([RnDock]::Windows() | Select-Object -First 300); UddFill $wl
+      $out.wins = @($wl | ForEach-Object { $wi = WinInfo $_; $wi.udd = $_.Udd; $wi.never = (NeverWhy $_ $sf); $wi }); Done $out }
+    $nowW = @{}; $wl = @([RnDock]::Windows()); UddFill $wl; foreach ($cw in $wl) { $nowW[[int64]$cw.H] = $cw }
+    $pick = New-Object System.Collections.ArrayList; $gone = New-Object System.Collections.ArrayList
+    foreach ($ci in @($In.wins)) { $cur = $nowW[[int64]$ci.h]
+      if (-not $cur) { [void]$gone.Add(@{ h = [int64]$ci.h; pid = [int64]$ci.pid; proc = "$($ci.proc)"; title = (ShortT $ci.title); res = 'closed'; why = '이미 닫힘' }) }
+      elseif ([int64]$cur.Pid -ne [int64]$ci.pid -or $cur.Proc -ine "$($ci.proc)") { [void]$gone.Add(@{ h = [int64]$ci.h; pid = [int64]$ci.pid; proc = "$($ci.proc)"; title = (ShortT $ci.title); res = 'left'; why = '창이 바뀌어 안 닫음(목록을 다시 보고 골라 주세요)' }) }
+      else { [void]$pick.Add($cur) } }
+    $wsec = $(if ($null -ne $In.waitSec) { [int]$In.waitSec } else { 6 })
+    $rs = @(CloseSet @($pick) $wsec $sf); $out.rows = @(RowsOut $rs) + @($gone); Done $out }
   'find' { $ev = @{}; $ic = @{} # (0.1.7) 단서마다 증거(ev) · 아이콘은 파일이 있는 후보 경로마다(앞 3개)
     foreach ($h in @($In.hints)) { try { $e1 = FindEv $h; $ev["$($h.key)"] = $e1; $nI = 0; foreach ($cc in @($e1.c)) { if ($nI -ge 3) { break }; if ($cc.ok -and $cc.p -notlike 'shell:*' -and -not $ic.ContainsKey($cc.p)) { $i = IconOf $cc.p; if ($i) { $ic[$cc.p] = $i; $nI = $nI + 1 } } } } catch { $ev["$($h.key)"] = @{ c = @(); look = @{}; err = "$($_.Exception.Message)" } } }
     foreach ($p in @($In.icons)) { if ($p -and (Test-Path -LiteralPath $p)) { $i = IconOf $p; if ($i) { $ic[$p] = $i } } }
@@ -136,20 +218,17 @@ switch ($Act) {
     foreach ($sp in $steps) { if ([int]$sp.match.slow -gt $wait) { $wait = [int]$sp.match.slow } }
     # (0.1.6) 크롬 단계는 하나씩 띄우고 새 창을 기다림(단계마다 최대 15초) — 시간 상한에 그만큼 더함
     $script:launchN = 0; $script:launchMax = $steps.Count + $tabTotal + 1; $hardSec = $wait + 8 * $tabTotal + 15 * $seqN + 20; $script:hardEnd = [DateTime]::Now.AddSeconds($hardSec); $out.limit = @{ launches = $script:launchMax; sec = $hardSec }
-    # ③ '모두 닫고 설정대로' — 화면에서 미리 보여 준 창만 · WM_CLOSE(닫아 달라고 부탁만 · 저장 안 한 문서는 그 프로그램이 물음) · 강제 종료 없음
-    $closed = New-Object System.Collections.ArrayList
-    if (@($In.close).Count) {
-      $nowWins = @{}; foreach ($cw in [RnDock]::Windows()) { $nowWins[[int64]$cw.H] = $cw }
-      foreach ($ci in @($In.close)) { $item = @{ h = [int64]$ci.h; proc = "$($ci.proc)"; title = "$($ci.title)"; ok = $false; gone = $false; why = '' }
-        try { $cur = $nowWins[[int64]$ci.h]
-          if (-not $cur) { $item.why = '이미 닫힘' }
-          elseif ([int64]$cur.Pid -ne [int64]$ci.pid -or $cur.Proc -ine "$($ci.proc)") { $item.why = '창이 바뀌어 안 닫음' }
-          elseif ($cur.Proc -match '^(chrome|claude|msedgewebview2|mstsc|msrdc|node|powershell|pwsh|cmd|conhost|WindowsTerminal|spoolsv|splwow64)$' -or ($cur.Proc -ieq 'explorer' -and $cur.Cls -ne 'CabinetWClass')) { $item.why = '보호 목록이라 안 닫음' }
-          else { [void][RnDock]::Close([int64]$ci.h); $item.ok = $true } } catch { $item.why = "닫기 부탁 실패: $($_.Exception.Message)" }
-        [void]$closed.Add($item) }
-      $endC = [DateTime]::Now.AddSeconds(6)
-      while ([DateTime]::Now -lt $endC -and @($closed | Where-Object { $_.ok -and [RnDock]::Exists([int64]$_.h) }).Count) { Start-Sleep -Milliseconds 400 }
-      foreach ($item in $closed) { if ($item.ok) { $item.gone = -not [RnDock]::Exists([int64]$item.h) } } }
+    # ③ '모두 닫고 설정대로' — 화면에서 미리 보여 주고 정범님이 고른 창만 · (0.1.9) 전체 닫기와 같은 차례(WM_CLOSE → 기다림 → 안 닫히면 강제 종료)
+    #  (0.1.8까지는 크롬·Claude 등을 PowerShell이 한 번 더 거절하고 WM_CLOSE만 보내 6초 기다려 끝 — 고른 창도 트레이로 숨거나 답하지 않으면 그대로 남았음)
+    $sf = @(Arr $In.selfPids); $closed = New-Object System.Collections.ArrayList
+    if (@($In.close).Count) { try { $nowWins = @{}; $cwl = @([RnDock]::Windows()); UddFill $cwl; foreach ($cw in $cwl) { $nowWins[[int64]$cw.H] = $cw }
+        $pick0 = New-Object System.Collections.ArrayList
+        foreach ($ci in @($In.close)) { $cur = $nowWins[[int64]$ci.h]
+          if (-not $cur) { [void]$closed.Add(@{ h = [int64]$ci.h; pid = [int64]$ci.pid; proc = "$($ci.proc)"; title = (ShortT $ci.title); res = 'closed'; why = '이미 닫힘' }) }
+          elseif ([int64]$cur.Pid -ne [int64]$ci.pid -or $cur.Proc -ine "$($ci.proc)") { [void]$closed.Add(@{ h = [int64]$ci.h; pid = [int64]$ci.pid; proc = "$($ci.proc)"; title = (ShortT $ci.title); res = 'left'; why = '창이 바뀌어 안 닫음' }) }
+          else { [void]$pick0.Add($cur) } }
+        foreach ($rw in @(RowsOut (CloseSet @($pick0) 6 $sf))) { [void]$closed.Add($rw) } } catch { $out.closeErr = "모두 닫기 실패: $($_.Exception.Message)" }
+      Start-Sleep -Milliseconds 600 }
     $out.closed = @($closed)
     $before = @{}; foreach ($bw in [RnDock]::Windows()) { $before[[int64]$bw.H] = 1 }
     $claimed = @{}; $Res = New-Object System.Collections.ArrayList
@@ -170,13 +249,6 @@ switch ($Act) {
       $sc = @($cands | Sort-Object -Property @{ Expression = { $(if ($_.Title -match "$($m.hidden)") { 0 } else { 1 }) } }, @{ Expression = { $(if ("$($m.hcls)" -and $_.Cls -eq "$($m.hcls)") { 0 } else { 1 }) } }, @{ Expression = { -1 * ($_.R.R - $_.R.L) * ($_.R.B - $_.R.T) } })
       return $sc[0] }
     function NewSt($sp) { @{ s = $sp; done = $false; how = ''; t0 = [DateTime]::Now; err = ''; h = [int64]0; title = ''; got = $null; tabN = 0; overN = 0; overWhy = ''; tabbed = $false; pre = @(); hintMiss = $false; hidWhy = ''; sec = 0; cls = '' } }
-    # (0.1.6) 크롬 프로필(--user-data-dir) — 창 주인(크롬 본 프로세스)의 명령 줄에서 · 평소 크롬은 '' · 못 읽으면 $null(그 창은 프로필로 거르지 않음)
-    $script:uddMap = @{}
-    function UddOf($cmdl) { if ($null -eq $cmdl) { return $null }; if ("$cmdl" -match '--user-data-dir=(?:"([^"]+)"|(\S+))') { $ud = $(if ($Matches[1]) { $Matches[1] } else { $Matches[2] }); return (Exp $ud).Trim('"').TrimEnd('\').ToLower() }; return '' }
-    function UddFill($wl) { $miss = @($wl | Where-Object { $_.Proc -ieq 'chrome' -and -not $script:uddMap.ContainsKey([int64]$_.Pid) })
-      if ($miss.Count) { try { foreach ($pr in @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction Stop)) { $script:uddMap[[int64]$pr.ProcessId] = (UddOf $pr.CommandLine) } } catch {}
-        foreach ($w in $miss) { if (-not $script:uddMap.ContainsKey([int64]$w.Pid)) { $script:uddMap[[int64]$w.Pid] = $null } } }
-      foreach ($w in $wl) { if ($w.Proc -ieq 'chrome' -and $script:uddMap.ContainsKey([int64]$w.Pid)) { $w.Udd = $script:uddMap[[int64]$w.Pid] } } }
     # (0.1.6) 크롬 단계의 창 고르기(C# PickNew) — 띄우기 바로 전 창(preK)·다른 단계가 잡은 창은 빼고 · 프로필·제목 단서 · loose = 평소 크롬 프로필 조건을 늦춤(우리 도우미 크롬은 여전히 뺌)
     function PickFor($sp, $wl, $preK, $loose) { $m = $sp.match; $ud = "$($m.udd)"; if ($null -eq $m.udd -or ($loose -and -not $ud)) { $ud = '*' }
       return [int64][RnDock]::PickNew(@($wl), [int64[]]@($preK), [int64[]]@($claimed.Keys), 'chrome', "$($m.cls)", $ud, "$($m.uddNot)", "$($m.hint)") }
@@ -224,21 +296,22 @@ switch ($Act) {
     # (0.1.6) 도우미 크롬 프로필 경로 펼침(%USERPROFILE% → 실제 · 소문자 · 끝 \ 뺌) — 창 주인 명령 줄의 --user-data-dir과 견줌
     foreach ($sp in $steps) { if ($sp.match.seq -and "$($sp.match.udd)") { $sp.match.udd = (Exp "$($sp.match.udd)").Trim('"').TrimEnd('\').ToLower() } }
     foreach ($sp in $steps) { if ($sp.folder) { $fp = FolderPath $sp.folder; $fl = Split-Path $fp -Leaf; if (-not $fl) { $fl = $fp }; $sp.launch.args = @($fp); $sp.match | Add-Member -Force -NotePropertyName folder -NotePropertyValue $fp; $sp.match | Add-Member -Force -NotePropertyName leaf -NotePropertyValue $fl } }
-    # (0.1.6 · 정범님 11/14 15:46) 먼저 닫기 — 이번에 놓을 프로그램(크롬·Claude·카카오톡·폴더 창 등)의 창을 WM_CLOSE로 닫고(부탁만 · 강제 종료 없음) 새로 띄워 칸에 놓음
-    #  (11/16) 크롬은 어떤 프로필이든 닫지 않음(뒤 탭 수집기·알라딘 로그인) · 윈도우 시작 자동 실행 때는 Node가 closeFirst를 넘기지 않음
-    #  지킴(C# CloseWhy): 크롬 전부(평소 프로필·수집기·도우미 크롬 …\ReadNow\… 프로필 · 프로필을 못 읽은 창) · 제목이 수집기 창(알라딘 수집 탭·🪟 리드나우 작업 창·🖐 손발·번외·ALPS·PC 배치) · 탐색기 셸 · 목록 밖 프로그램은 손대지 않음
-    $pre1Closed = New-Object System.Collections.ArrayList; $pre1Kept = New-Object System.Collections.ArrayList
-    if ($In.closeFirst) { $cfProcs = [string[]]@(Arr $In.closeFirst.procs); $cfKeep = "$($In.closeFirst.keepTitle)"
-      try { $cw0 = @([RnDock]::Windows()); UddFill $cw0
-        foreach ($cw in $cw0) { $why0 = [RnDock]::CloseWhy($cw, $cfProcs, $cfKeep); if ($null -eq $why0) { continue }
-          $tt = "$($cw.Title)"; $row = @{ proc = "$($cw.Proc)"; title = $tt.Substring(0, [Math]::Min(60, $tt.Length)) }
-          if ($why0) { $row.why = $why0; [void]$pre1Kept.Add($row) } elseif ([RnDock]::Close([int64]$cw.H)) { $row.h = [int64]$cw.H; [void]$pre1Closed.Add($row) } }
-        $endF = [DateTime]::Now.AddSeconds(8); while ([DateTime]::Now -lt $endF -and @($pre1Closed | Where-Object { [RnDock]::Exists([int64]$_.h) -and [RnDock]::Visible([int64]$_.h) }).Count) { Start-Sleep -Milliseconds 400 }
-        foreach ($row in $pre1Closed) { $row.gone = -not ([RnDock]::Exists([int64]$row.h) -and [RnDock]::Visible([int64]$row.h)) }
+    # (0.1.9 · 정범님 11/17 16:16 「닫으려는 프로그램들이 닫지 않아 닫고 실행 옵션이 무의미 — 모두 고를 수 있게 · 실제로 전부 닫히게」) 먼저 닫기
+    #  ① 설정에서 고른 프로그램(apps.js closeRules — 크롬·수집기·Claude·카카오톡·폴더 … 무엇이든) 규칙에 맞는 창만 → CloseSet(WM_CLOSE → 기다림 → 강제 종료)
+    #  · 크롬 프로필을 못 읽은 창은 어느 크롬인지 몰라 그대로(kept) · 윈도우 시작 자동 실행 때는 Node가 closeFirst를 넘기지 않음
+    #  (0.1.6~0.1.8은 크롬을 아예 빼고 C# CloseWhy가 크롬 창·수집기 제목을 두 겹으로 지켰고 WM_CLOSE만 보내 — 크롬 위주인 배치에선 거의 아무것도 안 닫혔음)
+    $pre1Rows = New-Object System.Collections.ArrayList; $pre1Kept = New-Object System.Collections.ArrayList
+    if ($In.closeFirst -and (Arr $In.closeFirst.rules).Count) { $cfRules = @(Arr $In.closeFirst.rules)
+      try { $cw0 = @([RnDock]::Windows()); UddFill $cw0; $cfT = New-Object System.Collections.ArrayList
+        foreach ($cw in $cw0) { $hitR = $null; $unk = $null
+          foreach ($rl in $cfRules) { $hr = RuleHit $cw $rl; if ($hr -eq $true) { $hitR = $rl; break }; if ($null -eq $hr -and -not $unk) { $unk = $rl } }
+          if ($hitR) { [void]$cfT.Add($cw) }
+          elseif ($unk) { [void]$pre1Kept.Add(@{ proc = "$($cw.Proc)"; title = (ShortT $cw.Title); why = "크롬 프로필을 못 읽어 어느 크롬인지 몰라 그대로($($unk.name))" }) } }
+        foreach ($rw in @(RowsOut (CloseSet @($cfT) 8 $sf))) { if ($rw.res -eq 'left') { [void]$pre1Kept.Add($rw) } else { [void]$pre1Rows.Add($rw) } }
       } catch { $out.closeErr = "먼저 닫기 실패: $($_.Exception.Message)" }
-      if ($pre1Closed.Count) { Start-Sleep -Milliseconds 600 }
-      $before = @{}; foreach ($bw in [RnDock]::Windows()) { $before[[int64]$bw.H] = 1 } }
-    $out.pre = @{ closed = @($pre1Closed); kept = @($pre1Kept) }
+      if ($pre1Rows.Count) { Start-Sleep -Milliseconds 600 } }
+    if ($closed.Count -or $pre1Rows.Count) { $before = @{}; foreach ($bw in [RnDock]::Windows()) { $before[[int64]$bw.H] = 1 } }
+    $out.pre = @{ closed = @($pre1Rows); kept = @($pre1Kept) }
     $shellNow = ShellMap
     # 프로그램마다 따로(try) — 하나가 실패해도 나머지는 계속
     foreach ($sp in $steps) { $st = NewSt $sp

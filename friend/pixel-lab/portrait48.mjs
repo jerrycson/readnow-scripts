@@ -1,4 +1,4 @@
-import {renderPixels} from './renderer.mjs';
+import {renderPixels} from './renderer.mjs?v=41';
 import {materialLibrary} from './materials.mjs';
 
 const code=(r,g,b)=>(r<<16)|(g<<8)|b;

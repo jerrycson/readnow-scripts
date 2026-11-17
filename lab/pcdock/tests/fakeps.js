@@ -51,7 +51,18 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
   /* (0.1.8) FAKE_LATE=N — 카카오톡 단계는 앞의 N번 실행에서 창을 못 찾음(윈도우 시작 때 늦게 뜸 · 프로세스는 있음) · 놓은 창 번호(h)는 실행마다 바뀜(로그인 창 → 본 창) */
   if (act === 'run' && +process.env.FAKE_LATE) { const cf = (process.env.FAKE_LOG || '/tmp/fake') + '.late'; let k = 0; try { k = +fs.readFileSync(cf, 'utf8') || 0; } catch (e) {} if ((j.steps || []).some((s) => s.app === 'kakao')) { k++; fs.writeFileSync(cf, String(k)); }
     return out({ build: 22631, closed: [], res: (j.steps || []).map((s) => s.app !== 'kakao' ? { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김', h: 7 } : k <= +process.env.FAKE_LATE ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: s.match.waitProc ? '창을 못 찾음(20초)' : '켬 · 창을 못 찾음(40초)', up: k > 1, tray: false, h: 0 } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: s.match.waitProc ? '이미 켜지는 중(프로세스 있음) — 다시 켜지 않고 창을 기다림 → 자리 옮김' : '이미 떠 있어 자리만 옮김', title: '카카오톡', cls: 'EVA_Window_Dblclk', up: true, h: 100 + k, want: s.rect, got: s.rect }) }); }
-  if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ok: true, gone: true, why: '' })),
+  /* (0.1.9) 닫기 결과 흉내 — claude는 부탁해도 트레이로 숨어 강제 종료(killed) · mstsc는 강제 종료도 안 됨(left) · 나머지는 부탁으로 닫힘(closed) */
+  const resOf = (w) => w.proc === 'claude' ? { res: 'killed', why: '닫기 부탁 뒤에도 프로세스가 남아 강제 종료' } : w.proc === 'mstsc' ? { res: 'left', why: '강제 종료도 안 됨(관리자 권한일 수 있음)' } : { res: 'closed', why: '' };
+  const WINS = [{ h: 101, pid: 10, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 — Chrome', udd: '' }, { h: 102, pid: 12, proc: 'claude', cls: 'Chrome_WidgetWin_1', title: 'Claude' },
+    { h: 103, pid: 13, proc: 'explorer', cls: 'Progman', title: 'Program Manager' }, { h: 104, pid: 13, proc: 'explorer', cls: 'CabinetWClass', title: '다운로드' },
+    { h: 105, pid: 14, proc: 'notepad', cls: 'Notepad', title: '제목 없음 - 메모장' }, { h: 106, pid: 15, proc: 'mstsc', cls: 'TscShellContainerClass', title: '원격 데스크톱 연결' },
+    { h: 107, pid: 16, proc: 'chrome', cls: 'Chrome_WidgetWin_1', title: '리드나우 PC 배치', udd: 'C:\\Users\\u\\readnow\\pcdock\\profile' }];
+  if (act === 'closeall' && j.plan) return out({ wins: WINS.map((w) => ({ ...w, never: w.cls === 'Progman' ? '윈도우 셸(바탕 화면·작업 표시줄)' : /pcdock/.test(w.udd || '') ? 'PC 배치 창' : '' })) });
+  if (act === 'closeall') return out({ rows: (j.wins || []).map((w) => ({ h: w.h, pid: w.pid, proc: w.proc, title: w.title, ...resOf(w) })) });
+  /* (0.1.9) 먼저 닫기 — 받은 규칙(rules)의 procs에 맞는 가짜 창을 닫았다고 답함 · 맞지 않는 창은 kept */
+  const preOf = (cf) => { if (!cf || !Array.isArray(cf.rules)) return null; const hit = (w) => cf.rules.some((r) => (r.procs || []).includes(w.proc) && (!r.cls || r.cls === w.cls));
+    const ws = WINS.filter((w) => w.cls !== 'Progman' && !/pcdock/.test(w.udd || '')); return { closed: ws.filter(hit).map((w) => ({ h: w.h, pid: w.pid, proc: w.proc, title: w.title, ...resOf(w) })), kept: ws.filter((w) => !hit(w)).map((w) => ({ proc: w.proc, title: w.title, why: '고른 프로그램 아님' })) }; };
+  if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ...resOf(c) })), pre: preOf(j.closeFirst),
     res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect }) });
   /* (0.1.4) front — FAKE_WIN 파일이 있으면 '도우미 창이 떠 있음'(가짜 크롬이 만듦) */
   if (act === 'front') return out({ found: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN)), moved: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN + '.off')), front: true });

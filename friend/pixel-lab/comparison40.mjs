@@ -1,4 +1,4 @@
-import {launchRound39} from './comparison39.mjs?v=40-navigation';
+import {launchRound39} from './comparison39.mjs?v=41';
 import {pixelLoupe40} from './pixel-loupe40.mjs';
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
@@ -6,11 +6,12 @@ const svg=(tag,attrs)=>{const e=document.createElementNS(ns,tag);for(const [k,v]
 const read=async file=>{const r=await fetch(file,{cache:'no-store'});if(!r.ok)throw Error('40차 실제 자료를 읽지 못했습니다: '+file);return r.json();};
 const wording=text=>String(text).replace(/38·39차|38\/39차|38차|39차/g,v=>({'38·39차':'39·40차','38/39차':'39/40차','38차':'39차','39차':'40차'}[v]));
 const lines=v=>!v?.length?[]:typeof v[0][0]==='number'?[v]:v;
+let symbolScale=1;
 const pointsOf=eye=>eye?['upper','lower','brow'].flatMap(k=>eye[k]||[]):[];
 
 // 가려져 끊긴 픽셀 구간은 잇지 않는다. 원전의 드문 표식은 점으로 표시한다.
-function eyeLine(parent,ps,color,observed=false){let run=[];const finish=()=>{if(run.length>1)parent.append(svg('polyline',{points:run.map(p=>p.join(',')).join(' '),fill:'none',stroke:color,'stroke-width':.65}));run=[];};for(const p of ps||[]){if(run.length&&Math.abs(p[0]-run.at(-1)[0])>1.05)finish();run.push(p);if(observed)parent.append(svg('circle',{cx:p[0],cy:p[1],r:.85,fill:color}));}finish();}
-function poly(parent,sets,color,dash=''){for(const ps of lines(sets))parent.append(svg('polyline',{points:ps.map(p=>p.join(',')).join(' '),fill:'none',stroke:color,'stroke-width':.9,'stroke-dasharray':dash}));}
+function eyeLine(parent,ps,color,observed=false){let run=[];const finish=()=>{if(run.length>1)parent.append(svg('polyline',{points:run.map(p=>p.join(',')).join(' '),fill:'none',stroke:color,'stroke-width':1.25,'vector-effect':'non-scaling-stroke'}));run=[];};for(const p of ps||[]){if(run.length&&Math.abs(p[0]-run.at(-1)[0])>1.05)finish();run.push(p);if(observed)parent.append(svg('circle',{cx:p[0],cy:p[1],r:2.2/symbolScale,fill:color}));}finish();}
+function poly(parent,sets,color,dash=''){for(const ps of lines(sets))parent.append(svg('polyline',{points:ps.map(p=>p.join(',')).join(' '),fill:'none',stroke:color,'stroke-width':1.35,'vector-effect':'non-scaling-stroke','stroke-dasharray':dash}));}
 function bounds(ps,pad=6){if(!ps.length)return null;const xs=ps.map(p=>p[0]),ys=ps.map(p=>p[1]),left=Math.max(0,Math.floor(Math.min(...xs)-pad)),top=Math.max(0,Math.floor(Math.min(...ys)-pad));return [left,top,Math.max(12,Math.ceil(Math.max(...xs)-left+pad)),Math.max(12,Math.ceil(Math.max(...ys)-top+pad))];}
 function lowest(sets){const ps=lines(sets).flat();return ps.length?ps.reduce((a,b)=>b[1]>a[1]?b:a):null;}
 
@@ -40,9 +41,9 @@ export async function launchRound40(input){
     let box=[0,0,...size];const face=c.id!=='W';for(const b of $('sourceFocus40').children){const key=b.dataset.focus;b.hidden=face?key==='bottom':['left','right','near','far'].includes(key);b.disabled=face&&(key==='near'||key==='far')&&record[key==='near'?'nearEyeIndex':'farEyeIndex']===null;}
     if(face){const index=focus==='near'?record.nearEyeIndex:focus==='far'?record.farEyeIndex:focus==='left'?0:focus==='right'?1:null;if(index!==null&&index!==undefined){const crop=bounds(pointsOf(record.sourceEyes[index]),8);if(crop)box=crop;}else if(focus!=='all')focus='all';}
     else if(focus==='bottom'){const p=lowest(sourceSets);if(p)box=[Math.max(0,p[0]-22),Math.max(0,p[1]-18),44,36];}
-    for(const b of $('sourceFocus40').children)b.setAttribute('aria-pressed',String(b.dataset.focus===focus));plate.setAttribute('viewBox',box.join(' '));
+    for(const b of $('sourceFocus40').children)b.setAttribute('aria-pressed',String(b.dataset.focus===focus));plate.setAttribute('viewBox',box.join(' '));const rect=plate.getBoundingClientRect();symbolScale=Math.max(.1,Math.min(rect.width/box[2],rect.height/box[3]));
     if($('photo38').checked){let im;if(face)im=svg('image',{href:imageUrl,width:248,height:248});else{const [x,y]=c.ref.paper[c.cell].box;im=svg('image',{href:imageUrl,x:-x,y:-y,width:Math.round(2007*725/1280),height:1143,preserveAspectRatio:'none'});}im.setAttribute('opacity',+$('opacity38').value/100);plate.append(im);}
-    for(const [toggle,color,sets]of [['trace38','#007b8c',face?record.sourceEyes:sourceSets],['prior38','#79549b',face?record.visible39:priorSets],['next38','#b34419',face?record.visible40:nextSets]])if($(toggle).checked){const g=svg('g',{'data-layer':toggle});if(face){sets.forEach((eye,i)=>{if(!eye)return;const group=svg('g',{'data-eye':i,'data-depth':i===record.nearEyeIndex?'near':i===record.farEyeIndex?'far':'unspecified'});for(const key of ['upper','lower','brow'])eyeLine(group,eye[key],color,toggle==='trace38');g.append(group);});}else{poly(g,sets,color,toggle==='prior38'?'3 2':'');const p=lowest(sets);if(p)g.append(svg('circle',{cx:p[0],cy:p[1],r:1.8,fill:'white',stroke:color,'stroke-width':.8}));}plate.append(g);}
+    for(const [toggle,color,sets]of [['trace38','#007b8c',face?record.sourceEyes:sourceSets],['prior38','#79549b',face?record.visible39:priorSets],['next38','#b34419',face?record.visible40:nextSets]])if($(toggle).checked){const g=svg('g',{'data-layer':toggle});if(face){sets.forEach((eye,i)=>{if(!eye)return;const group=svg('g',{'data-eye':i,'data-depth':i===record.nearEyeIndex?'near':i===record.farEyeIndex?'far':'unspecified'});for(const key of ['upper','lower','brow'])eyeLine(group,eye[key],color,toggle==='trace38');g.append(group);});}else{poly(g,sets,color,toggle==='prior38'?'3 2':'');const p=lowest(sets);if(p)g.append(svg('circle',{cx:p[0],cy:p[1],r:4/symbolScale,fill:'white',stroke:color,'stroke-width':1.3,'vector-effect':'non-scaling-stroke'}));}plate.append(g);}
     if(face){$('sourceInfo38').textContent='원화 '+record.imageNumber+' · '+(record.role||'관찰 자료')+' · '+(record.cameraRole||'등록된 공통 정합')+'. '+(record.nearEyeIndex===null?'이 원화의 좌우 눈 앞뒤 순서는 확정하지 않습니다. ':'가까운 눈: 화면 '+(record.nearEyeIndex===0?'왼쪽':'오른쪽')+' · 먼 눈: '+(record.farEyeIndex===null?'관측 대상 없음':record.farEyeIndex===0?'화면 왼쪽':'화면 오른쪽')+'. ')+'원전 관측 표식은 점, 모델 경계는 삼각형 가시 판정된 구간입니다. 가시 표본이 끊긴 구간은 잇지 않습니다. '+(record.omitted||'')+(record.partial?.some(Boolean)?' 일부 가린 눈이 있으므로 전체 눈 폭과 구분합니다.':'');$('credit38').href=eyeData.sources?.[c.id]?.source||c.record.source;}
     else{$('sourceInfo38').textContent=c.cell+' · 흰 원은 표시한 가시선 범위의 최저 표본입니다. 도판의 다른 부위나 가려진 선으로 연장하지 않습니다. 고정 카메라 비교이고 자유 회전은 별도입니다.';$('credit38').href='https://doi.org/10.1007/s00266-021-02753-y';}
   }

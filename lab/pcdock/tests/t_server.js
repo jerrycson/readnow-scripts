@@ -42,12 +42,14 @@ const fakeLog = (D) => { try { return fs.readFileSync(path.join(D, 'fake.log'), 
 
     console.log('④-2 ③ 묻기 — 남겨 둔 채 / 모두 닫고 / 취소');
     r = await P('POST', '/api/run', { mode: 'close', token: 'nope' }); ok(r.j && !r.j.ok && /닫을 목록/.test(r.j.err) && fakeLog(S.D).filter((x) => x.act === 'run').length === 1, '목록을 보지 않고 모두 닫기는 거절(아무것도 안 함)', r.j);
-    r = await P('POST', '/api/closeplan', {}); const cpl = r.j; ok(cpl && cpl.ok && cpl.close.map((w) => w.proc).sort().join() === 'explorer,notepad' && cpl.keep.length === 4 && cpl.keep.some((k) => k.proc === 'chrome') && cpl.keep.some((k) => k.proc === 'explorer' && /셸/.test(k.why)), '닫을 목록 — 폴더 창·메모장만 · 크롬·Claude·원격·바탕 화면은 지킴', cpl);
-    ok(!JSON.stringify(cpl.close).includes('"h"'), '화면에는 창 번호를 주지 않음(도우미가 들고 있다가 그 목록만 닫음)');
-    r = await P('POST', '/api/run', { mode: 'close', token: cpl.token }); const runC = fakeLog(S.D).filter((x) => x.act === 'run').pop();
-    ok(r.j && r.j.ok && r.j.mode === 'close' && runC.input.close.map((c) => c.h).sort().join() === '104,105' && r.j.closed.length === 2, '모두 닫고 — 미리 보여 준 두 창만 PowerShell에 넘김', runC && runC.input.close);
+    r = await P('POST', '/api/closeplan', {}); const cpl = r.j; ok(cpl && cpl.ok && cpl.close.map((w) => w.proc).sort().join() === 'chrome,claude,explorer,mstsc,notepad' && cpl.keep.length === 2 && cpl.keep.some((k) => k.proc === 'explorer' && /셸/.test(k.why)) && cpl.keep.some((k) => /PC 배치 창/.test(k.why)), '(0.1.9) 닫을 목록 — 크롬·Claude·원격·폴더·메모장 모두 고를 수 있음 · 바탕 화면(윈도우 셸)·PC 배치 창만 절대 안 닫음', cpl);
+    ok(/보이지 않는 탭/.test(cpl.close.find((w) => w.proc === 'chrome').warn) && cpl.close.find((w) => w.proc === 'claude').warn, '크롬·Claude는 닫으면 멈출 수 있는 일을 알려 줌(막지는 않음)', cpl.close);
+    ok(!JSON.stringify(cpl.close).includes('"h"') && !JSON.stringify(cpl.close).includes('"pid"') && cpl.close.every((w, i) => w.i === i), '화면에는 창 번호·프로세스 번호를 주지 않음(목록 차례 번호만 · 도우미가 들고 있다가 그 목록만 닫음)');
+    r = await P('POST', '/api/run', { mode: 'close', token: cpl.token, pick: [2, 3] }); const runC = fakeLog(S.D).filter((x) => x.act === 'run').pop();
+    ok(r.j && r.j.ok && r.j.mode === 'close' && runC.input.close.map((c) => c.h).sort().join() === '104,105' && r.j.closed.length === 2 && r.j.closed.every((c) => c.res === 'closed'), '모두 닫고 — 미리 보여 준 목록 중 고른 두 창(차례 2·3)만 PowerShell에 넘김 · 결과는 닫힘/강제 종료/남음', runC && runC.input.close);
+    ok(Array.isArray(runC.input.selfPids) && runC.input.selfPids.length === 1, 'PC 배치 서버 자신의 프로세스 번호를 넘김(절대 안 닫음)');
     r = await P('POST', '/api/run', { mode: 'close', token: cpl.token }); ok(r.j && !r.j.ok, '같은 목록으로 두 번은 안 됨');
-    ok(/모두 닫고/.test(fs.readFileSync(path.join(S.D, 'pcdock.log'), 'utf8')), '기록에 모두 닫고 · 닫기 부탁 수');
+    ok(/모두 닫기 닫힘 2 · 강제 종료 0 · 남음 0\/2/.test(fs.readFileSync(path.join(S.D, 'pcdock.log'), 'utf8')), '기록에 모두 닫기 — 닫힘·강제 종료·남음 수');
 
     console.log('⑤ 윈도우 시작 자동');
     r = await P('POST', '/api/startup', { on: true }); ok(r.j && r.j.on === true && fs.existsSync(path.join(S.D, 'startup.lnk')), '켜기 → 시작 프로그램 바로가기');

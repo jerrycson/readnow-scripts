@@ -18,13 +18,7 @@
   const HELPER_WIN = {
     col2: { url: 'http://127.0.0.1:8797/', prof: '%USERPROFILE%\\ReadNow\\col2\\col2-stat-chrome', title: '^(📊 )?번외 수집기$', extra: ['--disable-extensions'] },
     alps: { url: 'http://127.0.0.1:8898/alps', prof: '%USERPROFILE%\\ReadNow\\print\\chrome-alpswin', title: '^ALPS 도우미', extra: [] } };
-  /* (0.1.6) ③ '목록의 프로그램은 먼저 닫고 새로' 때 닫지 않는 창 제목 — 리드나우 수집기(알라딘 수집 탭 · 🪟 리드나우 작업 창 · 🖐 리드나우 손발) · 번외 · ALPS · PC 배치 자신
-   *  (크롬 창은 맨 앞 탭 제목만 보임 — 뒤 탭에 수집기가 있는 창은 알아보지 못함) · 도우미 크롬(…\ReadNow\… 프로필)·프로필을 못 읽은 크롬은 제목과 상관없이 지킴(C# CloseWhy)
-   *  (11/16 점검 ④-2 🔴) 앞 탭 제목만으로는 뒤 탭의 샵매니저 수집기·알라딘 로그인 탭을 못 알아봄 → 크롬은 어떤 프로필이든 먼저 닫기에서 아예 뺌(NO_CLOSE_PROCS · C# CloseWhy도 평소 프로필 크롬을 지킴 — 두 겹)
-   *  · 먼저 닫기는 기본 끔 · 윈도우 시작 자동 실행 때는 켜 두었어도 하지 않음(closeFirstFor) */
-  const NO_CLOSE_PROCS = ['chrome'];
   const SELF_TITLE = '리드나우 PC 배치'; /* (0.1.7) 이 작은 창 제목(ui.html <title> · readnow-pcdock.js TITLE과 같음) */
-  const KEEP_TITLE = '^🪟 리드나우 작업 창|리드나우 손발|알라딘|aladin|번외 수집|📊 번외|ALPS|리드나우 PC 배치';
   /* kind별 뼈대 — 목록에 처음 놓이는 열두 가지 */
   const CATALOG = [
     { kind: 'chrome', name: '크롬', icon: '🌐', find: CHROME_FIND, def: { urls: ['https://readnow.kr/app/'], windows: 1, profile: '' } },
@@ -136,12 +130,29 @@
       if (a.kind === 'self') { steps.push({ ...base1, rect: rc, reuse: true, self: true, launch: null, match: { procs: ['chrome'], cls: 'Chrome_WidgetWin_1', title: '^' + reEsc(SELF_TITLE) + '$', fresh: false } }); continue; }
       skip(a.name, '모르는 종류'); }
     return { steps: steps.filter(Boolean), skipped }; }
-  /* (0.1.6) 먼저 닫을 프로그램 = 이번 단계들의 프로세스 이름(크롬·Claude·카카오톡·탐색기 폴더 창 등) · 번외·ALPS 도우미 창은 빼고(자리만) · 휴대폰과 연결은 이름 조건만이라 뺌 */
-  function closeProcs(steps) { const S = new Set(); for (const s of steps || []) { if (s.helper || s.self) continue; /* (0.1.7) PC 배치 자기 창은 닫지 않음(자리만) */ for (const p of (s.match && s.match.procs) || []) if (p && !NO_CLOSE_PROCS.some((q) => q.toLowerCase() === String(p).toLowerCase())) S.add(p); } return [...S]; } /* (11/16) 크롬은 절대 넣지 않음 — 뒤 탭 수집기·로그인 탭 */
-  /* (11/16 점검 ④-2) PowerShell에 넘길 먼저 닫기 — null = 하지 않음
-   *  · 설정에서 사람이 켠 때만(cfg.run.closeFirst === true · 옛 기본값 켬은 settings.js가 끔으로 읽음) · 윈도우 시작 자동 실행(opts.auto)이면 언제나 하지 않음 · 닫을 프로그램이 없으면 하지 않음 */
-  function closeFirstFor(cfg, steps, opts) { if (!(cfg && cfg.run && cfg.run.closeFirst === true)) return null; if (opts && opts.auto) return null;
-    const procs = closeProcs(steps); return procs.length ? { procs, keepTitle: KEEP_TITLE } : null; }
+  /* (0.1.9 · 정범님 11/17 16:16 「닫으려는 프로그램들이 닫지 않아 닫고 실행 옵션이 무의미 — 모두 선택 가능하게 · 실제로 전부 닫히게」) ③ 때 먼저 닫을 창 규칙
+   *  cfg.run.closeApps = 정범님이 ① 설정에서 고른 목록의 틀 이름표(크롬·수집기·Claude·카카오톡·폴더 … 무엇이든 · PC 배치 자신만 못 고름)
+   *  규칙 하나 = { app, name, procs[], cls?, title?(정규식), udd?(크롬 프로필 — '' = 평소 프로필 · 경로 = 도우미 크롬) } · PowerShell RuleHit가 창마다 견줌 · 맞으면 CloseSet(WM_CLOSE → 기다림 → 강제 종료)
+   *  크롬 = 평소 프로필 크롬 창 전부(앞 탭이 무엇이든 — 뒤 탭의 알라딘 수집·로그인 탭도 닫힘 · 화면이 경고) · 원격 데스크톱·웹 주소 창 = 그 주소 사이트 이름이 제목에 있는 평소 프로필 크롬 창
+   *  번외·ALPS = 그 도우미 크롬 프로필 창 · 폴더 = 탐색기 폴더 창 전부 · 휴대폰과 연결 = 그 앱 창 · Claude = Claude 앱(+ 웹으로 여는 대화면 claude.ai 제목 크롬 창) · 프로그램 = 그 실행 파일
+   *  (0.1.6~0.1.8: 이번 배치 단계의 프로세스 이름만 넘기고 크롬은 아예 뺌(NO_CLOSE_PROCS) · C# CloseWhy가 크롬 창·수집기 제목을 한 번 더 지킴 · 휴대폰은 이름 조건이 비어 빠짐 → 크롬 위주 배치에선 닫을 것이 거의 없었음) */
+  const CHROME_RULE = { procs: ['chrome'], cls: 'Chrome_WidgetWin_1', udd: '' };
+  function rulesOf(a) { const nm = a.name || KINDS[a.kind] || a.kind; const R = []; const add = (o) => R.push({ app: a.id, name: nm, ...o });
+    if (a.kind === 'chrome') add({ ...CHROME_RULE });
+    else if (a.kind === 'crd' || a.kind === 'web') { const t = titleHint(a.url); if (t) add({ ...CHROME_RULE, title: t }); }
+    else if (a.kind === 'col2' || a.kind === 'alps') add({ procs: ['chrome'], cls: 'Chrome_WidgetWin_1', udd: HELPER_WIN[a.kind].prof });
+    else if (a.kind === 'folder') add({ procs: ['explorer'], cls: 'CabinetWClass' });
+    else if (a.kind === 'phone') add({ procs: ['PhoneExperienceHost', 'YourPhone', 'ApplicationFrameHost'], title: '^(휴대폰과 연결|Phone Link)' });
+    else if (a.kind === 'claude') { add({ procs: ['claude'] }); for (const u of claudeUrls(a).web) { const t = titleHint(u); if (t) add({ ...CHROME_RULE, title: t }); } }
+    else if (a.kind === 'exe') { const c = catOf(a); const pn = procOf((c && c.find && c.find.exe) || a.exe); if (pn && !/^shell:/i.test(String(a.exe || ''))) add({ procs: [pn] }); }
+    return R; }
+  function closeRules(cfg) { const ids = (cfg && cfg.run && Array.isArray(cfg.run.closeApps)) ? cfg.run.closeApps : []; const out = []; const seen = new Set();
+    for (const id of ids) { const tpl = ((cfg && cfg.apps) || []).find((x) => x.id === id); if (!tpl || tpl.kind === 'self') continue;
+      const inst = ((cfg && cfg.place) || []).filter((p) => p.app === id).map((p) => instApp(tpl, p)); /* 놓은 배치마다 주소가 다를 수 있음(원격·웹·Claude) · 이름은 틀 이름 */
+      for (const a of (inst.length ? inst : [tpl])) for (const r of rulesOf({ ...a, name: tpl.name })) { const k = JSON.stringify({ ...r, app: '', name: '' }); if (seen.has(k)) continue; seen.add(k); out.push(r); } }
+    return out; }
+  /* PowerShell에 넘길 먼저 닫기 — null = 하지 않음 · 고른 프로그램이 없으면(기본) 하지 않음 · 윈도우 시작 자동 실행(opts.auto)이면 언제나 하지 않음(11/16 점검 ④-2 — 정범님이 PC 앞에 없을 때 닫지 않음) */
+  function closeFirstFor(cfg, opts) { if (opts && opts.auto) return null; const rules = closeRules(cfg); return rules.length ? { rules } : null; }
   /* PowerShell이 돌려준 결과 한 줄 → 사람이 알아듣는 말 + 원문(접어 둠) */
   function friendly(r) { const how = String((r && r.how) || ''); const nm = (r && r.name) || '';
     if (r && r.ok) return { msg: how, raw: '' };
@@ -169,5 +180,5 @@
     const mo = (cfg.mons && cfg.mons[m.id]) || {}; const g = G.gridOf(m, mo.grid, base); const k = (m.dpi || 96) / 96; const wa = m.wa || m.b; const cw = wa.w / g.cols / k, ch = wa.h / g.rows / k;
     const w = Math.min(g.cols, Math.max(1, Math.ceil(300 / cw))), h = Math.min(g.rows, Math.max(1, Math.ceil(380 / ch)));
     return { mon: m.id, c: g.cols - w, r: 0, w, h, over: true }; }
-  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, KEEP_TITLE, NO_CLOSE_PROCS, SELF_TITLE, SRC, pickExe, selfSpot, closeProcs, closeFirstFor, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
+  return { CATALOG, KINDS, KIND_FIELDS, HELPER_WIN, SELF_TITLE, SRC, pickExe, selfSpot, closeRules, closeFirstFor, titleHint, defaultApps, catOf, findHints, keyOf, instApp, newInstO, claudeUrls, procOf, leafOf, buildPlan, friendly, friendlyErr, todoOf, UUID };
 });
