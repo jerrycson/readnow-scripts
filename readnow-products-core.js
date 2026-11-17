@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.19.10'; // (0.19.10 edkw1) 🔖 판본 의심 상품 — 판본 낱말 16개 ED_KW · edSuspect(낱말·괄호) · edMatch(낱말 빠짐·더 붙음·세트↔낱권 = 다른 상품 · 낱말 겹침 닮음) · edDecide(검색의 같은 판본 상품 우선 · 비슷한 후보 둘이면 사람 확인 · 정범님 11/17 14:00) // (0.19.9 shopmisc1) 📏 상품 단위 unitOf·qtyTxt·qtyMix(책 권 · 세트 · 디스크 장 · 그 밖 개) // (0.19.8 adapt2) marketNoBook 평균·흩어짐을 reduce 대신 for 고리로(알라딘 화면 prototype.js의 reduce 바꿔치기로 NaN) // (0.19.7) 429·503 뒤 30분 동안 요청 간격 최소 2초(설정 floor429Min·floor429Ms · 정범님 11/05) · 로그인은 이 바닥과 상관없음 // (0.19.6) 미등록 상품 새책 같은 책 판단(newBookJudge·newBookPick) // (0.19.5) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf(판매자 사진만) // (10/27) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf (판 번호는 나중에) // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.11'; // (0.19.11 tether1) 🔢 중고 상품 화면 ISBN — 그 화면엔 기본 정보 ISBN 줄·books:isbn·og:barcode가 없고 hd_ISBN은 'U+중고 번호'라 늘 null이었음(11/17 벤치마킹 상세 23,553쪽 · ISBN 0) → 제목 옆 검색 고리 SearchWord·미리보기 ISBN=·출간알림 인자·표지 그림 이름에서 검사 숫자가 맞는 것만(isbnNorm·isbnFromCover·isbnFromPage · isbnFrom에 어디서 읽었는지) // (0.19.10 edkw1) 🔖 판본 의심 상품 — 판본 낱말 16개 ED_KW · edSuspect(낱말·괄호) · edMatch(낱말 빠짐·더 붙음·세트↔낱권 = 다른 상품 · 낱말 겹침 닮음) · edDecide(검색의 같은 판본 상품 우선 · 비슷한 후보 둘이면 사람 확인 · 정범님 11/17 14:00) // (0.19.9 shopmisc1) 📏 상품 단위 unitOf·qtyTxt·qtyMix(책 권 · 세트 · 디스크 장 · 그 밖 개) // (0.19.8 adapt2) marketNoBook 평균·흩어짐을 reduce 대신 for 고리로(알라딘 화면 prototype.js의 reduce 바꿔치기로 NaN) // (0.19.7) 429·503 뒤 30분 동안 요청 간격 최소 2초(설정 floor429Min·floor429Ms · 정범님 11/05) · 로그인은 이 바닥과 상관없음 // (0.19.6) 미등록 상품 새책 같은 책 판단(newBookJudge·newBookPick) // (0.19.5) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf(판매자 사진만) // (10/27) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf (판 번호는 나중에) // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -72,6 +72,37 @@
     let t = 0;
     for (let i = 0; i < 12; i++) t += +b[i] * (i % 2 ? 3 : 1);
     return b + ((10 - (t % 10)) % 10);
+  }
+
+  // (0.19.11 tether1) 🔢 ISBN 낱말 다듬기 — ISBN13(978·979 · 검사 숫자 맞음)은 그대로 · ISBN10(검사 숫자 맞음)은 13자리로 · 그 밖(중고 번호 U…·알라딘 K코드·가린 ＊·검사 숫자 틀림)은 null
+  function isbnNorm(s) {
+    const v = String(s == null ? '' : s).trim().replace(/-/g, '').toUpperCase();
+    if (/^97[89]\d{10}$/.test(v) && ean13Valid(v)) return v;
+    if (isbn10Valid(v)) return isbn10to13(v);
+    return null;
+  }
+  // 표지 그림 주소의 이름(…/cover500/8972596809_1.gif)이 ISBN일 때만(K코드 k142532394_1.jpg는 null)
+  function isbnFromCover(u) {
+    const m = String(u || '').match(/\/cover\d*\/(\d{9}[\dXx]|\d{13})_\d+\.[a-z]+/i);
+    return m ? isbnNorm(m[1]) : null;
+  }
+  // 저장해 둔 상품 화면 정보(parseProductPage 결과)에서 ISBN 되살리기 — 화면을 다시 받지 않음
+  function isbnFromPage(pg) {
+    if (!pg) return null;
+    return isbnNorm(pg.isbn13) || isbnFromCover(pg.images && pg.images.front) || null;
+  }
+  // 중고 상품 화면(wproduct.aspx?ItemId=중고 번호)에서 ISBN 찾기 — 차례: 제목 옆 검색 고리 → 미리보기 → hd_ISBN → 출간알림 → 표지 이름
+  function pageIsbnFallback(doc, front) {
+    const at = (sel, attr) => [...doc.querySelectorAll(sel)].map((e) => e.getAttribute(attr) || '');
+    const tries = [
+      ['search', at('.Ere_prod_titlewrap a[href*="SearchWord="]', 'href').map((h) => (h.match(/SearchWord=([^&#]+)/i) || [])[1])],
+      ['preview', at('a[href*="wletslookViewer.aspx?ISBN="]', 'href').map((h) => (h.match(/ISBN=([0-9A-Za-z]+)/) || [])[1])],
+      ['hidden', at('input.hd_ISBN', 'value')],
+      ['alarm', at('[onclick*="fn_newEbookAlarm2"]', 'onclick').map((h) => (h.match(/fn_newEbookAlarm2\(\s*["']?([0-9Xx]{10,13})/) || [])[1])],
+    ];
+    for (const [from, list] of tries) for (const raw of list) { let v = raw; try { v = decodeURIComponent(raw || ''); } catch (e) {} const n = isbnNorm(v); if (n) return { isbn: n, from }; }
+    const c = isbnFromCover(front);
+    return c ? { isbn: c, from: 'cover' } : { isbn: null, from: null };
   }
 
   function gs1Country(v) {
@@ -320,6 +351,8 @@
     const soldoutDate = (txt(doc.querySelector('#topbtn_soldout_layer')).match(/확인일\s*:\s*(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
     const ld = [...doc.querySelectorAll('script[type="application/ld+json"]')].map((s) => { try { return JSON.parse(s.textContent); } catch (e) { return null; } }).find((j) => j && j['@type'] === 'Book');
     const isbnHidden = doc.querySelector('input.hd_ISBN');
+    const isbnMain = basic.isbn13 || meta('books:isbn');
+    const isbnAlt = isbnMain ? null : pageIsbnFallback(doc, front); /* (0.19.11 tether1) 중고 상품 화면엔 위 두 자리가 없음 */
     return {
       aladinItemId: itemId ? itemId[1] : null,
       title: nz(txt(titleLi && titleLi.querySelector('.Ere_bo_title'))),
@@ -328,7 +361,7 @@
       contributors, publisher: nz(txt(pubA)), aladinPublisherId: pubM ? pubM[1] : null,
       pubDate: dateM ? dateM[1] : (ld && ld.workExample && ld.workExample[0] && ld.workExample[0].datePublished) || null,
       originalTitle: origA ? txt(origA).replace(/^원제\s*:\s*/, '') : null,
-      isbn13: basic.isbn13 || meta('books:isbn'), isbnKey: isbnHidden ? isbnHidden.value : null,
+      isbn13: isbnMain || (isbnAlt && isbnAlt.isbn) || null, isbnFrom: isbnMain ? (basic.isbn13 ? 'basic' : 'meta') : (isbnAlt && isbnAlt.from) || null, isbnKey: isbnHidden ? isbnHidden.value : null,
       pages: basic.pages, size: basic.size, weightG: basic.weightG, basicExtra: basic.extra,
       categories, priceList, priceSales,
       salesPoint, ranks, rating, commentCount: comment ? +comment[1] : null, reviewCount: review ? +review[1] : null,
@@ -926,7 +959,7 @@
   }
 
   const api = {
-    VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
+    VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13, isbnNorm, isbnFromCover, isbnFromPage,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, ED_KW, ED_DEF, edKwOf, edBrOf, edSuspect, edSim, edMatch, edDecide, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA, UNIT, unitKind, unitOf, qtyTxt, qtyMix,
