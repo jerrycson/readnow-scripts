@@ -1,15 +1,11 @@
-const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
-const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = __dirname + '/repo/';
-(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 390, height: 800 } }); const errs = [];
-  p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text().slice(0, 200)); });
-  await p.route('**/*', (rt) => { const u = rt.request().url();
-    if (u.startsWith('https://www.gstatic.com/firebasejs/')) { const f = FB + u.split('/').pop(); let body = fs.readFileSync(f, 'utf8'); if (/storage-compat/.test(u)) body += `;(function(){var _i=firebase.initializeApp;firebase.initializeApp=function(){var r=_i.apply(this,arguments);var _a=firebase.auth;var o=_a();var fake={email:'jerrycson@gmail.com',uid:'u1',displayName:'테스트',getIdToken:async()=>'x'};o.onAuthStateChanged=function(cb){setTimeout(function(){cb(fake)},10);return function(){}};Object.defineProperty(o,'currentUser',{get:function(){return fake}});try{firebase.auth=function(){return o};Object.assign(firebase.auth,_a)}catch(e){console.error('patch fail',e)}return r}})();`; return rt.fulfill({ body, contentType: 'text/javascript' }); }
-    if (u.startsWith('http://t.test/app/sw.js')) return rt.fulfill({ body: fs.readFileSync('/home/claude/w/sw.js'), contentType: 'text/javascript' }); if (u.startsWith('http://t.test/app/')) return rt.fulfill({ body: fs.readFileSync(FILE), contentType: 'text/html; charset=utf-8' });
-    if (u.startsWith('http://t.test/')) { const f = R + u.replace('http://t.test/', '').split('?')[0]; return fs.existsSync(f) ? rt.fulfill({ body: fs.readFileSync(f), contentType: 'text/javascript' }) : rt.fulfill({ status: 404, body: '' }); }
-    return rt.abort(); });
-  await p.goto('http://t.test/app/' + (process.argv[3] || '')); await p.waitForTimeout(7000);
-  console.log('SH', await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(1500); const OUT = {}; const store = {}; const FV = firebase.firestore.FieldValue;
-    const isDel = (v) => v && v._delegate && v._delegate._methodName === 'FieldValue.delete';
+// tshard — 수동 일괄 그룹 문서 쪼개 담기(조각 ~s) · 옮기기 · 다시 읽기 · 저장 · 칸 모으기 · 지우기
+//  (11/17 bkfold1) 옛 틀(파일 인자·/home/claude 길)에서는 문지기로 돌 수 없어 harness 꼴로 옮김 · 확인값은 같음
+//  + 📁 묶음 실시간 받기(_bkfold)가 없는 가짜 db에서도 그룹 줄 셈이 멈추지 않는지
+// 실행: pw/ 안(harness.js 옆) RN_PORT=<포트> node tshard.js · 시험 자료에 손님 정보 없음
+let bad = 0; let fin = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 400)); } else console.log('  ✓', m); };
+require('./harness.js')(async (p) => { await p.waitForTimeout(2000);
+  const OUT = await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(1500); const OUT = {}; const store = {}; const FV = firebase.firestore.FieldValue;
+    const isDel = (v) => v && ((v._delegate && v._delegate._methodName === 'FieldValue.delete') || v.__del === 1);
     const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) { if (isDel(x)) delete o[k]; else if (x && typeof x === 'object' && !Array.isArray(x) && !x._delegate && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], x); else if (x && x._delegate) o[k] = 'TS'; else o[k] = x; } return o; };
     const snap = (pairs) => { const docs = pairs.map(([id, v]) => ({ id, data: () => v, ref: { delete: async () => { delete store[id]; } } })); return { docs, forEach: (f) => docs.forEach(f), size: docs.length }; };
     db.collection = (name) => ({ get: async () => snap(name === 'prd_price_batches' ? Object.entries(store) : []), doc: (id) => ({ id, get: async () => (name === 'prd_price_batches' ? { exists: !!store[id], id, data: () => store[id] } : { exists: true, data: () => ({ watchVer: '0.6.0' }) }), set: async (v) => { if (name === 'prd_price_batches') store[id] = merge(store[id], v); }, delete: async () => { delete store[id]; } }),
@@ -23,6 +19,12 @@ const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = _
     await batchSave('gA', { picks: { aladin_P0: FV.delete(), aladin_NEW: { price: 5 } }, lastRunAt: 'now' }); const g3 = await batchLoadOne('gA'); OUT.saved = [Object.keys(g3.picks).length, !!g3.picks.aladin_NEW, !!g3.picks.aladin_P0, store.gA.lastRunAt].join(',');
     S.prBatches = undefined; batchSlots(); await wait(300); OUT.slots = S.prBatches.map((x) => x.id).join(',');
     window.alert = () => {}; await batchDelete([{ id: 'gA', name: 'GA' }]); OUT.afterDel = Object.keys(store).length;
-    return JSON.stringify(OUT, null, 1); }));
-  await p.evaluate(() => document.querySelector('.verbar') && document.querySelector('.verbar').remove()); console.log('SHEET', JSON.stringify((await p.evaluate(() => (document.querySelector('#sheet.on') || {}).innerText || '-')).slice(0, 300))); console.log(FILE.split('/').pop(), 'body text:', JSON.stringify((await p.evaluate(() => document.body.innerText)).slice(0, 500)));
-  console.log(errs.filter((e) => !/net::ERR|Failed to load resource|googleapis|identitytoolkit/.test(e)).slice(0, 6).join('\n')); await br.close(); })();
+    return OUT; });
+  console.log('SH', JSON.stringify(OUT));
+  ok(OUT.assembled === '1,100,1,true', '옛 한 문서 그룹 = 칸 하나 · 고른 100 · 결정 1 · 옛 꼴 표시', OUT.assembled);
+  ok(/^shards=\d+ mainPicks=0 shardPicks=100$/.test(OUT.afterMig) && +OUT.afterMig.match(/shards=(\d+)/)[1] > 0, '옮기기 = 고른 100개가 조각으로 · 본 문서엔 0', OUT.afterMig);
+  ok(OUT.reload === '100,1,10000,false', '다시 읽기 = 100·1·시작가 그대로 · 새 꼴', OUT.reload);
+  ok(OUT.saved === '100,true,false,now', '저장 = 하나 지우고 하나 더함 · 본 칸 값 저장', OUT.saved);
+  ok(OUT.slots === 'gA', '칸 모으기 = 조각·묶음 문서는 칸이 아님', OUT.slots);
+  ok(OUT.afterDel === 0, '지우기 = 조각까지 모두', OUT.afterDel); fin = 1;
+}).then(() => { if (!fin) { bad++; console.log('  ❌ 시험이 끝까지 못 감(위 ERRORS)'); } console.log(bad ? `❌ tshard ${bad}개 실패` : '✓ tshard 통과'); process.exitCode = bad ? 1 : 0; });

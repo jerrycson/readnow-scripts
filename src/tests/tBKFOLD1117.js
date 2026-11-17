@@ -29,7 +29,7 @@ console.log('① 순수 셈');
   const all = cut('/* ◆bkfold 시작', 'const bkfGrip ='); ok(!/\b(alert|confirm|prompt)\s*\(/.test(all) && !/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/.test(all), '새 코드에 브라우저 창·휴대전화 번호 꼴 없음');
   ok((T.match(/function bkfOrdMerge\(/g) || []).length === 1 && (T.match(/function bkf(Sort|Step|KeyDir|Drag|ApplyDom|Listen|SaveOrder)\(/g) || []).length === 7, '새 함수 이름이 웹앱 안 다른 함수(예: 서가 bkfMerge)와 겹치지 않음');
   ok(/if \(d\.id === '_bkfold'\) \{ try \{ S\.bkfold = d\.data\(\)/.test(T), '그룹 모음에서 _bkfold 문서는 그룹이 아니라 순서로 받음');
-  ok((T.match(/bkfSort\(/g) || []).length >= 4 && /bkfSort\(S\.prBatches, \(S\.bkfold \|\| \{\}\)\.order\)/.test(T) && /bkfSort\(all\.filter\(\(b\) => !b\.archived \|\| S\.bslotArch\), \(S\.bkfold \|\| \{\}\)\.order\)/.test(T), '상품 탭 칸·📂 그룹 줄 두 곳이 같은 순서 함수'); }
+  ok((T.match(/bkfSort\(/g) || []).length >= 4 && /* (판 ②) 두 곳 모두 bkfLine → bkfTop → bkfSort(같은 순서 · 📁 묶음 칸 포함) */ /bkfLine\('sheet', S\.prBatches\)/.test(T) && /bkfLine\('slot', L\)/.test(T) && /return bkfSort\(items, N\.order\)/.test(T) && /bkfSort\(all\.filter\(\(b\) => !b\.archived \|\| S\.bslotArch\), \(S\.bkfold \|\| \{\}\)\.order\)/.test(T), '상품 탭 칸·📂 그룹 줄 두 곳이 같은 순서 함수'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tBKFOLD1117 ${bad}개 실패` : '✓ tBKFOLD1117 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
 const setup = async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
