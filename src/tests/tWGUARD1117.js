@@ -33,7 +33,7 @@ function mk(opt = {}) {
   // prd_system/wguard 문서는 시험에서 바로 씀(자기 것이라 지킴이를 거치지 않음)
   const firebase = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue: { increment: (n) => ({ inc: n }), arrayUnion: (...a) => ({ arrU: a }) } } };
   const sbC = (n) => { const c = col(n); const d0 = c.doc.bind(c); c.doc = (id) => { const r = d0(id); r.set = async (v, o) => apply(r.path, v, !!(o && o.merge)); return r; }; return c; };
-  const sb = { C: sbC, db, firebase, log: (m) => st.logs.push(String(m)), ui: () => {}, nowIso: () => new Date().toISOString(), PC_NAME: 'TESTPC', W: () => ({ writer: 'TESTPC' }), MW: () => ({ markAt: 1 }), Date, JSON, Math, Object, Map, Set, Array, String, Number, Error, Promise, console,
+  const sb = { C: sbC, db, firebase, log: (m) => st.logs.push(String(m)), ui: () => {}, nowIso: () => new Date().toISOString(), PC_NAME: 'TESTPC', PUBONLY: false /* 1.89.348 listfix 자동 복구 줄이 떼어 낸 묶음 안에 있음 */, W: () => ({ writer: 'TESTPC' }), MW: () => ({ markAt: 1 }), Date, JSON, Math, Object, Map, Set, Array, String, Number, Error, Promise, console,
     P: { diff: (prev, next, F) => { const o = {}; for (const f of F) if (next[f] != null && (!prev || JSON.stringify(prev[f]) !== JSON.stringify(next[f]))) o[f] = { from: prev ? prev[f] ?? null : null, to: next[f] }; return o; }, mediaType: () => ({ type: 'book', why: 'test' }) } };
   vm.createContext(sb);
   vm.runInContext(`let LISTINGS = new Map();\n${BLK}\n${LOPS}\n;this.api = { commitBatches, wgGuard, wgGoneCheck, wgFix, listingOps, WG, get L() { return LISTINGS; }, set L(v) { LISTINGS = v; } };`, sb);
