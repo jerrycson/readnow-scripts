@@ -379,6 +379,40 @@
         "sync-note45"
       ],
       "supersedes": "b58c89cd7277a43a45256b65"
+    },
+    {
+      "id": "19bfdf3f0d325132fc852e2e",
+      "project": "bookfriend",
+      "round": 45,
+      "cards": 342,
+      "sources": 331,
+      "chapters": 14,
+      "cardsSha": "07834a2ece28c29b1c76b71eb580142ac77d364279d151aa1757680ea6ce406b",
+      "sealedSha": "45c2585b6c852e937aa7703f11b3f9ce3789fd4946568e02504114d34a41051d",
+      "adminSha": "98ed01e6b2df542adfe979771689081374c14db1c3ce49058fe21eaba55d5549",
+      "at": "2026-11-17T07:14:15.283Z",
+      "label": "45차 보완 · 내 부위별 조작 선택과 자동 재개",
+      "hostSource": "81f099cf091d319f86602e22",
+      "extraHostedNotes": [
+        "face-note39",
+        "chest-note39",
+        "face-note40",
+        "chest-note40",
+        "native-note40",
+        "face-note41",
+        "chest-note41",
+        "iris-note41",
+        "face-note42",
+        "chest-note42",
+        "studio-notes43",
+        "studio-note44",
+        "sculpt-note44",
+        "photo-note44",
+        "study-charter44",
+        "sync-note45",
+        "preference-note45"
+      ],
+      "supersedes": "ef4f92b94fba7a6d96541f3f"
     }
   ]
 }

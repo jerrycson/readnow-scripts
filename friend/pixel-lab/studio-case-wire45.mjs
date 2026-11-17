@@ -4,6 +4,29 @@ const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const zones=new Set(['chin','jaw','throat','mid','cheek','rib','breast','lower']);
 const shareable=new Set(['measured','accepted','rejected','deferred','reverted']);
 const sdkRoot='https://www.gstatic.com/firebasejs/10.12.2/';
+const saltKey='bookfriend-case-device-salt45';
+let volatileSalt;
+function deviceSalt(){
+  let salt;
+  try{salt=localStorage.getItem(saltKey);}catch{}
+  if(!/^[a-f0-9]{64}$/.test(salt||'')){
+    volatileSalt??=Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
+    salt=volatileSalt;
+    try{localStorage.setItem(saltKey,salt);salt=localStorage.getItem(saltKey)||salt;}catch{}
+  }
+  return salt;
+}
+async function identity(user){
+  const salt=navigator.locks?await navigator.locks.request(saltKey,deviceSalt):deviceSalt();
+  const digest=async label=>{
+    const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+'|readnow-3a385/readnow-research|'+label));
+    return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+  };
+  const accountHash=await digest('uid|'+user.uid);
+  const signedAt=user.metadata?.lastSignInTime;
+  const sessionHash=typeof signedAt==='string'&&signedAt?await digest('session|'+user.uid+'|'+signedAt):null;
+  return {accountHash,sessionHash};
+}
 export function problem(code,message){return Object.assign(new Error(message),{code});}
 export function publicCase(row){
   if(row?.outcome==='observed')return null;
@@ -22,7 +45,7 @@ export function sameCase(a,b){
   const keys=Object.keys(a);
   return keys.length===Object.keys(b).length&&keys.every(k=>Object.hasOwn(b,k)&&a[k]===b[k]);
 }
-export async function firebaseEditor({onAccountChange,active}){
+export async function firebaseEditor({onAccountChange,active,expected}){
   const [appSdk,authSdk,dbSdk]=await Promise.all(['app','auth','firestore'].map(n=>import(sdkRoot+'firebase-'+n+'.js')));
   let app=appSdk.getApps().find(a=>a.name==='[DEFAULT]');
   if(!app){
@@ -35,8 +58,10 @@ export async function firebaseEditor({onAccountChange,active}){
   if(app.options.projectId!=='readnow-3a385')throw problem('wrong-project','기존 세션의 프로젝트가 다릅니다.');
   const auth=authSdk.getAuth(app);
   await auth.authStateReady();
-  const uid=auth.currentUser?.uid;
+  const user=auth.currentUser,uid=user?.uid;
   if(!uid)throw problem('unauthenticated','연구실에서 관리자 계정으로 로그인한 다음 다시 시작하세요.');
+  const principal=await identity(user);
+  if(expected&&(expected.accountHash!==principal.accountHash||(expected.sessionHash&&expected.sessionHash!==principal.sessionHash)))throw problem('account-changed','계정 또는 로그인 세션이 바뀌어 자동 재개를 해제했습니다. 확인 후 다시 시작하세요.');
   const db=dbSdk.getFirestore(app,'readnow-research');
   const check=()=>{
     if(!active())throw problem('stopped','동기화가 멈췄습니다.');
@@ -47,6 +72,7 @@ export async function firebaseEditor({onAccountChange,active}){
   check();
   const unsubscribe=authSdk.onAuthStateChanged(auth,user=>{if(user?.uid!==uid)onAccountChange();});
   return {
+    principal,
     close:unsubscribe,
     async putVerified(record){
       check();

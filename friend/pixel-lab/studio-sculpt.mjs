@@ -1,3 +1,4 @@
+import {mountMethodChoice} from './studio-method-view45.mjs';
 import {subjects,axes,zero,baseLabel,presets,defaultView,buildSculptBase,sculpt,displayScene,renderSculpt,
   plateInfo,surfaceZones,screenAnchors,posed,pivotChoices,pivotSpec} from './studio-sculpt-model.mjs';
 import {SculptSession,validatePreset} from './studio-sculpt-settings.mjs?v=45';
@@ -212,7 +213,7 @@ async function init(){
   const files={atlas:'atlas35',traces:'traces36',fit:'fit36',face:'face-eval42',chest:'chest-eval42'};
   const [pairs]=await Promise.all([Promise.all(Object.entries(files).map(async([k,n])=>{const r=await fetch(n+'.json');if(!r.ok)throw Error(n+' 자료 없음');return [k,await r.json()];})),loadRig()]);
   assets=Object.fromEntries(pairs);localPhoto=photoControls(()=>schedule(true),view);hook();
-  const key=new URL(location.href).searchParams.get('case');changeCase(Object.hasOwn(subjects,key)?key:'F02');
+  const key=new URL(location.href).searchParams.get('case');changeCase(Object.hasOwn(subjects,key)?key:'F02');mountMethodChoice();
 }
 init().catch(e=>{status('모델을 열지 못했습니다 · '+e.message);console.error(e);});
 
