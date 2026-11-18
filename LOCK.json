@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "bqman2 시험 중",
- "since": "2026-11-18T13:16:37Z",
- "beat": "2026-11-18T13:41:33Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "y24vf2 · 클라우드 0.35.316 — 예스24 확인된 묶음에 남은 멈춤 늦게 풂 be9bf3599",
-  "at": "2026-11-18T13:15:50Z"
+  "done": "bqman2 · 웹앱 1.78.741 — 수동 일괄 추천가 바로·「추천가로」·📉 3개이하/미등록 탭·🔖 판본 키워드 모으기 edadf177a",
+  "at": "2026-11-18T13:45:07Z"
  }
 }
