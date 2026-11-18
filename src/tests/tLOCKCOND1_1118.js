@@ -39,7 +39,7 @@ ok(/regPlkChip\(it, 1\)/.test(fnIn(T, 'regRowX')), '📋 한눈에 줄에 작은
 ok(/regPlkChip\(it\) \+ regAlChip\(it\)/.test(fnIn(T, 'regCardX')), '🔎 자세히 카드에 단추');
 
 console.log('③ 그 밖 카드·줄·표');
-ok(/<div class="bqc-c">\$\{plkChip\(\{ \.\.\.l, id: l\.id \|\| 'aladin_' \+ l\.usedCode \}\)\}/.test(T), '수동 일괄 📋 한눈에 줄');
+ok(/<div class="bqc-c">(?:\$\{bqStkChip\(l\)\})?\$\{plkChip\(\{ \.\.\.l, id: l\.id \|\| 'aladin_' \+ l\.usedCode \}\)\}/.test(T), '수동 일괄 📋 한눈에 줄');
 ok(/card pq bqsr[\s\S]{0,400}plkChip\(\{ \.\.\.l, id: l\.id \|\| 'aladin_' \+ l\.usedCode \}\)/.test(T), '수동 일괄 팔림 카드');
 ok(/l && l\.id \? plkChip\(l\) : ''/.test(fnIn(T, 'y24CardHtml')), '예스24 카드');
 ok(/plkChip\(a\)/.test(fnIn(T, 'bqUpCardHtml')), '상품 고침 카드(bqUpCardHtml)');
