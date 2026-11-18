@@ -62,7 +62,8 @@ footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
   const img = (f, h, w) => '<img src="' + esc(base + f) + '" alt="" loading="lazy" style="height:' + h + 'px;width:' + (w ? w + 'px' : 'auto') + '">';
   function verHtml(L, V) {
     const cur = V.v === L.cur; const f = V.files; const r = +V.ratio || 3;
-    return '<div class="ver' + (cur ? ' cur' : '') + '"><h4>' + esc(V.v) + (cur ? ' <span class="badge cur">지금 판</span>' : '') + '<small>' + esc(V.at || '') + '</small></h4>' +
+    const lk = /^[\w-]{1,30}$/.test(L.id) && /^[\w-]{1,20}$/.test(V.v) ? ' data-lp-key="' + esc(L.id + '@' + V.v) + '" data-lp-name="' + esc(L.id + ' ' + (L.name || '') + ' · ' + V.v) + '" data-lp-from="개선안(로고 프로젝트)" data-lp-href="project.html#' + esc(L.id) + '" data-lp-light="' + esc(f.light) + '" data-lp-dark="' + esc(f.dark) + '" data-lp-icon="' + esc(f.icon) + '"' : '';
+    return '<div class="ver' + (cur ? ' cur' : '') + '"' + lk + '><h4>' + esc(V.v) + (cur ? ' <span class="badge cur">지금 판</span>' : '') + '<small>' + esc(V.at || '') + '</small></h4>' +
       '<div class="lab">숍 머리띠(PC 높이 34)</div><div class="hdr">' + img(f.dark, 34, Math.round(34 * r)) + '<span class="nv">책 찾기 · 서가 · 🛒</span></div>' +
       '<div class="row"><div class="box lt"><div class="lab">밝은 바탕</div>' + img(f.light, 60, Math.round(60 * r)) + '</div><div class="box dk"><div class="lab">어두운 바탕</div>' + img(f.dark, 60, Math.round(60 * r)) + '</div>' +
       '<div class="box ic"><div class="lab">아이콘 72 · 40 · 24 · 16</div><div class="icons">' + img(f.icon, 72, 72) + img(f.icon, 40, 40) + img(f.icon, 24, 24) + img(f.icon, 16, 16) + '</div></div></div>' +
@@ -81,6 +82,8 @@ footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
     else $('#logsec').hidden = true;
     document.documentElement.dataset.ready = '1';
   }).catch((e) => { $('#logos').innerHTML = '<p class="err">자료를 읽지 못함: ' + esc(e.message) + ' — 잠시 뒤 새로고침</p>'; document.documentElement.dataset.ready = 'err'; });
+  // ⭐ 고르기·변형 창(studio/logopick.js · 손님 사이트엔 안 나감) — 스크립트 꼬리표 대신 불러 붙임
+  (function () { const s = document.createElement('script'); s.src = 'studio/logopick.js?v=1'; s.onload = () => { if (window.LP) window.LP.mount({ base: base, page: 'project.html', label: '개선안(로고 프로젝트)' }); }; document.head.appendChild(s); })();
 })();
 </script>
 </body>

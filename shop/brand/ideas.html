@@ -65,7 +65,7 @@ footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
     const w = M.top10_why && M.top10_why[it.id];
     const ax = Object.keys(it.axes || {}).map((k) => '<span><b>' + esc(k) + '</b>' + esc(it.axes[k]) + '</span>').join('');
     const p = D + it.id + '/';
-    return '<article class="card' + (top ? ' top' : '') + '" id="' + it.id + '"><h3><code>' + it.no + '</code>' + esc(it.name) + (top ? '<span class="st">★ 추천</span>' : '') + '</h3>' +
+    return '<article class="card' + (top ? ' top' : '') + '" id="' + it.id + '" data-lp-key="idea:' + it.id + '" data-lp-name="' + esc(it.no + ' ' + it.name) + '" data-lp-from="아이디어 100" data-lp-light="ideas/' + it.id + '/h.svg" data-lp-dark="ideas/' + it.id + '/h-dark.svg" data-lp-icon="ideas/' + it.id + '/icon.svg"><h3><code>' + it.no + '</code>' + esc(it.name) + (top ? '<span class="st">★ 추천</span>' : '') + '</h3>' +
       '<div class="lt"><img loading="lazy" src="' + p + 'h.svg" alt="' + esc(it.name) + ' 밝은 바탕"></div>' +
       '<div class="dk"><img loading="lazy" src="' + p + 'h-dark.svg" alt="' + esc(it.name) + ' 어두운 바탕"></div>' +
       '<div class="ics"><img loading="lazy" src="' + p + 'icon.svg" width="56" height="56" alt="아이콘"><img loading="lazy" src="' + p + 'icon.svg" width="32" height="32" alt=""><img loading="lazy" src="' + p + 'icon.svg" width="16" height="16" alt=""><div class="hd"><img loading="lazy" src="' + p + 'h-dark.svg" alt="머리띠 크기"></div></div>' +
@@ -90,6 +90,8 @@ footer { color: var(--mut); font-size: 13px; padding: 16px 0 28px; }
   fetch(D + 'ideas.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error('ideas.json ' + r.status); return r.json(); })
     .then((j) => { M = j; draw(); })
     .catch((e) => { $('#list').innerHTML = '<p class="err">아이디어 목록을 읽지 못했습니다(' + esc(e.message) + ') — 잠시 뒤 새로고침해 주세요.</p>'; });
+  // ⭐ 고르기·변형 창(studio/logopick.js · 손님 사이트엔 안 나감) — 스크립트 꼬리표 대신 불러 붙임
+  (function () { const s = document.createElement('script'); s.src = 'studio/logopick.js?v=1'; s.onload = () => { if (window.LP) window.LP.mount({ base: base, page: 'ideas.html', label: '아이디어 100', after: 'header.pg' }); }; document.head.appendChild(s); })();
 })();
 </script>
 </body>
