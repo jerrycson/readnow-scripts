@@ -43,6 +43,9 @@ async function main() {
   ok(await allowed(S.doc('prd_locks/aladin_12').set(lockDoc('2026-11-18T01:00:00Z'), { merge: true })), '잠그기(웹앱 plkSet과 같은 칸 · merge)');
   ok(await allowed(S.doc('prd_locks/aladin_12').set({ why: '까닭 고침', hist: FV.arrayUnion({ ...ev('why', '2026-11-18T01:02:00Z') }) }, { merge: true })), '까닭만 고치기(why + 기록 하나 더함)');
   ok(await allowed(S.doc('prd_locks/aladin_12').set({ on: false, why: '', grp: '', by: STAFF[0], at: '2026-11-18T01:05:00Z', lid: '12', usedCode: '34', sku: 'A1', title: '책', img: null, plat: '알라딘', hist: FV.arrayUnion(ev('unlock', '2026-11-18T01:05:00Z')), unlockedAt: '2026-11-18T01:05:00Z' }, { merge: true })), '풀기(on=false · 기록 더함)');
+  ok(await allowed(S.doc('prd_locks/aladin_12').set({ on: true, mode: 'cond', cond: { floor: 8000, gapUp: 10, until: null, memo: '' }, out: true, from: { k: 'batch', id: 'g1', nm: '그룹' }, by: STAFF[0], at: '2026-11-18T01:06:00Z', hist: FV.arrayUnion(ev('cond', '2026-11-18T01:06:00Z')) }, { merge: true })), '(lockcond1) 조건 잠금으로 바꾸기(mode·cond·from·out)');
+  ok(await allowed(S.doc('prd_locks/aladin_12').set({ hit: { n: 1, at: '2026-11-18T01:07:00Z', p: null, want: 7000, why: '하한가' }, day: { d: '2026-11-18', n: 1, amt: 500 } }, { merge: true })), '(lockcond1) 조건이 막은 횟수·오늘 바꾼 횟수 적기(hit·day · 기록 칸 없이 merge)');
+  ok(!(await allowed(S.doc('prd_locks/aladin_12').set({ mode: 'cond', price: 1 }, { merge: true }))), '(lockcond1) 새 칸이 있어도 정해진 칸 밖(price)은 막힘');
   ok(!(await allowed(S.doc('prd_locks/aladin_12').delete())), '잠금 문서 지우기 막힘(직원도)');
   ok(!(await allowed(S.doc('prd_locks/aladin_9').set({ on: false, hist: [] }, { merge: true }))), '기록(hist) 비우기 막힘');
   ok(!(await allowed(S.doc('prd_locks/aladin_9').update({ hist: FV.arrayRemove({ act: 'lock', at: '2026-11-17T00:00:00Z' }) }))), '기록 하나 빼기 막힘');

@@ -19,8 +19,9 @@ service cloud.firestore {
 
     // 🔒 상품 잠금 — 정범님 11/17 · reports/PLOCK_1117.md 「Firestore 규칙」
     //  · 문서 지우기 금지(풀기는 on=false로) · 정해진 칸만 · 기록(hist)은 늘기만(줄이거나 비울 수 없음)
+    //  · (11/18 lockcond1 · 정범님 I-1118-1417-15.4) 세 갈래 잠금 칸 더함 — mode(새로·완전·조건) · cond(조건) · from·out(잠근 자리·그 자리에서 뺌) · hit(조건이 막은 횟수) · day(오늘 바꾼 횟수·금액)
     function plockKeys() {
-      return ['on', 'why', 'grp', 'by', 'at', 'lid', 'usedCode', 'sku', 'title', 'img', 'plat', 'vals', 'hist', 'lockedAt', 'unlockedAt'];
+      return ['on', 'why', 'grp', 'by', 'at', 'lid', 'usedCode', 'sku', 'title', 'img', 'plat', 'vals', 'hist', 'lockedAt', 'unlockedAt', 'mode', 'cond', 'from', 'out', 'hit', 'day'];
     }
     match /prd_locks/{k} {
       allow read: if staff();
