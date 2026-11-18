@@ -240,12 +240,17 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
    *   ③ 예스24 허브(책 묶음) 공개 화면에서 판매자 우리 가게(jerrycson) · 같은 값·등급 · 맡기기 전 있던 번호(before)·장부 다른 줄 번호·맡기기 전부터 있던 우리 매물이 아닌 줄
    *  애매(둘 넘음)·못 찾음이면 아무것도 바꾸지 않음(사람 확인 그대로) · 찾으면 웹앱 「올라감 확인」과 같은 모양(st sent · ok 1 · gno)
    *  그 묶음의 확인 필요 줄이 모두 풀리면 그 묶음이 건 멈춤(auto.stop · state unsure/part)만 풂(다른 까닭의 멈춤은 그대로) · 한 줄은 10분에 한 번 · 한 차례 화면 4쪽까지 */
-  M.vf = new Map(); M.vfLast = null; const VF_DAYS = 14, VF_GAP = 10 * 60e3, VF_PAGES = 4, VF_ROWS = 3, VF_OWN = ['jerrycson'];
+  M.vf = new Map(); M.vfLast = null; const VF_DAYS = 14, VF_GAP = 10 * 60e3, VF_PAGES = 5, VF_ROWS = 3, VF_OWN = ['jerrycson'];
+  /* (y24vf1 11/18) 확인 필요 줄을 처음 vfFastH시간(⚙ 기본 2)은 vfMin분(⚙ 기본 3)마다 · 그 뒤엔 예전처럼 10분마다 다시 찾음 — 11/18 09:04Z 「총 균 쇠 리커버」 40,000원은 2시간 가까이 못 찾음
+   *  까닭: 허브 1940233 매물 246줄 · 같은 등급 「상」도 133줄(6쪽) · 값 낮은 차례라 40,000원(거의 가장 비쌈)은 6쪽 — 예전엔 같은 등급 1~3쪽만 봐서 영영 못 찾음
+   *  고침: 예스24 목록 정렬 sortGb '03'(상품등록순 · 새로 올린 매물이 맨 앞 — 11/18 실측: 첫 줄이 우리 매물)을 먼저 봄 · 값 차례 쪽은 그다음 */
+  const vfCfg = (c) => { c = c || {}; const n = (v, d, lo, hi) => (v != null && v !== '' && !isNaN(+v) ? Math.max(lo, Math.min(hi, +v)) : d); return { min: n(c.vfMin, 3, 1, 30), fastH: n(c.vfFastH, 2, 0, 24) }; };
+  const vfGapOf = (e, c, t) => { const C = vfCfg(c); return t - (Date.parse((e && e.at) || 0) || 0) <= C.fastH * 3600e3 ? C.min * 60e3 : Math.max(VF_GAP, C.min * 60e3); };
   const dig = (v) => String(v || '').replace(/\D/g, '');
   function hubOf(e, led, B) { if (/^\d{5,12}$/.test(String(e.mno || ''))) return String(e.mno); const K = new Set([dig(e.bc), dig(e.isbn)].filter(Boolean)); if (!K.size) return null;
     const L = ((((led.auto || {}).last || {}).raw || {}).vs || {}).rows; const x = Array.isArray(L) ? L.find((q) => q && K.has(dig(q.bc || q.isbn)) && /^\d{5,12}$/.test(String(q.no || ''))) : null; if (x) return String(x.no); /* 번외가 본 미리보기 결과 줄(상품 번호 = 허브 번호) */
     const H = new Set(((B && B.y24) || []).filter((q) => q.masterNo && K.has(dig(q.isbn13))).map((q) => String(q.masterNo))); return H.size === 1 ? [...H][0] : null; } /* 같은 책 우리 매물이 아는 허브 번호(꼭 하나일 때) */
-  async function vfStep(led, m) { const t0 = now(); const T = Object.entries(led.r || {}).filter(([lid, e]) => e && (e.auto || e.job) && e.st === 'sent' && !e.ok && !e.gno && e.unsure && t0 - (Date.parse(e.at || 0) || 0) <= VF_DAYS * 864e5 && t0 - (M.vf.get(lid) || 0) >= VF_GAP).slice(0, VF_ROWS);
+  async function vfStep(led, m, cfg) { const t0 = now(); const T = Object.entries(led.r || {}).filter(([lid, e]) => e && (e.auto || e.job) && e.st === 'sent' && !e.ok && !e.gno && e.unsure && t0 - (Date.parse(e.at || 0) || 0) <= VF_DAYS * 864e5 && t0 - (M.vf.get(lid) || 0) >= vfGapOf(e, cfg, t0)).slice(0, VF_ROWS);
     if (!T.length) return null; T.forEach(([lid]) => M.vf.set(lid, t0)); let B = M.big; if (!B) { try { await data(); B = M.big; } catch (e) { B = null; } }
     const taken = new Set(); for (const e of Object.values(led.r || {})) if (e && e.gno) taken.add(String(e.gno)); const out = { at: iso(), n: T.length, ok: [], amb: [], none: [], err: [] }; const patch = {}; let pages = 0;
     for (const [lid, e] of T) { const tAt = (Date.parse(e.at || 0) || 0) - 2 * 60e3; const before = new Set((e.before || []).map(String)); const free = (no) => !!no && !before.has(String(no)) && !taken.has(String(no)); const S0 = new Set(e.skus || []); const K = new Set([dig(e.bc), dig(e.isbn)].filter(Boolean)); const hub = hubOf(e, led, B);
@@ -257,8 +262,9 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
       if (!hit && !amb && hub && o.hubGet && m && m.X && m.X._y24HubPage && pages < VF_PAGES) { const seen = new Map();
         const eat = (P) => { for (const it of (P && P.items) || []) if (it && it.id) seen.set(String(it.id), it); return P; };
         const mine = () => [...seen.values()].filter((it) => VF_OWN.includes(String(it.sellerId || '')) && +it.p === +e.price && y24G(it.g) === e.grade && free(it.id) && !older.has(String(it.id))).map((it) => String(it.id));
-        try { const P = eat(m.X._y24HubPage(await o.hubGet(m.X.y24HubUrl ? m.X.y24HubUrl(hub) : 'https://www.yes24.com/Product/UsedShopHub/Hub/' + hub), hub)); pages++;
-          const lv = Object.keys(Y24_LV).find((k) => Y24_LV[k] === e.grade) || '00';
+        try { const lv = Object.keys(Y24_LV).find((k) => Y24_LV[k] === e.grade) || '00';
+          if (m.X.y24GoodsListUrl) { pages++; try { eat(m.X._y24HubPage(await o.hubGet(m.X.y24GoodsListUrl({ hubId: hub, page: 1, levelGb: lv, sortGb: '03' })), hub)); } catch (err) { out.err.push(lid + ' 새 매물 차례: ' + String((err && err.message) || err).slice(0, 60)); } } /* (y24vf1) 상품등록순 — 막 올린 우리 매물이 첫 쪽 · 못 읽어도 예전 길(허브 첫 화면·값 차례 쪽)로 */
+          const P = mine().length ? { lastPage: 1 } : eat(m.X._y24HubPage(await o.hubGet(m.X.y24HubUrl ? m.X.y24HubUrl(hub) : 'https://www.yes24.com/Product/UsedShopHub/Hub/' + hub), hub)); if (!mine().length) pages++;
           if (!mine().length && m.X.y24GoodsListUrl && (P.lastPage || 1) > 1) for (let pg = 1; pg <= 3 && pages < VF_PAGES && !mine().length; pg++) { const Q = eat(m.X._y24HubPage(await o.hubGet(m.X.y24GoodsListUrl({ hubId: hub, page: pg, levelGb: lv })), hub)); pages++; if (!Q.items.length || (Q.lastPage && pg >= Q.lastPage)) break; } /* 첫 화면은 최저가 24줄뿐 → 같은 등급만 다음 쪽 */
           const L = mine(); if (L.length === 1) { hit = L[0]; how = '공개 허브 화면 ' + hub + ' 판매자 우리 가게'; } else if (L.length > 1) amb = '공개 허브 화면에 같은 값·등급 우리 매물 ' + L.length + '개'; }
         catch (err) { out.err.push(lid + ': ' + String((err && err.message) || err).slice(0, 80)); continue; } }
@@ -422,8 +428,10 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
           if (!e || e.st !== 'autofail' || (/오류코드 -?\d/.test(w) && !ours) || !(ours || /미리보기 목록에 우리 줄이 안 보임|결과 표에 없음|모두 버려짐/.test(w)) || String(e.revVer || '') === String(st.ver)) continue;
           rv[lid] = { st: 'retry', ok: null, revVer: String(st.ver), markAt: iso(), markBy: '🤖 클라우드 — 번외 ' + st.ver + ' 새 판 · 아무것도 안 누른 실패 한 번 풂', hist: [...(e.hist || []), { st: e.st, ok: e.ok || null, at: e.markAt || e.failAt || e.at, by: e.markBy || e.by }].slice(-10) }; }
         if (Object.keys(rv).length) { try { await ref().set({ r: rv }, { merge: true }); for (const [lid, p] of Object.entries(rv)) Object.assign(led.r[lid], p); log('🤖 예스24 자동 올림', pc, '안 누른 실패 줄 다시 후보 ' + Object.keys(rv).join(',')); } catch (e) {} } } }
-    try { const v = await vfStep(led, m); if (v) out.vf = v; } catch (e) { out.vf = { err: [String((e && e.message) || e).slice(0, 120)] }; } /* (y24reg5) 🔎 확인 필요 줄을 공개 자료에서 다시 찾음 — 찾으면 그 묶음 멈춤도 풂 */
-    if (led.auto && led.auto.stop && !Object.keys(rm).length) return say('⛔ 멈춤 — ' + led.auto.stop.why);
+    try { const v = await vfStep(led, m, cfg0); if (v) out.vf = v; } catch (e) { out.vf = { err: [String((e && e.message) || e).slice(0, 120)] }; } /* (y24reg5) 🔎 확인 필요 줄을 공개 자료에서 다시 찾음 — 찾으면 그 묶음 멈춤도 풂 */
+    if (led.auto && led.auto.stop && !Object.keys(rm).length) { const sp = led.auto.stop; const C = vfCfg(cfg0); const W = Object.values(led.r || {}).filter((e) => e && e.job === sp.job && e.st === 'sent' && !e.ok && e.unsure); const t1 = now();
+      const fast = ['unsure', 'part'].includes(sp.state) && W.length && W.some((e) => t1 - (Date.parse(e.at || 0) || 0) <= C.fastH * 3600e3); /* (y24vf1) 확인 필요 멈춤은 처음 몇 시간 클라우드가 스스로 찾는 동안 — 사람 할 일이 아니라 「확인 중」 */
+      return say(fast ? `🔎 확인 중 — 예스24가 ${W.length}건 등록했다고 함 · 클라우드가 ${C.min}분마다 공개 화면에서 찾음(처음 ${C.fastH}시간 · 찾으면 저절로 이어 감 · 그동안 새로 맡기지 않음)` : '⛔ 멈춤 — ' + sp.why + (W.length ? ` · ${C.fastH}시간 동안 공개 화면에서 못 찾음 — 사람 확인` : '')); }
     if (st.en === false) return say('이 PC 번외 예스24 읽기가 꺼져 있음');
     const fly = Object.values(led.r).filter((e) => e && e.auto && e.st === 'auto'); const known = new Set([...(st.wait || []).map((w) => w.id), st.cur && st.cur.id].filter(Boolean)); const me = byOf(pc);
     const lost = [...new Set(fly.filter((e) => { const age = now() - Date.parse(e.at || 0); return String(e.by || '') === me ? age > 3 * 60e3 : age > 30 * 60e3; }).map((e) => e.job))].filter((j) => j && !known.has(j)); /* 웹앱과 같음: 장부엔 적었는데 번외가 모르는 묶음 — 내 것은 3분 · 남의 것은 30분 뒤 다시 맡김(번외가 같은 상품·SKU를 두 번 받지 않음) */

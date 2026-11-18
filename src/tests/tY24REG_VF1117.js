@@ -37,14 +37,14 @@ const hubHtml = (items) => '<html><body><ul>' + items.join('') + '</ul></body></
     ok(e.st === 'sent' && e.ok === 1 && e.gno === GNO && e.unsure === null && e.why === null && e.todo === null && /클라우드/.test(e.okBy) && /허브/.test(e.how), '블루레이 줄 = 올라감(ok 1 · gno ' + GNO + ' · 확인 필요 지움)', e);
     ok(e.mno === HUB, '허브 번호(mno)는 번외가 본 미리보기 결과 줄(auto.last.raw.vs.rows)에서', e.mno);
     ok(S.led().auto.stop === null && S.led().auto.vf && S.led().auto.vf.freed && S.led().auto.vf.freed.job === JOB, '그 묶음 멈춤(unsure) 풂 · 기록 auto.vf.freed', S.led().auto);
-    ok(S.got.length === 1 && S.got[0].includes('/Product/UsedShopHub/Hub/' + HUB), '허브 화면 한 쪽만 읽음', S.got);
+    ok(S.got.filter((u) => /\/Hub\//.test(u)).length === 1 && S.got.filter((u) => /\/Hub\//.test(u))[0].includes('/Product/UsedShopHub/Hub/' + HUB), '허브 화면 한 쪽만 읽음(y24vf1 11/18: 그 앞에 상품등록순 목록 한 쪽 — tY24VF1118)', S.got);
     ok(y.vf && y.vf.ok.length === 1 && !/멈춤/.test(y.why), '같은 차례에 멈춤이 풀려 다음 판단으로 이어감', { why: y.why, vf: y.vf }); }
 
   console.log('② 애매하면 아무것도 바꾸지 않음');
   { const H = hubHtml([li(GNO, 298000, '최상', 'jerrycson', '북스퀸'), li('201101132', 298000, '최상', 'jerrycson', '북스퀸')]);
     const S = await mk({ r: { [LID]: row() }, auto: { stop: stopU, last: lastRaw } }, { ['Hub/' + HUB]: H });
     const y = await S.Y.step('HOME', yOf()); const e = S.led().r[LID];
-    ok(!e.ok && !e.gno && e.unsure === 1 && S.led().auto.stop && S.led().auto.stop.job === JOB && /멈춤/.test(y.why), '같은 값·등급 우리 매물 둘 → 그대로(사람 확인) · 멈춤 그대로', { e, why: y.why });
+    ok(!e.ok && !e.gno && e.unsure === 1 && S.led().auto.stop && S.led().auto.stop.job === JOB && /멈춤|확인 중/.test(y.why), '같은 값·등급 우리 매물 둘 → 그대로(사람 확인) · 멈춤 그대로', { e, why: y.why });
     ok(y.vf && y.vf.amb.length === 1, '애매 까닭이 진단에 보임', y.vf); }
   { const H = hubHtml([li(GNO, 298000, '최상', 'jerrycson', '북스퀸')]);
     const S = await mk({ r: { [LID]: row({ before: [GNO] }) }, auto: { stop: stopU, last: lastRaw } }, { ['Hub/' + HUB]: H });
@@ -52,8 +52,8 @@ const hubHtml = (items) => '<html><body><ul>' + items.join('') + '</ul></body></
   { const H = hubHtml([li(GNO, 298000, '최상', 'other1', '남의 가게'), li('201000009', 290000, '최상', 'jerrycson', '북스퀸')]);
     const S = await mk({ r: { [LID]: row() }, auto: { stop: stopU, last: lastRaw } }, { ['Hub/' + HUB]: H });
     await S.Y.step('HOME', yOf()); ok(!S.led().r[LID].gno && S.led().auto.stop, '다른 판매자 같은 값 · 우리 가게 다른 값 → 못 찾음(그대로)', S.led().r[LID]);
-    S.tick(61e3); await S.Y.step('HOME', yOf()); ok(S.got.length === 1, '한 줄은 10분에 한 번만 읽음(그 사이 차례는 화면을 다시 읽지 않음)', S.got);
-    S.tick(10 * 60e3); await S.Y.step('HOME', yOf()); ok(S.got.length === 2, '10분 뒤 다시 읽음', S.got); }
+    S.tick(61e3); await S.Y.step('HOME', yOf()); ok(S.got.length === 2, '한 줄은 정한 간격에 한 번만 읽음(그 사이 차례는 화면을 다시 읽지 않음 · y24vf1: 한 차례 = 새 매물 차례 쪽 + 허브 첫 화면)', S.got);
+    S.tick(10 * 60e3); await S.Y.step('HOME', yOf()); ok(S.got.length === 4, '10분 뒤 다시 읽음', S.got); }
   { const H = hubHtml([li(GNO, 298000, '최상', 'jerrycson', '북스퀸')]);
     const S = await mk({ r: { [LID]: row(), aladin_U2: row({ lid: 'aladin_U2', isbn: '9788900000011', bc: undefined, st: 'sent', ok: 1, unsure: null, gno: GNO, job: 'y24aOLD' }) }, auto: { stop: stopU, last: lastRaw } }, { ['Hub/' + HUB]: H });
     await S.Y.step('HOME', yOf()); ok(!S.led().r[LID].gno, '장부 다른 줄의 번호는 쓰지 않음', S.led().r[LID]); }
