@@ -57,7 +57,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   /* ⓒ 그룹 나 화면 — 고른 상품도 판매완료면 결정 대기가 아니라 🏷 탭 · 읽기만 */
   await p.evaluate(() => { history.pushState({ batch: 1 }, ''); openBatchGroup('gB', { tab: 'sold' }); });
   const sc = await until(() => { const q = document.querySelector('#b_res [data-bqsold]'); if (!q || S.batchId !== 'gB') return null; const tb = {}; document.querySelectorAll('#b_res [data-btab]').forEach((b) => (tb[b.dataset.btab] = +((b.querySelector('b') || {}).textContent || -1))); const box = document.querySelector('#b_res .bqsoldl');
-    return { T: S.batchT, tb, rows: document.querySelectorAll('#b_res .bqsr').length, inp: box ? box.querySelectorAll('input,textarea,select,button,[contenteditable],[draggable="true"]').length : -1, cards: document.querySelectorAll('#b_res [data-bk]').length, txt: q.textContent.slice(0, 200) }; }, 120);
+    return { T: S.batchT, tb, rows: document.querySelectorAll('#b_res .bqsr').length, inp: box ? box.querySelectorAll('input,textarea,select,button:not([data-plk]):not([data-plkopt]),[contenteditable],[draggable="true"]').length : -1 /* (bqman2) 🔓/🔒 잠금 단추는 뺌 — 정범님 I-1118-1417-15.3 「잠금 단추가 없던 카드·줄 모두에」(lockcond1 ea42742e5)로 판매완료 줄에도 생김 · 가격·실행 입력은 여전히 없어야 함 */, cards: document.querySelectorAll('#b_res [data-bk]').length, txt: q.textContent.slice(0, 200) }; }, 120);
   ok(sc && sc.T === 'sold' && sc.tb.sold === 2 && sc.rows === 2 && sc.inp === 0, '🏷 생성후판매완료 탭 = 2개 · 입력칸·단추·끌기 없음(읽기만)', sc);
   ok(sc && sc.tb.pick === 0, '고른 가격이 있던 상품도 판매완료면 결정 대기(실행 대상)에서 빠짐', sc && sc.tb);
   ok(sc && /판매율/.test(sc.txt) && /평균/.test(sc.txt), '머리에 판매율·판매까지 평균', sc && sc.txt);

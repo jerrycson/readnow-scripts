@@ -666,6 +666,8 @@ html.rnfab-on body:has(#sheet.on) .rnfab-m{bottom:calc(80px + env(safe-area-inse
 .bdelbar{margin:8px 0;padding:8px 10px;border-radius:10px}.bdelbar.off{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#FBF6F5;border:1px dashed #E3A59F}.bdelbar.on{position:sticky;top:0;z-index:6;background:#FFF1EF;border:2px solid #B0322A;animation:bdelpulse 2.4s ease-in-out infinite}.bdelbar .bdelprog{flex-basis:100%;margin-top:4px}.bdelh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.bdelh b{color:#9A2A22}.bdelacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .bdanger{color:#9A2A22 !important;border-color:#E3A59F !important}.bdanger-s{background:#B0322A !important;border-color:#B0322A !important;color:#fff !important}.bdanger-s[disabled]{background:#D9B5B1 !important;border-color:#D9B5B1 !important}
 .boksel{display:inline-flex;gap:3px;align-items:center;font-size:12px;font-weight:800;color:#1F5FAF;background:#fff;border:2px solid #9DB9E0;border-radius:8px;padding:1px 6px;cursor:pointer;margin-right:4px}.boksel.on{background:#1F5FAF;color:#fff;border-color:#1F5FAF}.bdelchk{position:absolute;left:-6px;top:-8px;z-index:2;display:inline-flex;gap:3px;align-items:center;font-size:12px;font-weight:800;color:#9A2A22;background:#fff;border:2px solid #E3A59F;border-radius:8px;padding:2px 6px;cursor:pointer}.bdelchk.on{background:#B0322A;color:#fff;border-color:#B0322A}.bq{position:relative}.bq.bdelsel{outline:3px solid #B0322A;outline-offset:2px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#FFF4F2 12px,#FFF4F2 24px)}
+.bqrec{font-size:11px;font-weight:700;color:#1F5FAF;background:none;border:0;border-bottom:1px dashed #1F5FAF;padding:0 1px;margin-left:2px;cursor:pointer;min-height:0}.bqrec:hover{color:#0B3F80}
+.rgektag{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:0 0 6px;padding:4px 6px;border-radius:8px;background:#FFFBEF;border:1px dashed #C9A94A}
 .bdelwarn{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;background:#FDEDEB;border:2px solid #B0322A;color:#7A1F18;margin-bottom:8px}.bdelwarn-i{font-size:28px;animation:bdelshake 1.2s ease-in-out 2}.bdeltype{margin-top:10px;padding:10px;border-radius:10px;background:#FFF8F7;border:1px solid #E3A59F;display:flex;flex-direction:column;gap:6px}.bdeltype input{font:inherit;font-size:16px;padding:8px 10px;border:2px solid #E3A59F;border-radius:8px;max-width:260px}.bdeltype input.ok{border-color:#1F6B3A;background:#EEF7F1}
 @keyframes bdelpulse{0%,100%{box-shadow:0 0 0 0 rgba(176,50,42,0)}50%{box-shadow:0 0 0 5px rgba(176,50,42,.18)}}@keyframes bdelshake{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
 .pdelbn{border-left:6px solid #B0322A;background:#FFF5F4}
@@ -1501,7 +1503,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../cloud/shop-stock.js?v=0.1.0"></script>
 <script src="../readnow-ml-core.js?v=0.9.12"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.740'; // (1.78.740 bqsimp1) ✅ 수동 일괄 간소화 — 확정 두 번 누름 하나로(⚙ 되살리기) · 살핀 상품 찾기 · 이 목록을 선택 대기로 // (1.78.739 shipnote1) 📝 출고 탭마다 「이 탭 주문 전체 유의 사항 다시 읽기」 · 최상·상도 📝 · 💰💸 이득·손해 정렬 고침 // (1.78.738 bqmkt1) 수동 일괄 시장 지표 — 그룹 단추는 모든 탭(판매완료만 뺌) · 살핀 상품 패널 탭 다시 읽기 · 카드마다 시장 지표 갱신</script>
-<script src="readnow-webapp.js?v=1.78.740"></script>
+<script>const APP_VER = '1.78.741'; // (1.78.741 bqman2) 수동 일괄 추천가 바로·「추천가로」 · 📉 3개이하/미등록 탭 · 🔖 판본 키워드 모으기(수동 일괄·등록)</script>
+<script src="readnow-webapp.js?v=1.78.741"></script>
 </body>
 </html>
