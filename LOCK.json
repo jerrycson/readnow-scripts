@@ -1,25 +1,11 @@
 {
- "queue": [
-  {
-   "who": "lead",
-   "host": "vm",
-   "why": "판 내기 기다림: bqman2 수동 일괄 추천가·3개이하 탭",
-   "first": "2026-11-18T12:28:23Z",
-   "at": "2026-11-18T13:15:35Z"
-  }
- ],
- "ask": {
-  "who": "lead",
-  "host": "vm",
-  "why": "판 내기 기다림: bqman2 수동 일괄 추천가·3개이하 탭",
-  "at": "2026-11-18T13:15:35Z",
-  "first": "2026-11-18T12:28:23Z"
- },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "queue": [],
+ "ask": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "bqman2 수동 일괄 추천가·3개이하 탭",
+ "since": "2026-11-18T13:16:37Z",
+ "beat": "2026-11-18T13:16:37Z",
  "last": {
   "who": "lead",
   "done": "y24vf2 · 클라우드 0.35.316 — 예스24 확인된 묶음에 남은 멈춤 늦게 풂 be9bf3599",
