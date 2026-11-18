@@ -22,14 +22,14 @@
   "at": "2026-11-18T16:25:42Z",
   "first": "2026-11-18T15:33:32Z"
  },
- "holder": "engloop1",
- "host": "vm-engloop1",
- "what": "엔진·연구 자율 운영",
- "since": "2026-11-18T16:17:47Z",
- "beat": "2026-11-18T16:23:06Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
-  "who": "lead",
-  "done": "웹앱 1.78.748 관제창 판 가·나 냄(a666e0b88)",
-  "at": "2026-11-18T16:17:31Z"
+  "who": "engloop1",
+  "done": "클라우드 0.35.319 연구 건강 장부 779b5e642",
+  "at": "2026-11-18T16:26:06Z"
  }
 }
