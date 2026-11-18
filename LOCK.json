@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-ctrlimp2",
+ "what": "ctrlimp2 웹앱 판 라(+하) 🔁 자동 재편성",
+ "since": "2026-11-18T17:36:12Z",
+ "beat": "2026-11-18T17:36:12Z",
  "last": {
   "who": "lead",
   "done": "관제창 판 다 1.78.751 8a648a905",
