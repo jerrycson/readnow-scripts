@@ -11,7 +11,7 @@ const F = new Function(cut('/* ◆y24reg 시작', '/* ◆y24reg 끝 */') + '\nre
 ok(F.Y24R_DEF.lowWon === 1000 && F.y24RegCfg({}).lowWon === 1000 && F.y24RegCfg({ lowWon: 0 }).lowWon === 0 && F.y24RegCfg({ lowWon: 999999 }).lowWon === 100000 && F.y24RegCfg({ lowWon: -5 }).lowWon === 0 && F.y24RegCfg({ lowWon: 'x' }).lowWon === 1000, '⚠ 값 경고 기준 = 설정(기본 1,000원 · 0 = 끔 · 0~100,000)');
 const blk = cut('function y24CardHtml(r, i)', '/* 두 번 누르기(브라우저 창 없음)');
 ok(!/y24rbar/.test(blk) && /regCardFns\(new Map\(\), window\.ReadnowRegister, 'done', V\)/.test(blk), '카드 = 등록 카드 함수 그대로 · 위 띠 없음');
-ok(/data-\(\?!full=\|mh=\|mk=\|rgn=\|isbncp=\)/.test(T), 'ISBN 누르면 복사(등록 카드와 같음) — 끊지 않음');
+ok(/data-\(\?!full=\|mh=\|mk=\|rgn=\|isbncp=[|)]/.test(T), /* (y24vf1 11/18) 1.78.735 bqstock1이 뒤에 ipop="stk" 등을 더해 「)」로 끝나지 않음 — isbncp 칸이 빠지지 않았는지만 봄 */ 'ISBN 누르면 복사(등록 카드와 같음) — 끊지 않음');
 ok(/PAGE_GUIDES\['y24Reg'\] = \{ title: '📤 예스24에 새로 올리기', ver: '2026-11-18'/.test(T) && /t: '흐름 띠'/.test(T) && /t: '🔎 자세히 \/ 📋 한눈에'/.test(T), '쪽 안내 새 판(흐름 띠·보기·편의)');
 ok(/bigTable === 'y24reg'\)\) return; const b = document\.querySelector\(`\[data-y24view=/.test(T), 'Alt+V는 이 화면이 열렸을 때만');
 { const sc = cut('/* (y24page1 11/18 · 정범님 노트 b_mwllenfmptaj1 [4]', '/* (plock2 11/18'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(sc + blk) && !/01[016789]-?\d{3,4}-?\d{4}/.test(sc + blk), '브라우저 창·휴대전화 번호 꼴 0'); }
