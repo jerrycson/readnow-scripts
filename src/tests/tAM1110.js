@@ -83,4 +83,4 @@ const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
       ok(!W.calls.length, '머리가 다른 판·같은 판·시작 실패한 판·빠른 업데이트 끈 PC는 부르지 않음'); }
     ok(/if \(window\.__rnShipWait && window\.__rnShipWait\('verReload'/.test(VW) && /!tried && !hw && busy && running[^\n]*curKey !== 'explore' && JOBS\[curKey\]/.test(VW), '바꾸는 규칙은 그대로 — 출고 보호 · 긴 일(🎯 벤치마킹 포함)은 저장 지점에서 멈추고 새로고침 뒤 그 자리부터'); }
 
-  console.log(bad ? `❌ tAM1110 실패 ${bad}` : '✓ tAM1110 통과'); process.exitCode = bad ? 1 : 0; })();
+  console.log(bad ? `❌ tAM1110 실패 ${bad}` : '✓ tAM1110 통과'); process.exit(bad ? 1 : 0); /* (juso2 11/18) 통과 줄을 찍고도 남은 연결 때문에 끝나지 않아 시험 문지기 시간 넘음(240초)으로 '실패'가 되던 것 — main에서도 같았음 · 바로 끝냄 */ })();
