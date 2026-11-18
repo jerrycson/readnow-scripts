@@ -71,14 +71,14 @@
   "at": "2026-11-18T05:21:45Z",
   "first": "2026-11-18T04:13:42Z"
  },
- "holder": "lead",
- "host": "vm-fbops1",
- "what": "fbops1 클라우드 진단 fssize·iam(읽기만) + 규칙 배포 흐름(손으로만)",
- "since": "2026-11-18T05:13:28Z",
- "beat": "2026-11-18T05:13:28Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "bkseller1 웹앱 1.78.719 수동 일괄 겹치는 판매자·그룹 조건 한눈에 b6b23d345 (머리 그대로 8ab2f661d1d8afa8)",
-  "at": "2026-11-18T05:13:16Z"
+  "done": "fbops1 클라우드 0.35.302 진단 fssize·iam(읽기만) + 규칙 배포 흐름(손으로만) · 969f208be",
+  "at": "2026-11-18T05:21:52Z"
  }
 }
