@@ -1,6 +1,20 @@
 {
- "queue": [],
- "ask": null,
+ "queue": [
+  {
+   "who": "lead",
+   "host": "vm",
+   "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
+   "first": "2026-11-18T14:26:59Z",
+   "at": "2026-11-18T14:26:59Z"
+  }
+ ],
+ "ask": {
+  "who": "lead",
+  "host": "vm",
+  "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
+  "at": "2026-11-18T14:26:59Z",
+  "first": "2026-11-18T14:26:59Z"
+ },
  "holder": "daily",
  "host": "vm",
  "what": "정밀 점검 ② 보고서(코드 고침 없음)",
