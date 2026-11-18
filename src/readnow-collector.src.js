@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.367
+// @version      1.89.368
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6681,14 +6681,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  · 있던 유의 사항을 빈 것으로 바꾸지 않음 · '중' 상품인데 글이 비면 잘못 읽은 것으로 보고 쓰지 않음(한 번 더 읽어 봄) */
   const UI_CACHE = new Map(); /* (1.89.171) 우리 매물 유의 사항 기록 — 이 탭에서 6시간 기억 */
   async function readOurUsed(lid, grade, prev, at) { at = at || nowIso(); const ref = C('prd_used_info').doc(String(lid));
-    let info = null, box = false;
+    let info = null, box = false, scm = false;
     for (let t = 0; t < 2; t++) { const pg = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${lid}${t ? '&_=' + Date.now() : ''}`); info = P.parseUsedItemInfo(pg.doc, null); box = !!pg.doc.getElementById('usedDecription');
       if (box && (info.hasNote || grade !== '중')) break; await sleep(1500); }
-    if ((!box || !info.hasNote) && !PUBONLY && P.parseScmEditNote) { try { const sg = await getDoc(`https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=${lid}`); const sc = P.parseScmEditNote(sg.doc); if (sc && sc.found) { const top = (info && info.photos ? info.photos : []).filter((x) => x.where === 'top'); info = { ...(info || {}), note: sc.note, hasNote: sc.hasNote, photos: [...top, ...sc.photos], sellerPhotoCount: sc.photos.length, photoDiff: sc.photos.length > 0 || !!(info && info.photoDiff) }; box = true; } } catch (e) {} } /* (1.77.6) 공개 화면에 안 보이면(주문 중 비공개 등) 샵매니저 상품 수정 화면(bookDesc)에서 — 클라우드 0.16.7과 같은 길 · 로거는 로그인 화면을 열지 않음 */
+    if ((!box || !info.hasNote) && !PUBONLY && P.parseScmEditNote) { try { const sg = await getDoc(`https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=${lid}`); const sc = P.parseScmEditNote(sg.doc); if (sc && sc.found) { const top = (info && info.photos ? info.photos : []).filter((x) => x.where === 'top'); info = { ...(info || {}), note: sc.note, hasNote: sc.hasNote, photos: [...top, ...sc.photos], sellerPhotoCount: sc.photos.length, photoDiff: sc.photos.length > 0 || !!(info && info.photoDiff) }; box = true; scm = true; } } catch (e) {} } /* (1.77.6) 공개 화면에 안 보이면(주문 중 비공개 등) 샵매니저 상품 수정 화면(bookDesc)에서 — 클라우드 0.16.7과 같은 길 · 로거는 로그인 화면을 열지 않음 */
     const miss = (why) => ref.set({ lastMissAt: at, lastMissWhy: why, lastMissBy: PC_NAME, missN: firebase.firestore.FieldValue.increment(1) }, { merge: true }).catch(() => {}).then(() => ({ wrote: false, miss: why, prev })); /* (1.89.171) 못 읽은 횟수 — 다시 읽기 간격을 늘림 */
     if (!box) return miss('상품 화면에 유의 사항 칸이 없음');
     if (!info.hasNote && prev && prev.note) return miss('빈 내용 — 있던 유의 사항 그대로 둠');
-    if (!info.hasNote && grade === '중') return miss("'중' 상품인데 유의 사항 글이 비어 있음");
+    if (!info.hasNote && grade === '중' && !scm) return miss("'중' 상품인데 유의 사항 글이 비어 있음"); /* (정범님 11/18 I-1118-2245-28.1 · shipfix2) 샵매니저 상품 수정 화면의 유의 사항 칸(bookDesc)까지 보고 비어 있으면 = 글이 없다고 확실히 확인 → '중'도 읽음으로 끝냄(클라우드 0.35.317과 같은 규칙) */
     const sig = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
     if (prev && prev.sig === sig) { await ref.set({ checkedAt: at, missN: 0 }, { merge: true }); return { wrote: false, same: true, note: prev.note }; }
     const nv = ((prev && prev.versions) || 0) + 1; const b = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file, ...(x.kind ? { kind: x.kind } : {}) })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: true, sig, at };
