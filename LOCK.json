@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-ctrlimp2",
+ "what": "판 거 1.78.761 내기 (ctrlimp2)",
+ "since": "2026-11-18T20:30:40Z",
+ "beat": "2026-11-18T20:30:40Z",
  "last": {
   "who": "lead",
   "done": "판 파 1.78.760 냄 (ctrlimp2)",
