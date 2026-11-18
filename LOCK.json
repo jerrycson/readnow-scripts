@@ -1,13 +1,6 @@
 {
  "queue": [
   {
-   "who": "lead",
-   "host": "vm-fbops1",
-   "why": "판 내기 기다림: fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
-   "first": "2026-11-18T05:26:53Z",
-   "at": "2026-11-18T07:03:01Z"
-  },
-  {
    "who": "bkgrp1",
    "host": "vm",
    "why": "판 내기 기다림: 묶음 소속 표시",
@@ -44,17 +37,17 @@
   }
  ],
  "ask": {
-  "who": "lead",
-  "host": "vm-fbops1",
-  "why": "판 내기 기다림: fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
-  "at": "2026-11-18T07:03:01Z",
-  "first": "2026-11-18T05:26:53Z"
+  "who": "bkgrp1",
+  "host": "vm",
+  "why": "판 내기 기다림: 묶음 소속 표시",
+  "at": "2026-11-18T07:03:45Z",
+  "first": "2026-11-18T05:27:28Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-fbops1",
+ "what": "fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
+ "since": "2026-11-18T07:04:05Z",
+ "beat": "2026-11-18T07:04:05Z",
  "last": {
   "who": "lead",
   "done": "shoprow1 우리숍 shop.js 0.2.23 · shop.css 0.2.10 한 줄 띠 사진 칸 고르게 · afb63bf07 (머리·웹앱 판 그대로)",
