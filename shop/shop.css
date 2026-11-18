@@ -135,6 +135,15 @@ h2 #nwh { margin-left: 8px; font-size: 0; vertical-align: middle; } h2.flex { di
 .rail { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - var(--sp-3) * 1.5) / 2.35); gap: var(--sp-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(-1 * var(--sp-4)); padding: 2px var(--sp-4) var(--sp-2); scroll-padding: 0 var(--sp-4); }
 .rail::-webkit-scrollbar { display: none; } .rail > * { scroll-snap-align: start; }
 .grid.rail { grid-template-columns: none; grid-auto-flow: column; row-gap: 0; }
+/* (shoprow1 11/18) 🎞 한 줄 띠 — 끌면 관성으로 굴러가고 끝과 처음이 이어짐(앞뒤 복제 .rc) · 한 화면 책 수 --per = 휴대폰 --pm · PC --pp(설정) */
+.roll { --per: var(--pm, 2.4); position: relative; margin: 0 calc(-1 * var(--sp-4)); }
+.roll .rv { overflow: hidden; touch-action: pan-y; padding: 2px var(--sp-4) var(--sp-2); cursor: grab; }
+.roll .rt { display: flex; gap: var(--sp-3); will-change: transform; }
+.roll .rt > .cw { flex: 0 0 calc((100% - var(--sp-3) * (var(--per) - 1)) / var(--per)); }
+.roll.nol .rc, .roll.nol .rb { display: none; } .roll.nol .rv { cursor: auto; }
+.roll.drag .rv { cursor: grabbing; } .roll.drag, .roll.drag * { user-select: none; -webkit-user-select: none; } .roll img, .roll a { -webkit-user-drag: none; }
+.roll .rb { display: none; position: absolute; top: 34%; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--c-line); background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-2); place-items: center; cursor: pointer; padding: 0; }
+.roll .rb .ic { width: 20px; height: 20px; } .roll .rp { left: 4px; } .roll .rn { right: 4px; } .roll .rb:hover { background: var(--c-surface-2); }
 .trust { display: grid; grid-template-columns: 1fr; gap: var(--sp-2); margin: var(--sp-7) 0 var(--sp-2); }
 .trust > div { display: flex; gap: var(--sp-3); align-items: center; background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); }
 .trust .ti { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-md); background: var(--c-accent-soft); color: var(--c-accent-text); }
@@ -178,6 +187,7 @@ h2 #nwh { margin-left: 8px; font-size: 0; vertical-align: middle; } h2.flex { di
 .sk .tx i, .sk .info i { display: block; height: 12px; margin: 8px 0; border-radius: 4px; } .sk .tx i:nth-child(2) { width: 60%; } .sk .info i { height: 18px; } .sk .info i:nth-child(2) { width: 70%; } .sk .info i:nth-child(3) { width: 40%; height: 28px; }
 @keyframes sk { 0% { background-position: 100% 0 } 100% { background-position: -100% 0 } }
 @media (prefers-reduced-motion: reduce) { .sk .im, .sk .ph, .sk i { animation: none; } * { scroll-behavior: auto !important; } }
+@media (min-width: 900px) and (hover: hover) { .roll.rbtn .rb { display: grid; } }
 
 /* ── 알림 띠 · 빈 화면 · 오류 */
 .bar { display: flex; gap: 10px; align-items: flex-start; border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin: var(--sp-4) 0 0; font-size: var(--fs-md); line-height: 1.5; } .bar .ic { flex: none; width: 20px; height: 20px; margin-top: 1px; }
@@ -334,6 +344,7 @@ legend .edit { font-size: var(--fs-sm); font-weight: 500; margin-left: 8px; colo
 @media (min-width: 640px) {
   .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .rail, .grid.rail { grid-auto-columns: calc((100% - var(--sp-3) * 3) / 4.3); }
+  .roll { --per: max(var(--pm, 2.4), min(var(--pp, 6), 4.3)); }
   .chips.kinds { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
   .trust { grid-template-columns: repeat(3, 1fr); }
   .catl { grid-template-columns: repeat(3, minmax(0, 1fr)); } .catl a:nth-last-child(-n+3) { border-bottom: 0; }
@@ -352,6 +363,8 @@ legend .edit { font-size: var(--fs-sm); font-weight: 500; margin-left: 8px; colo
   .cbar { justify-content: center; padding: 0 var(--sp-4); } .cbar a { height: 48px; }
   .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-6) var(--sp-4); }
   .rail, .grid.rail { grid-auto-flow: row; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-columns: auto; overflow: visible; margin: 0; padding: 0; gap: var(--sp-6) var(--sp-4); }
+  .roll { --per: var(--pp, 6); margin: 0; } .roll .rv { padding: 2px 0 var(--sp-2); } .roll .rt { gap: var(--sp-4); } .roll .rt > .cw { flex-basis: calc((100% - var(--sp-4) * (var(--per) - 1)) / var(--per)); }
+  .roll .rp { left: -14px; } .roll .rn { right: -14px; }
   .rail > :nth-child(n+7) { display: none; } /* PC 첫 화면 줄은 한 줄 6권(교보·예스24 PC 첫 화면 줄) — 나머지는 「전체 보기」 */
   .hero { display: grid; grid-template-columns: 1.3fr 1fr; align-items: end; gap: var(--sp-6); min-height: 280px; }
   .hero .stat { margin-top: 0; justify-content: flex-end; }

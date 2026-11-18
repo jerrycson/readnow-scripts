@@ -222,11 +222,11 @@ console.log('⑥ (shop4) 화면 — 🆕 새로 들어온 책 표 · 5분 자동
   { const p2 = await b.newPage(); let big = 0; await p2.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => { const u = rt.request().url(); if (/_t\.jpg/.test(u)) return rt.fulfill({ status: 403, body: '{"error":{}}', contentType: 'application/json' }); big++; return rt.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="3" height="4"/>' }); });
     await p2.addInitScript((u) => { window.BQ_API = u; }, base); await p2.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html#/b/aladin_U3`, { waitUntil: 'domcontentloaded' }); await p2.waitForSelector('#gal img', { timeout: 6000 }).catch(() => {}); await p2.waitForTimeout(600);
     const fb = await p2.evaluate(() => [...document.querySelectorAll('#gal img')].map((i) => [i.dataset.fb || '', i.naturalWidth > 0, /_t\.jpg/.test(i.src)])); ok(fb.some(([f, w, t]) => f === '1' && w && !t), "작은 사진(_t)이 안 열리면 큰 사진으로 한 번 더(열림)", fb); await p2.close(); }
-  const n0 = await p.locator('#nwg .card').count(); const l0 = lists; await p.screenshot({ path: SHOT + 'shop4_fresh.png', fullPage: false });
+  const n0 = await p.locator('#nwg .cw:not(.rc) .card').count(); /* (11/18 shoprow1) 한 줄 띠는 끝없이 돌리려고 앞뒤에 복제 카드(.rc)를 둠 — 진짜 책만 셈 */ const l0 = lists; await p.screenshot({ path: SHOT + 'shop4_fresh.png', fullPage: false });
   extra = { id: 'aladin_NEW', t: '방금 들어온 책', a: '지은이A', g: '최상', p: 7000, lp: 12000, im: null, d: day, st: 's' };
   await p.clock.runFor(2 * 60e3); await p.waitForTimeout(200); ok(lists === l0, '5분 전엔 다시 받지 않음(손님 기기·클라우드 아낌)');
   await p.clock.runFor(3.2 * 60e3); await p.waitForFunction(() => /방금 들어온 책/.test(document.querySelector('#nwg').textContent), null, { timeout: 5000 }).catch(() => {});
-  ok(lists === l0 + 1 && /방금 들어온 책/.test(await p.textContent('#nwg')) && /새 책 1권이 들어왔습니다/.test(await p.textContent('#toast')) && (await p.locator('#nwg .card').count()) === Math.min(12, n0 + 1), "첫 화면을 띄워 두면 5분 뒤 조용히 다시 받아 새 책을 맨 앞에 · '새 책 1권' 알림");
+  ok(lists === l0 + 1 && /방금 들어온 책/.test(await p.textContent('#nwg')) && /새 책 1권이 들어왔습니다/.test(await p.textContent('#toast')) && (await p.locator('#nwg .cw:not(.rc) .card').count()) === Math.min(12, n0 + 1), "첫 화면을 띄워 두면 5분 뒤 조용히 다시 받아 새 책을 맨 앞에 · '새 책 1권' 알림");
   await p.screenshot({ path: SHOT + 'shop4_fresh_after.png', fullPage: false });
   await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .card', { timeout: 5000 }).catch(() => {}); const l1 = lists; ok(/오늘 들어옴/.test(await p.textContent('#lg')), "목록에도 '오늘 들어옴' 표");
   await p.clock.runFor(6 * 60e3); await p.waitForTimeout(200); ok(lists === l1, '첫 화면이 아니면 자동 갱신 안 함');

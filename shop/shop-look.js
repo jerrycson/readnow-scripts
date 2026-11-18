@@ -43,7 +43,16 @@
     { k: 'heroTitle', group: '첫 화면', label: '큰 띠 제목', type: 'text', def: '한 권 한 권, 다음 주인을 기다리는 책', max: 40 },
     { k: 'heroSub', group: '첫 화면', label: '큰 띠 풀이', type: 'text', def: '직접 살펴 등급을 매긴 헌책 · 받으실 그 책의 실물 사진 그대로', max: 80 },
     { k: 'rows', group: '첫 화면', label: '첫 화면에 보일 줄(차례는 아래 차례 그대로)', type: 'multi', def: ['kinds', 'new', 'rare', 'pick', 'sale', 'cheap', 'cats', 'seen', 'reviews', 'trust'], opts: ROWS },
-    { k: 'rowN', group: '첫 화면', label: '줄마다 보일 책 수', type: 'number', def: 12, min: 4, max: 24 },
+    { k: 'rowN', group: '첫 화면', label: '줄마다 보일 책 수(아래 「한 줄 띠」를 끄면 · 예전 가로 줄)', type: 'number', def: 12, min: 4, max: 24 },
+    /* ══ (11/18 shoprow1 · 정범님 11/18 12:08 「새로 들어온 책·5천원 아래 외 여러 섹션을 한 줄로(전체 링크 포함) · 좌우로 끌면 그 줄 상품 수의 2~3배만큼 롤링 · 끝과 끝이 이어져 끊임없이 · 섹션 선택/추가/편집·배수는 설정에서」) */
+    { k: 'rollOn', group: '첫 화면 한 줄 띠', label: '첫 화면 책 줄을 「한 줄 띠」로 — 좌우로 끌면 관성으로 굴러가고 끝과 처음이 이어져 끝없이 돎(끄면 예전 가로 줄)', type: 'check', def: true, help: '새로 들어온 책·희귀본·가게 추천·할인·5천 원 아래·내 섹션·최근 본 책 줄 · 줄 제목 옆 「전체 ›」' },
+    { k: 'rollPc', group: '첫 화면 한 줄 띠', label: 'PC 한 줄에 보일 책 수(= 그 줄 상품 수)', type: 'number', def: 6, min: 3, max: 10 },
+    { k: 'rollMob', group: '첫 화면 한 줄 띠', label: '휴대폰 한 화면에 보일 책 수', type: 'select', def: '2.4', opts: { 2: '두 권', 2.4: '두 권 + 다음 책 조금(기본 · 더 있다는 표시)', 3: '세 권', 3.4: '세 권 + 다음 책 조금' } },
+    { k: 'rollX', group: '첫 화면 한 줄 띠', label: '굴러가는 책 수 = 한 줄 상품 수 × 이 배수(끝 다음은 다시 처음)', type: 'select', def: '2', opts: { 1.5: '1.5배', 2: '2배(기본 · PC 6권이면 12권이 돎)', 2.5: '2.5배', 3: '3배', 4: '4배' }, help: '최대 48권 · 그 줄에 책이 모자라면 있는 만큼' },
+    { k: 'rollAuto', group: '첫 화면 한 줄 띠', label: '저절로 흐르기', type: 'select', def: 'off', opts: { off: '안 함 — 손님이 끌 때만(기본)', slow: '천천히 저절로 흐름(손이 닿거나 마우스를 올리면 멈춤)', mid: '조금 빠르게 저절로 흐름(손이 닿거나 마우스를 올리면 멈춤)' }, help: '손님 기기가 「움직임 줄이기」면 흐르지 않음' },
+    { k: 'rollBtn', group: '첫 화면 한 줄 띠', label: 'PC에서 줄 양옆 ‹ › 단추(누르면 한 화면씩 굴러감)', type: 'check', def: true },
+    { k: 'rowOrder', group: '첫 화면 한 줄 띠', label: '줄 차례 바꾸기 — 줄 이름을 쉼표로(예: 5천 원 아래, 새로 들어온 책, 내 섹션 1) · 비우면 위 「보일 줄」 차례', type: 'text', def: '', max: 200, help: '적은 줄끼리만 자리를 바꿈 · 나머지는 제자리 · 줄 이름 = 위 칸 이름·내 섹션 제목·「내 섹션 1」' },
+    ...[1, 2, 3, 4, 5, 6].map((i) => ({ k: 'sec' + i, group: '첫 화면 내 섹션', label: `내 섹션 ${i} — 「제목 | 조건 | 작은 풀이」`, type: 'text', def: '', max: 200, help: i === 1 ? '조건 = 우리숍 책 목록 주소(#/list?… 거르고 정렬한 뒤 주소창 그대로) 또는 말로: 1만원 아래 · 3천원 넘게 · 값 5천-2만 · 할인 · 희귀본 · 추천 · 세트 · 세트 빼기 · 분류 국내도서>소설 · 등급 최상 · 찾기 하루키 · 싼 차례 · 할인 많은 차례 (쉼표로 여럿) · 예: 만 원 아래 소설 | 분류 국내도서>소설, 1만원 아래 · 맨 앞에 - 를 붙이면 숨김 · 비우거나 조건을 못 읽으면 그 줄은 안 보임' : '' })),
     { k: 'mobCols', group: '책 목록', label: '휴대폰 한 줄 책 수', type: 'select', def: '2', opts: { 2: '두 권(사진 크게 · 기본)', 3: '세 권(더 많이)' } },
     { k: 'listMore', group: '책 목록', label: '다음 쪽 불러오기', type: 'select', def: 'auto', opts: { auto: '끝까지 내리면 저절로(쿠팡·무신사)', button: '「더 보기」 단추를 눌러서' } },
     { k: 'showAuthor', group: '책 목록', label: '책 카드에 지은이 보이기', type: 'check', def: true },
@@ -108,6 +117,58 @@
   /* 관리 화면 미리 보기 주소 꼬리(저장 없이 손님 화면에서 보기) — #/?look=<base64url JSON> */
   const previewArg = (c) => { const s = JSON.stringify(cfgDiff(c)); try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const previewCfg = (a) => { try { const b = String(a || '').replace(/-/g, '+').replace(/_/g, '/'); const s = typeof atob === 'function' ? decodeURIComponent(escape(atob(b))) : Buffer.from(b, 'base64').toString('utf8'); const o = JSON.parse(s); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } };
-  const API = { VER: '0.1.3', THEMES, ROWS, SCHEMA, FONTS, ROLES, SETS, ROLE_Q, FK, fontOf, fontUrls, fontCss, stackOf, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix };
+  /* ══ (shoprow1) 내 섹션 글 → { t 제목, sub 풀이, q 목록 주소 조건, api 클라우드 조건, href 「전체」 주소, bad 못 읽은 조각 } · 숨김(-)·빈 칸은 null */
+  const QK = ['q', 'c', 'cp', 'g', 's', 'pr', 'sale', 'bd', 'xs'];
+  const KINDS = /^(국내도서|외국도서|잡지|음반|DVD|블루레이|전자책|중고)/;
+  function money(v) { const t = String(v || '').replace(/[,\s원]/g, ''); const m = /^(?:(\d+(?:\.\d+)?)만)?(?:(\d+(?:\.\d+)?)천)?(\d+)?$/.exec(t); if (t === '만' || t === '천') return t === '만' ? 1e4 : 1e3; if (!m || !(m[1] || m[2] || m[3])) return null; return Math.round((+m[1] || 0) * 1e4 + (+m[2] || 0) * 1e3 + (+m[3] || 0)); }
+  function qsParse(s) { const o = {}; String(s || '').split('&').filter(Boolean).forEach((kv) => { const i = kv.indexOf('='); const k = i < 0 ? kv : kv.slice(0, i); let v = i < 0 ? '' : kv.slice(i + 1); try { v = decodeURIComponent(v.replace(/\+/g, ' ')); } catch (e) {} if (QK.includes(k) || k === 'pmin' || k === 'pmax') o[k] = v; }); return o; }
+  function condOf(cond) { const q = {}; const bad = []; let lo = '', hi = ''; const s0 = String(cond || '').trim(); const at = s0.indexOf('?');
+    if (/^(https?:\/\/[^#]*)?#?\/?list\?/.test(s0) || (at >= 0 && /=/.test(s0.slice(at)))) { Object.assign(q, qsParse(s0.slice(at + 1))); }
+    else for (const part of s0.split(/\s*[,·]\s*/).map((x) => x.trim()).filter(Boolean)) { let m;
+      if ((m = /^(q|c|cp|g|s|pr|sale|bd|xs|pmin|pmax)\s*[=:]\s*(.+)$/.exec(part))) q[m[1]] = m[2].trim();
+      else if ((m = /^(찾기|검색|낱말)\s+(.+)$/.exec(part))) q.q = m[2].trim();
+      else if ((m = /^(분류|분야|종류)\s+(.+)$/.exec(part))) { const v = m[2].trim().replace(/\s*>\s*/g, '>'); if (v.includes('>') || KINDS.test(v)) q.cp = v; else q.c = v; }
+      else if ((m = /^등급\s+(.+)$/.exec(part))) q.g = m[1].trim();
+      else if (/^세트\s*(빼기|빼고|제외|말고)$/.test(part)) q.xs = 'x';
+      else if (/^세트(만)?$/.test(part)) q.xs = '1';
+      else if (/^희귀(본)?$/.test(part)) q.bd = 'rare';
+      else if (/^(가게\s*)?추천$/.test(part)) q.bd = 'pick';
+      else if (/^할인\s*(많은|큰)\s*(차례|순)?$/.test(part)) q.s = 'off';
+      else if (/^할인(만|\s*중(인\s*책)?)?$/.test(part)) q.sale = '1';
+      else if (/^(새\s*책|새로\s*들어온\s*책|최신|새\s*차례|최신\s*차례|새로운\s*차례)$/.test(part)) q.s = 'new';
+      else if (/^(낮은\s*값|싼|값\s*낮은|싼\s*책)\s*(차례|순)?$/.test(part)) q.s = 'low';
+      else if (/^(높은\s*값|비싼|값\s*높은|비싼\s*책)\s*(차례|순)?$/.test(part)) q.s = 'high';
+      else if ((m = /^(?:값|가격)?\s*([\d.,]+\s*(?:만|천)?\s*(?:\d+\s*천)?)\s*원?\s*[-~]\s*([\d.,]+\s*(?:만|천)?\s*(?:\d+\s*천)?)\s*원?$/.exec(part)) && money(m[1]) != null && money(m[2]) != null) { lo = money(m[1]); hi = money(m[2]); }
+      else if ((m = /^(?:값|가격)?\s*(.+?)\s*(아래|이하|까지|미만)$/.exec(part)) && money(m[1]) != null) hi = money(m[1]);
+      else if ((m = /^(?:값|가격)?\s*(.+?)\s*(넘게|이상|부터|초과|넘는)$/.exec(part)) && money(m[1]) != null) lo = money(m[1]);
+      else bad.push(part); }
+    if (q.pmin != null || q.pmax != null) { lo = q.pmin != null ? money(q.pmin) || '' : lo; hi = q.pmax != null ? money(q.pmax) || '' : hi; delete q.pmin; delete q.pmax; }
+    if (lo !== '' || hi !== '') q.pr = `${lo === '' ? '' : lo}-${hi === '' ? '' : hi}`;
+    const o = {}; for (const k of QK) if (q[k] != null && String(q[k]).trim() !== '') o[k] = String(q[k]).trim().slice(0, 160); if (o.s && !/^(new|low|high|off)$/.test(o.s)) delete o.s; if (o.pr && !/^\d*-\d*$/.test(o.pr)) delete o.pr; if (o.pr === '-') delete o.pr;
+    const api = { ...o }; if (api.pr) { const [a, b] = api.pr.split('-'); delete api.pr; if (a) api.pmin = a; if (b) api.pmax = b; }
+    return { q: o, api, bad }; }
+  const qsOf = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  function secOf(txt, i) { const s0 = String(txt || '').trim(); if (!s0 || s0[0] === '-') return null; const P = s0.split('|').map((x) => x.trim()); let t = P[0], cond = P[1], sub = P[2] || '';
+    if (P.length < 2) { if (/^(https?:|#|\/?list\?)/.test(s0)) { t = `내 섹션 ${i || ''}`.trim(); cond = s0; } else cond = s0; }
+    const C = condOf(cond); if (!Object.keys(C.q).length) { if (C.bad.length) return null; C.q.s = 'new'; } /* 못 읽은 조건뿐이면 엉뚱한 책을 보이지 않게 숨김 */
+    const href = '#/list?' + qsOf({ ...C.q, s: C.q.s || 'new' }); return { k: 'u' + (i || 1), t: (t || `내 섹션 ${i || ''}`).slice(0, 40), sub: sub.slice(0, 80), q: C.q, api: C.api, href, bad: C.bad }; }
+  /* 첫 화면 줄 차례 — 고른 줄(rows) + 내 섹션(5천 원 아래 뒤) → rowOrder에 적은 줄끼리 그 자리들 안에서 적은 차례로(나머지는 제자리) */
+  const NICK = { kinds: ['종류'], new: ['새책', '새로들어온책', '새로', '신간'], rare: ['희귀', '희귀본'], pick: ['추천', '가게추천'], sale: ['할인', '할인중인책', '할인책'], cheap: ['5천원아래', '5천원아래책', '오천원아래', '5000원아래'], cats: ['분야', '분야바로가기'], seen: ['최근본책', '최근'], reviews: ['리뷰', '새로올라온리뷰'], trust: ['믿고사는까닭', '믿음'] };
+  const nrm = (x) => String(x || '').toLowerCase().replace(/[\s·()（）]/g, '').replace(/\(.*$/, '');
+  function homeRows(c) { c = c && c.rows && 'rollOn' in c ? c : cfgOf(c); const secs = []; for (let i = 1; i <= 6; i++) { const S = secOf(c['sec' + i], i); if (S) secs.push(S); }
+    const base = c.rows.slice(); let at = -1; ['new', 'rare', 'pick', 'sale', 'cheap'].forEach((k) => { const j = base.indexOf(k); if (j > at) at = j; }); if (at < 0) at = base.indexOf('kinds');
+    base.splice(at + 1, 0, ...secs.map((S) => S.k));
+    const names = {}; const add = (nm, k) => { const n = nrm(nm); if (n && !(n in names)) names[n] = k; };
+    for (const S of secs) { add(S.k, S.k); add('내섹션' + S.k.slice(1), S.k); add(S.t, S.k); }
+    for (const k of Object.keys(ROWS)) { add(k, k); add(ROWS[k].split('(')[0], k); (NICK[k] || []).forEach((n) => add(n, k)); }
+    const want = []; for (const w of String(c.rowOrder || '').split(/\s*[,，>/\n]\s*/)) { const k = names[nrm(w)]; if (k && base.includes(k) && !want.includes(k)) want.push(k); }
+    const slots = base.map((k, j) => (want.includes(k) ? j : -1)).filter((j) => j >= 0); const out = base.slice(); slots.forEach((j, n) => { out[j] = want[n]; });
+    return { rows: out, secs: Object.fromEntries(secs.map((S) => [S.k, S])) }; }
+  /* 한 줄 띠: 굴러가는 책 수 = PC 한 줄 책 수 × 배수(최대 48) */
+  const rollN = (c) => { c = c && 'rollPc' in c ? c : cfgOf(c); return clamp(Math.round(c.rollPc * (+c.rollX || 2)), c.rollPc, 48); };
+  /* 끝없이 도는 띠의 자리 셈 — pos(끈 거리 · 끝없음)를 한 벌 너비 안으로 접기 · 가장 가까운 책 칸에 붙이기 */
+  const wrap = (pos, S) => (S > 0 ? ((pos % S) + S) % S : 0);
+  const snapTo = (pos, step) => (step > 0 ? Math.round(pos / step) * step : pos);
+  const API = { VER: '0.1.4', THEMES, ROWS, SCHEMA, FONTS, ROLES, SETS, ROLE_Q, FK, fontOf, fontUrls, fontCss, stackOf, DEF, cfgOf, cfgDiff, colors, cssText, topBarText, previewArg, previewCfg, lum, contrast, inkOn, mix, money, condOf, secOf, homeRows, rollN, wrap, snapTo };
   if (typeof module === 'object' && module.exports) module.exports = API; else root.BQL = API;
 })(typeof window !== 'undefined' ? window : this);

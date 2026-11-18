@@ -145,34 +145,88 @@
 
   /* (11/11 shop4) 🆕 새로 들어온 책 자동 갱신 — 성공 사례(AbeBooks 'Recently added'·Shopify 'New arrivals'·헌책 자사몰 '오늘 입고'):
    *  첫 화면에 '오늘 N권 · 이번 주 N권' · 책마다 '오늘 들어옴/어제/N일 전' · 첫 화면을 띄워 둔 채면 5분마다(화면이 보일 때만) 조용히 다시 받아 새 책만 알림 */
+  /* ══ (11/18 shoprow1 · 정범님 11/18 12:08) 🎞 한 줄 띠 — 첫 화면 줄을 한 줄로 · 좌우로 끌면(마우스·손가락) 관성으로 굴러가고 끝과 처음이 이어져 끝없이 돎
+   *  굴러가는 책 = PC 한 줄 책 수 × 배수(설정 🎨 우리숍 꾸밈 › 첫 화면 한 줄 띠) · 앞뒤에 같은 책을 한 벌씩 복제해 두고 위치를 한 벌 너비 안으로 되감음(끊김 없음)
+   *  transform + requestAnimationFrame(그림 다시 짜기 없음) · 끄는 중엔 책 눌림 막음 · 세로로 밀면 화면이 그대로 내려감(touch-action: pan-y) · 기기 「움직임 줄이기」면 미끄러짐·저절로 흐르기 없음 */
+  const RL = { set: new Set(), raf: 0, ro: null, io: null };
+  const rollCfg = () => LOOK.c || lookOf();
+  const rowCnt = () => { const c = rollCfg(); return c && c.rollOn && window.BQL.rollN ? window.BQL.rollN(c) : rowN(); };
+  const rollRM = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  const rollH = (L, day) => { const c = rollCfg(); if (!c || !c.rollOn) return railH(L, day);
+    return `<div class="roll${c.rollBtn ? ' rbtn' : ''}" data-roll style="--pm:${+c.rollMob || 2.4};--pp:${+c.rollPc || 6}"><button type="button" class="rb rp" aria-label="앞 책 보기">${ic('left')}</button><div class="rv"><div class="rt grid">${L.map((x, k) => cardH(x, day, k >= 3)).join('')}</div></div><button type="button" class="rb rn" aria-label="다음 책 보기">${ic('right')}</button></div>`; };
+  const rollX = (st) => (st.loop ? st.S + window.BQL.wrap(st.pos, st.S) : 0);
+  function rollImg(st, x) { if (!st.near || !st.step) return; const K = st.tr.children; const a = Math.max(0, Math.floor((x - st.W) / st.step)), b = Math.min(K.length - 1, Math.ceil((x + 2 * st.W) / st.step));
+    for (let j = a; j <= b; j++) { const i = K[j] && K[j].querySelector('img[data-src]'); if (i) { i.src = i.dataset.src; i.removeAttribute('data-src'); } } }
+  function rollDraw(st) { const x = rollX(st); st.tr.style.transform = `translate3d(${-x.toFixed(2)}px,0,0)`; const i = st.step ? Math.floor(x / st.step) : 0; if (i !== st.lastI) { st.lastI = i; rollImg(st, x); } }
+  function rollKick() { if (!RL.raf) RL.raf = requestAnimationFrame(rollTick); }
+  function rollTick(now) { RL.raf = 0; let more = false; const sp = { slow: 0.022, mid: 0.045 }[(rollCfg() || {}).rollAuto] || 0;
+    for (const st of RL.set) { if (!st.el.isConnected) { RL.set.delete(st); if (RL.ro) RL.ro.unobserve(st.vw); if (RL.io) RL.io.unobserve(st.el); continue; }
+      const dt = Math.min(64, now - (st.t || now)); st.t = now;
+      if (st.anim) { const A = st.anim; const p = Math.min(1, (now - A.t0) / A.ms); st.pos = A.from + (A.to - A.from) * (1 - Math.pow(1 - p, 3)); rollDraw(st); if (p >= 1) st.anim = null; else more = true; }
+      else if (sp && st.loop && st.near && !st.drag && !st.hover && !document.hidden && !rollRM() && now > st.hold) { st.pos += sp * dt; rollDraw(st); more = true; } else if (sp && st.loop && st.near) more = true; }
+    if (more && !document.hidden) rollKick(); }
+  function rollTo(st, to, ms) { st.anim = null; if (rollRM() || !ms) { st.pos = to; rollDraw(st); return; } st.anim = { from: st.pos, to, t0: performance.now(), ms }; st.t = 0; rollKick(); }
+  function rollMeasure(st) { const K = st.tr.children; const c0 = K[st.cloned ? st.n : 0]; if (!c0) return; const g = parseFloat(getComputedStyle(st.tr).columnGap) || 0; const w = c0.getBoundingClientRect().width; const W = st.vw.clientWidth; if (!w || !W) return;
+    const old = st.step; st.step = w + g; st.S = st.n * st.step; st.W = W; const loop = st.S - g > W + 4;
+    if (loop && !st.cloned) { const O = [...K]; const cl = () => { const f = document.createDocumentFragment(); O.forEach((x) => { const y = x.cloneNode(true); y.classList.add('rc'); y.setAttribute('aria-hidden', 'true'); y.querySelectorAll('a,button').forEach((z) => z.setAttribute('tabindex', '-1')); f.appendChild(y); }); return f; };
+      st.tr.insertBefore(cl(), st.tr.firstChild); st.tr.appendChild(cl()); st.cloned = true; }
+    st.loop = loop; st.el.classList.toggle('nol', !loop); if (old && old !== st.step) st.pos = (st.pos / old) * st.step; if (!loop) st.pos = 0; st.lastI = -1; rollDraw(st); rollKick(); }
+  function rollArm(root, keep) { if (!window.BQL || !window.BQL.wrap) return; for (const st of RL.set) if (!st.el.isConnected) RL.set.delete(st);
+    if (!RL.ro && 'ResizeObserver' in window) RL.ro = new ResizeObserver((es) => es.forEach((e) => { const st = e.target.parentNode && e.target.parentNode._rl; if (st) rollMeasure(st); }));
+    if (!RL.io && 'IntersectionObserver' in window) RL.io = new IntersectionObserver((es) => es.forEach((e) => { const st = e.target._rl; if (!st) return; st.near = e.isIntersecting; if (st.near) { st.lastI = -1; rollDraw(st); rollKick(); } }), { rootMargin: '300px 0px' });
+    $$('[data-roll]', root).forEach((el) => { if (el._rl) return; const vw = $('.rv', el), tr = $('.rt', el); if (!vw || !tr) return;
+      const st = { el, vw, tr, n: tr.children.length, pos: keep || 0, step: 0, S: 0, W: 0, loop: false, cloned: false, anim: null, drag: null, hold: 0, hover: false, near: !RL.io, lastI: -1, noClick: 0 }; el._rl = st; RL.set.add(st);
+      const now = () => performance.now(); const pause = () => { st.hold = now() + 4000; };
+      vw.addEventListener('pointerdown', (e) => { if (!st.loop || (e.pointerType === 'mouse' && e.button !== 0)) return; st.anim = null; st.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: st.pos, on: false, pts: [[e.timeStamp, e.clientX]] }; st.hold = Infinity; });
+      vw.addEventListener('pointermove', (e) => { const d = st.drag; if (!d || d.id !== e.pointerId) return; const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+        if (!d.on) { if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; if (Math.abs(dy) >= Math.abs(dx)) { st.drag = null; pause(); return; } d.on = true; el.classList.add('drag'); try { vw.setPointerCapture(e.pointerId); } catch (x) {} }
+        e.preventDefault(); st.pos = d.p0 - dx; d.pts.push([e.timeStamp, e.clientX]); if (d.pts.length > 8) d.pts.shift(); rollDraw(st); });
+      const up = (e, cancel) => { const d = st.drag; if (!d || d.id !== e.pointerId) return; st.drag = null; el.classList.remove('drag'); pause(); if (!d.on) return; st.noClick = now() + 450;
+        let v = 0; const P = d.pts.filter((p) => e.timeStamp - p[0] < 120); if (!cancel && P.length >= 2) { const a = P[0], b = P[P.length - 1]; v = (b[1] - a[1]) / Math.max(8, b[0] - a[0]); } if (e.timeStamp - d.pts[d.pts.length - 1][0] > 90) v = 0;
+        const fl = Math.max(-st.S, Math.min(st.S, -v * 380)); const to = window.BQL.snapTo(st.pos + fl, st.step); rollTo(st, to, Math.max(260, Math.min(1100, 220 + Math.abs(to - st.pos) * 0.8))); };
+      vw.addEventListener('pointerup', (e) => up(e, false)); vw.addEventListener('pointercancel', (e) => up(e, true));
+      vw.addEventListener('click', (e) => { if (st.noClick && now() < st.noClick) { e.preventDefault(); e.stopPropagation(); } }, true);
+      vw.addEventListener('dragstart', (e) => e.preventDefault());
+      el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') st.hover = true; }); el.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { st.hover = false; pause(); rollKick(); } });
+      vw.addEventListener('wheel', (e) => { if (!st.loop) return; let dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0; if (!dx) return; if (e.deltaMode === 1) dx *= 16; e.preventDefault(); st.anim = null; st.pos += dx; rollDraw(st); pause(); clearTimeout(st.wt); st.wt = setTimeout(() => rollTo(st, window.BQL.snapTo(st.pos, st.step), 220), 140); }, { passive: false });
+      const by = (k) => { if (!st.loop) return; const per = Math.max(1, Math.floor((st.W + 4) / st.step)); pause(); rollTo(st, window.BQL.snapTo(st.anim ? st.anim.to : st.pos, st.step) + k * per * st.step, 520); };
+      $('.rp', el).onclick = () => by(-1); $('.rn', el).onclick = () => by(1);
+      vw.addEventListener('scroll', () => { if (vw.scrollLeft) vw.scrollLeft = 0; }); /* 손님이 Tab으로 책을 옮겨 다닐 때 브라우저가 띠 안을 몰래 밀지 않게 — 대신 그 책이 보이게 돌림 */
+      vw.addEventListener('focusin', (e) => { if (!st.loop || !st.step) return; const cw = e.target.closest && e.target.closest('.cw'); if (!cw || cw.classList.contains('rc')) return; const j = [...tr.children].indexOf(cw) - st.n; const L0 = st.S + j * st.step, x = rollX(st); if (L0 < x - 1 || L0 + st.step > x + st.W + 1) rollTo(st, j * st.step, 0); pause(); });
+      el.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { if (!st.loop) return; e.preventDefault(); rollTo(st, window.BQL.snapTo(st.pos, st.step) + (e.key === 'ArrowRight' ? 1 : -1) * st.step, 240); pause(); } });
+      if (RL.ro) RL.ro.observe(vw); if (RL.io) RL.io.observe(el); rollMeasure(st); }); }
+  const rollPos = (root) => { const el = root && $('[data-roll]', root); return el && el._rl ? el._rl.pos : 0; };
+  /* 띠 하나에 필요한 책 수가 한 쪽(24권)보다 많으면 다음 쪽도 받아 이어 붙임 */
+  async function listN(q, n, first) { const r = first || (await api('/shop/list?' + B.qs(q))); if (!r || !r.items || r.items.length >= n || !r.more) return r; try { const r2 = await api('/shop/list?' + B.qs({ ...q, p: 1 })); const had = new Set(r.items.map((x) => x.id)); return { ...r, items: r.items.concat((r2.items || []).filter((x) => !had.has(x.id))) }; } catch (e) { return r; } }
   const FR = { t: null, at: 0, items: null };
   const rowN = () => (LOOK.c && LOOK.c.rowN) || 12;
   const freshHead = (L) => (L.today ? `<span class="fresh">오늘 ${L.today.toLocaleString('ko-KR')}권 새로</span>` : L.wk ? `<span class="fresh wk">이번 주 ${L.wk.toLocaleString('ko-KR')}권</span>` : '');
-  const newGrid = (L) => (L.items.length ? railH(L.items.slice(0, rowN()), L.day) : emptyH('book', '아직 올라온 책이 없습니다', '곧 새 책을 올립니다'));
+  const newGrid = (L) => (L.items.length ? rollH(L.items.slice(0, rowCnt()), L.day) : emptyH('book', '아직 올라온 책이 없습니다', '곧 새 책을 올립니다'));
   async function freshPoll(force) { if (B.route(location.hash).name !== 'home' || document.hidden || !$('#nwg')) return; if (!force && Date.now() - FR.at < 4.5 * 60e3) return; FR.at = Date.now();
-    try { const L = await api('/shop/list?s=new'); if (B.route(location.hash).name !== 'home' || !$('#nwg')) return; const add = B.freshIds(FR.items, L.items.slice(0, rowN())); FR.items = L.items.slice(0, rowN());
-      $('#nwg').innerHTML = newGrid(L); imgArm($('#nwg')); const fh = $('#nwh'); if (fh) fh.innerHTML = freshHead(L); if (add.length) toast(`새 책 ${add.length}권이 들어왔습니다`); } catch (e) {} }
+    try { const L = await listN({ s: 'new' }, rowCnt()); if (B.route(location.hash).name !== 'home' || !$('#nwg')) return; const add = B.freshIds(FR.items, L.items.slice(0, rowCnt())); FR.items = L.items.slice(0, rowCnt());
+      const keep = rollPos($('#nwg')); $('#nwg').innerHTML = newGrid(L); rollArm($('#nwg'), keep); imgArm($('#nwg')); const fh = $('#nwh'); if (fh) fh.innerHTML = freshHead(L); if (add.length) toast(`새 책 ${add.length}권이 들어왔습니다`); } catch (e) {} }
   function freshArm() { clearInterval(FR.t); FR.t = setInterval(() => freshPoll(false), 5 * 60e3); }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) freshPoll(false); });
   /* ══ (shopux1) 🏠 첫 화면 — 큰 띠 → 종류 아이콘 줄 → 새로 들어온 책 → 희귀본(우리 강점) → 추천 → 할인 → 5천 원 아래 → 분야 → 최근 본 책 → 리뷰 → 믿고 사는 까닭
    *  줄 차례·켜고 끔·줄마다 권 수 = 설정(🎨 우리숍 꾸밈 › 첫 화면) · 새 책 말고 다른 줄은 화면 가까이 올 때 받음(첫 화면 무게 그대로 — 처음 받는 것은 설정·새 책 두 개뿐) */
   const SEC_H = (t, sub, more, extra) => `<div class="sec-h"><div><h2 class="flex">${t}${extra || ''}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${more ? `<a class="more" href="${more[0]}">${esc(more[1] || '전체 보기')}${ic('right')}</a>` : ''}</div>`;
   const LAZY = { rare: ['희귀본', '구하기 어려운 절판·초판·한정본 — 한 권뿐이라 먼저 보는 분 몫', { bd: 'rare' }, '#/list?bd=rare'], pick: ['가게 추천', '책방지기가 고른 책', { bd: 'pick' }, '#/list?bd=pick'], sale: ['할인 중인 책', '정해진 동안만 값을 내린 책', { sale: 1, s: 'off' }, '#/list?sale=1&s=off'], cheap: ['5천 원 아래', '부담 없이 한 권 더', { pmax: 5000, s: 'new' }, '#/list?pr=0-5000'] };
-  function lazyRows(root) { const els = $$('[data-lazy]', root); if (!els.length) return; const run = async (el) => { const k = el.dataset.lazy; const D = LAZY[k]; el.removeAttribute('data-lazy'); try { const r = await api('/shop/list?' + B.qs(D[2])); if (!el.isConnected) return; const L = (r.items || []).slice(0, rowN()); if (!L.length) { el.remove(); return; } el.innerHTML = SEC_H(D[0], D[1], [D[3], `전체 ${r.total.toLocaleString('ko-KR')}권`]) + railH(L, r.day); imgArm(el); } catch (e) { el.remove(); } };
+  const HS = { secs: {} };
+  function lazyRows(root) { const els = $$('[data-lazy]', root); if (!els.length) return; const run = async (el) => { const k = el.dataset.lazy; const U = HS.secs && HS.secs[k]; const D = LAZY[k] || (U && [esc(U.t), esc(U.sub), U.api, U.href]); el.removeAttribute('data-lazy'); if (!D) { el.remove(); return; } try { const r = await listN(D[2], rowCnt()); if (!el.isConnected) return; const L = (r.items || []).slice(0, rowCnt()); if (!L.length) { el.remove(); return; } el.innerHTML = SEC_H(D[0], D[1], [D[3], `전체 ${r.total.toLocaleString('ko-KR')}권`]) + rollH(L, r.day); rollArm(el); imgArm(el); } catch (e) { el.remove(); } }; /* (shoprow1) 내 섹션(u1~u6)도 같은 길 */
     if (!('IntersectionObserver' in window)) { els.forEach(run); return; } const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); run(e.target); } }), { rootMargin: '0px 0px 120px 0px' }); els.forEach((e) => io.observe(e)); }
   async function home() { const current = pageScope(); const L0 = lookOf(); main().innerHTML = `${L0 && !L0.heroOn ? '' : `<section class="hero"><div><span class="eb">${ic('shield', 'sm')}직접 살핀 헌책</span><h1>${esc((L0 && L0.heroTitle) || '한 권 한 권, 다음 주인을 기다리는 책')}</h1><p>${esc((L0 && L0.heroSub) || '')}</p><div class="hacts"><a class="btn acc" href="#/list?s=new">새로 들어온 책</a><a class="btn ghost" href="#/shelf" id="heroShelf">서가 책장 둘러보기</a></div></div><div class="stat" id="hstat"></div></section>`}<div id="hc">${loading(6)}</div>`; bindSearch(); searchBox('');
-    try { const [c, L] = await Promise.all([cfg(), api('/shop/list?s=new')]);
-      if (!current() || !$('#hc')) return; const Lk = lookOf() || { rows: ['kinds', 'new', 'seen', 'trust'] }; const pr = c.promo || {}; const seen = LS.get('bq-seen', []).slice(0, rowN());
+    try { const [c, L1] = await Promise.all([cfg(), api('/shop/list?s=new')]); const L = await listN({ s: 'new' }, rowCnt(), L1);
+      if (!current() || !$('#hc')) return; const Lk0 = lookOf(); const HR = Lk0 && window.BQL.homeRows ? window.BQL.homeRows(Lk0) : null; HS.secs = (HR && HR.secs) || {}; const Lk = HR ? { rows: HR.rows } : Lk0 || { rows: ['kinds', 'new', 'seen', 'trust'] }; const pr = c.promo || {}; const seen = LS.get('bq-seen', []).slice(0, rowCnt());
       { const hs = $('#hstat'); if (hs) hs.innerHTML = `${c.n != null ? `<div><b>${c.n.toLocaleString('ko-KR')}</b>권 판매 중</div>` : ''}${L.today ? `<div><b>${L.today.toLocaleString('ko-KR')}</b>권 오늘 새로</div>` : L.wk ? `<div><b>${L.wk.toLocaleString('ko-KR')}</b>권 이번 주 새로</div>` : ''}`; const hb = $('#heroShelf'); if (hb && c.shelf && c.shelf.on === false) hb.remove(); }
       const R = { kinds: () => ((c.kinds || []).length > 1 ? `<section class="sec">${SEC_H('종류', '', ['#/cats', '모든 분류'])}<div class="chips kinds">${c.kinds.map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ cp: k })}"><span class="kic">${kic(k)}</span>${esc(k)} <small>${n.toLocaleString('ko-KR')}</small></a>`).join('')}</div></section>` : ''),
         new: () => `<section class="sec">${SEC_H('새로 들어온 책', '', ['#/list?s=new', `전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''}`], `<span id="nwh">${freshHead(L)}</span>`)}<div id="nwg">${newGrid(L)}</div></section>`,
         rare: () => '<section class="sec" data-lazy="rare"></section>', pick: () => '<section class="sec" data-lazy="pick"></section>', sale: () => '<section class="sec" data-lazy="sale"></section>', cheap: () => '<section class="sec" data-lazy="cheap"></section>',
         cats: () => ((c.cats || []).length ? `<section class="sec">${SEC_H('분야', '', ['#/cats', '모든 분류'])}<div class="catl">${c.cats.filter(([k]) => !(c.kinds || []).some(([q]) => q === k)).slice(0, 12).map(([k, n]) => `<a href="#/list?${B.qs((c.kinds || []).length ? { cp: '국내도서>' + k } : { c: k })}">${esc(k)} <small>${n.toLocaleString('ko-KR')}</small></a>`).join('')}</div></section>` : ''),
-        seen: () => (seen.length ? `<section class="sec">${SEC_H('최근 본 책', '이 기기에서 본 책')}${railH(seen)}</section>` : ''),
+        seen: () => (seen.length ? `<section class="sec">${SEC_H('최근 본 책', '이 기기에서 본 책')}${rollH(seen)}</section>` : ''),
         reviews: () => '<section class="sec" id="hrv"></section>',
         trust: () => `<section class="trust"><div><span class="ti">${ic('camera')}</span><span><b>실물 사진</b><small>받으실 바로 그 책을 찍었습니다</small></span></div><div><span class="ti">${ic('shield')}</span><span><b>등급 풀이</b><small>최상·상·중·하 — 책마다 상태를 적었습니다</small></span></div><div><span class="ti">${ic('box')}</span><span><b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></span></div></section>` };
-      $('#hc').innerHTML = `${closedBar(c)}<a class="aitmp-go" href="#/ai">✍ 임시 · 요약·추천글이 있는 책만 모아 보기 ›</a>${''/* (임시 aisum-tmp) 첫 화면 임시 링크 aiTmp — 지울 때 이 a 하나 */}${pr.bundle ? `<div class="bar info">${ic('book')}<div><b>${pr.bundle.n}권 넘게 담으면 ${pr.bundle.pct ? pr.bundle.pct + '%' : won(pr.bundle.won)} 할인</b> — 장바구니에서 저절로</div></div>` : ''}${Lk.rows.map((k) => (R[k] ? R[k]() : '')).join('')}`;
-      FR.items = L.items.slice(0, rowN()); FR.at = Date.now(); freshArm(); imgArm($('#hc')); lazyRows($('#hc')); const rv = $('#hrv'); if (window.BQA && rv) window.BQA.home(rv); else if (rv) rv.remove(); }
+      $('#hc').innerHTML = `${closedBar(c)}<a class="aitmp-go" href="#/ai">✍ 임시 · 요약·추천글이 있는 책만 모아 보기 ›</a>${''/* (임시 aisum-tmp) 첫 화면 임시 링크 aiTmp — 지울 때 이 a 하나 */}${pr.bundle ? `<div class="bar info">${ic('book')}<div><b>${pr.bundle.n}권 넘게 담으면 ${pr.bundle.pct ? pr.bundle.pct + '%' : won(pr.bundle.won)} 할인</b> — 장바구니에서 저절로</div></div>` : ''}${Lk.rows.map((k) => (R[k] ? R[k]() : HS.secs[k] ? `<section class="sec" data-lazy="${k}"></section>` : '')).join('')}`;
+      FR.items = L.items.slice(0, rowCnt()); FR.at = Date.now(); freshArm(); rollArm($('#hc')); imgArm($('#hc')); lazyRows($('#hc')); const rv = $('#hrv'); if (window.BQA && rv) window.BQA.home(rv); else if (rv) rv.remove(); }
     catch (e) { if (!current() || !$('#hc')) return; $('#hc').innerHTML = errBox(e); bindAgain(() => { if (current()) home(); }); } }
 
   /* (shop2 · 정범님 11/13 19:42) 🗂 종류·분류 고르기 — 국내도서·외국도서·잡지·음반·LP·DVD·블루레이 → 알라딘 가장 작은 분류까지 한 칸씩(빵 부스러기 길 + 아래 칸 칩)
@@ -207,7 +261,7 @@
   window.addEventListener('popstate', () => { const s = $('.sheet'); if (s) { s._h = 0; sheetClose(); } });
   function sheetClose(now) { const s = $('.sheet'), d = $('.shd'); if (!s && !d) return; if (!now && s && s._h) { s._h = 0; try { if (history.state && history.state.bqSheet) { history.back(); return; } } catch (e) {} } document.body.style.overflow = ''; if (s && s._k) document.removeEventListener('keydown', s._k); if (now) { if (s) s.remove(); if (d) d.remove(); return; } if (s) s.classList.remove('on'); if (d) d.classList.remove('on'); setTimeout(() => { if (s) s.remove(); if (d) d.remove(); }, 260); }
   function listTitle(p0) { if (p0.q) return `‘${esc(p0.q)}’`; if (p0.cp) return esc(p0.cp.split('>').pop()); if (p0.c) return esc(p0.c); if (p0.bd) return esc((BDF.find((x) => x[0] === p0.bd) || [0, '책'])[1]); if (p0.sale) return '할인 중인 책'; if (p0.s === 'new') return '새로 들어온 책'; return '모든 책'; }
-  async function list(q) { const current = pageScope(); const p0 = { q: q.q || '', c: q.c || '', cp: q.cp || '', g: q.g || '', s: q.s || 'new', pr: q.pr || '', sale: q.sale || '', bd: q.bd || '' }; const rg = B.rangeOf(p0.pr); /* (11/11 shopc1) 값 범위·할인만·할인 많은 차례 */
+  async function list(q) { const current = pageScope(); const p0 = { q: q.q || '', c: q.c || '', cp: q.cp || '', g: q.g || '', s: q.s || 'new', pr: q.pr || '', sale: q.sale || '', bd: q.bd || '', xs: q.xs || '' }; const rg = B.rangeOf(p0.pr); /* (shoprow1) 세트 거름(xs)도 주소에서 읽음 — 전엔 빠져 「세트 빼고」가 안 먹었음 */ /* (11/11 shopc1) 값 범위·할인만·할인 많은 차례 */
     const nF = fltN(p0); bindSearch(); searchBox(p0.q);
     main().innerHTML = `<nav class="cnav" id="cnav" aria-label="종류·분류 고르기"></nav><div class="lhead"><h1>${listTitle(p0)}</h1><p id="lh" class="lh"></p></div>
       <div class="lst"><aside class="fpane" aria-label="거르기">${fltH(p0)}${nF ? `<p><a href="#/list?${B.qs({ q: p0.q, cp: p0.cp, s: p0.s })}" class="hint">거름 모두 풀기</a></p>` : ''}</aside><div class="lbody">
