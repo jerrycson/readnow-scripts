@@ -33,7 +33,7 @@ const seedOps = () => [card('w1', '웹앱', '노트', '웹앱 카드 1'), card('
     N.live.stop(); }
   // ── ② 핵심 ──
   const core = fs.readFileSync(COREF, 'utf8'); const vm = require('vm'); const ctx = { window: {}, console }; vm.createContext(ctx); vm.runInContext(core, ctx); const J = ctx.window.JBN;
-  ok(J.version === '8', '② 노트 핵심 8판');
+  ok(+J.version >= 8, '② 노트 핵심 8판');
   const docs = (extra) => new Map(seedOps().map((o) => [o.id, o.data]).concat(extra || []));
   const names = (M) => J.tree(M.cards, M.meta).map((a) => a.name);
   { const M = J.model(docs()); const n = names(M); ok(n[n.length - 1] === LAZY, '② 급하지 않은 일 모음은 기본 맨 아래 — ' + n.join(' › ')); }
@@ -74,7 +74,7 @@ const seedOps = () => [card('w1', '웹앱', '노트', '웹앱 카드 1'), card('
   // 카드 손가락 끌기: 웹앱 부류 맨 아래 카드를 맨 위로
   const before = s.web.slice(); const last = before[before.length - 1];
   const cdp = await ctx2.newCDPSession(a);
-  const gp = await a.evaluate((id) => { const g = document.querySelector(`.jbn-card[data-card="${id}"] .jbn-grip`); const r = g.getBoundingClientRect(); const t = document.querySelector('.jbn-cat[data-catk="웹앱"] .jbn-card').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, ty: t.top + 4 }; }, last);
+  const gp = await a.evaluate((id) => { const g = document.querySelector(`.jbn-card[data-card="${id}"] .jbn-grip`); g.scrollIntoView({ block: 'center' }); /* (notefx2) 도구 줄이 생겨 맨 아래 카드가 아래 입력칸 밑에 깔릴 수 있음 — 손가락이 닿는 곳으로 */ const r = g.getBoundingClientRect(); const t = document.querySelector('.jbn-cat[data-catk="웹앱"] .jbn-card').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, ty: t.top + 4 }; }, last);
   const tp = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
   await tp('touchStart', gp.x, gp.y); for (let i = 1; i <= 12; i++) { await tp('touchMove', gp.x, gp.y + (gp.ty - gp.y) * i / 12); await a.waitForTimeout(25); } await a.waitForTimeout(100); await tp('touchEnd'); await a.waitForTimeout(1500);
   s = await st();

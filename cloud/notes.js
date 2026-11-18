@@ -16,7 +16,7 @@ const COL = 'jb_notes';
 const KINDS = ['card', 'memo', 'batch', 'meta', 'slot', 'jbmemo']; // (note5 11/13) slot = 💾 저장1·2·3 칸(쓰던 글 draft) · jbmemo = 📝 내 메모(정범님 혼자 · 리드에게 안 감)
 const STATES = ['open', 'held', 'done', 'archived', 'trashed']; // held = ⏸ 보류(note4 11/13)
 const BST = ['sent', 'queued', 'picked', 'failed'];
-const STR = { cat: 40, sub: 60, leaf: 60, title: 300, src: 60, srcAt: 40, ref: 300, stateAt: 40, readAt: 40, cardId: 80, cardTitle: 300, quote: 2000, text: 20000, by: 40, at: 40, via: 20, status: 20, err: 400, pickedAt: 40, createdAt: 40, updatedAt: 40, editedAt: 40, color: 12, trashedAt: 40, folder: 60, leadSession: 120, draft: 20000, sentAt: 40, batchId: 80 }; // (note5) batchId — 예전엔 버려져 아티팩트에서 보낸 메모가 다음 전체 받기 때 '아직 안 보냄'으로 되돌아왔음
+const STR = { cat: 40, sub: 60, leaf: 60, title: 300, src: 60, srcAt: 40, ref: 300, stateAt: 40, readAt: 40, cardId: 80, cardTitle: 300, quote: 2000, text: 20000, by: 40, at: 40, via: 20, status: 20, err: 400, pickedAt: 40, createdAt: 40, updatedAt: 40, editedAt: 40, color: 12, trashedAt: 40, folder: 60, leadSession: 120, draft: 20000, sentAt: 40, batchId: 80, jbNote: 20000, jbNoteAt: 40, seenSig: 40 }; // (note5) batchId — 예전엔 버려져 아티팩트에서 보낸 메모가 다음 전체 받기 때 '아직 안 보냄'으로 되돌아왔음
 const BODY_MAX = 200000;
 const s = (x, n) => (x == null ? '' : String(x).slice(0, n));
 const nowIso = () => new Date().toISOString();
@@ -26,10 +26,10 @@ const idOk = (id) => /^[A-Za-z0-9_.:@+-]{1,120}$/.test(String(id || '')) && !/^\
 function clean(d, isMeta) {
   const o = {}; if (!d || typeof d !== 'object' || Array.isArray(d)) return { o, bad: '모양' };
   for (const [k, v] of Object.entries(d)) {
-    const textLimit = k === 'body' ? BODY_MAX : (k === 'text' || k === 'draft' || k === 'quote') ? STR[k] : 0;
+    const textLimit = k === 'body' ? BODY_MAX : (k === 'text' || k === 'draft' || k === 'quote' || k === 'jbNote') ? STR[k] : 0;
     if (textLimit && v != null && String(v).length > textLimit) return { o: {}, bad: '길이 초과:' + k };
 
-    if (v === null) { if (k === 'body' || STR[k] || ['kind', 'state', 'imp', 'ord', 'tags', 'memoIds', 'pinned', 'archived', 'trashed', 'fwd'].includes(k)) o[k] = null; continue; }
+    if (v === null) { if (k === 'body' || STR[k] || ['kind', 'state', 'imp', 'ord', 'tags', 'memoIds', 'pinned', 'archived', 'trashed', 'fwd', 'hls', 'jbTags', 'intent'].includes(k)) o[k] = null; continue; }
     if (k === 'body') { o.body = s(v, BODY_MAX); continue; }
     if (STR[k]) { o[k] = s(v, STR[k]); continue; }
     if (k === 'kind') { if (KINDS.includes(v)) o.kind = v; continue; }
@@ -44,6 +44,10 @@ function clean(d, isMeta) {
     if (k === 'imp') { const n = Math.round(+v); if (n >= 1 && n <= 3) o.imp = n; continue; }
     if (k === 'tags' || k === 'memoIds') { if (Array.isArray(v)) o[k] = v.map((x) => s(x, 80)).filter(Boolean).slice(0, k === 'tags' ? 12 : 300); continue; }
     if (k === 'pinned' || k === 'archived' || k === 'trashed' || k === 'fwd') { o[k] = !!v; continue; }
+    // (notefx2 · 정범님 11/18) 노트 관리 칸 — 정범님만 쓰는 칸(note-post가 카드를 다시 올려도 merge라 그대로)
+    if (k === 'jbTags') { if (Array.isArray(v)) o.jbTags = v.filter((x) => typeof x === 'string').map((x) => s(x, 30).trim()).filter(Boolean).slice(0, 12); continue; } // 🏷 내 태그(리드 tags와 따로)
+    if (k === 'intent') { if (v === 'ask' || v === 'todo') o.intent = v; continue; } // 메모 종류 ❓ 리드에게 묻기 · 📌 할 일로
+    if (k === 'hls') { if (Array.isArray(v)) { const H = []; for (const h of v.slice(-300)) { if (!h || typeof h !== 'object') continue; const q = s(h.q, 500).trim(); if (!q) continue; const e = { q, c: ['y', 'g', 'b', 'p', 'r'].includes(h.c) ? h.c : 'y', at: s(h.at, 40) }; if (h.off === true) { e.off = true; if (h.offAt) e.offAt = s(h.offAt, 40); } H.push(e); } o.hls = H; } continue; } // 🖍 하이라이트 [{q 글, c 색, at, off 뺌(지우지 않음)}]
     if (isMeta && k === 'imported' && Array.isArray(v)) { o.imported = v.map((x) => s(x, 120)).slice(0, 500); continue; }
     if (isMeta && k === 'catOrd' && Array.isArray(v)) { o.catOrd = v.map((x) => s(x, 80)).filter(Boolean).slice(0, 80); continue; } // (notefx1 · 정범님 11/18) 부류 끌어 바꾼 차례
     if (isMeta && k === 'uiCatOpen' && v && typeof v === 'object' && !Array.isArray(v)) { const m = {}; for (const [a, b] of Object.entries(v).slice(0, 300)) { const kk = s(a, 160); if (kk) m[kk] = !!b; } o.uiCatOpen = m; continue; } // 부류·묶음 펼침 기억
