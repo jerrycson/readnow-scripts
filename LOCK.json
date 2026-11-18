@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bkfold3",
-   "why": "판 내기 기다림: 판 내기: bkfold3 묶음 폴더 24.3~24.7·27(1.78.744)",
-   "first": "2026-11-18T14:42:51Z",
-   "at": "2026-11-18T15:44:50Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-ctrlimp1",
    "why": "판 내기 기다림: 판 내기: ctrlimp1 🗼 관제창 판 가·나 (bkfold3 판 뒤)",
    "first": "2026-11-18T15:03:03Z",
@@ -31,16 +24,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bkfold3",
-  "why": "판 내기 기다림: 판 내기: bkfold3 묶음 폴더 24.3~24.7·27(1.78.744)",
-  "at": "2026-11-18T15:44:50Z",
-  "first": "2026-11-18T14:42:51Z"
+  "host": "vm-ctrlimp1",
+  "why": "판 내기 기다림: 판 내기: ctrlimp1 🗼 관제창 판 가·나 (bkfold3 판 뒤)",
+  "at": "2026-11-18T15:45:20Z",
+  "first": "2026-11-18T15:03:03Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bkfold3",
+ "what": "판 내기: bkfold3 묶음 폴더 24.3~24.7·27",
+ "since": "2026-11-18T15:45:30Z",
+ "beat": "2026-11-18T15:45:30Z",
  "last": {
   "who": "lead",
   "done": "engtab1 · 웹앱 1.78.746 연구 탭 💲 가격 판정 엔진 b3f51a95d",
