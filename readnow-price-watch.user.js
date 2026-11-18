@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.60
+// @version      0.10.61
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -622,7 +622,7 @@
     const L = [gOf(wg)]; const ob = prevD && prevD.approval && prevD.approval.batchId ? String(prevD.approval.batchId) : null; if (ob && ob !== String(wg.id) && WGm && WGm.get(ob) && prevD.approvalState !== 'done') L.push(gOf(WGm.get(ob)));
     const X = {}; /* (판 카 · 정범님 I-1118-2344-32) 📌 상품 개별(_bkfc per[상품].chase) > 그룹 > 조건 묶음 > 📁 묶음 기본(_bkfold folds[].ctrl.def.chase) > 전체 — 판단은 엔진 stratFor 한 곳 */
     try { const pc = key && BKC && BKC.per && BKC.per[key] ? BKC.per[key].chase : null; if (pc === 'off') X.item = 'off'; else if (pc && typeof pc === 'object' && pc.name) X.item = pc; else if (typeof pc === 'string' && pc) X.item = { name: pc };
-      const FO = BKF && BKF.folds ? BKF.folds : null; const ids = L.map((g) => String(g.id)); if (FO) for (const fid of (Array.isArray(BKF.order) ? BKF.order : []).filter((x) => FO[x]).concat(Object.keys(FO).filter((x) => !(BKF.order || []).includes(x)))) { const f = FO[fid]; if (!f || f.archived) continue; const gids = (f.gids || []).map(String); if (!ids.some((i) => gids.includes(i))) continue; X.fold = { id: fid, name: f.name || fid, gids, chase: f.ctrl && f.ctrl.def && f.ctrl.def.chase ? (typeof f.ctrl.def.chase === 'string' ? { name: f.ctrl.def.chase } : f.ctrl.def.chase) : null }; break; } } catch (e) {}
+      const FO = BKF && BKF.folds ? BKF.folds : null; const ids = L.map((g) => String(g.id)); if (FO) for (const fid of (Array.isArray(BKF.order) ? BKF.order : []).filter((x) => FO[x]).concat(Object.keys(FO).filter((x) => !(BKF.order || []).includes(x)))) { const f = FO[fid]; if (!f || f.archived) continue; const gids = (f.gids || []).map(String); if (!ids.some((i) => gids.includes(i))) continue; X.fold = { id: fid, name: f.name || fid, gids, chase: (() => { const cc = ((BKF.ctl || {})[fid] || f.ctrl || {}).def || {}; const c = cc.chase; return c ? (typeof c === 'string' ? { name: c } : c.name ? { name: String(c.name) } : null) : null; })() }; /* (판 타) _bkfold ctl[fid] 먼저 · 옛 자리 folds[].ctrl */ break; } } catch (e) {}
     return CH.stratFor({ global: SET.autoChase || null, groups: L, ...X }); }
   async function chaseFor(key, bookId, now, detect) { try { const S0 = { chase: { ...PR.DEFAULTS.chase, ...((SET.engine || {}).chase || {}), ...(detect || {}) } }; const since = Date.now() - (S0.chase.releaseDays || 30) * 864e5;
       const [qa, qc] = await Promise.all([C('prd_price_actions').where('key', '==', key).get(), bookId ? C('prd_metric_changes').where('bookId', '==', bookId).get() : Promise.resolve({ docs: [] })]);
