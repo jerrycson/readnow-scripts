@@ -4,6 +4,7 @@
 //   ② 새 매물 차례 쪽을 못 읽어도 예전 길(허브 첫 화면)로 찾음
 //   ③ 처음 ⚙ vfFastH시간(기본 2)은 ⚙ vfMin분(기본 3)마다 · 그 뒤엔 10분마다 · 설정 값을 따름
 //   ④ 찾는 동안 상태 글 = 「🔎 확인 중」(새로 맡기지 않음 · 확인 필요 줄은 다시 후보 아님) · 그 시간이 지나도 못 찾으면 그때 「⛔ 멈춤 … 사람 확인」
+//   ⑥ (y24vf2) 번외가 멈춤을 쓰기 직전 클라우드가 줄을 찾아 멈춤만 남은 경우 — 다음 차례에 저절로 풂
 //   ⑤ 웹앱 y24RegCfg가 vfMin·vfFastH를 받아 범위로 자름 · ⚙ 화면에 칸
 // 실행: node src/tests/tY24VF1118.js · 지어낸 자료(손님 정보 없음) · 실제 Firebase·예스24에 아무것도 안 함
 const fs = require('fs'); const path = require('path');
@@ -67,6 +68,15 @@ const cheap = (n, from) => Array.from({ length: n }, (_, i) => li(String(2020000
     S.tick(2 * 3600e3); const y2 = await S.Y.step('HOME', yOf()); ok(/^⛔ 멈춤/.test(y2.why) && /2시간 동안 공개 화면에서 못 찾음 — 사람 확인/.test(y2.why) && S.led().auto.stop, '2시간 뒤 못 찾음 → 그때 사람 확인 멈춤', y2.why); }
   { const S = await mk({ r: { [LID]: row({ st: 'autofail', unsure: null }) }, auto: { stop: { why: '올리기 전 오류', state: 'fail', job: JOB, at: '2026-11-18T09:04:34Z' } } }, {});
     const y = await S.Y.step('HOME', yOf()); ok(/^⛔ 멈춤 — 올리기 전 오류$/.test(y.why), '다른 까닭 멈춤(fail)은 예전 글 그대로', y.why); }
+
+  console.log('⑥ (y24vf2) 줄은 이미 올라감 확인됐는데 멈춤만 남은 경우 — 다음 차례에 저절로 풂 · 안 끝난 줄이 있으면 안 풂');
+  { const S = await mk({ r: { [LID]: row({ unsure: null, ok: 1, gno: GNO, okBy: '🤖 클라우드 확인' }) }, auto: { stop: stopU } }, {});
+    const y = await S.Y.step('HOME', yOf()); ok(S.led().auto.stop === null && S.led().auto.vf.freed.job === JOB && S.led().auto.vf.freed.late === 1, '확인된 묶음 멈춤 풂 · vf.freed(late)', S.led().auto);
+    ok(!/멈춤|확인 중/.test(y.why) && S.got.length === 0 && !(y.jobs || []).some((j) => (j.rows || []).some((r) => r.lid === LID)), '공개 화면을 더 안 읽고 이어 감 · 그 책 다시 안 맡김', { why: y.why, got: S.got }); }
+  { const S = await mk({ r: { [LID]: row({ unsure: null, ok: 1, gno: GNO }), [LID2]: row({ lid: LID2, unsure: null, skus: ['TSTa0002EX'] }) }, auto: { stop: stopU } }, {});
+    await S.Y.step('HOME', yOf()); ok(!!S.led().auto.stop, '같은 묶음에 확인 안 된 올린 줄이 있으면 안 풂', S.led().auto); }
+  { const S = await mk({ r: { [LID]: row({ st: 'autofail', unsure: null }) }, auto: { stop: { ...stopU, state: 'fail' } } }, {});
+    await S.Y.step('HOME', yOf()); ok(!!S.led().auto.stop, '다른 까닭 멈춤(fail)은 안 풂', S.led().auto); }
 
   console.log('⑤ 웹앱 설정');
   { const h = rd('src/app.html'); const s = h.indexOf('const Y24R_DEF'); const e = h.indexOf('\nfunction y24RegCfg', s); const f = h.indexOf('\n', h.indexOf('return c; }', e));
