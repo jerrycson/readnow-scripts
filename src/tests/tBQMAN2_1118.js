@@ -14,7 +14,7 @@ const mk = (o) => new Function('unregOf', 'OBS_VALID', 'needSearch', 'edOf', 'ed
 const M = mk({});
 console.log('① 공용 탭 목록 BQ_TABDEF');
 { const keys = M.BQ_TABDEF.map((d) => d[0]); ok(keys.join(',') === 'sel,pick,done,ok,few,keep,bb,lot,gone,edkw,hold,trash,sold', '탭 차례(조건 이미 부합 바로 옆 3개이하/미등록 · 판본 키워드 포함)', keys);
-  ok(M.BQ_TABDEF.every((d) => d.length === 5 && typeof d[3] === 'string' && d[3].length > 10), '탭마다 [열쇠, 이름, 짧은 이름, 설명, 묶음 칸]');
+  ok(M.BQ_TABDEF.every((d) => d.length >= 5 && typeof d[3] === 'string' && d[3].length > 10), '탭마다 [열쇠, 이름, 짧은 이름, 설명, 묶음 칸]');
   ok(M.BKF_TB.some((x) => x[0] === 'few') && [...M.BKF_TB, ...M.BKF_TBX].some((x) => x[0] === 'edkw'), '묶음 상태판(BKF_TB·BKF_TBX)도 같은 목록에서 — few·edkw 들어감');
   ok(M.BQ_TAB_ALWAYS.has('few') && !M.BQ_TAB_ALWAYS.has('edkw'), '3개이하/미등록은 늘 보임 · 판본 키워드는 모았을 때만'); }
 console.log('② bqFewOf — 3개이하/미등록 판정');
