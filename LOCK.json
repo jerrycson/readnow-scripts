@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "판 버 판매자 관찰 ② 웹앱 1.78.766 (ctrlimp3)",
- "since": "2026-11-18T22:20:31Z",
- "beat": "2026-11-18T22:20:31Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판 러 1.78.765 냄 (ctrlimp3)",
-  "at": "2026-11-18T21:58:38Z"
+  "done": "판 버 1.78.766 냄 (ctrlimp3)",
+  "at": "2026-11-18T22:20:58Z"
  }
 }
