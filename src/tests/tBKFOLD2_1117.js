@@ -46,7 +46,7 @@ console.log('① 순수 셈');
     ok(O.n === 2 && O.total === 5 && O.pairs.get('0|1') === 2 && O.pairs.get('0|2') === 1 && O.pairs.get('1|2') === 1 && O.dup.get('k3').length === 3, '겹침 셈 = 두 그룹 이상에 든 상품 수 · 쌍마다 수', [O.n, O.total, [...O.pairs]]);
     ok(F.bkfOverlap([{ keys: ['a', 'a'] }]).n === 0, '한 그룹 안의 같은 열쇠는 겹침 아님');
     ok(F.bkfSig([{ id: 'a', cond: { x: 1 }, trashed: { k: 1 } }]) !== F.bkfSig([{ id: 'a', cond: { x: 1 }, trashed: {} }]) && F.bkfSig([{ id: 'a', held: {} }]) !== F.bkfSig([{ id: 'a', held: { k: 1 } }]), '조건·휴지통·보류가 바뀌면 셈이 낡음'); }
-  const io = cut('/* ◆bkfold-io 시작', '/* ◆bkfold-io 끝 */');
+  const bkf3 = (t) => t.replace(/\/\* ◆bkf3 시작[\s\S]*?\/\* ◆bkf3 끝 \*\//g, ''); /* (11/18 bkfold3) 정범님 24.5·24.6 — 「한꺼번에」·재분류는 가격을 씀 · tBKFOLD3_1118이 봄 */ const io = bkf3(cut('/* ◆bkfold-io 시작', '/* ◆bkfold-io 끝 */'));
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(io) && !/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/.test(io), '새 코드에 브라우저 창·휴대전화 번호 꼴 없음');
   ok(!/prd_price_decisions|batchApply|approvalState|applyPrice/.test(io), '묶음 코드는 가격 결정 문서를 건드리지 않음(가격을 바꾸는 코드 0줄)');
   const names = ['bkfTx', 'bkfLine', 'bkfBind', 'bkfScan', 'bkfKick', 'bkfMembers', 'bkfPut', 'bkfCopyGroup', 'openBkfold', 'bkfPaint', 'bkfMenu', 'bkfGMenu', 'bkfBand', 'batchArchive', 'bkfNorm', 'bkfApply', 'bkfOverlap'];

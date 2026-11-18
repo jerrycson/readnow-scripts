@@ -8,11 +8,11 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b, i); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
 console.log('① 글');
-{ const NEW = cut('/* ◆bqsold (판 ⑤', '/* ◆bqsold 끝 */');
+{ const NEW0 = cut('/* ◆bqsold (판 ⑤', '/* ◆bqsold 끝 */'); const ti = NEW0.indexOf('/* ◆bkftb'), tj = NEW0.indexOf('/* 🧭 그룹 화면 머리의 묶음 길잡이'); const NEW = ti >= 0 && tj > ti ? NEW0.slice(0, ti) + NEW0.slice(tj) : NEW0; /* (11/18 bkfold3) 📊 탭 표의 안쪽 창·한꺼번에는 가격을 씀 — tBKFOLD3_1118이 봄 */
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(NEW), '새 코드에 브라우저 창(alert·confirm·prompt) 없음');
   ok(!/prd_price_decisions/.test(NEW) && !/batchSave\(|\.set\(|\.update\(/.test(NEW), '새 덩어리는 서버에 쓰지 않음(읽기만 · 가격 결정 문서 손대지 않음)');
   ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(NEW), '전화번호 모양 없음');
-  const names = ['bqBaseAt', 'BQS_CH', 'bqSoldOf', 'bqSoldList', 'bqCls', 'bqSoldHtml', 'BKF_TB', 'BKF_TBX', 'BKF_TBQ', 'BKF_tbBusy', 'bkfTbSig', 'bkfTbSum', 'bkfTbKick', 'bkfTbHtml', 'bkfTbPaint', 'bkfTbClick', 'bkfNavHtml', 'bkfBbIdx'];
+  const names = ['bqBaseAt', 'BQS_CH', 'bqSoldOf', 'bqSoldList', 'bqCls', 'bqSoldHtml', 'BKF_TBQ', 'BKF_tbBusy', 'bkfTbSig', 'bkfTbSum', 'bkfTbKick', 'bkfTbHtml', 'bkfTbPaint', 'bkfTbClick', 'bkfNavHtml', 'bkfBbIdx'];
   const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 파일 전체에서 한 번만 선언`, dup);
   const calls = (T.match(/bhSendL\([^)]*?\{ k: [^}]*\}[^;]*?\)/g) || []); ok(/async function bhSendL\(ls, src, xOf, skuOf, opt\)/.test(T) && /return bhSend\(recs, src, opt\); \}/.test(T), 'bhSendL에 다섯째 칸(opt)만 더함 — 옛 네 곳은 그대로(opt 없음 = 예전과 같음)', calls.length);
   ok(/X\.info\[g\.id\] = \{ keys: C\.R\.filter\(\(x\) => !x\.sold\)\.map\(C\.keyOf\) \}/.test(T), '📈 지표 모두 갱신은 생성후판매완료 상품을 뺌');
@@ -65,12 +65,13 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   /* ⓓ 묶음 화면 — 상태판 */
   await p.evaluate(async (fid) => { history.back(); await new Promise((r) => setTimeout(r, 300)); openBkfold(fid); }, fid);
   const tb = await until(() => { const c = S._bkfTb || {}; if (!(c.gA && c.gA.n && c.gC && c.gC.n)) return null; const el = document.getElementById('bkf_tb'); if (!el || !el.querySelector('[data-bkftbr="gA"] [data-bkftb]')) return null;
-    return { gA: c.gA.n, gC: c.gC.n, gD: !!c.gD, off: !!el.querySelector('[data-bkftbon="gD"]'), arch: (el.querySelector('[data-bkftbr="gZ"]') || {}).textContent || '', tot: !!el.querySelector('.bkf-tbt') }; }, 200);
-  ok(tb && tb.tot && tb.off && !tb.gD && /보관/.test(tb.arch), '상태판: 켜진 그룹은 저절로 셈 · 꺼진 그룹은 「누르면 계산」 · 보관 그룹은 셈에서 뺌 · 합계 줄', tb);
-  if (tb) { await p.locator('[data-bkftbon="gD"]').click(); const d = await until(() => (S._bkfTb || {}).gD && S._bkfTb.gD.n ? S._bkfTb.gD.n : null, 120); ok(!!d, '꺼진 그룹을 누르면 그 그룹만 셈', d); }
+    return { gA: c.gA.n, gC: c.gC.n, gD: !!(c.gD && c.gD.n), off: !!el.querySelector('[data-bkftbr="gD"] [data-bkftb]'), arch: (el.querySelector('[data-bkftbr="gZ"]') || {}).textContent || '', tot: !!el.querySelector('.bkf-tbt') }; }, 200);
+  ok(tb && tb.tot && /보관/.test(tb.arch), '상태판: 보관 그룹은 셈에서 뺌 · 합계 줄', tb);
+  { const d = await until(() => (S._bkfTb || {}).gD && S._bkfTb.gD.n && document.querySelector('[data-bkftbr="gD"] [data-bkftb]') ? S._bkfTb.gD.n : null, 200); ok(!!d, '(11/18 바뀜) 꺼진 그룹도 저절로 셈 · 칸이 모두 눌림', d); }
   /* 칸 누름 → 그 그룹 그 탭 · 상태판 수 = 탭 수 */
   const pick = await p.evaluate(() => { const n = S._bkfTb.gC.n; const k = ['sel', 'ok', 'keep', 'bb'].find((x) => n[x] > 0) || 'sel'; return { k, n }; });
-  await p.locator(`[data-bkftb="gC"][data-bkftbt="${pick.k}"]`).click();
+  await p.locator(`[data-bkftb="gC"][data-bkftbt="${pick.k}"]`).click(); /* 11/18: 칸 = 안쪽 창 · 「그룹 화면에서 열기 ↗」로 그룹 화면 */
+  ok(!!(await until(() => !!document.querySelector('#bkf_pop [data-bkfpo]'), 60)), '칸을 누르면 안쪽 창이 열림(그룹 화면으로 바로 가지 않음)'); await p.locator('#bkf_pop [data-bkfpo]').click();
   const g1 = await until(() => { if (S.batchId !== 'gC' || !Array.isArray(S.batchRes) || !document.querySelector('#b_res [data-btab]')) return null; const tb = {}; document.querySelectorAll('#b_res [data-btab]').forEach((b) => (tb[b.dataset.btab] = +((b.querySelector('b') || {}).textContent || -1))); return { T: S.batchT, tb, from: S.bkfFrom, nav: !!document.querySelector('[data-bkfnav]') }; }, 160);
   const same = g1 && ['sel', 'pick', 'done', 'ok', 'keep', 'bb', 'sold'].every((k) => (pick.n[k] || 0) === (g1.tb[k] || 0)); /* 0개 탭은 머리에 안 보일 수 있음 */
   ok(g1 && g1.T === pick.k && g1.from && g1.from.fid === fid && g1.nav, `칸을 누르면 그 그룹의 그 탭(${pick.k}) · 묶음 길잡이 보임`, g1);

@@ -20,7 +20,7 @@ console.log('① 순수 셈');
   const ex = cut('/* ◆bqexec 시작', '/* ◆bqexec 끝 */'); const E = new Function('const db = null, S = {}; ' + ex.replace(/async function bqCtx[\s\S]*$/, '') + '\nreturn { bMetProg, bMetCoolLeft };')();
   const P = E.bMetProg({ status: 'running', keys: ['a', 'b', 'c'], doneN: 5, ok: 2, fail: 1 }); ok(P.tot === 3 && P.i === 3 && P.ok === 2 && P.fail === 1, '지표 진행 숫자(넘치지 않음 · 그룹 화면 띠와 같은 셈)', P);
   ok(E.bMetCoolLeft({ lastMetricsReqAt: new Date(Date.now() - 3600e3).toISOString() }) > 22 * 3600e3 && E.bMetCoolLeft({ lastMetricsReqAt: new Date(Date.now() - 25 * 3600e3).toISOString() }) <= 0 && E.bMetCoolLeft({}) === 0, '24시간 남은 때');
-  const io = cut('/* ── (판 ④ bkfold1) 📁 묶음 실행기', '/* ◆bkfold-io 끝 */'); const NEW = ex + blk + io;
+  const bkf3 = (t) => t.replace(/\/\* ◆bkf3 시작[\s\S]*?\/\* ◆bkf3 끝 \*\//g, ''); /* (11/18 bkfold3) 정범님 24.5·24.6 — 「한꺼번에」·재분류는 가격을 씀 · tBKFOLD3_1118이 봄 */ const io = bkf3(cut('/* ── (판 ④ bkfold1) 📁 묶음 실행기', '/* ◆bkfold-io 끝 */')); const NEW = ex + blk + io;
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(NEW), '새 코드에 브라우저 창(alert·confirm·prompt) 없음 — 웹앱 확인 창 ask만');
   ok(!/prd_price_decisions'\)\.(doc|add)\(/.test(NEW) && (NEW.match(/collection\('prd_price_decisions'\)/g) || []).length === 1 && /collection\('prd_price_decisions'\)\.where\(/.test(NEW), '가격 결정 문서는 읽기 한 곳만(쓰기 0)');
   ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(NEW), '전화번호 모양 없음');
@@ -62,7 +62,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(scrDoc && scrDoc.type === 'metrics' && scrDoc.label === '그룹: 그룹 다' && !('foldId' in scrDoc), '그룹 화면 📈 단추가 같은 함수(bMetricsSend)로 맡김 — 묶음 표식 없음', scrDoc);
   await p.evaluate(async (fid) => { history.back(); await new Promise((r) => setTimeout(r, 300)); openBkfold(fid); await new Promise((r) => setTimeout(r, 300)); }, fid);
   const act = await until(() => { const a = document.querySelector('#bkf_scr #bkf_act'); return a && a.querySelectorAll('[data-bkfrun]').length >= 5 ? /* (판 ⑤) 🏷 매입가 하한 단추가 더해져 여섯 */ a.textContent : null; }, 60);
-  ok(act && /가격은 바꾸지 않습니다/.test(act) && /켜진 그룹 \d\/4/.test(act) && /매일 자동 지표 0\/4/.test(act), '묶음 화면 「▶ 한꺼번에」 = 단추 다섯 · 켜진·꺼진·매일 자동 수 · 가격은 안 바꾼다는 말', (act || '').slice(0, 200));
+  ok(act && /가격을 바꾸지 않습니다/.test(act) && /켜진 그룹 \d\/4/.test(act) && /매일 자동 지표 0\/4/.test(act), '묶음 화면 「▶ 한꺼번에」 = 단추 다섯 · 켜진·꺼진·매일 자동 수 · 가격은 안 바꾼다는 말', (act || '').slice(0, 200));
   /* ⓑ 취소하면 쓰기 0 */
   let w0 = await nW(); await p.evaluate(() => { window.__ANS = false; }); let r = await run('metrics');
   ok((await nW()) === w0 && r.ak.length === 1, '확인 창에서 취소 → 쓰기 0', { w: (await nW()) - w0, r });
