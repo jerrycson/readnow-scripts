@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "bunoe4",
-   "why": "판 내기 기다림: bunoe4 번외 판",
-   "first": "2026-11-17T22:39:59Z",
-   "at": "2026-11-17T23:32:20Z"
-  },
-  {
-   "who": "lead",
    "host": "shipqB-watch1",
    "why": "판 내기 기다림: 판 내기 기다림: watch1 감시 묶음(shipqB)",
    "first": "2026-11-17T22:40:07Z",
@@ -19,7 +12,7 @@
    "host": "shipqB-fbchk2",
    "why": "판 내기 기다림: 판 내기 기다림: fbchk2 연구 DB 지우기 막음 진단(shipqB)",
    "first": "2026-11-17T22:40:11Z",
-   "at": "2026-11-18T00:01:22Z"
+   "at": "2026-11-18T00:02:26Z"
   },
   {
    "who": "lead",
@@ -66,10 +59,10 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "bunoe4",
-  "why": "판 내기 기다림: bunoe4 번외 판",
-  "at": "2026-11-17T23:32:20Z",
-  "first": "2026-11-17T22:39:59Z"
+  "host": "shipqB-watch1",
+  "why": "판 내기 기다림: 판 내기 기다림: watch1 감시 묶음(shipqB)",
+  "at": "2026-11-18T00:01:51Z",
+  "first": "2026-11-17T22:40:07Z"
  },
  "holder": null,
  "host": null,
