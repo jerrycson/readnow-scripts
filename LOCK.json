@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-edkw2",
-   "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
-   "first": "2026-11-17T22:40:29Z",
-   "at": "2026-11-18T00:21:05Z"
-  },
-  {
-   "who": "lead",
    "host": "shipqB-spine4",
    "why": "판 내기 기다림: 판 내기 기다림: spine4 사진 책등(shipqB)",
    "first": "2026-11-17T22:40:31Z",
@@ -45,10 +38,10 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-edkw2",
-  "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
-  "at": "2026-11-18T00:21:05Z",
-  "first": "2026-11-17T22:40:29Z"
+  "host": "shipqB-spine4",
+  "why": "판 내기 기다림: 판 내기 기다림: spine4 사진 책등(shipqB)",
+  "at": "2026-11-18T00:21:19Z",
+  "first": "2026-11-17T22:40:31Z"
  },
  "holder": "lead",
  "host": "shipqB-y24all1",
