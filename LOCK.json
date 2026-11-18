@@ -1,13 +1,6 @@
 {
  "queue": [
   {
-   "who": "lead",
-   "host": "vm-ctrlimp1",
-   "why": "판 내기 기다림: 판 내기: ctrlimp1 🗼 관제창 판 가·나",
-   "first": "2026-11-18T15:03:03Z",
-   "at": "2026-11-18T15:57:03Z"
-  },
-  {
    "who": "engloop1",
    "host": "vm-engloop1",
    "why": "판 내기 기다림: 엔진·연구 자율 운영",
@@ -30,17 +23,17 @@
   }
  ],
  "ask": {
-  "who": "lead",
-  "host": "vm-ctrlimp1",
-  "why": "판 내기 기다림: 판 내기: ctrlimp1 🗼 관제창 판 가·나",
-  "at": "2026-11-18T15:57:03Z",
-  "first": "2026-11-18T15:03:03Z"
+  "who": "engloop1",
+  "host": "vm-engloop1",
+  "why": "판 내기 기다림: 엔진·연구 자율 운영",
+  "at": "2026-11-18T15:57:42Z",
+  "first": "2026-11-18T15:25:16Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-ctrlimp1",
+ "what": "판 내기: ctrlimp1 🗼 관제창 판 가·나",
+ "since": "2026-11-18T15:58:05Z",
+ "beat": "2026-11-18T15:58:05Z",
  "last": {
   "who": "lead",
   "done": "bkfold3 · 웹앱 1.78.747 묶음 폴더 24.3~24.7·27 d9c268ab4",
