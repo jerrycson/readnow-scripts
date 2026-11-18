@@ -73,8 +73,8 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await shot(p, '1_수동일괄_한눈에', '#sheet .bqc');
   /* 누르면 잠기고 줄은 펼쳐지지 않음 */
   const k0 = await p.evaluate(() => { const b = document.querySelector('#sheet .bqc [data-plk]'); const k = b.dataset.plk; b.click(); return k; }); await p.waitForTimeout(500);
-  const af = await p.evaluate((k) => ({ on: !!(plkMap().get(k) || {}).on, open: !!(S.bqOpen && S.bqOpen.has(k)), btn: (document.querySelector(`#sheet .bqc [data-plk="${k}"]`) || {}).textContent || '' }), k0);
-  ok(af.on && !af.open && /🔒/.test(af.btn), '한눈에 줄의 단추를 누르면 잠김 · 줄은 안 펼쳐짐', af);
+  const af = await p.evaluate((k) => ({ on: !!(plkMap().get(k) || {}).on, open: !!(S.bqOpen && S.bqOpen.has(k)), btn: (document.querySelector(`#sheet .bqc [data-plk="${k}"]`) || {}).textContent || '', bout: !!document.querySelector('#sheet .plk-bout') }), k0);
+  ok(af.on && !af.open && (/🔒/.test(af.btn) || (!af.btn && af.bout)), '한눈에 줄의 단추를 누르면 잠김 · 줄은 안 펼쳐짐(판 ② — 잠근 상품은 그 그룹에서 빠지고 「서랍에서 되돌리기」)', af);
   await shot(p, '2_수동일괄_한눈에_잠금', '#sheet .bqc');
   /* 📚 상품 전체 표 — 작은 단추 */
   await p.evaluate(async () => { openProdAll(); await new Promise((r) => setTimeout(r, 900)); });
