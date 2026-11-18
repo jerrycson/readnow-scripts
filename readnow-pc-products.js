@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.358의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.359의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.358' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.358', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.359' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.359', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2566,12 +2566,25 @@
   async function benchBook(id) { if (benchBookMem.has(id)) return benchBookMem.get(id); const ref = C('bench_books').doc(String(id)); let b = (await ref.get().catch(() => null)); b = b && b.exists ? b.data() : null;
     if (!b) { try { const m = (await C('prd_ids').doc('itemId_' + id).get()).data(); if (m && m.bookId) { const k = (await C('prd_books').doc(String(m.bookId)).get()).data(); if (k) { const c0 = (k.categories || [])[0]; b = { full: true, bookId: String(m.bookId), id: String(id), isbn: k.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: k.pubDate ? String(k.pubDate).slice(0, 7) : null, src: 'ours', at: nowIso() }; } } } catch (e) {} }
     if (b && !b.full && b.src === 'page') b = null; /* (1.53.1) 예전(1.53.0)엔 세 가지만 저장 → 상품 페이지 정보 전부로 다시 읽음 */
+    if (b && b.saved && !b.isbn) await benchIsbnHeal(ref, b); /* (tether1 11/18) 예전 파서가 중고 화면에서 ISBN을 못 뽑은 것 — 저장된 화면 정보(표지 이름)로만 되살림 · 화면 다시 안 받음 */
     if (!b) { const g = await pubProd(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); const pg = P.parseProductPage(g.doc, g.finalUrl); const c0 = (pg.categories || [])[0]; const pd = pg.pubDate || null;
       /* (1.53.1) 상품 페이지에서 읽은 것 전부(우리 책 도서 정보와 같은 파서 · 같은 칸 이름) — 한 번 저장하면 덮어쓰지 않고 영원히 보관 · 판매자끼리 같이 씀 */
       const page = JSON.parse(JSON.stringify(pg, (k, v) => (v === undefined ? null : v))); b = { id: String(id), isbn: pg.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: pd ? String(pd).replace(/[./]/g, '-').slice(0, 7) : null, title: pg.title || null, page, full: true, src: 'page', at: nowIso() }; }
     if (b && !b.isbn && !b.cat && !b.pubYm) { benchBookMem.set(id, null); return null; } /* 아무것도 못 읽었으면 저장하지 않음(다음에 다시 시도) */
     if (b && b.src && !b.saved) { try { await ref.set({ ...b, saved: true, ...W() }, { merge: true }); } catch (e) { try { const { page, ...rest } = b; await ref.set({ ...rest, pageJ: JSON.stringify(page || null).slice(0, 200000), saved: true, ...W() }, { merge: true }); } catch (e2) {} } b.saved = true; } /* 중첩 목록 등으로 거절되면 글자(JSON)로 */
     benchBookMem.set(id, b); if (benchBookMem.size > 20000) benchBookMem.clear(); return b; }
+  /* (tether1 11/18) 🔢 저장된 상품 화면 정보에서 ISBN 되살리기 — 11/17까지 벤치마킹 상세 읽기는 판매자 중고 상품 번호로 중고 화면을 열어(그 화면엔 기본 정보 ISBN 줄·books:isbn이 없음) ISBN이 늘 비었음(12곳 0) ·
+   *  알라딘을 다시 열지 않고(테더링 0) 표지 그림 이름이 ISBN인 것만(검사 숫자 맞음 · K코드는 못 되살림) bench_books에 isbn·isbnFrom을 더함(있던 칸은 그대로 · 지우지 않음) */
+  async function benchIsbnHeal(ref, b) { if (!b || b.isbn || !P.isbnFromPage) return null; let pg = b.page; if (!pg && b.pageJ) { try { pg = JSON.parse(b.pageJ); } catch (e) { pg = null; } } const isbn = P.isbnFromPage(pg); if (!isbn) return null; b.isbn = isbn; b.isbnFrom = 'cover'; try { await ref.set({ isbn, isbnFrom: 'cover', isbnHealAt: nowIso(), ...W() }, { merge: true }); } catch (e) {} return isbn; }
+  /* 숍 상태의 '다 읽음(1)·ISBN 없음' 상품을 bench_books에서만 되살림 — 숍마다 하루 한 번 · 한 번에 HEALMAX개(근거: 딱따구리 det 62,003개를 약 2주에 · Firestore 읽기 하루 숍 12곳 × 5,000 = 6만 번) · 알라딘 안 엶 */
+  async function benchIsbnHealShop(sc, name, st, parts) { const HEALMAX = 5000; const td = kDayB(); const H = st.isbnHeal || {}; if (H.day === td || H.done) return null;
+    const L = []; for (const P0 of parts) for (const [id, v] of Object.entries(P0.M)) if (Array.isArray(v) && v[10] === 1 && !v[7] && !v[6]) L.push([id, v, P0]);
+    const from = +H.next || 0; const part = L.slice(from, from + HEALMAX); let fixed = 0, seen = 0; let B = db.batch(), n = 0;
+    for (const [id, v, P0] of part) { if (stopFlag) break; seen++; const ref = C('bench_books').doc(String(id)); let b = null; try { const g = await ref.get(); b = g && g.exists ? g.data() : null; } catch (e) { b = null; } if (!b) continue;
+      const isbn = b.isbn || (await benchIsbnHeal(ref, b)); if (!isbn) continue; v[7] = isbn; P0.dirty = true; fixed++; benchBookMem.delete(id); B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, isbn, isbnHealAt: nowIso(), ...W() }, { merge: true }); n++; if (n >= 400) { await B.commit().catch(() => {}); B = db.batch(); n = 0; } }
+    if (n) await B.commit().catch(() => {}); const next = from + seen; const done = next >= L.length;
+    await C('bench_state').doc(sc).set({ isbnHeal: { day: td, at: nowIso(), next: done ? 0 : next, done, seen: (+H.seen || 0) + seen, fixed: (+H.fixed || 0) + fixed, left: Math.max(0, L.length - next) } }, { merge: true }).catch(() => {});
+    log(`🔢 '${name}': 예전에 ISBN 없이 '다 읽음'이 된 ${L.length.toLocaleString()}개 중 ${seen.toLocaleString()}개를 저장된 화면 정보로 봄 → ISBN ${fixed.toLocaleString()}개 되살림(알라딘 안 엶 · 표지 이름이 K코드인 것은 못 되살림)${done ? ' · 끝' : ` · 남은 ${(L.length - next).toLocaleString()}개는 내일`}`); return { seen, fixed, left: L.length - next }; }
   /* (1.57.7) 📖 상품 페이지 정보만 따로 — 판매자의 지금 숍 상품(bench_state 조각) 중 아직 상품 페이지 정보가 없는 것만 엶(한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 = benchBook)
    *  capped: 판매자마다 설정의 최대 개수·분(한 바퀴 뒤 자동) · 아니면(수집기 단추) 판매자마다 끝까지 — 멈추면 100개마다 저장한 데까지 남음 · 판매자가 숍 목록을 읽는 중(prog)이면 건너뜀(겹쳐 쓰지 않게) */
   /* (benchfix 11/13) 📖 상품 페이지 정보는 로거 테더링 하루 몫 안에서만(벤치마킹 숍 목록 뒤 차례) — 11/13: 숍 목록이 오늘 몫(8.03GB)을 넘겨(8.3GB) 한 바퀴 끝 표시 뒤 벤치마킹 몫이 0 →
@@ -2581,6 +2594,7 @@
     for (const t of T) { if (stopFlag) throw new Error('멈춤'); if (stopAll) break; { const q0 = benchNetQuota(); if (!q0.ok) { stopAll = q0.why; break; } } const sc = String(t.sc); const name = t.name || sc; const st = (await C('bench_state').doc(sc).get()).data() || {}; if (st.prog) { log(`📖 '${name}': 숍 목록을 읽는 중인 회차가 있어 건너뜀`); continue; } const nC = st.chunks || 0; if (!nC) continue;
       const parts = []; for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } parts.push({ k, M: M || {}, dirty: false, day: c && c.day }); }
       const where = new Map(); parts.forEach((P) => Object.keys(P.M).forEach((id) => where.set(id, P)));
+      try { await benchIsbnHealShop(sc, name, st, parts); } catch (e) { log(`🔢 '${name}': ISBN 되살리기 실패(다음 회차에 다시): ${e && e.message}`, 1); } /* (tether1 11/18) 고친 칸(P.dirty)은 아래 save()가 함께 저장 */
       let redo = 0; const redoChk = !st.detailRedo1113; if (redoChk) { for (const P of parts) for (const v of Object.values(P.M)) if (Array.isArray(v) && v[10] === 2) { v[10] = 0; P.dirty = true; redo++; } } /* (benchfix 11/13 · 한 번만) 몫이 막혀 열지도 못한 상품을 '못 읽음(2 — 맨 뒤 차례)'으로 적었던 것(11/13 2,495개 · 가장 최근 상품) → 다시 차례에 넣음 */
       const all = [...where.entries()].map(([id, P]) => [id, P.M[id], P]).filter(([, v]) => Array.isArray(v) && !v[6] && v[10] !== 1);
       const td2 = kDayB(); const tail2 = all.filter(([, v]) => v[10] === 2); const skip2 = !!tail2.length && st.detail2Day === td2; /* (bench2 11/17) 못 읽음(2 — 19금 등 로그인 없이는 못 보는 상품·정보 없는 화면)은 하루 한 번만 다시 엶 — 11/16 딱따구리 332개(그중 304개 19금)를 매시 다시 열어 하루 2,988번 열고 0개 채움(같은 일 되풀이 · 상품 화면 1장 ≈0.23MiB) · 빼지 않음: 다음 날 첫 회차에 다시 */ const cand = all.filter(([, v]) => v[10] !== 2).sort((a, b) => String(b[1][1]).localeCompare(String(a[1][1]))).concat(skip2 ? [] : tail2); const lim = opt.capped ? Math.max(0, +D.max || 0) : cand.length; const until = opt.capped ? Date.now() + Math.max(1, +D.maxMin || 30) * 60000 : Infinity;
