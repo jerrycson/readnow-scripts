@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-tether1",
-   "why": "판 내기 기다림: tether1 테더링 지킴",
-   "first": "2026-11-17T22:40:34Z",
-   "at": "2026-11-18T00:32:23Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edq1",
    "why": "판 내기 기다림: edq1 판본 다시 보기 먼저",
    "first": "2026-11-17T22:40:39Z",
@@ -38,16 +31,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-tether1",
-  "why": "판 내기 기다림: tether1 테더링 지킴",
-  "at": "2026-11-18T00:32:23Z",
-  "first": "2026-11-17T22:40:34Z"
+  "host": "vm-edq1",
+  "why": "판 내기 기다림: edq1 판본 다시 보기 먼저",
+  "at": "2026-11-18T00:33:07Z",
+  "first": "2026-11-17T22:40:39Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-tether1",
+ "what": "tether1 테더링 지킴",
+ "since": "2026-11-18T00:33:25Z",
+ "beat": "2026-11-18T00:33:25Z",
  "last": {
   "who": "lead",
   "done": "",
