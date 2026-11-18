@@ -80,9 +80,9 @@
  },
  "holder": "lead",
  "host": "vm-bkseller1",
- "what": "웹앱 수동 일괄 겹치는 판매자·조건 한눈에 (bkseller1)",
+ "what": "bkseller1 판 내는 중 wk-bkseller1",
  "since": "2026-11-18T05:06:16Z",
- "beat": "2026-11-18T05:06:16Z",
+ "beat": "2026-11-18T05:06:34Z",
  "last": {
   "who": "lead",
   "done": "판본 확인 판 ② 다시 냄(edkw3) APP_VER = '1.78.718' f1cf9f6c2 (머리 그대로 8ab2f661d1d8afa8)",
