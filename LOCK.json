@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-shoprow1",
-   "why": "판 내기 기다림: shoprow1 우리숍 0.2.23 한 줄 띠 사진 칸 고르게",
-   "first": "2026-11-18T05:04:31Z",
-   "at": "2026-11-18T06:54:22Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-fbops1",
    "why": "판 내기 기다림: fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
    "first": "2026-11-18T05:26:53Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-shoprow1",
-  "why": "판 내기 기다림: shoprow1 우리숍 0.2.23 한 줄 띠 사진 칸 고르게",
-  "at": "2026-11-18T06:54:22Z",
-  "first": "2026-11-18T05:04:31Z"
+  "host": "vm-fbops1",
+  "why": "판 내기 기다림: fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
+  "at": "2026-11-18T06:54:27Z",
+  "first": "2026-11-18T05:26:53Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-shoprow1",
+ "what": "shoprow1 우리숍 0.2.23 한 줄 띠 사진 칸 고르게",
+ "since": "2026-11-18T06:55:32Z",
+ "beat": "2026-11-18T06:55:32Z",
  "last": {
   "who": "lead",
   "done": "regjump1 웹앱 1.78.726 등록 선택 대기 튐·⚡ 칸 초점 · 5c0963440 (머리 그대로 8ab2f661d1d8afa8)",
