@@ -23,13 +23,6 @@
   },
   {
    "who": "lead",
-   "host": "shipqA-lfcount1",
-   "why": "판 내기 기다림: 판 내기 기다림: lfcount1 서버 건수(shipqA)",
-   "first": "2026-11-17T21:00:02Z",
-   "at": "2026-11-17T23:59:05Z"
-  },
-  {
-   "who": "lead",
    "host": "shipqB-y24all1",
    "why": "판 내기 기다림: 판 내기 기다림: y24all1 예스24 전상품(shipqB)",
    "first": "2026-11-17T22:40:23Z",
@@ -73,16 +66,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "shipqA-lfcount1",
-  "why": "판 내기 기다림: 판 내기 기다림: lfcount1 서버 건수(shipqA)",
-  "at": "2026-11-17T23:59:05Z",
-  "first": "2026-11-17T21:00:02Z"
+  "host": "bunoe4",
+  "why": "판 내기 기다림: bunoe4 번외 판",
+  "at": "2026-11-17T23:32:20Z",
+  "first": "2026-11-17T22:39:59Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "shipqA-lfcount1",
+ "what": "판 내기 기다림: lfcount1 서버 건수(shipqA)",
+ "since": "2026-11-18T00:00:13Z",
+ "beat": "2026-11-18T00:00:13Z",
  "last": {
   "who": "lead",
   "done": "bkfold1 판 ② 냄 — 웹앱 1.78.700 (210557a67 · 결과물 59513b093) · 패널 판은 문지기에서 막혀 멈춤",
