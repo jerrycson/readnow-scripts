@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-wake1",
-   "why": "판 내기 기다림: wake1 순서표 시험 GIT_* 막기",
-   "first": "2026-11-17T22:52:04Z",
-   "at": "2026-11-18T00:47:30Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bkfold1",
    "why": "판 내기 기다림: bkfold1 수동 일괄 살핀 상품 패널·③④⑤⑥ 차례로",
    "first": "2026-11-18T00:13:30Z",
@@ -24,16 +17,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-wake1",
-  "why": "판 내기 기다림: wake1 순서표 시험 GIT_* 막기",
-  "at": "2026-11-18T00:47:30Z",
-  "first": "2026-11-17T22:52:04Z"
+  "host": "vm-bkfold1",
+  "why": "판 내기 기다림: bkfold1 수동 일괄 살핀 상품 패널·③④⑤⑥ 차례로",
+  "at": "2026-11-18T00:48:10Z",
+  "first": "2026-11-18T00:13:30Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-wake1",
+ "what": "wake1 순서표 시험 GIT_* 막기",
+ "since": "2026-11-18T00:48:32Z",
+ "beat": "2026-11-18T00:48:32Z",
  "last": {
   "who": "lead",
   "done": "edq1 판본 추적 0.1.4 클라우드 0.35.297 f4d59901 — 다시 보기 먼저·몫 새는 고리 막음",
