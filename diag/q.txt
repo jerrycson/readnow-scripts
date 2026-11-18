@@ -1,2 +1,2 @@
-doc=app_settings/ed_cfg
-# 702831486
+@kpin kpin/20261118-063654-21171.json
+# 9672715
