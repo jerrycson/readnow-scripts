@@ -52,9 +52,9 @@
  },
  "holder": "bkgrp1",
  "host": "vm",
- "what": "묶음 소속 표시 — 빌드",
+ "what": "묶음 소속 표시 — 시험·push",
  "since": "2026-11-18T07:19:10Z",
- "beat": "2026-11-18T07:19:43Z",
+ "beat": "2026-11-18T07:20:22Z",
  "last": {
   "who": "lead",
   "done": "fbops1 클라우드 0.35.306 규칙 배포를 deploy-cloud.yml 손으로 돌리기 rules 칸으로(통로 조건 안) · 72e63d00a",
