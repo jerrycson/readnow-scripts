@@ -38,9 +38,9 @@
  },
  "holder": "lead",
  "host": "vm-tether1",
- "what": "tether1 테더링 지킴 · 최신 위 다시 얹기",
+ "what": "tether1 테더링 지킴 · 빌드",
  "since": "2026-11-18T00:33:25Z",
- "beat": "2026-11-18T00:33:47Z",
+ "beat": "2026-11-18T00:34:14Z",
  "last": {
   "who": "lead",
   "done": "",
