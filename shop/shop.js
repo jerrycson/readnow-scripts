@@ -157,8 +157,8 @@
   const rollX = (st) => (st.loop ? st.S + window.BQL.wrap(st.pos, st.S) : 0);
   function rollImg(st, x) { if (!st.near || !st.step) return; const K = st.tr.children; const a = Math.max(0, Math.floor((x - st.W) / st.step)), b = Math.min(K.length - 1, Math.ceil((x + 2 * st.W) / st.step));
     for (let j = a; j <= b; j++) { const i = K[j] && K[j].querySelector('img[data-src]'); if (i) { i.src = i.dataset.src; i.removeAttribute('data-src'); } } }
-  /* (11/18 shoprow1 · 리드 결정 「사진 칸 고르게」) 띠가 화면 가까이 오면 그 띠의 사진(복제 칸 포함 · 많아야 36장)을 한꺼번에 받음 — 멀리 밀어도 빈 칸이 안 보임 */
-  function rollAll(st) { if (!st.near) return; st.el.querySelectorAll('img[data-src]').forEach((i) => { i.src = i.dataset.src; i.removeAttribute('data-src'); }); }
+  /* (11/18 shoprow1 · 리드 결정 「사진 칸 고르게」) 띠가 화면 가까이 오면 그 띠의 사진(복제 칸 포함 · 많아야 36장)을 한꺼번에 받음 — 멀리 밀어도 빈 칸이 안 보임 · 앞 3권(브라우저 lazy)의 복제도 바로 받음(0.2.24) */
+  function rollAll(st) { if (!st.near) return; st.el.querySelectorAll('img[data-src],img[loading="lazy"]').forEach((i) => { if (i.dataset.src) { i.src = i.dataset.src; i.removeAttribute('data-src'); } i.loading = 'eager'; }); }
   function rollDraw(st) { const x = rollX(st); st.tr.style.transform = `translate3d(${-x.toFixed(2)}px,0,0)`; const i = st.step ? Math.floor(x / st.step) : 0; if (i !== st.lastI) { st.lastI = i; rollImg(st, x); } }
   function rollKick() { if (!RL.raf) RL.raf = requestAnimationFrame(rollTick); }
   function rollTick(now) { RL.raf = 0; let more = false; const sp = { slow: 0.022, mid: 0.045 }[(rollCfg() || {}).rollAuto] || 0;
