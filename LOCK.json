@@ -3,9 +3,9 @@
  "ask": null,
  "holder": "lead",
  "host": "vm-regup1",
- "what": "regup1 시험(1.78.715)",
+ "what": "regup1 push(1.78.715)",
  "since": "2026-11-18T02:09:18Z",
- "beat": "2026-11-18T02:10:56Z",
+ "beat": "2026-11-18T02:17:19Z",
  "last": {
   "who": "lead",
   "done": "판본 확인 판 ② APP_VER = '1.78.715' 08d92189d (내기 종료 5)",
