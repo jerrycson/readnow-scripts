@@ -746,7 +746,7 @@ async function shipRead(p, until) {
  *      · 하루 cfg.dayCap개(기본 60개) — 모두 근거: 없음, 설정으로 바꿈(웹앱 ⚙ 설정 '🆕 미등록 상품 새책 찾기' → app_settings/nb_find.cfg)
  *      · 알라딘이 막으면(403·429·503·비정상 접근) 그날은 다시 안 함 · 로그인은 절대 안 함(쿠키 없이 · 19금 화면이면 그 상품만 '모름')
  *  저장: prd_newbook/{상품 열쇠} — 지우지 않음 · 결과가 바뀔 때만 hist에 한 줄 · 사람이 뺀 번호(rej)·고친 기록은 웹앱이 씀 · app_settings/nb_find.cnt[날짜] 하루 센 수 · pend[열쇠] 끝나면 지움 */
-const NB_DEF = { on: true, dayCap: 120, gapMin: 4000, gapMax: 9000, sliceSec: 40, restMin: 3, restMax: 12, maxRead: 3, nightFrom: 23, nightTo: 8 }; /* (cap2x 11/18 정범님 16:24 「두 배까지만」) 하루 60 → 180(cap3x) → 120 */ /* 밤 23시~아침 8시(한국 시각)는 쉼 — 근거: 없음, 설정으로 바꿈 */
+const NB_DEF = { on: true, dayCap: 180, gapMin: 4000, gapMax: 9000, sliceSec: 40, restMin: 3, restMax: 12, maxRead: 3, nightFrom: 23, nightTo: 8 }; /* (cap2x 11/18 정범님 16:32 「큰 몫만 2배」) 원래 60은 500 아래라 3배 180 그대로 */ /* 밤 23시~아침 8시(한국 시각)는 쉼 — 근거: 없음, 설정으로 바꿈 */
 const NB = { day: '', block: null };
 const nbDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 async function nbCfgC() { let x = {}; try { const d = await C('app_settings').doc('nb_find').get(); x = (d && d.exists && d.data()) || {}; } catch (e) {} const c = x.cfg || {}; const n = (k) => (isFinite(+c[k]) && +c[k] >= 0 ? +c[k] : NB_DEF[k]);
@@ -3812,7 +3812,7 @@ async function diagSfp(q) { q = q || {}; const out = {}; const lim = Math.min(50
  *  쓰는 것(로거 rev6mJob과 같은 칸): sellers/{sc_번호} rev6m·rev6mLt3·rev6mAt·shopPeriods·shopTotal·aladinGrade·isPro·cancel3m·shopAt·shopSig + shopItems·shopItemsAt(전체 상품 수 — 예전 totalItems는 옛 툴팁 값이라 덮지 않음) · rev6mBy 'cloud'
  *    seller_rev6m/{id}.days·items[날짜] · 바뀌면 seller_history(옛 기록 지우지 않음) · 모으기 줄에서 뺌 · 값·비용은 건드리지 않음 */
 let sshAt = 0;
-const SSH_DEF = { cap: 300, tickMax: 4, refreshDays: 7, stopH: 6, listMax: 4000, quiet: ['12:30', '14:10'], night: ['01:00', '07:00'] }; /* (cap2x 11/18 정범님 16:24 「두 배까지만」) 하루 몫 450(cap3x) → 300 = 150의 2배 · (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 몫 150 → 450 · 쉼·틈은 그대로 · (auditfix 11/13 ④-4) 하루 몫 300 → 150 · 한국 01~07시 쉼(클라우드 IP 하나에 공개 읽기 네 종류 · 사람다움) — 설정 문서 seller_shop_state에 cap·night을 따로 두면 그 값 */
+const SSH_DEF = { cap: 450, tickMax: 4, refreshDays: 7, stopH: 6, listMax: 4000, quiet: ['12:30', '14:10'], night: ['01:00', '07:00'] }; /* (cap2x 11/18 정범님 16:32 「큰 몫만 2배」) 원래 150은 500 아래라 3배 450 그대로 · (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 몫 150 → 450 · 쉼·틈은 그대로 · (auditfix 11/13 ④-4) 하루 몫 300 → 150 · 한국 01~07시 쉼(클라우드 IP 하나에 공개 읽기 네 종류 · 사람다움) — 설정 문서 seller_shop_state에 cap·night을 따로 두면 그 값 */
 /* (cres1 11/12) 🏪 상품 수 — 공용 해석(alShopInfoOf)의 '전체상품 (n)' 꼴만으로는 16,066곳 모두 빈 칸(실제 가게 화면 글 꼴이 다름) → 화면 글에서 여러 꼴로 더 찾음
  *  ① 전체상품 (n) ② 판매중인/등록된 상품 (수) n ③ 총 n개/건/권 (상품) ④ 전체 (n) ⑤ 분야 숫자 합(국내도서 (n) · 외국도서 (n) · 음반 (n) · DVD (n) · 블루레이 (n) · 기타) — 못 찾으면 null(지어내지 않음) */
 /* (0.35.144 cres1) 🏪 가게 첫 화면 왼쪽 분야 나무(div.wTrees id=subtr-N = 맨 위 갈래 · 그 안 ul > li > a.br '건강/취미 (11469)')의 맨 윗줄 숫자만 더함 = 그 가게 전체 상품 수
@@ -3883,8 +3883,8 @@ async function cap3xOnce() { const mref = C('app_settings').doc('cap3x_1118');
       if (p.write) { if (merge) tx.set(ref, p.write, { merge: true }); else tx.set(ref, p.write); } tx.set(mref, { [part]: { at: nowIso(), ...p.rec, v: CAP3X.VER } }, { merge: true }); return p.rec; });
     if (rec) log('🧮 cap3x 몫 3배', part, JSON.stringify(rec).slice(0, 300)); } catch (e) { log('🧮 cap3x 몫 3배 실패', part, e.message); } } }
 setTimeout(() => { cap3xOnce().catch((e) => log('🧮 cap3x 몫 3배 실패', e.message)); }, 75e3);
-/* (cap2x 11/18 정범님 16:24 「알라딘 부르는 횟수가 이렇게 비약적으로 많으면 두 배까지만 늘려」) 한 번만 — cap3x가 3배로 올린 설정 문서 몫을 원래 값의 2배로 낮춤(내리기만 · 틈·쉼·밤·막힘 멈춤·테더링 바닥은 그대로)
- *  · 목표 = app_settings/cap3x_1118.<칸>.from(원래 값) × 2(공식 쿼터까지) · nb_find cfg.dayCap · ext src.<출처>.cap · col2_cfg v['pace.dayCap']·v['alcfg.dayCap']
+/* (cap2x 11/18 정범님 16:24 「알라딘 부르는 횟수가 이렇게 비약적으로 많으면 두 배까지만 늘려」 · 16:32 I-1118-1632-17 「큰 몫만 2배 · 작은 것은 3배 그대로」) 한 번만 — cap3x가 3배로 올린 설정 문서 몫 중 원래 500 이상인 것만 원래 값의 2배로 낮춤(내리기만 · 500 아래는 손대지 않음 · 틈·쉼·밤·막힘 멈춤·테더링 바닥은 그대로)
+ *  · 목표 = app_settings/cap3x_1118.<칸>.from(원래 값)이 500 이상일 때만 × 2(공식 쿼터까지) · nb_find cfg.dayCap(원래 120이라 그대로) · ext src.<출처>.cap(교보·예스24·국중 등 큰 출처만) · col2_cfg v['pace.dayCap'](알라딘 화면 1,600 → 3,200 · 샵매니저 300은 3배 900 그대로)
  *  · 셈은 cloud/cap2x.js(순수 · 시험 tCAP2X1118) · 한 일·전 값은 app_settings/cap2x_1118.<nb|ext|c2>에 — 같은 거래 안에서 표시를 읽어 한 번만 · cap3x 표시(cap3x_1118)는 그대로 둠(그 안 from = 원래 값) */
 const CAP2X = require('./cap2x.js');
 async function cap2xOnce() { const mref = C('app_settings').doc('cap2x_1118'); const m3ref = C('app_settings').doc('cap3x_1118');
@@ -4967,7 +4967,7 @@ async function extCloudRun(X, cfg, budgetMs) {
  *  상태: app_settings/wx_run {key{at,by,tail}, stn{지점:{hi,lo,loDone,err,errAt,n}}, cnt{날짜:번}, last, keyBad}
  *  WX-START (시험 tWX1110이 이 칸만 떼어 가짜 Firestore·가짜 http로 돌림 — 바깥 것은 D로만) */
 const WX_STN = { 108: '서울', 119: '수원', 112: '인천', 159: '부산', 143: '대구', 133: '대전', 156: '광주', 131: '청주', 146: '전주', 105: '강릉', 184: '제주' };
-const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 80, hourKst: 9 }; /* (cap2x 11/18 몫 2배까지만) 하루 받는 묶음 40 → 120(cap3x) → 80 */
+const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 120, hourKst: 9 }; /* (cap3x 11/18 몫 3배) 하루 받는 묶음 40 → 120 · (cap2x 11/18) 원래 40은 500 아래라 3배 그대로 */
 const WX_PV = 2; /* (11/10 밤) 읽기 판 — 2 = 두세 줄 머리 읽기. wx_run.pv가 이보다 낮으면(예전 읽기로 평균 기온이 비고 비가 0으로 쌓임) 지점마다 처음부터 다시 모음(같은 문서를 덮어씀 · 지우지 않음) */
 const WX_COLS = ['TM', 'STN', 'WS_AVG', 'WR_DAY', 'WD_MAX', 'WS_MAX', 'WS_MAX_TM', 'WD_INS', 'WS_INS', 'WS_INS_TM', 'TA_AVG', 'TA_MAX', 'TA_MAX_TM', 'TA_MIN', 'TA_MIN_TM', 'TD_AVG', 'TS_AVG', 'TG_MIN', 'HM_AVG', 'HM_MIN', 'HM_MIN_TM', 'PV_AVG', 'EV_S', 'EV_L', 'FG_DUR', 'PA_AVG', 'PS_AVG', 'PS_MAX', 'PS_MAX_TM', 'PS_MIN', 'PS_MIN_TM', 'CA_TOT', 'SS_DAY', 'SS_DUR', 'SS_CMB', 'SI_DAY', 'SI_60M_MAX', 'SI_60M_MAX_TM', 'RN_DAY', 'RN_D99', 'RN_DUR']; /* 머리 줄이 없을 때만 쓰는 차례(기상청 도움말 순서 — 머리 줄이 있으면 그 이름으로 찾음) */
 /* (정범님 11/10 저녁 '승인까지 했는데 403 활용신청이 필요') 기상청 API허브는 같은 ASOS 일자료를 API 여러 개로 나눠 활용신청을 따로 받음 → 아래 차례로 시험해 되는 것을 씀(이름을 app_secrets/kma.api에 저장 · 모으기도 그것으로)
@@ -5307,7 +5307,7 @@ function metCloudMake(D) { const ME = 'cloud', CH = 40, STALE = D.stale || 10 * 
 const avCode = (a) => { a = String(a || ''); if (!a) return null; if (a === 'onSale') return 'S'; if (/^(구판|합본)절판/.test(a)) return 'G'; if (/일시품절/.test(a)) return 'T'; if (/^절판/.test(a)) return 'J'; if (/품절/.test(a)) return 'P'; if (/예약/.test(a)) return 'R'; return 'X'; };
 const avEvent = (at, from, to) => { const a = avCode(from), b = avCode(to); if (!a || !b || a === b) return null; const t = Date.parse(at); if (!isFinite(t)) return null; return new Date(t + 9 * 3600e3).toISOString().slice(2, 13).replace(/[-T]/g, '') + '|' + a + '>' + b; };
 const MET_F = ['priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuy']; /* 수집기 METRICS와 같은 차례 */
-const MET_DEF = { gapMin: 1200, gapMax: 2000, inMin: 700, inMax: 1300, dayCap: 2000, sliceSec: 50, adoptMin: 10 }; /* (cap2x 11/18 정범님 16:24 「두 배까지만」) 하루 3,000권 → 2,000권 · (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 1,000권 → 3,000권 · 책 사이·화면 사이 틈은 그대로(사람 속도 바닥) */ /* (0.35.74 정범님 11/01 '새로 맡긴 시장 지표를 아무도 안 받음') 24시간 → 10분: 아무 PC도 10분 안에 안 받은 시장 지표는 클라우드가 맡음(PC가 오면 함께 · 같은 조각 규칙) */ /* 책 사이 1.2~2.0초 = 클라우드 예스24 가게 읽기 간격(sleep 1200+0~800) · 한 권 안 두 화면 사이 0.7~1.3초 = 클라우드 구매 주문 읽기(700+0~600)·수집기 reqMinMs 700 · 하루 1,000권(한 권 = 알라딘 요청 2~5번)·한 회차 50초 = 근거: 없음, 설정으로 바꿈(app_settings/cloud_met — 데이터센터 주소라 적게 시작) · adoptMin 24시간 = 노선표 metrics.waitMin(그 뒤 '늦음' 알림 — 0이면 안 맡음) */
+const MET_DEF = { gapMin: 1200, gapMax: 2000, inMin: 700, inMax: 1300, dayCap: 2000, sliceSec: 50, adoptMin: 10 }; /* (cap2x 11/18 정범님 16:24·16:32 「큰 몫만 2배」) 원래 1,000권(500 이상) → 3배 3,000 → 2배 2,000권 · (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 1,000권 → 3,000권 · 책 사이·화면 사이 틈은 그대로(사람 속도 바닥) */ /* (0.35.74 정범님 11/01 '새로 맡긴 시장 지표를 아무도 안 받음') 24시간 → 10분: 아무 PC도 10분 안에 안 받은 시장 지표는 클라우드가 맡음(PC가 오면 함께 · 같은 조각 규칙) */ /* 책 사이 1.2~2.0초 = 클라우드 예스24 가게 읽기 간격(sleep 1200+0~800) · 한 권 안 두 화면 사이 0.7~1.3초 = 클라우드 구매 주문 읽기(700+0~600)·수집기 reqMinMs 700 · 하루 1,000권(한 권 = 알라딘 요청 2~5번)·한 회차 50초 = 근거: 없음, 설정으로 바꿈(app_settings/cloud_met — 데이터센터 주소라 적게 시작) · adoptMin 24시간 = 노선표 metrics.waitMin(그 뒤 '늦음' 알림 — 0이면 안 맡음) */
 const MET = { cfg: MET_DEF, cfgAt: 0, day: '', n: 0, block: null, busy: false, beatSig: '', beatAt: 0, last: null };
 const kstDayM = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 async function metCfg() { if (Date.now() - MET.cfgAt < 5 * 60e3) return MET.cfg; MET.cfgAt = Date.now(); try { const d = (await C('app_settings').doc('cloud_met').get()).data() || {}; const n = (k) => (isFinite(+d[k]) && +d[k] >= 0 ? +d[k] : MET_DEF[k]); MET.cfg = { gapMin: n('gapMin'), gapMax: Math.max(n('gapMin'), n('gapMax')), inMin: n('inMin'), inMax: Math.max(n('inMin'), n('inMax')), dayCap: n('dayCap'), sliceSec: Math.min(55, n('sliceSec')), adoptMin: n('adoptMin') }; } catch (e) {} return MET.cfg; }
