@@ -73,9 +73,9 @@
  },
  "holder": "lead",
  "host": "shipqA-lfcount1",
- "what": "판 내기 기다림: lfcount1 서버 건수(shipqA)",
+ "what": "lfcount1 등 묶음 판 4개 올림",
  "since": "2026-11-18T00:00:13Z",
- "beat": "2026-11-18T00:00:13Z",
+ "beat": "2026-11-18T00:00:31Z",
  "last": {
   "who": "lead",
   "done": "bkfold1 판 ② 냄 — 웹앱 1.78.700 (210557a67 · 결과물 59513b093) · 패널 판은 문지기에서 막혀 멈춤",
