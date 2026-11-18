@@ -82,7 +82,7 @@ const past = '2000-01-01T00:00:00Z';
     const Cc = Wd.mk(); await Cc.tick(); const f2 = (Wd.getD('app_settings/ed_study').fail || {})['9791195936380']; ok(f2 && f2.n === 0 && !f2.next && Wd.getD('ed_work/w9791195936380'), '다시 읽히면 장부 풂(n 0)·묶음 남김'); }
 
   console.log('④ 빌린 몫(watch1 0.1.3)과 함께 — 정기 상한 = 오늘 상한 − 다시 보기 몫');
-  { const Wd = world({}); Wd.store.set('app_settings/ed_cfg', { dayCap: 80, alDay: 100000, capMax: 400, gapMin: 0, gapMax: 1, nl: false });
+  { const Wd = world({}); Wd.store.set('app_settings/ed_cfg', { dayCap: 80, rrRes: 60, alDay: 100000, capMax: 400, gapMin: 0, gapMax: 1, nl: false } /* (cap3x 11/18) 기본 다시 보기 몫이 300이 되어 이 시험은 60을 직접 줌 */);
     let blk = false; const A = Wd.mk({ alUse: () => ({ others: [], alBlk: blk }) }); const dg = await A.diag({ edition: 1 }); const cap = dg.mem.cap.cap;
     ok(cap >= 80 && cap <= 400 && dg.rr.regCap === cap - 60, `빌린 몫이 있어도 정기 상한은 오늘 상한 − 60(${cap} → ${dg.rr.regCap})`);
     blk = true; const B = Wd.mk({ alUse: () => ({ others: [], alBlk: blk }) }); const dg2 = await B.diag({ edition: 1 }); ok(dg2.mem.cap.cap === 80 && dg2.rr.regCap === 20, '막힘 기록이 있으면 바닥 80 · 정기 상한 20'); }

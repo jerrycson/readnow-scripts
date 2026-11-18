@@ -11,22 +11,23 @@
  *  지키는 것: 관찰·기록만 — 값·등록·돈을 바꾸지 않음(제33조 무손해) · 알라딘은 클라우드 공개 화면만(로거·사무실 PC에 일 없음 · 제5조) · 사람처럼 쉬엄쉬엄(화면 사이 2.5~6초 · 하루 상한 · 막히면 쉼)
  *          사람이 넣은 설정(app_settings/ed_cfg)은 읽기만 · 지우지 않음(묶음이 바뀌면 hist에 남김) · 손님 정보 없음 */
 'use strict';
-const ED_V = '0.1.4';
+const ED_V = '0.1.5'; // (0.1.5 cap3x 11/18 · 정범님 노트 「하루 몫 600쪽을 3배로 · 그중 일부를 이 엔진에」) 바닥 600→1,800 · 빌림 끝 2,400→7,200 · 다시 보기 몫 60→300 · 막힘 바닥 blkCap 600(막히면 옛 바닥으로 · 두 번이면 그 절반)
 const ED_DEF = {
-  on: true, tickMs: 95e3, dayCap: 600, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 600쪽 · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
+  on: true, tickMs: 95e3, dayCap: 1800, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 1,800쪽(0.1.5 cap3x · 정범님 11/18 「3배」 · 그 전 600) · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
   maxEds: 24, maxLinkHops: 14, searchTop: 6, accept: 0.72, maybe: 0.52, // 받아들임 문턱 0.72 · 후보 0.52(첫 값 — 매일 스스로 맞춤 edTune)
   recheckOop: 14, recheckNewer: 30, recheckOn: 30, avs: 'GJP', // 다시 보기 날 · 대상 새책 상태(G 구판절판 · J 절판 · P 품절 · S 판매중을 넣으면 모두)
   notify: true, push: true, infoReuseDays: 30, nl: true,
-  alDay: null, capMax: 2400, metReq: 3, // (0.1.3 watch1 11/18 · 리드 결정 「하루 상한은 되돌릴 수 있는 기준값 · 알라딘 전체 하루 몫 안에서 남는 몫을 판본 엔진에 줌(고정 600 대신) · 막힘 기록 나오면 줄임」) 근거: 없음(되돌릴 수 있는 기준값 · app_settings/ed_cfg) — alDay = 클라우드 알라딘 전체 하루 몫(없으면 책 정보 알라딘 상한 + 시장 지표 상한×metReq + dayCap) · capMax = 판본 엔진이 빌려 쓸 수 있는 끝 · dayCap 600은 바닥
-  rrRes: 60, rrMax: 20, partMax: 2, // (0.1.4 edq1) 사람이 건 다시 보기 몫 60쪽(정기 회차는 하루 몫 − 60까지) · 대기 칸 20권까지 · 사슬 이어 보기는 하루 처음 + 2번까지(그 뒤는 다음 날)
+  alDay: null, capMax: 7200, metReq: 3, blkCap: 600, /* (0.1.5 cap3x) 막힘 기록이 있는 날의 상한 = 옛 바닥 600(두 번 넘게 막히면 300) — 몫을 3배로 늘려도 막히면 바닥(사람다움)이 먼저 멈춤 */ // (0.1.3 watch1 11/18 · 리드 결정 「하루 상한은 되돌릴 수 있는 기준값 · 알라딘 전체 하루 몫 안에서 남는 몫을 판본 엔진에 줌(고정 600 대신) · 막힘 기록 나오면 줄임」) 근거: 없음(되돌릴 수 있는 기준값 · app_settings/ed_cfg) — alDay = 클라우드 알라딘 전체 하루 몫(없으면 책 정보 알라딘 상한 + 시장 지표 상한×metReq + dayCap) · capMax = 판본 엔진이 빌려 쓸 수 있는 끝 · dayCap 600은 바닥
+  rrRes: 300, rrMax: 20, partMax: 2, // (0.1.5 cap3x) 다시 보기 몫 300쪽 = 대기 칸 20권 × 한 권 약 14쪽(11/18 09:54 실제 14쪽) — 대기 칸이 가득 차도 하루에 다 봄 · (0.1.4 edq1) 사람이 건 다시 보기 몫 60쪽(정기 회차는 하루 몫 − 60까지) · 대기 칸 20권까지 · 사슬 이어 보기는 하루 처음 + 2번까지(그 뒤는 다음 날)
 };
 /* (0.1.3) 오늘 판본 엔진 상한(순수) — 다른 엔진(책 정보 알라딘·클라우드 시장 지표)이 오늘 끝까지 쓸 것으로 보이는 몫(지금까지 쓴 것을 하루 지난 비율로 늘려 본 것 · 그 엔진 상한까지)을 전체 몫에서 빼고 남는 것을 하루 지난 비율만큼만 빌려 줌(새벽에 한꺼번에 쓰지 않게)
  *  막힘 기록(판본 엔진 막힘 · 책 정보 알라딘 막힘 화면·쉼)이 오늘 하나라도 있으면 바닥(dayCap)으로 · 판본 엔진이 오늘 두 번 넘게 막히면 바닥의 절반
- *  o = { base, alDay, capMax, frac(0~1 · 한국 시각 하루 지난 비율), others:[{ k, used, cap }], edBlocks, alBlk(책 정보 쪽 막힘 있음) } → { cap, base, extra, total, spare, why } */
+ *  o = { base, alDay, capMax, blkCap(막힌 날 상한 · 없으면 base), frac(0~1 · 한국 시각 하루 지난 비율), others:[{ k, used, cap }], edBlocks, alBlk(책 정보 쪽 막힘 있음) } → { cap, base, extra, total, spare, why } */
 function edCapOf(o) { o = o || {}; const base = Math.max(0, +o.base || 0); const frac = Math.min(1, Math.max(0, +o.frac || 0)); const others = (o.others || []).map((x) => ({ k: x.k, used: Math.max(0, +x.used || 0), cap: Math.max(0, +x.cap || 0) }));
   const total = o.alDay != null && isFinite(+o.alDay) && +o.alDay > 0 ? +o.alDay : base + others.reduce((a, x) => a + x.cap, 0);
-  if ((+o.edBlocks || 0) >= 2) return { cap: Math.floor(base / 2), base, extra: 0, total, spare: 0, why: `판본 엔진이 오늘 ${+o.edBlocks}번 막힘 — 바닥의 절반` };
-  if ((+o.edBlocks || 0) >= 1 || o.alBlk) return { cap: base, base, extra: 0, total, spare: 0, why: o.alBlk ? '책 정보 알라딘 막힘 기록 — 바닥으로' : '판본 엔진 막힘 기록 — 바닥으로' };
+  const bf = o.blkCap != null && isFinite(+o.blkCap) && +o.blkCap >= 0 ? Math.min(base, +o.blkCap) : base; /* (0.1.5 cap3x) 막힘 바닥 — 몫을 늘려도 막힌 날은 옛 바닥(blkCap)으로 */
+  if ((+o.edBlocks || 0) >= 2) return { cap: Math.floor(bf / 2), base, extra: 0, total, spare: 0, why: `판본 엔진이 오늘 ${+o.edBlocks}번 막힘 — 막힘 바닥의 절반` };
+  if ((+o.edBlocks || 0) >= 1 || o.alBlk) return { cap: bf, base, extra: 0, total, spare: 0, why: o.alBlk ? '책 정보 알라딘 막힘 기록 — 바닥으로' : '판본 엔진 막힘 기록 — 바닥으로' };
   const want = others.reduce((a, x) => a + Math.min(Math.max(x.cap, x.used), frac > 0.02 ? Math.max(x.used, Math.ceil(x.used / frac)) : x.cap), 0); /* 하루 2% 전(00:29 전)은 다 쓴다고 봄 */
   const spare = Math.max(0, total - base - want); const hi = Math.max(base, +o.capMax || base); const extra = Math.max(0, Math.min(hi - base, Math.floor(spare * frac)));
   return { cap: base + extra, base, extra, total, spare, why: extra ? `남는 몫 ${spare}쪽 중 하루 지난 만큼 ${extra}쪽을 빌림` : '남는 몫 없음 — 바닥' }; }
@@ -142,7 +143,7 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     ST.cfg = { ...ED_DEF, ...c, accept: +c.accept || +(st.tune && st.tune.th) || ED_DEF.accept }; ST.cfgAt = Date.now(); if (st.fail && typeof st.fail === 'object') for (const [k, v] of Object.entries(st.fail)) if (v && (!ST.fail[k] || String(v.at || '') > String(ST.fail[k].at || ''))) ST.fail[k] = v; /* (0.1.4 edq1) 못 읽는 화면 장부(인스턴스가 바뀌어도 이어 씀) */ if (!ST.day && st.today && st.today.day === kDay()) { ST.day = st.today.day; ST.used = +st.today.pages || 0; ST.blocks = Math.max(ST.blocks, +st.today.blk || 0); } return ST.cfg; } /* (0.1.3) 새 컨테이너도 오늘 막힘 횟수를 이어 받음(줄인 상한 그대로) */
   const kFrac = () => { const t = new Date(Date.now() + 9 * 3600e3); return (t.getUTCHours() * 3600 + t.getUTCMinutes() * 60 + t.getUTCSeconds()) / 86400; };
   function capNow() { const c = ST.cfg || ED_DEF; if (ST.capV && Date.now() - ST.capAt < 60e3) return ST.capV; let u = null; try { u = ctx.alUse ? ctx.alUse() : null; } catch (e) {} if (!u) { ST.capV = { cap: c.dayCap, base: c.dayCap, extra: 0, why: '다른 엔진 몫을 모름 — 바닥' }; ST.capAt = Date.now(); return ST.capV; }
-    ST.capV = edCapOf({ base: c.dayCap, alDay: c.alDay, capMax: c.capMax, frac: kFrac(), others: (u.others || []).map((x) => (x.k === 'met' ? { ...x, used: x.used * (+c.metReq || 3), cap: x.cap * (+c.metReq || 3) } : x)), edBlocks: ST.blocks, alBlk: !!u.alBlk }); ST.capAt = Date.now(); return ST.capV; }
+    ST.capV = edCapOf({ base: c.dayCap, alDay: c.alDay, capMax: c.capMax, frac: kFrac(), others: (u.others || []).map((x) => (x.k === 'met' ? { ...x, used: x.used * (+c.metReq || 3), cap: x.cap * (+c.metReq || 3) } : x)), edBlocks: ST.blocks, alBlk: !!u.alBlk, blkCap: c.blkCap }); ST.capAt = Date.now(); return ST.capV; }
   const regCap = (c) => Math.max(0, capNow().cap - Math.max(0, +c.rrRes || 0)); /* (0.1.4 edq1) 정기 회차 상한 = 오늘 상한(빌린 몫 포함) − 다시 보기 몫 */
   function dayRoll() { const d = kDay(); if (ST.day !== d) { ST.day = d; ST.used = 0; ST.blocks = 0; } }
   async function pace() { const c = ST.cfg || ED_DEF; dayRoll(); if (ST.pauseUntil > Date.now()) throw Object.assign(new Error('쉬는 중'), { pause: 1 }); if (ST.used >= (ST.rrMode ? capNow().cap : regCap(c))) throw Object.assign(new Error('오늘 상한'), { cap: 1 }); /* (0.1.4 edq1) 정기 회차는 오늘 상한 − 다시 보기 몫(rrRes)까지 · 사람이 건 다시 보기·진단은 오늘 상한 끝까지 */ const gap = c.gapMin + Math.random() * (c.gapMax - c.gapMin); const w = ST.last + gap - Date.now(); if (w > 0) await sleep(w); ST.last = Date.now(); ST.used++; }
@@ -263,7 +264,7 @@ function makeEdition(ctx) { const { C, log } = ctx; const nowIso = ctx.nowIso ||
     for (const b of R.books) { T.books++; if (b.rr) T.rr = (T.rr || 0) + 1; T.eds += b.eds; T.newer += b.newer; T.older += b.older; T.trans += b.trans; T.links += b.links || 0; if (b.eds > 1) T.withEd++; if (b.err) T.errs++; } T.pages = ST.used; T.errs += R.errs.length; T.blk = ST.blocks; const cv = capNow(); T.cap = cv.cap; T.capMax = Math.max(+T.capMax || 0, cv.cap); /* (0.1.3) 오늘 상한(빌린 몫 포함) */
     const TP = { pos: [...((S.tunePool && S.tunePool.pos) || []), ...tune.pos].slice(-400), neg: [...((S.tunePool && S.tunePool.neg) || []), ...tune.neg].slice(-400) };
     if (R.books.length || R.errs.length || (R.rr && R.rr.ran)) await C('ed_ledger').doc(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-')).set(clean({ at: R.at, saw: { targets: R.targets || 0, skipped: R.skipped }, did: R.books.slice(0, 20), pages: R.pages, ms: R.ms, errs: R.errs.slice(0, 6), alert: R.alert || null, th: c.accept, v: ED_V, rr: R.rr || null, failSkip: R.failSkip || 0 }));
-    const upd = { v: ED_V, at: nowIso(), today: T, tunePool: TP, cfg: { dayCap: c.dayCap, rrRes: c.rrRes, partMax: c.partMax, accept: c.accept, maybe: c.maybe, avs: c.avs, on: c.on, alDay: c.alDay, capMax: c.capMax }, capNow: cv, errs: ST.errs.slice(0, 10), pause: ST.pauseUntil > Date.now() ? new Date(ST.pauseUntil).toISOString() : null };
+    const upd = { v: ED_V, at: nowIso(), today: T, tunePool: TP, cfg: { dayCap: c.dayCap, blkCap: c.blkCap == null ? null : c.blkCap, rrRes: c.rrRes, partMax: c.partMax, accept: c.accept, maybe: c.maybe, avs: c.avs, on: c.on, alDay: c.alDay, capMax: c.capMax }, capNow: cv, errs: ST.errs.slice(0, 10), pause: ST.pauseUntil > Date.now() ? new Date(ST.pauseUntil).toISOString() : null };
     if (ST.failDirty) { upd.fail = ST.fail; ST.failDirty = false; } /* (0.1.4 edq1) 못 읽는 화면 장부 — 바뀐 회차만 */
     if (S.dayDone !== today && new Date(Date.now() + 9 * 3600e3).getUTCHours() >= 22 || (S.dayDone !== today && S.today && S.today.day && S.today.day !== today)) { /* 하루 한 번(밤 10시 넘어 또는 날이 바뀐 첫 회차): 스스로 맞춤·채점·진화 기록 */
       const tn = edTune(TP.pos, TP.neg, c.accept); upd.tune = { ...tn, at: nowIso() }; const fixes = [...(S.fixes || [])]; if (tn.th !== c.accept) fixes.unshift({ d: today, t: `받아들임 문턱 ${c.accept} → ${tn.th} (${tn.why} · 링크 짝 ${tn.n[0]} · 분명히 다른 후보 ${tn.n[1]} · F1 ${tn.f1})` });

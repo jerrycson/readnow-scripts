@@ -746,7 +746,7 @@ async function shipRead(p, until) {
  *      · 하루 cfg.dayCap개(기본 60개) — 모두 근거: 없음, 설정으로 바꿈(웹앱 ⚙ 설정 '🆕 미등록 상품 새책 찾기' → app_settings/nb_find.cfg)
  *      · 알라딘이 막으면(403·429·503·비정상 접근) 그날은 다시 안 함 · 로그인은 절대 안 함(쿠키 없이 · 19금 화면이면 그 상품만 '모름')
  *  저장: prd_newbook/{상품 열쇠} — 지우지 않음 · 결과가 바뀔 때만 hist에 한 줄 · 사람이 뺀 번호(rej)·고친 기록은 웹앱이 씀 · app_settings/nb_find.cnt[날짜] 하루 센 수 · pend[열쇠] 끝나면 지움 */
-const NB_DEF = { on: true, dayCap: 60, gapMin: 4000, gapMax: 9000, sliceSec: 40, restMin: 3, restMax: 12, maxRead: 3, nightFrom: 23, nightTo: 8 }; /* 밤 23시~아침 8시(한국 시각)는 쉼 — 근거: 없음, 설정으로 바꿈 */
+const NB_DEF = { on: true, dayCap: 180, gapMin: 4000, gapMax: 9000, sliceSec: 40, restMin: 3, restMax: 12, maxRead: 3, nightFrom: 23, nightTo: 8 }; /* 밤 23시~아침 8시(한국 시각)는 쉼 — 근거: 없음, 설정으로 바꿈 */
 const NB = { day: '', block: null };
 const nbDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 async function nbCfgC() { let x = {}; try { const d = await C('app_settings').doc('nb_find').get(); x = (d && d.exists && d.data()) || {}; } catch (e) {} const c = x.cfg || {}; const n = (k) => (isFinite(+c[k]) && +c[k] >= 0 ? +c[k] : NB_DEF[k]);
@@ -3594,7 +3594,7 @@ const NOTES = require('./notes.js').makeNotes({ C, db, log, ver: VER }); /* (not
 /* (edition1 11/14 · 정범님 11/14 18:13 · 연구 N15) 📚 판본 추적 엔진 — 우리 판매 중 품절·절판·구판절판 책의 다른 판본을 알라딘 공개 화면(로그인 정보 없이)의 판본 링크 양쪽 끝까지 + 제목·원제 검색 + 국립중앙도서관으로 찾아 같은 책인지 다시 보고 출간일 차례로 세움 · 다시 보기에서 새 판이 나오면 📓 카드·알림 · 관찰·기록만(cloud/edition.js) · 진단 edition=1 · edprobe=<ISBN|상품번호>(남기지 않음) · edrun=<ISBN>(지금 한 권) */
 const EDITION = require('./edition.js').makeEdition({ db, C, FV, W, log, nowIso, getPage: () => getPage(), extKeys: () => extKeysC(), notes: (ops, by) => NOTES.write(ops, by), push: (n, p, k) => pushSend(n, p, k), pulse: (P, by) => pulseIn(P, by), alUse: () => edAlUse() });
 /* (watch1 11/18 · 리드 결정 · 판본 0.1.3) 📚 판본 엔진이 빌려 쓸 알라딘 몫 — 다른 클라우드 엔진의 오늘 알라딘 쓴 양·상한·막힘(읽기만 · 늦게 불러 BKINFO·MET가 아래에 있어도 됨) */
-function edAlUse() { const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const kd = (iso) => (iso ? new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10) : null); const S = BKINFO.state || {}; const pa = (S.pace || {}).aladin || {}; const bc = S.cfg && S.cfg.caps && S.cfg.caps.aladin != null ? +S.cfg.caps.aladin : pa.cap != null ? +pa.cap : 4000; const bkOff = S.cfg && S.cfg.aladin === false;
+function edAlUse() { const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const kd = (iso) => (iso ? new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10) : null); const S = BKINFO.state || {}; const pa = (S.pace || {}).aladin || {}; const bc = S.cfg && S.cfg.caps && S.cfg.caps.aladin != null ? +S.cfg.caps.aladin : pa.cap != null ? +pa.cap : 12000; const bkOff = S.cfg && S.cfg.aladin === false;
   const bu = S.day === today ? +((S.used || {}).aladin || 0) : 0; const blk = (S.blk || {}).aladin; const alBlk = !!((blk && kd(blk.at) === today) || (pa.pauseUntil && pa.pauseUntil > Date.now()));
   return { others: [{ k: 'bk', used: bu, cap: bkOff ? bu : bc }, { k: 'met', used: MET.day === today ? MET.n : 0, cap: +(MET.cfg || MET_DEF).dayCap || 0 }], alBlk }; }
 /* (spine2 11/14 · 정범님 11/14 18:13) ✂ 묶음 사진 판별 엔진 스스로 — 하루 한 번(새벽 3시 넘어) 사람 확인 기록으로 방법마다 문턱·단계·자기 채점(브라이어)을 다시 셈(cloud/cutself.js · 셈은 공용 readnow-cutout-core.js) · 기록만(사진·등록 줄 안 바꿈) · 진단 cutself=1 */
@@ -3784,7 +3784,7 @@ async function diagSfp(q) { q = q || {}; const out = {}; const lim = Math.min(50
  *  쓰는 것(로거 rev6mJob과 같은 칸): sellers/{sc_번호} rev6m·rev6mLt3·rev6mAt·shopPeriods·shopTotal·aladinGrade·isPro·cancel3m·shopAt·shopSig + shopItems·shopItemsAt(전체 상품 수 — 예전 totalItems는 옛 툴팁 값이라 덮지 않음) · rev6mBy 'cloud'
  *    seller_rev6m/{id}.days·items[날짜] · 바뀌면 seller_history(옛 기록 지우지 않음) · 모으기 줄에서 뺌 · 값·비용은 건드리지 않음 */
 let sshAt = 0;
-const SSH_DEF = { cap: 150, tickMax: 4, refreshDays: 7, stopH: 6, listMax: 4000, quiet: ['12:30', '14:10'], night: ['01:00', '07:00'] }; /* (auditfix 11/13 ④-4) 하루 몫 300 → 150 · 한국 01~07시 쉼(클라우드 IP 하나에 공개 읽기 네 종류 · 사람다움) — 설정 문서 seller_shop_state에 cap·night을 따로 두면 그 값 */
+const SSH_DEF = { cap: 450, tickMax: 4, refreshDays: 7, stopH: 6, listMax: 4000, quiet: ['12:30', '14:10'], night: ['01:00', '07:00'] }; /* (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 몫 150 → 450 · 쉼·틈은 그대로 · (auditfix 11/13 ④-4) 하루 몫 300 → 150 · 한국 01~07시 쉼(클라우드 IP 하나에 공개 읽기 네 종류 · 사람다움) — 설정 문서 seller_shop_state에 cap·night을 따로 두면 그 값 */
 /* (cres1 11/12) 🏪 상품 수 — 공용 해석(alShopInfoOf)의 '전체상품 (n)' 꼴만으로는 16,066곳 모두 빈 칸(실제 가게 화면 글 꼴이 다름) → 화면 글에서 여러 꼴로 더 찾음
  *  ① 전체상품 (n) ② 판매중인/등록된 상품 (수) n ③ 총 n개/건/권 (상품) ④ 전체 (n) ⑤ 분야 숫자 합(국내도서 (n) · 외국도서 (n) · 음반 (n) · DVD (n) · 블루레이 (n) · 기타) — 못 찾으면 null(지어내지 않음) */
 /* (0.35.144 cres1) 🏪 가게 첫 화면 왼쪽 분야 나무(div.wTrees id=subtr-N = 맨 위 갈래 · 그 안 ul > li > a.br '건강/취미 (11469)')의 맨 윗줄 숫자만 더함 = 그 가게 전체 상품 수
@@ -3844,6 +3844,17 @@ const SSH_FIX_FROM = '2026-11-12T07:25:00.000Z', SSH_FIX_TO = new Date().toISOSt
 setTimeout(async () => { try { const sref = C('app_settings').doc('seller_shop_state'); const st = (await sref.get()).data() || {}; if (st.fix1112) return; const g = await C('sellers').where('shopItemsAt', '>=', SSH_FIX_FROM).select('shopItems', 'shopItemsAt').get(); let n = 0;
   for (const d of g.docs) { const v = d.data() || {}; if (!(v.shopItemsAt < SSH_FIX_TO) || v.shopItems == null) continue; const day = kday(Date.parse(v.shopItemsAt)); await d.ref.set({ shopItems: null, shopItemsBad: { v: v.shopItems, at: v.shopItemsAt, why: '0.35.142 아랫분야 숫자 오인' } }, { merge: true }); await C('seller_rev6m').doc(d.id).set({ items: { [day]: null } }, { merge: true }).catch(() => {}); n++; }
   await sref.set({ fix1112: { at: nowIso(), n, seen: g.size } }, { merge: true }); log('🏪 0.35.142 잘못 쓴 상품 수 비움', n, '곳'); } catch (e) { log('🏪 상품 수 정리 실패', e.message); } }, 60e3);
+/* (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 한 번만 — 코드 기본값 말고 설정 문서에 적혀 있던 하루 몫도 3배로 올림(내리지 않음 · 틈·쉼·밤·막힘 멈춤·테더링 바닥은 그대로)
+ *  · 새책 찾기 app_settings/nb_find cfg.dayCap ×3 · 외부 정보 app_settings/ext src.<출처>.cap(cap3x.js EXT_TO · 공식 하루 쿼터가 있는 출처는 그 쿼터까지 · 끝난 서비스는 그대로)
+ *  · 번외 공통 값 app_settings/col2_cfg v['pace.dayCap']·v['alcfg.dayCap'] ×3(웹앱 c2CfgWrite와 같은 꼴 · log 줄 · 로거 몫 logger.dayCap은 그대로)
+ *  · 셈은 cloud/cap3x.js(순수 · 시험 tCAP3X1118) · 한 일·전 값은 app_settings/cap3x_1118.<nb|ext|c2>에 — 표시를 같은 거래 안에서 읽어 인스턴스가 여럿이어도 한 번만(9배 안 됨) · 되돌릴 때 그 from 값 */
+const CAP3X = require('./cap3x.js');
+async function cap3xOnce() { const mref = C('app_settings').doc('cap3x_1118');
+  const parts = [['nb', 'nb_find', (x) => CAP3X.planNb(x), true], ['ext', 'ext', (x) => CAP3X.planExt(x), true], ['c2', 'col2_cfg', (x) => CAP3X.planC2(x, Date.now()), false]];
+  for (const [part, doc, plan, merge] of parts) { try { const rec = await db.runTransaction(async (tx) => { const ref = C('app_settings').doc(doc); const [m, d] = await Promise.all([tx.get(mref), tx.get(ref)]); if (((m.exists && m.data()) || {})[part]) return null; const p = plan((d.exists && d.data()) || {});
+      if (p.write) { if (merge) tx.set(ref, p.write, { merge: true }); else tx.set(ref, p.write); } tx.set(mref, { [part]: { at: nowIso(), ...p.rec, v: CAP3X.VER } }, { merge: true }); return p.rec; });
+    if (rec) log('🧮 cap3x 몫 3배', part, JSON.stringify(rec).slice(0, 300)); } catch (e) { log('🧮 cap3x 몫 3배 실패', part, e.message); } } }
+setTimeout(() => { cap3xOnce().catch((e) => log('🧮 cap3x 몫 3배 실패', e.message)); }, 75e3);
 /* (정범님 11/09 밤) 🔎 판매자 깊이 읽기(seller_deep) — 무리로 보이는 판매자의 공개 화면을 사람 속도로 읽어 원문 그대로 남김(비공개 Firestore만 · 로그인 없음 · 손님으로)
  *  누구를: app_settings/seller_deep_state.targets([{plat:'al'|'y24', id, why}] — 연구 일꾼·메인 세션이 더함) + auto(같은 사업자 번호·상호로 찾은 예스24 가게 · 클라우드가 더함) + 알라딘 판매자 중 시트 '허위 매물' 표시(번호 있는 것)
  *  무엇을: 알라딘 — 가게 첫 화면(wshopitem · 등급·판매자 정보·만족도·품절 취소율·첫 쪽 매물 번호) + 평가 1쪽(wshopsurvey · 날짜·만족도·글) · 예스24 — 가게 첫 화면·공지·평가·분야 메뉴·상품 목록 1쪽(매물 번호) + 낱개 매물 descN(기본 2)개(설명 문장)
@@ -4904,7 +4915,7 @@ async function extCloudRun(X, cfg, budgetMs) {
  *  상태: app_settings/wx_run {key{at,by,tail}, stn{지점:{hi,lo,loDone,err,errAt,n}}, cnt{날짜:번}, last, keyBad}
  *  WX-START (시험 tWX1110이 이 칸만 떼어 가짜 Firestore·가짜 http로 돌림 — 바깥 것은 D로만) */
 const WX_STN = { 108: '서울', 119: '수원', 112: '인천', 159: '부산', 143: '대구', 133: '대전', 156: '광주', 131: '청주', 146: '전주', 105: '강릉', 184: '제주' };
-const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 40, hourKst: 9 };
+const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 120, hourKst: 9 }; /* (cap3x 11/18 몫 3배) 하루 받는 묶음 40 → 120 */
 const WX_PV = 2; /* (11/10 밤) 읽기 판 — 2 = 두세 줄 머리 읽기. wx_run.pv가 이보다 낮으면(예전 읽기로 평균 기온이 비고 비가 0으로 쌓임) 지점마다 처음부터 다시 모음(같은 문서를 덮어씀 · 지우지 않음) */
 const WX_COLS = ['TM', 'STN', 'WS_AVG', 'WR_DAY', 'WD_MAX', 'WS_MAX', 'WS_MAX_TM', 'WD_INS', 'WS_INS', 'WS_INS_TM', 'TA_AVG', 'TA_MAX', 'TA_MAX_TM', 'TA_MIN', 'TA_MIN_TM', 'TD_AVG', 'TS_AVG', 'TG_MIN', 'HM_AVG', 'HM_MIN', 'HM_MIN_TM', 'PV_AVG', 'EV_S', 'EV_L', 'FG_DUR', 'PA_AVG', 'PS_AVG', 'PS_MAX', 'PS_MAX_TM', 'PS_MIN', 'PS_MIN_TM', 'CA_TOT', 'SS_DAY', 'SS_DUR', 'SS_CMB', 'SI_DAY', 'SI_60M_MAX', 'SI_60M_MAX_TM', 'RN_DAY', 'RN_D99', 'RN_DUR']; /* 머리 줄이 없을 때만 쓰는 차례(기상청 도움말 순서 — 머리 줄이 있으면 그 이름으로 찾음) */
 /* (정범님 11/10 저녁 '승인까지 했는데 403 활용신청이 필요') 기상청 API허브는 같은 ASOS 일자료를 API 여러 개로 나눠 활용신청을 따로 받음 → 아래 차례로 시험해 되는 것을 씀(이름을 app_secrets/kma.api에 저장 · 모으기도 그것으로)
@@ -5244,7 +5255,7 @@ function metCloudMake(D) { const ME = 'cloud', CH = 40, STALE = D.stale || 10 * 
 const avCode = (a) => { a = String(a || ''); if (!a) return null; if (a === 'onSale') return 'S'; if (/^(구판|합본)절판/.test(a)) return 'G'; if (/일시품절/.test(a)) return 'T'; if (/^절판/.test(a)) return 'J'; if (/품절/.test(a)) return 'P'; if (/예약/.test(a)) return 'R'; return 'X'; };
 const avEvent = (at, from, to) => { const a = avCode(from), b = avCode(to); if (!a || !b || a === b) return null; const t = Date.parse(at); if (!isFinite(t)) return null; return new Date(t + 9 * 3600e3).toISOString().slice(2, 13).replace(/[-T]/g, '') + '|' + a + '>' + b; };
 const MET_F = ['priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuy']; /* 수집기 METRICS와 같은 차례 */
-const MET_DEF = { gapMin: 1200, gapMax: 2000, inMin: 700, inMax: 1300, dayCap: 1000, sliceSec: 50, adoptMin: 10 }; /* (0.35.74 정범님 11/01 '새로 맡긴 시장 지표를 아무도 안 받음') 24시간 → 10분: 아무 PC도 10분 안에 안 받은 시장 지표는 클라우드가 맡음(PC가 오면 함께 · 같은 조각 규칙) */ /* 책 사이 1.2~2.0초 = 클라우드 예스24 가게 읽기 간격(sleep 1200+0~800) · 한 권 안 두 화면 사이 0.7~1.3초 = 클라우드 구매 주문 읽기(700+0~600)·수집기 reqMinMs 700 · 하루 1,000권(한 권 = 알라딘 요청 2~5번)·한 회차 50초 = 근거: 없음, 설정으로 바꿈(app_settings/cloud_met — 데이터센터 주소라 적게 시작) · adoptMin 24시간 = 노선표 metrics.waitMin(그 뒤 '늦음' 알림 — 0이면 안 맡음) */
+const MET_DEF = { gapMin: 1200, gapMax: 2000, inMin: 700, inMax: 1300, dayCap: 3000, sliceSec: 50, adoptMin: 10 }; /* (cap3x 11/18 정범님 노트 「모든 수집기 몫 3배」) 하루 1,000권 → 3,000권 · 책 사이·화면 사이 틈은 그대로(사람 속도 바닥) */ /* (0.35.74 정범님 11/01 '새로 맡긴 시장 지표를 아무도 안 받음') 24시간 → 10분: 아무 PC도 10분 안에 안 받은 시장 지표는 클라우드가 맡음(PC가 오면 함께 · 같은 조각 규칙) */ /* 책 사이 1.2~2.0초 = 클라우드 예스24 가게 읽기 간격(sleep 1200+0~800) · 한 권 안 두 화면 사이 0.7~1.3초 = 클라우드 구매 주문 읽기(700+0~600)·수집기 reqMinMs 700 · 하루 1,000권(한 권 = 알라딘 요청 2~5번)·한 회차 50초 = 근거: 없음, 설정으로 바꿈(app_settings/cloud_met — 데이터센터 주소라 적게 시작) · adoptMin 24시간 = 노선표 metrics.waitMin(그 뒤 '늦음' 알림 — 0이면 안 맡음) */
 const MET = { cfg: MET_DEF, cfgAt: 0, day: '', n: 0, block: null, busy: false, beatSig: '', beatAt: 0, last: null };
 const kstDayM = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 async function metCfg() { if (Date.now() - MET.cfgAt < 5 * 60e3) return MET.cfg; MET.cfgAt = Date.now(); try { const d = (await C('app_settings').doc('cloud_met').get()).data() || {}; const n = (k) => (isFinite(+d[k]) && +d[k] >= 0 ? +d[k] : MET_DEF[k]); MET.cfg = { gapMin: n('gapMin'), gapMax: Math.max(n('gapMin'), n('gapMax')), inMin: n('inMin'), inMax: Math.max(n('inMin'), n('inMax')), dayCap: n('dayCap'), sliceSec: Math.min(55, n('sliceSec')), adoptMin: n('adoptMin') }; } catch (e) {} return MET.cfg; }

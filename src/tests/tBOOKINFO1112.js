@@ -94,7 +94,7 @@ console.log('⑥ 🗂 차례 — 새 등록 → 판매 중 → 그 밖 → 다�
 
 console.log('⑦ 🖼 샘플 페이지 예산 — 하루 처음엔 많이, 남은 수가 줄면 적게');
 { const a = B.pvBudget({ hourKst: 3, left: 8000 }), b = B.pvBudget({ hourKst: 15, left: 8000 }), c = B.pvBudget({ hourKst: 21, left: 8000 }); ok(a.n === 80 && b.n === 28 && c.n === 16, `시간 비중 새벽 ${a.n} · 오후 ${b.n} · 밤 ${c.n}`);
-  const d = B.pvBudget({ hourKst: 3, left: 100 }); ok(d.n < a.n && d.n > 0, `남은 100권 → ${d.n}권/시간(남은 양 비중 ${d.f})`); ok(B.pvBudget({ hourKst: 3, left: 0 }).n === 0, '다 모으면 0'); ok(B.pvBudget({ hourKst: 3, left: 9000, todayDone: 1190 }).n === 10, '하루 상한 1,200');
+  const d = B.pvBudget({ hourKst: 3, left: 100 }); ok(d.n < a.n && d.n > 0, `남은 100권 → ${d.n}권/시간(남은 양 비중 ${d.f})`); ok(B.pvBudget({ hourKst: 3, left: 0 }).n === 0, '다 모으면 0'); ok(B.pvBudget({ hourKst: 3, left: 9000, todayDone: 1190, cap: 1200 }).n === 10, '하루 상한(cap 1,200을 준 때)'); ok(B.pvBudget({ hourKst: 3, left: 9000, todayDone: 3590 }).n === 10, '기본 하루 상한 3,600(cap3x 11/18)');
   const L = B.pvFromListing([{ stored: 'img/preview/1/2.jpg', thumb: 'img/preview/1/2_t.webp', n: 2 }, { stored: null, n: 1 }, { stored: 'img/preview/1/1.jpg', n: 1 }]); ok(L.length === 2 && L[0].n === 1 && L[1].t, '같은 책 매물 미리보기를 책 단위로(받은 것만 · 쪽 차례)'); }
 
 console.log('⑧ 💾 저장 — 가짜 Firestore·가짜 인터넷으로 한 회차(예스24 번호는 ext_basic에서) · 미리보기 함께 쓰기');

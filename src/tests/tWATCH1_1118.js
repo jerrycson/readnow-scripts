@@ -16,7 +16,7 @@ const lineOf = (S, re) => (S.split('\n').find((x) => re.test(x)) || '');
 
 console.log('① 판본 엔진 하루 상한(edCapOf)');
 const ED = require(EDJ); const edCapOf = ED._t.edCapOf;
-ok(ED.ED_DEF.dayCap === 600 && ED.ED_DEF.capMax === 2400, '바닥 600 · 위 2400(되돌릴 수 있는 기준값)', [ED.ED_DEF.dayCap, ED.ED_DEF.capMax]);
+ok(ED.ED_DEF.dayCap === 1800 && ED.ED_DEF.capMax === 7200 && ED.ED_DEF.blkCap === 600, '바닥 1800 · 위 7200 · 막힘 바닥 600(cap3x 11/18 3배 · 되돌릴 수 있는 기준값)', [ED.ED_DEF.dayCap, ED.ED_DEF.capMax, ED.ED_DEF.blkCap]);
 const others = [{ k: 'bk', used: 4000, cap: 4000 }, { k: 'met', used: 0, cap: 3000 }];
 const a = edCapOf({ base: 600, capMax: 2400, frac: 0.17, others });
 ok(a.cap > 600 && a.cap <= 2400, '새벽(하루 17% 지남) 남는 몫이 있으면 600보다 많이', a);

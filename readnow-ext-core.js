@@ -35,24 +35,24 @@
 
   /* ── 출처 (on 기본값 · 하루 최대 cap · 요청 사이 paceMs) — 화면 읽기 출처는 그 사이트가 막지 않게 낮게 시작(설정 ⑱에서 늘림) · 수집기는 로그인 쿠키 없이(손님으로) 물음 ── */
   const SOURCES = {
-    kyobo: { grp: 'basic', label: '교보문고', kind: 'page', host: 'search.kyobobook.co.kr', keys: [], cap: 500, paceMs: 2500 },
-    naverbook: { grp: 'basic', label: '네이버 도서 (화면)', kind: 'page', host: 'search.shopping.naver.com', keys: [], cap: 400, paceMs: 3500 }, /* (0.6.0) 네이버 책 검색 API가 끝나 화면으로 — 사장님 10/16: 교보 > 예스24 > 네이버 > 알라딘 */
-    yes24: { grp: 'basic', label: '예스24', kind: 'page', host: 'www.yes24.com', keys: [], cap: 500, paceMs: 2500 },
-    google: { grp: 'basic', label: '구글 북스', kind: 'api', host: 'www.googleapis.com', keys: ['googleBooks'], keyOptional: true, cap: 900, paceMs: 1200 },
+    kyobo: { grp: 'basic', label: '교보문고', kind: 'page', host: 'search.kyobobook.co.kr', keys: [], cap: 1500, paceMs: 2500 },
+    naverbook: { grp: 'basic', label: '네이버 도서 (화면)', kind: 'page', host: 'search.shopping.naver.com', keys: [], cap: 1200, paceMs: 3500 }, /* (0.6.0) 네이버 책 검색 API가 끝나 화면으로 — 사장님 10/16: 교보 > 예스24 > 네이버 > 알라딘 */
+    yes24: { grp: 'basic', label: '예스24', kind: 'page', host: 'www.yes24.com', keys: [], cap: 1500, paceMs: 2500 },
+    google: { grp: 'basic', label: '구글 북스', kind: 'api', host: 'www.googleapis.com', keys: ['googleBooks'], keyOptional: true, cap: 1000, paceMs: 1200 },
     ttb: { grp: 'basic', label: '알라딘 TTB (공식 · 2026-10-30 서비스 종료)', ended: '2026-10-30', alt: '알라딘 공개 상품 화면(시장 지표·상품 화면 읽기) · 국립중앙도서관 · 교보 · 예스24', /* (ttb1 11/11) 알라딘이 OpenAPI를 끝냄 — 응답 '999 …OpenAPI서비스는 종료되었습니다' · 대체 주소 없음(공지 blog.aladin.co.kr/cscenter/17483675) · 묻지 않음 */ kind: 'api', host: 'www.aladin.co.kr', keys: ['aladinTtb'], cap: 0, paceMs: 800 },
-    kakao: { grp: 'basic', label: '카카오 책 검색 (공식)', kind: 'api', host: 'dapi.kakao.com', keys: ['kakaoRest'], cap: 25000, paceMs: 500 }, /* (0.6.2) 카카오 공식 일간 쿼터 책 검색 30,000건(앱 기준 · developers.kakao.com/docs/ko/getting-started/quota) → 여유 두고 25,000 */
+    kakao: { grp: 'basic', label: '카카오 책 검색 (공식)', kind: 'api', host: 'dapi.kakao.com', keys: ['kakaoRest'], cap: 30000, paceMs: 500 }, /* (0.6.2) 카카오 공식 일간 쿼터 책 검색 30,000건(앱 기준 · developers.kakao.com/docs/ko/getting-started/quota) → 여유 두고 25,000 */
     naver: { grp: 'basic', label: '네이버 책 검색 (공식 · 종료됨: 10/13·11/11 두 번 다 응답 SE05)', ended: '2026-07-31', endedSure: true, endedWhy: '근거: 10/13(공용 파일 0.4.3) 응답 SE05 · 11/11 클라우드 진단 naverchk가 저장된 키로 실제로 다시 물음 → HTTP 404 SE05 \'존재하지 않는 검색 api\'(키 있음) = 종료 확정 · 묻지 않음(헛호출 0) · 다시 살았는지 보려면 진단 naverchk(확인만 · 켜지 않음)', /* (adapt2 11/11) '확인 필요' → '종료됨' 확정(app_settings/ext_alive.naver) */ /* (adapt1 11/11) '종료됨' → '확인 필요' */ /* (0.4.3) 네이버가 책 검색 API를 2026-07-31에 끝냄(NAVER API HUB로 옮기지 않음) — 응답 SE05 '존재하지 않는 검색 api' · 묻지 않음 */ kind: 'api', host: 'openapi.naver.com', keys: ['naverId', 'naverSecret'], cap: 5000, paceMs: 500 },
-    nl: { grp: 'basic', label: '국립중앙도서관 ISBN 서지 (공식)', kind: 'api', host: 'www.nl.go.kr', keys: ['nlKey'], cap: 3000, paceMs: 800 },
-    joongmo: { grp: 'used', label: '중고닷 (통합 검색)', kind: 'page', host: 'www.joongmo.com', keys: [], cap: 600, paceMs: 3000 }, /* (0.2.0) 당근·중고나라·번개장터·헬로마켓·후르츠를 한 번에 — 정범 지정: 중고 검색은 여기 먼저, 없을 때만 각 장터에 직접 */
-    yes24used: { grp: 'used', label: '예스24 중고', kind: 'page', host: 'www.yes24.com', keys: [], cap: 400, paceMs: 3000 },
-    bunjang: { grp: 'used', label: '번개장터', kind: 'page', host: 'api.bunjang.co.kr', keys: [], cap: 400, paceMs: 3000 },
-    joongna: { grp: 'used', label: '중고나라', kind: 'page', host: 'web.joongna.com', keys: [], cap: 300, paceMs: 3500 },
-    daangn: { grp: 'used', label: '당근', kind: 'page', host: 'www.daangn.com', keys: [], cap: 300, paceMs: 3500 },
-    dvdprime: { grp: 'used', label: 'DVDPrime 장터', kind: 'page', host: 'dvdprime.com', keys: [], cap: 200, paceMs: 4000, media: ['video', 'music'] }, /* (0.3.0) 영상·음반만 — 책은 묻지 않음 */
-    ebay: { grp: 'foreign', label: 'eBay (공식 API)', kind: 'api', host: 'api.ebay.com', keys: ['ebayAppId', 'ebayCertId'], cap: 4000, paceMs: 700 },
-    abebooks: { grp: 'foreign', label: 'AbeBooks (보조)', kind: 'page', host: 'www.abebooks.com', keys: [], cap: 200, paceMs: 4000 },
-    lib: { grp: 'lib', label: '도서관 정보나루 (공식)', kind: 'api', host: 'data4library.kr', keys: ['d4lKey'], cap: 450, paceMs: 1000 },
-    ridi: { grp: 'ebook', label: '리디', kind: 'page', host: 'ridibooks.com', keys: [], cap: 300, paceMs: 3000 },
+    nl: { grp: 'basic', label: '국립중앙도서관 ISBN 서지 (공식)', kind: 'api', host: 'www.nl.go.kr', keys: ['nlKey'], cap: 9000, paceMs: 800 },
+    joongmo: { grp: 'used', label: '중고닷 (통합 검색)', kind: 'page', host: 'www.joongmo.com', keys: [], cap: 1800, paceMs: 3000 }, /* (0.2.0) 당근·중고나라·번개장터·헬로마켓·후르츠를 한 번에 — 정범 지정: 중고 검색은 여기 먼저, 없을 때만 각 장터에 직접 */
+    yes24used: { grp: 'used', label: '예스24 중고', kind: 'page', host: 'www.yes24.com', keys: [], cap: 1200, paceMs: 3000 },
+    bunjang: { grp: 'used', label: '번개장터', kind: 'page', host: 'api.bunjang.co.kr', keys: [], cap: 1200, paceMs: 3000 },
+    joongna: { grp: 'used', label: '중고나라', kind: 'page', host: 'web.joongna.com', keys: [], cap: 900, paceMs: 3500 },
+    daangn: { grp: 'used', label: '당근', kind: 'page', host: 'www.daangn.com', keys: [], cap: 900, paceMs: 3500 },
+    dvdprime: { grp: 'used', label: 'DVDPrime 장터', kind: 'page', host: 'dvdprime.com', keys: [], cap: 600, paceMs: 4000, media: ['video', 'music'] }, /* (0.3.0) 영상·음반만 — 책은 묻지 않음 */
+    ebay: { grp: 'foreign', label: 'eBay (공식 API)', kind: 'api', host: 'api.ebay.com', keys: ['ebayAppId', 'ebayCertId'], cap: 5000, paceMs: 700 },
+    abebooks: { grp: 'foreign', label: 'AbeBooks (보조)', kind: 'page', host: 'www.abebooks.com', keys: [], cap: 600, paceMs: 4000 },
+    lib: { grp: 'lib', label: '도서관 정보나루 (공식)', kind: 'api', host: 'data4library.kr', keys: ['d4lKey'], cap: 500, paceMs: 1000 },
+    ridi: { grp: 'ebook', label: '리디', kind: 'page', host: 'ridibooks.com', keys: [], cap: 900, paceMs: 3000 },
   };
   const ORDER = ['kyobo', 'yes24', 'naverbook', 'google', 'ttb', 'kakao', 'naver', 'nl', 'joongmo', 'yes24used', 'bunjang', 'joongna', 'daangn', 'dvdprime', 'ebay', 'abebooks', 'lib', 'ridi'];
   /* 기본 정보 칸마다 어느 출처를 먼저 믿는지 (정범 지정: 교보 → 예스24 → 구글 북스, 그 뒤 공식 API) — 설정 ext.basicOrder로 바꿈 */
@@ -280,7 +280,7 @@
   /* 검색 결과 화면의 책 묶음(허브) 번호들 — ISBN 검색이면 보통 하나 */
   const y24HubIds = (H) => [...new Set([...String(H || '').matchAll(/UsedShopHub\/Hub\/(\d+)/gi)].map((m) => m[1]))];
   /* 사람 속도·하루 상한·멈춤 — 근거: 없음(정범님 11/09 '화면 사이 4~8초'), 설정으로 바꿈(app_settings/y24_mkt_state.paceMin·paceMax·cap) */
-  const Y24_PACE = { min: 4000, max: 8000, cap: 120, stopH: 6 };
+  const Y24_PACE = { min: 4000, max: 8000, cap: 360, stopH: 6 }; /* (0.6.25 cap3x 11/18 몫 3배) 하루 상한 120 → 360 · 화면 사이 4~8초(사람 속도 바닥)·막힘 멈춤 6시간은 그대로 */
   const y24PaceMs = (r, st) => { const a = Math.max(4000, +(st && st.paceMin) || Y24_PACE.min), b = Math.max(a, +(st && st.paceMax) || Y24_PACE.max); const x = Number.isFinite(r) ? Math.min(1, Math.max(0, r)) : Math.random(); return Math.round(a + x * (b - a)); }; /* 4초 아래로는 못 내림 */
   const y24Blocked = (status, text) => { const s = +status || 0; if (s === 403 || s === 429) return `HTTP ${s} — 예스24가 막음`; const t = String(text || '').slice(0, 200000); if (/captcha|recaptcha|자동\s*입력\s*방지|보안\s*문자|비정상적인\s*(접근|요청)|접근이\s*(차단|제한)|too\s+many\s+requests/i.test(t)) return '캡차·차단 화면'; return null; };
   const y24Gate = (st, now, o) => { st = st || {}; o = o || {}; const t = +now || Date.now(); const day = o.day || new Date(t + 9 * 3600e3).toISOString().slice(0, 10); const cap = Math.max(0, +st.cap || Y24_PACE.cap); const used = st.day === day ? +st.n || 0 : 0;
