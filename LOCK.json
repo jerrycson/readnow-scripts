@@ -50,14 +50,14 @@
   "at": "2026-11-18T00:26:03Z",
   "first": "2026-11-17T22:40:31Z"
  },
- "holder": "lead",
- "host": "shipqB-y24all1",
- "what": "y24all1 판 내기",
- "since": "2026-11-18T00:19:05Z",
- "beat": "2026-11-18T00:23:10Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-18T00:18:33Z"
+  "at": "2026-11-18T00:26:09Z"
  }
 }
