@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.370
+// @version      1.89.371
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -23,12 +23,12 @@
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.12
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.17
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.18
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.19
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.206
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.207
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.27
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
-// @require      https://readnow.kr/readnow-ml-core.js?v=0.10.0
+// @require      https://readnow.kr/readnow-ml-core.js?v=0.10.1
 // @require      https://readnow.kr/readnow-autosched-core.js?v=0.18.33
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -7252,7 +7252,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if ((cfg.custBlock || cfg.sellerReview) && m.cust === undefined) m.cust = await auCust(o, SHC);
         const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
         const JM = typeof auJmemo === 'function' ? await auJmemo() : null; /* (memo1 · 정범님 I-1118-2255-30) 📝 정범님 판단 메모 — 자동 출고 판단에도 반영(판매 평가에만 · 학습 표본엔 안 넣음 F32) */
-        const evMemo = JM ? (a) => { try { const I = JM.M.forItem(JM.idx, { lid: a && a.lid, isbn: (a && a.isbn) || ((E[a && a.lid] || {}).isbn) || null }); return ML.evalSale(I.length ? { ...a, memo: JM.M.digest(I, a.rows) } : a); } catch (e) { return ML.evalSale(a); } } : ML.evalSale;
+        const evMemo = JM ? (a) => { try { const e0 = E[a && a.lid] || {}; const I = JM.M.forItem(JM.idx, { lid: a && a.lid, isbn: (a && a.isbn) || e0.isbn || null, pub: e0.publisher || e0.pub || null }); /* (memo2) 같은 출판사 메모도 */ return ML.evalSale(I.length ? { ...a, memo: JM.M.digest(I, a.rows) } : a); } catch (e) { return ML.evalSale(a); } } : ML.evalSale;
         const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: evMemo, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock || cfg.sellerReview ? m.cust : null, bb: AU.bbx || null });
         const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }

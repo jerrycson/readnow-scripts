@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.17.17'; // (0.17.17 memo1) 📝 판단 메모 엔진 Memo(풀이·찾기·묶음·critTarget 한 겹 — 처리 기준 뒤·하한선 앞 · 낮추는 규칙은 「맞음」 뒤 · 못 알아들은 메모는 저절로 내리지 않음 · 정범님 11/18) // (0.17.16 edkw1) specialKeywords 기본값에 주년·텀블벅·펀딩(판본 낱말 16개 · 정범님 11/17 14:00) // (0.17.15) 🚚 bbCourier(택배 계약 중 그날 적용 줄)·bbWithCourier(매입 판정 재료에 얹기) · bbNetParts 출처 칸 crSrc // (0.17.14) 🏷 매입 후보 순이익(bbNetParts): 택배비 마진(손님 배송비 − 평균 택배비)을 더함·우리 부담이면 뺌(예전엔 마진을 버림 · 하한 셈 sellNet은 그대로) · 칸 pkPer·ship · 우리 매입원가(cost)를 주면 profit·bbProfit(차는 그대로) // (0.17.13) 판매자 가치 판정 스위치(기본 끔)·그림자(기록만) · 예스24 대조에서 시트 빼기 없앰 // (0.17.12) 상태(등급)별 알라딘 매입 조건 표 bbGrRow·bbGrDef(기본값 = 지금 동작) // (0.17.11) 알라딘 매입 등급 밖(중·하) 판단 bbGradeOut · 추격자 전략 고르기 하나 ReadnowChase.stratFor(그룹 개별 > 반자동 조건 묶음 > 전체 · 애매하면 전체) // (0.17.10) 🔬 정밀 점검 11/06 · bbNear 까닭 글(calc)은 처음 읽을 때 만듦(경영 계산·휴대폰 매입 탭이 상품 2.6만 개마다 원 표시 4번 — 느린 함수 1위 self 6.0초·긴 멈춤 41번 46초) · bbW 원 표시를 글자 식으로(같은 결과) // (0.17.9) 🏷 알라딘 매입가 한 곳 — bbValid(정가보다 큰 매입가 무시)·bbPick·bbNetParts·bbNear(매입 후보 판정)·bbFloor(하한 · 기준 차액 넣기는 설정 floorMargin, 기본 끔) // (0.17.8) 하한가로 올리기 전 값 out.preFloor(알라딘 매입 근삿값 표시용 · 판정은 그대로) // (0.17.7) 🚫 빼기 '언제 뺄까'(excl.when · exclLive) // (0.17.6) 🚫 무시 판매자 빼기 설정(excl) · 블랙리스트 기록 // (0.17.5) 🎯 추격자 엔진 ReadnowChase 분리(찾기·정책·고르기·한 걸음·기록) · 지정 판매자 태세 · 불특정 규칙 n회만·되돌아가 2위·그대로 두기 · 옛 chaseStep 그대로 // (0.17.4) 🏝 같은 책 근거 등급 — 확정(우리·장터) 값은 목표 · 사라진 매물 추정은 2건 이상일 때만 · 1건은 참고(정가 9.9배 추천 막음) // (0.17.3) 📐 soloHigh가 시장 전체 팔린 비율(무리별 p75 목표·p95 상한·같은 책 시장 최고값)을 먼저 근거로 · 터무니없는 값 거르기 상한도 무리 p95 // (0.17.2) 🏝 새책 상한 = 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원(79% 없앰) // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.17.18'; // (0.17.18 memo2) 📝 판단 메모 일곱 길 — 출판사 범위(pub)·엔진이 못 보는 요인(factor: 상태·사은품·계절·희귀)·예외(exc · 엔진이 따로 다룸)·가설 채점(score — 시장 매물·지난 판매만 · 헌장 제43조)·비슷한 상품 메모(similar)·값 바꾼 내력(timeline)·엔진이 틀린 사례(wrongCases) · 메모 앞 엔진 값 out.memo.eng · 정범님 11/19 // (0.17.17 memo1) 📝 판단 메모 엔진 Memo(풀이·찾기·묶음·critTarget 한 겹 — 처리 기준 뒤·하한선 앞 · 낮추는 규칙은 「맞음」 뒤 · 못 알아들은 메모는 저절로 내리지 않음 · 정범님 11/18) // (0.17.16 edkw1) specialKeywords 기본값에 주년·텀블벅·펀딩(판본 낱말 16개 · 정범님 11/17 14:00) // (0.17.15) 🚚 bbCourier(택배 계약 중 그날 적용 줄)·bbWithCourier(매입 판정 재료에 얹기) · bbNetParts 출처 칸 crSrc // (0.17.14) 🏷 매입 후보 순이익(bbNetParts): 택배비 마진(손님 배송비 − 평균 택배비)을 더함·우리 부담이면 뺌(예전엔 마진을 버림 · 하한 셈 sellNet은 그대로) · 칸 pkPer·ship · 우리 매입원가(cost)를 주면 profit·bbProfit(차는 그대로) // (0.17.13) 판매자 가치 판정 스위치(기본 끔)·그림자(기록만) · 예스24 대조에서 시트 빼기 없앰 // (0.17.12) 상태(등급)별 알라딘 매입 조건 표 bbGrRow·bbGrDef(기본값 = 지금 동작) // (0.17.11) 알라딘 매입 등급 밖(중·하) 판단 bbGradeOut · 추격자 전략 고르기 하나 ReadnowChase.stratFor(그룹 개별 > 반자동 조건 묶음 > 전체 · 애매하면 전체) // (0.17.10) 🔬 정밀 점검 11/06 · bbNear 까닭 글(calc)은 처음 읽을 때 만듦(경영 계산·휴대폰 매입 탭이 상품 2.6만 개마다 원 표시 4번 — 느린 함수 1위 self 6.0초·긴 멈춤 41번 46초) · bbW 원 표시를 글자 식으로(같은 결과) // (0.17.9) 🏷 알라딘 매입가 한 곳 — bbValid(정가보다 큰 매입가 무시)·bbPick·bbNetParts·bbNear(매입 후보 판정)·bbFloor(하한 · 기준 차액 넣기는 설정 floorMargin, 기본 끔) // (0.17.8) 하한가로 올리기 전 값 out.preFloor(알라딘 매입 근삿값 표시용 · 판정은 그대로) // (0.17.7) 🚫 빼기 '언제 뺄까'(excl.when · exclLive) // (0.17.6) 🚫 무시 판매자 빼기 설정(excl) · 블랙리스트 기록 // (0.17.5) 🎯 추격자 엔진 ReadnowChase 분리(찾기·정책·고르기·한 걸음·기록) · 지정 판매자 태세 · 불특정 규칙 n회만·되돌아가 2위·그대로 두기 · 옛 chaseStep 그대로 // (0.17.4) 🏝 같은 책 근거 등급 — 확정(우리·장터) 값은 목표 · 사라진 매물 추정은 2건 이상일 때만 · 1건은 참고(정가 9.9배 추천 막음) // (0.17.3) 📐 soloHigh가 시장 전체 팔린 비율(무리별 p75 목표·p95 상한·같은 책 시장 최고값)을 먼저 근거로 · 터무니없는 값 거르기 상한도 무리 p95 // (0.17.2) 🏝 새책 상한 = 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원(79% 없앰) // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -888,8 +888,8 @@
    *    값을 낮추는 규칙(천장값·이 값에·정가의 n%가 지금보다 낮음)은 정범님 「맞음」(ok) 뒤에만 · 어느 경우든 그 뒤 하한선·최대 인하 %가 늘 이김
    *  ⚠ 못 알아들은 글(need)이 붙은 상품은 저절로 내리지 않음(지금 가격) — 「사람 확인 필요」로 판정 옆에 남김(버리지 않음) */
   function makeMemo() {
-    const MVER = '1.0.0';
-    const SCOPES = { lid: '이 상품만', isbn: '같은 ISBN 모두', seller: '이 판매자(모든 상품)' };
+    const MVER = '1.1.0'; /* (1.1.0 memo2) pub 범위·factor·exc·score·similar·timeline·wrongCases·forValue */
+    const SCOPES = { lid: '이 상품만', isbn: '같은 ISBN 모두', seller: '이 판매자(모든 상품)', pub: '같은 출판사 모두' };
     const KINDS = { keep: '추천 못 함 이유', price: '추천가 까닭', base: '기준가 까닭', seller: '판매자 색·판단', few: '3개이하·미등록', edkw: '판본 키워드', note: '유의 사항', ship: '출고 판매가 평가', bundle: '묶음', stock: '재고 품목', reg: '등록 추천가', etc: '판단 이유' };
     const ED_KW = ['리커버', '한정판', '개정판', '개정증보', '증보판', '초판', '양장', '반양장', '특별판', '스페셜', '사인본', '기념판', '에디션', '합본', '세트', '낱권', '부록', '영문판', '원서', '큰글자', '보급판', '소장판', '애장판', '무선', '포켓', '미니북', '굿즈', '주년', '텀블벅', '펀딩'];
     const snapW = (v) => Math.round(v / 10) * 10;
@@ -899,9 +899,19 @@
       m = s.match(/(\d{1,3}(?:,\d{3})+|\d{3,})\s*원?/); return m ? +m[1].replace(/,/g, '') : null; }
     const pctOf = (s) => { const m = String(s || '').match(/(\d+(?:\.\d+)?)\s*(?:%|퍼센트|프로)/); return m ? +m[1] : null; };
     const W = (v) => (+v || 0).toLocaleString() + '원';
+    /* (memo2 ②) 엔진이 못 보는 요인 — 상태·사은품(부록)·계절·희귀 · '+'(값을 받칠 까닭 → 저절로 내리지 않음) · '-'(값을 깎을 까닭 → 알림만 · 내리는 것은 사람이) */
+    const FACT = { cond: '상태', gift: '사은품·부록', season: '계절·시기', rare: '희귀·절판' };
+    function factorOf(t) { t = String(t || ''); const neg = /(없|빠|분실|누락|안\s*옴|지남|끝남|끝났|비수기|흔함|흔해)/.test(t);
+      if (/(얼룩|파손|낙서|밑줄|변색|찢|젖|헌\s*책|상태\s*(?:나쁨|안\s*좋|별로|하)|곰팡|접힘|구김|때\s*탐)/.test(t)) return { k: 'factor', f: 'cond', dir: '-', t };
+      if (/(깨끗|새\s*책\s*같|미개봉|최상|상태\s*(?:좋|최상|훌륭|새것)|비닐\s*안\s*뜯)/.test(t)) return { k: 'factor', f: 'cond', dir: '+', t };
+      if (/(사은품|부록|굿즈|엽서|포스터|씨디|CD|DVD|별책|스티커|책갈피|키링)/i.test(t)) return { k: 'factor', f: 'gift', dir: neg ? '-' : '+', t };
+      if (/(시즌|계절|방학|입학|개학|수능|시험\s*(?:철|기간|앞)|크리스마스|연말|명절|여름\s*(?:방학|휴가|시즌)|겨울\s*(?:방학|시즌)|성수기|비수기|학기)/.test(t)) return { k: 'factor', f: 'season', dir: neg ? '-' : '+', t };
+      if (/(희귀|절판|품절|구하기\s*어려|귀한|드문|찾는\s*사람)/.test(t)) return { k: 'factor', f: 'rare', dir: neg ? '-' : '+', t };
+      return null; }
     /* 한 조각 → 규칙 하나(못 알아들으면 null) · 순서: 판매자 → 다른 상품 → 돈이 있는 말 → 돈 없는 멈춤 */
     function one(s) { const t = String(s || '').trim(); if (!t) return null; const w = wonOf(t); const pc = pctOf(t); const NEG = /(말|마|않|안\s*(?:됨|돼|함)|금지|못|없게)/;
       if (/(판매자|셀러|상점|가게|업체)/.test(t) && /(허위|가짜|사기|유령|믿지|무시|빼|제외|재고\s*없|거짓|엉터리|안\s*봄|보지\s*마)/.test(t)) { let nm = (t.match(/^(.*?)\s*(?:판매자|셀러|상점|가게|업체)/) || [])[1] || ''; nm = nm.replace(/^(이|그|저|이번|해당)$/, '').replace(/[「」"'『』]/g, '').trim(); return { k: 'ign', name: nm || null, t }; }
+      if (/(예외|따로\s*(?:다루|봐|관리|처리|둬|두)|별도\s*(?:관리|처리)|엔진\s*(?:에서\s*)?(?:빼|제외|말고|쓰지)|자동\s*판정\s*(?:빼|제외|말))/.test(t)) return { k: 'exc', t }; /* (memo2 ④) 예외 — 엔진이 이 상품을 따로 다룸 */
       if (/(같은\s*(?:책|상품|판본)\s*(?:맞|임|이다|이야))/.test(t)) return { k: 'same', t };
       const kw = ED_KW.filter((k) => t.includes(k)); if (/(다른\s*(?:상품|판본|책|판|물건)|판본이?\s*(?:달|다름)|같은\s*(?:책|상품)이?\s*아님?)/.test(t) || (kw.length && /(라|이라|임|이다|이야|판이|본이|다름|달라|아님)/.test(t))) return { k: 'diff', kw, t };
       if (/(사람만|사람이\s*(?:정|직접)|직접\s*정|자동\s*(?:말|끄|금지|하지)|감시\s*(?:끄|빼|말))/.test(t)) return { k: 'human', t };
@@ -910,11 +920,11 @@
         if (/(최소|바닥|하한|적어도|이상)/.test(t)) return { k: 'floor', won: w, t };
         if (/(넘게|위로|초과|이상으로|비싸게)/.test(t) && /(올리|받|팔)/.test(t) && NEG.test(t)) return { k: 'ceil', won: w, t };
         if (/(최대|천장|상한|넘지|이하로|까지만)/.test(t)) return { k: 'ceil', won: w, t };
-        if (/(에\s*(?:팔|맞|두|올|내|고정)|으로\s*(?:팔|맞|두|올|내|고정|해)|로\s*(?:팔|맞|두|올|내|고정|해)|가\s*맞)/.test(t)) return { k: 'fix', won: w, t }; return null; }
+        if (/(에\s*(?:팔|맞|두|올|내|고정)|으로\s*(?:팔|맞|두|올|내|고정|해)|로\s*(?:팔|맞|두|올|내|고정|해)|가\s*맞)/.test(t)) return { k: 'fix', won: w, t }; return factorOf(t); }
       if (/(내리지|내림|인하|깎지|낮추지)/.test(t) && NEG.test(t)) return { k: 'noDown', t };
       if (/(올리지|인상|올림)/.test(t) && NEG.test(t)) return { k: 'noUp', t };
       if (/(그대로|유지|고정|바꾸지|건드리지|손대지)/.test(t)) return { k: 'hold', t };
-      return null; }
+      return factorOf(t); }
     /* ① 풀이 — 한 메모 글 → 규칙들 + 못 알아들은 조각(빈 말·인사는 버리지 않고 need로) */
     function parse(text) { const s = String(text || '').trim(); const rules = [], need = []; if (!s) return { rules, need };
       const parts = s.split(/(?:[.\n!;?]|,(?!\d{3})|\s그리고\s|\s하고\s)+/).map((x) => x.trim()).filter(Boolean);
@@ -927,18 +937,20 @@
       case 'floor': return `바닥값 ${W(r.won)} — 이 값 밑으로 내리지 않음`; case 'ceil': return `천장값 ${W(r.won)} — 이 값 넘게 올리지 않음`; case 'fix': return `판매가 ${W(r.won)}으로`;
       case 'noDown': return '내리지 않음'; case 'noUp': return '올리지 않음'; case 'hold': return '가격 그대로(바꾸지 않음)'; case 'human': return '자동으로 바꾸지 않음 — 사람만';
       case 'ign': return `판매자 ${r.name ? '「' + r.name + '」' : '(이 이유 줄의 판매자)'} 매물을 시장 비교에서 뺌`; case 'diff': return `다른 상품${r.kw && r.kw.length ? '(' + r.kw.join('·') + ')' : ''} — 같은 이름 시장과 견주지 않음`;
-      case 'same': return '같은 책 맞음(판본 의심 아님)'; case 'listPct': return `추천 못 할 때 정가의 ${r.pct}%`; default: return r.k; } }
+      case 'same': return '같은 책 맞음(판본 의심 아님)'; case 'listPct': return `추천 못 할 때 정가의 ${r.pct}%`;
+      case 'exc': return '예외 — 엔진이 따로 다룸(자동 판정·자동 출고에서 빼고 사람이 봄)'; case 'factor': return `엔진이 못 보는 요인: ${FACT[r.f] || r.f} ${r.dir === '+' ? '↑ 값을 받침 → 저절로 내리지 않음' : '↓ 값을 깎을 까닭 → 알림만(내리는 것은 사람이)'}`; default: return r.k; } }
     const lower = (r) => ['ceil', 'fix', 'listPct'].includes(r.k); /* 값을 낮출 수 있는 규칙 — 「맞음」 뒤에만 */
     const on = (m) => m && !m.off && String(m.text || '').trim();
     /* ② 찾기 표 */
-    function index(list) { const I = { lid: new Map(), isbn: new Map(), seller: [], n: 0 }; for (const m of list || []) { if (!on(m)) continue; I.n++; const k = String(m.key || ''); if (m.scope === 'seller') { I.seller.push(m); continue; } const mp = m.scope === 'isbn' ? I.isbn : I.lid; if (!k) continue; if (!mp.has(k)) mp.set(k, []); mp.get(k).push(m); } return I; }
+    const pubKey = (v) => String(v || '').replace(/\(주\)|㈜|주식회사|\s|[·.,()\[\]]/g, '').toLowerCase();
+    function index(list) { const I = { lid: new Map(), isbn: new Map(), pub: new Map(), seller: [], n: 0 }; for (const m of list || []) { if (!on(m)) continue; I.n++; const k = String(m.key || ''); if (m.scope === 'seller') { I.seller.push(m); continue; } const mp = m.scope === 'isbn' ? I.isbn : m.scope === 'pub' ? I.pub : I.lid; if (!k) continue; const kk = m.scope === 'pub' ? pubKey(k) : k; if (!mp.has(kk)) mp.set(kk, []); mp.get(kk).push(m); } return I; }
     function forItem(I, o) { if (!I) return []; o = o || {}; const out = []; const seen = new Set(); const add = (L) => { for (const m of L || []) { const id = m.id || m.scope + ':' + m.key + ':' + m.kind; if (!seen.has(id)) { seen.add(id); out.push(m); } } };
-      for (const k of [o.lid, o.uc, o.key].filter((v) => v != null && v !== '')) add(I.lid.get(String(k))); if (o.isbn) add(I.isbn.get(String(o.isbn).replace(/[^0-9Xx]/g, ''))); add(I.seller); return out; }
+      for (const k of [o.lid, o.uc, o.key].filter((v) => v != null && v !== '')) add(I.lid.get(String(k))); if (o.isbn) add(I.isbn.get(String(o.isbn).replace(/[^0-9Xx]/g, ''))); if (o.pub && I.pub) add(I.pub.get(pubKey(o.pub))); add(I.seller); return out; }
     const nmEq = (a, b) => { a = String(a || '').replace(/\s/g, ''); b = String(b || '').replace(/\s/g, ''); return !!a && !!b && (a === b || (a.length >= 2 && b.includes(a)) || (b.length >= 2 && a.includes(b))); };
     const rowSc = (r) => String(r && (r.sellerCode != null ? r.sellerCode : r.sc != null ? r.sc : '') || '');
     const rowNm = (r) => (r && (r.n != null ? r.n : r.sellerName)) || '';
     /* ③ 한 상품의 규칙 묶음 — rows(지금 첫 페이지)는 '이름으로 적은 판매자'가 이 시장에 있는지 볼 때만 */
-    function digest(memos, rows) { const D = { n: 0, ign: [], floor: null, ceil: null, fix: null, listPct: null, noDown: false, noUp: false, hold: false, human: false, diff: null, same: false, need: [], used: [], wait: [], clash: [] };
+    function digest(memos, rows) { const D = { n: 0, ign: [], floor: null, ceil: null, fix: null, listPct: null, noDown: false, noUp: false, hold: false, human: false, diff: null, same: false, exc: null, factors: [], need: [], used: [], wait: [], clash: [] };
       for (const m of memos || []) { if (!on(m)) continue; D.n++; const P = parse(m.text); const src = { id: m.id || null, scope: m.scope || 'lid', kind: m.kind || 'etc', ok: !!m.ok };
         P.need.forEach((x) => D.need.push({ ...src, text: x }));
         for (const r of P.rules) { const tag = { ...src, k: r.k, txt: ruleTxt(r) };
@@ -946,6 +958,8 @@
             if (!sc && !nm) { D.need.push({ ...src, text: r.t, why: '어느 판매자인지 몰라 — 판매자 이름을 글에 넣거나 「이 판매자」 범위로' }); continue; } tag.txt = ruleTxt({ ...r, name: nm || sc }); D.ign.push({ sc: sc || null, name: nm || null, from: tag }); continue; }
           if (r.k === 'diff') { D.diff = { kw: [...new Set([...((D.diff && D.diff.kw) || []), ...(r.kw || [])])], from: tag }; continue; }
           if (r.k === 'same') { D.same = true; D.used.push(tag); continue; }
+          if (r.k === 'exc') { if (!D.exc) D.exc = { from: tag }; continue; }
+          if (r.k === 'factor') { D.factors.push({ f: r.f, dir: r.dir, from: tag }); continue; }
           if (['noDown', 'noUp', 'hold', 'human'].includes(r.k)) { D[r.k] = true; D.used.push(tag); continue; }
           if (r.k === 'floor') { if (!D.floor || r.won > D.floor.won) D.floor = { won: r.won, from: tag }; continue; } /* 부딪히면 더 조심스러운 쪽(높은 바닥) */
           if (r.k === 'ceil') { if (!D.ceil || r.won > D.ceil.won) D.ceil = { won: r.won, ok: !!m.ok, from: tag }; continue; } /* 천장은 높은 쪽이 덜 깎음 */
@@ -961,8 +975,10 @@
     function rowsDrop(rows, D) { if (!D || !D.ign || !D.ign.length || !Array.isArray(rows)) return rows; const o = rows.filter((r) => !(r && r.c !== 'ours' && ignHit(r, D.ign))); return o.length === rows.length ? rows : o; }
     const has = (D) => !!(D && (D.n || 0) > 0);
     /* ④-2 목표가에 한 겹 — R(이유 줄)에 「📝 메모 반영됨: …」 · out.memo = 한눈 요약 · 하한선은 이 뒤 critTarget에서 늘 이김 */
-    function onTarget(t, l, D, R, out) { if (!has(D)) return t; const cur = l && l.price > 0 ? +l.price : null; const lp = +((l && l.priceList) || 0); const used = []; const tag = (x) => `📝 메모 반영됨: ${x}`; const WT = [...(D.wait || [])]; /* 묶음(D)은 여러 번 써도 그대로 — 고치지 않음 */
-      if (D.diff) { R.push(tag(`${D.diff.from.txt} → 첫 페이지 시장으로 정한 값을 쓰지 않고 ${cur ? '지금 가격 그대로' : '추천 못 함'}`)); used.push(D.diff.from); t = cur; out.memoHold = 'diff'; }
+    function onTarget(t, l, D, R, out) { if (!has(D)) return t; const eng = t; const cur = l && l.price > 0 ? +l.price : null; const lp = +((l && l.priceList) || 0); const used = []; const tag = (x) => `📝 메모 반영됨: ${x}`; const WT = [...(D.wait || [])]; /* 묶음(D)은 여러 번 써도 그대로 — 고치지 않음 */
+      const FU = (D.factors || []).filter((f) => f.dir === '+'), FD = (D.factors || []).filter((f) => f.dir === '-');
+      if (D.exc) { R.push(tag(`${D.exc.from.txt} → 엔진 값${t != null ? ' ' + W(t) : ''}을 쓰지 않고 ${cur ? '지금 가격 그대로' : '추천 못 함'}`)); used.push(D.exc.from); t = cur; out.memoHold = 'exc'; out.memoExc = true; }
+      else if (D.diff) { R.push(tag(`${D.diff.from.txt} → 첫 페이지 시장으로 정한 값을 쓰지 않고 ${cur ? '지금 가격 그대로' : '추천 못 함'}`)); used.push(D.diff.from); t = cur; out.memoHold = 'diff'; }
       else if (D.human || D.hold) { const f = D.used.find((u) => u.k === 'human' || u.k === 'hold'); R.push(tag(`${f ? f.txt : '가격 그대로'} → 지금 가격 그대로`)); used.push(f); t = cur; out.memoHold = D.human ? 'human' : 'hold'; }
       else {
         /* 값을 낮추는 규칙(정가의 n%·이 값에·천장)은 정범님 「맞음」(ok) 뒤에만 — 단 지금 가격보다 낮추지 않거나 엔진 추천보다 높은 경우는 바로 씀 */
@@ -973,13 +989,60 @@
         if (t != null && cur && D.noDown && t < cur) { const f = D.used.find((u) => u.k === 'noDown'); R.push(tag(`내리지 않음 → ${W(t)} 대신 지금 가격 ${W(cur)}`)); t = cur; used.push(f); }
         if (t != null && cur && D.noUp && t > cur) { const f = D.used.find((u) => u.k === 'noUp'); R.push(tag(`올리지 않음 → ${W(t)} 대신 지금 가격 ${W(cur)}`)); t = cur; used.push(f); }
         if (D.floor) { if (t != null && t < D.floor.won) { R.push(tag(`${D.floor.from.txt} → ${W(t)}에서 ${W(D.floor.won)}으로 올림`)); t = D.floor.won; } else R.push(tag(`${D.floor.from.txt} (지금 추천 ${t != null ? W(t) : '-'}은 그 위)`)); used.push(D.floor.from); }
+        if (FU.length && t != null && cur && t < cur) { R.push(tag(`${FU.map((f) => f.from.txt).join(' · ')} → ${W(t)} 대신 지금 가격 ${W(cur)}`)); t = cur; FU.forEach((f) => used.push(f.from)); out.memoHold = out.memoHold || 'factor'; } else FU.forEach((f) => R.push(tag(`${f.from.txt} (지금 추천은 내리지 않음)`)));
+        FD.forEach((f) => R.push(tag(`${f.from.txt}${t != null && cur && t >= cur ? ' — 엔진은 이 까닭을 못 봄 · 내릴지 사람이 정함' : ''}`)));
         if (D.need.length && t != null && cur && t < cur) { R.push(`📝 사람 확인 필요 메모 ${D.need.length}개가 있어 저절로 내리지 않음 → 지금 가격 ${W(cur)} (메모를 알아들을 수 있게 고치거나 정범님이 값을 정함)`); t = cur; out.memoHold = 'need'; } }
       D.ign.forEach((g) => { used.push(g.from); R.push(tag(`${g.from.txt}${g.here != null ? ' — 이 첫 페이지에서 ' + g.here + '개' : ''}`)); }); if (D.same) used.push(D.used.find((u) => u.k === 'same'));
       WT.forEach((w) => R.push(`📝 메모 확인 전(값을 낮추는 규칙) — ${w.txt} · 📝 칸에서 「맞음」을 누르면 다음 판정부터 씀`)); D.clash.forEach((x) => R.push('📝 ' + x));
       if (D.need.length) R.push(`📝 사람 확인 필요 — 못 알아들은 메모: ${D.need.map((x) => '「' + String(x.text).slice(0, 40) + '」' + (x.why ? '(' + x.why + ')' : '')).join(' · ')}`);
-      out.memo = { n: D.n, used: used.filter(Boolean).map((u) => u.txt), need: D.need.map((x) => x.text), wait: WT.map((w) => w.txt), floor: D.floor ? D.floor.won : null, hold: out.memoHold || null };
+      out.memo = { n: D.n, used: used.filter(Boolean).map((u) => u.txt), need: D.need.map((x) => x.text), wait: WT.map((w) => w.txt), floor: D.floor ? D.floor.won : null, hold: out.memoHold || null, eng: eng != null ? eng : null, exc: !!D.exc, factors: (D.factors || []).map((f) => f.f + f.dir) };
       return t; }
-    return { VERSION: MVER, SCOPES, KINDS, ED_KW, wonOf, pctOf, parse, one, ruleTxt, lower, index, forItem, digest, ignHit, rowsDrop, onTarget, has };
+    /* ══ (memo2 · 정범님 11/19 I-1119-0007-01.2) 메모를 실제로 쓰는 길 ③⑤⑥⑦ — 모두 순수 함수(웹앱·클라우드가 같은 답) ══ */
+    /* ③-1 메모가 무엇을 주장하나 — keep(이 값을 지켜도 팔림: 바닥·내리지 않음·그대로·예외·받치는 요인) · cut(내리면/이 값이면 팔림: 천장·정가 n%·깎을 요인) · mkt(시장 판단: 판매자 빼기·다른 상품·같은 책) */
+    function dirOf(m, uses) { const P = parse(m && m.text); const ks = P.rules.map((r) => r.k + (r.k === 'factor' ? r.dir : ''));
+      if (ks.includes('fix')) { const U = Object.values(uses || (m && m.use) || {}).filter((e) => e && e.from > 0 && e.to > 0); const dn = U.filter((e) => e.to < e.from).length; return dn * 2 > U.length && U.length ? 'cut' : 'keep'; }
+      if (ks.some((k) => ['ceil', 'listPct', 'factor-'].includes(k))) return 'cut'; if (ks.some((k) => ['floor', 'noDown', 'hold', 'human', 'exc', 'factor+', 'noUp'].includes(k))) return 'keep'; if (ks.some((k) => ['ign', 'diff', 'same'].includes(k))) return 'mkt'; return null; }
+    /* ③-2 대조 고르기 — 메모 없는 비슷한 상품(같은 출판사 또는 같은 분야 · 값 ±20%) · pool = [{k, pub, cat, price}] · 메모 상품(keys)은 뺌 */
+    function pickCtrl(it, pool, o) { o = o || {}; const keys = o.keys || new Set(); const p = +(it && it.price) || 0; const pk = pubKey(it && it.pub); const ct = String((it && it.cat) || ''); const band = o.band != null ? o.band : 0.2; const out = [];
+      for (const c of pool || []) { if (!c || keys.has(c.k) || c.k === (it && it.k)) continue; const cp = +c.price || 0; if (p > 0 && (cp <= 0 || Math.abs(cp - p) > p * band)) continue; if (!((pk && pubKey(c.pub) === pk) || (ct && String(c.cat || '') === ct))) continue; out.push(c); if (out.length >= (o.max || 40)) break; } return out; }
+    /* ③-3 가설 채점 — 돈 드는 실험 없이 지난 판매·시장 매물로만(헌장 제43조 대리 표본)
+     *  o = { memo, items:[{k, at(메모가 쓰인 때), sold, soldAt}], ctrl:[{k, sold(같은 기간 안에 팔림)}], days(기본 30), now(ms) }
+     *  돌려줌 { verdict: hit(맞음)·miss(틀림)·wait(기다림)·na(판단 못 함), dir, n, nM(기간 다 찬 상품), sM, rateM, nC, rateC, why } */
+    function score(o) { o = o || {}; const days = +o.days || 30; const now = o.now != null ? +o.now : Date.now(); const DAY = 864e5; const ms = (v) => (v == null ? NaN : typeof v === 'number' ? v : Date.parse(v)); const dir = o.dir || dirOf(o.memo);
+      const items = (o.items || []).filter((e) => e && Number.isFinite(ms(e.at))); const done = items.filter((e) => (e.sold && ms(e.soldAt) - ms(e.at) <= days * DAY) || now - ms(e.at) >= days * DAY); const sM = done.filter((e) => e.sold && ms(e.soldAt) - ms(e.at) <= days * DAY).length;
+      const C = o.ctrl || []; const nC = C.length; const sC = C.filter((c) => c && c.sold).length; const rateC = nC ? sC / nC : null; const rateM = done.length ? sM / done.length : null; const pc = (v) => (v == null ? '-' : Math.round(v * 100) + '%');
+      const R = { verdict: 'na', dir, n: items.length, nM: done.length, sM, rateM, nC, rateC, days, why: '' };
+      if (!dir) { R.why = '채점할 주장이 없는 메모(사람 확인 필요·풀이 없음)'; return R; } if (!items.length) { R.why = '아직 이 메모가 쓰인 상품이 없음'; return R; }
+      if (!done.length) { R.verdict = 'wait'; R.why = `쓰인 뒤 ${days}일이 아직 안 참(${items.length}개 지켜보는 중)`; return R; }
+      if (nC < 3) { R.why = `대조할 비슷한 상품(메모 없음·같은 출판사/분야·값 ±20%)이 ${nC}개뿐 — 3개 이상일 때 채점`; return R; }
+      const claim = dir === 'cut' ? '내린 값이면 팔림' : dir === 'keep' ? '값을 지켜도 팔림' : '시장 판단이 맞음(견준 시장에서 팔림)';
+      if (done.length === 1) { if (sM) { R.verdict = 'hit'; R.why = `${claim} — 이 상품이 ${days}일 안에 팔림 · 대조 ${pc(rateC)}(${nC}개)`; } else if (rateC >= 0.3) { R.verdict = 'miss'; R.why = `${claim}라 했으나 ${days}일 안 안 팔림 · 비슷한 상품은 ${pc(rateC)} 팔림(${nC}개)`; } else { R.why = `안 팔렸지만 비슷한 상품도 ${pc(rateC)}만 팔림 — 메모 탓인지 알 수 없음`; } return R; }
+      const bar = dir === 'cut' ? rateC : rateC * 0.7; R.verdict = rateM >= bar ? 'hit' : 'miss';
+      R.why = `${claim} — 메모 상품 ${pc(rateM)} 팔림(${done.length}개 중 ${sM}) · 대조 ${pc(rateC)}(${nC}개)${dir === 'cut' ? ' · 기준: 대조 이상' : ' · 기준: 대조의 70% 이상(값을 지킨 만큼 조금 덜 팔려도 맞음)'}`; return R; }
+    /* ⑤ 비슷한 상품의 지난 메모 — 제목 낱말·같은 시리즈(끝 번호 뺀 제목)·출판사+저자 · it = {title, pub, author, isbn, key} · 이미 이 상품에 걸린 메모는 뺌 */
+    const ttlStem = (t) => String(t || '').replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/[\s:·,\-]*(?:제?\s*\d+\s*(?:권|부|편|장)?|[上中下]|상|중|하|세트|합본)\s*$/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const ttlTok = (t) => new Set(String(t || '').toLowerCase().replace(/\(.*?\)|\[.*?\]/g, ' ').split(/[^0-9a-z가-힣]+/).filter((w) => w.length >= 2 && !/^\d+$/.test(w) && !['세트', '전집', '개정판', '리커버', '한정판', '특별판'].includes(w)));
+    function similar(list, it, o) { o = o || {}; it = it || {}; const T = ttlTok(it.title); const st = ttlStem(it.title); const pk = pubKey(it.pub); const au = String(it.author || '').replace(/\s/g, ''); const isb = String(it.isbn || '').replace(/[^0-9Xx]/g, ''); const own = new Set((o.own || []).map((m) => m.id)); const out = [];
+      for (const m of list || []) { if (!on(m) || own.has(m.id) || m.scope === 'seller') continue; if ((it.key && String(m.key) === String(it.key)) || (isb && m.scope === 'isbn' && String(m.key) === isb)) continue;
+        const MT = ttlTok(m.title); let inter = 0; T.forEach((w) => { if (MT.has(w)) inter++; }); const uni = T.size + MT.size - inter; let sim = uni ? inter / uni : 0; const why = [];
+        if (sim >= 0.5) why.push('제목 낱말 ' + Math.round(sim * 100) + '% 같음'); if (st && st.length >= 2 && ttlStem(m.title) === st) { sim = Math.max(sim, 0.9); why.push('같은 시리즈(제목 앞부분 같음)'); }
+        const mp = pubKey(m.pub || (m.scope === 'pub' ? m.key : '')); if (pk && mp === pk) { if (au && String(m.author || '').replace(/\s/g, '') === au) { sim = Math.max(sim, 0.7); why.push('같은 출판사·저자'); } else if (m.scope === 'pub') { sim = Math.max(sim, 0.6); why.push('같은 출판사 메모'); } else if (sim >= 0.3) { sim += 0.15; why.push('같은 출판사'); } }
+        if (sim >= (o.min || 0.5)) out.push({ m, sim: Math.min(1, sim), why: why.join(' · ') }); }
+      return out.sort((a, b) => b.sim - a.sim).slice(0, o.n || 5); }
+    /* ⑥ 넘겨받기·설명 — 이 상품의 값을 누가·언제·왜 바꿨나(메모 적음·고침·맞음·끔 + 엔진이 메모로 바꾼 값 + 밖의 가격 바꿈 기록 o.changes[{at, by, from, to, why}]) · 새것 먼저 */
+    function timeline(memos, key, o) { o = o || {}; const E = []; const nm = (v) => String(v || '').split('@')[0]; const SRC = { web: '웹앱', cloud: '클라우드', pc: '수집기 PC' };
+      for (const m of memos || []) { if (!m) continue; const head = String(m.text || '').slice(0, 60); E.push({ at: m.at, who: nm(m.byName || m.by), what: '📝 메모 적음', text: head, id: m.id, scope: m.scope });
+        (m.hist || []).forEach((h) => E.push({ at: h.at, who: nm(h.by), what: '📝 ' + (h.what || '고침'), text: h.text ? String(h.text).slice(0, 60) : '', id: m.id }));
+        const e = key != null && m.use ? m.use[key] : null; if (e) E.push({ at: e.at, who: SRC[e.src] || e.src || '엔진', what: '🤖 메모로 판정', from: e.from, to: e.to, eng: e.eng != null ? e.eng : null, why: e.why || '', hold: e.hold || null, id: m.id }); }
+      (o.changes || []).forEach((c) => c && E.push({ at: c.at, who: nm(c.by) || '사람', what: '💲 값 바꿈', from: c.from, to: c.to, why: c.why || '' }));
+      return E.filter((e) => e.at).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, o.n || 60); }
+    /* ⑦ 엔진이 틀린 사례 모음 — 메모가 엔진 값을 바꿨거나 멈췄고(eng ≠ to 또는 멈춤) 채점이 맞음(hit)이면 「엔진이 틀림」 · 채점 전이면 「확인 기다림」 · 다음 학습 재료(메모 글은 넣지 않음 — 규칙 종류·값만) */
+    function wrongCases(memos, scores, o) { o = o || {}; const S = scores || {}; const out = [];
+      for (const m of memos || []) { if (!m || m.off) continue; const sc = S[m.id] || m.score || null; if (sc && sc.verdict === 'miss') continue; const kinds = parse(m.text).rules.map((r) => r.k + (r.k === 'factor' ? r.f + r.dir : ''));
+        for (const [k, e] of Object.entries(m.use || {})) { if (!e) continue; const moved = e.eng != null && e.to != null && +e.eng !== +e.to; const stop = ['diff', 'exc', 'human', 'hold', 'factor'].includes(e.hold); if (!moved && !stop) continue;
+          out.push({ id: m.id, k, at: e.at, title: e.t || '', eng: e.eng != null ? e.eng : null, to: e.to != null ? e.to : null, from: e.from != null ? e.from : null, hold: e.hold || null, kinds, mkind: m.kind || null, verdict: sc ? sc.verdict : 'wait', state: sc && sc.verdict === 'hit' ? '엔진이 틀림(메모가 맞음)' : '확인 기다림' }); } }
+      return out.sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).slice(0, o.n || 500); }
+    return { VERSION: MVER, SCOPES, KINDS, ED_KW, FACT, wonOf, pctOf, parse, one, factorOf, ruleTxt, lower, pubKey, index, forItem, digest, ignHit, rowsDrop, onTarget, has, dirOf, pickCtrl, score, similar, timeline, wrongCases };
   }
   const Memo = makeMemo();
   if (root && typeof root === 'object') { try { root.ReadnowMemo = Memo; } catch (e) {} }
