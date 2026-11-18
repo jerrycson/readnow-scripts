@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "shipqB-fbchk2",
-   "why": "판 내기 기다림: 판 내기 기다림: fbchk2 연구 DB 지우기 막음 진단(shipqB)",
-   "first": "2026-11-17T22:40:11Z",
-   "at": "2026-11-18T00:11:03Z"
-  },
-  {
-   "who": "lead",
    "host": "shipqB-y24all1",
    "why": "판 내기 기다림: 판 내기 기다림: y24all1 예스24 전상품(shipqB)",
    "first": "2026-11-17T22:40:23Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "shipqB-fbchk2",
-  "why": "판 내기 기다림: 판 내기 기다림: fbchk2 연구 DB 지우기 막음 진단(shipqB)",
-  "at": "2026-11-18T00:11:03Z",
-  "first": "2026-11-17T22:40:11Z"
+  "host": "shipqB-y24all1",
+  "why": "판 내기 기다림: 판 내기 기다림: y24all1 예스24 전상품(shipqB)",
+  "at": "2026-11-18T00:11:19Z",
+  "first": "2026-11-17T22:40:23Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "shipqB-fbchk2",
+ "what": "판 내기 기다림: fbchk2 연구 DB 지우기 막음 진단(shipqB)",
+ "since": "2026-11-18T00:12:05Z",
+ "beat": "2026-11-18T00:12:05Z",
  "last": {
   "who": "lead",
   "done": "",
