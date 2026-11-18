@@ -204,7 +204,8 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
       const ended = !!(Mx.ended != null ? Mx.ended : XL && XL.ended != null ? XL.ended : null); const admSold = !!(A && aNew && /^0?4$/.test(String(A.st || ''))); if (ended || admSold) continue;
       if (grade) add(isbn, grade, x.goodsNo); else ['최상', '상', '중', '하'].forEach((g) => add(isbn, g, x.goodsNo)); }
     const selfSet = new Set(); for (const a of D.adm.values()) { if (!/^0?(4|7)$/.test(String(a.st || ''))) add(a.ean, a.grade, a.no); String(a.self || '').split(/[,\s]+/).filter(Boolean).forEach((s) => selfSet.add(s)); }
-    const ledSku = new Set(); for (const e of Object.values(led.r || {})) if (e && e.st !== 'retry') (e.skus || []).forEach((s) => ledSku.add(s)); return { onY24, selfSet, led: led.r || {}, ledSku, cfg, val }; }
+    const ledSku = new Set(); for (const e of Object.values(led.r || {})) if (e && e.st !== 'retry') (e.skus || []).forEach((s) => ledSku.add(s)); const pxAl = new Set(); for (const w of Object.values(led.w || {})) if (w && w.lid && w.px === 'al' && w.on != null && +w.on) pxAl.add(String(w.lid)); /* (y24pick1 11/18) 「알라딘 값과 같게」 정해 둔 상품 — 웹앱 y24PxAlSet 그대로 */
+    return { onY24, selfSet, led: led.r || {}, ledSku, pxAl, cfg, val }; }
   /* 웹앱 y24EngVal(use 'new') — 공용 파일 y24PriceOf 그대로 */
   function engVal(m, D, l, mk) { const y = D.plat.y24 || {}; const cfg = { ...(y.val || {}) }; if (cfg.cheapPct == null && m.SH && m.SH.autoCfg) { try { const A = m.SH.autoCfg(D.ship || {}); if (A && A.cheapPct != null) cfg.cheapPct = A.cheapPct; } catch (e) {} }
     const L = { alPrice: +l.price || 0, grade: y24G(l.grade), priceList: +l.priceList || 0, ourShip: cfg.ourShip != null ? cfg.ourShip : null };
