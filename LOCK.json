@@ -29,14 +29,14 @@
   "at": "2026-11-18T08:40:25Z",
   "first": "2026-11-18T07:35:00Z"
  },
- "holder": "lead",
- "host": "vm-shoprow1",
- "what": "shoprow1 올림",
- "since": "2026-11-18T08:32:59Z",
- "beat": "2026-11-18T08:40:35Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
-  "who": "y24low1",
-  "done": "웹앱 1.78.731 · 클라우드 0.35.310 · 수집기 1.89.364 · ext-core 0.6.26 · 예스24 자동 올림 지킴 둘 · 7b06968c5 (머리 그대로)",
-  "at": "2026-11-18T08:32:28Z"
+  "who": "lead",
+  "done": "shoprow1 우리숍 shop.js 0.2.24 띠 앞 3권 복제 사진 바로 받기 · 81889db54 (머리·웹앱 판 그대로)",
+  "at": "2026-11-18T08:40:43Z"
  }
 }
