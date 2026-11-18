@@ -29,14 +29,14 @@
   "at": "2026-11-18T12:56:49Z",
   "first": "2026-11-18T11:19:50Z"
  },
- "holder": "lead",
- "host": "vm-shipnote1",
- "what": "shipnote1 웹앱 1.78.739 — push",
- "since": "2026-11-18T12:41:05Z",
- "beat": "2026-11-18T12:57:03Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "bqmkt1 · 웹앱 1.78.738 — 수동 일괄 시장 지표(그룹 갱신에 모든 탭·탭 전체 다시 읽기·카드마다 갱신) · 8a8ae0b6e (머리 그대로 8ab2f661d1d8afa8)",
-  "at": "2026-11-18T12:40:44Z"
+  "done": "shipnote1 · 웹앱 1.78.739 · 클라우드 0.35.315 📝 출고 탭 전체 유의 사항 다시 읽기(모든 등급)·최상·상 📝·이득·손해 정렬 고침 · 45afd364a (머리 그대로 8ab2f661d1d8afa8)",
+  "at": "2026-11-18T12:57:35Z"
  }
 }
