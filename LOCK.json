@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "shipqB-y24all1",
-   "why": "판 내기 기다림: 판 내기 기다림: y24all1 예스24 전상품(shipqB)",
-   "first": "2026-11-17T22:40:23Z",
-   "at": "2026-11-18T00:17:42Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edkw2",
    "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
    "first": "2026-11-17T22:40:29Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "shipqB-y24all1",
-  "why": "판 내기 기다림: 판 내기 기다림: y24all1 예스24 전상품(shipqB)",
-  "at": "2026-11-18T00:17:42Z",
-  "first": "2026-11-17T22:40:23Z"
+  "host": "vm-edkw2",
+  "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
+  "at": "2026-11-18T00:18:59Z",
+  "first": "2026-11-17T22:40:29Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "shipqB-y24all1",
+ "what": "판 내기 기다림: y24all1 예스24 전상품(shipqB)",
+ "since": "2026-11-18T00:19:05Z",
+ "beat": "2026-11-18T00:19:05Z",
  "last": {
   "who": "lead",
   "done": "",
