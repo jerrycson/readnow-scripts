@@ -21,6 +21,7 @@ on:
     inputs:
       health_only: { description: '숫자 요약만(배포 안 함)', type: boolean, default: false }
       cb: { description: 'Cloud Build에 맡기기 — build(진짜 배포) · fail(일부러 실패 · 안 올림) · broken(깨진 파일 · 안 올림) · dry(검사만 · 안 올림) · 비우면 예전처럼 여기서 배포', type: string, default: '' }
+      rules: { description: '🛡 Firestore 보안 규칙만 — view(보기만) · deploy(에뮬레이터 시험 통과 때만 배포 · 옛 묶음 남김) · 비우면 안 함(이 칸을 쓰면 클라우드 배포는 안 함)', type: string, default: '' }
   schedule:
     - cron: '41 22,4,10 * * *'  # (privzero1 11/17) 💸 매시 → 점검 직전만: 한국 07:41·13:41·19:41(하루 3번 점검 08·14·20시 13분 앞) + 아래 21:21(매일 정밀 점검 21:49 앞) — 열쇠 길 세션은 dg.sh '@health'로 바로 물어 이 가지가 없어도 됨
     - cron: '21 12 * * *'
@@ -40,7 +41,7 @@ jobs:
     if: vars.RN_CLOUD_DEPLOY != 'cloudbuild' || github.event_name != 'push' || contains(toJSON(github.event.commits), 'diag/q.txt') || contains(toJSON(github.event.commits), 'pc-live.json')
     runs-on: ubuntu-slim  # (privzero1 11/17) 💸 1-core 가벼운 기계 — 분당 값 1/3(공개→비공개 뒤 Actions 무료 몫 지킴 · 최대 15분)
     timeout-minutes: 5
-    outputs: { cb: '${{ steps.ch.outputs.cb }}', deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
+    outputs: { rules: '${{ steps.ch.outputs.rules }}', cb: '${{ steps.ch.outputs.cb }}', deploy: '${{ steps.ch.outputs.deploy }}', diag: '${{ steps.ch.outputs.diag }}', pclive: '${{ steps.ch.outputs.pclive }}', health: '${{ steps.ch.outputs.health }}' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
         with: { fetch-depth: 2 }
@@ -49,6 +50,7 @@ jobs:
         run: |
           # (자동 점검 2026-10-16) 한 번에 여러 커밋을 올리면 HEAD~1과만 비교해 앞 커밋의 cloud/ 바뀜을 놓치고 배포를 건너뛰던 것 → 올리기 전 커밋(event.before)과 비교 · 못 받으면 ALL(배포)
           if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "${{ inputs.health_only }}" = true ]; then echo "health=1" >> "$GITHUB_OUTPUT"; exit 0; fi  # (2026-10-22) 숫자 요약만 — 배포·진단 안 함
+          RU_IN="${{ inputs.rules }}"; if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ -n "$RU_IN" ]; then case "$RU_IN" in view|deploy) echo "rules=$RU_IN" >> "$GITHUB_OUTPUT"; echo "::notice::🛡 Firestore 규칙만($RU_IN) — 클라우드 배포 안 함";; *) echo "::error::rules 칸은 view·deploy 중 하나"; exit 1;; esac; exit 0; fi  # (fbops1 11/18) 구글 확인 통로가 이 파일에만 열려 있어 규칙 배포도 여기서
           CB_IN="${{ inputs.cb }}"; if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ -n "$CB_IN" ]; then case "$CB_IN" in build|fail|broken|dry) echo "cb=$CB_IN" >> "$GITHUB_OUTPUT"; echo "::notice::Cloud Build에 맡김($CB_IN)";; *) echo "::error::cb 칸은 build·fail·broken·dry 중 하나"; exit 1;; esac; exit 0; fi  # (cbuild 11/13)
           B="${{ github.event.before }}"
           if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
@@ -59,6 +61,55 @@ jobs:
             else echo "deploy=1" >> "$GITHUB_OUTPUT"; fi; fi
           if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "diag=1" >> "$GITHUB_OUTPUT"; fi
           if echo "$CH" | grep -q '^pc-live\.json$'; then echo "pclive=1" >> "$GITHUB_OUTPUT"; fi  # (2026-10-18) ⚡ 수집기 새 판 → 클라우드 /pclive → 켜진 PC가 바로
+  # (fbops1 11/18 · 정범 노트 [9] — 정범님이 배포 계정 gh-deployer에 「Firebase 규칙 관리」 역할을 줌) 🛡 Firestore 보안 규칙 배포 — 손으로만(Run workflow의 rules 칸)
+  #  · 따로 만든 rules-deploy.yml은 구글 확인 통로 조건(이 파일·deploy-hosting·hosting-domain·deploy-shop만)에 막혀 여기로 옮김 — 통로는 넓히지 않음
+  #  · ① 규칙 권한 4개 확인 ② src/tools/rules-deploy.js 보기(바뀌는 줄 · 전자우편 가림) ③ deploy일 때만 에뮬레이터 시험 통과 → 새 묶음 → 풀이를 새 묶음으로(옛 묶음 지우지 않음 · 되돌리기 = 풀이를 옛 묶음으로) ④ 풀이 다시 읽어 확인
+  rules:
+    name: 🛡 Firestore 규칙 (손으로만)
+    needs: what
+    if: needs.what.outputs.rules != '' && github.ref == 'refs/heads/main'
+    concurrency: { group: rules-deploy, cancel-in-progress: false }
+    runs-on: ubuntu-latest  # 에뮬레이터에 Java가 있어야 함(ubuntu-slim엔 없음) · 손으로 가끔만
+    timeout-minutes: 15
+    permissions: { contents: read, id-token: write }
+    env: { RU: '${{ needs.what.outputs.rules }}' }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: access_token }
+      - name: ① 배포 계정 규칙 권한 확인
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}' }
+        run: |
+          OUT=$(curl -sS -X POST -H "Authorization: Bearer $RN_GTOKEN" -H 'Content-Type: application/json' \
+            -d '{"permissions":["firebaserules.rulesets.create","firebaserules.rulesets.get","firebaserules.releases.get","firebaserules.releases.update"]}' \
+            "https://cloudresourcemanager.googleapis.com/v1/projects/$PROJECT:testIamPermissions")
+          echo "$OUT"
+          N=$(echo "$OUT" | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('permissions',[])))")
+          echo "### 🔑 gh-deployer 규칙 권한 ${N}/4" >> "$GITHUB_STEP_SUMMARY"
+          [ "$N" = "4" ] || { echo "::error::gh-deployer에 규칙 권한이 모자람(${N}/4) — 배포 안 함"; exit 1; }
+      - name: 에뮬레이터 시험 도구 (저장소 밖 임시 폴더)
+        if: env.RU == 'deploy'
+        run: |
+          java -version
+          mkdir -p "$RUNNER_TEMP/rt" && cd "$RUNNER_TEMP/rt" && npm i --no-audit --no-fund firebase-tools@13 @firebase/rules-unit-testing@3 firebase@10 > npm.log 2>&1 || { tail -30 npm.log; exit 1; }
+      - name: ② 보기 / ③ 시험 통과 때 배포
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}', RULES_NODE_MODULES: '${{ runner.temp }}/rt/node_modules' }
+        shell: bash  # -eo pipefail — 도구가 실패하면 tee 뒤에도 여기서 멈춤
+        run: |
+          A=""; [ "$RU" = deploy ] && A="--deploy"
+          node src/tools/rules-deploy.js $A | tee "$RUNNER_TEMP/out.txt"
+          grep -E '^(배포된 규칙|빠지는 줄|더하는 줄|보기만|✅)' "$RUNNER_TEMP/out.txt" >> "$GITHUB_STEP_SUMMARY" || true
+      - name: ④ 배포 뒤 풀이 확인
+        if: env.RU == 'deploy'
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}' }
+        run: |
+          WANT=$(grep -oE '✅ 배포함: [^ ]+' "$RUNNER_TEMP/out.txt" | awk '{print $3}')
+          GOT=$(curl -sS -H "Authorization: Bearer $RN_GTOKEN" "https://firebaserules.googleapis.com/v1/projects/$PROJECT/releases/cloud.firestore" | python3 -c "import json,sys;print(json.load(sys.stdin).get('rulesetName','').split('/')[-1])")
+          echo "### 🛡 지금 풀이: ${GOT} (만든 것: ${WANT})" >> "$GITHUB_STEP_SUMMARY"
+          [ -n "$WANT" ] && [ "$GOT" = "$WANT" ] || { echo "::error::풀이가 새 묶음이 아님"; exit 1; }
   deploy:
     name: Cloud Run 배포
     needs: what

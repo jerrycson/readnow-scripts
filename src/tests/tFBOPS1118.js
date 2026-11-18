@@ -45,5 +45,17 @@ const i = CL.indexOf("const IAM_GH = "); const k = CL.indexOf('async function fs
   ok(v['(default)'].v === 12e9 && v['(default)'].at === '2026-11-18T00:00:00Z' && v['readnow-research'].v === 5e8, 'DB별 최근 값', v);
   r = await mk.fsSizeRead(async () => 'tk', fake(() => [403, { error: {} }]), NOW); ok(/^HTTP 403/.test(r.err), '지표 목록 못 읽으면 err', r);
   ok(/if \(q\.fssize\) out\.fssize = await fsSizeRead\(\);/.test(CL) && /if \(q\.iam\) out\.iam = await iamRead\(\);/.test(CL), '진단 fssize·iam에 이어짐');
+  // (fbops1 11/18 2차) 규칙 배포는 구글 확인 통로가 열린 deploy-cloud.yml 안에서만(따로 만든 rules-deploy.yml은 통로 조건에 막혀 뺌)
+  //  시험 문(test-gate)은 이 파일을 <사본>/w/pw에서 돌림 — cloud는 <사본>/w에 이어져 있지만 .github는 <사본>에만 있어 위로 찾아 올라감
+  const GROOT = [path.join(__dirname, '..'), path.join(__dirname, '..', '..'), path.join(__dirname, '..', '..', '..')].find((d) => fs.existsSync(path.join(d, '.github', 'workflows', 'deploy-cloud.yml')));
+  ok(!!GROOT, 'deploy-cloud.yml을 찾음'); if (!GROOT) { console.log(`❌ ${bad}개 실패`); process.exit(1); }
+  const WF = fs.readFileSync(path.join(GROOT, '.github', 'workflows', 'deploy-cloud.yml'), 'utf8');
+  ok(!fs.existsSync(path.join(GROOT, '.github', 'workflows', 'rules-deploy.yml')), '통로에 막히는 rules-deploy.yml은 없음');
+  ok(/^\s+rules: \{ description: .*type: string, default: '' \}/m.test(WF) && /case "\$RU_IN" in view\|deploy\)/.test(WF), '손으로 돌리기 rules 칸(view·deploy만)');
+  const RJ = WF.slice(WF.indexOf('\n  rules:\n'), WF.indexOf('\n  deploy:\n'));
+  ok(RJ.length > 100 && /if: needs\.what\.outputs\.rules != '' && github\.ref == 'refs\/heads\/main'/.test(RJ), '규칙 작업은 rules 칸 + main에서만');
+  ok(/RU_IN.*exit 0; fi/.test(WF) && WF.indexOf('RU_IN=') < WF.indexOf('B="${{ github.event.before }}"'), 'rules 칸이면 클라우드 배포 판단 전에 끝냄(배포 안 함)');
+  ok(/node src\/tools\/rules-deploy\.js \$A/.test(RJ) && /\[ "\$RU" = deploy \] && A="--deploy"/.test(RJ) && /if: env\.RU == 'deploy'/.test(RJ), 'deploy일 때만 --deploy(시험 통과 때만 배포)');
+  ok(/testIamPermissions/.test(RJ) && /\[ "\$N" = "4" \]/.test(RJ) && /\[ "\$GOT" = "\$WANT" \]/.test(RJ), '권한 4개 확인 · 배포 뒤 풀이 확인');
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })();
