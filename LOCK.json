@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-y24vf1",
-   "why": "판 내기 기다림: 예스24 확인 필요 빨리 찾기 판(y24vf1)",
-   "first": "2026-11-18T11:05:20Z",
-   "at": "2026-11-18T11:37:01Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bqmkt1",
    "why": "판 내기 기다림: bqmkt1 수동 일괄 시장 지표 판",
    "first": "2026-11-18T11:08:59Z",
@@ -31,16 +24,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-y24vf1",
-  "why": "판 내기 기다림: 예스24 확인 필요 빨리 찾기 판(y24vf1)",
-  "at": "2026-11-18T11:37:01Z",
-  "first": "2026-11-18T11:05:20Z"
+  "host": "vm-bqmkt1",
+  "why": "판 내기 기다림: bqmkt1 수동 일괄 시장 지표 판",
+  "at": "2026-11-18T11:37:10Z",
+  "first": "2026-11-18T11:08:59Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-y24vf1",
+ "what": "예스24 확인 필요 빨리 찾기 판(y24vf1)",
+ "since": "2026-11-18T11:38:03Z",
+ "beat": "2026-11-18T11:38:03Z",
  "last": {
   "who": "lead",
   "done": "lockdr1 · 웹앱 1.78.736 잠금 서랍 까닭 고치기·유의 사항·시장 지표 · 8086a65d9 (머리 그대로 8ab2f661d1d8afa8)",
