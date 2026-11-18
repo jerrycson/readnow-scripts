@@ -11124,7 +11124,8 @@ function bqCfgHtml() { const c = bqCfg(); const z = c.biz || {}; const bk = c.ba
     <div class="brow"><label>무료 배송</label><div>${inp('bqc_free', c.freeOver || '', '0 = 없음', 'number')} <small class="hint">원 넘으면 배송비 0</small></div></div>
     <div class="brow"><label>입금 기한</label><div>${inp('bqc_days', c.payDays, '2', 'number')} <small class="hint">일(1~7) · 지나도 저절로 취소하지 않음 — 이 화면에 빨갛게</small></div></div>
     <div class="brow"><label>입금 계좌</label><div>${inp('bqc_bank', bk.name, '은행')} ${inp('bqc_acct', bk.acct, '계좌 번호')} ${inp('bqc_holder', bk.holder, '예금주')}</div></div>
-    ${BQ_BIZ.map(([k, n]) => `<div class="brow"><label>${esc(n)}${BQ_BIZ_NEED.includes(k) ? ' *' : ''}</label><div>${inp('bqc_b_' + k, z[k], '')}</div></div>`).join('')}
+    ${BQ_BIZ.map(([k, n]) => `<div class="brow"><label>${esc(n)}${BQ_BIZ_NEED.includes(k) ? ' *' : ''}</label><div>${inp('bqc_b_' + k, z[k], '')}${k === 'addr' ? jusoBtn('#bqc_b_addr') : ''}</div></div>`).join('')}
+    <div class="brow"><label>주문서 주소 찾기</label><div><label><input type="checkbox" id="bqc_addr"${c.addrFind === 0 || c.addrFind === false ? '' : ' checked'}> 🔎 손님 주문서 받는 분 칸에 「주소 찾기」 보이기</label> <small class="hint">(juso2 11/18) 도로명·건물 이름으로 찾으면 우편번호·주소가 채워짐 · 승인키(⚙ 설정 › ⑱ 🌐 외부 정보 › 📮 도로명주소 찾기)가 있을 때만 보임 · 끄면 손님은 손으로만 넣음 · 손님 한 명 1분 20번·하루 200번, 가게 전체 하루 5천 번까지</small></div></div>
     ${bqMsgCfgHtml(c)}
     <div class="brow"><label>알림 한 줄</label><div>${inp('bqc_notice', c.notice, '손님 첫 화면 위 한 줄(비우면 없음)')}</div></div>
     <div class="hint">* = 전자상거래법 제10조 사업자 신원 표시(손님 화면 아래에 늘 보임) · 카드·간편결제(PG)는 계약 뒤 — 지금은 무통장 입금만</div>
@@ -11135,7 +11136,7 @@ function bqCfgWipe(old, v) { if (old == null) return { err: '⚠ 우리숍 설�
   const lost = []; const chk = (o, n, k, nm) => { const a = String((o || {})[k] == null ? '' : o[k]).trim(), b = String((n || {})[k] == null ? '' : n[k]).trim(); if (b === '-') { n[k] = n === v.bank ? '' : null; return; } if (a && !b) lost.push(nm); };
   [['name', '입금 은행'], ['acct', '계좌 번호'], ['holder', '예금주']].forEach(([k, nm]) => chk(old.bank, v.bank = v.bank || {}, k, nm)); BQ_BIZ.forEach(([k, nm]) => chk(old.biz, v.biz = v.biz || {}, k, nm));
   return lost.length ? { err: `⚠ 이미 저장된 칸이 빈칸이라 저장하지 않음: ${lost.join(' · ')} — 화면이 값을 다 받지 못했을 수 있음(⚙ 우리숍 설정을 닫았다 다시 열기) · 일부러 지우려면 그 칸에 '-' 하나만 넣고 저장` } : { ok: true }; }
-async function bqCfgSave(btn) { const g = (id) => { const e = $('#' + id); return e ? (e.type === 'checkbox' ? e.checked : e.value.trim()) : ''; }; const v = bqCfgOf({ open: g('bqc_open') ? 1 : 0, name: g('bqc_name') || '북스퀸', shipFee: g('bqc_fee'), freeOver: g('bqc_free') || 0, payDays: g('bqc_days'), maxItems: bqCfg().maxItems, notice: g('bqc_notice') || null,
+async function bqCfgSave(btn) { const g = (id) => { const e = $('#' + id); return e ? (e.type === 'checkbox' ? e.checked : e.value.trim()) : ''; }; const v = bqCfgOf({ open: g('bqc_open') ? 1 : 0, name: g('bqc_name') || '북스퀸', shipFee: g('bqc_fee'), freeOver: g('bqc_free') || 0, payDays: g('bqc_days'), maxItems: bqCfg().maxItems, notice: g('bqc_notice') || null, addrFind: g('bqc_addr') ? 1 : 0,
     bank: { name: g('bqc_bank'), acct: g('bqc_acct'), holder: g('bqc_holder') }, biz: Object.fromEntries(BQ_BIZ.map(([k]) => [k, g('bqc_b_' + k) || null])), msg: { send: 0, via: '', tpl: Object.fromEntries(BQ_MSG_EV.map(([k]) => [k, g('bqc_m_' + k) || ''])) } });
   { const W = bqCfgWipe(S._bqCfg0, v); if (W.err) return toast(W.err, 1); } /* (11/11 fix5) 받기 전이거나 이미 있던 계좌·사업자 칸을 빈칸으로 덮어쓰려 하면 막음 */
   const need = bqOpenNeed(v); if (v.open && need.length) { v.open = 0; toast('⚠ 문은 닫은 채로 저장 — 먼저 채울 것: ' + need.join(' · ')); }
@@ -19681,7 +19682,7 @@ function jusoGuideHtml() { return `<div class="hint" style="font-size:12.5px;lin
   ④ 승인키가 화면(또는 이메일)에 나오면 복사 → 아래 칸에 붙여 넣고 <b>[확인하고 저장]</b> — 「서울 세종대로 209」를 한 번 찾아 맞을 때만 저장합니다. 화면 이름이 조금 다르면 비슷한 것을 고르세요.</div>`; }
 function jusoSetBody() { if (JUSO.key === undefined) { jusoLoad().then(jusoSetRedraw); return '<div class="wload"></div>'; } const adm = isAdminDevice(); const dis = adm ? '' : 'disabled';
   const st = JUSO.key ? `<b style="color:var(--cloth)">✓ 승인키 저장됨 ••••${esc(JUSO.tail || '')}</b> <small class="hint">${esc(kTime(JUSO.at))} ${esc(JUSO.by)}</small>` : JUSO.err === 'perm' ? '<b style="color:var(--amber)">이 기기는 승인키 칸을 읽지 못함(관리자 기기에서 봄) — 주소 찾기는 클라우드가 대신 부릅니다</b>' : JUSO.err ? `<b style="color:var(--red)">승인키 칸을 못 읽음 — ${esc(JUSO.err)}</b>` : '<b style="color:var(--amber)">아직 승인키 없음 — 주소 칸은 예전처럼 손으로 넣습니다</b>';
-  return `<p class="hint" style="margin:0 0 6px">현금 판매의 받는 분 주소 · 매입의 판매자 주소 칸 옆 <b>🔎 주소 찾기</b>로 도로명 주소와 우편번호를 찾아 넣습니다(행정안전부 도로명주소 검색 API). 주소를 고르기만 하고, 판매·가격·출고 일은 하지 않습니다.</p>
+  return `<p class="hint" style="margin:0 0 6px">현금 판매의 받는 분 주소 · 매입의 판매자 주소 · 우리숍 설정 사업장 주소 칸 옆 <b>🔎 주소 찾기</b>로(우리숍 손님 주문서에도 — 우리숍 설정 「주문서 주소 찾기」로 끄고 켬) 도로명 주소와 우편번호를 찾아 넣습니다(행정안전부 도로명주소 검색 API). 주소를 고르기만 하고, 판매·가격·출고 일은 하지 않습니다.</p>
   <div style="margin:2px 0 6px">${st}</div>${jusoGuideHtml()}
   <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input id="juso_key" type="password" autocomplete="off" spellcheck="false" placeholder="${JUSO.key ? '바꿀 때만 새 승인키' : '도로명주소 승인키 붙여 넣기'}" style="width:min(100%,340px)" ${dis}><button class="btn sm" id="juso_save" ${dis}>${JUSO.busy ? '확인하는 중…' : JUSO.armed ? '한 번 더 누르면 확인 없이 저장' : '확인하고 저장'}</button>${adm ? '' : '<small class="hint">(관리자 기기에서만)</small>'}</div>
   ${JUSO.msg ? `<div id="juso_msg" style="margin:6px 0;font-weight:700;color:${JUSO.msg.ok ? 'var(--cloth)' : 'var(--red)'}">${esc(JUSO.msg.t)}</div>` : ''}

@@ -288,6 +288,13 @@ legend .edit { font-size: var(--fs-sm); font-weight: 500; margin-left: 8px; colo
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .agree .ck.all { padding: var(--sp-3); border: 1px solid var(--c-line-2); border-radius: var(--r-md); margin-bottom: var(--sp-2); background: var(--c-surface-2); } .agree .ck.all small { opacity: .7; font-weight: 400; }
 .cprow { display: flex; gap: 6px; } .cprow input { flex: 1; min-width: 0; } .nb { margin: 6px 0 0; }
+/* (juso2 11/18) 📮 주문서 주소 찾기 — 안의 칸(팝업 없음) */
+.jrow { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; margin: var(--sp-3) 0 0; } .jrow .btn { min-height: 44px; } .jrow small { color: var(--c-text-2); font-size: var(--fs-sm); flex: 1 1 180px; min-width: 0; }
+.jpan { border: 1px solid var(--c-line-2); border-radius: var(--r-md); background: var(--c-surface-2); padding: var(--sp-3); margin: var(--sp-2) 0 0; } .jpan[hidden] { display: none; }
+.jbar { display: flex; gap: 6px; } .jbar input { flex: 1; min-width: 0; height: 44px; border-radius: var(--r-md); border: 1px solid var(--c-line-2); padding: 0 12px; font-size: 16px; background: var(--c-surface); color: var(--c-text); } .jbar .btn { min-height: 44px; flex: none; } .jbar .jx { width: 44px; padding: 0; }
+.jres .hint { margin: var(--sp-2) 0 0; } .jres .hint.bad { color: var(--c-sale); }
+.jlist { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; }
+.jpick { text-align: left; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-surface); color: var(--c-text); padding: 10px 12px; font: inherit; font-size: var(--fs-md); line-height: 1.45; cursor: pointer; overflow-wrap: anywhere; } .jpick:hover, .jpick:focus-visible { border-color: var(--c-brand); } .jpick b { color: var(--c-brand-text); margin-right: 4px; } .jpick small { display: block; color: var(--c-text-3); font-size: var(--fs-xs); }
 .gobar .btn.wide { margin: var(--sp-2) 0; }
 .done .ok { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--c-ok) 12%, var(--c-surface)); color: var(--c-ok); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); font-weight: 800; margin-top: var(--sp-4); }
 .stt { display: inline-block; padding: 4px 12px; border-radius: var(--r-full); background: var(--c-surface); border: 1px solid var(--c-line); font-weight: 700; font-size: var(--fs-md); } .st-cancel { color: var(--c-sale); } .st-sent, .st-done { color: var(--c-ok); }
