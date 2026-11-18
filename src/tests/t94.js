@@ -38,7 +38,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   // 재고 품목 거르기
   await p.evaluate(() => { history.back(); }); await p.waitForTimeout(500);
   await p.evaluate(() => { STK.px = 'on'; openStockView(); }); await p.waitForTimeout(1200);
-  R.stock = await p.evaluate(() => ({ rows: document.querySelectorAll('#sheet .stk-row').length, chip: !!document.querySelector('#sheet [data-stk="px|on"]') }));
+  R.stock = await p.evaluate(() => ({ rows: document.querySelectorAll('#sheet .stk-row').length, chip: !!document.querySelector('#sheet [data-stktab="px"].on') }));
   await p.evaluate(() => { STK.px = 'all'; history.back(); }); await p.waitForTimeout(500);
   // 상품 전체 표
   await p.evaluate(() => openProdAll()); await p.waitForTimeout(1200);
