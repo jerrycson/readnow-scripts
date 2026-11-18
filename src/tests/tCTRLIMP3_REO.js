@@ -15,7 +15,8 @@ const r0 = T.indexOf('/* (판 러 · ctrlimp3'), r1 = T.indexOf('/* (판 러) �
 const d0 = T.indexOf('/* (판 더 · ctrlimp2'), d1 = T.indexOf('/* (판 더) 끝 */'); const DEO = T.slice(d0, d1);
 
 console.log('① 가격 코어');
-ok(R && PR.VERSION === '0.17.20' && typeof R.pauseCheck === 'function', '가격 코어 0.17.20 · ReadnowCtrl 있음');
+const vGe = (a, b) => { const x = String(a || '').split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return true; }; // (판 서) 뒤 판이 올라가도 통과 — 판 러가 들인 것 이상인지만
+ok(R && vGe(PR.VERSION, '0.17.20') && typeof R.pauseCheck === 'function', '가격 코어 0.17.20 이상 · ReadnowCtrl 있음', PR && PR.VERSION);
 { const ctx = { console, Map, Set, Date, Math, JSON, Object, String, Number, Array, S: { prCfg: {} } }; vm.createContext(ctx);
   vm.runInContext(line(/^const CTRL_PAGE = 40, CTRL_CAP = 400, CTRL_DEF = /) + '\n' + DEO + '\nthis.N = ctrlCfgNorm;', ctx);
   const cases = [{}, { lazy: 'final', onDrift: 'autoCancel' }, { dayDrop: { act: 'alert', limit: 9000 }, chasedMin: { n: 0, pct: 40 } }, { perItem: ['strat', 'watch'], learnAt: 'ctrl', memoAuto: 'markOnly' }, { allOnKeep: 'x', tryDays: 999 }];
@@ -86,7 +87,7 @@ const F = ctx.F;
   ok(SAVES.length === 1, '되짚기는 쓰지 않음');
 
   console.log('③ 가격 감시기');
-  ok(/@version\s+0\.10\.62/.test(PW) && /readnow-pricing-core\.js\?v=0\.17\.20/.test(PW), '가격 감시기 0.10.62 · 코어 0.17.20');
+  { const pv = (PW.match(/@version\s+([0-9.]+)/) || [])[1], cv = (PW.match(/readnow-pricing-core\.js\?v=([0-9.]+)/) || [])[1]; ok(vGe(pv, '0.10.62') && vGe(cv, '0.17.20') && cv === PR.VERSION, '가격 감시기 0.10.62 이상 · 코어 0.17.20 이상(코어 판과 같음)', [pv, cv]); }
   const G = fnBody(PW, 'ctrlGate'); ok(!!G && /F\.pauseCheck\(/.test(G) && /doc\('_bkfold'\)\.set\(\{ ctl: \{ \[fo\.fid\]: \{ \.\.\.r\.write, log: firebase\.firestore\.FieldValue\.arrayUnion\(ent\) \} \} \}, \{ merge: true \}\)/.test(G), 'ctrlGate = 코어 판정 · _bkfold에 merge로만(로그는 덧붙임)');
   ok(G.indexOf("doc('_bkfold').get()") > 0 && G.indexOf("doc('_bkfold').get()") < G.indexOf("doc('_bkfold').set("), '쓰기 전 _bkfold를 새로 읽음(웹앱이 방금 다시 켠 것을 덮지 않음)');
   ok(!/\.delete\(|FieldValue\.delete/.test(G) && !/\.delete\(|FieldValue\.delete/.test(fnBody(PW, 'ctrlDay')), '지우기 없음');

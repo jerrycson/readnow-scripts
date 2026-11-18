@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.62
+// @version      0.10.63
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -10,7 +10,7 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.12
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.20
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.21
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -653,7 +653,7 @@
   const CHE = PR && PR.Chase ? PR.Chase : null;
   async function chaseRecord(J, x, prevS) { if (!CHE || !J || (SET.chaseEng && SET.chaseEng.rec === false)) return; try { const L = CHE.logEntry(prevS, J.chR, x); if (!L) return; const FV = firebase.firestore.FieldValue; const b = db.batch();
       b.set(C('chase_log').doc(), { ...L, ...W() }); const E = CHE.episode(prevS, J.chR, x); if (E) b.set(C('chase_eps').doc(E.id), { ...E.data, steps: FV.increment(1), ...W() }, { merge: true });
-      if (L.sc) b.set(C('chase_rel').doc(String(L.sc)), { sc: L.sc, name: L.scName || null, who: L.who, stance: L.stance, lastAt: L.at, lastStrat: L.strat, n: FV.increment(1), moves: FV.increment(L.to != null && L.from != null && L.to !== L.from ? 1 : 0), books: { [String(L.bookId || L.key)]: { t: L.title, last: L.at, n: FV.increment(1) } }, ...W() }, { merge: true });
+      if (L.sc) b.set(C('chase_rel').doc(String(L.sc)), { sc: L.sc, name: L.scName || null, who: L.who, stance: L.stance, lastAt: L.at, lastStrat: L.strat, n: FV.increment(1), moves: FV.increment(L.to != null && L.from != null && L.to !== L.from ? 1 : 0), books: { [String(L.bookId || L.key)]: { t: L.title, last: L.at, n: FV.increment(1) } }, ...(L.lag != null ? { lagSum: FV.increment(L.lag), lagN: FV.increment(1) } : {}), ...W() }, { merge: true }); /* (0.10.63 판 서) 반응 시간 — 같은 문서에 칸만 더함(쓰기 횟수 그대로) */
       const sk = String(L.strat || 'none'); b.set(C('chase_day').doc(L.day), { day: L.day, [sk]: { steps: FV.increment(1), moves: FV.increment(L.to != null && L.from != null && L.to !== L.from ? 1 : 0), starts: FV.increment(!prevS || !prevS.active ? 1 : 0), ends: FV.increment(L.end ? 1 : 0) }, ...W() }, { merge: true });
       await b.commit(); } catch (e) { log('추격 기록 실패: ' + e.message, 1); } }
   function watchJudge(wg, pre, listing, market, sellers, ctx0, P1c, used, prevD, now, SP) { const strat = SP && SP.strat ? SP.strat : stratOf(wg, pre); /* (11/09) 그룹 개별 전략 — stratPick(판정 엔진 stratFor) */

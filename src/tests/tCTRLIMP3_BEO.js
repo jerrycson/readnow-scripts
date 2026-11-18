@@ -42,6 +42,7 @@ const ctx = { console, Map, Set, Date, Math, JSON, Object, String, Number, Array
   memo: (k, fn) => fn(), norm: (s) => String(s || '').toLowerCase().replace(/\s+/g, ''), num: (n) => String(n), won: (n) => n + '원',
   cheEng: () => ({ STRATS_ALL: { match: '같은 값', gap: '틈 두기' } }), bkfNorm: () => ({ folds: { F1: { name: '묶음1', gids: ['G1'] } } }), ctrlKids: () => [{ id: 'G1' }],
   p1Has: (m) => !!m && Array.isArray(m.rows), p1Scan: (m, fn) => m.rows.forEach((r) => fn(r.sc, r.p, r.g, !!r.so)),
+  slObsCfg: () => ({ fastLagMin: 60 }), // (판 서) ⚡ 칩 문턱 — 판 머 덩이 밖이라 흉내
   slObsSc: (s) => String(s.sc || s.sellerCode || String(s.id || '').replace(/^sc_/, '')),
   db: { collection: (c) => ({ get: async () => { READS.push(c); if (relWait) await relWait; return snap(REL); },
     where: (f, op, v) => ({ get: async () => { READS.push(c + ':' + f + op + v); return snap((c === 'chase_log' ? LOGS : EPS).filter((x) => x[f] === v)); } }) }) } };
