@@ -1,25 +1,11 @@
 {
- "queue": [
-  {
-   "who": "lead",
-   "host": "vm-ctrlimp2",
-   "why": "판 내기 기다림: 관제창 판 다 — 확정·되돌리기 (ctrlimp2)",
-   "first": "2026-11-18T16:58:20Z",
-   "at": "2026-11-18T17:10:39Z"
-  }
- ],
- "ask": {
-  "who": "lead",
-  "host": "vm-ctrlimp2",
-  "why": "판 내기 기다림: 관제창 판 다 — 확정·되돌리기 (ctrlimp2)",
-  "at": "2026-11-18T17:10:39Z",
-  "first": "2026-11-18T16:58:20Z"
- },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "queue": [],
+ "ask": null,
+ "holder": "lead",
+ "host": "vm-ctrlimp2",
+ "what": "관제창 판 다 — 확정·되돌리기 (ctrlimp2)",
+ "since": "2026-11-18T17:11:43Z",
+ "beat": "2026-11-18T17:11:43Z",
  "last": {
   "who": "memo2",
   "done": "웹앱 1.78.750·클라우드 0.35.321·수집기 1.89.371 판단 메모 일곱 길 1912585f",
