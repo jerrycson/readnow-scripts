@@ -43,14 +43,14 @@
   "at": "2026-11-18T00:32:23Z",
   "first": "2026-11-17T22:40:34Z"
  },
- "holder": "lead",
- "host": "shipqB-spine4",
- "what": "spine4 판 내기",
- "since": "2026-11-18T00:27:05Z",
- "beat": "2026-11-18T00:31:07Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-18T00:26:09Z"
+  "at": "2026-11-18T00:32:45Z"
  }
 }
