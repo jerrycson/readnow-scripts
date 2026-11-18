@@ -50,14 +50,14 @@
   "at": "2026-11-18T07:03:01Z",
   "first": "2026-11-18T05:26:53Z"
  },
- "holder": "lead",
- "host": "vm-shoprow1",
- "what": "shoprow1 시험 문",
- "since": "2026-11-18T06:55:32Z",
- "beat": "2026-11-18T06:55:46Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "regjump1 웹앱 1.78.726 등록 선택 대기 튐·⚡ 칸 초점 · 5c0963440 (머리 그대로 8ab2f661d1d8afa8)",
-  "at": "2026-11-18T06:55:13Z"
+  "done": "shoprow1 우리숍 shop.js 0.2.23 · shop.css 0.2.10 한 줄 띠 사진 칸 고르게 · afb63bf07 (머리·웹앱 판 그대로)",
+  "at": "2026-11-18T07:03:58Z"
  }
 }
