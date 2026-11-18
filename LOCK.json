@@ -59,9 +59,9 @@
  },
  "holder": "lead",
  "host": "shipqB-fbchk2",
- "what": "판 내기 기다림: fbchk2 연구 DB 지우기 막음 진단(shipqB)",
+ "what": "fbchk2 판 내기",
  "since": "2026-11-18T00:12:05Z",
- "beat": "2026-11-18T00:12:05Z",
+ "beat": "2026-11-18T00:16:19Z",
  "last": {
   "who": "lead",
   "done": "",
