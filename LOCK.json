@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-y24pick1",
-   "why": "판 내기 기다림: y24pick1 클라우드 0.35.306 수동 일괄 판정 좁힘",
-   "first": "2026-11-18T06:05:18Z",
-   "at": "2026-11-18T07:41:48Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-fpbump1",
    "why": "판 내기 기다림: fpbump1 앞 페이지 올리기 길",
    "first": "2026-11-18T06:29:25Z",
@@ -45,16 +38,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-y24pick1",
-  "why": "판 내기 기다림: y24pick1 클라우드 0.35.306 수동 일괄 판정 좁힘",
-  "at": "2026-11-18T07:41:48Z",
-  "first": "2026-11-18T06:05:18Z"
+  "host": "vm-fpbump1",
+  "why": "판 내기 기다림: fpbump1 앞 페이지 올리기 길",
+  "at": "2026-11-18T07:42:14Z",
+  "first": "2026-11-18T06:29:25Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-y24pick1",
+ "what": "y24pick1 클라우드 0.35.306 수동 일괄 판정 좁힘",
+ "since": "2026-11-18T07:43:01Z",
+ "beat": "2026-11-18T07:43:01Z",
  "last": {
   "who": "lockcond1",
   "done": "웹앱 1.78.728 잠금 단추 모든 카드 (713732ddc)",
