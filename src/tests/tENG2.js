@@ -106,7 +106,7 @@ function fakeDb() { const S = {}; const col = (n) => (S[n] = S[n] || new Map());
     ok(/engOut: ENGO\[lid\] \|\| null, fence: ENGF\[a\.id\] \|\| null/.test(SRC) && /doc\('eng_excl'\), C\('app_settings'\)\.doc\('eng_fence_now'\)/.test(SRC) && /tm\('engx', \(\) => engExpTick\(\)\)/.test(SRC), '⚡ 전략 실행이 eng_excl·울타리를 읽어 안전 검사에 넘김 · 회차마다 engExpTick(스스로 20분 간격)'); }
 
   /* ── ③ 클라우드 배우기: 되살린 날 ── */
-  { const L = SRC.slice(SRC.indexOf('async function mlLearn()'), SRC.indexOf('/* ══════════ (0.10.0) 🌐 외부 정보'));
+  { const L = SRC.slice(SRC.indexOf('async function mlLearn('), SRC.indexOf('/* ══════════ (0.10.0) 🌐 외부 정보'));
     ok(/ML\.mlSplitDays\(lab, \[\.\.\.RB\]\)/.test(L) && /RB\.has\(d\) \? stride \* rbK : stride/.test(L) && /else if \(!RB\.has\(d\)\) va\.push\(i\)/.test(L) && /split: res\.split/.test(L), '팔릴 확률 배우기: 공용 mlSplitDays로 나눔 · 되살린 날 줄은 둘에 하나(무게 절반) · 검증에서 뺌 · 나눈 모습을 ml_state.learn.split에');
     const V = SRC.slice(SRC.indexOf('async function valueLearn('), SRC.indexOf('/* (0.19.0) 🔭 벤치마킹 조회 엔진'));
     ok(/v\.rebuilt && ML\.REBUILT_W/.test(V) && /\.\.\.\(rw \? \{ w: rw \} : \{\}\)/.test(V), '판매가치 배우기: 되살린 날 줄은 무게·판매 함께 절반');
