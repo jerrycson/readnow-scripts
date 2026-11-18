@@ -12,9 +12,9 @@ ok(!!BLK, '◆ctrl 덩이가 있음');
 { const names = ['CTRL_PAGE', 'CTRL_DEF', 'ctrlCfg', 'ctrlCfgSet', 'ctrlLazy', 'ctrlTabNm', 'ctrlKids', 'openBkfCtrl', 'ctrlKey', 'ctrlClose', 'ctrlKeys', 'ctrlOnTb', 'ctrlReset', 'ctrlCtx', 'ctrlLoad', 'ctrlChg', 'ctrlCard', 'ctrlPaint', 'ctrlInput', 'ctrlFind', 'ctrlClick', 'ctrlAct', 'ctrlPickMany'];
   const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 파일 전체에서 한 번만 선언`, dup); }
 ok(!/\b(alert|confirm|prompt)\s*\(/.test(BLK), '브라우저 창 없음(확인은 두 번 누름 twiceArm)'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(BLK), '전화번호 모양 없음');
-ok(!/\.delete\(\)\s*;?\s*$/m.test(BLK.replace(/FV\.delete\(\)/g, '')) && !/collection\('prd_price_batches'\)/.test(BLK), '그룹 문서를 지우지 않음(칸만 batchSave)');
+ok(!/\.delete\(\)\s*;?\s*$/m.test(BLK.replace(/FV\.delete\(\)/g, '')) && !/collection\('prd_price_batches'\)(?!\.doc\('_bkfc'\))/.test(BLK), '그룹 문서를 지우지 않음(칸만 batchSave · 판 마 개별 설정 문서 _bkfc만 따로)');
 ok(/function bkfTbAll\(fid, tab\) \{ return openBkfCtrl\(fid, tab \|\| 'done'\); \}/.test(T) && /data-bkfctrl="1"/.test(T) && /ctrlOnTb\(gid\); \} \}/.test(T), '「모두」 줄 칸·📊 상태판 머리 → 관제창 · 상태판이 그룹을 다 세면 ctrlOnTb');
-ok(/const rows = opt\.only \? rows0\.filter\(\(l\) => opt\.only\.has\('aladin_' \+ l\.usedCode\)\) : rows0;[^\n]*const R = batchCompute\(c, rows\)/.test(T), 'bqCtx only = 계산 전에 그 열쇠들만 남김(계산기는 그대로)');
+ok(/const rows = opt\.only \? rows0\.filter\(\(l\) => opt\.only\.has\('aladin_' \+ l\.usedCode\)\) : rows0;[^\n]*const R0? = batchCompute\(c, rows\)/.test(T), 'bqCtx only = 계산 전에 그 열쇠들만 남김(계산기는 그대로)');
 ok(/BQ_TABACT\(/.test(BLK) && /bqPxGate\(/.test(BLK) && /plkFreshMany\(/.test(BLK) && /bkfLkOf\(/.test(BLK) && /bkfCancelDec\(/.test(BLK) && /bkfRun\(fid, 'pickAll', tab\)/.test(BLK), '이음새 부름 — 탭 동작 BQ_TABACT · 바닥 검사 bqPxGate · 잠금 다시 읽음 · 확정 취소 bkfCancelDec · 탭 전체 bkfRun');
 ok(/twiceArm\(t, '이 그룹에서 빼기'/.test(BLK) && /twiceArm\(t, `고른 \$\{L\.length\}개 → 결정 대기로`/.test(BLK) && /v === 'auto' && twiceArm\(/.test(BLK), '빼기·고른 것 보내기·자동 취소 설정은 두 번 누름');
 ok(/Escape/.test(BLK) && /popstate/.test(BLK) && /e\.target === ov/.test(BLK), '닫기: Esc·뒤로·바깥 누름');
