@@ -1,13 +1,6 @@
 {
  "queue": [
   {
-   "who": "h4",
-   "host": "vm",
-   "why": "판 내기 기다림: 정밀 점검 ② 보고서(코드 고침 없음)",
-   "first": "2026-11-18T14:28:49Z",
-   "at": "2026-11-18T14:39:20Z"
-  },
-  {
    "who": "lead",
    "host": "vm-shipfix2",
    "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
@@ -23,17 +16,17 @@
   }
  ],
  "ask": {
-  "who": "h4",
-  "host": "vm",
-  "why": "판 내기 기다림: 정밀 점검 ② 보고서(코드 고침 없음)",
-  "at": "2026-11-18T14:39:20Z",
-  "first": "2026-11-18T14:28:49Z"
+  "who": "lead",
+  "host": "vm-shipfix2",
+  "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
+  "at": "2026-11-18T14:37:48Z",
+  "first": "2026-11-18T14:29:19Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "host": "vm",
+ "what": "정밀 점검 ② 보고서(코드 고침 없음)",
+ "since": "2026-11-18T14:40:24Z",
+ "beat": "2026-11-18T14:40:24Z",
  "last": {
   "who": "lead",
   "done": "bqkeep1 · 웹앱 1.78.743 추천 못 함 탭을 선택 대기처럼 9a4f17b77",
