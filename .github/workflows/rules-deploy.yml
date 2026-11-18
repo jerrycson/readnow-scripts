@@ -1,0 +1,58 @@
+# 🛡 Firestore 보안 규칙 배포 (fbops1 11/18 · 정범 노트 [9] — 정범님이 배포 계정 gh-deployer에 「Firebase 규칙 관리」 역할을 줌)
+#  · 손으로만 돌림(workflow_dispatch) · 열쇠 없음: 클라우드·Hosting 배포와 같은 1회용 신분증(OIDC · 이 저장소 main만)
+#  · ① gh-deployer가 규칙 만들기·풀이 바꾸기 권한을 정말 가졌는지 확인(testIamPermissions — 없으면 여기서 멈춤)
+#  · ② src/tools/rules-deploy.js: 배포된 규칙에서 직원 목록을 읽어 firestore/firestore.rules에 채우고 바뀌는 줄을 보임(전자우편 가림)
+#  · ③ deploy=true일 때만: 에뮬레이터 시험(firestore/rules.test.js) 통과 → 새 규칙 묶음 만들기 → 풀이를 새 묶음으로(옛 묶음은 지우지 않음 · 되돌리기 = 풀이를 옛 묶음으로)
+#  · ④ 배포 뒤 풀이를 다시 읽어 새 묶음인지 확인
+name: Firestore 규칙 배포 (손으로만)
+on:
+  workflow_dispatch:
+    inputs:
+      deploy: { description: '참이면 시험 통과 때 실제 배포 · 거짓이면 보기만', type: boolean, default: false }
+concurrency: { group: rules-deploy, cancel-in-progress: false }
+permissions: { contents: read, id-token: write }
+env:
+  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
+  SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
+jobs:
+  rules:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest  # 에뮬레이터에 Java가 있어야 함(ubuntu-slim엔 없음) · 손으로 가끔만 돌림
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: access_token }
+      - name: ① 배포 계정 권한 확인
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}' }
+        run: |
+          OUT=$(curl -sS -X POST -H "Authorization: Bearer $RN_GTOKEN" -H 'Content-Type: application/json' \
+            -d '{"permissions":["firebaserules.rulesets.create","firebaserules.rulesets.get","firebaserules.releases.get","firebaserules.releases.update"]}' \
+            https://cloudresourcemanager.googleapis.com/v1/projects/readnow-3a385:testIamPermissions)
+          echo "$OUT"
+          N=$(echo "$OUT" | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('permissions',[])))")
+          echo "### 🔑 gh-deployer 규칙 권한 ${N}/4" >> "$GITHUB_STEP_SUMMARY"
+          [ "$N" = "4" ] || { echo "::error::gh-deployer에 규칙 권한이 모자람(${N}/4) — 배포 안 함"; exit 1; }
+      - name: 에뮬레이터 시험 도구 (저장소 밖 임시 폴더)
+        if: inputs.deploy
+        run: |
+          java -version
+          mkdir -p "$RUNNER_TEMP/rt" && cd "$RUNNER_TEMP/rt" && npm i --no-audit --no-fund firebase-tools@13 @firebase/rules-unit-testing@3 firebase@10 > npm.log 2>&1 || { tail -30 npm.log; exit 1; }
+      - name: ② 보기 / ③ 시험 통과 때 배포
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}', RULES_NODE_MODULES: '${{ runner.temp }}/rt/node_modules', DEPLOY: '${{ inputs.deploy }}' }
+        shell: bash  # -eo pipefail — 도구가 실패하면 tee 뒤에도 여기서 멈춤
+        run: |
+          A=""; [ "$DEPLOY" = "true" ] && A="--deploy"
+          node src/tools/rules-deploy.js $A | tee "$RUNNER_TEMP/out.txt"
+          grep -E '^(배포된 규칙|빠지는 줄|더하는 줄|보기만|✅)' "$RUNNER_TEMP/out.txt" >> "$GITHUB_STEP_SUMMARY" || true
+      - name: ④ 배포 뒤 풀이 확인
+        if: inputs.deploy
+        env: { RN_GTOKEN: '${{ steps.auth.outputs.access_token }}' }
+        run: |
+          WANT=$(grep -oE '✅ 배포함: [^ ]+' "$RUNNER_TEMP/out.txt" | awk '{print $3}')
+          GOT=$(curl -sS -H "Authorization: Bearer $RN_GTOKEN" https://firebaserules.googleapis.com/v1/projects/readnow-3a385/releases/cloud.firestore | python3 -c "import json,sys;print(json.load(sys.stdin).get('rulesetName','').split('/')[-1])")
+          echo "### 🛡 지금 풀이: ${GOT} (만든 것: ${WANT})" >> "$GITHUB_STEP_SUMMARY"
+          [ -n "$WANT" ] && [ "$GOT" = "$WANT" ] || { echo "::error::풀이가 새 묶음이 아님"; exit 1; }
