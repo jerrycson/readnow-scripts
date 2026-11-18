@@ -29,14 +29,14 @@
   "at": "2026-11-18T14:39:20Z",
   "first": "2026-11-18T14:28:49Z"
  },
- "holder": "lead",
- "host": "vm",
- "what": "bqkeep1 추천 못 함 탭",
- "since": "2026-11-18T14:28:56Z",
- "beat": "2026-11-18T14:39:58Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
-  "who": "daily",
-  "done": "",
-  "at": "2026-11-18T14:28:46Z"
+  "who": "lead",
+  "done": "bqkeep1 · 웹앱 1.78.743 추천 못 함 탭을 선택 대기처럼 9a4f17b77",
+  "at": "2026-11-18T14:40:04Z"
  }
 }
