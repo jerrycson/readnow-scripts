@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bqmkt1",
-   "why": "판 내기 기다림: bqmkt1 수동 일괄 시장 지표 판",
-   "first": "2026-11-18T11:08:59Z",
-   "at": "2026-11-18T11:56:01Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-shipnote1",
    "why": "판 내기 기다림: shipnote1 웹앱·클라우드 0.35.314 유의 사항 탭 전체·이득 정렬",
    "first": "2026-11-18T11:15:02Z",
@@ -24,16 +17,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bqmkt1",
-  "why": "판 내기 기다림: bqmkt1 수동 일괄 시장 지표 판",
-  "at": "2026-11-18T11:56:01Z",
-  "first": "2026-11-18T11:08:59Z"
+  "host": "vm-shipnote1",
+  "why": "판 내기 기다림: shipnote1 웹앱·클라우드 0.35.314 유의 사항 탭 전체·이득 정렬",
+  "at": "2026-11-18T11:56:39Z",
+  "first": "2026-11-18T11:15:02Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bqmkt1",
+ "what": "bqmkt1 수동 일괄 시장 지표 판",
+ "since": "2026-11-18T11:57:05Z",
+ "beat": "2026-11-18T11:57:05Z",
  "last": {
   "who": "lead",
   "done": "y24vf1 · 웹앱 1.78.737 · 클라우드 0.35.314 — 예스24 확인 필요 줄 상품등록순 먼저·3분마다 다시 찾기",
