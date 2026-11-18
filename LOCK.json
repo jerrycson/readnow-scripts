@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-edq1",
-   "why": "판 내기 기다림: edq1 판본 다시 보기 먼저",
-   "first": "2026-11-17T22:40:39Z",
-   "at": "2026-11-18T00:40:27Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-wake1",
    "why": "판 내기 기다림: wake1 순서표 시험 GIT_* 막기",
    "first": "2026-11-17T22:52:04Z",
@@ -31,16 +24,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-edq1",
-  "why": "판 내기 기다림: edq1 판본 다시 보기 먼저",
-  "at": "2026-11-18T00:40:27Z",
-  "first": "2026-11-17T22:40:39Z"
+  "host": "vm-wake1",
+  "why": "판 내기 기다림: wake1 순서표 시험 GIT_* 막기",
+  "at": "2026-11-18T00:41:14Z",
+  "first": "2026-11-17T22:52:04Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-edq1",
+ "what": "edq1 판본 다시 보기 먼저",
+ "since": "2026-11-18T00:41:29Z",
+ "beat": "2026-11-18T00:41:29Z",
  "last": {
   "who": "lead",
   "done": "tether1 📶 테더링 문·🔢 상세 ISBN 웹앱 1.78.709·수집기 1.89.359 fa401c57",
