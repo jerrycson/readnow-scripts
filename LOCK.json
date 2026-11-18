@@ -85,14 +85,14 @@
   "at": "2026-11-18T05:05:15Z",
   "first": "2026-11-18T04:07:37Z"
  },
- "holder": "lead",
- "host": "vm-edkw3",
- "what": "edkw3 판본 확인 판 ② 시험·올림 중",
- "since": "2026-11-18T04:52:30Z",
- "beat": "2026-11-18T05:02:49Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "shoprow1 우리숍 0.2.22 첫 화면 한 줄 띠·끌면 관성·끝없이 돎·내 섹션·차례·배수 설정(꾸밈 틀 0.1.4 · shop.css 0.2.9) · 51b226574 (머리 그대로 · 웹앱 판 그대로)",
-  "at": "2026-11-18T04:51:40Z"
+  "done": "판본 확인 판 ② 다시 냄(edkw3) APP_VER = '1.78.718' f1cf9f6c2 (머리 그대로 8ab2f661d1d8afa8)",
+  "at": "2026-11-18T05:05:19Z"
  }
 }
