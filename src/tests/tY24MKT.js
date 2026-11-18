@@ -49,7 +49,7 @@ const searchDoc = `<div class="itemUnit"><a href="/Product/UsedShopHub/Hub/777">
   // 사람 속도·하루 상한·멈춤(순수 함수)
   const pace = [0, 0.5, 1, -3, 9].map((r) => X.y24PaceMs(r)); ok(pace.every((x) => x >= 4000 && x <= 8000) && X.y24PaceMs(0, { paceMin: 1000 }) === 4000, '화면 사이 4~8초(설정으로도 4초 아래는 못 내림)', pace);
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  ok(X.y24Gate({ day, n: 120 }).ok === false && X.y24Gate({ day: '2000-01-01', n: 999 }).ok === true && X.y24Gate({ cap: 10, day, n: 3 }).left === 7, '하루 상한(기본 120화면 · 날이 바뀌면 다시)');
+  ok(X.y24Gate({ day, n: X.Y24_PACE.cap }).ok === false && X.Y24_PACE.cap === 360 && X.y24Gate({ day, n: 359 }).ok === true && X.y24Gate({ day: '2000-01-01', n: 999 }).ok === true && X.y24Gate({ cap: 10, day, n: 3 }).left === 7, '하루 상한(기본 360화면 · 11/18 cap3x 3배 · 날이 바뀌면 다시)');
   ok(X.y24Blocked(429, '') && X.y24Blocked(403, '') && X.y24Blocked(200, '<div>자동입력 방지 문자를 입력</div>') && !X.y24Blocked(200, hubDoc(rowsA)), '403·429·캡차 화면 알아봄');
   ok(X.y24Gate({ stopUntil: new Date(Date.now() + 3600e3).toISOString(), stopWhy: 'HTTP 429' }).stopped === true, '멈춤 시각 전엔 읽지 않음');
 

@@ -26,7 +26,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   L('A1', '9788900000011', 9000); L('A2', '9788900000028', 5000); L('A3', '9788900000035', 4000); L('A4', '9788900000042', 7000); L('A5', '9788900000059', 3000, { sku: 'DUPES 미끼' });
   put('y24_listings', '111111111', { goodsNo: '111111111', isbn13: '9788900000035', grade: '상', state: '02', firstSeenAt: '2026-11-01T00:00:00Z' }); /* A3 — 예스24에 같은 책·등급이 이미 있음 */
   put('crm_orders', 'aladin_X1', { kind: 'sale', orderedAt: '2026-11-13T00:00:00Z', orderNo: 'X1', items: [{ aladinUsedCode: 'A2', lineStatus: 'normal' }] }); /* A2 — 주문에 묶임 */
-  for (const i of ['9788900000011', '9788900000028', '9788900000035', '9788900000042']) put('y24_mkt', i, { none: true, at: '2026-11-14T09:00:00Z' }); /* 예스24에 우리뿐 → +20% */
+  for (const i of ['9788900000011', '9788900000028', '9788900000035', '9788900000042']) put('y24_mkt', i, { none: true, noneHow: 'search', at: '2026-11-14T09:00:00Z' }); /* 예스24에 우리뿐 → +20% */
   const texts = { 'src/app.html': rd('src/app.html'), 'readnow-ext-core.js': rd('readnow-ext-core.js'), 'readnow-registry.js': rd('readnow-registry.js'), 'readnow-shipping-core.js': rd('readnow-shipping-core.js') };
   const Y = makeY24Auto({ db: F.db, C: F.C, FV: F.FV, now, getText: async (f) => { if (!texts[f]) throw new Error('없음 ' + f); return texts[f]; }, getUrl: async () => { throw new Error('바깥 안 감'); }, xlsx: XLSX });
   /* 번외 올림 모듈(실제 파일) — 숨은 크롬은 띄우지 않음(put·state·ack만) */
@@ -52,7 +52,7 @@ const XLSX = (() => { const m = { exports: {} }; new Function('module', 'exports
   T += 61e3; y = await Y.step('HOME', gather()); ok(!y.jobs.length && /올리는 중/.test(y.why), '③ 올리는 중이면 새 묶음 없음(되풀이 0)', y.why);
   /* ④ 성공 결과 */
   REG.R.q.res[J1.id] = { state: 'done', gno: { aladin_A4: '222222222' }, cnt: { sale: 1, unpub: 0 }, msg: '올라감', at: T, rows: ['aladin_A4'] }; REG.R.q.jobs = []; REG.R.rec.ok1 = T; REG.R.rec.lid.aladin_A4 = { at: T }; REG.R.rec.sku[J1.rows[0].self] = 'aladin_A4';
-  put('prd_listings', 'aladin_A6', { listingId: 9006, usedCode: 'A6', title: '시험 책 A6', isbn13: '9788900000066', grade: '최상', price: 6000, qty: 1, sku: 'ABC_A6', active: true, status: '판매중' }); store.app_settings.sku_map_0.m.aladin_A6 = { c: ['ab006'] }; put('y24_mkt', '9788900000066', { none: true });
+  put('prd_listings', 'aladin_A6', { listingId: 9006, usedCode: 'A6', title: '시험 책 A6', isbn13: '9788900000066', grade: '최상', price: 6000, qty: 1, sku: 'ABC_A6', active: true, status: '판매중' }); store.app_settings.sku_map_0.m.aladin_A6 = { c: ['ab006'] }; put('y24_mkt', '9788900000066', { none: true, noneHow: 'search' });
   put('app_settings', 'platforms', { y24: { reg: { autoAll: 1 } } }); Y._M.dataAt = 0; Y._M.bigAt = 0; /* 판매중 상품 전부(정범님이 켬)를 흉내 */
   T += 61e3; y = await Y.step('HOME', gather()); const e2 = led().r.aladin_A4;
   ok(e2.ok === 1 && e2.gno === '222222222' && e2.st === 'sent' && y.ack.includes(J1.id), '④ 번외 결과 → 장부 ✅(ok · 예스24 번호) · 결과 받았음(ack)', { e2, ack: y.ack });

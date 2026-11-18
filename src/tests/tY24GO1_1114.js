@@ -13,7 +13,7 @@ const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.inde
 console.log('① 판매가 엔진');
 { const L = { alPrice: 8000, grade: '상', priceList: 15000 }; const fk = (lv) => ({ lv, p: lv === 'ok' ? 0.1 : 0.9, conf: 0.8, est: false, n: 5, tag: lv });
   const P = (rows, o) => X.y24PriceOf(L, { page1: rows, total: rows.length, full: true }, o);
-  const solo = X.y24PriceOf(L, { none: true }); ok(solo.mode === 'solo' && solo.price === 9600, '③ 예스24에 이 책이 없음(우리뿐) → 알라딘 8,000 + 20% = 9,600', solo);
+  const solo = X.y24PriceOf(L, { none: true, noneHow: 'search' }); ok(solo.mode === 'solo' && solo.price === 9600, '③ 예스24에 이 책이 없음(우리뿐) → 알라딘 8,000 + 20% = 9,600', solo);
   const own = P([{ id: '1', p: 8000, g: '상', sid: 'me', fk: { lv: 'own' } }]); ok(own.mode === 'solo' && own.price === 9600, '③ 우리 매물뿐 → +20%', own);
   const fo = P([{ id: '2', p: 3000, g: '상', sid: 'shopF', fk: fk('fake') }]); ok(fo.mode === 'fakeOnly' && fo.price === 9600, '③ 허위만(정범님 11/10) → +20%', fo);
   const w = P([{ id: '3', p: 3000, g: '중', sid: 'shopG', fk: fk('ok') }]); ok(w.mode === 'worseOnly' && w.price === 8000 && /그대로/.test(w.why.join(' ')), '② 유효 매물이 모두 나쁜 등급(동급 유효 최저를 못 셈) → 알라딘 값 그대로', w);

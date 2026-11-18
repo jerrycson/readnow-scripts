@@ -23,7 +23,7 @@ const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 (async () => {
   console.log('① 판매자 지문 — 재료 0이면 몇 시간 뒤 다시');
   const i0 = SRC.indexOf('let sfpAt = 0;'), i1 = SRC.indexOf('/* (정범님 11/09) 🟦 예스24 시장 지표 — 알라딘 시장 지표와 따로'); ok(i0 > 0 && i1 > i0, '클라우드에 sellerFpTick·diagSfp 자리');
-  const mk = (FS) => new Function('C', 'extMod', 'fetch', 'nowIso', 'log', SRC.slice(i0, i1) + '\nreturn { sellerFpTick, diagSfp };')(FS.C, async () => X, async () => { throw new Error('새로 읽으면 안 됨'); }, () => new Date().toISOString(), () => {});
+  const mk = (FS) => new Function('C', 'extMod', 'fetch', 'nowIso', 'log', 'require', SRC.slice(i0, i1) + '\nreturn { sellerFpTick, diagSfp };')(FS.C, async () => X, async () => { throw new Error('새로 읽으면 안 됨'); }, () => new Date().toISOString(), () => {}, (m) => require(path.join(path.dirname(find(['cloud/index.js', '../cloud/index.js'])), m)) /* (y24low1 11/18) 잘린 부분 안 cap3x require */);
   { const F = mkFS(); F.D.app_settings = { seller_fp_state: { hour: 0 } }; const T = mk(F);
     const r1 = await T.sellerFpTick(); const st1 = F.D.app_settings.seller_fp_state;
     ok(r1 && r1.empty === 1 && r1.retry === true && st1.day === null && st1.empty.n === 1 && Math.abs(Date.parse(st1.empty.nextAt) - Date.now() - 3 * 3600e3) < 60e3, '재료 0 → 날짜 잠금 풂 · 3시간 뒤 다시(오늘 1/4번)', st1.empty);

@@ -20,7 +20,7 @@ function world(extra) { let T = Date.parse('2026-11-16T10:00:00Z'); const now = 
   put('app_settings', 'sku_map_0', { m: { aladin_A1: { c: ['ab001'] }, aladin_A2: { c: ['ab002'] }, aladin_A3: { c: ['ab003'] } } });
   const L = (id, isbn, price, x) => put('prd_listings', 'aladin_' + id, { listingId: 9000 + +id.slice(1), usedCode: id, title: '시험 책 ' + id, isbn13: isbn, grade: '상', price, priceList: 15000, qty: 1, sku: 'ABC_' + id, active: true, status: '판매중', ...(x || {}) });
   L('A1', '9788900000011', 9000); L('A2', '9788900000028', 5000); L('A3', '9788900000035', 7000);
-  for (const i of ['9788900000011', '9788900000028', '9788900000035']) put('y24_mkt', i, { none: true, at: '2026-11-16T09:00:00Z' });
+  for (const i of ['9788900000011', '9788900000028', '9788900000035']) put('y24_mkt', i, { none: true, noneHow: 'search', at: '2026-11-16T09:00:00Z' });
   for (let i = 0; i < 40; i++) put('prd_listings', 'aladin_F' + i, { listingId: 5000 + i, usedCode: 'F' + i, title: '채움 ' + i, isbn13: '97889000' + String(100 + i).padStart(5, '0'), grade: '중', price: 3000, qty: 1, sku: 'ABC_F' + i, active: true, status: '판매중', priceList: 9000 }); /* 읽기 수가 보이게 */
   const Y = makeY24Auto({ db: F.db, C, FV: F.FV, now, getText: async (f) => { if (!texts[f]) throw new Error('없음 ' + f); return texts[f]; }, getUrl: async () => { throw new Error('바깥 안 감'); }, xlsx: XLSX, ...(extra || {}) });
   return { Y, F, store, put, reads, now, adv: (ms) => { T += ms; }, led: () => store.app_settings.y24_reg || {}, reset: () => { for (const k of Object.keys(reads)) delete reads[k]; } }; }

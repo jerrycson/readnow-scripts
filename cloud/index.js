@@ -3957,10 +3957,19 @@ let y24FkC = null, y24FkAt = 0;
 async function y24FkCtx() { if (y24FkC && Date.now() - y24FkAt < 6 * 3600e3) return y24FkC; y24FkAt = Date.now(); let K = { fam: {}, real: {}, al: {} };
   try { const s = (await C('app_settings').doc('seller_fp_state').get()).data() || {}; const day = s.day || (s.lastRun && String(s.lastRun.at || '').slice(0, 10)) || null; if (day) { const v = (await C('seller_fp_runs').doc(day).get()).data() || {}; if (v.y24fk) K = { fam: v.y24fk.fam || {}, real: v.y24fk.real || {}, al: v.y24fk.al || {}, day }; } } catch (e) {}
   y24FkC = K; return K; }
+/* (y24low1 11/18 · 발견 f_261118_y24mkt_used_miss) 이 책 예스24 중고 허브(중고샵 모음) 번호를 이미 아는 기록에서 — ① 우리 예스24 매물(y24_listings.masterNo · 가게 읽기가 남김) ② 바깥 중고 기록(ext_used/{ISBN}.src.yes24used — 허브 요약 hubSum.id 또는 검색에서 나온 묶음 하나)
+ *  화면을 더 읽지 않음(문서 읽기 1~2번) · 못 찾으면 null → 검색으로 */
+async function y24HubKnown(isbn) { const ok = (x) => (x != null && /^\d{5,}$/.test(String(x)) ? String(x) : null);
+  try { const qs = await C('y24_listings').where('isbn13', '==', String(isbn)).select('masterNo').limit(10).get(); for (const d of qs.docs) { const m = ok((d.data() || {}).masterNo); if (m) return { id: m, how: 'ours' }; } } catch (e) {}
+  try { const d = await C('ext_used').doc(String(isbn)).get(); const y = d.exists ? (((d.data() || {}).src || {}).yes24used || null) : null; const D = (y && y.d) || null;
+    const m = ok(D && D.hubSum && D.hubSum.id) || (D && D.hub && !D.mv && Array.isArray(D.items) && D.items.length === 1 ? ok(D.items[0].id) : null); if (m) return { id: m, how: 'ext' }; } catch (e) {}
+  return null; }
 async function y24MktTick() { if (Date.now() - y24mAt < 120e3) return null; y24mAt = Date.now(); const X = await extMod(); if (!X || !X.y24MktRec || !X._y24HubPage) return null;
   const sref = C('app_settings').doc('y24_mkt_state'); const st = (await sref.get()).data() || {}; const G = X.y24Gate(st, Date.now()); if (!G.ok) return G.stopped ? { stop: G.why } : null;
   const cut = new Date(Date.now() - 2 * 864e5).toISOString(); let want = null;
   { const qs = await C('y24_mkt').where('req.at', '>=', cut).limit(10).get(); for (const d of qs.docs) { const v = d.data() || {}; if (v.req && (!v.at || String(v.req.at) > String(v.at))) { want = { id: d.id, v, why: 'req' }; break; } } }
+  /* (y24low1 11/18 · 발견 f_261118_y24mkt_used_miss) 옛 「이 책 없음(우리뿐)」 기록 — 검색 화면인지 확인하지 않고 적은 것(noneHow 없음)을 먼저 다시 읽음(하루 몇 권 · 22권쯤) · 다시 읽으면 noneHow가 붙거나(확인한 없음) 허브 첫 쪽·「못 읽음」으로 바뀌어 다시 고르지 않음 */
+  if (!want && st.noneFix !== false) { try { const qs = await C('y24_mkt').where('none', '==', true).limit(40).get(); for (const d of qs.docs) { const v = d.data() || {}; if (!v.noneHow && !(Date.parse(v.noneTry || '') > Date.now() - 864e5)) { want = { id: d.id, v, why: 'noneFix' }; break; } } } catch (e) {} }
   if (!want) { const old = new Date(Date.now() - (+st.refreshDays || 3) * 864e5).toISOString(); const qs = await C('y24_mkt').where('at', '<', old).orderBy('at').limit(1).get(); if (!qs.empty) want = { id: qs.docs[0].id, v: qs.docs[0].data() || {}, why: 'old' }; }
   /* (11/10 아침 확인) ③ 재료 넓히기 — y24_mkt는 웹앱 요청한 책만 생겨 판매자 지문(seller_fp) 재료가 0이었음 → 요청·오래된 책이 없을 때 우리 예스24 매물(y24_listings)의 책 중 아직 안 읽은 것 한 권
    *  같은 회차 상한·하루 상한(cap)·사람 속도 안에서만 · 매물에 허브 번호(masterNo)가 있으면 검색 화면을 건너뜀 · 끄기 seed:false · 다 돌면 하루 쉼(seedIdle) */
@@ -3971,10 +3980,15 @@ async function y24MktTick() { if (Date.now() - y24mAt < 120e3) return null; y24m
   const tickMax = Math.max(1, +st.tickMax || 6); let used = G.used, pages = 0, last = 0, stop = null; const out = { isbn, why: want.why, pages: 0 };
   const get = async (u) => { if (stop) throw new Error(stop); if (pages >= tickMax || used >= G.cap) throw new Error('budget'); const gap = X.y24PaceMs(Math.random(), st); const w = last ? gap - (Date.now() - last) : 0; if (w > 0) await sleep(w); /* 사람 속도: 화면 사이 4~8초 */
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000); let r, text = ''; try { r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ko-KR,ko;q=0.9', Referer: 'https://www.yes24.com/' }, signal: ctl.signal }); text = await y24Dec(r); } finally { clearTimeout(t); last = Date.now(); pages++; used++; }
-    const b = X.y24Blocked(r.status, text); if (b) { stop = b; throw new Error(b); } if (!r.ok) throw new Error('HTTP ' + r.status); return text; };
+    lastU = (r && r.url) || u; const b = X.y24Blocked(r.status, text); if (b) { stop = b; throw new Error(b); } if (!r.ok) throw new Error('HTTP ' + r.status); return text; }; let lastU = ''; /* (y24low1) 마지막으로 받은 화면의 최종 주소(넘겨졌으면 넘어간 곳) */
   const ref = C('y24_mkt').doc(isbn); const prev = want.v || {}; const at = nowIso(); const W = { at, by: 'cloud', ver: VER };
   try { let hubId = prev.hubId || null;
-    if (!hubId) { const H0 = await get(X.y24SearchUrl(isbn)); const ids = X.y24HubIds(H0); if (!ids.length) { await ref.set({ ...W, isbn, none: true, err: null, n: 0 }, { merge: true }); out.none = 1; return fin(); } hubId = ids[0]; if (ids.length > 1) W.amb = ids.slice(0, 5); }
+    if (!hubId) { const K = await y24HubKnown(isbn); if (K) { hubId = K.id; W.hubHow = K.how; out.hubHow = K.how; } } /* (y24low1 11/18) 검색보다 먼저 이미 아는 허브 번호(우리 예스24 매물 · 바깥 중고 기록) — 클라우드 검색은 첫 화면으로 넘어가 늘 0개였음 */
+    if (!hubId) { const H0 = await get(X.y24SearchUrl(isbn)); const ids = X.y24HubIds(H0);
+      if (!ids.length) { const sv = X.y24SearchSeen ? X.y24SearchSeen(H0, lastU, isbn) : { ok: false, why: '공용 파일이 옛 판(검색 화면 확인 셈 없음)' }; /* (y24low1) 검색 결과 화면임을 확인했을 때만 「없음(우리뿐)」 */
+        if (!sv.ok) { const m = '예스24 검색을 못 읽음 — ' + sv.why + '(우리뿐으로 정하지 않음)'; await ref.set({ ...W, isbn, none: null, noneHow: null, noneTry: at, err: m, n: null }, { merge: true }); out.err = m; return fin(); }
+        await ref.set({ ...W, isbn, none: true, noneHow: 'search', noneTry: at, err: null, n: 0 }, { merge: true }); out.none = 1; return fin(); }
+      hubId = ids[0]; if (ids.length > 1) W.amb = ids.slice(0, 5); }
     const P = X._y24HubPage(await get(X.y24HubUrl(hubId)), hubId); if (!P.items.length && !(P.tab && P.tab.ALL)) { await ref.set({ ...W, hubId, err: '허브 화면에서 매물 줄을 못 읽음(모양이 바뀌었을 수 있음)' }, { merge: true }); return fin(); }
     const lastP = Math.min(+st.pagesMax || 4, P.lastPage || Math.ceil(((P.tab && P.tab.ALL) || 0) / 24) || 1); for (let pg = 2; pg <= lastP; pg++) { try { const Q = X._y24HubPage(await get(X.y24GoodsListUrl({ hubId, page: pg })), hubId); if (!Q.items.length) break; P.items.push(...Q.items); } catch (e) { if (stop) throw e; break; } }
     const rec = X.y24MktRec(P, { isbn, hubId, at }); let bb = prev.bb || null; if (!bb || Date.now() - (Date.parse(bb.at) || 0) > 7 * 864e5) { try { const B = X.y24Buyback(await get(X.y24BuybackUrl(isbn)), isbn); bb = { at, ...(B.hit || {}), none: !B.hit }; } catch (e) { if (stop) throw e; } }
@@ -3986,10 +4000,10 @@ async function y24MktTick() { if (Date.now() - y24mAt < 120e3) return null; y24m
     rec.page1 = X.y24TrustAll(rec, cards, st.trust || null);
     if (X.y24FakeAll) { try { const K = await y24FkCtx(); rec.page1 = X.y24FakeAll(rec, { cards, fam: K.fam, real: K.real, al: K.al, own: st.ownSellers || ['jerrycson'], ownNos }, st.fake || null); rec.fkSum = X.y24FakeSum(rec.page1); } catch (e) { log('예스24 허위 판정(줄) 실패', e.message); } } /* (정범님 11/10 · y24eng) 그림자 — 값 안 바꿈 · 줄마다 fk{p·lv·conf·n·est·why} */
     const D = X.y24MktDiff(prev.page1 ? prev : null, rec);
-    await ref.set({ ...W, ...rec, ours, bb, err: null, req: prev.req || null, lastDiff: D.same ? prev.lastDiff || null : { at, add: D.add.length, gone: D.gone.length, px: D.px.length, min: D.min, total: D.total, first: D.first } }, { merge: true });
+    await ref.set({ ...W, ...rec, ours, bb, err: null, none: false, noneHow: null, req: prev.req || null, lastDiff: D.same ? prev.lastDiff || null : { at, add: D.add.length, gone: D.gone.length, px: D.px.length, min: D.min, total: D.total, first: D.first } }, { merge: true });
     if (!D.same) await C('y24_mkt_changes').add({ isbn, hubId, at, kind: 'y24Listings', prevSig: prev.sig || null, sig: rec.sig, diff: { add: D.add, gone: D.gone, px: D.px.slice(0, 30), min: D.min, total: D.total, first: D.first }, page: rec.page1.map((x) => ({ r: x.r, id: x.id, g: x.g, p: x.p, s: x.s, sid: x.sid, ts: x.tr ? x.tr.s : null, fk: x.fk ? x.fk.lv : null, fp: x.fk ? x.fk.p : null })), total: rec.total, n: rec.n });
     out.n = rec.n; out.total = rec.total; out.changed = !D.same; }
-  catch (e) { const m = String(e.message || e).slice(0, 120); if (m !== 'budget') await ref.set({ at, err: m }, { merge: true }).catch(() => {}); out.err = m; }
+  catch (e) { const m = String(e.message || e).slice(0, 120); if (m !== 'budget') await ref.set({ at, err: m, ...(prev.none && !prev.noneHow ? { none: null, noneTry: at } : {}) }, { merge: true }).catch(() => {}); out.err = m; } /* (y24low1) 확인 안 된 옛 「없음」은 오류 때도 지움(우리뿐 +%로 쓰이지 않게) */
   return fin();
   async function fin() { out.pages = pages; const P2 = { day: G.day, n: used }; if (stop) Object.assign(P2, X.y24StopOf(stop, Date.now(), st)); await sref.set(P2, { merge: true }); if (pages) log(`🟦 예스24 시장 지표 ${isbn} · ${pages}화면 · 오늘 ${used}/${G.cap}${stop ? ' · ⛔ 멈춤: ' + stop : ''}${out.err && !stop ? ' · ' + out.err : ''}`); return pages || stop ? out : null; } }
 /* (0.26.0) 🟦 예스24 우리 가게 매물(북스퀸 · entrNo 340160) — 정범님 10/20 두 번째 판매 플랫폼 · 로그인 없이 공개 가게 목록(쪽마다 18개)을 1시간마다 다 읽음

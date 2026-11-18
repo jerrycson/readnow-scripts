@@ -26,7 +26,7 @@ function world(wrapC) { let T = Date.parse('2026-11-18T01:00:00Z'); const clk = 
   L('A1', '9788900000011', 9000); L('A2', '9788900000028', 5000); L('A3', '9788900000035', 4000); L('A4', '9788900000042', 7000); L('A5', '9788900000059', 3000, { sku: 'DUPES 미끼' });
   put('y24_listings', '111111111', { goodsNo: '111111111', isbn13: '9788900000035', grade: '상', state: '02', firstSeenAt: '2026-11-01T00:00:00Z' });
   put('crm_orders', 'aladin_X1', { kind: 'sale', orderedAt: '2026-11-17T00:00:00Z', orderNo: 'X1', items: [{ aladinUsedCode: 'A2', lineStatus: 'normal' }] });
-  for (const i of ['9788900000011', '9788900000028', '9788900000035', '9788900000042']) put('y24_mkt', i, { none: true, at: '2026-11-18T00:00:00Z' });
+  for (const i of ['9788900000011', '9788900000028', '9788900000035', '9788900000042']) put('y24_mkt', i, { none: true, noneHow: 'search', at: '2026-11-18T00:00:00Z' });
   const C = wrapC ? wrapC(F.C, put, store) : F.C;
   const Y = makeY24Auto({ db: F.db, C, FV: F.FV, now: clk.now, getText: async (f) => { if (!texts[f]) throw new Error('없음 ' + f); return texts[f]; }, getUrl: async () => { throw new Error('바깥 안 감'); }, xlsx: XLSX });
   const HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'plk2-')); HOMES.push(HOME); const st = { login: 'ok', hold: false, en: true, pc: 'HOME' };
