@@ -1,6 +1,20 @@
 {
- "queue": [],
- "ask": null,
+ "queue": [
+  {
+   "who": "lead",
+   "host": "vm-lockdr1",
+   "why": "판 내기 기다림: 잠금 서랍 까닭 고치기·유의 사항·시장 지표 (lockdr1)",
+   "first": "2026-11-18T11:00:07Z",
+   "at": "2026-11-18T11:00:07Z"
+  }
+ ],
+ "ask": {
+  "who": "lead",
+  "host": "vm-lockdr1",
+  "why": "판 내기 기다림: 잠금 서랍 까닭 고치기·유의 사항·시장 지표 (lockdr1)",
+  "at": "2026-11-18T11:00:07Z",
+  "first": "2026-11-18T11:00:07Z"
+ },
  "holder": "lead",
  "host": "vm-bqstock1",
  "what": "bqstock1 웹앱 판 — 📦 보유재고 이 카드·구성별",
