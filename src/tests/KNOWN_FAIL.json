@@ -92,6 +92,14 @@
    "owner": "lead",
    "until": "2026-11-25",
    "since": "2026-11-18"
+  },
+  {
+   "test": "tus2",
+   "items": [],
+   "why": "알라딘 중고 검색 대조 시험 — main(123a621e)에서도 같은 실패(11/17 lead 일꾼 edkw2가 test-gate --only로 확인) · 시험이 읽는 본보기 파일 us/used_search.html이 저장소에 없음(ENOENT) · 판본 판 ②가 sameVolume을 고쳐 딸린 시험으로 불림 · 판 ②의 권·디스크 괄호 대조는 tEDKW2_1117이 따로 봄",
+   "owner": "lead",
+   "since": "2026-11-17",
+   "until": "2026-11-30"
   }
  ]
 }

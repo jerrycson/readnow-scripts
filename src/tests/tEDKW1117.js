@@ -18,7 +18,7 @@ const T1 = '아내를 모자로 착각한 남자 (교보 리커버 한정판)';
 const s1 = P.edSuspect(T1); ok(s1.on && ['교보', '리커버', '한정'].every((k) => s1.kw.includes(k)), '교보 리커버 한정판 → 낱말 셋');
 ok(P.edSuspect('[블루레이] 어떤 영화').on === false, '[블루레이] 꼬리표만 → 의심 아님');
 ok(P.edSuspect('[중고-상] [국내도서] 어떤 책').on === false, '[중고-상] [국내도서] 꼬리표만 → 의심 아님');
-ok(P.edSuspect('어떤 책 (양장)').on === true && P.edSuspect('어떤 책 (양장)').kw.length === 0, '괄호만 있는 상품 → 의심(낱말 없음)');
+ok(P.edSuspect('어떤 책 (나의 부제)').on === true && P.edSuspect('어떤 책 (나의 부제)').kw.length === 0, '괄호만 있는 상품 → 의심(낱말 없음) — (0.19.11) 양장은 판본 낱말이 되어 부제 괄호로 바꿈');
 ok(P.edSuspect('YES24 단독 어떤 책').kw.includes('예스24'), '영문 YES24 → 예스24');
 ok(P.edSuspect('평범한 책 제목').on === false, '낱말·괄호 없으면 의심 아님');
 ok(P.edSuspect('텀블벅 펀딩 굿즈 포함').kw.length === 2, '텀블벅·펀딩 둘');

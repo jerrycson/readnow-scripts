@@ -98,7 +98,12 @@ console.log('④ 수집기가 되살리기를 부름');
   ok(/await benchIsbnHealShop\(sc, name, st, parts\)/.test(src), '상세 읽기 한 바퀴 앞에 숍 하루 한 번 되살리기');
   const m = src.match(/async function benchIsbnHealShop\([\s\S]*?\n  }\n/); const body = m ? m[0] : '';
   ok(body && !/fetchText|GM_xmlhttpRequest|helperFetch|aladin\.co\.kr/.test(body), '되살리기는 알라딘을 열지 않음(저장된 bench_books만 읽음)', body.slice(0, 80));
-  ok(/@require\s+https:\/\/readnow\.kr\/readnow-products-core\.js\?v=0\.19\.11/.test(src) && /readnow-autosched-core\.js\?v=0\.18\.33/.test(src), '수집기가 새 공용 파일 판을 부름');
+  // (edkw3 11/18) 판 번호를 못 박지 않음 — 공용 파일의 지금 VERSION을 읽어 수집기 @require ?v=가 그 판인지 + 테더 고침이 든 판(0.19.11·0.18.33) 이상인지 봄(다음 판이 공용 판을 올려도 시험이 깨지지 않게)
+  const verOf = (f) => ((fs.readFileSync(path.join(R, f), 'utf8').match(/const VERSION = '([0-9.]+)'/) || [])[1] || '');
+  const vge = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return true; };
+  const reqv = (f) => ((src.match(new RegExp('@require\\s+https://readnow\\.kr/' + f.replace(/[.]/g, '\\.') + '\\?v=([0-9.]+)')) || [])[1] || '');
+  const pv = verOf('readnow-products-core.js'), av = verOf('readnow-autosched-core.js'), pr = reqv('readnow-products-core.js'), ar = reqv('readnow-autosched-core.js');
+  ok(pr === pv && ar === av && vge(pv, '0.19.11') && vge(av, '0.18.33'), '수집기가 새 공용 파일 판을 부름', { products: [pr, pv], autosched: [ar, av] });
 }
 
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과');

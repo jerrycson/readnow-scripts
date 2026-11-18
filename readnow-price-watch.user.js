@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.55
+// @version      0.10.56
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -9,7 +9,7 @@
 // @downloadURL  https://readnow.kr/readnow-price-watch.user.js
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
-// @require      https://readnow.kr/readnow-products-core.js?v=0.19.11
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.12
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.16
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
@@ -207,8 +207,10 @@
   async function plkReadW(x) { try { const d = await C('prd_locks').doc(String(x.key || '')).get(); if (d.exists) return d.data() || null; if (x.listingId) { const q = await C('prd_locks').where('lid', '==', String(x.listingId)).limit(1).get(); if (!q.empty) return q.docs[0].data() || null; } return null; } catch (e) { return undefined; } } /* undefined = 못 읽음 → 잠긴 것으로(안전 쪽) */
   /* (0.10.53 edkw1) 🔖 판본 검색 대조 — 수집기 검색 시세가 남긴 prd_market_nobook/{상품}.ed 를 읽어, 검색이 같은 판본을 찾았거나(srch) 근거가 모자라 사람 확인(check·hold)이면 막음 · 스위치 app_settings/main.edSearch(기본 켬 · 10분 기억) */
   const EDS = { at: 0, on: true };
-  async function edBlockOf(l, key) { try { if (!P.edSuspect || !P.edSuspect(l.title || '').on) return null; if (Date.now() - EDS.at > 600000) { try { EDS.on = ((await C('app_settings').doc('main').get()).data() || {}).edSearch !== false; } catch (e) {} EDS.at = Date.now(); } if (!EDS.on) return null;
-      const e = ((await C('prd_market_nobook').doc(key).get()).data() || {}).ed; if (!e || !(e.use === 'srch' || (e.use === 'check' && e.hold))) return null; const w = (v) => (v == null ? '-' : Number(v).toLocaleString('ko-KR') + '원');
+  /* (edkw2 판 ② 더함 · 정범님 11/17 20:27) 우리 상품의 유의 사항(prd_used_info/{판매 번호}.note)에 사인본·친필·서명·넘버링·한정이 있으면 제목이 평범해도 막음 — 같은 이름의 보통판 시장일 수 있음(동방신기 정규 8집 사례) · 사람이 판을 고르면(edPick) 그것을 따름 */
+  async function edNoteOfL(l, uinfo) { if (!P.edNoteKw || l.listingId == null) return []; let x = uinfo && uinfo[l.listingId]; if (x === undefined) { try { x = (await C('prd_used_info').doc(String(l.listingId)).get()).data() || null; } catch (e) { x = null; } } return x && x.note ? P.edNoteKw(String(x.note)) : []; }
+  async function edBlockOf(l, key, uinfo) { try { const nw = await edNoteOfL(l, uinfo); if (!nw.length && (!P.edSuspect || !P.edSuspect(l.title || '').on)) return null; if (Date.now() - EDS.at > 600000) { try { EDS.on = ((await C('app_settings').doc('main').get()).data() || {}).edSearch !== false; } catch (e) {} EDS.at = Date.now(); } if (!EDS.on) return null;
+      const dd = (await C('prd_market_nobook').doc(key).get()).data() || {}; const pk = dd.edPick && (dd.edPick.itemId || dd.edPick.none) ? dd.edPick : null; const e0 = dd.ed; const e1 = e0 && pk ? { ...e0, use: pk.itemId ? 'srch' : 'check', why: pk.itemId ? e0.why : '사람이 「다 아님」으로 정함' } : e0; const e = nw.length && !(pk && pk.itemId && e0) ? { ...(e0 || {}), use: 'check', hold: true, why: `유의 사항에 판본 낱말(${nw.join('·')})이 있어 같은 이름의 보통판 시장일 수 있음 · 판매가 그대로` } : e1; if (!e || !(e.use === 'srch' || e.use === 'check')) return null; /* (edkw2 판 ②) 사람 확인은 hold가 없어도 막음 · 사람이 고른 판(edPick)도 따름 */ const w = (v) => (v == null ? '-' : Number(v).toLocaleString('ko-KR') + '원');
       return { use: e.use, hold: !!e.hold, autoLow: e.autoLow ?? null, srchLow: e.srchLow ?? null, at: e.at || null, short: e.use === 'srch' ? '🔖 판본 의심 — 검색 시장 우선' : '🔖 판본 확인 필요', line: e.use === 'srch' ? `🔖 판본 의심 — 이 중고 목록은 다른 판본일 수 있음 · 검색에서 같은 판본을 찾음(자동 지표 최저 ${w(e.autoLow)} → 검색 최저 ${w(e.srchLow)}) · 자동 반영 막음` : `🔖 판본 확인 필요 — ${e.why || '같은 판본을 가리지 못함'} · 자동 반영 막음` }; } catch (e) { return null; } }
   async function processOne(l) {
     const key = 'aladin_' + l.usedCode; const now = new Date().toISOString();
@@ -276,7 +278,7 @@
           else Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: why }); }
         else { Object.assign(rec, { approvalState: prevD.approvalState === 'pending' ? null : prevD.approvalState || null }); if (prevD.approvalState !== 'pending') delete rec.approval; } }
       else Object.assign(rec, { approvalState: prevD.approvalState }); if (keepW) delete rec.approval; }
-    const ED = await edBlockOf(l, key); if (ED) { rec.ed = ED; rec.reasons = [ED.line, ...(rec.reasons || [])].slice(0, 12); if (rec.approval && rec.approval.decision === 'auto' && rec.approval.at === now) { Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: [ED.short] }); } else if (rec.approvalState === 'pending' && !keepApproval) rec.autoBlock = [ED.short, ...(rec.autoBlock || [])].slice(0, 8); } /* (0.10.53 edkw1 · 정범님 11/17 14:00) 🔖 판본 의심 상품: 이 새책 화면의 중고 목록이 다른 판본일 수 있음 → 이번 판정의 자동 반영을 막고 관리자에게(값은 그대로 · 웹앱 일괄 계산이 검색 시장으로 다시 셈) */
+    const ED = await edBlockOf(l, key, uinfo); if (ED) { rec.ed = ED; rec.reasons = [ED.line, ...(rec.reasons || [])].slice(0, 12); if (rec.approval && rec.approval.decision === 'auto' && rec.approval.at === now) { Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: [ED.short] }); } else if (rec.approvalState === 'pending' && !keepApproval) rec.autoBlock = [ED.short, ...(rec.autoBlock || [])].slice(0, 8); } /* (0.10.53 edkw1 · 정범님 11/17 14:00) 🔖 판본 의심 상품: 이 새책 화면의 중고 목록이 다른 판본일 수 있음 → 이번 판정의 자동 반영을 막고 관리자에게(값은 그대로 · 웹앱 일괄 계산이 검색 시장으로 다시 셈) */
     if (!watched && prevD.strat && prevD.strat.active) rec.strat = { ...prevD.strat, active: false, end: 'notWatched', endedAt: now }; // 감시를 끄거나 뺀 상품의 전략은 끝냄 (다시 보기 목록에 계속 남지 않게)
     /* (10/30 위험 2) 판정 기록은 트랜잭션으로 — 처음 읽은 결정(prevD)과 지금 결정이 다르면(그 사이 웹앱에서 일괄 확정·직접 가격·원상복귀 등) 결정 칸(approvalState·approval·autoBlock)은 쓰지 않고 시장·판정 칸만 · 예전엔 수~수십 초 뒤 merge 쓰기로 다른 기기의 확정을 소리 없이 옛 값으로 덮었음 */
     const logRef = prevD.sig !== sig ? decRef.collection('log').doc() : null; let raced = false;
