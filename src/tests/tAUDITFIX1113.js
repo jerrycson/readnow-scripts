@@ -30,7 +30,7 @@ const cut = (S, a, b) => { const i = S.indexOf(a); const j = S.indexOf(b, i + 1)
     const Cf = (col) => ({ doc: () => ({ async get() { return { data: () => ({ sc: [] }) }; } }), select: () => ({ async get() { return { forEach: (f) => SEL.forEach((v) => f({ id: 'sc_' + v.sc, data: () => v })) }; } }) });
     const S1 = SS(Cf, () => {}); const L1 = await S1.sshList({}, '2026-11-13');
     ok(JSON.stringify(L1.list) === '["11","14"]', '④-4 목록 — 문 닫은 가게·3일 안 못 읽은 가게·7일 안 읽은 가게 뺌(5일 전 못 읽은 곳은 다시)', L1);
-    ok(S1.SSH_DEF.cap === 450 && JSON.stringify(S1.SSH_DEF.night) === '["01:00","07:00"]' && /cfg\.night\.length === 2 && hm >= cfg\.night\[0\] && hm < cfg\.night\[1\]\) return null/.test(CL), '④-4 하루 몫 450(cap3x 11/18 3배 · 옛 150) · 한국 01~07시 쉼');
+    ok(S1.SSH_DEF.cap === 300 && JSON.stringify(S1.SSH_DEF.night) === '["01:00","07:00"]' && /cfg\.night\.length === 2 && hm >= cfg\.night\[0\] && hm < cfg\.night\[1\]\) return null/.test(CL), '④-4 하루 몫 300(cap2x 11/18 2배 · cap3x 450 · 옛 150) · 한국 01~07시 쉼');
     /* ④-12 자동 내림 예스24 주문 */
     const Q = []; const Y = [{ id: 'y1', v: { lastSeenAt: ago(2), orderedAt: ago(2) } }, { id: 'y2', v: { lastSeenAt: ago(0.01), orderedAt: ago(0.5) } }];
     const Cy = () => ({ where: (k, op, v) => ({ async get() { Q.push(v); const L = Y.filter((x) => x.v.lastSeenAt >= v); return { forEach: (f) => L.forEach((x) => f({ id: x.id, data: () => x.v })) }; } }) });

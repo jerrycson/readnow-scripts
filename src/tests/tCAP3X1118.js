@@ -1,6 +1,6 @@
 // tCAP3X1118 — (11/18 일꾼 cap3x · 정범님 노트 「하루 몫 600쪽을 3배 · 그중 일부를 판본 엔진에 · 모든 수집기 몫 3배」)
 //   ① 판본 엔진 몫(edCapOf) — 바닥 1,800 · 빌림 끝 7,200 · 막힘 1번이면 막힘 바닥 600 · 2번 넘으면 그 절반 · 설정으로 바꿈(ed_cfg.blkCap)
-//   ② 코드 기본값 3배(클라우드 새책 찾기·가게 읽기·시장 지표·날씨 · 책 정보 출처별 · 외부 정보 공용 파일 · 예스24 하루 · 벤치마킹 한 번 몫)
+//   ② (cap2x 11/18) 코드 기본값은 원래의 2배로 낮춤 — tCAP2X1118이 봄 · 여기선 cap3x.js 셈(③)만 그대로 지킴
 //   ③ 한 번만 설정 문서 3배(cloud/cap3x.js) — 올리기만 · 공식 쿼터까지 · 끝난 서비스 그대로 · 번외 로거 몫 그대로 · 거래 안에서 표시를 읽어 두 번 안 함
 //   ④ 바닥(틈·쉼·밤·막힘 멈춤)은 그대로
 // 실행: node src/tests/tCAP3X1118.js · 시험 자료에 손님 정보 없음
@@ -12,7 +12,7 @@ const lineOf = (S, re) => (S.split('\n').find((x) => re.test(x)) || '');
 
 console.log('① 판본 엔진 몫');
 const ED = require(path.join(R, 'cloud', 'edition.js')); const edCapOf = ED._t.edCapOf;
-ok(ED.ED_DEF.dayCap === 1800 && ED.ED_DEF.capMax === 7200 && ED.ED_DEF.blkCap === 600 && ED.ED_DEF.rrRes === 300, '기본값 바닥 1,800 · 빌림 끝 7,200 · 막힘 바닥 600 · 다시 보기 몫 300', ED.ED_DEF);
+ok(ED.ED_DEF.blkCap === 600 && ED.ED_DEF.rrRes === 300, '막힘 바닥 600 · 다시 보기 몫 300(바닥·빌림 끝 기본값은 cap2x 11/18에 2배로 낮춤 — tCAP2X1118이 봄)', ED.ED_DEF);
 const full = [{ k: 'bk', used: 12000, cap: 12000 }, { k: 'met', used: 9000, cap: 9000 }];
 const a = edCapOf({ base: 1800, capMax: 7200, blkCap: 600, frac: 0.99, others: full });
 ok(a.cap === 1800, '남는 몫이 없어도 바닥 1,800', a);
@@ -29,23 +29,7 @@ ok(c4.cap === 900, '설정 ed_cfg.blkCap 900이면 900', c4);
 const EDS = fs.readFileSync(path.join(R, 'cloud', 'edition.js'), 'utf8');
 ok(/blkCap: c\.blkCap/.test(EDS), '회차가 설정 blkCap을 넘김');
 
-console.log('② 코드 기본값 3배');
-ok(/const NB_DEF = \{ on: true, dayCap: 180,/.test(CL), '새책 찾기 60 → 180');
-ok(/const SSH_DEF = \{ cap: 450,/.test(CL), '가게 읽기 150 → 450');
-ok(/dayCap: 3000, sliceSec: 50/.test(lineOf(CL, /^const MET_DEF/)), '클라우드 시장 지표 1,000 → 3,000권');
-ok(/perDay: 120/.test(lineOf(CL, /^const WX_DEF/)), '날씨 묶음 40 → 120');
-ok(/: 12000; const bkOff/.test(lineOf(CL, /^function edAlUse/)), '판본 엔진이 보는 책 정보 알라딘 기본 몫 12,000');
-const BK = fs.readFileSync(path.join(R, 'cloud', 'bookinfo.js'), 'utf8');
-const pd = lineOf(BK, /const PACE_DEF/);
-for (const [k, n] of [['yes24', 27000], ['nl', 18000], ['kyobo', 9000], ['aladin', 12000], ['render', 3600], ['pvimg', 36000]]) ok(new RegExp(k + ': \\{[^}]*cap: ' + n + '\\b').test(pd), '책 정보 ' + k + ' ' + n);
-const X = require(path.join(R, 'readnow-ext-core.js'));
-const S = X.SOURCES || (X.api && X.api.SOURCES);
-if (S) { const want = { kyobo: 1500, yes24: 1500, nl: 9000, google: 1000, kakao: 30000, ebay: 5000, lib: 500, joongmo: 1800, dvdprime: 600, ridi: 900 }; for (const [k, n] of Object.entries(want)) ok(S[k] && S[k].cap === n, '외부 정보 ' + k + ' ' + n, S[k] && S[k].cap); }
-else { const xs = fs.readFileSync(path.join(R, 'readnow-ext-core.js'), 'utf8'); ok(/kyobo: \{[^\n]*cap: 1500/.test(xs) && /kakao: \{[^\n]*cap: 30000/.test(xs) && /google: \{[^\n]*cap: 1000,/.test(xs), '외부 정보 출처 상한(글자로 확인)'); }
-const xs = fs.readFileSync(path.join(R, 'readnow-ext-core.js'), 'utf8');
-ok(/const Y24_PACE = \{ min: 4000, max: 8000, cap: 360, stopH: 6 \}/.test(xs), '예스24 하루 120 → 360 · 4~8초·6시간 멈춤 그대로');
-const RG = fs.readFileSync(path.join(R, 'readnow-registry.js'), 'utf8');
-ok(/const BENCH_DETAIL_DEF = \{ max: 900, maxMin: 30 \}/.test(RG), '벤치마킹 한 번 상품 페이지 300 → 900 · 30분 그대로');
+console.log('② 코드 기본값 — cap2x 11/18(정범님 16:24 「두 배까지만」)에 원래의 2배로 낮춤 · tCAP2X1118이 봄');
 
 console.log('③ 한 번만 설정 문서 3배(cloud/cap3x.js)');
 const K = require(path.join(R, 'cloud', 'cap3x.js'));

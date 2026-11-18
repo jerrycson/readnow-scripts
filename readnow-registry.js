@@ -148,7 +148,7 @@
     { k: 'detail', grp: 'detail', label: '상품 페이지 정보 전부', why: 'ISBN·주제 분류·출간일·지은이·출판사·쪽수·크기·무게·원제·시리즈·정가·새상품 판매가·Sales Point·순위·평점·리뷰 수·표지·절판/품절 — 우리 책에서 모으는 도서 정보와 같은 것 전부', uses: '겹치는 책·매입 후보·분야·출간 연도' },
   ];
   const BENCH_FIELDS_DEF = Object.fromEntries(BENCH_FIELDS.map((f) => [f.k, f.grp === 'list']));
-  const BENCH_DETAIL_DEF = { max: 900, maxMin: 30 }; /* (0.14.201 cap3x 11/18 몫 3배) 한 번에 여는 상품 페이지 300 → 900 · 시간 바닥 30분은 그대로(먼저 멈춤) */ // 상품 페이지 열기: 판매자 한 번 수집에 최대 개수·최대 분 (새로 올린 것 먼저, 남으면 예전 것 채움)
+  const BENCH_DETAIL_DEF = { max: 600, maxMin: 30 }; /* (cap2x 11/18 정범님 16:24 「두 배까지만」) 900 → 600 = 300의 2배 · (0.14.201 cap3x 11/18 몫 3배) 한 번에 여는 상품 페이지 300 → 900 · 시간 바닥 30분은 그대로(먼저 멈춤) */ // 상품 페이지 열기: 판매자 한 번 수집에 최대 개수·최대 분 (새로 올린 것 먼저, 남으면 예전 것 채움)
   const BENCH_VIEW_DEF = { bands: [3000, 6000, 10000, 20000, 40000], life: [3, 7, 14, 30, 60], days: 0, cohortDays: 7, fastDays: 7, catDepth: 2, recentN: 60, ourDays: 30, minN: 5 };
   const benchFields = (cfg) => { const f = { ...BENCH_FIELDS_DEF, ...((cfg && cfg.fields) || {}) }; if (f.detail == null || (cfg && cfg.fields && cfg.fields.detail == null)) f.detail = !!(cfg && cfg.fields && (cfg.fields.isbn || cfg.fields.cat || cfg.fields.pubYm)); f.isbn = f.cat = f.pubYm = !!f.detail; return f; }; /* 예전(0.13.0) 세 칸 설정도 읽음 */
   const benchNeedsDetail = (cfg) => { const f = benchFields(cfg); return BENCH_FIELDS.some((x) => x.grp === 'detail' && f[x.k]); };
