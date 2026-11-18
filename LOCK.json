@@ -38,9 +38,9 @@
  },
  "holder": "lead",
  "host": "vm-tether1",
- "what": "tether1 테더링 지킴 · 시험",
+ "what": "tether1 테더링 지킴 · 딸린 시험",
  "since": "2026-11-18T00:33:25Z",
- "beat": "2026-11-18T00:34:50Z",
+ "beat": "2026-11-18T00:40:05Z",
  "last": {
   "who": "lead",
   "done": "",
