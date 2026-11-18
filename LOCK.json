@@ -3,9 +3,9 @@
  "ask": null,
  "holder": "lead",
  "host": "vm-juso2",
- "what": "juso2 도로명주소 찾기 넓힘 — 빌드 끝 · 시험 중",
+ "what": "juso2 시험 문 다시 돌림",
  "since": "2026-11-18T03:28:27Z",
- "beat": "2026-11-18T03:29:37Z",
+ "beat": "2026-11-18T03:30:46Z",
  "last": {
   "who": "lead",
   "done": "fbdp1 클라우드 0.35.299 Firestore 통째 지우기 막음 켜기(/kp-in fsdp · 켜기만) · 1d5395c14 (머리 그대로 · 웹앱 판 그대로)",
