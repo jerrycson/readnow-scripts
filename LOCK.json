@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-fbops1",
-   "why": "판 내기 기다림: fbops1 클라우드 진단 fssize·iam(읽기만) + 규칙 배포 흐름(손으로만)",
-   "first": "2026-11-18T04:10:59Z",
-   "at": "2026-11-18T05:12:26Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-restore1",
    "why": "판 내기 기다림: restore1 수집기 판 — 상품 기록 되돌리기만 지킴이 비켜 감(머리 그대로)",
    "first": "2026-11-18T04:13:42Z",
@@ -73,16 +66,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-fbops1",
-  "why": "판 내기 기다림: fbops1 클라우드 진단 fssize·iam(읽기만) + 규칙 배포 흐름(손으로만)",
-  "at": "2026-11-18T05:12:26Z",
-  "first": "2026-11-18T04:10:59Z"
+  "host": "vm-restore1",
+  "why": "판 내기 기다림: restore1 수집기 판 — 상품 기록 되돌리기만 지킴이 비켜 감(머리 그대로)",
+  "at": "2026-11-18T05:13:06Z",
+  "first": "2026-11-18T04:13:42Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-fbops1",
+ "what": "fbops1 클라우드 진단 fssize·iam(읽기만) + 규칙 배포 흐름(손으로만)",
+ "since": "2026-11-18T05:13:28Z",
+ "beat": "2026-11-18T05:13:28Z",
  "last": {
   "who": "lead",
   "done": "bkseller1 웹앱 1.78.719 수동 일괄 겹치는 판매자·그룹 조건 한눈에 b6b23d345 (머리 그대로 8ab2f661d1d8afa8)",
