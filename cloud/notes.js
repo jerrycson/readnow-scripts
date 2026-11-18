@@ -38,12 +38,15 @@ function clean(d, isMeta) {
     if (k === 'uiDockH') { const n = Math.round(+v); if (n >= 20 && n <= 95) o.uiDockH = n; continue; } // (note5 둘째) 노트 설정 — 입력칸 펼침 높이(화면 %)
     if (k === 'uiSlotSz') { if (v === 's' || v === 'm') o.uiSlotSz = v; continue; } // 저장 단추 크기
     if (k === 'uiMineOpen') { o.uiMineOpen = !!v; continue; } // 내 메모 처음 펼침
+    if (k === 'uiGrip') { o.uiGrip = !!v; continue; } // (notefx1) 끌어 옮기기 손잡이 보임
     if (k === 'slot' || k === 'slotCur') { const n = Math.round(+v); if (n >= 1 && n <= 3) o[k] = n; continue; }
     if (k === 'ord') { const n = +v; if (Number.isFinite(n)) o.ord = n; continue; }
     if (k === 'imp') { const n = Math.round(+v); if (n >= 1 && n <= 3) o.imp = n; continue; }
     if (k === 'tags' || k === 'memoIds') { if (Array.isArray(v)) o[k] = v.map((x) => s(x, 80)).filter(Boolean).slice(0, k === 'tags' ? 12 : 300); continue; }
     if (k === 'pinned' || k === 'archived' || k === 'trashed' || k === 'fwd') { o[k] = !!v; continue; }
     if (isMeta && k === 'imported' && Array.isArray(v)) { o.imported = v.map((x) => s(x, 120)).slice(0, 500); continue; }
+    if (isMeta && k === 'catOrd' && Array.isArray(v)) { o.catOrd = v.map((x) => s(x, 80)).filter(Boolean).slice(0, 80); continue; } // (notefx1 · 정범님 11/18) 부류 끌어 바꾼 차례
+    if (isMeta && k === 'uiCatOpen' && v && typeof v === 'object' && !Array.isArray(v)) { const m = {}; for (const [a, b] of Object.entries(v).slice(0, 300)) { const kk = s(a, 160); if (kk) m[kk] = !!b; } o.uiCatOpen = m; continue; } // 부류·묶음 펼침 기억
   }
   return { o, bad: null };
 }
