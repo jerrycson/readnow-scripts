@@ -124,7 +124,7 @@ const sha = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest
   /* ── ② 코드에서 다른 쓰기 길이 없는지 */
   for (const [nm, S] of [['로거 도우미', S1], ['인쇄 도우미', S2]]) {
     const bkApi = S.slice(S.indexOf('function bkApi('), S.indexOf('\n', S.indexOf("if (u.pathname === '/bk-state')")));
-    ok(/const w = bkWrite\(col, d, kind, L\)/.test(bkApi) && !/appendFileSync|writeFileSync\(path\.join\(dir/.test(bkApi.replace(/\/bk-state[\s\S]*$/, '')), nm + ': /bk-put 쓰기는 bkWrite 하나뿐(직접 appendFileSync 없음)');
+    ok(/const w = bkWrite\(col, d, kind, L(, u\.searchParams\.get\(.slot.\))?\)/.test(bkApi) && !/appendFileSync|writeFileSync\(path\.join\(dir/.test(bkApi.replace(/\/bk-state[\s\S]*$/, '')), nm + ': /bk-put 쓰기는 bkWrite 하나뿐(직접 appendFileSync 없음)');
     ok(!/-\$\{kind\}\.jsonl`\)\s*,/.test(S.replace(B1, '')) && /seal: sealStat\(\)/.test(S), nm + ': 봉인 덩어리 밖에서 백업 파일 이름으로 직접 쓰지 않음 · /bk-stat 에 seal');
     ok(!/(unlinkSync|rmSync|rmdirSync|renameSync|truncateSync|writeFileSync)\([^)]*(firestore|BK_DIR, 'firestore')/.test(S), nm + ': backup\\firestore 안을 지우기·이름 바꾸기·통째로 쓰기 하는 줄 없음');
     ok(!/bk-(del|clear|rm)/.test(S), nm + ': 지우는 HTTP 길 없음'); }
