@@ -100,6 +100,14 @@
    "owner": "lead",
    "since": "2026-11-17",
    "until": "2026-11-30"
+  },
+  {
+   "test": "tml2",
+   "items": [],
+   "why": "src/tests/inline_row.js가 저장소에 없어 시작부터 멈춤 — main 779b5e642에서도 같음 · train·shouldPromote가 바뀌어 딸린 시험이 됨",
+   "owner": "engacc1",
+   "until": "2026-12-02",
+   "since": "2026-11-19"
   }
  ]
 }
