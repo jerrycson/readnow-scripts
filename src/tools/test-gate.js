@@ -80,6 +80,21 @@ function followCheck(Q) {
 function findKit() { const c = [process.env.RN_KIT, path.join(TOP, '..', 'readnow-chats', 'tools', 'session-kit', 'pw'), '/home/user/readnow-chats/tools/session-kit/pw', '/home/claude/readnow-chats/tools/session-kit/pw'].filter(Boolean); return c.find((d) => fs.existsSync(path.join(d, 'harness.js'))); }
 function findXlsx() { const c = [process.env.RN_XLSX, path.join(TOP, '..', 'w', 'pw', 'xlsx.full.min.js'), '/home/user/w/pw/xlsx.full.min.js', '/home/claude/w/pw/xlsx.full.min.js', path.join(os.homedir(), '.cache', 'rn-gate', 'xlsx.full.min.js')].filter(Boolean); return c.find((f) => fs.existsSync(f)); }
 function freePort() { return new Promise((res) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)); }); }); }
+function buildOut(Q, W) { // 이 커밋 원본 → W/out(진짜 판 내기와 같은 split.js·release.js) · 저장소 자리(RN_REPO)는 이 커밋 그대로인 Q
+  const base = path.join(Q, '.rn-base'); fs.mkdirSync(base); fs.symlinkSync(Q, path.join(base, 'readnow-scripts')); // release.js: RN_REPO = RN_BASE/readnow-scripts
+  const man = show(TARGET, 'manual/latest.json'); if (man != null) { fs.mkdirSync(path.join(Q, 'manual'), { recursive: true }); fs.writeFileSync(path.join(Q, 'manual', 'latest.json'), man); } // 설명서 장부(설명서 판 번호 MANUAL_VER) — 설명서 사본(164MB)은 안 받음
+  const env = { ...process.env, RN_BASE: base }; const run = (f) => cp.spawnSync('node', [f], { cwd: W, env, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 180e3 });
+  const s = run('split.js'); if (s.status !== 0) return { err: `이 커밋 원본으로 결과물을 못 지음(split.js 끝 코드 ${s.status}): ${((s.stderr || '') + (s.stdout || '')).trim().split('\n').slice(-3).join(' / ').slice(0, 300)}` };
+  const r = run('release.js'); const log = ((r.stdout || '') + (r.stderr || '')).trim();
+  if (!fs.existsSync(path.join(W, 'out', 'app', 'index.html')) || !fs.existsSync(path.join(W, 'out', 'app', 'readnow-webapp.js'))) return { err: `이 커밋 원본으로 웹앱 결과물(out/app)을 못 지음(release.js 끝 코드 ${r.status}): ${log.split('\n').slice(-4).join(' / ').slice(0, 400)}` };
+  /* release.js의 판 맞춤 ❌(핀·판 번호)는 ship-check ③⑤와 판 내기 차례가 맡음 — 여기서는 결과물만 쓰고 알림으로 보임 */
+  if (r.status !== 0) warn(`이 커밋으로 지은 release.js가 판 맞춤 ❌를 냄(시험은 지은 결과물로 그대로 돎): ${log.split('\n').filter((l) => /❌|^[^✓⚠]/.test(l)).slice(-4).join(' / ').slice(0, 400)}`);
+  /* 커밋된 app/이 원본으로 새로 지은 것과 다르면 알림 — 배포(Pages·Hosting)는 커밋된 app/을 올리므로, 결과물을 다시 지어 커밋하지 않으면 손님·기기에 옛 화면이 감 */
+  { const rd = (f) => { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return null; } }; const diff = ['index.html', 'readnow-webapp.js'].filter((f) => rd(path.join(Q, 'app', f)) !== rd(path.join(W, 'out', 'app', f)));
+    if (diff.length) warn(`커밋된 app/${diff.join('·app/')}이 이 커밋 원본(src/app.html)으로 새로 지은 것과 다름 — 시험은 새로 지은 것으로 돎 · 판이면 node split.js && node release.js 뒤 out/app을 app/에 맞춰 커밋할 것`);
+    else say('✓ 결과물: 이 커밋 원본으로 새로 지은 app/이 커밋된 app/과 같음'); }
+  return {};
+}
 function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + Q/w(공용 빌드 폴더 모양) + Q/w/srv(시험 서버) + Q/w/pw(시험 틀 + 이 커밋의 시험)
   const kit = findKit(); if (!kit) return { err: '시험 틀(readnow-chats/tools/session-kit/pw/harness.js)을 못 찾음 — readnow-chats를 readnow-scripts 옆에 받을 것' };
   try { require.resolve('playwright', { paths: [TOP, ...(process.env.NODE_PATH || '').split(':').filter(Boolean)] }); } catch (e) { return { err: 'playwright를 못 찾음 — readnow-chats tools/session-kit/setup.sh 안내대로' }; }
@@ -89,11 +104,15 @@ function bed() { // 밀어 올리는 커밋 그대로 → Q(저장소 모양) + 
   const ln = (a, b) => { try { fs.symlinkSync(a, b); } catch (e) {} };
   for (const f of ['app.html', 'notes-core.js', 'split.js', 'release.js', 'sw.js']) if (fs.existsSync(path.join(Q, 'src', f))) fs.copyFileSync(path.join(Q, 'src', f), path.join(W, f));
   fs.copyFileSync(path.join(Q, 'src', 'readnow-collector.src.js'), path.join(W, 'readnow-collector.user.js'));
-  for (const f of fs.readdirSync(Q).filter((x) => /^readnow-.*\.js$/.test(x))) { ln(path.join(Q, f), path.join(W, f)); ln(path.join(Q, f), path.join(W, 'out', f)); }
-  for (const d of ['cloud', 'local', 'research', 'facts-docs']) if (fs.existsSync(path.join(Q, d))) ln(path.join(Q, d), path.join(W, d));
+  for (const f of fs.readdirSync(Q).filter((x) => /^readnow-.*\.js$/.test(x))) ln(path.join(Q, f), path.join(W, f));
+  for (const d of ['cloud', 'local', 'research', 'facts-docs', 'lab']) if (fs.existsSync(path.join(Q, d))) ln(path.join(Q, d), path.join(W, d));
   if (fs.existsSync(path.join(Q, 'src', 'img'))) ln(path.join(Q, 'src', 'img'), path.join(W, 'img'));
-  for (const d of ['app', 'friend', 'cloud']) if (fs.existsSync(path.join(Q, d))) ln(path.join(Q, d), path.join(W, 'out', d));
-  if (fs.existsSync(path.join(Q, 'pc-live.json'))) ln(path.join(Q, 'pc-live.json'), path.join(W, 'out', 'pc-live.json'));
+  /* (gateused1 11/18 · chk1040 확인) 이 커밋의 원본으로 결과물을 새로 지음(split.js → release.js) — 전엔 W/out/app이 그 커밋에 올라 있던 app/(옛 결과물)을 가리키고
+   *  빌드 단계가 없어, /app/index.html을 여는 시험(하네스 포함 26개+)이 새 src/app.html 대신 옛 화면을 봤음. 지은 뒤 남은 것(이번에 안 지은 공용 파일·friend)만 커밋 사본을 이음 */
+  const built = buildOut(Q, W); if (built.err) return { err: built.err };
+  for (const f of fs.readdirSync(Q).filter((x) => /^readnow-.*\.js$/.test(x))) if (!fs.existsSync(path.join(W, 'out', f))) ln(path.join(Q, f), path.join(W, 'out', f));
+  for (const d of ['app', 'friend', 'cloud']) if (fs.existsSync(path.join(Q, d)) && !fs.existsSync(path.join(W, 'out', d))) ln(path.join(Q, d), path.join(W, 'out', d));
+  if (fs.existsSync(path.join(Q, 'pc-live.json')) && !fs.existsSync(path.join(W, 'out', 'pc-live.json'))) ln(path.join(Q, 'pc-live.json'), path.join(W, 'out', 'pc-live.json'));
   const P = path.join(W, 'pw'); fs.mkdirSync(P); cp.execSync(`cp -r ${JSON.stringify(kit)}/. ${JSON.stringify(P)}/ && cp -r ${JSON.stringify(path.join(Q, 'src', 'tests'))}/. ${JSON.stringify(P)}/`, { shell: '/bin/bash' });
   const xl = findXlsx(); if (xl) fs.copyFileSync(xl, path.join(P, 'xlsx.full.min.js'));
   const S = path.join(W, 'srv'); fs.mkdirSync(S); for (const d of ['app', 'friend']) ln(path.join(W, 'out', d), path.join(S, d)); for (const f of fs.readdirSync(W).filter((x) => /^readnow-.*\.js$/.test(x))) ln(path.join(W, f), path.join(S, f));
