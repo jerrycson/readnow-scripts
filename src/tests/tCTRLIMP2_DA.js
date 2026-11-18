@@ -52,6 +52,7 @@ const ctx = { S, console, Map, Set, Date, Math, JSON, Object, String, Number, Ar
   history: { pushState() {}, back() {} }, CSS: { escape: (s) => s }, toast: (m, e) => TOASTS.push([m, e || 0]), num: (n) => String(n), esc: (s) => String(s), won: (n) => n + '원', kTime: (s) => String(s), kMs: (v) => Date.parse(v) || 0,
   BKF_STALE_H: 72, BKF_BULK: { sel: 'pickAll', lot: 'pickAll', pick: 'execAll' }, BKF_OPS: { execAll: { title: '✅ 모두 확정' } }, BQ_TABACT: (k) => ({ sel: { edit: 1 }, pick: { back: 1 } })[k] || {},
   bkfTbCols: () => [['sel', '선택 대기'], ['pick', '결정 대기'], ['done', '확정'], ['keep', '추천 못 함'], ['hold', '보류'], ['trash', '휴지통']], bkfNorm: () => ({ folds: { f1: { gids: ['g1', 'g2'] } } }), bkfGl: (g) => S.prBatches.find((x) => x.id === g) || null,
+  bqReoMv: (d) => !!(d && d.reo && !d.reo.stay), /* (판 라) 관제창 카드가 부름 */
   bqCls: (x, c) => { const k = 'aladin_' + x.l.usedCode; if (c.st.trashed[k]) return 'trash'; if (c.st.held[k]) return 'hold'; if (c.st.picks[k]) return 'pick'; if (c.st.decided[k]) return 'done'; return 'sel'; },
   bkfDirty: () => {}, errKo: (e) => String((e && e.message) || e), bkfTabP: (x) => x.target, plkOn: () => false, bkfItemWhy: () => null, bkfSIdx: () => null, batchIsOn: () => true, bkfName: () => '시험 묶음', bkfTbPaint() {}, openBatchGroup() {},
   twiceArm: () => 'go', bkfRun: async (fid, op, arg) => { RUNS.push([fid, op, arg]); }, batchSave: async () => {}, bkfGlSet() {}, plkFreshMany: async () => new Map(), bkfLkOf: () => null,
