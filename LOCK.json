@@ -80,9 +80,9 @@
  },
  "holder": "lead",
  "host": "vm-shoprow1",
- "what": "우리숍 0.2.22 한 줄 띠 — 시험 문 돌림 (shoprow1)",
+ "what": "우리숍 0.2.22 한 줄 띠 — 시험 문 다시 (shoprow1)",
  "since": "2026-11-18T04:32:45Z",
- "beat": "2026-11-18T04:33:11Z",
+ "beat": "2026-11-18T04:43:26Z",
  "last": {
   "who": "lead",
   "done": "logopick1 북스퀸 로고 고르기·변형 작업대(shop/brand/studio/logopick.js · 아이디어 100·개선안) · 8cadbe603 (머리 그대로 · 웹앱 판 그대로)",
