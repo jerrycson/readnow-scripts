@@ -111,7 +111,7 @@ const blockLines = (S) => S.split('\n').filter((x) => /const plkBlock = \(lk, ks
   ok(/plk: \['🔒 잠긴 상품', \(\) => plkWidget\(\)/.test(T), '홈 칸(대시보드 카드)');
   ok(/\['plkf', '🔒 잠금 폴더', \(d\) => d\.plkf, 'openPlkFolder'\]/.test(T) && /PAGE_GUIDES\['plkf'\]/.test(T) && /\['plkFold', '🔒 잠금 폴더'/.test(T), '잠금 폴더 — 페이지 목록·안내·바로 가기');
   ok(/plkOff: !L\.includes\('plk'\)/.test(T) && /rn-home-plkseen/.test(T), '홈 배치 — 처음엔 넣고 빼서 저장하면 다시 안 넣음');
-  ok(/function plkSkipped\(/.test(T) && /dataset\.plkdrawer = 'mark'/.test(fnIn(T, 'plkSkipped')) && /plkDrawer\(\{ mark: hd\.dataset\.plkdrawer === 'mark' \}\)/.test(T), '「🔒 잠금이라 건너뜀 N」 → 누르면 서랍에 건너뛴 상품 표시');
+  ok(/function plkSkipped\(/.test(T) && /dataset\.plkdrawer = 'mark'/.test(fnIn(T, 'plkSkipped')) && /plkDrawer\(\{ mark: hd\.dataset\.plkdrawer === 'mark'[ ,}]/.test(T), '「🔒 잠금이라 건너뜀 N」 → 누르면 서랍에 건너뛴 상품 표시');
 
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e && e.stack); process.exit(1); });

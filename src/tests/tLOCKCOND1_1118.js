@@ -19,7 +19,9 @@ ok(/span\[data-plk\]/.test(T) && /plkToggle\(t\)/.test(T), 'Enter/Space로도 �
 { // 실제로 그려 봄
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const M = new Map([['aladin_9', { on: true }]]);
-  const f = new Function('esc', 'plkMap', 'plkWatch', 'plkSig', innerM + '\n' + mini + '\nreturn plkMini;')(esc, () => M, () => {}, () => 's');
+  const cut = (a, b) => T.slice(T.indexOf(a), T.indexOf(b)); /* (판 ②) 작은 단추가 쓰는 갈래·풀이 도움 글 */
+  const H = cut('const PLK_ML =', '/* 저장할 조건만 골라 냄') + cut('const PLK_TIP =', 'function plkChip(');
+  const f = new Function('esc', 'plkMap', 'plkWatch', 'plkSig', H + '\n' + innerM + '\n' + mini + '\nreturn plkMini;')(esc, () => M, () => {}, () => 's');
   ok(/🔒/.test(f({ id: 'aladin_9' })) && /plk-m on/.test(f({ id: 'aladin_9' })), '잠긴 상품 → 🔒');
   ok(/🔓/.test(f({ id: 'aladin_1' })) && !/ on"/.test(f({ id: 'aladin_1' })), '안 잠긴 상품 → 🔓');
   ok(f({}) === '' && f(null) === '', '상품 키가 없으면 그리지 않음');
