@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "판 러 자동 멈춤 웹앱 1.78.765 (ctrlimp3)",
- "since": "2026-11-18T21:51:19Z",
- "beat": "2026-11-18T21:51:19Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판 머 1.78.764 냄 (ctrlimp2)",
-  "at": "2026-11-18T21:12:15Z"
+  "done": "판 러 1.78.765 냄 (ctrlimp3)",
+  "at": "2026-11-18T21:58:38Z"
  }
 }
