@@ -49,6 +49,7 @@ console.log('② 클라우드');
   const ix = rd('cloud/index.js'); ok(/async function y24WantIn\(J, by\)/.test(ix) && /J0\.y24want \? await y24WantIn\(J0\.y24want/.test(ix), '/kp-in이 y24want를 받음');
   const fn = ix.slice(ix.indexOf('async function y24WantIn'), ix.indexOf('async function fsDelProtOn'));
   ok(/prd_locks/.test(fn) && /prd_price_batches/.test(fn) && /y24_listings/.test(fn) && /minPh/.test(fn) && /SET_RE/.test(fn) && /if \(dry \|\| !ok\.length\) return/.test(fn) && /set\(\{ w \}, \{ merge: true \}\)/.test(fn) && /slice\(0, 30\)/.test(fn), '잠금·수동 일괄·우리 예스24·사진·세트를 보고 · dry면 확인만 · 쓸 때 w에 merge만 · 30개까지');
+  ok(/J\.mb/.test(fn) && /'pend'/.test(fn) && /확정 기다림/.test(fn) && /기록만/.test(fn) && /mbMode/.test(fn), '(0.35.307) 수동 일괄은 기본 「값이 바뀔 상품만」(확정 기다림·감시·자동 그룹) · 지난 기록만 있는 상품은 빼지 않고 그룹 이름만 보여 줌 · mb:all/off 고를 수 있음');
   ok(!/autoAll/.test(fn.replace(/autoAll은 건드리지 않음/, '')), 'autoAll(판매중 전부)은 건드리지 않음');
   fin();
 })().catch((e) => { bad++; console.log('  ❌ 오류', e && e.stack); fin(); });
