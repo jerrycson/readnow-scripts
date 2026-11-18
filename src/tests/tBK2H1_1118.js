@@ -87,6 +87,26 @@ const S1 = fs.readFileSync(LOCAL, 'utf8'), S2 = fs.readFileSync(PRINT, 'utf8'), 
     ok(!JSON.stringify(ctx.GHISS).includes('github_pat_TEST'), '열쇠 값은 상태에 안 나옴');
   }
 
+  /* ── ④-2 사진 크기 나눠 세기(/img-stat?cats=1 · 정범님 11/18 17:28) */
+  { const a = S1.indexOf('function imgDim('), b = S1.indexOf('function readBody(', a); const code = S1.slice(a, b);
+    const IMG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rnimg-')); const put = (rel, buf) => { const f = path.join(IMG_DIR, ...rel.split('/')); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, buf); };
+    const jpg = (w, h, pad) => { const sof = Buffer.from([0xff, 0xc0, 0, 17, 8, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1]); const app0 = Buffer.concat([Buffer.from([0xff, 0xe0, 0, 16]), Buffer.alloc(14)]); return Buffer.concat([Buffer.from([0xff, 0xd8]), app0, sof, Buffer.alloc(pad || 0)]); };
+    const png = (w, h) => { const b = Buffer.alloc(40); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b); b.writeUInt32BE(13, 8); b.write('IHDR', 12, 'ascii'); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b; };
+    const webpX = (w, h) => { const b = Buffer.alloc(40); b.write('RIFF', 0, 'ascii'); b.write('WEBP', 8, 'ascii'); b.write('VP8X', 12, 'ascii'); b.writeUIntLE(w - 1, 24, 3); b.writeUIntLE(h - 1, 27, 3); return b; };
+    put('img/A1/1.jpg', jpg(1600, 1200, 400000)); put('img/A1/1_t.webp', webpX(200, 150)); put('img/A2/2.png', png(800, 600)); put('img/A2/2_t.webp', webpX(200, 100)); put('pur_photos/p1.jpg', jpg(1000, 1600, 30000)); put('ppt_photo_data/x1.jpg', jpg(320, 240, 3000));
+    const M = new Map(); const walk = (d, rel) => { for (const x of fs.readdirSync(d, { withFileTypes: true })) { const r = rel ? rel + '/' + x.name : x.name; if (x.isDirectory()) walk(path.join(d, x.name), r); else M.set(r, fs.statSync(path.join(d, x.name)).size); } }; walk(IMG_DIR, '');
+    const ctx = vm.createContext({ fs, path, IMG_DIR, Buffer, Math, Object, JSON, Date, String }); vm.runInContext(code + '\nthis.imgCats = imgCats; this.imgDim = imgDim;', ctx);
+    const R2 = ctx.imgCats(M, 20);
+    ok(R2.orig.n === 4 && R2.thumb.n === 2 && R2.ppt.n === 1 && R2.origNoPpt.n === 3, '갈래 수: 원본 4(ppt 포함) · 작은 그림 2 · ppt_photo_data 1 · ppt 뺀 원본 3');
+    ok(R2.orig.max === 'img/A1/1.jpg' && R2.orig.maxKB >= 390 && R2.thumb.avgKB < 1, '가장 큰 원본·평균 KB');
+    ok(R2.tops['img/'].orig.n === 2 && R2.tops['img/'].thumb.n === 2 && R2.tops['pur_photos/'].orig.n === 1 && R2.tops['ppt_photo_data/'].orig.n === 1, '맨 위 폴더마다(원본·작은 그림 따로)');
+    const dm = Object.fromEntries(R2.sample.map((x) => [x.f, x.w + 'x' + x.h])); ok(dm['img/A1/1.jpg'] === '1600x1200' && dm['img/A2/2.png'] === '800x600' && dm['pur_photos/p1.jpg'] === '1000x1600' && R2.sample.length === 4, '원본 표본 가로×세로(JPEG·PNG) ' + JSON.stringify(dm));
+    const w = ctx.imgDim(path.join(IMG_DIR, 'img', 'A1', '1_t.webp')); ok(w && w.w === 200 && w.h === 150, 'WebP(VP8X) 가로×세로');
+    ok(R2.longSide && R2.longSide.max === 1600 && R2.band['300KB~1MB'] === 1, '긴 변 요약·크기 띠');
+    ok(/\/img-stat\?cats=1/.test(C) && /IMGM\.cats = \{ \.\.\.j0\.cats/.test(C), '수집기가 갈래 숫자를 prd_system/imgMirror.cats로 남김');
+    ok(!/unlink|rmSync|writeFileSync|renameSync/.test(code), '나눠 세기는 읽기만');
+  }
+
   /* ── ⑤ 수집기 문 · 사진 · 보안 자료 · 웹앱 글 */
   ok(/ST\.slot === SL\.key/.test(C) && !/ST\.day === day \|\| hr < 2/.test(C) && /ST\.read\.n >= 400000/.test(C), '자료 보관 문 = 2시간 칸마다 한 번(02시 뒤 하루 한 번 아님) · 40만 하루 합 그대로');
   ok(/Date\.now\(\) - last < BK_EVERY_H \* 3600e3/.test(C), '사진 보관 = 2시간마다');
