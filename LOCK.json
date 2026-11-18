@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bqstock1",
+ "what": "bqstock1 웹앱 판 — 📦 보유재고 이 카드·구성별",
+ "since": "2026-11-18T10:56:21Z",
+ "beat": "2026-11-18T10:56:21Z",
  "last": {
   "who": "lead",
   "done": "bk2h1 · 웹앱 1.78.734 · 수집기 1.89.367 · 로거 도우미 1.8.33 · 인쇄 도우미 1.2.7 로거 백업 2시간마다·GitHub 저장소 넷·사진 크기 나눠 세기 · 3e1f1074d (머리 그대로 8ab2f661d1d8afa8)",
