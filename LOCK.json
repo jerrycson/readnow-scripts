@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm-regup1",
- "what": "regup1 push(1.78.715)",
- "since": "2026-11-18T02:09:18Z",
- "beat": "2026-11-18T02:17:19Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판본 확인 판 ② APP_VER = '1.78.715' 08d92189d (내기 종료 5)",
-  "at": "2026-11-18T02:09:16Z"
+  "done": "regup1 등록 사진 올리기 시간 제한 · 웹앱 1.78.715 e4b8307d3 (머리 그대로 8ab2f661d1d8afa8)",
+  "at": "2026-11-18T02:17:33Z"
  }
 }
