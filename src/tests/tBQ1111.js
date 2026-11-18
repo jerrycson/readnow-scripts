@@ -70,13 +70,13 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     out.log = ((FS.prd_price_batches || {}).bQ || {}).listLog ? FS.prd_price_batches.bQ.listLog.map((e) => e.what).join(',') : '';
     // ① 꺼진 그룹 확정
     S.batchSt.picks[K(6)] = { price: S.batchRes[6].l.price - 200, at: new Date().toISOString() }; S.batchT = 'pick'; await window.__open();
-    out.off = { chooser: !!q('#b_offc'), exec: !!q('#b_exec'), once: !!q('#b_once'), onexec: !!q('#b_onexec'), label: ((sh.querySelector('#b_on') || {}).parentElement || {}).textContent };
-    await window.__batchExecOne(S.batchRes.findIndex((x) => 'aladin_' + x.l.usedCode === K(7)), S.batchRes.find((x) => 'aladin_' + x.l.usedCode === K(7)).l.price - 400, K(7)); await W(300);
-    out.offExec = { dec: Object.keys(FS.prd_price_decisions || {}).length, toast: window.__TL.filter((t) => /이번만 적용/.test(t)).join(' / '), notes: document.querySelectorAll('#rn-notes [role=alert]').length };
-    const ob = q('#b_once'); ob.click(); await W(200); out.once1 = { dec: Object.keys(FS.prd_price_decisions || {}).length, armed: ob.classList.contains('ux2-armed') }; await W(500); ob.click();
+    /* (11/18 정범님 22.1) 적용 개념 없앰 — 꺼진 그룹도 [✅ N개 확정 — 두 번 누름] 하나 · 옛 고르기 칸·적용 칸은 ⚙ 설정을 켤 때만 */
+    out.off = { chooser: !!q('#b_offc'), exec: !!q('#b_exec'), twice: !!q('#b_exec[data-twice]'), once: !!q('#b_once'), onexec: !!q('#b_onexec'), label: !!sh.querySelector('#b_on'), txt: ((q('#b_exec') || {}).textContent || '').replace(/\s+/g, ' ') };
+    out.offExec = { dec: 0, toast: '이번만 적용', notes: document.querySelectorAll('#rn-notes [role=alert]').length };
+    const ob = q('#b_exec'); ob.click(); await W(200); out.once1 = { dec: Object.keys(FS.prd_price_decisions || {}).length, armed: ob.classList.contains('ux2-armed') }; await W(500); ob.click();
     for (let i = 0; i < 40 && Object.keys(FS.prd_price_decisions || {}).length < 2; i++) await W(200); await W(500);
     const PD = FS.prd_price_decisions || {}; const PC = FS.prd_system.pricing; out.once = { dec: Object.keys(PD).sort().join(','), st: [K(6), K(7)].map((k) => PD[k] ? [PD[k].approvalState, PD[k].approval.decision, PD[k].approval.batchId, PD[k].approval.once, PD[k].approval.expectPrice != null].join('|') : '-'), off: (PC.batchOff || {}).bQ, onceAt: !!((PC.batchOnce || {}).bQ || {}).at, n: ((PC.batchOnce || {}).bQ || {}).n, watch: !!((FS.prd_price_batches || {}).bQ || {}).watch, log: (PC.batchOffLog || []).slice(-1)[0] };
-    await W(300); out.onceLabel = ((sh.querySelector('#b_on') || {}).parentElement || {}).textContent || '';
+    await W(300); S.app = { ...(S.app || {}), bqApplyUi: true }; await window.__open(); out.onceLabel = ((sh.querySelector('#b_on') || {}).parentElement || {}).textContent || ''; out.restore = { on: !!sh.querySelector('#b_on'), offc: !!q('#b_offc') || !!q('#b_exec:not([data-twice])') }; S.app.bqApplyUi = false; await window.__open();
     // 반영 끝 → 저절로 다시 끔
     Object.values(PD).forEach((v) => { v.approvalState = 'done'; }); FS.prd_system.pricing.batchOnce.bQ.at = new Date(Date.now() - 11 * 60e3).toISOString(); S.prCfg.batchOnce.bQ.at = FS.prd_system.pricing.batchOnce.bQ.at; await bqOnceSweep(); await W(200);
     out.sweep = { off: (FS.prd_system.pricing.batchOff || {}).bQ, once: !!((FS.prd_system.pricing.batchOnce || {}).bQ), local: batchIsOn('bQ'), why: ((FS.prd_system.pricing.batchOffLog || []).slice(-1)[0] || {}).why };
@@ -103,11 +103,11 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(r.held && r.heldSaved && r.holdTab.cards.length === 1 && r.holdTab.btn && r.unheld, '④ ⏸ 보류 → 보류 탭(그룹 나눔 문서에 저장 · 모든 기기) → ↩ 선택 대기로', r);
   ok(r.trash1 && r.trash2 && r.trashTab.length === 1 && r.untrash, '④ ✖ 빼기 = 두 번 누름 → 🗑 휴지통(결정 대기에서 빠짐) → ↩ 되돌리기', r);
   ok(/hold/.test(r.log) && /unhold/.test(r.log) && /trash/.test(r.log) && /untrash/.test(r.log), '④ 기록 남김(그룹 문서 listLog)', r.log);
-  ok(r.off.chooser && !r.off.exec && r.off.once && r.off.onexec && /적용\(확정 가격 반영\)/.test(r.off.label), '① 꺼진 그룹 결정 대기 = 그 자리에서 [✅ 켜고 확정] / [⚡ 이번만 적용] 고르기', r.off);
-  ok(r.offExec.dec === 0 && /이번만 적용/.test(r.offExec.toast) && r.offExec.notes === 0, '① 꺼진 그룹에서 하나 확정 → 확정 안 함 · 알림창 대신 토스트(고르는 칸으로)', r.offExec);
-  ok(r.once1.dec === 0, '① [⚡ 이번만 적용] 한 번 = 무장만(아무것도 안 씀)', r.once1);
+  ok(!r.off.chooser && r.off.exec && r.off.twice && !r.off.once && !r.off.onexec && !r.off.label && /2개 확정 — 두 번 누름/.test(r.off.txt), '① (22.1) 꺼진 그룹도 단추 하나 [✅ 2개 확정 — 두 번 누름] · 적용 칸·고르기 칸 없음', r.off);
+  ok(r.offExec.notes === 0, '① 알림창 없음', r.offExec);
+  ok(r.once1.dec === 0 && r.once1.armed, '① 한 번 누름 = 「확정할까요?」 무장만(아무것도 안 씀)', r.once1);
   ok(r.once.st.every((x) => /^manual\|batch\|bQ\|1\|true$/.test(x)) && r.once.off === undefined && r.once.onceAt && r.once.n === 2 && !r.once.watch && r.once.log && r.once.log.once === 1, '① 두 번 = 결정 대기 2개 확정(반영 직전 확인 expectPrice 그대로) · 그동안만 적용 켬 · 🛰 감시는 안 켬 · 기록', r.once);
-  ok(/이번만 켜짐/.test(r.onceLabel), '① 적용 칸에 「⚡ 이번만 켜짐 — 다 반영되면 저절로 다시 꺼짐」', r.onceLabel);
+  ok(/이번만 켜짐/.test(r.onceLabel) && r.restore.on, '① ⚙ 「수동 일괄 \'적용\' 되살리기」를 켜면 옛 적용 칸이 돌아옴(「⚡ 이번만 켜짐」)', [r.onceLabel, r.restore]);
   ok(r.sweep.off === true && !r.sweep.once && !r.sweep.local && /이번만 적용 끝/.test(r.sweep.why || ''), '① 이번 확정이 다 반영되면 저절로 다시 끔(기록)', r.sweep);
   ok(r.find.rows >= 1 && r.find.add && r.find.rgrow, '⑤ 기등록 상품 찾기 → 등록 한눈에 줄 모양 목록 · [➕ 이 그룹에 더함]', r.find);
   ok(r.added.st && r.added.inR && r.added.saved && /이미 이 그룹에 있음/.test(r.find2), '⑤ 누르면 이 그룹에 더함(나눔 문서 added) · 다시 찾으면 「이미 이 그룹에 있음 — 탭」', [r.added, r.find2]);
