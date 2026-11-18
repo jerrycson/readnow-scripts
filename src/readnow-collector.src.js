@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.360
+// @version      1.89.361
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5157,12 +5157,22 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (keep.length > cap) { const al = await wgAllowed(); if (!al) { await wgNote('goneStop', { n: keep.length, cap, activeN, sample: keep.slice(0, 5).map(([k]) => k) }); log(`🛡 사라짐 표시 멈춤: 한 번에 ${keep.length.toLocaleString()}개(문턱 ${cap.toLocaleString()} = max(${WG.GONE_MIN}, 판매 중 ${activeN.toLocaleString()}의 5%)) — 화면·읽기 오류일 수 있어 표시하지 않음 · 정말이면 prd_system/wguard allowUntil을 적고 다시`, 1); return []; } }
     return keep;
   }
-  async function commitBatches(ops, label) {
+  /* (restore1 11/18 · 정범님 노트 「상품 기록 되돌리기 진행」) 지킴이를 비켜 가는 쓰기 = 이름표 → 갈 수 있는 모음 — 상품 기록 되돌리기(lfrApply)만 씀
+   *  되돌리기는 '이미 있는 상품'에 처음 본 날을 일부러 옛 값으로 다시 적는 일이라 ①~③이 늘 막음(11/18 09:42 14,658개 → 「이미 있는 문서 200개」로 멈춤 · 아무것도 안 씀)
+   *  비켜 가는 것 = 이 이름표로 부른 commitBatches 안의 prd_listings 합치기 쓰기(merge: true)·prd_listing_changes 쓰기뿐 · 같은 묶음의 다른 쓰기·다른 곳의 쓰기는 지킴이 그대로
+   *  되돌리기 쓰기는 되돌림 자료(prd_system/listfix_undo_*)를 먼저 남기고 · 1,000개마다 서버에서 다시 읽어 맞는지 봄(lfrApply) */
+  const WG_SKIP = { listfix: ['prd_listings', 'prd_listing_changes'] };
+  const wgSkipOk = (c, cols) => { const coll = c.ref && c.ref.parent && c.ref.parent.id; return c.k === 'set' && cols.includes(coll) && (coll !== 'prd_listings' || !!(c.opt && c.opt.merge === true)); };
+  async function commitBatches(ops, label, opt) {
+    const skip = opt && opt.wgSkip && Object.prototype.hasOwnProperty.call(WG_SKIP, opt.wgSkip) ? WG_SKIP[opt.wgSkip] : null; let nSkip = 0;
     for (let i = 0; i < ops.length; i += 400) {
       const calls = []; const rec = wgRec(calls); ops.slice(i, i + 400).forEach((f) => f(rec)); /* (wguard1) 바로 올리지 않고 적어 두었다가 지킴이를 거쳐 올림 */
-      const safe = await wgGuard(calls, label); const b = wgPlay(db.batch(), safe); await b.commit();
+      let safe; if (skip) { const pass = calls.filter((c) => wgSkipOk(c, skip)), rest = calls.filter((c) => !wgSkipOk(c, skip)); nSkip += pass.length; safe = rest.length ? [...pass, ...(await wgGuard(rest, label))] : pass; }
+      else safe = await wgGuard(calls, label);
+      const b = wgPlay(db.batch(), safe); await b.commit();
       if (label) ui(label, Math.min(i + 400, ops.length), ops.length, '올리는 중');
     }
+    if (skip && nSkip) log(`🛡 쓰기 지킴이: 상품 기록 되돌리기(${opt.wgSkip}) 쓰기 ${nSkip.toLocaleString()}개는 지킴이를 비켜 감(되돌림 자료를 먼저 남긴 쓰기 · 다른 쓰기는 지킴이 그대로)`);
   }
   const LISTING_FIELDS = ['title', 'titleRaw', 'condition', 'grade', 'sku', 'publisher', 'status', 'price', 'priceList', 'qty', 'qtyList', 'registeredAt', 'listingId', 'isbn13', 'isbn10', 'aladinCode', 'barcode'];
   const ACTIVE = ['판매중', '판매대기', '일시판매중지', '판매중지', '판매금지'];
@@ -5385,7 +5395,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const FV = firebase.firestore.FieldValue; let done = 0;
     for (let i = 0; i < rows.length; i += 1000) { if (stopFlag) throw new Error(`멈춤 — ${done.toLocaleString()}개까지 씀(되돌림 자료 ${name})`); const part = rows.slice(i, i + 1000); const ops = [];
       for (const r of part) { const doc = lfrDoc(r.set, FV, firebase.firestore.Timestamp); const at = nowIso(); ops.push((b) => b.set(C('prd_listings').doc(r.id), { ...doc, listfixAt: at, listfixBy: source, ...W() }, { merge: true })); ops.push((b) => b.set(C('prd_listing_changes').doc(), { listingKey: r.id, at, source, changes: lfrChanges(r), ...W() })); }
-      await commitBatches(ops, `상품 기록 되돌리는 중 (${(i + part.length).toLocaleString()}/${rows.length.toLocaleString()})`); done += part.length;
+      await commitBatches(ops, `상품 기록 되돌리는 중 (${(i + part.length).toLocaleString()}/${rows.length.toLocaleString()})`, { wgSkip: 'listfix' }); /* (restore1) 이 되돌리기 쓰기만 지킴이를 비켜 감 */ done += part.length;
       for (const r of part.slice(0, 3)) { const v = (await C('prd_listings').doc(r.id).get({ source: 'server' })).data() || {}; for (const [k, x] of Object.entries(r.set)) { const good = lfrIsDel(x) ? v[k] === undefined : lfrSame(bkSer(v[k]), bkSer(x)); if (!good) throw new Error(`쓴 값 확인이 어긋남(${r.id} ${k}) — ${done.toLocaleString()}개까지 쓰고 멈춤 · 되돌림 자료 ${name}`); } } }
     try { await C('prd_system').doc('listfix_plan').set({ applied: { at: nowIso(), pc: PC_NAME || '', source, tag, n: done, undo: name, undoParts: parts } }, { merge: true }); } catch (e) {}
     log(`🩹 상품 기록 ${done.toLocaleString()}개를 되돌림(${source}) · 바뀐 칸은 상품 변경 기록(prd_listing_changes · source ${source})에도 남김 · 되돌림 파일: ${name}`); return done;
@@ -5441,14 +5451,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const lfaRef = () => C('prd_system').doc(LFA.DOC);
   const lfaSet = (o) => lfaRef().set({ ...o, pc: PC_NAME || '', at: nowIso(), ...W() }, { merge: true }).catch(() => {});
   async function lfaClaim() { return db.runTransaction(async (tx) => { const s = await tx.get(lfaRef()); const x = s.data() || {}; if (x.stop === true) return null;
-    const old = x.state === 'run' && Date.now() - (Date.parse(x.runAt || '') || 0) > 3 * 3600e3; if (x.state && x.state !== 'wait' && !old) return null;
-    let tries = x.tries || 0; const fix = {}; if (!x.cntfix && x.state === 'wait' && /서버 건수를 못 셈/.test(String(x.err || ''))) { fix.cntfix = 'lfcount1 ' + (typeof VER !== 'undefined' ? VER : ''); fix.cntfixAt = nowIso(); fix.cntfixTries = tries; tries = 0; } /* (lfcount1) 건수 세기가 고장이던 판(compat에 count() 없음)에서 「서버 건수를 못 셈」으로 쓴 시도는 셈에서 한 번만 빼 줌 — cntfix 표시로 되풀이 안 함 · done·held·error-apply·stop은 위에서 그대로 막음 */
+    const old = x.state === 'run' && Date.now() - (Date.parse(x.runAt || '') || 0) > 3 * 3600e3;
+    const wgr = !x.wgfix && x.state === 'error-apply' && /쓰기 지킴이/.test(String(x.err || '')); /* (restore1 11/18) 쓰기 지킴이에 막혀 멈춘 것(그때 아무것도 안 씀)은 지킴이를 비켜 가는 판에서 한 번만 다시 — wgfix 표시로 되풀이 안 함 */
+    if (x.state && x.state !== 'wait' && !old && !wgr) return null;
+    let tries = x.tries || 0; const fix = {}; if (wgr) { fix.wgfix = 'restore1 ' + (typeof VER !== 'undefined' ? VER : ''); fix.wgfixAt = nowIso(); fix.wgfixTries = tries; fix.wgfixRun = x.run || ''; tries = 0; } if (!x.cntfix && x.state === 'wait' && /서버 건수를 못 셈/.test(String(x.err || ''))) { fix.cntfix = 'lfcount1 ' + (typeof VER !== 'undefined' ? VER : ''); fix.cntfixAt = nowIso(); fix.cntfixTries = tries; tries = 0; } /* (lfcount1) 건수 세기가 고장이던 판(compat에 count() 없음)에서 「서버 건수를 못 셈」으로 쓴 시도는 셈에서 한 번만 빼 줌 — cntfix 표시로 되풀이 안 함 · done·held·error-apply·stop은 위에서 그대로 막음 */
     if (tries >= LFA.TRY) return null;
     tx.set(lfaRef(), { state: 'run', runAt: nowIso(), tries: tries + 1, pc: PC_NAME || '', ...fix, ...(x.err ? { prevErr: String(x.err).slice(0, 500), err: '' } : {}) }, { merge: true }); return x; }); } /* (lfcount1) 새 시도를 맡을 때 지난 까닭은 prevErr로 옮김(지우지 않음 · 지금 까닭과 헷갈리지 않게) */
   async function lfrAuto() {
-    if (!LFA.ON || !PUBONLY || /^MJ-MAIN$/i.test(String(PC_NAME || '')) || !auth.currentUser || running || (typeof BKX !== 'undefined' && BKX.state === 'run') || GM_getValue('rn-lfa-done', '')) return;
+    if (!LFA.ON || !PUBONLY || /^MJ-MAIN$/i.test(String(PC_NAME || '')) || !auth.currentUser || running || (typeof BKX !== 'undefined' && BKX.state === 'run')) return;
+    const gd = GM_getValue('rn-lfa-done', ''); const gw = gd === 'error-apply' && !GM_getValue('rn-lfa-wgfix', ''); if (gd && !gw) return; /* (restore1 11/18) 쓰기 지킴이에 막혀 'error-apply'로 멈춘 PC는 이 판에서 한 번만 다시 봄(rn-lfa-wgfix) — 서버 표시(wgfix)가 다시 할지 정함 */
     const ls = await lfaPost('/lf-ls'); if (ls.st !== 200 || !ls.j || !ls.j.ok) return; /* 도우미가 아직 1.8.31이 아님 — 다음 확인 때(도우미는 한 시간마다 스스로 새 판) */
-    let x0 = null; try { x0 = await lfaClaim(); } catch (e) { return; } if (!x0) { const x = (await lfaRef().get().catch(() => null)); const st = x && x.data() ? x.data().state : ''; if (st === 'done' || st === 'held' || st === 'error-apply') GM_setValue('rn-lfa-done', st); return; }
+    let x0 = null; try { x0 = await lfaClaim(); } catch (e) { return; } if (!x0) { const x = (await lfaRef().get().catch(() => null)); const st = x && x.data() ? x.data().state : ''; if (st === 'done' || st === 'held' || st === 'error-apply') GM_setValue('rn-lfa-done', st); if (gw && /^(done|held|error-apply)$/.test(st)) GM_setValue('rn-lfa-wgfix', nowIso()); return; }
+    if (gw) GM_setValue('rn-lfa-wgfix', nowIso());
     setRunning('상품 기록 되돌리기(저절로)'); let stage = '목록'; const run = lfrStamp(); const made = nowIso();
     try {
       const files = (ls.j.files || []).filter((f) => LFR.FILE.test(f.name)); const bk = files.slice().sort((a, b) => a.name.localeCompare(b.name));
@@ -7584,6 +7598,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if (mode === 'reg' && it.confDay && r.registeredAt && !r.registeredYearGuessed && String(r.registeredAt).slice(0, 10) < String(it.confDay)) w.push(`샵매니저 등록일 ${String(r.registeredAt).slice(0, 10)}이 확정한 날 ${it.confDay}보다 앞`);
         if (mode === 'listing' && it.price != null && r.price != null && +r.price !== +it.price) w.push(`판매가가 고를 때(${it.price})와 다름(${r.price}) — 그사이 바뀐 상품`);
         if (s.code === 18) w.push('판매완료 상품 — 주문 기록 때문에 지우지 않음');
+        if (it.bump) { if (s.code !== 1) w.push(`판매중이 아님(${REG_ST[s.code] || s.code}) — 앞 페이지 올리기는 판매중 상품만`); if (it.qty != null && r.qty != null && +r.qty !== +it.qty) w.push(`수량이 맡길 때(${it.qty})와 다름(${r.qty}) — 그사이 팔렸을 수 있음`); } /* (restore1 11/18 · fbrev1 §10) 앞 페이지 올리기 삭제는 판매중·같은 수량일 때만 — 그사이 팔렸거나 멈춘 상품을 지우고 다시 올리지 않음 */
         if (w.length) { refuse(it, '샵매니저 줄이 고른 상품과 다름: ' + w.join(' · ')); continue; }
         it._before = REG_ST[s.code]; (by.get(s.code) || by.set(s.code, []).get(s.code)).push(it); }
       for (const [code, L] of by) { await ref.set({ step: 2, msg: `${REG_ST[code]} ${L.length}개 → 삭제 요청`, results: res }, { merge: true }); await PACE_P.wait(sleep);
