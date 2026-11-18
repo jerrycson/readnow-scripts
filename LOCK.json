@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-shoprow1",
-   "why": "판 내기 기다림: 판 내기 기다림: 우리숍 0.2.21 첫 화면 한 줄 띠·끝없이 롤링 (shoprow1)",
-   "first": "2026-11-18T03:37:11Z",
-   "at": "2026-11-18T04:31:41Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edkw3",
    "why": "판 내기 기다림: 판본 확인 판 ② 다시 내기(edkw3)",
    "first": "2026-11-18T03:50:23Z",
@@ -80,16 +73,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-shoprow1",
-  "why": "판 내기 기다림: 판 내기 기다림: 우리숍 0.2.21 첫 화면 한 줄 띠·끝없이 롤링 (shoprow1)",
-  "at": "2026-11-18T04:31:41Z",
-  "first": "2026-11-18T03:37:11Z"
+  "host": "vm-edkw3",
+  "why": "판 내기 기다림: 판본 확인 판 ② 다시 내기(edkw3)",
+  "at": "2026-11-18T04:32:22Z",
+  "first": "2026-11-18T03:50:23Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-shoprow1",
+ "what": "판 내기 기다림: 우리숍 0.2.21 첫 화면 한 줄 띠·끝없이 롤링 (shoprow1)",
+ "since": "2026-11-18T04:32:45Z",
+ "beat": "2026-11-18T04:32:45Z",
  "last": {
   "who": "lead",
   "done": "logopick1 북스퀸 로고 고르기·변형 작업대(shop/brand/studio/logopick.js · 아이디어 100·개선안) · 8cadbe603 (머리 그대로 · 웹앱 판 그대로)",
