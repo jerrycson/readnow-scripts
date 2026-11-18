@@ -1,2 +1,2 @@
-@kpin kpin/pulse_20261118-054250.json
-# 27395354
+doc=app_settings/ed_cfg
+# 702831486
