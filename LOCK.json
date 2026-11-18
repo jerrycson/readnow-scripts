@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "fbdp1 클라우드 0.35.299 DB 지우기 막음 켜기(/kp-in fsdp)",
- "since": "2026-11-18T02:44:06Z",
- "beat": "2026-11-18T02:49:43Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "gateused1 시험 문지기 새로 짓기(tGATEFRESH1118) + 클라우드 0.35.298 판매 장부 코드 메꾸기 · c2c57706f (머리 그대로 · 웹앱·수집기 판 그대로)",
-  "at": "2026-11-18T02:25:22Z"
+  "done": "fbdp1 클라우드 0.35.299 Firestore 통째 지우기 막음 켜기(/kp-in fsdp · 켜기만) · 1d5395c14 (머리 그대로 · 웹앱 판 그대로)",
+  "at": "2026-11-18T02:50:33Z"
  }
 }
