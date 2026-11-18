@@ -40,7 +40,7 @@
  "host": "vm-juso2",
  "what": "juso2 ship-check 도는 중",
  "since": "2026-11-18T03:28:27Z",
- "beat": "2026-11-18T03:49:41Z",
+ "beat": "2026-11-18T03:52:43Z",
  "last": {
   "who": "lead",
   "done": "fbdp1 클라우드 0.35.299 Firestore 통째 지우기 막음 켜기(/kp-in fsdp · 켜기만) · 1d5395c14 (머리 그대로 · 웹앱 판 그대로)",
