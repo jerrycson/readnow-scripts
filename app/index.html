@@ -603,7 +603,7 @@ html.rnfab-on body:has(#sheet.on) .rnfab-m{bottom:calc(80px + env(safe-area-inse
 
 /* 오늘 출고 상품 칸 (0.67.0): 관리코드 → 등급+제목 → 사진 → 상태 글 → 그 외. PC는 3열, 휴대폰은 한 줄로 쌓음 */
 .shp-it{display:grid!important;grid-template-columns:225px minmax(0,1fr) 34%;grid-template-areas:"code gt blk" "img note blk" "img etc blk" "img . blk";grid-template-rows:auto auto auto 1fr;column-gap:14px;row-gap:8px;align-items:start;padding:12px!important}
-.shp-it>.shp-code{grid-area:code}.shp-it>.shp-gt{grid-area:gt}.shp-it>.shp-img{grid-area:img;min-width:0!important}.shp-it>.shp-note{grid-area:note}.shp-it>.shp-etc{grid-area:etc}.shp-it>.shp-blk{grid-area:blk}
+.shp-it>.shp-code{grid-area:code}.shp-it>.shp-gt{grid-area:gt}.shp-it>.shp-img{grid-area:img;min-width:0!important}.shp-it>.shp-note{grid-area:note}.shp-note.none{background:#F4F6F5!important;border-left-color:#B8C4BE!important;color:#55625C!important;font-size:12.5px!important;padding:4px 8px!important}.shp-nall{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0;font-size:12.5px}.shp-nall .x{margin-left:auto}.shp-it>.shp-etc{grid-area:etc}.shp-it>.shp-blk{grid-area:blk}
 .shp-code{display:flex!important;align-items:center;gap:8px;color:#fff;border-radius:6px;padding:6px 10px!important;margin:0!important;white-space:nowrap;overflow:hidden;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
 .shp-code .cd{font-family:'SF Mono',Consolas,'Roboto Mono',monospace;letter-spacing:1.5px;line-height:1;overflow:hidden;text-overflow:ellipsis}.shp-code .cd b{font-size:22px;font-weight:900}.shp-code .cd i{font-style:normal;font-size:14px;font-weight:700;opacity:.8;letter-spacing:.5px;margin-left:2px}
 .shp-code.dk{color:#1b1b1b}.shp-code .shp-k{margin-left:auto;font-size:13px;font-weight:800;opacity:.9;font-family:system-ui}.shp-code .shp-qx{margin-left:auto;background:#fff;color:#d32f2f;font-weight:900;font-size:15px;border-radius:10px;padding:2px 8px;font-family:system-ui}.shp-code .shp-qx+.shp-k{margin-left:6px}
@@ -1499,7 +1499,7 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../cloud/shop-stock.js?v=0.1.0"></script>
 <script src="../readnow-ml-core.js?v=0.9.12"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.738'; // (1.78.738 bqmkt1) 수동 일괄 시장 지표 — 그룹 단추는 모든 탭(판매완료만 뺌) · 살핀 상품 패널 탭 다시 읽기 · 카드마다 시장 지표 갱신</script>
-<script src="readnow-webapp.js?v=1.78.738"></script>
+<script>const APP_VER = '1.78.739'; // (1.78.739 shipnote1) 📝 출고 탭마다 「이 탭 주문 전체 유의 사항 다시 읽기」 · 최상·상도 📝 · 💰💸 이득·손해 정렬 고침 // (1.78.738 bqmkt1) 수동 일괄 시장 지표 — 그룹 단추는 모든 탭(판매완료만 뺌) · 살핀 상품 패널 탭 다시 읽기 · 카드마다 시장 지표 갱신</script>
+<script src="readnow-webapp.js?v=1.78.739"></script>
 </body>
 </html>
