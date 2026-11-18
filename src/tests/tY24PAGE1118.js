@@ -40,7 +40,8 @@ ok(/bigTable === 'y24reg'\)\) return; const b = document\.querySelector\(`\[data
       e1.querySelector('[data-y24fold]').click(); await Wt(400); o.fold = sh.querySelectorAll('.y24rc .rgrow').length === o.rows && !sh.querySelector('[data-y24fold]');
       const b1 = sh.querySelector('.y24rc .rgrow [data-y24rsel]'); b1.click(); await Wt(200); o.chkNoExp = !sh.querySelector('[data-y24fold]') && S._y24Pick.has(b1.dataset.y24rsel);
       /* Alt+V */ document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', key: 'v', altKey: true, bubbles: true })); await Wt(400); o.altV = localStorage.getItem('rn-y24-view') === 'full' && !sh.querySelector('.y24rc .rgrow');
-      /* 흐름 띠 → 못 올림 · 까닭 칩 */ const fno = sh.querySelector('[data-y24flow="no|"]'); fno.click(); await Wt(400); o.noTab = S._bt_y24reg.f.k === 'no'; const nNo = sh.querySelectorAll('.y24rc').length; const sb = [...sh.querySelectorAll('[data-y24sub^="no|"]')]; o.subN = sb.length;
+      /* 흐름 띠 → 못 올림 · 까닭 칩 (시험 자료엔 못 올림 줄이 없어 셋을 못 올림으로 바꿈 — 까닭 둘) */ { const R0 = y24RegRows(); R0.filter((r) => r.k === 'ok').slice(-3).forEach((r, i) => { r.k = 'no'; r.why = i < 2 ? '예스24에 같은 상품이 이미 있음(우리 목록)' : 'ISBN 없음 — 바코드로 못 올림'; r.row = null; }); }
+      const fno = sh.querySelector('[data-y24flow="no|"]'); fno.click(); await Wt(400); o.noTab = S._bt_y24reg.f.k === 'no'; const nNo = sh.querySelectorAll('.y24rc').length; const sb = [...sh.querySelectorAll('[data-y24sub^="no|"]')]; o.subN = sb.length;
       if (sb[0]) { const want = +sb[0].querySelector('b').textContent.replace(/[^0-9]/g, ''); sb[0].click(); await Wt(400); o.subCut = sh.querySelectorAll('.y24rc').length === Math.min(want, 60) && (want < nNo || sb.length === 1); }
       else o.subCut = true;
       S._bt_y24reg.f.k = 'led'; S._bt_y24reg.sub = ''; openY24Reg(); await Wt(300); o.subOtherTab = sh.querySelectorAll('[data-y24sub^="no|"]').length === 0;
