@@ -387,7 +387,10 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
     const plat = (await doc('app_settings', 'platforms')) || {}; let led0 = null; const ledGet = async () => { if (!led0) { led0 = (await doc('app_settings', 'y24_reg')) || {}; led0.r = led0.r || {}; } return led0; };
     if (!(plat.y24 || {}).off) { try { out.down = await downStep(pc, st, plat, ledGet); } catch (e) { out.down = { why: '오류: ' + String((e && e.message) || e).slice(0, 120) }; } } /* (r1116-y24) 🛑 팔린 책 내림 — 자동 올림을 꺼도·멈춰도 돎(공용 셈 덩어리가 필요 없음) */
     const m = await mods(); if (!M.mods) return say('클라우드가 공용 셈을 못 받음 — ' + (m.err || []).join(' · ').slice(0, 160));
-    const cfg = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
+    const cfg0 = m.B.y24RegCfg((plat.y24 || {}).reg); if ((plat.y24 || {}).off) return say('🟦 예스24 꺼 둠(⚙)'); if (!cfg0.auto) return say('🤖 자동 올림 꺼 둠(⚙)');
+    /* (y24pick1 11/18) 번외가 「처음 한 건 확인(ok1)」을 아직 못 했다고 알리면(state ok1:null) 장부에 올라간 줄이 있어도 1건씩만 맡김 — 번외는 ok1 전엔 2건 넘는 맡김을 거절하므로(col2-y24reg.js)
+     *  11/18 07:55Z 첫 20권 맡김이 「1건짜리 맡김만 받음」으로 통째 거절 → 멈춤이 됐음 · 그 1건이 목록에서 확인되면 번외가 ok1을 적고 그다음부터 cfg.chunk(25)건씩 · ok1을 알리지 않는 옛 번외는 예전 그대로 */
+    const ok1No = Object.prototype.hasOwnProperty.call(st, 'ok1') && !st.ok1; const cfg = ok1No ? { ...cfg0, chunk: 1 } : cfg0;
     const led = await ledGet();
     { const add = {}, mark = {}; for (const [lid, x] of Object.entries(BC_SEED)) if (!(led.bc || {})[lid] && !(led.bcSeed || {})[lid] && m.B.y24RegEan(x.bc)) { add[lid] = x.bc; mark[lid] = { at: iso(), why: x.why, by: 'cloud y24auto' }; }
       if (Object.keys(add).length) { try { await ref().set({ bc: add, bcSeed: mark }, { merge: true }); led.bc = { ...(led.bc || {}), ...add }; led.bcSeed = { ...(led.bcSeed || {}), ...mark }; log('🟦 예스24 바코드 심음', Object.keys(add).join(',')); } catch (e) {} } } /* (r1116-y24reg) BC_SEED */
@@ -406,6 +409,10 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
      *  → '아무것도 누르지 않은 멈춤'(미리보기·올리기 전 실패)은 번외 판이 멈춘 판보다 새로우면 번외 판마다 한 번만 저절로 풂(auto.resumeVer에 그 판을 적어 같은 판에서 되풀이 0 · 누른 뒤 '확실하지 않음' 멈춤은 그대로 둠) */
     { const sp = led.auto && led.auto.stop; const vn = (x) => String(x || '0').split('.').reduce((a, q) => a * 1000 + (+q || 0), 0); const why0 = String((sp && sp.why) || '');
       const preStop = !!sp && (!sp.state || sp.state === 'fail') && (/미리보기 목록에 우리 줄이 안 보임|예스24 엑셀 확인 결과/.test(why0)) /* 미리보기·엑셀 확인 단계 멈춤만(화면 모양이 다름 같은 멈춤은 사람이 봄) */;
+      /* (y24pick1 11/18) 번외가 맡김 크기로 거절한 멈춤(「1건짜리 맡김만 받음」 · 예스24 화면을 열기도 전 · 상품 탓 아님)은 한 번 풀고 그때 실패한 줄도 「↩ 다시 올릴 수 있게」 — 위 ok1No로 다시 안 생김 · 예전 상태는 hist · 지우지 않음 */
+      if (sp && /1건짜리 맡김만 받음/.test(why0) && !(sp.state && sp.state !== 'fail')) { try { const rv = {}; for (const [lid, e] of Object.entries(led.r || {})) { if (!e || e.st !== 'autofail' || !/1건짜리 맡김만 받음/.test(String(e.why || '')) || Object.keys(rv).length >= 60) continue;
+          rv[lid] = { st: 'retry', ok: null, markAt: iso(), markBy: '🤖 클라우드 — 번외가 맡김 크기로 거절(아무것도 안 누름) · 1건부터 다시', hist: [...(e.hist || []), { st: e.st, ok: e.ok || null, at: e.markAt || e.failAt || e.at, by: e.markBy || e.by }].slice(-10) }; }
+        await ref().set({ auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 번외가 맡김 크기로 거절한 멈춤 풂(1건부터 다시)' }, ...(Object.keys(rv).length ? { r: rv } : {}) }, { merge: true }); led.auto.stop = null; for (const [lid, p] of Object.entries(rv)) Object.assign(led.r[lid], p); log('🤖 예스24 자동 올림', pc, '맡김 크기 거절 멈춤 풂 · 다시 후보 ' + Object.keys(rv).length + '줄'); } catch (e) {} }
       const spVer = (sp && sp.hv) || (/\(표 /.test(why0) ? '0.1.71' : '0.1.66'); /* 판을 적지 않던 옛 멈춤: 표 줄 수가 붙으면 0.1.68~0.1.71 · 아니면 0.1.66까지 */
       if (preStop && st.ver && vn(st.ver) > vn(spVer) && String((led.auto && led.auto.resumeVer) || '') !== String(st.ver)) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeVer: String(st.ver), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 새 판(멈춘 판 ' + spVer + ') · 아무것도 누르지 않은 멈춤을 판마다 한 번 풂' } }, { merge: true }); led.auto.stop = null; led.auto.resumeVer = String(st.ver); log('🤖 예스24 자동 올림', pc, '아무것도 안 누른 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {}
         /* (y24reg3 11/17 고침 2) 같은 때 그 멈춤으로 실패한 줄도 판마다 한 번 「↩ 다시 올릴 수 있게」(사람 단추 y24RegMark와 같은 모양 · 예전 상태는 hist · 지우지 않음)

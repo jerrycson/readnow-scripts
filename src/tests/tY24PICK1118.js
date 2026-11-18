@@ -45,6 +45,21 @@ console.log('② 클라우드');
   ok(J && J.rows.length === 1 && J.rows[0].lid === 'aladin_U111' && +J.rows[0].price === 14500, '처음 한 건 = 정해 둔 책 · 시장 지표 없이 알라딘 판매가 14500원 그대로', { why: y.why, plan: y.plan, rows: J && J.rows });
   const e = (store.app_settings.y24_reg.r || {}).aladin_U111; ok(e && e.st === 'auto' && +e.price === 14500 && +e.alPrice === 14500, '장부 줄 값 = 알라딘 값', e);
   ok(!(store.app_settings.y24_reg.r || {}).aladin_U222, 'px 없는 표시 상품은 시장 지표를 기다림(이번엔 안 올림)');
+  console.log('②-2 번외가 처음 한 건을 아직 확인 못 함(ok1:null) — 1건씩만 · 맡김 크기 거절 멈춤은 한 번 풂');
+  { const W1 = '번외가 맡김을 거절 — 처음 한 건이 예스24 목록에서 확인되기 전에는 1건짜리 맡김만 받음';
+    put('prd_listings', 'aladin_U333', { listingId: 9203, usedCode: 'U333', title: '시험 책 셋', isbn13: '9788900000035', grade: '상', price: 9900, priceList: 16000, qty: 1, sku: 'AB_U3', active: true, status: '판매중' });
+    store.app_settings.sku_map_0.m.aladin_U333 = { c: ['aa003'] };
+    const L0 = store.app_settings.y24_reg; L0.w.px_aladin_U333 = { on: 1, px: 'al', lid: 'aladin_U333', by: '시험', at: '2026-11-18T05:00:00Z' };
+    L0.r = { aladin_U111: { ...L0.r.aladin_U111, st: 'autofail', why: W1, failAt: '2026-11-18T06:01:00Z' }, aladin_Z9: { st: 'sent', auto: 1, ok: 1, gno: '1', at: '2026-11-17T01:00:00Z', day: '2026-11-17', skus: ['zz9'] } };
+    L0.auto = { stop: { why: W1, state: 'fail', job: 'y24a-시험', hv: '0.1.78', at: '2026-11-18T06:01:00Z' } };
+    T += 60e3; const g2 = gather(); g2.st.ok1 = null; g2.st.ver = '0.1.78';
+    const y2 = await Y.step('HOME', g2); const J2 = y2.jobs && y2.jobs[0]; const L1 = store.app_settings.y24_reg;
+    ok(!(L1.auto && L1.auto.stop) && L1.auto.resumeBy && /맡김 크기/.test(L1.auto.resumeBy), '「1건짜리 맡김만 받음」 멈춤은 저절로 풂(아무것도 안 누른 크기 실수)', L1.auto);
+    ok(J2 && J2.rows.length === 1 && y2.plan && y2.plan.mode === 'bulk', '목록에 올라간 줄이 있어도(묶음 단계) 번외가 ok1:null이면 1건만 맡김', { why: y2.why, plan: y2.plan, n: J2 && J2.rows.length });
+    const r111 = L1.r.aladin_U111; ok(r111 && ((r111.st === 'retry' && r111.hist && r111.hist.some((h) => h.st === 'autofail')) || (r111.st === 'auto' && J2.rows[0].lid === 'aladin_U111')), '그때 실패한 줄은 「↩ 다시」로 풀려 다시 후보(예전 상태는 hist에 남음)', r111);
+    // 같은 장면을 ok1:1로 — 묶음 크기 그대로
+    L1.r = { aladin_Z9: L1.r.aladin_Z9 }; T += 60e3; const g3 = gather(); g3.st.ver = '0.1.78';
+    const y3 = await Y.step('HOME', g3); const J3 = y3.jobs && y3.jobs[0]; ok(J3 && y3.plan && y3.plan.max === 25 && y2.plan.max === 1, '번외가 ok1을 알리면 예전처럼 묶음 크기(chunk 25) · ok1:null일 때만 1', { y2: y2.plan, y3: y3.plan }); }
   console.log('③ 클라우드 본체 /kp-in y24want');
   const ix = rd('cloud/index.js'); ok(/async function y24WantIn\(J, by\)/.test(ix) && /J0\.y24want \? await y24WantIn\(J0\.y24want/.test(ix), '/kp-in이 y24want를 받음');
   const fn = ix.slice(ix.indexOf('async function y24WantIn'), ix.indexOf('async function fsDelProtOn'));
