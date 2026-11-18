@@ -57,14 +57,14 @@
   "at": "2026-11-18T00:11:03Z",
   "first": "2026-11-17T22:40:11Z"
  },
- "holder": "lead",
- "host": "shipqB-watch1",
- "what": "watch1 판 내기",
- "since": "2026-11-18T00:02:53Z",
- "beat": "2026-11-18T00:07:11Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "shipqA 묶음 — 웹앱 1.78.701~704 · 수집기 1.89.357·358 · 클라우드 0.35.291·292 · 번외 0.1.78 (lfcount1·kfail3·jbn1·bunoe4·wguard2·note2b · b6fee485f)",
-  "at": "2026-11-18T00:01:01Z"
+  "done": "",
+  "at": "2026-11-18T00:11:10Z"
  }
 }
