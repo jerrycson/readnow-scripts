@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-shipfix2",
-   "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
-   "first": "2026-11-18T14:29:19Z",
-   "at": "2026-11-18T14:40:49Z"
-  },
-  {
-   "who": "lead",
    "host": "memo1",
    "why": "판 내기 기다림: memo1 판단 메모",
    "first": "2026-11-18T14:29:27Z",
@@ -24,16 +17,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-shipfix2",
-  "why": "판 내기 기다림: shipfix2 유의 끝남·%정렬",
-  "at": "2026-11-18T14:40:49Z",
-  "first": "2026-11-18T14:29:19Z"
+  "host": "memo1",
+  "why": "판 내기 기다림: memo1 판단 메모",
+  "at": "2026-11-18T14:41:13Z",
+  "first": "2026-11-18T14:29:27Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-shipfix2",
+ "what": "shipfix2 유의 끝남·%정렬",
+ "since": "2026-11-18T14:41:51Z",
+ "beat": "2026-11-18T14:41:51Z",
  "last": {
   "who": "h4",
   "done": "",
