@@ -1,2 +1,2 @@
-@kpin kpin/20261118-033802-170.json
-# 560221710
+doc=app_settings/col2_cfg
+# 2429712886
