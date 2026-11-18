@@ -57,14 +57,14 @@
   "at": "2026-11-18T07:18:01Z",
   "first": "2026-11-18T05:27:28Z"
  },
- "holder": "lead",
- "host": "vm-fbops1",
- "what": "fbops1 규칙 배포 단계를 deploy-cloud.yml 손으로 돌리기 칸으로(통로 조건 안)",
- "since": "2026-11-18T07:04:05Z",
- "beat": "2026-11-18T07:04:05Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "shoprow1 우리숍 shop.js 0.2.23 · shop.css 0.2.10 한 줄 띠 사진 칸 고르게 · afb63bf07 (머리·웹앱 판 그대로)",
-  "at": "2026-11-18T07:03:58Z"
+  "done": "fbops1 클라우드 0.35.306 규칙 배포를 deploy-cloud.yml 손으로 돌리기 rules 칸으로(통로 조건 안) · 72e63d00a",
+  "at": "2026-11-18T07:19:04Z"
  }
 }
