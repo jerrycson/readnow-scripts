@@ -59,9 +59,9 @@
  },
  "holder": "lead",
  "host": "shipqB-watch1",
- "what": "판 내기 기다림: watch1 감시 묶음(shipqB)",
+ "what": "watch1 판 내기",
  "since": "2026-11-18T00:02:53Z",
- "beat": "2026-11-18T00:02:53Z",
+ "beat": "2026-11-18T00:07:11Z",
  "last": {
   "who": "lead",
   "done": "shipqA 묶음 — 웹앱 1.78.701~704 · 수집기 1.89.357·358 · 클라우드 0.35.291·292 · 번외 0.1.78 (lfcount1·kfail3·jbn1·bunoe4·wguard2·note2b · b6fee485f)",
