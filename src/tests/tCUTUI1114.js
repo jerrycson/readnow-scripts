@@ -24,7 +24,7 @@ const SCENE = `(() => { let seed = 11; const rnd = () => ((seed = (seed * 110351
       ok(await p.evaluate(() => typeof openCutout === 'function' && !!NAV_X.cutout && !!RH_OPEN.cutout && !!RH_LATE.V01 && GO_PAGES.some((x) => x[0] === 'cutout') && FEAT.some((f) => /묶음 사진 판별/.test(f.t)) && !!PAGE_GUIDES.cutout), '화면·탭 묶음·연구 모음·바로 가기·기능 찾기·화면 설명서에 이어짐');
       ok(await p.evaluate(() => NAV_HUB.purchase[1][1].includes('cutout') && NAV_HUB.research[0][1].includes('cutout')), '🛒 매입 탭 · 🔬 연구 탭 묶음에 있음');
       await p.evaluate(() => openCutout()); await p.waitForFunction(() => !!window.ReadnowCutout, null, { timeout: 8000 }).catch(() => {});
-      ok(await p.evaluate(() => !!window.ReadnowCutout && window.ReadnowCutout.VERSION === '0.1.2'), '공용 셈 파일을 화면 열 때 받음(0.1.2)');
+      ok(await p.evaluate(() => !!window.ReadnowCutout && /^0\.1\.\d+$/.test(window.ReadnowCutout.VERSION)), '공용 셈 파일을 화면 열 때 받음(0.1.x — 11/17 0.1.3 책등 띠 뒤로 판 번호 고정 안 함)');
       const st = await p.evaluate(() => { const d = document.querySelector('#cut_study'); d.open = true; return d.textContent; }); ok(['목적', '지금 단계', '점수 그래프', '일지', '고친 점', '남은 어려움', '다음 한 수'].every((k) => st.includes(k)), '🔬 연구 칸 7가지(목적·단계·점수·일지·고친 점·어려움·다음 한 수)');
       /* 뒷면 */
       await p.evaluate(async () => { const sc = await window.__mk('back'); window.__miss = sc.codes[5].text; window.pptBarcodes = async () => sc.codes.slice(0, 5); window.loadZX = async () => ({ readBarcodes: async () => [{ text: window.__miss + ' 52000' }] }); await cutRun(sc.file); });
