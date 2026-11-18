@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bkfold1",
-   "why": "판 내기 기다림: bkfold1 수동 일괄 살핀 상품 패널·③④⑤⑥ 차례로",
-   "first": "2026-11-18T00:13:30Z",
-   "at": "2026-11-18T00:53:22Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edkw2",
    "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
    "first": "2026-11-18T00:22:35Z",
@@ -17,16 +10,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bkfold1",
-  "why": "판 내기 기다림: bkfold1 수동 일괄 살핀 상품 패널·③④⑤⑥ 차례로",
-  "at": "2026-11-18T00:53:22Z",
-  "first": "2026-11-18T00:13:30Z"
+  "host": "vm-edkw2",
+  "why": "판 내기 기다림: 판본 확인 판 ② 내기(edkw2)",
+  "at": "2026-11-18T00:54:32Z",
+  "first": "2026-11-18T00:22:35Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bkfold1",
+ "what": "bkfold1 수동 일괄 살핀 상품 패널·③④⑤⑥ 차례로",
+ "since": "2026-11-18T00:54:35Z",
+ "beat": "2026-11-18T00:54:35Z",
  "last": {
   "who": "lead",
   "done": "wake1 순서표 지피티 먼저·줄 칸 지킴(F57)·시험 GIT_* 막기 d4dbdb022 (판 번호 그대로 · 도구 파일만 · 머리 8ab2f661d1d8afa8)",
