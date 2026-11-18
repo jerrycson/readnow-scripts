@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "gateused1 — 시험 문지기 새로 짓기 + 클라우드 0.35.298 판매 장부 코드 메꾸기",
- "since": "2026-11-18T02:18:55Z",
- "beat": "2026-11-18T02:19:25Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "regup1 등록 사진 올리기 시간 제한 · 웹앱 1.78.715 e4b8307d3 (머리 그대로 8ab2f661d1d8afa8)",
-  "at": "2026-11-18T02:17:33Z"
+  "done": "gateused1 시험 문지기 새로 짓기(tGATEFRESH1118) + 클라우드 0.35.298 판매 장부 코드 메꾸기 · c2c57706f (머리 그대로 · 웹앱·수집기 판 그대로)",
+  "at": "2026-11-18T02:25:22Z"
  }
 }
