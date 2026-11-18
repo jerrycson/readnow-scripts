@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-y24page1",
-   "why": "판 내기 기다림: y24page1 — 📤 예스24에 새로 올리기 개편 판",
-   "first": "2026-11-18T04:28:49Z",
-   "at": "2026-11-18T06:22:33Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-regjump1",
    "why": "판 내기 기다림: regjump1 등록 선택 대기 스크롤 튐",
    "first": "2026-11-18T04:53:15Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-y24page1",
-  "why": "판 내기 기다림: y24page1 — 📤 예스24에 새로 올리기 개편 판",
-  "at": "2026-11-18T06:22:33Z",
-  "first": "2026-11-18T04:28:49Z"
+  "host": "vm-regjump1",
+  "why": "판 내기 기다림: regjump1 등록 선택 대기 스크롤 튐",
+  "at": "2026-11-18T06:22:39Z",
+  "first": "2026-11-18T04:53:15Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-y24page1",
+ "what": "y24page1 — 📤 예스24에 새로 올리기 개편 판",
+ "since": "2026-11-18T06:23:41Z",
+ "beat": "2026-11-18T06:23:41Z",
  "last": {
   "who": "lead",
   "done": "PC배치 0.1.10 크롬 창 알라딘 로그인(크롬 비밀번호 관리자 채움 + 로그인 단추만) · 7f9206602 (머리 그대로 · lab/pcdock만)",
