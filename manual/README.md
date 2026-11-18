@@ -4,7 +4,9 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v210 (지금) | 2026-11-18 | `c8b8e93f48b9c5c4` | [펼쳐 보기](https://readnow.kr/manual/v210_2026-11-18.html) · [파일](v210_2026-11-18.html) |
+| v212 (지금) | 2026-11-18 | `1112d6fd25a1ea7e` | [펼쳐 보기](https://readnow.kr/manual/v212_2026-11-18.html) · [파일](v212_2026-11-18.html) |
+| v211 | 2026-11-18 | `25cc75bb54356d9c` | [펼쳐 보기](https://readnow.kr/manual/v211_2026-11-18.html) · [파일](v211_2026-11-18.html) |
+| v210 | 2026-11-18 | `c8b8e93f48b9c5c4` | [펼쳐 보기](https://readnow.kr/manual/v210_2026-11-18.html) · [파일](v210_2026-11-18.html) |
 | v209 | 2026-11-18 | `507f50a1e5eaeaf6` | [펼쳐 보기](https://readnow.kr/manual/v209_2026-11-18.html) · [파일](v209_2026-11-18.html) |
 | v208 | 2026-11-18 | `df8133e5cdb7d08b` | [펼쳐 보기](https://readnow.kr/manual/v208_2026-11-18.html) · [파일](v208_2026-11-18.html) |
 | v207 | 2026-11-18 | `91accd11021794f6` | [펼쳐 보기](https://readnow.kr/manual/v207_2026-11-18.html) · [파일](v207_2026-11-18.html) |
