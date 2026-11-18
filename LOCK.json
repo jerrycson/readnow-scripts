@@ -36,14 +36,14 @@
   "at": "2026-11-18T00:40:27Z",
   "first": "2026-11-17T22:40:39Z"
  },
- "holder": "lead",
- "host": "vm-tether1",
- "what": "tether1 테더링 지킴 · 딸린 시험",
- "since": "2026-11-18T00:33:25Z",
- "beat": "2026-11-18T00:40:05Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-18T00:32:45Z"
+  "done": "tether1 📶 테더링 문·🔢 상세 ISBN 웹앱 1.78.709·수집기 1.89.359 fa401c57",
+  "at": "2026-11-18T00:40:33Z"
  }
 }
