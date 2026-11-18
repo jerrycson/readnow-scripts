@@ -33,7 +33,7 @@ console.log('① 순수 셈');
   const js = rd('shop/shop.js'); const css = rd('shop/shop.css'); const ix = rd('shop/index.html');
   ok(/function rollArm\(/.test(js) && /translate3d/.test(js) && /requestAnimationFrame\(rollTick\)/.test(js) && /prefers-reduced-motion/.test(js) && /touch-action: pan-y/.test(css) && /\.roll \.rt/.test(css), '엔진: transform + requestAnimationFrame · 세로 밀기는 화면에 · 움직임 줄이기 따름');
   ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(rd('shop/shop-look.js') + js), '브라우저 창 없음(팝업 금지)');
-  ok(/^0\.1\.([4-9]|\d\d)$/.test(BQL.VER) && new RegExp('shop-look\\.js\\?v=' + BQL.VER.replace(/\./g, '\\.')).test(ix) && /shop\.css\?v=0\.2\.([8-9]|\d\d)/.test(ix), `판 번호: 꾸밈 틀 ${BQL.VER} · 첫 화면이 새 판을 부름`);
+  ok(/^0\.1\.([4-9]|\d\d)$/.test(BQL.VER) && new RegExp('shop-look\\.js\\?v=' + BQL.VER.replace(/\./g, '\\.')).test(ix) && /shop\.css\?v=0\.2\.(\d\d)/.test(ix), `판 번호: 꾸밈 틀 ${BQL.VER} · 첫 화면이 새 판을 부름`);
   ok(/xs: q\.xs \|\| ''/.test(js), '목록 화면이 주소의 세트 거름(xs)을 읽음 — 내 섹션 「세트 빼기」의 「전체」 고리가 맞게 거름'); }
 if (!process.env.RN_UI) { console.log(bad ? `❌ tSHOPROW1_1118 ${bad}개 실패` : '✓ tSHOPROW1_1118 순수 셈 통과 (화면 시험은 RN_UI=1)'); process.exit(bad ? 1 : 0); }
 
@@ -88,6 +88,11 @@ try {
     await p.waitForTimeout(700); const f0 = await strip(p, '#nwg [data-roll]'); await drag(p, '#nwg', -A.step * 0.8, 3, 8); await p.waitForTimeout(1400); const f1 = await strip(p, '#nwg [data-roll]');
     ok(f1.pos - f0.pos > A.step * 0.8 + 2, `${nm} 빠르게 튕기면 관성으로 끈 거리보다 더 굴러감(${Math.round((f1.pos - f0.pos) / A.step * 10) / 10}칸)`, [f0.pos, f1.pos]);
     await shot(p, nm + '_after_drag', false);
+    // (11/18 사진 칸 고르게) 띠가 화면에 들어오면 사진을 한꺼번에 받음(복제 칸까지) · 사진 칸은 사진과 상관없이 칸 너비 그대로 3:4
+    const G = await p.evaluate((PXs) => { const el = document.querySelector('#nwg [data-roll]'); const C = [...el.querySelectorAll('.rt > .cw')]; const im0 = C[0].querySelector('.im img'); const keep = im0.getAttribute('src'); im0.setAttribute('src', PXs);
+      const R = C.map((c) => { const w = c.getBoundingClientRect().width, m = c.querySelector('.card .im').getBoundingClientRect(); return [Math.round(w * 10) / 10, Math.round(m.width * 10) / 10, Math.round(m.height * 10) / 10]; }); im0.setAttribute('src', keep);
+      return { left: el.querySelectorAll('img[data-src]').length, n: C.length, bad: R.filter((r) => Math.abs(r[0] - r[1]) > 1 || Math.abs(r[2] - r[1] * 4 / 3) > 1.5), r0: R[0] }; }, 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+    ok(G.left === 0 && G.n === A.kids && !G.bad.length, `${nm} 띠 사진 한꺼번에 받음(남은 칸 ${G.left}) · 사진 칸 ${G.n}개 모두 칸 너비 그대로 3:4(1×1 빈 그림이어도)`, G);
     // 그냥 누르면 책이 열림
     await p.waitForTimeout(500); await p.evaluate(() => { const r = document.querySelector('#nwg').getBoundingClientRect(); window.scrollBy(0, r.top - 120); }); await p.waitForTimeout(100); const vis = await p.evaluate(() => { const vr = document.querySelector('#nwg .rv').getBoundingClientRect(); const c = [...document.querySelectorAll('#nwg .rt > .cw')].find((x) => { const r = x.getBoundingClientRect(); return r.left > vr.left + 4 && r.right < vr.right - 4; }); const a = c && c.querySelector('a[href^="#/b/"]'); if (!a) return null; const r = a.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + Math.min(r.height / 2, 60), h: a.getAttribute('href') }; });
     if (vis) { await p.mouse.click(vis.x, vis.y); await p.waitForTimeout(500); } const h2 = await p.evaluate(() => location.hash); ok(vis && h2 === vis.h, `${nm} 끌지 않고 누르면 책이 열림(${h2})`, vis);

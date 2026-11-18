@@ -157,6 +157,8 @@
   const rollX = (st) => (st.loop ? st.S + window.BQL.wrap(st.pos, st.S) : 0);
   function rollImg(st, x) { if (!st.near || !st.step) return; const K = st.tr.children; const a = Math.max(0, Math.floor((x - st.W) / st.step)), b = Math.min(K.length - 1, Math.ceil((x + 2 * st.W) / st.step));
     for (let j = a; j <= b; j++) { const i = K[j] && K[j].querySelector('img[data-src]'); if (i) { i.src = i.dataset.src; i.removeAttribute('data-src'); } } }
+  /* (11/18 shoprow1 · 리드 결정 「사진 칸 고르게」) 띠가 화면 가까이 오면 그 띠의 사진(복제 칸 포함 · 많아야 36장)을 한꺼번에 받음 — 멀리 밀어도 빈 칸이 안 보임 */
+  function rollAll(st) { if (!st.near) return; st.el.querySelectorAll('img[data-src]').forEach((i) => { i.src = i.dataset.src; i.removeAttribute('data-src'); }); }
   function rollDraw(st) { const x = rollX(st); st.tr.style.transform = `translate3d(${-x.toFixed(2)}px,0,0)`; const i = st.step ? Math.floor(x / st.step) : 0; if (i !== st.lastI) { st.lastI = i; rollImg(st, x); } }
   function rollKick() { if (!RL.raf) RL.raf = requestAnimationFrame(rollTick); }
   function rollTick(now) { RL.raf = 0; let more = false; const sp = { slow: 0.022, mid: 0.045 }[(rollCfg() || {}).rollAuto] || 0;
@@ -169,11 +171,11 @@
   function rollMeasure(st) { const K = st.tr.children; const c0 = K[st.cloned ? st.n : 0]; if (!c0) return; const g = parseFloat(getComputedStyle(st.tr).columnGap) || 0; const w = c0.getBoundingClientRect().width; const W = st.vw.clientWidth; if (!w || !W) return;
     const old = st.step; st.step = w + g; st.S = st.n * st.step; st.W = W; const loop = st.S - g > W + 4;
     if (loop && !st.cloned) { const O = [...K]; const cl = () => { const f = document.createDocumentFragment(); O.forEach((x) => { const y = x.cloneNode(true); y.classList.add('rc'); y.setAttribute('aria-hidden', 'true'); y.querySelectorAll('a,button').forEach((z) => z.setAttribute('tabindex', '-1')); f.appendChild(y); }); return f; };
-      st.tr.insertBefore(cl(), st.tr.firstChild); st.tr.appendChild(cl()); st.cloned = true; }
+      st.tr.insertBefore(cl(), st.tr.firstChild); st.tr.appendChild(cl()); st.cloned = true; rollAll(st); }
     st.loop = loop; st.el.classList.toggle('nol', !loop); if (old && old !== st.step) st.pos = (st.pos / old) * st.step; if (!loop) st.pos = 0; st.lastI = -1; rollDraw(st); rollKick(); }
   function rollArm(root, keep) { if (!window.BQL || !window.BQL.wrap) return; for (const st of RL.set) if (!st.el.isConnected) RL.set.delete(st);
     if (!RL.ro && 'ResizeObserver' in window) RL.ro = new ResizeObserver((es) => es.forEach((e) => { const st = e.target.parentNode && e.target.parentNode._rl; if (st) rollMeasure(st); }));
-    if (!RL.io && 'IntersectionObserver' in window) RL.io = new IntersectionObserver((es) => es.forEach((e) => { const st = e.target._rl; if (!st) return; st.near = e.isIntersecting; if (st.near) { st.lastI = -1; rollDraw(st); rollKick(); } }), { rootMargin: '300px 0px' });
+    if (!RL.io && 'IntersectionObserver' in window) RL.io = new IntersectionObserver((es) => es.forEach((e) => { const st = e.target._rl; if (!st) return; st.near = e.isIntersecting; if (st.near) { rollAll(st); st.lastI = -1; rollDraw(st); rollKick(); } }), { rootMargin: '300px 0px' });
     $$('[data-roll]', root).forEach((el) => { if (el._rl) return; const vw = $('.rv', el), tr = $('.rt', el); if (!vw || !tr) return;
       const st = { el, vw, tr, n: tr.children.length, pos: keep || 0, step: 0, S: 0, W: 0, loop: false, cloned: false, anim: null, drag: null, hold: 0, hover: false, near: !RL.io, lastI: -1, noClick: 0 }; el._rl = st; RL.set.add(st);
       const now = () => performance.now(); const pause = () => { st.hold = now() + 4000; };

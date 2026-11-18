@@ -140,6 +140,8 @@ h2 #nwh { margin-left: 8px; font-size: 0; vertical-align: middle; } h2.flex { di
 .roll .rv { overflow: hidden; touch-action: pan-y; padding: 2px var(--sp-4) var(--sp-2); cursor: grab; }
 .roll .rt { display: flex; gap: var(--sp-3); will-change: transform; }
 .roll .rt > .cw { flex: 0 0 calc((100% - var(--sp-3) * (var(--per) - 1)) / var(--per)); }
+/* (11/18 shoprow1 · 사진 칸 고르게) 띠 안 사진 칸은 사진이 오기 전에도 칸 너비 그대로 3:4 — 그림은 칸 위에 얹기만 해 칸 크기를 못 바꿈 */
+.roll .rt > .cw > .card { width: 100%; } .roll .card .im { width: 100%; aspect-ratio: 3 / 4; } .roll .card .im img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .roll.nol .rc, .roll.nol .rb { display: none; } .roll.nol .rv { cursor: auto; }
 .roll.drag .rv { cursor: grabbing; } .roll.drag, .roll.drag * { user-select: none; -webkit-user-select: none; } .roll img, .roll a { -webkit-user-drag: none; }
 .roll .rb { display: none; position: absolute; top: 34%; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--c-line); background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-2); place-items: center; cursor: pointer; padding: 0; }
