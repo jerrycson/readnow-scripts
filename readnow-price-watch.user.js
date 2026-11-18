@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.61
+// @version      0.10.62
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -10,7 +10,7 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.12
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.19
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.20
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -271,13 +271,15 @@
         return { r: i + 1, n: r.sellerName || null, sc: r.sellerCode || null, g: r.grade || null, p: r.price ?? null, s: r.ship ?? null, c: ours ? 'ours' : al ? 'aladin' : r.sellerCode ? (sd ? Core.classifySellerDoc(sd, RS).cls : 'unknown') : 'unknown', lid: r.listingId || null, uc: r.usedCode || null, so: r.soldOut ? 1 : 0, ...(uinfo[r.listingId] ? { q: uinfo[r.listingId].hasNote || uinfo[r.listingId].photoDiff ? 1 : 0, qn: String(uinfo[r.listingId].note || '').slice(0, 120) || null, qp: uinfo[r.listingId].sellerPhotoCount || 0 } : {}) }; }), yes24Used: !!ctx.yes24, counts: d.counts || null, peerShadow: d.peerShadow || null, /* (sv1 11/10) 🧭 판매자 가치 그림자(기록만) */ /* Firestore는 목록 안의 목록을 못 받음 → 줄마다 이름 붙인 칸으로 */ needYes24: !!d.needYes24, yes24: ctx.yes24 || null, lowest, sig, engine: PR.VERSION,
       approvalState: keepApproval ? prevD.approvalState : needApproval ? 'pending' : null, ...(keepApproval ? {} : { approval: null }), lock: LOCK ? { kind: LOCK.kind, why: LOCK.why, until: LOCK.until || null, scope: 'research', at: now } : null, ...W() }; /* (fence4) scope research = 연구·엔진만 안 건드림(감시 자동 반영·추격자는 그대로) */
     if (d.group === 'treat' && d.status !== 'skip' && (NOLOSS || LOCK)) rec.reasons = [(LOCK ? '🔒 ' + LOCK.why : '🧪 무손해 모드 — 전체 비율 실험은 판정만 기록(값을 바꾸지 않음)'), ...(rec.reasons || [])].slice(0, 12);
-    let JW = null; if (watched) { const P1c = (rec.page1 || []).map((w) => ({ ...w })); const J = watchJudge(wg, pre, listing, market, sellers, ctx, P1c, used, prevD, now, SP); JW = J;
+    let JW = null; if (watched) { const P1c = (rec.page1 || []).map((w) => ({ ...w })); const J = watchJudge(wg, pre, listing, market, sellers, ctx, P1c, used, prevD, now, SP); JW = J; const CG = await ctrlGate(wg.id, !!J.chaser, key, now); /* (판 러) ⏸ 묶음 자동 멈춤 */
+      if (CG && CG.pause) { if (CG.cfg.dayDrop.lure === 'restore' && J.strat && J.strat.active && J.strat.name === 'lure' && J.start > listing.price) { J.target = J.start; J.strat = { ...J.strat, active: false, end: 'ctrlPause', endedAt: now }; J.reasons = ['⏸ 묶음 자동 멈춤 — 미끼(끌어내린 뒤 빠지기)를 멈추고 시작 값으로 되돌림', ...J.reasons]; } else J.reasons = [CG.line, ...J.reasons]; }
       const cur = listing.price; const chg = J.target != null && cur != null && J.target !== cur; const sg = (wg.watch.guardPct ?? 15);
       Object.assign(rec, { watchGid: wg.id, watchMode: wg.watch.mode, presetId: pre ? wg.watch.presetId : null, presetName: pre ? pre.name || null : null, status: J.target == null ? 'queue' : 'ok', action: J.target == null ? 'review' : chg ? 'set' : 'none', target: J.target, delta: chg ? J.target - cur : 0, deltaPct: chg && cur ? (J.target - cur) / cur : 0, reasons: J.reasons, strat: J.strat || null, chaser: J.chaser || null, floorW: J.floor || 0, chaseSrc: J.chaseSrc || null /* (11/09) 어느 추격자 전략이 왜(그룹 개별·조건 묶음·전체) — 웹앱 결정 카드 한 줄 */ });
       const batchHoldW = !!(prevD.approval && prevD.approval.decision === 'batch' && Date.now() - Date.parse(prevD.approval.at || 0) < 7 * 864e5 && (String(prevD.approval.batchId || '') !== String(wg.id) || wg.watch.mode !== 'semi')); /* (10/30 정범님 '세 기능 연계 만전' · 위험 1) 감시 그룹에 든 상품이라도 수동 일괄로 확정한 지 7일 안이면 감시는 판정만 기록 — 예전엔 감시(자동 · 엔진 설정)가 일괄 확정가를 다음 판정에서 되돌려 가격이 왔다 갔다 함 */
       const keepW = waitingExec || prevD.approvalState === 'applying' || batchHoldW; if (batchHoldW && chg) rec.reasons = ['수동 일괄 확정 7일 보호 — 감시 판정은 기록만(가격 바꾸지 않음)', ...(rec.reasons || [])].slice(0, 12);
       /* (11/10 fence4 · 정범님 11/09 밤 '감시 그룹 자동 반영과 추격자는 내가 결정해서 할 일 — 기능을 왜 꺼?') 🔒 연구 잠금(등록 3개월 안·사람 손댐 14일)은 여기 안 씀 — 정범님이 그룹에 정한 설정(자동 반영 한도·하한·제외)대로 예전처럼 */
       if (!keepW) { if (chg) { const why = []; const pct = Math.abs(J.target - cur) / cur * 100; if (wg.watch.apply !== 'auto') why.push('관리자 승인 그룹'); else { if (pct > sg) why.push(`변경 ${pct.toFixed(1)}% > 자동 반영 한도 ${sg}%`); if (J.floor && J.target < J.floor) why.push('하한 아래'); if (PR.isExcluded(listing, engineSettings())) why.push('자동 제외 상품'); } let TGW = J.target, PXW = null, PLKD = null; if ((await plkSetW()).has(key)) { const lk = await plkReadW({ key, listingId: listing.listingId }); const B = lk ? plkBlock(lk, ['price']) : null; if (B && B.cond) { PXW = plkCtxW(listing, rec.page1, cur); const Q = plkClamp(lk, J.target, PXW); if (!Q.ok) { why.push(Q.why); await plkNoteW(key, lk, { hit: 1, want: J.target, why: Q.why }); } else if (Q.cut) { TGW = Q.p; rec.reasons = [Q.why, ...(rec.reasons || [])].slice(0, 12); await plkNoteW(key, lk, { hit: 1, want: J.target, p: Q.p, why: Q.why }); } if (Q.ok) PLKD = { key, lk, cur, p: TGW }; } else why.push('🔒 잠긴 상품 — 판매 상태 말고는 바꾸지 않음'); } /* (11/18 lockcond1) 조건 잠금이면 선 안에서만 자동 반영(넘으면 선까지 줄이거나 막음) · 완전·새로 잠금은 예전처럼 막음 */
+          if (CG && CG.pause && TGW < cur) why.push(`⏸ 묶음 「${CG.name}」 자동 멈춤 — 값을 내리는 자동 반영은 선택 대기로`); /* (판 러) 올리기는 그대로 */
           if (!why.length) { Object.assign(rec, { approvalState: 'approved', approval: { decision: 'auto', by: 'engine:' + wg.id, gid: wg.id, at: now, price: TGW, expectPrice: cur, reasons: J.reasons.slice(0, 6), ...(PXW ? { plkx: PXW } : {}) }, autoBlock: [] }); if (PLKD) await plkNoteW(PLKD.key, PLKD.lk, PLKD); }
           else Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: why }); }
         else { Object.assign(rec, { approvalState: prevD.approvalState === 'pending' ? null : prevD.approvalState || null }); if (prevD.approvalState !== 'pending') delete rec.approval; } }
@@ -611,7 +613,25 @@
    *  반영 방식: 관리자 승인(결정 대기) / 자동 반영(한도 % 안이고 하한 위일 때만 바로 '승인' — 넘으면 결정 대기)
    *  추격자 전략(양보·동가·그림자·끌어내린 뒤 빠지기·끌어올리기)은 판정 엔진 chaseStep 한 곳. 전략 진행 중인 상품은 every 시간마다 따로 다시 봄(followUps) */
   let WG = new Map(), WGAt = 0, BKF = null, BKC = null;
-  async function wgLoad(force) { if (!force && Date.now() - WGAt < 5 * 60000) return WG; try { const q = await C('prd_price_batches').where('watch.on', '==', true).get(); const m = new Map(); q.forEach((d) => { const g = d.data(); if (g.shardOf || g.archived || (SET.batchOff || {})[d.id]) return; m.set(d.id, { id: d.id, name: g.name || d.id, cond: g.cond || {}, watch: g.watch || {} }); }); WG = m; WGAt = Date.now(); try { const [fd, cd] = await Promise.all([C('prd_price_batches').doc('_bkfold').get(), C('prd_price_batches').doc('_bkfc').get()]); BKF = fd.exists ? fd.data() || null : null; BKC = cd.exists ? cd.data() || null : null; } catch (e) { BKF = null; BKC = null; } /* (판 카) 묶음 기본 전략·상품 개별 추격을 같은 5분 묶음 안에서 읽음 — 못 읽으면 예전처럼 그룹·전체만 */ } catch (e) { log('감시 그룹 읽기 실패: ' + e.message, 1); } return WG; }
+  async function wgLoad(force) { if (!force && Date.now() - WGAt < 5 * 60000) return WG; try { const q = await C('prd_price_batches').where('watch.on', '==', true).get(); const m = new Map(); q.forEach((d) => { const g = d.data(); if (g.shardOf || g.archived || (SET.batchOff || {})[d.id]) return; m.set(d.id, { id: d.id, name: g.name || d.id, cond: g.cond || {}, watch: g.watch || {}, n: Array.isArray(g.lastKeys) ? g.lastKeys.length : g.lastCount ?? null /* (판 러) 알림선 몫 셈 — 그룹 상품 수 */ }); }); WG = m; WGAt = Date.now(); try { const [fd, cd] = await Promise.all([C('prd_price_batches').doc('_bkfold').get(), C('prd_price_batches').doc('_bkfc').get()]); BKF = fd.exists ? fd.data() || null : null; BKC = cd.exists ? cd.data() || null : null; } catch (e) { BKF = null; BKC = null; } /* (판 카) 묶음 기본 전략·상품 개별 추격을 같은 5분 묶음 안에서 읽음 — 못 읽으면 예전처럼 그룹·전체만 */ } catch (e) { log('감시 그룹 읽기 실패: ' + e.message, 1); } return WG; }
+  /* (0.10.62 · 판 러 · ctrlimp3 · CTRLDES3 2.3) ⏸ 묶음 자동 멈춤 — 묶음(_bkfold)마다 오늘 감시·추격자가 내린 합(원장 eng_fence_ledger 오늘 문서 · 10분 기억 · 새 쓰기 없음)이 알림선을 넘거나 추격자 붙은 상품이 문턱을 넘으면
+   *  설정(prd_system/pricing.ctrlCfg · 묶음별 ctl[묶음].opt — 셈은 가격 코어 Ctrl)대로 알림만(ctl.alert) 또는 멈춤(ctl.pause) · 멈춘 묶음은 값을 내리는 자동 반영을 선택 대기로(올리기·시장 읽기는 그대로) · 다시 켜기는 웹앱 관제창 */
+  let CTD = null, CTDAt = 0; const CHD = new Map();
+  async function ctrlDay() { if (CTD && Date.now() - CTDAt < 10 * 60000 && CTD.day === kst(Date.now()).slice(0, 10)) return CTD; const day = kst(Date.now()).slice(0, 10); CTDAt = Date.now();
+    try { const [ls, nw] = await Promise.all([C('eng_fence_ledger').doc(day).get(), C('app_settings').doc('eng_fence_now').get()]); CTD = { day, L: (ls.exists && ls.data()) || {}, dayLoss: ((nw.exists && nw.data()) || {}).dayLoss ?? null }; } catch (e) { CTD = { day, L: null, dayLoss: null, err: e.message }; } return CTD; }
+  async function ctrlGate(gid, chased, key, now) { const F = PR.Ctrl; if (!F || !BKF || !gid) return null; const fo = F.foldOf(BKF, gid); if (!fo) return null;
+    const ctl = (BKF.ctl || {})[fo.fid] || {}; const cfg = F.cfgNorm(SET.ctrlCfg || {}, ctl.opt || null); const D = await ctrlDay();
+    if (!D.L) { const p = F.pauseLive(ctl, cfg, D.day); return p ? { fid: fo.fid, name: fo.name, pause: p, cfg, line: F.line(p) } : null; } /* 원장을 못 읽으면 걸린 멈춤만 지킴(새로 멈추지 않음) */
+    const rAt = String((ctl.resume && ctl.resume.at) || ''); let ch = CHD.get(fo.fid); if (!ch || ch.at !== rAt || ch.day !== D.day) { ch = { at: rAt, day: D.day, keys: new Set() }; CHD.set(fo.fid, ch); } if (chased && key) ch.keys.add(key);
+    let nFold = 0, nAll = 0, gFold = 0; for (const [id, g] of WG) { const n = +g.n || 0; nAll += n; if (fo.gids.includes(id)) { nFold += n; gFold++; } }
+    const S0 = F.daySum(D.L, fo.gids); const lim = F.dayLimit(cfg, D.dayLoss, nFold, nAll, gFold, WG.size);
+    let r = F.pauseCheck({ cfg, ctl, day: D.day, sum: S0.sum, n: S0.n, limit: lim.limit, chased: ch.keys.size, nFold, nowIso: now, by: 'auto:' + (PC || '?') });
+    if (r.write) { try { const fd = await C('prd_price_batches').doc('_bkfold').get(); const f2 = fd.exists ? fd.data() || {} : {}; BKF.ctl = f2.ctl || {}; const c2 = BKF.ctl[fo.fid] || {}; /* 쓰기 전 한 번 새로 읽음 — 5분 기억 사이에 웹앱이 다시 켰으면 그 바탕(resume.base)으로 다시 셈 */
+        if (String((c2.resume && c2.resume.at) || '') !== rAt || !!c2.pause !== !!ctl.pause) { const c3 = F.cfgNorm(SET.ctrlCfg || {}, c2.opt || null); r = F.pauseCheck({ cfg: c3, ctl: c2, day: D.day, sum: S0.sum, n: S0.n, limit: lim.limit, chased: String((c2.resume && c2.resume.at) || '') !== rAt ? 0 : ch.keys.size, nFold, nowIso: now, by: 'auto:' + (PC || '?') }); } } catch (e) { r = { ...r, write: null }; /* 못 읽으면 쓰지 않음 */ } }
+    if (r.write) { const kind = r.write.pause ? 'pause' : 'alert'; const ent = { at: now, by: 'price-watch:' + (PC || '?'), kind, why: (r.write.pause || r.write.alert).why, sum: (r.write.pause || r.write.alert).sum, limit: lim.limit };
+      try { await C('prd_price_batches').doc('_bkfold').set({ ctl: { [fo.fid]: { ...r.write, log: firebase.firestore.FieldValue.arrayUnion(ent) } } }, { merge: true }); { const c0 = (BKF.ctl || {})[fo.fid] || ctl; BKF.ctl = { ...(BKF.ctl || {}), [fo.fid]: { ...c0, ...r.write, log: [...(Array.isArray(c0.log) ? c0.log : []), ent] } }; }
+        log(kind === 'pause' ? F.msgPause(fo.name, r.write.pause, F.recentPauses([...(ctl.log || []), ent], now)) : F.msgAlert(fo.name, r.write.alert), kind === 'pause' ? 1 : 0); } catch (e) { log('묶음 자동 멈춤 기록 실패: ' + e.message, 1); } }
+    return r.pause ? { fid: fo.fid, name: fo.name, pause: r.pause, cfg, line: r.line } : null; }
   const presetOf = (g) => (g && g.watch && g.watch.presetId ? (SET.presets || {})[g.watch.presetId] || null : null);
   const stratOf = (g, pre) => (pre ? pre.chase || { name: 'yield' } : SET.autoChase || { name: 'yield' });
   /* (정범님 11/09 '추격자 전략을 그룹마다 따로') 어느 전략을 쓸까 = 판정 엔진 ReadnowChase.stratFor 한 곳(웹앱 그룹 감시 칸·결정 카드와 같은 판단)
