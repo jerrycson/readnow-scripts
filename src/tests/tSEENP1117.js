@@ -46,7 +46,7 @@ const SCROLLCASE = async (p, nm) => { const a = await p.evaluate(PREP, ['sel', 2
 (async () => {
   await H(async (p) => { await setup(p); try {
     // ① 목록에서 빠짐
-    const a = await p.evaluate(PREP, ['sel', 1500]); ok(a.scope === 'batch:bQ:sel' && a.seen.length >= 3, '① 선택 대기 탭을 훑으면 살핀 목록이 쌓임', a);
+    const a = await p.evaluate(PREP, ['sel', 1800]); /* (bqmkt1 11/18) 카드마다 「📈 시장 지표 갱신」 단추 한 줄(약 22px)이 늘어 1500 → 1800까지 훑음 */ ok(a.scope === 'batch:bQ:sel' && a.seen.length >= 3, '① 선택 대기 탭을 훑으면 살핀 목록이 쌓임', a);
     const r1 = await p.evaluate(async (ks) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const out = {}; const sh = document.getElementById('sheet');
       const hb = sh.querySelector(`[data-bqht="hold"][data-bqk="${CSS.escape(ks[0])}"]`); out.hb = !!hb; if (hb) hb.click(); await W(700); out.afterHold = window.__seen(); out.held = !!(S.batchSt.held || {})[ks[0]];
       const tb = sh.querySelector(`[data-bqht="trash"][data-bqk="${CSS.escape(ks[1])}"]`); out.tb = !!tb; if (tb) { tb.click(); await W(600); const t2 = sh.querySelector(`[data-bqht="trash"][data-bqk="${CSS.escape(ks[1])}"]`); if (t2) t2.click(); } await W(700); out.afterTrash = window.__seen(); out.trashed = !!(S.batchSt.trashed || {})[ks[1]];
