@@ -36,14 +36,14 @@
   "at": "2026-11-18T15:57:03Z",
   "first": "2026-11-18T15:03:03Z"
  },
- "holder": "lead",
- "host": "vm-bkfold3",
- "what": "판 내기: bkfold3 묶음 폴더 24.3~24.7·27(1.78.744)",
- "since": "2026-11-18T15:45:30Z",
- "beat": "2026-11-18T15:57:40Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "engtab1 · 웹앱 1.78.746 연구 탭 💲 가격 판정 엔진 b3f51a95d",
-  "at": "2026-11-18T15:45:03Z"
+  "done": "bkfold3 · 웹앱 1.78.747 묶음 폴더 24.3~24.7·27 d9c268ab4",
+  "at": "2026-11-18T15:57:54Z"
  }
 }
