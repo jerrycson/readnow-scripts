@@ -115,7 +115,7 @@ const webRej = (F, L) => { const at = new Date().toISOString(); for (const ono o
       // 원스톱: 점검에 연결 창 · Y24 단계가 끝없이 기다리지 않음
       const setRaw = async (ms) => { await db.collection('app_settings').doc('y24_ord_state').set({ rawAt: new Date(Date.now() - ms).toISOString() }, { merge: true }); await W(200); S.y24o.st = { ...(S.y24o.st || {}), rawAt: new Date(Date.now() - ms).toISOString() }; };
       await setRaw(2 * 60e3); o.link1 = await osY24Link(1, { y24: true }); await setRaw(90 * 60e3); o.link2 = await osY24Link(1, { y24: true }); o.link0 = await osY24Link(0, { y24: true });
-      const rid = 'osT'; await db.collection('shp_runs').doc(rid).set({ id: rid, status: 'run', ph: 'Y24', log: [] }); const run = { id: rid, status: 'run', ph: 'Y24', need: null };
+      const rid = 'osT'; await db.collection('shp_runs').doc(rid).set({ id: rid, status: 'run', ph: 'Y24', log: [], owner: { tab: OS_TAB, dev: 'T', epoch: 1, beat: new Date().toISOString() } }); S.os.lease = { id: rid, epoch: 1 }; S.os.phaseLease = null; /* (memo1 11/18) 11/15 담당권 보호 뒤 — 이 탭이 담당인 실행으로 준비(전엔 담당 없이 osPut이 막혀 시험 안 오류) */ const run = { id: rid, status: 'run', ph: 'Y24', need: null };
       const q = (no, st, m, extra) => { const x = S.y24o.m.get(no); x.auto = { ship: { state: st, seq: 3, at: new Date(Date.now() - m * 60e3).toISOString(), ...(extra || {}) } }; return x; };
       o.stuck0 = !!(await osY24Stuck(run, [q('Y2', 'queued', 5)])); /* 기준 안 → 기다림 */
       o.stuck1 = await osY24Stuck(run, [q('Y2', 'queued', 30)]); await W(300); const R1 = (FS.shp_runs || {})[rid] || {}; o.need1 = { st: R1.status, k: (R1.need || {}).k, m: (R1.need || {}).msg, btn: ((R1.need || {}).btns || []).map((x) => x[0]).join(',') };

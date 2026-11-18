@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.368의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.369의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.368' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.368', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.369' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.369', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3378,6 +3378,8 @@
       if (v && v.hold && v.hold.on) { if (m) m.held = true; return; } /* (11/04 정범님) ⏸ 보류 — 판단을 적지도 맡기지도 않음(m.held → 기억에 '끝'으로 두지 않아 풀면 다시 봄) */
       if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
       tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }
+  /* (memo1 · 정범님 I-1118-2255-30) 📝 판단 메모 — prd_judge_memos를 60초 기억 · 못 읽으면 null(메모 없이 예전대로) */
+  async function auJmemo() { try { const PR = window.ReadnowPricing || globalThis.ReadnowPricing; const M = window.ReadnowMemo || globalThis.ReadnowMemo || (PR && PR.Memo); if (!M || !M.index || !M.forItem || !M.digest) return null; if (AU.jm && Date.now() - (AU.jmAt || 0) < 60e3) return AU.jm; const q = await C('prd_judge_memos').get(); const L = q.docs.map((d) => ({ id: d.id, ...(d.data() || {}) })); AU.jm = { M, idx: M.index(L) }; AU.jmAt = Date.now(); return AU.jm; } catch (e) { AU.jmAt = Date.now(); return AU.jm || null; } }
   async function autoShipPc(orders) { if (AU.busy || PUBONLY || !auth.currentUser || !pcLoggedNow()) return null; if (window.__rnFeat && !window.__rnFeat('ship')) return null; /* 출고 기능을 끈 PC는 판단·발송준비시작 안 함(다른 PC·클라우드) */
     const SHC = window.ReadnowShipping || globalThis.ReadnowShipping, ML = window.ReadnowML || globalThis.ReadnowML; if (!SHC || !SHC.autoShipDecide || !ML || !ML.evalSale) return null;
     AU.busy = true; const out = { sent: 0, review: 0, wait: 0 };
@@ -3395,7 +3397,9 @@
           if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; } }
         if ((cfg.custBlock || cfg.sellerReview) && m.cust === undefined) m.cust = await auCust(o, SHC);
         const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
-        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock || cfg.sellerReview ? m.cust : null, bb: AU.bbx || null });
+        const JM = typeof auJmemo === 'function' ? await auJmemo() : null; /* (memo1 · 정범님 I-1118-2255-30) 📝 정범님 판단 메모 — 자동 출고 판단에도 반영(판매 평가에만 · 학습 표본엔 안 넣음 F32) */
+        const evMemo = JM ? (a) => { try { const I = JM.M.forItem(JM.idx, { lid: a && a.lid, isbn: (a && a.isbn) || ((E[a && a.lid] || {}).isbn) || null }); return ML.evalSale(I.length ? { ...a, memo: JM.M.digest(I, a.rows) } : a); } catch (e) { return ML.evalSale(a); } } : ML.evalSale;
+        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: evMemo, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock || cfg.sellerReview ? m.cust : null, bb: AU.bbx || null });
         const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
         if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], operationIds: { [ono]: 'delivery-v2:' + ono }, status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }, m).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });

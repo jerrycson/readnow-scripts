@@ -86,7 +86,7 @@ console.log('⑦ 웹앱 — 사람 확인 상품은 시장 지표 숨김(값은 
   ok(X.edUse({ id: 'aladin_8', listingId: 5003, title: '어떤 책 양장 특별판' }) === null, '검색 기록이 없는 제목 의심은 예전처럼(숨기지 않음)'); }
 
 console.log('⑧ 가격 쪽 — 사람 확인이면 추천가를 내지 않음');
-ok(/const eu0 = edUse\(l\);[^\n]*if \(eu0 === 'check'\)/.test(APP), '일괄 계산: hold가 없어도 사람 확인이면 판매가 그대로');
+ok(/const eu0 = edUse\(l\);[^\n]*if \(eu0 === 'check'(?:\)| && )/.test(APP), '일괄 계산: hold가 없어도 사람 확인이면 판매가 그대로');
 { const pw = rd('readnow-price-watch.user.js'); ok(/e\.use === 'srch' \|\| e\.use === 'check'\)\) return null/.test(pw) && /dd\.edPick/.test(pw), '가격 감시기: 사람 확인은 모두 막음 · 사람이 고른 판 따름'); }
 ok(/판본 낱말이 같은 검색 상품이 없어 추천가를 채우지 않음/.test(APP) && /PC\.edMatch\(ttl, r\.title/.test(APP), '등록 준비: 판본 낱말이 다른 검색 상품 값으로 추천가를 채우지 않음');
 ok(/edHide\(l0\) \? edHideHtml\(l0, w\)/.test(APP), '시장 블록(prBlocks) 숨김');
