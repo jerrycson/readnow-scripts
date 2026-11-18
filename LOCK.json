@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "host": "vm",
+ "what": "정밀 점검 ② 보고서(코드 고침 없음)",
+ "since": "2026-11-18T14:26:05Z",
+ "beat": "2026-11-18T14:26:05Z",
  "last": {
   "who": "lead",
   "done": "invimp1 · 웹앱 1.78.742 재고 품목 판 ① 탭 틀 333341a7d",
