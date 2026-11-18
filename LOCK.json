@@ -71,14 +71,14 @@
   "at": "2026-11-17T23:32:20Z",
   "first": "2026-11-17T22:39:59Z"
  },
- "holder": "lead",
- "host": "shipqA-lfcount1",
- "what": "lfcount1 등 묶음 판 4개 올림",
- "since": "2026-11-18T00:00:13Z",
- "beat": "2026-11-18T00:00:31Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "bkfold1 판 ② 냄 — 웹앱 1.78.700 (210557a67 · 결과물 59513b093) · 패널 판은 문지기에서 막혀 멈춤",
-  "at": "2026-11-17T23:59:57Z"
+  "done": "shipqA 묶음 — 웹앱 1.78.701~704 · 수집기 1.89.357·358 · 클라우드 0.35.291·292 · 번외 0.1.78 (lfcount1·kfail3·jbn1·bunoe4·wguard2·note2b · b6fee485f)",
+  "at": "2026-11-18T00:01:01Z"
  }
 }
