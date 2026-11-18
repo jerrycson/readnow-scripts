@@ -1,2 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611181013
-# 2598714207
+@kpin kpin/pulse_20261118-054250.json
+# 27395354
