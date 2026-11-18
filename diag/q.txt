@@ -1,2 +1,2 @@
-doc=app_settings/y24_reg
-# 396631131
+@kpin kpin/20261118-112809-3393.json
+# 22518668
