@@ -57,14 +57,14 @@
   "at": "2026-11-18T00:17:42Z",
   "first": "2026-11-17T22:40:23Z"
  },
- "holder": "lead",
- "host": "shipqB-fbchk2",
- "what": "fbchk2 판 내기",
- "since": "2026-11-18T00:12:05Z",
- "beat": "2026-11-18T00:16:19Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-18T00:11:10Z"
+  "at": "2026-11-18T00:18:33Z"
  }
 }
