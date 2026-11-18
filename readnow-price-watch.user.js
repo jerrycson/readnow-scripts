@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.59
+// @version      0.10.60
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -10,7 +10,7 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.12
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.18
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.19
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -244,7 +244,7 @@
     const sellers = await sellersFor(rows.map((r) => r.sellerCode));
     const WGm = await wgLoad(); const wg = prevD.watch && prevD.watch.gid ? WGm.get(prevD.watch.gid) || null : null; const pre = wg && wg.watch.mode === 'semi' ? presetOf(wg) : null; const watched = !!(wg && (wg.watch.mode !== 'semi' || pre));
     if (wg && wg.watch.mode === 'semi' && !pre) log(`반자동 조건 묶음(${wg.watch.presetId || '?'})이 없어 감시하지 않음: ${l.title || l.usedCode} — 웹앱에서 그룹의 조건 묶음을 다시 고르세요`, 1);
-    const SP = watched ? stratPick(wg, pre, prevD, WGm) : null; const CHR = await chaseFor(key, l.bookId, now, SP ? (SP.strat || {}).detect : null); const chase = CHR ? CHR.map : null; /* (🎯 추격자 엔진) 찾기 = 엔진 collect · 정책(무시·보통 판매자)은 엔진 mapWithPolicy가 반영 — 정책이 꺼져 있으면 예전과 같은 지도 */ // (0.8.0) 추격자 찾기를 판정에 연결 (예전엔 엔진에 추격 규칙만 있고 자료를 넘기지 않아 양보가 한 번도 동작하지 않았음)
+    const SP = watched ? stratPick(wg, pre, prevD, WGm, key) : null; const CHR = await chaseFor(key, l.bookId, now, SP ? (SP.strat || {}).detect : null); const chase = CHR ? CHR.map : null; /* (🎯 추격자 엔진) 찾기 = 엔진 collect · 정책(무시·보통 판매자)은 엔진 mapWithPolicy가 반영 — 정책이 꺼져 있으면 예전과 같은 지도 */ // (0.8.0) 추격자 찾기를 판정에 연결 (예전엔 엔진에 추격 규칙만 있고 자료를 넘기지 않아 양보가 한 번도 동작하지 않았음)
     const ctx = { now, core: Core, RS, chase, chaseMoves: CHR ? CHR.moves : {}, buyback: used.buyback || null, policy: { fee: mine && mine.ship != null ? mine.ship : SHOP.fee ?? null, freeOver: SHOP.freeOver ?? null }, settings: engineSettings(), peerEv: await peerEv(), yes24: prevD.yes24 && Date.now() - Date.parse(prevD.yes24.at) < 48 * 3600e3 ? prevD.yes24 : null };
     const market = { at: now, pagesSeen: 1, lastPage: used.lastPage || 1, rows, recentGone: gone };
     let d = PR.decide(listing, market, sellers, ctx);
@@ -610,17 +610,20 @@
    *  자동 = 지금의 판정 엔진(전체 설정, 계속 고쳐 감) · 반자동 = 이름 붙인 조건 묶음(SET.presets — 수동 일괄 기준 + 엔진 세부 + 추격자 전략)
    *  반영 방식: 관리자 승인(결정 대기) / 자동 반영(한도 % 안이고 하한 위일 때만 바로 '승인' — 넘으면 결정 대기)
    *  추격자 전략(양보·동가·그림자·끌어내린 뒤 빠지기·끌어올리기)은 판정 엔진 chaseStep 한 곳. 전략 진행 중인 상품은 every 시간마다 따로 다시 봄(followUps) */
-  let WG = new Map(), WGAt = 0;
-  async function wgLoad(force) { if (!force && Date.now() - WGAt < 5 * 60000) return WG; try { const q = await C('prd_price_batches').where('watch.on', '==', true).get(); const m = new Map(); q.forEach((d) => { const g = d.data(); if (g.shardOf || g.archived || (SET.batchOff || {})[d.id]) return; m.set(d.id, { id: d.id, name: g.name || d.id, cond: g.cond || {}, watch: g.watch || {} }); }); WG = m; WGAt = Date.now(); } catch (e) { log('감시 그룹 읽기 실패: ' + e.message, 1); } return WG; }
+  let WG = new Map(), WGAt = 0, BKF = null, BKC = null;
+  async function wgLoad(force) { if (!force && Date.now() - WGAt < 5 * 60000) return WG; try { const q = await C('prd_price_batches').where('watch.on', '==', true).get(); const m = new Map(); q.forEach((d) => { const g = d.data(); if (g.shardOf || g.archived || (SET.batchOff || {})[d.id]) return; m.set(d.id, { id: d.id, name: g.name || d.id, cond: g.cond || {}, watch: g.watch || {} }); }); WG = m; WGAt = Date.now(); try { const [fd, cd] = await Promise.all([C('prd_price_batches').doc('_bkfold').get(), C('prd_price_batches').doc('_bkfc').get()]); BKF = fd.exists ? fd.data() || null : null; BKC = cd.exists ? cd.data() || null : null; } catch (e) { BKF = null; BKC = null; } /* (판 카) 묶음 기본 전략·상품 개별 추격을 같은 5분 묶음 안에서 읽음 — 못 읽으면 예전처럼 그룹·전체만 */ } catch (e) { log('감시 그룹 읽기 실패: ' + e.message, 1); } return WG; }
   const presetOf = (g) => (g && g.watch && g.watch.presetId ? (SET.presets || {})[g.watch.presetId] || null : null);
   const stratOf = (g, pre) => (pre ? pre.chase || { name: 'yield' } : SET.autoChase || { name: 'yield' });
   /* (정범님 11/09 '추격자 전략을 그룹마다 따로') 어느 전략을 쓸까 = 판정 엔진 ReadnowChase.stratFor 한 곳(웹앱 그룹 감시 칸·결정 카드와 같은 판단)
    *  전체(SET.autoChase)가 기본 · 그룹 개별 전략(그룹 watch.chase)이 먼저 · 반자동이면 조건 묶음 전략 · 한 상품이 여러 감시 그룹에 걸리면(감시 그룹 ≠ 확정 대기 중인 다른 감시 그룹) 애매 → 전체
    *  옛 판정 엔진(stratFor 없음)이면 예전 stratOf 그대로 */
-  function stratPick(wg, pre, prevD, WGm) { if (!wg) return null; const CH = PR && PR.Chase; if (!CH || !CH.stratFor) { const st = stratOf(wg, pre); return { strat: st, src: pre ? 'preset' : 'global', gid: wg.id, gname: wg.name, why: '', text: '' }; }
+  function stratPick(wg, pre, prevD, WGm, key) { if (!wg) return null; const CH = PR && PR.Chase; if (!CH || !CH.stratFor) { const st = stratOf(wg, pre); return { strat: st, src: pre ? 'preset' : 'global', gid: wg.id, gname: wg.name, why: '', text: '' }; }
     const gOf = (g) => { const pr = g.watch && g.watch.mode === 'semi' ? presetOf(g) : null; return { id: g.id, name: g.name, chase: (g.watch && g.watch.chase) || null, preset: pr ? { name: pr.name || g.watch.presetId, chase: pr.chase || { name: 'yield' } } : null }; };
     const L = [gOf(wg)]; const ob = prevD && prevD.approval && prevD.approval.batchId ? String(prevD.approval.batchId) : null; if (ob && ob !== String(wg.id) && WGm && WGm.get(ob) && prevD.approvalState !== 'done') L.push(gOf(WGm.get(ob)));
-    return CH.stratFor({ global: SET.autoChase || null, groups: L }); }
+    const X = {}; /* (판 카 · 정범님 I-1118-2344-32) 📌 상품 개별(_bkfc per[상품].chase) > 그룹 > 조건 묶음 > 📁 묶음 기본(_bkfold folds[].ctrl.def.chase) > 전체 — 판단은 엔진 stratFor 한 곳 */
+    try { const pc = key && BKC && BKC.per && BKC.per[key] ? BKC.per[key].chase : null; if (pc === 'off') X.item = 'off'; else if (pc && typeof pc === 'object' && pc.name) X.item = pc; else if (typeof pc === 'string' && pc) X.item = { name: pc };
+      const FO = BKF && BKF.folds ? BKF.folds : null; const ids = L.map((g) => String(g.id)); if (FO) for (const fid of (Array.isArray(BKF.order) ? BKF.order : []).filter((x) => FO[x]).concat(Object.keys(FO).filter((x) => !(BKF.order || []).includes(x)))) { const f = FO[fid]; if (!f || f.archived) continue; const gids = (f.gids || []).map(String); if (!ids.some((i) => gids.includes(i))) continue; X.fold = { id: fid, name: f.name || fid, gids, chase: f.ctrl && f.ctrl.def && f.ctrl.def.chase ? (typeof f.ctrl.def.chase === 'string' ? { name: f.ctrl.def.chase } : f.ctrl.def.chase) : null }; break; } } catch (e) {}
+    return CH.stratFor({ global: SET.autoChase || null, groups: L, ...X }); }
   async function chaseFor(key, bookId, now, detect) { try { const S0 = { chase: { ...PR.DEFAULTS.chase, ...((SET.engine || {}).chase || {}), ...(detect || {}) } }; const since = Date.now() - (S0.chase.releaseDays || 30) * 864e5;
       const [qa, qc] = await Promise.all([C('prd_price_actions').where('key', '==', key).get(), bookId ? C('prd_metric_changes').where('bookId', '==', bookId).get() : Promise.resolve({ docs: [] })]);
       const acts = qa.docs.map((d) => d.data()).filter((a) => a.at && Date.parse(a.at) > since); const chs = qc.docs.map((d) => d.data()).filter((c) => c.at && Date.parse(c.at) > since);

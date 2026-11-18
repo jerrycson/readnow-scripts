@@ -1,7 +1,7 @@
 {
  "ver": "1.89.371",
  "hsig": "8ab2f661d1d8afa8",
- "at": "2026-11-18T18:56:12.175Z",
+ "at": "2026-11-18T19:07:51.985Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -29,9 +29,9 @@
   },
   {
    "f": "readnow-pricing-core.js",
-   "v": "0.17.18",
-   "sha": "1a3869bba2730c1b660be8b8860f417b599b2b658cb505ddcb03f6df68cd377a",
-   "n": 185294
+   "v": "0.17.19",
+   "sha": "707184bdb0abb7e38a50a279174d2eaeb8167009f7de9e20ac36cfd08d30f619",
+   "n": 187227
   },
   {
    "f": "readnow-shipping-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.207",
-   "sha": "b1c1cc2acef53ef769d30b265b636fe1026acbad16d9e9ab468a2038bbe8baa7",
-   "n": 81676
+   "v": "0.14.208",
+   "sha": "78e22b42dd8820821e26e50e2abad52ceb64899eb129b42a7dcd531588411b91",
+   "n": 81722
   },
   {
    "f": "readnow-ext-core.js",
