@@ -24,9 +24,9 @@
  },
  "holder": "lead",
  "host": "vm-shipfix2",
- "what": "shipfix2 유의 끝남·%정렬",
+ "what": "shipfix2 빌드",
  "since": "2026-11-18T14:41:51Z",
- "beat": "2026-11-18T14:41:51Z",
+ "beat": "2026-11-18T14:42:25Z",
  "last": {
   "who": "h4",
   "done": "",
