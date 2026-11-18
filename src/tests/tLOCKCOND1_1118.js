@@ -58,19 +58,22 @@ ok(/item cxrow[^`]{0,120}plkMini\(x\.l\)/.test(T), '세트·짝 줄(cxrow)');
 }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ ${bad}개 실패` : '✓ tLOCKCOND1_1118 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('④ 화면(가짜 클라우드 · 지어낸 책 · 배율 1)');
-const SHOT = process.env.RN_SHOT || ''; const shot = async (p, n) => { if (SHOT) { fs.mkdirSync(SHOT, { recursive: true }); await p.screenshot({ path: path.join(SHOT, n + '.png') }); } };
+const SHOT = process.env.RN_SHOT || ''; const shot = async (p, n, sel) => { if (SHOT) { if (sel) await p.evaluate((q) => { const e = document.querySelector(q); if (e) e.scrollIntoView({ block: 'start' }); }, sel); await p.waitForTimeout(150); fs.mkdirSync(SHOT, { recursive: true }); await p.screenshot({ path: path.join(SHOT, n + '.png') }); } };
 require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type()); d.dismiss().catch(() => {}); });
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
   /* 수동 일괄 📋 한눈에 */
-  await p.evaluate(async () => { try { localStorage.setItem('rn-bq-view', 'compact'); } catch (e) {} openBatch(JSON.parse(JSON.stringify({ ...BATCH_DEF, name: '잠금 단추 시험' }))); await new Promise((r) => setTimeout(r, 700)); });
+  await p.evaluate(async () => { const now = new Date().toISOString(); const L = [...S.plist.values()].filter((l) => l.active).slice(0, 6);
+    S.batchRes = L.map((l, j) => ({ l, target: l.price - 300 * (j + 1), reasons: ['시험'], page1: [], at: now, out: false })); S.batchId = 'bL'; S.prBatches = [{ id: 'bL', name: '잠금 단추 시험' }];
+    S.batchSt = { start: {}, picks: {}, decided: {}, held: {}, trashed: {}, added: {} }; S.batchEdit = {}; S.batchMeta = {}; S.batchT = 'sel'; S._bFresh = true; S.batchSub = 'all'; S.bqOpen = new Set(); S.bqAddQ = '';
+    try { localStorage.setItem('rn-bq-view', 'compact'); } catch (e) {} openBatch(JSON.parse(JSON.stringify({ ...BATCH_DEF, name: '잠금 단추 시험' }))); await new Promise((r) => setTimeout(r, 700)); });
   const bq = await p.evaluate(() => { const rows = [...document.querySelectorAll('#sheet .bqc')]; return { n: rows.length, withBtn: rows.filter((r) => r.querySelector('[data-plk]')).length, dup: rows.filter((r) => r.querySelectorAll('[data-plk]').length > 1).length }; });
   ok(bq.n > 0 && bq.withBtn === bq.n && bq.dup === 0, '수동 일괄 📋 한눈에 줄마다 잠금 단추 하나씩', bq);
-  await shot(p, '1_수동일괄_한눈에');
+  await shot(p, '1_수동일괄_한눈에', '#sheet .bqc');
   /* 누르면 잠기고 줄은 펼쳐지지 않음 */
   const k0 = await p.evaluate(() => { const b = document.querySelector('#sheet .bqc [data-plk]'); const k = b.dataset.plk; b.click(); return k; }); await p.waitForTimeout(500);
   const af = await p.evaluate((k) => ({ on: !!(plkMap().get(k) || {}).on, open: !!(S.bqOpen && S.bqOpen.has(k)), btn: (document.querySelector(`#sheet .bqc [data-plk="${k}"]`) || {}).textContent || '' }), k0);
   ok(af.on && !af.open && /🔒/.test(af.btn), '한눈에 줄의 단추를 누르면 잠김 · 줄은 안 펼쳐짐', af);
-  await shot(p, '2_수동일괄_한눈에_잠금');
+  await shot(p, '2_수동일괄_한눈에_잠금', '#sheet .bqc');
   /* 📚 상품 전체 표 — 작은 단추 */
   await p.evaluate(async () => { openProdAll(); await new Promise((r) => setTimeout(r, 900)); });
   const tb = await p.evaluate(() => { const m = [...document.querySelectorAll('#sheet [data-plkm]')]; return { n: m.length, on: m.filter((x) => /🔒/.test(x.textContent)).length, btn: m.filter((x) => x.querySelector('button')).length }; });
@@ -79,6 +82,6 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const k1 = await p.evaluate(() => { const m = [...document.querySelectorAll('#sheet [data-plkm] [data-plk]')].find((x) => /🔓/.test(x.textContent)); m.click(); return m.dataset.plk; }); await p.waitForTimeout(500);
   const af2 = await p.evaluate((k) => ({ on: !!(plkMap().get(k) || {}).on, mini: !!document.querySelector(`#sheet [data-plkm] [data-plk="${k}"].plk-m`), sh: JSON.stringify(Object.keys(S.detail || {})) + ':' + ((S.detail && S.detail.bigTable) || '') }), k1);
   ok(af2.on && af2.mini && af2.sh === sh0, '작은 단추를 누르면 잠기고 다시 그려도 작은 모양 · 상품 상세로 넘어가지 않음', { ...af2, sh0 });
-  await shot(p, '3_상품전체_표_작은단추');
+  await shot(p, '3_상품전체_표_작은단추', '#sheet [data-plkm]');
   ok(dlg.length === 0, '브라우저 팝업 0', dlg);
 }, { vp: { width: 1280, height: 900 } }).then(() => { console.log(bad ? `❌ ${bad}개 실패` : '✓ tLOCKCOND1_1118 통과'); process.exit(bad ? 1 : 0); });
