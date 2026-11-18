@@ -1,6 +1,20 @@
 {
- "queue": [],
- "ask": null,
+ "queue": [
+  {
+   "who": "lead",
+   "host": "vm-ctrlimp2",
+   "why": "판 내기 기다림: 관제창 판 다 — 확정·되돌리기 (ctrlimp2)",
+   "first": "2026-11-18T16:58:20Z",
+   "at": "2026-11-18T16:58:20Z"
+  }
+ ],
+ "ask": {
+  "who": "lead",
+  "host": "vm-ctrlimp2",
+  "why": "판 내기 기다림: 관제창 판 다 — 확정·되돌리기 (ctrlimp2)",
+  "at": "2026-11-18T16:58:20Z",
+  "first": "2026-11-18T16:58:20Z"
+ },
  "holder": "memo2",
  "host": "vm",
  "what": "판 내기: memo2 판단 메모 일곱 길",
