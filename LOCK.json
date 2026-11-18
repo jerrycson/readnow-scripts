@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-shoprow1",
-   "why": "판 내기 기다림: shoprow1 우리숍 0.2.24 띠 앞 3권 복제 사진 바로 받기",
-   "first": "2026-11-18T07:08:43Z",
-   "at": "2026-11-18T08:31:50Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-cap2x",
    "why": "판 내기 기다림: cap2x 수집기 몫 2배",
    "first": "2026-11-18T07:35:00Z",
@@ -31,16 +24,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-shoprow1",
-  "why": "판 내기 기다림: shoprow1 우리숍 0.2.24 띠 앞 3권 복제 사진 바로 받기",
-  "at": "2026-11-18T08:31:50Z",
-  "first": "2026-11-18T07:08:43Z"
+  "host": "vm-cap2x",
+  "why": "판 내기 기다림: cap2x 수집기 몫 2배",
+  "at": "2026-11-18T08:32:00Z",
+  "first": "2026-11-18T07:35:00Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-shoprow1",
+ "what": "shoprow1 우리숍 0.2.24 띠 앞 3권 복제 사진 바로 받기",
+ "since": "2026-11-18T08:32:59Z",
+ "beat": "2026-11-18T08:32:59Z",
  "last": {
   "who": "y24low1",
   "done": "웹앱 1.78.731 · 클라우드 0.35.310 · 수집기 1.89.364 · ext-core 0.6.26 · 예스24 자동 올림 지킴 둘 · 7b06968c5 (머리 그대로)",
