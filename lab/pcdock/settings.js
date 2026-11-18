@@ -6,7 +6,7 @@
  *     apps:[{ id, kind, name, icon, … 종류별 칸 }],             ← 목록의 '틀'(놓을 때 처음 값)
  *     place:[{ id, app, name, o:{ 종류별 칸 }, mon, c, r, w, h }],  ← 배치(인스턴스) — 배치마다 자기 설정 o · 칸 자리(왼쪽 위 c·r · 너비 w · 높이 h) · 한 칸에 하나
  *   0.1.0의 v:1(배치에 자기 설정이 없음)은 읽을 때 틀의 값을 배치마다 복사해 v:2로 옮김(migrated) — 예전 파일은 old\에 남김(지우지 않음)
- *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeApps:[③ 때 먼저 닫을 틀 이름표 — 기본 빈 것](0.1.9) · closeFirst(= closeApps가 있음) · closeFirstV:3(0.1.9 꼴이라는 표 · 2 = 11/16 꼴) },  clean:{ keep:[프로세스 이름] },
+ *     auto:{ on, delaySec },  run:{ waitSec, reuse, closeApps:[③ 때 먼저 닫을 틀 이름표 — 기본 빈 것](0.1.9) · closeFirst(= closeApps가 있음) · closeFirstV:3(0.1.9 꼴이라는 표 · 2 = 11/16 꼴) },  clean:{ keep:[프로세스 이름] },  login:{ on, click, waitSec, checkSec, guideX(크롬 비밀번호 관리자 안내를 접어 둔 때 · 0 = 펼침) }(0.1.10 · 크롬 창 알라딘 로그인 단추),
  *     selfAdded:true, selfV:2 } ← (0.1.7·0.1.8) PC 배치 작은 창을 목록·칸에 한 번 넣었음(사람이 빼면 다시 안 넣음) */
 (function (root, factory) { const M = factory(root); if (typeof module === 'object' && module.exports) module.exports = M; else root.PDSet = M; })(typeof self !== 'undefined' ? self : this, function (root) {
   'use strict';
@@ -15,7 +15,7 @@
   const MAX_BYTES = 200 * 1024;
   const SECRET = /pass(word)?|passwd|비밀번호|token|secret|cookie|cred|api[_-]?key/i;
   const KIND_FIELDS = A.KIND_FIELDS;
-  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20, lateSec: 180, showSelf: true }, run: { waitSec: 40, reuse: true, closeFirst: false, closeFirstV: 3, closeApps: [], overlap: false }, clean: { keep: [] } }; }
+  function defaults() { return { v: 2, base: { ...G.BASE }, mons: {}, apps: A.defaultApps(), place: [], auto: { on: false, delaySec: 20, lateSec: 180, showSelf: true }, run: { waitSec: 40, reuse: true, closeFirst: false, closeFirstV: 3, closeApps: [], overlap: false }, clean: { keep: [] }, login: { on: true, click: true, waitSec: 5, checkSec: 8, guideX: 0 } }; }
   const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n || 400);
   const okPath = (p) => !p || (/^([a-zA-Z]:\\|\\\\)[^<>"|?*]*$/.test(p) && !/\.\.(\\|$)/.test(p));
   const okUrl = (u) => /^https?:\/\/[^\s"<>]{3,}$/.test(u);
@@ -49,7 +49,13 @@
       /* (0.1.6) ③ 때 목록의 프로그램 창을 먼저 닫고 새로 · (11/16 점검 ④-2 🔴) 기본 끔으로 바꿈
        *  0.1.6~0.1.7은 기본 켬이라 저장 파일의 closeFirst:true가 '사람이 켠 것'인지 '옛 기본값'인지 가를 수 없음 → 표(closeFirstV:2)가 없는 옛 파일은 끔으로 읽음
        *  (파일은 그대로 둠 · 다음 저장 때 끔+표로 쓰이고 그 전 파일은 old\에 남음) · 켜려면 ① 설정에서 다시 한 번 켬 */
-      clean: { keep: Array.isArray(input.clean && input.clean.keep) ? input.clean.keep.map((x) => str(x, 80).replace(/\.exe$/i, '')).filter(Boolean).slice(0, 100) : [] } };
+      clean: { keep: Array.isArray(input.clean && input.clean.keep) ? input.clean.keep.map((x) => str(x, 80).replace(/\.exe$/i, '')).filter(Boolean).slice(0, 100) : [] },
+      /* (0.1.10 · 정범님 11/18 I-1118-1208 · 리드 결정 F61) 크롬 창이 알라딘 로그인 페이지면 — 크롬 비밀번호 관리자가 채운 뒤 로그인 단추만 누름(값은 우리가 다루지 않음)
+       *  on 켜고 끄기 · click 단추 누르기(끄면 알림만) · waitSec 크롬이 채우기를 기다리는 초(0~30) · checkSec 누른 뒤 다시 보는 초(2~60) */
+      login: { on: !(input.login && input.login.on === false), click: !(input.login && input.login.click === false),
+        waitSec: (() => { const v = input.login && input.login.waitSec; return v === '' || v == null || !Number.isFinite(+v) ? 5 : Math.max(0, Math.min(30, Math.round(+v))); })(),
+        checkSec: (() => { const v = input.login && input.login.checkSec; return v === '' || v == null || !Number.isFinite(+v) ? 8 : Math.max(2, Math.min(60, Math.round(+v))); })(),
+        guideX: (() => { const v = input.login && +input.login.guideX; return Number.isFinite(v) && v > 0 ? Math.round(v) : 0; })() } };
     /* 프로그램 */
     const ids = new Set(); for (const a0 of Array.isArray(input.apps) ? input.apps : []) { if (!a0 || typeof a0 !== 'object') continue; const kind = A.KINDS[a0.kind] ? a0.kind : null; if (!kind) { errs.push(`모르는 종류의 프로그램(${str(a0.kind, 20)})`); continue; }
       const id = str(a0.id, 40).replace(/[^\w-]/g, ''); if (!id) { errs.push('이름표(id)가 없는 프로그램'); continue; } if (ids.has(id)) { errs.push(`같은 이름표가 두 번(${id})`); continue; } ids.add(id);

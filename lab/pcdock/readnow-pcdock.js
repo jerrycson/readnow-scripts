@@ -9,7 +9,7 @@
  *  시험(리눅스): RN_PCDOCK_PS=가짜 PowerShell · RN_PCDOCK_HOME=임시 폴더 · RN_PCDOCK_NOWIN=1(크롬 안 띄움) · RN_PCDOCK_NOUPDATE=1 · RN_PCDOCK_PORT */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os'), crypto = require('crypto');
-const CFG = require('./pcdock-config.js'); const G = require('./grid.js'); const A = require('./apps.js'); const SET = require('./settings.js'); const CL = require('./clean.js'); const CP = require('./closeplan.js');
+const CFG = require('./pcdock-config.js'); const G = require('./grid.js'); const A = require('./apps.js'); const SET = require('./settings.js'); const CL = require('./clean.js'); const CP = require('./closeplan.js'); const LG = require('./login.js');
 const APP = __dirname;
 const HOME = process.env.RN_PCDOCK_HOME || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'ReadNow', 'pcdock') : path.join(os.homedir(), '.readnow-pcdock'));
 const WANT_PORT = +process.env.RN_PCDOCK_PORT || CFG.PORT;
@@ -58,6 +58,18 @@ function exeOk(p) { p = String(p || ''); if (!p) return false; if (/^shell:/i.te
 /* (0.1.6) 마지막 실행·배치 결과를 last.json에 — 도우미가 꺼졌다 켜져도 진단(dock.last)에 남음(0.1.5는 메모리에만 있어 다시 켜면 비었음) */
 const LASTF = path.join(HOME, 'last.json'); try { const j = JSON.parse(fs.readFileSync(LASTF, 'utf8')); if (j && j.at) ST.last = j; } catch (e) {}
 function setLast(L) { ST.last = L; try { const t = LASTF + '.' + process.pid; fs.writeFileSync(t, JSON.stringify(L)); fs.renameSync(t, LASTF); } catch (e) {} }
+/* (0.1.10 · 정범님 11/18 I-1118-1208) 크롬 창 알라딘 로그인 — 마지막 결과를 login.json에(창 이름·제목 앞부분·까닭만 · 로그인 값 없음) · 웹앱이 GET /api/login으로 「크롬 창 로그인 필요」를 읽음 */
+const LOGINF = path.join(HOME, 'login.json'); ST.login = null; try { const j = JSON.parse(fs.readFileSync(LOGINF, 'utf8')); if (j && j.at) ST.login = j; } catch (e) {}
+function setLogin(L) { ST.login = L; try { const t = LOGINF + '.' + process.pid; fs.writeFileSync(t, JSON.stringify(L)); fs.renameSync(t, LOGINF); } catch (e) {} }
+/* ③ 뒤: 평소 프로필로 띄운 크롬 창이 알라딘 로그인 페이지면 — 크롬 비밀번호 관리자가 채우기를 기다린 뒤 「로그인」 단추만 누름(PowerShell 'login') · 값은 우리가 넣지 않음 */
+async function loginCheck(cfg, plan, res, by) { const C = (cfg && cfg.login) || SET.defaults().login; if (!C.on) return null;
+  const wins = LG.pickWins(plan.steps, res); if (!wins.length) { const L0 = { at: Date.now(), by, ok: true, seen: 0, done: [], need: [], x: 0 }; setLogin(L0); return L0; }
+  const r = await ps('login', { wins: wins.map((w) => ({ h: w.h })), pat: LG.PAT, waitSec: C.waitSec, checkSec: C.checkSec, click: C.click !== false }, null, (C.waitSec + C.checkSec + 30 + wins.length * 15) * 1000);
+  const L = LG.sumUp(r, wins, by); L.done = L.done.map((x) => ({ ...x, t: scrubP(x.t), how: scrubP(x.how) })); L.need = L.need.map((x) => ({ ...x, t: scrubP(x.t), how: scrubP(x.how) })); setLogin(L);
+  log(`🔐 크롬 창 로그인 — 본 창 ${L.seen} · 로그인함 ${L.done.length} · 로그인 필요 ${L.need.length}` + (L.err ? ' · ' + L.err : '') + L.need.map((x) => ' · ✗ ' + (x.name || x.t) + ': ' + x.how).join(''));
+  if (!r.ok) noteErr('login', String(r.err || '까닭 모름')); return L; }
+const loginOut = () => { const L = ST.login; return { ok: true, app: 'readnow-pcdock', ver: VER, at: L ? L.at : 0, on: loadCfg().login.on, need: L && !L.x ? L.need.map((x) => ({ name: x.name, t: x.t, how: x.how })) : [], done: L ? L.done.length : 0, x: L ? +L.x || 0 : 0, note: LG.noticeOf(L), pc: pcLabel().pc }; };
+const LOGIN_ORGS = ['https://readnow.kr', 'https://jerrycson.github.io']; /* 웹앱 출처만 — 다른 웹 페이지는 읽지 못함(머리글을 안 붙임) */
 /* (0.1.6 · 정범님 11/14 15:36 「창 맨 위 이름이 DESKTOP-…」) 🏷 리드나우 기기 이름표 — PC 신호(pcBeat)의 이름과 같게
  *  ① 이 PC 수집기가 진단을 읽을 때 알려 준 이름(pcname.json · 수집기 PC_NAME = pcBeat 칸 이름) ② 번외 도우미 설정(col2.json pc — 웹앱 기기 이름에서 옴)
  *  ③ 인쇄 도우미가 번외를 켤 때 적은 이름(col2\want.json pc) ④ 없으면 윈도우 컴퓨터 이름 */
@@ -122,7 +134,9 @@ async function runLayout(by, opts) { opts = opts || {}; if (ST.busy) return { ok
     const out = { ok: !!r.ok, err: fe.msg || undefined, raw: fe.raw || undefined, res, skipped: plan.skipped, closed: r.closed || [], pre: r.pre || null, closeErr: r.closeErr || undefined, mode: close.length ? 'close' : 'keep', sec: Math.round((Date.now() - t0) / 1000) };
     log(`③ 실행·배치(${by}${close.length ? ' · 모두 닫고' : ''}) — ${res.filter((x) => x.ok).length}/${res.length} 놓음 · 건너뜀 ${plan.skipped.length}` + (close.length ? ` · 모두 닫기 ${closeSum(r.closed)}/${close.length}` : '') + (r.pre ? ` · 먼저 닫기 ${closeSum(r.pre.closed)} · 고른 프로그램 아님 ${((r.pre.kept) || []).length}` : '') + ` · ${out.sec}초` + (r.err ? ' · ' + r.err : '') + res.filter((x) => !x.ok).map((x) => ' · ✗ ' + x.name + ': ' + x.how).join(''));
     for (const c of [...(r.closed || []), ...((r.pre && r.pre.closed) || [])]) if (c.res !== 'closed') log('③   ' + closeRow(c));
-    setLast({ at: Date.now(), by, ...out, rows: stepRows(cfg, ST.mons, res, plan) }); return out; } finally { ST.busy = ''; runUnlock(); } }
+    setLast({ at: Date.now(), by, ...out, rows: stepRows(cfg, ST.mons, res, plan) });
+    try { const L = await loginCheck(cfg, plan, res, by); if (L && L.seen) { out.login = { need: L.need.length, done: L.done.length }; setLast({ ...ST.last, login: out.login }); } } catch (e) { noteErr('login', e.message); } /* (0.1.10) 크롬 창 알라딘 로그인 */
+    return out; } finally { ST.busy = ''; runUnlock(); } }
 /* (0.1.8 · 정범님 11/16 15:28 「카카오톡이 여전히 안 열리고 배치도 안 됨 — 윈도우 시작 때 카카오톡이 뜨기 전에 배치가 돈 듯」)
  *  윈도우 시작 자동 실행이 끝난 뒤에도 늦게 뜨는 프로그램(목록의 match.boot — 카카오톡)을 auto.lateSec(기본 180초)까지 LATE_MS(15초)마다 다시 찾음
  *  · 실행 파일을 못 찾았으면 다시 찾기(떠 있는 프로세스 경로가 그때 생김) · 프로세스가 이미 있으면 다시 켜지 않고 창을 기다림(waitProc · 마지막 차례만 켬)
@@ -304,21 +318,29 @@ function healLauncher() { const dir = process.env.RN_PCDOCK_LAUNCH_DIR || (proce
 const FILES = { '/': ['ui.html', 'text/html; charset=utf-8'], '/grid.js': ['grid.js', 'text/javascript; charset=utf-8'], '/apps.js': ['apps.js', 'text/javascript; charset=utf-8'], '/settings.js': ['settings.js', 'text/javascript; charset=utf-8'] };
 function body(req, max) { return new Promise((res, rej) => { const L = []; let n = 0; req.on('data', (b) => { n += b.length; if (n > max) { rej(new Error('너무 큼')); req.destroy(); } else L.push(b); }); req.on('end', () => { try { res(JSON.parse(Buffer.concat(L).toString('utf8') || '{}')); } catch (e) { rej(new Error('JSON이 아님')); } }); req.on('error', rej); }); }
 const server = http.createServer(async (req, res) => { const u = new URL(req.url, 'http://127.0.0.1'); const cli = u.searchParams.get('cli') === '1' || req.headers['x-rn-dock-cli'] === '1';
-  if (u.pathname !== '/api/diag') ST.lastHit = Date.now(); /* (0.1.3) 수집기의 진단 읽기는 '창이 떠 있음'으로 안 셈(도우미가 스스로 꺼지게) */
-  if (u.pathname !== '/api/diag' && u.pathname !== '/api/bye' && !cli) WINST.uiAt = Date.now(); /* (0.1.4) 화면(창)이 부른 것만 '창이 떠 있음' — 아이콘이 띄운 짧은 프로세스(cli=1)·수집기는 빼고 */
+  if (u.pathname !== '/api/diag' && u.pathname !== '/api/login') ST.lastHit = Date.now(); /* (0.1.3) 수집기의 진단 읽기는 '창이 떠 있음'으로 안 셈(도우미가 스스로 꺼지게) */
+  if (u.pathname !== '/api/diag' && u.pathname !== '/api/bye' && u.pathname !== '/api/login' && !cli) WINST.uiAt = Date.now(); /* (0.1.4) 화면(창)이 부른 것만 '창이 떠 있음' — 아이콘이 띄운 짧은 프로세스(cli=1)·수집기는 빼고 */
   const J = (code, o) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
   if (req.method === 'GET' && FILES[u.pathname]) { const [f, t] = FILES[u.pathname]; res.writeHead(200, { 'content-type': t, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }); return res.end(fs.readFileSync(path.join(APP, f))); }
   if (u.pathname === '/api/ping') return J(200, { ok: true, app: 'readnow-pcdock', ver: VER, busy: ST.busy || '', upd: ST.update ? ST.update.v : '' });
   if (!u.pathname.startsWith('/api/')) return J(404, { ok: false });
   /* (0.1.4) 창을 닫을 때 화면이 보내는 알림(sendBeacon은 머리글을 못 붙임) — '창이 닫힘'만 적고 아무것도 켜거나 지우지 않음 */
   if (u.pathname === '/api/bye' && req.method === 'POST') { const o0 = req.headers.origin; if (o0 && o0 !== 'http://127.0.0.1:' + ST.port) return J(403, { ok: false }); WINST.byeAt = Date.now(); req.resume(); return J(200, { ok: true }); }
+  /* (0.1.10) 웹앱(readnow.kr)이 1분쯤마다 「크롬 창 로그인 필요」를 읽음 — 읽기만(GET) · 웹앱 출처에만 CORS·사설망 머리글 · 다른 출처는 머리글 없음(브라우저가 막음) · 창 이름·까닭만(로그인 값 없음) · 도우미를 깨워 두지 않음(lastHit 안 셈) */
+  if (u.pathname === '/api/login') { const o1 = String(req.headers.origin || ''); const good = LOGIN_ORGS.includes(o1); const hh = String(req.headers.host || '');
+    const H = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', vary: 'Origin', ...(good ? { 'access-control-allow-origin': o1, 'access-control-allow-methods': 'GET', 'access-control-allow-headers': 'x-rn-dock-web', 'access-control-allow-private-network': 'true', 'access-control-max-age': '600' } : {}) };
+    if (hh && !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(hh)) { res.writeHead(403, H); return res.end(JSON.stringify({ ok: false, err: '이 PC 주소로만' })); }
+    if (req.method === 'OPTIONS') { res.writeHead(good ? 204 : 403, H); return res.end(); }
+    if (req.method !== 'GET') { res.writeHead(405, H); return res.end(JSON.stringify({ ok: false })); }
+    if (o1 && !good && o1 !== 'http://127.0.0.1:' + ST.port) { res.writeHead(403, H); return res.end(JSON.stringify({ ok: false, err: '웹앱에서만' })); }
+    res.writeHead(200, H); return res.end(JSON.stringify(loginOut())); }
   /* 이 창(같은 출처)에서만 — 다른 웹 페이지가 이 PC 프로그램을 켜거나 지우게 하지 않음 */
   const org = req.headers.origin; if (req.method !== 'GET' && (req.headers['x-rn-dock'] !== '1' || (org && org !== 'http://127.0.0.1:' + ST.port))) return J(403, { ok: false, err: '이 창에서만' });
   { const hh = String(req.headers.host || ''); if (hh && !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(hh)) return J(403, { ok: false, err: '이 PC 주소로만' }); } /* (0.1.2 🔬 정밀 점검 11/12) GET /api/state도 Host 검사 — 다른 이름(DNS 되돌리기)으로 열면 PC 이름·경로가 새지 않게 */
   try {
     if (u.pathname === '/api/diag') { if (u.searchParams.get('pc')) notePcName(u.searchParams.get('pc'), req); return J(200, diagOut()); } /* (0.1.6) 수집기가 ?pc=<PC 신호 이름>을 붙여 읽음 → 이름표 */
     if (u.pathname === '/api/state') { if (!ST.mons.length || u.searchParams.get('fresh')) await readMons(); if (ST.startup == null) await startupState(); const cfg = loadCfg();
-      return J(200, { ok: true, ver: VER, title: TITLE, cfg, mons: ST.mons, monErr: ST.monErr, monErrAt: ST.monErrAt, aware: ST.aware, found: ST.found, from: ST.from, tried: ST.tried, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: pcLabel().pc, pcSrc: pcLabel().src, host: os.hostname() }); }
+      return J(200, { ok: true, ver: VER, title: TITLE, cfg, mons: ST.mons, monErr: ST.monErr, monErrAt: ST.monErrAt, aware: ST.aware, found: ST.found, from: ST.from, tried: ST.tried, icons: ST.icons, startup: ST.startup, busy: ST.busy, last: ST.last, login: ST.login, update: ST.update, catalog: A.CATALOG.map((c) => ({ kind: c.kind, id: c.id || c.kind, name: c.name, icon: c.icon })), profiles: chromeProfiles(), build: ST.build, advice: CL.ADVICE, levels: CL.LEVELS, pc: pcLabel().pc, pcSrc: pcLabel().src, host: os.hostname() }); }
     if (req.method !== 'POST') return J(405, { ok: false });
     const o = await body(req, u.pathname === '/api/lnk' ? 256 * 1024 : 400 * 1024);
     /* (0.1.4) 아이콘을 다시 눌렀을 때 짧은 프로세스가 부름 — 이 서버가 자기 크롬 경로·모니터로 창을 열거나(떠 있으면 앞으로) · /api/quit = 새 판이 넘겨받을 때 이 서버를 끔(일하는 중이면 안 끔) */
@@ -327,6 +349,7 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
     if (u.pathname === '/api/quit') { if (ST.busy) return J(200, { ok: false, err: '지금 ' + ST.busy + ' 중' }); log('🔄 새 판(' + String(o.ver || '?').slice(0, 12) + ')이 넘겨받아 꺼짐'); J(200, { ok: true }); setTimeout(() => process.exit(0), 150); return; }
     if (u.pathname === '/api/screens') { const r = await readMons(); const got = !!(r.ok && Array.isArray(r.mons) && r.mons.length); return J(200, { ok: got, err: got ? undefined : ST.monErr, mons: ST.mons, aware: ST.aware }); }
     if (u.pathname === '/api/restart') { if (!ST.update) return J(200, { ok: false, err: '받아 둔 새 판이 없음' }); if (ST.busy) return J(200, { ok: false, err: '지금 ' + ST.busy + ' 중 — 끝난 뒤에' }); const r = restartNew(); return J(200, r); }
+    if (u.pathname === '/api/loginx') { if (ST.login) setLogin({ ...ST.login, x: Date.now() }); return J(200, { ok: true }); } /* (0.1.10) 「크롬 창 로그인 필요」 ✕ 닫기 — 다음 ③ 실행 때 다시 봄 */
     if (u.pathname === '/api/check') { const v = SET.validate(o.cfg, ST.mons); return J(200, { ok: v.ok, errs: v.errs, warns: v.warns }); }
     if (u.pathname === '/api/save') { const v = SET.validate(o.cfg, ST.mons); if (!v.ok) return J(400, { ok: false, errs: v.errs, warns: v.warns }); const keepAuto = loadCfg().auto; v.cfg.auto = { ...v.cfg.auto, on: keepAuto.on }; saveCfg(v.cfg); log(`① 설정 저장 — 프로그램 ${v.cfg.apps.length} · 놓은 자리 ${v.cfg.place.length}`); return J(200, { ok: true, warns: v.warns, cfg: v.cfg }); }
     if (u.pathname === '/api/find') { const r = await findAll(loadCfg().apps); return J(200, { ok: r.ok, err: r.err, found: ST.found, from: ST.from, tried: ST.tried, icons: ST.icons }); }
@@ -347,7 +370,7 @@ const server = http.createServer(async (req, res) => { const u = new URL(req.url
   } catch (e) { log('✗ ' + u.pathname + ' ' + e.message); return J(500, { ok: false, err: e.message }); } });
 
 const pickArg = (v) => Array.isArray(v) ? v.slice(0, 400).map((x) => Math.round(+x)).filter((x) => Number.isInteger(x) && x >= 0) : null;
-function diagOut() { const L = ST.last; return { ok: true, app: 'readnow-pcdock', ver: VER, at: Date.now(), mons: ST.mons.length, monErr: ST.monErr ? scrubP(ST.monErr).slice(0, 300) : '', monErrAt: ST.monErrAt || 0, aware: ST.aware || '', build: ST.build || 0, busy: ST.busy || '', upd: ST.update ? ST.update.v : '',
+function diagOut() { const L = ST.last; const LL = ST.login; return { ok: true, app: 'readnow-pcdock', ver: VER, at: Date.now(), login: LL ? { at: LL.at, seen: +LL.seen || 0, done: (LL.done || []).length, need: (LL.need || []).length, how: ((LL.need || [])[0] || {}).how || '', err: LL.err || '', x: +LL.x || 0 } : null, /* (0.1.10) 크롬 창 알라딘 로그인 */ mons: ST.mons.length, monErr: ST.monErr ? scrubP(ST.monErr).slice(0, 300) : '', monErrAt: ST.monErrAt || 0, aware: ST.aware || '', build: ST.build || 0, busy: ST.busy || '', upd: ST.update ? ST.update.v : '',
   last: L ? { at: L.at, by: L.by, ok: !!L.ok, n: (L.res || []).length, good: (L.res || []).filter((x) => x.ok).length, err: L.err ? scrubP(L.err).slice(0, 200) : '', sec: +L.sec || 0, pre: L.pre ? { closed: (L.pre.closed || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), res: String(c.res || '').slice(0, 10) })), kept: (L.pre.kept || []).slice(0, 15).map((c) => ({ p: String(c.proc || '').slice(0, 20), t: scrubP(c.title || '').slice(0, 40), why: String(c.why || '').slice(0, 60) })) } : null, closed: (L.closed || []).length ? closeSum(L.closed) : '', rows: Array.isArray(L.rows) ? L.rows : [], skip: (L.skipped || []).slice(0, 10).map((k) => ({ n: String(k.app || '').slice(0, 30), why: scrubP(k.why || '').slice(0, 160), ...(k.tried ? { tried: scrubP(k.tried).slice(0, 300) } : {}) })) } : null,
   find: { at: ST.foundAt || 0, err: ST.findErr ? scrubP(ST.findErr).slice(0, 200) : '', from: Object.fromEntries(Object.entries(ST.from).slice(0, 12).map(([k, v]) => [k, scrubP(v).slice(0, 60)])), miss: Object.fromEntries(Object.entries(ST.tried).slice(0, 6).map(([k, v]) => [k, scrubP(v).slice(0, 300)])) }, /* (0.1.7) 어디서 찾았나·못 찾으면 찾아본 자리 */ pc: pcLabel().pc, pcSrc: pcLabel().src, errs: readDiag().errs.slice(0, 5),
   lastClose: ST.lastClose ? { at: ST.lastClose.at, n: ST.lastClose.n, sum: closeSum(ST.lastClose.rows), left: ST.lastClose.rows.filter((c) => c.res === 'left').slice(0, 8).map((c) => ({ p: String(c.proc || '').slice(0, 20), why: String(c.why || '').slice(0, 80) })) } : null, /* (0.1.9) 마지막 ⛔ 전체 닫기 */

@@ -102,6 +102,7 @@ details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } det
   <button class="big pri" id="b3"><span class="n">▶</span><span class="t">③ 설정대로 지금 실행·배치<small id="b3s" style="color:#ffffffcc">켜고 · 뜨길 기다려 · 칸에 놓음</small></span></button>
   <button class="big" id="b4"><span class="n">🧹</span><span class="t">④ PC 정리<small>임시·캐시만 · 리드나우는 안 건드림</small></span></button>
   <button class="big" id="b5"><span class="n">⛔</span><span class="t">전체 닫기<small id="b5s">작업 표시줄의 프로그램 모두 종료(수집기 포함) · 목록 본 뒤 한 번 더</small></span></button>
+  <div id="lgCard" class="list warn" hidden style="font-size:12px;position:relative;padding-right:26px"><button id="lgX" title="닫기 — 다음 ③ 실행 때 다시 봄" style="position:absolute;top:3px;right:3px;padding:0 6px;font-size:12px">✕</button><b>🔐 크롬 창 로그인 필요</b><div id="lgRows"></div><div class="mute" style="font-size:11px">크롬 비밀번호 관리자에 알라딘 계정이 저장돼 있어야 저절로 채워집니다 — ① 설정 아래 「🔑 크롬 비밀번호 관리자에 알라딘 계정 저장하는 법」</div></div>
   <div id="last" class="mute">아직 실행·배치하지 않았습니다.</div>
   <div id="ask" class="ask" hidden>
     <b style="font-size:14px">▶ 지금 열린 프로그램을 어떻게 할까요?</b>
@@ -144,6 +145,23 @@ details.raw { font-size: 11px; color: var(--mute); margin: 1px 0 3px 18px; } det
       <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)" title="켜면 한 칸에 프로그램 둘 이상을 겹쳐 놓을 수 있음(나중 것이 위) · 끄면 겹친 배치는 저장 때 막힘"><input id="oOver" type="checkbox" style="width:auto"> 한 칸에 겹쳐 놓기 허용</label>
       <span>③ 창이 뜨길 최대 <input id="oWait" type="number" min="5" max="180" style="width:58px"> 초 기다림</span>
       <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oReuse" type="checkbox" style="width:auto"> 이미 떠 있는 프로그램은 새로 안 띄우고 자리만(크롬 빼고)</label>
+      <div id="oLogin" style="flex-basis:100%;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px" title="③ 실행·배치 뒤 평소 프로필로 띄운 크롬 창이 알라딘 로그인 페이지면 — 크롬 비밀번호 관리자가 아이디·비밀번호를 채우길 기다린 뒤 「로그인」 단추만 누름 · PC 배치는 로그인 값을 읽지도·두지도·넣지도 않음 · 안 되면 「크롬 창 로그인 필요」 알림">
+        <b>🔐 크롬 창 알라딘 로그인</b>
+        <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oLoginOn" type="checkbox" style="width:auto"> ③ 뒤 로그인 페이지인지 봄</label>
+        <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oLoginClick" type="checkbox" style="width:auto"> 「로그인」 단추 누르기(끄면 알림만)</label>
+        <span>크롬이 채우길 <input id="oLoginWait" type="number" min="0" max="30" style="width:52px"> 초 기다림</span>
+        <span>누른 뒤 <input id="oLoginCheck" type="number" min="2" max="60" style="width:52px"> 초에 다시 봄</span>
+      </div>
+      <details id="oLgGuide" style="flex-basis:100%;font-size:12px"><summary><b>🔑 크롬 비밀번호 관리자에 알라딘 계정 저장하는 법</b> <span class="mute">(PC마다 한 번 · 저장해 두면 크롬이 로그인 페이지를 저절로 채움)</span></summary>
+        <ol style="margin:4px 0 4px 18px;padding:0;line-height:1.6">
+          <li>PC 배치가 띄우는 <b>평소 크롬 창</b>(번외 수집기 창 말고)의 주소창에 <code>chrome://password-manager/passwords</code> 를 넣고 엽니다.</li>
+          <li>검색 칸에 <code>aladin</code> — 알라딘 계정이 <b>이미 있으면 끝</b>(수집기가 로그인할 때 크롬이 저장해 둔 것일 수 있음).</li>
+          <li>없으면 「추가」 → 사이트 <code>https://www.aladin.co.kr</code> · 사용자 이름 · 비밀번호를 넣고 「저장」(크롬에만 저장됨 · PC 배치·리드나우는 그 값을 받지 않음).</li>
+          <li>알라딘 계정은 <b>하나만</b> 둡니다 — 여럿이면 크롬이 어느 것인지 고르길 기다려 저절로 채우지 않습니다.</li>
+          <li><code>chrome://password-manager/settings</code> 에서 「비밀번호 저장 제안」·「자동 로그인」을 켭니다.</li>
+        </ol>
+        <label style="display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)"><input id="oLgGuideX" type="checkbox" style="width:auto"> 저장해 둠 — 다음부터 이 안내를 접어 둠</label>
+      </details>
       <div id="oCloseApps" style="flex-basis:100%;font-size:12px" title="③ 단추를 누를 때 고른 프로그램의 창을 먼저 닫고(부탁 → 기다림 → 남으면 강제 종료) 새로 띄워 칸에 놓음 · 크롬·수집기·번외·Claude 모두 고를 수 있음(크롬을 고르면 뒤 탭의 수집기·알라딘 로그인도 닫힘) · 윈도우 시작 자동 실행 때는 하지 않음 · 기본 아무것도 안 고름"></div>
     </div>
   </div>
@@ -182,7 +200,7 @@ const appIcon0 = (a) => { const k = AP.keyOf(a); const b64 = (a.kind === 'exe' &
 const appIcon = appIcon0;
 
 /* ── 처음 화면 ── */
-async function load(fresh) { S = await api('/api/state' + (fresh ? '?fresh=1' : '')); if (!S.ok) { toast('도우미 상태를 못 읽음: ' + (S.err || '')); return; } $('#ver').textContent = `${S.pc} · 판 ${S.ver}`; paintUpd(S.update ? S.update.v : ''); paintHome(); }
+async function load(fresh) { S = await api('/api/state' + (fresh ? '?fresh=1' : '')); if (!S.ok) { toast('도우미 상태를 못 읽음: ' + (S.err || '')); return; } $('#ver').textContent = `${S.pc} · 판 ${S.ver}`; paintUpd(S.update ? S.update.v : ''); paintHome(); paintLogin(S.login); }
 /* (0.1.3) 새 판을 받아 두면 단추 하나로 바꿈(예전엔 '다시 열면 바뀜'인데 도우미가 15분 동안 안 꺼져 바로 안 바뀌었음) */
 function paintUpd(v) { $('#upd').hidden = !v; if (v) $('#updS').textContent = `새 판 ${v} 받아 둠`; }
 $('#updGo').onclick = async () => { const b = $('#updGo'); b.disabled = true; $('#updS').textContent = '새 판으로 바꾸는 중… (새 창이 뜹니다)'; const old = S.ver; const r = await api('/api/restart', {}); if (!r.ok) { b.disabled = false; $('#updS').textContent = '못 바꿈: ' + (r.err || ''); return; }
@@ -205,11 +223,16 @@ function paintLast(L) { const el = $('#last'); el.classList.remove('mute'); cons
     (pc.length ? `<div>🧹 먼저 닫기(고른 프로그램) — ${esc(closeSum(pc))}</div><details class="raw"${pc.some((c) => c.res === 'left') ? ' open' : ''}><summary>먼저 닫은 창</summary>${closeRows(pc)}</details>` : '') +
     (L.closeErr ? `<div class="bad">${esc(L.closeErr)}</div>` : '') +
     (L.res || []).map((r) => `<div>${r.ok ? '✅' : '⚠'} ${r.ok ? esc(r.name) + ' — ' + esc(r.how) : esc(r.msg || (r.name + ' — ' + r.how))}</div>` + raw(r.raw)).join('') +
-    (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)}: ${esc(s.why)}${s.todo ? ' → ' + esc(s.todo) : ''}</div>`).join(''); }
+    (L.skipped || []).map((s) => `<div class="warn">⏭ ${esc(s.app)}: ${esc(s.why)}${s.todo ? ' → ' + esc(s.todo) : ''}</div>`).join('') +
+    (L.login ? `<div class="${L.login.need ? 'warn' : ''}">🔐 크롬 창 알라딘 로그인 — 로그인함 ${+L.login.done || 0} · 로그인 필요 ${+L.login.need || 0}</div>` : ''); }
+/* (0.1.10 · 정범님 11/18 I-1118-1208) 「🔐 크롬 창 로그인 필요」 카드 — ✕ 닫기(약속 100 · 다음 ③ 실행 때 다시 봄) */
+function paintLogin(L) { const on = !!(L && L.need && L.need.length && !L.x); $('#lgCard').hidden = !on; if (!on) return;
+  $('#lgRows').innerHTML = L.need.map((x) => `<div>⚠ ${esc(x.name || x.t || '크롬 창')}${x.t && x.name ? ' <span class="mute">' + esc(x.t) + '</span>' : ''} — ${esc(x.how || '로그인 페이지에 머물러 있음')}</div>`).join(''); }
+$('#lgX').onclick = async () => { await api('/api/loginx', {}); if (S.login) S.login.x = Date.now(); paintLogin(S.login); };
 $('#b1').onclick = () => openSet();
 $('#b2').onclick = async () => { const on = !S.startup; const r = await api('/api/startup', { on }); if (!r.ok) return toast('바꾸지 못함: ' + (r.err || '')); S.startup = r.on; S.cfg.auto.on = r.on; paintHome(); toast(r.on ? '윈도우 시작 때 자동 실행·배치를 켰습니다' : '껐습니다(바로가기 이름만 .off로 바꿈)'); };
 /* ③ — 먼저 묻기: 남겨 둔 채 / 모두 닫고(목록을 보여 준 뒤 두 번 누르기) / 취소 */
-async function doRun(body) { $('#ask').hidden = true; const b = $('#b3'); b.disabled = true; $('#b3s').textContent = '실행·배치 중… (창이 뜨길 기다림)'; const r = await api('/api/run', body); b.disabled = false; $('#b3s').textContent = '켜고 · 뜨길 기다려 · 칸에 놓음'; paintLast({ at: Date.now(), by: '단추', ...r }); }
+async function doRun(body) { $('#ask').hidden = true; const b = $('#b3'); b.disabled = true; $('#b3s').textContent = '실행·배치 중… (창이 뜨길 기다림)'; const r = await api('/api/run', body); b.disabled = false; $('#b3s').textContent = '켜고 · 뜨길 기다려 · 칸에 놓음'; paintLast({ at: Date.now(), by: '단추', ...r }); if (r.login) { const s2 = await api('/api/state'); if (s2.ok) { S.login = s2.login; paintLogin(S.login); } } }
 $('#b3').onclick = () => { $('#askList').innerHTML = ''; $('#ask').hidden = false; };
 $('#askNo').onclick = () => { $('#ask').hidden = true; };
 $('#askKeep').onclick = () => doRun({ mode: 'keep' });
@@ -233,7 +256,7 @@ $('#allNo').onclick = () => { $('#all').hidden = true; };
 $('#b4').onclick = () => openClean();
 
 /* ── ① 설정 ── */
-function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; $('#oLate').value = C.auto.lateSec == null ? 180 : C.auto.lateSec; $('#oShowSelf').checked = C.auto.showSelf !== false; $('#oOver').checked = C.run.overlap === true;  const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
+function openSet() { C = JSON.parse(JSON.stringify(S.cfg)); sel = null; selP = null; $('#oDelay').value = C.auto.delaySec; $('#oWait').value = C.run.waitSec; $('#oReuse').checked = C.run.reuse !== false; $('#oLate').value = C.auto.lateSec == null ? 180 : C.auto.lateSec; $('#oShowSelf').checked = C.auto.showSelf !== false; $('#oOver').checked = C.run.overlap === true; C.login = { ...SETL.defaults().login, ...(C.login || {}) }; $('#oLoginOn').checked = C.login.on !== false; $('#oLoginClick').checked = C.login.click !== false; $('#oLoginWait').value = C.login.waitSec; $('#oLoginCheck').value = C.login.checkSec; $('#oLgGuideX').checked = +C.login.guideX > 0; $('#oLgGuide').open = !(+C.login.guideX > 0);  const b = C.base; const v = `${b.aw}:${b.ah}`; $('#base').value = $$('#base option').some((o) => o.value === v) ? v : '16:9'; show('set'); fit('set'); setTimeout(paintSet, 60); paintDetail(); }
 window.addEventListener('resize', () => { if ($('#set').classList.contains('on')) paintSet(); });
 const monKey = (m) => m.id; const gridFor = (m) => G.gridOf(m, (C.mons[m.id] || {}).grid || 'auto', C.base);
 function paintSet() { paintApps(); paintMap(); paintMonOpts(); paintCloseApps(); }
@@ -353,6 +376,11 @@ $('#reMon').onclick = async () => { const b = $('#reMon'); b.disabled = true; b.
   if (Array.isArray(r.mons)) S.mons = r.mons; S.monErr = r.ok ? '' : (r.err || '까닭 모름'); paintSet(); if (!r.ok) return toast('모니터를 못 읽음: ' + monWhy(), 6000); toast(`모니터 ${S.mons.length}대를 읽었습니다`); };
 $('#setCancel').onclick = $('#setBack').onclick = () => { C = null; show('home'); fit('home'); };
 $('#oDelay').onchange = () => { C.auto.delaySec = Math.max(0, Math.min(600, +$('#oDelay').value || 0)); }; $('#oWait').onchange = () => { C.run.waitSec = Math.max(5, Math.min(180, +$('#oWait').value || 40)); }; $('#oReuse').onchange = () => { C.run.reuse = $('#oReuse').checked; }; $('#oLate').onchange = () => { const v = $('#oLate').value; C.auto.lateSec = v === '' || !Number.isFinite(+v) ? 180 : Math.max(0, Math.min(600, Math.round(+v))); $('#oLate').value = C.auto.lateSec; }; $('#oShowSelf').onchange = () => { C.auto.showSelf = $('#oShowSelf').checked; }; $('#oOver').onchange = () => { C.run.overlap = $('#oOver').checked; };
+/* (0.1.10) 크롬 창 알라딘 로그인 설정(약속 79) · 안내 접어 둠은 설정 칸(guideX)에 — 이 창은 브라우저 저장소를 안 씀 */
+$('#oLoginOn').onchange = () => { C.login.on = $('#oLoginOn').checked; }; $('#oLoginClick').onchange = () => { C.login.click = $('#oLoginClick').checked; };
+$('#oLoginWait').onchange = () => { const v = $('#oLoginWait').value; C.login.waitSec = v === '' || !Number.isFinite(+v) ? 5 : Math.max(0, Math.min(30, Math.round(+v))); $('#oLoginWait').value = C.login.waitSec; };
+$('#oLoginCheck').onchange = () => { const v = $('#oLoginCheck').value; C.login.checkSec = v === '' || !Number.isFinite(+v) ? 8 : Math.max(2, Math.min(60, Math.round(+v))); $('#oLoginCheck').value = C.login.checkSec; };
+$('#oLgGuideX').onchange = () => { C.login.guideX = $('#oLgGuideX').checked ? Date.now() : 0; if (C.login.guideX) $('#oLgGuide').open = false; };
 $('#setOk').onclick = async () => { for (const m of S.mons) { const g = gridFor(m); C.mons[m.id] = { ...(C.mons[m.id] || {}), grid: (C.mons[m.id] || {}).grid || 'auto', cols: g.cols, rows: g.rows, w: m.b.w, h: m.b.h }; }
   const r = await api('/api/save', { cfg: C }); if (!r.ok) return toast('저장 못 함:\n' + (r.errs || [r.err]).slice(0, 5).join('\n'), 6000);
   S.cfg = r.cfg; C = null; show('home'); fit('home'); paintHome(); toast('저장했습니다' + (r.warns && r.warns.length ? '\n' + r.warns.join('\n') : '')); };

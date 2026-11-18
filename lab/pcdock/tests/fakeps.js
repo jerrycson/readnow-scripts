@@ -63,7 +63,7 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
   const preOf = (cf) => { if (!cf || !Array.isArray(cf.rules)) return null; const hit = (w) => cf.rules.some((r) => (r.procs || []).includes(w.proc) && (!r.cls || r.cls === w.cls));
     const ws = WINS.filter((w) => w.cls !== 'Progman' && !/pcdock/.test(w.udd || '')); return { closed: ws.filter(hit).map((w) => ({ h: w.h, pid: w.pid, proc: w.proc, title: w.title, ...resOf(w) })), kept: ws.filter((w) => !hit(w)).map((w) => ({ proc: w.proc, title: w.title, why: '고른 프로그램 아님' })) }; };
   if (act === 'run') return out({ build: 22631, closed: (j.close || []).map((c) => ({ h: c.h, proc: c.proc, title: c.title, ...resOf(c) })), pre: preOf(j.closeFirst),
-    res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect }) });
+    res: (j.steps || []).map((s) => process.env.FAKE_RUN_FAIL && s.app === process.env.FAKE_RUN_FAIL ? { app: s.app, inst: s.inst, name: s.name, ok: false, how: '켜기 실패: 지정된 파일을 찾을 수 없습니다' } : { app: s.app, inst: s.inst, name: s.name, ok: true, how: '켬 → 자리 옮김' + (s.tabs ? ` · 탭 ${s.tabs.length}개 더함` : ''), want: s.rect, got: s.rect, ...(process.env.FAKE_RUN_H ? { h: 5000 + (j.steps || []).indexOf(s), title: s.name + ' - Chrome' } : {}) }) }); /* (0.1.10) FAKE_RUN_H = 창 번호도 줌(크롬 로그인 시험) */
   /* (0.1.4) front — FAKE_WIN 파일이 있으면 '도우미 창이 떠 있음'(가짜 크롬이 만듦) */
   if (act === 'front') return out({ found: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN)), moved: !!(process.env.FAKE_WIN && fs.existsSync(process.env.FAKE_WIN + '.off')), front: true });
   if (act === 'fit') return out({ got: { x: 0, y: 0, w: j.w, h: j.h } });
@@ -78,5 +78,8 @@ let input = ''; process.stdin.on('data', (d) => (input += d)); process.stdin.on(
       { pid: 18, name: 'SomeGame', ws: 600 * 1048576, cpu: 30, path: 'D:\\Games\\SomeGame.exe', cmd: '' }],
     startup: [{ name: 'OneDrive', cmd: 'OneDrive.exe /background', where: 'HKCU' }, { name: 'ReadNow-Print.lnk', cmd: 'C:\\…\\ReadNow-Print.lnk', where: '시작 프로그램 폴더' }, { name: 'Mystery', cmd: 'mystery.exe', where: 'HKCU' }], defEx: null });
   if (act === 'cleanrun') return out({ deleted: 42, freed: 123 * 1048576, failed: 3, stopped: (j.pids || []).map((p) => p.name), mem: j.trim ? { before: 8e9, after: 7e9, n: 40 } : null });
+  /* (0.1.10) login — FAKE_LOGIN: ok(로그인 페이지 → 누름 → 넘어감) · need(누른 뒤에도 로그인 페이지) · none(로그인 페이지 아님) · fail(화면 읽기 실패) · 기본 none */
+  if (act === 'login') { const M = process.env.FAKE_LOGIN || 'none'; if (M === 'fail') return process.stdout.write(JSON.stringify({ ok: false, act, err: '화면 읽기(UI Automation)를 못 불러옴' }) + '\n');
+    return out({ rows: (j.wins || []).map((w, i) => M === 'none' ? { h: w.h, login: false, clicked: false, how: '', still: false, u: 'www.example.com/' } : i === 0 && M === 'need' ? { h: w.h, login: true, clicked: true, how: '「로그인」 단추를 누름', still: true, u: 'www.aladin.co.kr/login/wlogin.aspx' } : i === 0 ? { h: w.h, login: true, clicked: !!j.click, how: j.click ? '「로그인」 단추를 누름' : '', still: !j.click, u: 'www.aladin.co.kr/scm/wmain.aspx' } : { h: w.h, login: false, clicked: false, how: '', still: false, u: 'www.example.com/' }) }); }
   process.stdout.write(JSON.stringify({ ok: false, err: '모르는 일' }) + '\n');
 });

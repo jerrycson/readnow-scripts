@@ -9,6 +9,8 @@
  *  가짜 PowerShell(fakeps.js) + 가짜 크롬(fakechrome.js) · 실행: node lab/pcdock/tests/t_show.js */
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), http = require('http');
+/* (0.1.10) 옛 판 파일은 그 커밋의 묶음 목록대로 꺼냄(새 판에 파일이 늘어도 옛 판엔 없음 — login.js) */
+const oldFiles = (c) => JSON.parse(cp.spawnSync('git', ['show', c + ':lab/pcdock/bundle.json'], { cwd: __dirname, encoding: 'utf8' }).stdout || '{"files":[]}').files;
 let bad = 0, n = 0; const ok = (c, m, x) => { n++; if (c) console.log('  ✓ ' + m); else { bad++; console.log('  ✗ ' + m + (x !== undefined ? ' — ' + JSON.stringify(x).slice(0, 600) : '')); } };
 const FAKE = path.join(__dirname, 'fakeps.js'), FCH = path.join(__dirname, 'fakechrome.js'); fs.chmodSync(FAKE, 0o755); fs.chmodSync(FCH, 0o755);
 const APPJS = path.join(__dirname, '..', 'readnow-pcdock.js'); const VER = require('../pcdock-config.js').PCDOCK_VER;
@@ -80,7 +82,7 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       const d = await req(S.port, 'GET', '/api/diag'); ok(r.status === 0 && (d.j.errs || []).some((e) => /짧은 프로세스 시험 실패/.test(e.err)), '다른 프로세스가 diag.json에 남긴 것을 서버가 덮지 않고 보여 줌', d.j && d.j.errs); stop(S); }
 
     console.log('⑥ 실제 0.1.3 서버가 살아 있을 때 0.1.4를 켬(바로 앞 판에서 넘어가기)');
-    { const OLD = mk(); for (const f of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files) { const r = cp.spawnSync('git', ['show', '2807f9f4:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('옛 판 파일을 못 꺼냄(git show 2807f9f4) ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
+    { const OLD = mk(); for (const f of oldFiles('2807f9f4')) { const r = cp.spawnSync('git', ['show', '2807f9f4:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('옛 판 파일을 못 꺼냄(git show 2807f9f4) ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
       ok(/PCDOCK_VER: '0\.1\.3'/.test(fs.readFileSync(path.join(OLD, 'pcdock-config.js'), 'utf8')), '옛 판 파일 = 0.1.3(커밋 2807f9f4)');
       const D = mk(); const port = rport(); const A = await start(D, port, {}, path.join(OLD, 'readnow-pcdock.js')); kill.push(A);
       const pa = await req(port, 'GET', '/api/ping'); ok(pa.j && pa.j.ver === '0.1.3', '0.1.3 서버가 켜짐(창 없이)');
@@ -96,7 +98,7 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       ok((await req(port2, 'GET', '/api/ping')).j.ver === '0.1.3', '그때 0.1.3 서버는 그대로'); }
 
     console.log('⑥-2 실제 0.1.4 서버(커밋 d8760f1)가 살아 있을 때 지금 판을 켬');
-    { const OLD = mk(); for (const f of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files) { const r = cp.spawnSync('git', ['show', 'd8760f1:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.4 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
+    { const OLD = mk(); for (const f of oldFiles('d8760f1')) { const r = cp.spawnSync('git', ['show', 'd8760f1:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.4 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
       const D = mk(); const port = rport(); const A = await start(D, port, {}, path.join(OLD, 'readnow-pcdock.js')); kill.push(A);
       ok((await req(port, 'GET', '/api/ping')).j.ver === '0.1.4', '0.1.4 서버가 켜짐');
       const B = await start(D, port); kill.push(B); const pb = await req(port, 'GET', '/api/ping');
@@ -104,7 +106,7 @@ const stop = (S) => { try { S.p.kill(); } catch (e) {} };
       ok(await until(() => chromeCalls(D).length >= 2 || /🪟 떠 있던 창을 앞으로 \(켬\)/.test(logOf(D)), 5000), '넘겨받은 새 판이 창을 띄움(옛 창이 떠 있으면 그 창을 앞으로)', logOf(D).split('\n').filter((l) => /🪟/.test(l))); stop(B); }
 
     console.log('⑥-3 (0.1.6) 실제 0.1.5 서버(커밋 a78210e3 · 정범님 JS-MAIN에 지금 도는 판)가 살아 있을 때 지금 판을 켬');
-    { const OLD = mk(); for (const f of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bundle.json'), 'utf8')).files) { const r = cp.spawnSync('git', ['show', 'a78210e3:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.5 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
+    { const OLD = mk(); for (const f of oldFiles('a78210e3')) { const r = cp.spawnSync('git', ['show', 'a78210e3:lab/pcdock/' + f], { cwd: __dirname, maxBuffer: 8 * 1048576 }); if (r.status !== 0) throw new Error('0.1.5 파일을 못 꺼냄 ' + f); fs.writeFileSync(path.join(OLD, f), r.stdout); }
       const D = mk(); const port = rport(); const A = await start(D, port, {}, path.join(OLD, 'readnow-pcdock.js')); kill.push(A);
       ok((await req(port, 'GET', '/api/ping')).j.ver === '0.1.5', '0.1.5 서버가 켜짐');
       const B = await start(D, port); kill.push(B); const pb = await req(port, 'GET', '/api/ping');

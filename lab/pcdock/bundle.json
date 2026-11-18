@@ -8,6 +8,7 @@
   "settings.js",
   "clean.js",
   "closeplan.js",
+  "login.js",
   "ui.html",
   "pcdock.ps1",
   "pcdock-win.cs"

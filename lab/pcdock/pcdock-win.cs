@@ -49,6 +49,9 @@ public static class RnDock {
   [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint f, UIntPtr extra);
   [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
+  [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
+  [StructLayout(LayoutKind.Sequential)] public struct PT { public int X; public int Y; }
+  [DllImport("user32.dll")] static extern bool GetCursorPos(out PT p);
   [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
   [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
   [StructLayout(LayoutKind.Explicit)] public struct INPUTU { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
@@ -160,6 +163,17 @@ public static class RnDock {
   public static bool Front(long hv) { IntPtr h = new IntPtr(hv); if (GetForegroundWindow() == h) return true;
     if (IsIconic(h)) ShowWindow(h, 9); SetForegroundWindow(h); Thread.Sleep(150); if (GetForegroundWindow() == h) return true;
     keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero); SetForegroundWindow(h); Thread.Sleep(250); return GetForegroundWindow() == h; }
+  // (0.1.10 · 정범님 11/18 I-1118-1208) 창 안 한 점을 왼쪽 단추로 한 번 누름(진짜 마우스 누름 — 크롬은 사람이 누른 뒤에야 비밀번호 관리자가 채운 값을 페이지에 넘김)
+  //  창이 맨 앞이 아니거나 점이 창 밖이면 누르지 않고 까닭 · 누른 뒤 마우스 자리는 되돌림 · 글자는 치지 않음(값을 다루지 않음) · 되면 ""
+  public static string ClickAt(long hv, int x, int y) { IntPtr h = new IntPtr(hv);
+    if (!IsWindow(h)) return "창이 없어짐";
+    if (!Front(hv)) return "창을 앞으로 못 가져옴";
+    RECT r; if (!GetWindowRect(h, out r) || x < r.L || x >= r.R || y < r.T || y >= r.B) return "누를 자리가 창 밖";
+    PT old; bool had = GetCursorPos(out old);
+    if (!SetCursorPos(x, y)) return "마우스를 못 옮김";
+    Thread.Sleep(80); if (GetForegroundWindow() != h) { if (had) SetCursorPos(old.X, old.Y); return "누르기 직전 다른 창이 앞에 옴"; }
+    var L = new List<INPUT>(); INPUT d = new INPUT(); d.type = 0; d.u.mi.dwFlags = 0x0002; L.Add(d); INPUT u = new INPUT(); u.type = 0; u.u.mi.dwFlags = 0x0004; L.Add(u); Send(L);
+    Thread.Sleep(120); if (had) SetCursorPos(old.X, old.Y); return ""; }
   static string TitleOf(IntPtr h) { var t = new StringBuilder(512); GetWindowText(h, t, 512); return t.ToString(); }
   // 탐색기 창에 탭 하나(경로) 더하기 — 되면 "" · 안 되면 까닭
   public static string ExplorerTab(long hv, string path, string leaf, int ms) { IntPtr h = new IntPtr(hv);

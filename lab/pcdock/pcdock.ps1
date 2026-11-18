@@ -393,6 +393,49 @@ switch ($Act) {
     $k = $m.dpi / 96.0; $w = [Math]::Min([int]($In.w * $k), $m.wa.w); $h = [Math]::Min([int]($In.h * $k), $m.wa.h)
     $x = $(if ($In.corner -eq 'tr') { $m.wa.x + $m.wa.w - $w } else { $m.wa.x + [int](($m.wa.w - $w) / 2) }); $y = $(if ($In.corner -eq 'tr') { $m.wa.y } else { $m.wa.y + [int](($m.wa.h - $h) / 2) })
     $out.got = (Rc ([RnDock]::Place([int64]$hit.H, $x, $y, $w, $h))); Done $out }
+  'login' { # (0.1.10 · 정범님 11/18 I-1118-1208 · 리드 결정 F61) ③으로 띄운 평소 크롬 창이 알라딘 로그인 페이지면 — 크롬 비밀번호 관리자가 채우기를 기다린 뒤 「로그인」 단추만 누름
+    # 값은 다루지 않음: 페이지 안 입력 칸은 종류(Edit)만 보고 값을 읽거나 넣지 않음 · 글자를 치지 않음 · 읽는 것은 주소(주소창·페이지 주소)와 단추 이름·자리뿐
+    try { Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop } catch { Fail "화면 읽기(UI Automation)를 못 불러옴: $($_.Exception.Message)" }
+    $lgPat = "$($In.pat)"; $lgWait = [Math]::Max(0, [Math]::Min(30, [int]$In.waitSec)); $lgCheck = [Math]::Max(2, [Math]::Min(60, [int]$In.checkSec)); $lgClick = -not ($In.click -eq $false)
+    $lgWalk = [System.Windows.Automation.TreeWalker]::ControlViewWalker; $lgCT = [System.Windows.Automation.ControlType]
+    function LgVal($el) { try { if ($el.Current.IsPassword) { return '' } } catch { return '' } # 비밀번호 칸은 값 읽기를 아예 하지 않음(주소창·페이지 주소만 읽음)
+      $vp = $null; try { if ($el.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$vp)) { return "$($vp.Current.Value)" } } catch {}; return '' }
+    # 창의 주소: 페이지(Document)가 가진 주소 · 없으면 주소창(페이지 밖 첫 Edit) — 페이지 안으로는 내려가지 않음
+    function LgUrl($hv) { $root = $null; try { $root = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$hv) } catch {}; if (-not $root) { return @{ ok = $false; why = '창을 못 읽음' } }
+      $q = New-Object System.Collections.Generic.Queue[object]; $q.Enqueue($root); $cnt = 0; $docU = ''; $barU = ''; $doc = $null
+      while ($q.Count -and $cnt -lt 600) { $el = $q.Dequeue(); $cnt++; $ty = $null; try { $ty = $el.Current.ControlType } catch { continue }
+        if ($ty -eq $lgCT::Document) { if (-not $doc) { $doc = $el; $docU = LgVal $el }; continue }
+        if ($ty -eq $lgCT::Edit -and -not $barU) { $barU = LgVal $el }
+        $kid = $null; try { $kid = $lgWalk.GetFirstChild($el) } catch {}; while ($kid) { $q.Enqueue($kid); try { $kid = $lgWalk.GetNextSibling($kid) } catch { $kid = $null } } }
+      $u = $(if ($docU) { $docU } else { $barU }); return @{ ok = $true; url = $u; doc = $doc } }
+    # 페이지 안 「로그인」 단추: 입력 칸(Edit) 뒤에 처음 나오는 것(머리의 「로그인」 글줄은 고르지 않음) · 없으면 처음 나온 단추(Button)
+    function LgBtn($doc) { $stk = New-Object System.Collections.Generic.Stack[object]; $stk.Push($doc); $cnt = 0; $seen = $false; $first = $null; $after = $null
+      while ($stk.Count -and $cnt -lt 4000) { $el = $stk.Pop(); $cnt++; $cur = $null; try { $cur = $el.Current } catch { continue }
+        $ty = $cur.ControlType
+        if ($ty -eq $lgCT::Edit) { $seen = $true }
+        elseif (($ty -eq $lgCT::Button -or $ty -eq $lgCT::Hyperlink -or $ty -eq $lgCT::Image) -and "$($cur.Name)" -match '^\s*로그인\s*$') { if (-not $first) { $first = $el }; if ($seen) { $after = $el; break } }
+        $kids = New-Object System.Collections.ArrayList; $kid = $null; try { $kid = $lgWalk.GetFirstChild($el) } catch {}
+        while ($kid) { [void]$kids.Add($kid); try { $kid = $lgWalk.GetNextSibling($kid) } catch { $kid = $null } }
+        for ($i = $kids.Count - 1; $i -ge 0; $i--) { $stk.Push($kids[$i]) } }
+      if ($after) { return $after }; if ($first) { try { if ($first.Current.ControlType -eq $lgCT::Button) { return $first } } catch {} }; return $null }
+    function LgCut($u) { $s = "$u" -replace '^[a-z]+://', ''; $s = ($s -split '\?')[0]; if ($s.Length -gt 80) { $s = $s.Substring(0, 80) }; return $s }
+    # 크롬은 화면 읽기 프로그램이 부르면 그제야 페이지 안을 열어 줌 — 처음엔 비어 있을 수 있어 세 번까지 다시 봄
+    function LgLook($hv) { $r = $null; for ($t = 0; $t -lt 3; $t++) { $r = LgUrl $hv; if (-not $r.ok -or ($r.doc -and $r.url)) { break }; Start-Sleep -Milliseconds 700 }; return $r }
+    $lgRows = New-Object System.Collections.ArrayList
+    foreach ($lw in @($In.wins)) { $hv = [int64]$lw.h; $row = @{ h = $hv; login = $false; clicked = $false; how = ''; still = $false; u = ''; doc = $null }
+      try { if (-not $hv) { $row.how = '창 번호 없음' } else { $r = LgLook $hv; if (-not $r.ok) { $row.how = $r.why } else { $row.u = LgCut $r.url; $row.doc = $r.doc; $row.login = [bool]($r.url -and $r.url -match $lgPat); if (-not $r.url) { $row.how = '주소를 못 읽음' } } } } catch { $row.how = "주소를 못 읽음: $($_.Exception.Message)" }
+      [void]$lgRows.Add($row) }
+    $need = @($lgRows | Where-Object { $_.login })
+    if ($need.Count -and $lgClick) { Start-Sleep -Seconds $lgWait # 크롬 비밀번호 관리자가 채우기를 기다림
+      foreach ($row in $need) { try { $look = LgLook $row.h; if ($look.ok -and $look.doc) { $row.doc = $look.doc }; if (-not $row.doc) { $row.how = '페이지를 못 읽음'; continue }
+          $btn = LgBtn $row.doc; if (-not $btn) { $row.how = '「로그인」 단추를 못 찾음'; continue }
+          $bx = $btn.Current.BoundingRectangle; $why = '단추 자리를 모름'
+          if (-not $bx.IsEmpty -and $bx.Width -gt 0 -and $bx.Height -gt 0) { $why = [RnDock]::ClickAt([int64]$row.h, [int]($bx.X + $bx.Width / 2), [int]($bx.Y + $bx.Height / 2)) }
+          if (-not $why) { $row.clicked = $true; $row.how = '「로그인」 단추를 누름' }
+          else { $ip = $null; if ($btn.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$ip)) { $ip.Invoke(); $row.clicked = $true; $row.how = "「로그인」 단추를 화면 읽기로 누름($why)" } else { $row.how = "못 누름: $why" } } } catch { $row.how = "단추 누르기 실패: $($_.Exception.Message)" } }
+      if (@($need | Where-Object { $_.clicked }).Count) { Start-Sleep -Seconds $lgCheck } }
+    foreach ($row in $need) { try { $r = LgLook $row.h; if ($r.ok) { $row.still = [bool]($r.url -and $r.url -match $lgPat); $row.u = LgCut $r.url } else { $row.still = $true } } catch { $row.still = $true } }
+    $out.rows = @($lgRows | ForEach-Object { @{ h = $_.h; login = [bool]$_.login; clicked = [bool]$_.clicked; how = "$($_.how)"; still = [bool]$_.still; u = "$($_.u)" } }); Done $out }
   default { Fail "모르는 일: $Act" }
 }
 } catch { Fail $_.Exception.Message }
