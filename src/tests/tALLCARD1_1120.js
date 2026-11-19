@@ -41,7 +41,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.evaluate((fid) => { window.__nBC = 0; const o = window.batchCardHtml; window.batchCardHtml = function () { window.__nBC++; return o.apply(this, arguments); }; openBkfold(fid); }, fid);
   const tb = await until(() => { const c = S._bkfTb || {}; return c.mA && c.mA.n ? c.mA.n : null; }, 80); ok(!!tb, '묶음 상태판이 셈', tb);
   const tabOf = await p.evaluate(() => { const n = (S._bkfTb.mA || {}).n || {}; return ['sel', 'lot', 'bb', 'few', 'keep'].find((t) => (n[t] || 0) >= 3) || null; }); ok(!!tabOf, '상품 3개 넘는 탭이 있음', tabOf);
-  const doc = (k) => p.evaluate(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); const d = s.data() || {}; return { pick: !!(d.picks || {})[k], held: !!(d.held || {})[k], tr: !!(d.trashed || {})[k], from: ((d.held || {})[k] || (d.trashed || {})[k] || {}).from || null }; }, k);
+  const doc = (k) => p.evaluate(async (k) => { const d = (await batchLoadOne('mA')) || {}; return { pick: !!(d.picks || {})[k], held: !!(d.held || {})[k], tr: !!(d.trashed || {})[k], from: ((d.held || {})[k] || (d.trashed || {})[k] || {}).from || null }; }, k);
   const feat = (sel) => p.evaluate((sel) => { const ov = document.querySelector(sel); if (!ov) return null; const c = ov.querySelector('.ctrl-full'); const q = (s) => !!(c && c.querySelector(s));
     return { full: ov.querySelectorAll('.ctrl-full .card.pq.bq').length, simple: ov.querySelectorAll('.ctrl-c:not(.ctrl-full)').length, tbl: !!ov.querySelector('table.bkf-tb'), bto: q('[data-bto]'), hold: q('[data-bqht="hold"]'), trash: q('[data-bqht="trash"]'), met: q('[data-bqmet]'), step: q('[data-bstep]'), pin: q('[data-bpin]'), right: q('.pq-r'), memo: q('.jm,.jmemo,[data-jm],[data-jmemo]') || /메모/.test(c ? c.textContent : ''), grp: q('[data-cgo]'), view: !!ov.querySelector('.rgvwf'), nBC: window.__nBC }; }, sel);
   /* ── 길 1: 그룹 × 탭 칸 → 칸 창 ── */
@@ -53,15 +53,15 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const ks = await p.evaluate(() => [...document.querySelectorAll('#bkf_pop .ctrl-full[data-cid]')].slice(0, 3).map((w) => w.dataset.cid.split('|').slice(1).join('|')));
   /* 결정 대기로 */
   await p.evaluate(() => { const w = document.querySelector('#bkf_pop .ctrl-full[data-cid]'); const i = w.querySelector('[data-bpin]'); if (i && !(+i.value >= 10)) { i.value = '7300'; i.dispatchEvent(new Event('input', { bubbles: true })); } w.querySelector('[data-bto]').click(); });
-  ok(!!(await until(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); return !!((s.data() || {}).picks || {})[k]; }, 60, ks[0])), '칸 창 ⇢ 결정 대기로 → 그 그룹 문서 picks', ks[0]);
+  ok(!!(await until(async (k) => { const d = (await batchLoadOne('mA')) || {}; return !!((d).picks || {})[k]; }, 60, ks[0])), '칸 창 ⇢ 결정 대기로 → 그 그룹 문서 picks', ks[0]);
   /* 보류 */
   await until((k) => { const w = [...document.querySelectorAll('#bkf_pop .ctrl-full[data-cid]')].find((x) => x.dataset.cid.endsWith('|' + k)); const b = w && w.querySelector('[data-bqht="hold"]'); if (b && !b.disabled) { b.click(); return true; } return null; }, 40, ks[1]);
-  ok(!!(await until(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); return !!((s.data() || {}).held || {})[k]; }, 60, ks[1])), '칸 창 ⏸ 보류 → 그 그룹 문서 held');
+  ok(!!(await until(async (k) => { const d = (await batchLoadOne('mA')) || {}; return !!((d).held || {})[k]; }, 60, ks[1])), '칸 창 ⏸ 보류 → 그 그룹 문서 held');
   { const d = await doc(ks[1]); ok(d.held && d.from === tabOf && !d.pick, '보류 기록 = 그룹 화면과 같은 꼴(from = 그 탭 · 결정 대기 아님)', d); }
   /* 빼기 — 한 번은 무장만, 두 번째에 뺌 */
   const clickTr = (k) => until((k) => { const w = [...document.querySelectorAll('#bkf_pop .ctrl-full[data-cid]')].find((x) => x.dataset.cid.endsWith('|' + k)); const b = w && w.querySelector('[data-bqht="trash"]'); if (b && !b.disabled) { b.click(); return true; } return null; }, 40, k);
   await clickTr(ks[2]); await Wt(p, 400); ok(!(await doc(ks[2])).tr, '✖ 빼기 한 번 누름 = 아직 안 뺌');
-  await clickTr(ks[2]); ok(!!(await until(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); return !!((s.data() || {}).trashed || {})[k]; }, 60, ks[2])), '두 번째 누름 → 그 그룹 문서 trashed');
+  await clickTr(ks[2]); ok(!!(await until(async (k) => { const d = (await batchLoadOne('mA')) || {}; return !!((d).trashed || {})[k]; }, 60, ks[2])), '두 번째 누름 → 그 그룹 문서 trashed');
   await p.keyboard.press('Escape'); ok(!!(await until(() => !document.getElementById('bkf_pop'), 30)), 'Esc → 칸 창 닫힘');
   /* ── 길 2: 🗼 모아 보기(묶음 모든 그룹의 그 탭) ── */
   await p.evaluate(([fid, t]) => { window.__nBC = 0; bkfTbAll(fid, t); }, [fid, tabOf]);
@@ -76,12 +76,12 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(ov.doc <= 1 && ov.card <= 2, '420px: 화면·카드 가로 넘침 없음', ov);
   await p.setViewportSize({ width: 1280, height: 900 });
   const k4 = await p.evaluate(() => { const w = document.querySelector('#bkf_ctrl .ctrl-full[data-cid]'); if (!w) return null; const i = w.querySelector('[data-bpin]'); if (i && !(+i.value >= 10)) { i.value = '7400'; i.dispatchEvent(new Event('input', { bubbles: true })); } w.querySelector('[data-bto]').click(); return w.dataset.cid.split('|').slice(1).join('|'); });
-  ok(!!(await until(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); return !!((s.data() || {}).picks || {})[k]; }, 60, k4)), '모아 보기 ⇢ 결정 대기로 → 그 그룹 문서 picks', k4);
+  ok(!!(await until(async (k) => { const d = (await batchLoadOne('mA')) || {}; return !!((d).picks || {})[k]; }, 60, k4)), '모아 보기 ⇢ 결정 대기로 → 그 그룹 문서 picks', k4);
   /* 결정 대기 탭 — ↩ 선택 대기로 */
   await p.evaluate((fid) => { ctrlClose(); bkfTbAll(fid, 'pick'); }, fid);
   await until(() => !!document.querySelector('#bkf_ctrl .ctrl-full [data-bback]'), 100);
   const kb = await p.evaluate(() => { const w = document.querySelector('#bkf_ctrl .ctrl-full[data-cid]'); const st = !!w.querySelector('[data-bstep]'); w.querySelector('[data-bback]').click(); return [w.dataset.cid.split('|').slice(1).join('|'), st]; });
   ok(kb[1], '결정 대기 탭 카드에도 ±5%');
-  ok(!!(await until(async (k) => { const s = await db.collection('prd_price_batches').doc('mA').get(); return !((s.data() || {}).picks || {})[k]; }, 60, kb[0])), '결정 대기 탭 ↩ → 그 그룹 문서 picks에서 빠짐', kb[0]);
+  ok(!!(await until(async (k) => { const d = (await batchLoadOne('mA')) || {}; return !((d).picks || {})[k]; }, 60, kb[0])), '결정 대기 탭 ↩ → 그 그룹 문서 picks에서 빠짐', kb[0]);
   ok(!dlg.length, '브라우저 창 안 뜸', dlg);
   console.log(bad ? `❌ tALLCARD1_1120 ${bad}개 실패` : '✅ tALLCARD1_1120 모두 통과'); process.exit(bad ? 1 : 0); });
