@@ -40,13 +40,13 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   let fids = await p.evaluate(async ([src, d, n]) => (eval('(' + src + ')'))(d, n), [SEED.toString(), d10, 1]);
   for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[f]), fids[0])) break; await Wt(p, 150); }
   await p.evaluate((f) => openCtrlRoom(f), fids[0]); await Wt(p, 600);
-  let m = await p.evaluate(() => ({ csw: !!document.querySelector('#bkf_scr .csw'), chips: document.querySelectorAll('#bkf_scr .csw [data-bkf]').length, all: !!document.querySelector('#bkf_scr .csw-all') }));
+  let m = await p.evaluate(() => ({ csw: !!document.querySelector('#bkf_scr .csw'), chips: document.querySelectorAll('#bkf_scr .csw [data-bkf]').length, all: !!document.querySelector('#bkf_scr [data-cswall]') }));
   ok(m.csw && m.chips === 1, '묶음 1개: 띠가 있고 칩 1개', m); ok(!m.all, '묶음 1개: ▾ 모두 단추는 없음', m);
   // 묶음 9개로 늘림
   const more = await p.evaluate(async () => { const r = []; for (let i = 1; i < 9; i++) { const a = await bkfTx({ t: 'new', name: '묶음' + String.fromCharCode(65 + i) }); r.push(a.fid); } return r; });
   fids = fids.concat(more); await Wt(p, 800);
   await p.evaluate((f) => openCtrlRoom(f), fids[0]); await Wt(p, 600);
-  m = await p.evaluate(() => ({ chips: document.querySelectorAll('#bkf_scr .csw [data-bkf]').length, all: !!document.querySelector('#bkf_scr .csw-all') }));
+  m = await p.evaluate(() => ({ chips: document.querySelectorAll('#bkf_scr .csw [data-bkf]').length, all: !!document.querySelector('#bkf_scr [data-cswall]') }));
   ok(m.chips >= 8, '묶음 9개: 칩이 여러 개', m); ok(m.all, '묶음 9개: ▾ 모두 단추가 생김', m);
   // 바꾸면 기록이 쌓이지 않음
   const h0 = await p.evaluate(() => history.length);
