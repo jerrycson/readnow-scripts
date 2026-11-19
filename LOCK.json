@@ -57,14 +57,14 @@
   "at": "2026-11-19T06:01:11Z",
   "first": "2026-11-19T04:19:53Z"
  },
- "holder": "lead",
- "host": "vm-panel3",
- "what": "panel3 1.78.779 시험 중",
- "since": "2026-11-19T05:49:21Z",
- "beat": "2026-11-19T06:00:35Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "등록 후보 판본 — 웹앱 1.78.778 (regcand2)",
-  "at": "2026-11-19T05:47:55Z"
+  "done": "수동 일괄 살핀 패널 되살림·판본 확인 목록 안의 창 — 웹앱 1.78.779 (panel3)",
+  "at": "2026-11-19T06:01:32Z"
  }
 }
