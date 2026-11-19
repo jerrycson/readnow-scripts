@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-kpib1",
-   "why": "판 내기 기다림: 판 내기 기다림: kpib1 클라우드 관제소 요약 판 B",
-   "first": "2026-11-19T12:39:25Z",
-   "at": "2026-11-19T16:05:15Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-gperf1",
    "why": "판 내기 기다림: gperf1 관제소 그룹 성과·묶음 성과 안쪽 창",
    "first": "2026-11-19T12:55:35Z",
@@ -101,16 +94,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-kpib1",
-  "why": "판 내기 기다림: 판 내기 기다림: kpib1 클라우드 관제소 요약 판 B",
-  "at": "2026-11-19T16:05:15Z",
-  "first": "2026-11-19T12:39:25Z"
+  "host": "vm-gperf1",
+  "why": "판 내기 기다림: gperf1 관제소 그룹 성과·묶음 성과 안쪽 창",
+  "at": "2026-11-19T16:06:15Z",
+  "first": "2026-11-19T12:55:35Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-kpib1",
+ "what": "판 내기 기다림: kpib1 클라우드 관제소 요약 판 B",
+ "since": "2026-11-19T16:06:17Z",
+ "beat": "2026-11-19T16:06:17Z",
  "last": {
   "who": "lead",
   "done": "pxg1 조회수 표 판 G 1.78.809 냄(54e80919e · 운영 확인)",
