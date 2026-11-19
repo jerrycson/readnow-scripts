@@ -87,7 +87,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   // ⑤ 판매수
   await win('sold'); w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const th = [...ov.querySelectorAll('.ckd > .ckd-tw .ckd-t thead th')].map((x) => x.textContent); const tr = ov.querySelector('.ckd > .ckd-tw .ckd-t tbody tr'); return { th, r: tr ? [...tr.cells].map((c) => c.textContent.trim()) : null, k: tr && tr.dataset.cksold, sum: (ov.querySelector('.ckd-sum') || {}).textContent || '', heat: (ov.querySelector('svg.pxheat') || {}).outerHTML || '' }; });
   ok(w.th.includes('1,000개당 판매') && w.r && w.r[1] === '1' && w.r[2] === '7,000원' && w.r[4] === '12' && /^83(\.3)?$/.test(w.r[5]) && /알라딘 판매 30권/.test(w.sum), '판매수 = 오늘 1권 · 7,000원 · 묶음 상품 12 · 1,000개당 83.3 · 30일 합 30권', w);
-  ok(/요일과 시각별 판매/.test(w.heat) && /15시 — \d+권/.test(w.heat), '요일×시각 = 주문 시각(권)', w.heat.slice(0, 200));
+  ok(/요일과 시각별 판매/.test(w.heat) && /15시 · 합 \d+권/.test(w.heat), '요일×시각 = 주문 시각(권)', w.heat.slice(0, 200));
   await click(`#ctrl_kpi tr[data-cksold="${w.k}"]`); w = await txt('#ckd_day'); ok(/팔린 상품/.test(w) && /사건 띠 시험 책 판매/.test(w) && /7,000원 · 1권/.test(w) && /주문한 분 정보는 보이지 않음/.test(w), '판매 날 누름 = 그날 상품 줄(값·권수만)', w);
   await click('#ctrl_kpi [data-ckset="vw:r"]'); w = await p.evaluate(() => [...document.querySelectorAll('#ctrl_kpi .ckd-sel button.on')].map((b) => b.textContent)); ok(w.includes('1,000개당'), '보기 단추 = 「1,000개당」', w); await click('#ctrl_kpi [data-ckset="vw:n"]');
   await p.keyboard.press('Escape'); await Wt(p, 150);
