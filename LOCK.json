@@ -71,14 +71,14 @@
   "at": "2026-11-19T13:28:31Z",
   "first": "2026-11-19T11:13:52Z"
  },
- "holder": "lead",
- "host": "vm-buyp0",
- "what": "buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판",
- "since": "2026-11-19T13:16:30Z",
- "beat": "2026-11-19T13:19:22Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-19T13:15:51Z"
+  "at": "2026-11-19T13:29:02Z"
  }
 }
