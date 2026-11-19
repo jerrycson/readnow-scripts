@@ -13,15 +13,15 @@ console.log('① 글');
 { const a = T.indexOf('/* CTRLKPI-START'), b = T.indexOf('/* CTRLKPI-END */'); const B = a > 0 && b > a ? T.slice(a, b) : '';
   ok((B.match(/db\.collection\(/g) || []).length === 2, '판 E도 새 읽는 칸 없음(db.collection 두 군데 그대로)');
   ok(/bkfLedger\(f\)/.test(B) && /i \+= 5/.test(B) && /CK_TTL/.test(B), '묶음 장부 = bkfLedger · 5개씩 · 30분 메모');
-  ok((B.match(/stratLogLoad\(/g) || []).length === 1 && /k === 'stl'/.test(B), '전략 기록 = 「불러오기」를 눌렀을 때만 읽음');
+  ok((B.match(/stratLogLoad\(true\)/g) || []).length === 1 && /k === 'stl'/.test(B), '전략 기록 = 「불러오기」를 눌렀을 때만 읽음');
   ok(B.includes('이 표는 같은 때 일어난 일을 나란히 놓은 것입니다. 무엇이 무엇을 일으켰는지는 이것만으로 알 수 없습니다.') && B.includes('여러 수를 함께 보면 한둘은 우연히 커 보입니다.'), '앞뒤 견주기 끝 두 문장');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(B), '브라우저 창 없음'); ok(!/때문에|덕분에|효과|올렸다/.test(B), '원인을 단정하는 말 없음'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(B), '전화번호 모양 없음'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tCTRLKPI_E ${bad}개 실패` : '✓ tCTRLKPI_E 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
-/* 상품 12개(묶음 안 · 값 6,900~18,900) + 6개(묶음 밖 · 값 5만 원 = 견줄 무리) · 그룹 다섯 · gA에 8일 전 감시 켬 */
+/* 상품 12개(묶음 안 · 값 2만~2만 2,750 · 기본 씨앗 상품과 안 겹침) + 6개(묶음 밖 · 값 5만 원 = 견줄 무리) · 그룹 다섯 · gA에 8일 전 감시 켬 */
 const SEED = async function ([d10, w8]) { if (!S.user) S.user = { email: 't@x', uid: 't' };
-  for (let i = 0; i < 18; i++) { const uc = 'U5900000' + (10 + i); const out = i >= 12; S.plist.set('aladin_' + uc, { id: 'aladin_' + uc, usedCode: uc, listingId: String(509937000 + i), title: (out ? '견줄 책 ' : '사건 띠 시험 책 ') + i, price: out ? 50000 : 7000 + i * 250, qty: 1, grade: ['최상', '상', '중'][i % 3], status: '판매중', active: true, bookId: 'bk59' + i }); }
-  const put = (id, name, x) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 6900, pmax: 18900, recentDays: 0, kw: '' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: [], lastCount: 0, start: {}, ...(x || {}) });
+  for (let i = 0; i < 18; i++) { const uc = 'U5900000' + (10 + i); const out = i >= 12; S.plist.set('aladin_' + uc, { id: 'aladin_' + uc, usedCode: uc, listingId: String(509937000 + i), title: (out ? '견줄 책 ' : '사건 띠 시험 책 ') + i, price: out ? 50000 : 20000 + i * 250, qty: 1, grade: ['최상', '상', '중'][i % 3], status: '판매중', active: true, bookId: 'bk59' + i }); }
+  const put = (id, name, x) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 19900, pmax: 22900, recentDays: 0, kw: '' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: [], lastCount: 0, start: {}, ...(x || {}) });
   const ids = ['gA', 'gB', 'gC', 'gD', 'gE']; for (let i = 0; i < 5; i++) await put(ids[i], '사건 띠 그룹 ' + i, i === 0 ? { watchLog: [{ on: true, at: w8, by: 't', what: '감시 켬' }] } : null);
   S.prBatches = undefined; S.bkfold = undefined; S.tab = 'products'; renderTabs(); renderMainNow();
   for (let i = 0; i < 40 && !(S.prBatches || []).find((b) => b.id === 'gE'); i++) await new Promise((r) => setTimeout(r, 150));
