@@ -4,8 +4,9 @@
 //  ① 손잡이 범위·검사 ② 출처 칸(엔진 stratFor와 같은 차례) ③ 바뀐 칸만 update(겹치는 길 없음 · 지움) ④ 트랜잭션: 같으면 쓰고 다르면 띠
 //  ⑤ 기본값 셋(셈만 7일 · 빠른 추격자 줄 · 빨리 따라 내림 기준) + 이미 운영 중인 그룹 값 안 바뀜 ⑥ bkcNorm이 손잡이·규칙·정책을 안 버림
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const PR = require(process.argv[2] || path.join(__dirname, '../../../readnow-pricing-core.js')); const CH = PR.Chase;
-const APP = fs.readFileSync(path.join(__dirname, '../../app.html'), 'utf8');
+const firstOf = (c) => c.find((x) => fs.existsSync(x)) || c[0]; /* 저장소(src/tests/chase) 안과 시험 문지기 임시 자리(pw/chase) 두 곳에서 모두 돎 */
+const PR = require(process.argv[2] || firstOf([path.join(__dirname, '../../../readnow-pricing-core.js'), path.join(__dirname, '../../readnow-pricing-core.js')])); const CH = PR.Chase;
+const APP = fs.readFileSync(firstOf([path.join(__dirname, '../../app.html'), path.join(__dirname, '../../../app.html')]), 'utf8');
 let bad = 0, n = 0; const ok = (c, m) => { n++; if (!c) { bad++; console.log('  ❌', m); } else if (process.env.V) console.log('  ✓', m); };
 const cut = (a, b) => { const i = APP.indexOf(a), j = APP.indexOf(b, i + 1); if (i < 0 || j < 0) throw new Error('원본에서 못 찾음: ' + a); return APP.slice(i, j); };
 const BLK = cut('/* ◆gsw 시작', '/* ◆gsw 끝 */'); const NORM = cut('function bkcNorm(', 'function bkcOf('); const NEWL = cut('function cheNewLine(', 'function openPresetList(');

@@ -28041,10 +28041,10 @@ function bkfPaint() { const fid = S.detail && S.detail.bkfold; const el = docume
  *  · 묶음 기본 추격자(def.chase)는 판 카의 📁 묶음 기본 층(stratFor)이 읽음 — 그룹 개별·조건 묶음이 있으면 그것이 이김
  *  · 모두 켜기 기본 = 'keep': 이미 켜진 그룹은 안 건드림 · 꺼진 그룹은 그 그룹이 가진 칸을 지키고 빈 칸만 묶음 기본으로 · 'over'(덮기)는 따로 두 번 누름 · 보기 전용·보관 그룹은 건드리지 않음 · 실험 한도 지킴 */
 const BKC_LOG = 60;
-function bkcNorm(c) { c = c && typeof c === 'object' ? c : {}; const d = c.def && typeof c.def === 'object' ? c.def : {}; const w = d.watch && typeof d.watch === 'object' ? d.watch : {};
+function bkcNorm(c) { const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o); c = c && typeof c === 'object' ? c : {}; const d = c.def && typeof c.def === 'object' ? c.def : {}; const w = d.watch && typeof d.watch === 'object' ? d.watch : {};
   const ch = d.chase && (typeof d.chase === 'string' ? d.chase : d.chase.name); const gp = Math.round(+w.guardPct); const semi = w.mode === 'semi' && w.presetId;
-  const chO = ch ? (typeof d.chase === 'object' ? gswChaseNorm({ ...d.chase, name: String(ch) }) : { name: String(ch).slice(0, 40) }) : null; /* (판 ① 11/19) 손잡이·규칙·정책도 지킴 — 예전엔 이름만 남기고 버렸음 */
-  const def = { chase: chO, ...(gswPlain(d.rule) ? { rule: d.rule } : {}), ...(gswPlain(d.pol) ? { pol: d.pol } : {}), watch: { mode: semi ? 'semi' : 'auto', presetId: semi ? String(w.presetId).slice(0, 80) : null, apply: w.apply === 'auto' ? 'auto' : 'approve', guardPct: gp >= 1 && gp <= 50 ? gp : 15 } };
+  const chO = ch ? (typeof d.chase === 'object' ? (typeof gswChaseNorm === 'function' ? gswChaseNorm : (x) => x)({ ...d.chase, name: String(ch) }) : { name: String(ch).slice(0, 40) }) : null; /* (판 ① 11/19) 손잡이·규칙·정책도 지킴 — 예전엔 이름만 남기고 버렸음 */
+  const def = { chase: chO, ...(isObj(d.rule) ? { rule: d.rule } : {}), ...(isObj(d.pol) ? { pol: d.pol } : {}), watch: { mode: semi ? 'semi' : 'auto', presetId: semi ? String(w.presetId).slice(0, 80) : null, apply: w.apply === 'auto' ? 'auto' : 'approve', guardPct: gp >= 1 && gp <= 50 ? gp : 15 } };
   const L = c.last && typeof c.last === 'object' && Array.isArray(c.last.gs) ? c.last : null;
   const last = L ? { at: String(L.at || ''), by: String(L.by || ''), how: L.how === 'over' ? 'over' : 'keep', undoneAt: L.undoneAt ? String(L.undoneAt) : '', gs: L.gs.filter((x) => x && typeof x.id === 'string' && x.id).slice(0, BKF_MAXG).map((x) => ({ id: x.id, before: x.before && typeof x.before === 'object' ? x.before : null, after: x.after && typeof x.after === 'object' ? x.after : null, enrolled: !!x.enrolled })) } : null;
   const opt = typeof ctrlOptNorm === 'function' ? ctrlOptNorm(c.opt) : null; /* (판 더) 이 묶음만 다르게 */
