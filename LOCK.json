@@ -29,14 +29,14 @@
   "at": "2026-11-19T19:04:13Z",
   "first": "2026-11-19T15:58:10Z"
  },
- "holder": "lead",
- "host": "vm-strat6",
- "what": "strat6 감시 전략 판 ⑤ 시험 문",
- "since": "2026-11-19T18:55:27Z",
- "beat": "2026-11-19T19:04:15Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "pubv1 웹앱 1.78.819·가격 감시기 0.10.72 올림 · main 435f81d28 · 공개 반영 끝까지·10원 단위·카드 보기 안쪽 창",
-  "at": "2026-11-19T18:54:30Z"
+  "done": "strat6 판 ⑤ 웹앱 1.78.820 push",
+  "at": "2026-11-19T19:04:41Z"
  }
 }
