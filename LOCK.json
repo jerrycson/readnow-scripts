@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-edall3",
-   "why": "판 내기 기다림: 판본 판 ④(edall3)",
-   "first": "2026-11-19T13:04:42Z",
-   "at": "2026-11-19T16:33:57Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-buyp0",
    "why": "판 내기 기다림: buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판(다시)",
    "first": "2026-11-19T13:29:38Z",
@@ -87,16 +80,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-edall3",
-  "why": "판 내기 기다림: 판본 판 ④(edall3)",
-  "at": "2026-11-19T16:33:57Z",
-  "first": "2026-11-19T13:04:42Z"
+  "host": "vm-buyp0",
+  "why": "판 내기 기다림: buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판(다시)",
+  "at": "2026-11-19T16:34:03Z",
+  "first": "2026-11-19T13:29:38Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-edall3",
+ "what": "판본 판 ④(edall3)",
+ "since": "2026-11-19T16:35:00Z",
+ "beat": "2026-11-19T16:35:00Z",
  "last": {
   "who": "lead",
   "done": "gperf1 웹앱 1.78.810 · main b7e4c7b8e(판 f7bd736fc) · 운영 확인",
