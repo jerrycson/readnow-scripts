@@ -6,6 +6,7 @@
 //  ⑤ 클라우드 메모리 감시(cloud/memwatch.js) 연결·앞 판 기록·진단 mem·clog
 // 실행: cd src/tests && node --expose-gc tVOICE_INC1112.js   (../../cloud/*.js) · 시험 자료는 모두 지어낸 값(가게 번호 9000001…)
 const fs = require('fs'); const path = require('path');
+if (typeof global.gc !== 'function') { try { require('v8').setFlagsFromString('--expose-gc'); global.gc = require('vm').runInNewContext('gc'); } catch (e) {} } /* (testfix1 11/19) 시험 문지기는 그냥 node로 돌림 — --expose-gc 없이도 ④ 메모리 상한을 잼 */
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
 const ROOT = fs.existsSync(path.join(__dirname, '..', 'cloud')) ? path.join(__dirname, '..') : path.join(__dirname, '..', '..');
 const V = require(path.join(ROOT, 'cloud', 'voice.js')); const SRC = fs.readFileSync(path.join(ROOT, 'cloud', 'index.js'), 'utf8');
@@ -37,7 +38,7 @@ function mkData(S, per) { const c2 = {}, op = {}; let k = 0; for (let s = 0; s <
 function oneShot(data) { const N = new Map(Object.entries(data.col2_voice_s).map(([k, v]) => [k, v.n])); const A = V.makeAcc({ lex: V.lexOf(data.app_settings.voice_lex.add), sizeOf: (sc) => V.voSize(N.has(sc) ? N.get(sc) : null) });
   const ids = Object.keys(data.col2_voice).sort(); ids.filter((id) => !/tail$/.test(id)).forEach((id) => A.c2(data.col2_voice[id])); Object.keys(data.seller_reviews).sort().forEach((id) => A.op(data.seller_reviews[id]));
   const scs = [...new Set([...Object.keys(data.col2_voice_s)])]; for (const sc of scs) for (const k of ['r', 'q']) { const v = data.col2_voice[`${sc}_${k}tail`]; if (v) A.c2(v); }
-  return V.docOf(A.result([{ r: 'good', c: '배송 빨라요' }, { r: 'bad', c: '찢어져 왔어요' }]), '2026-11-12'); }
+  return V.docOf(A.result([{ r: 'good', c: '배송 빨라요' }, { r: 'bad', c: '찢어져 왔어요' }]), new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)); } /* (testfix1 11/19) 기준 날짜를 '2026-11-12'로 박아 둬서 11/12 하루만 통과하던 것 — 셈(voice.js kday)처럼 오늘 한국 날짜로 */
 const core = (d) => { const { at: _a, ms: _m, src: _s, partial: _p, few: _f, pruned: _r, by: _b, writer: _w, uploadedAt: _u, writerSchema: _ws, ...x } = d; return JSON.stringify(x); };
 const coreSet = (d) => { const x = JSON.parse(core(d)); x.sizes = (x.sizes || []).slice().sort((a, b) => (a.g < b.g ? -1 : 1)); x.cands = (x.cands || []).slice().sort((a, b) => (a.w < b.w ? -1 : 1)); const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v); return JSON.stringify(canon(x)); }; /* 주제별 수 칸의 차례도 */ /* 차례가 섞이는 칸(판매자 크기 묶음·후보 낱말 동점)은 정렬해 견줌 */
 const mkVS = (F, extra) => V.makeVoiceStudy({ C: F.C, FieldPath: F.FieldPath, log: () => {}, W: () => ({ writer: 'cloud' }), ...(extra || {}) });
@@ -111,7 +112,7 @@ const mkVS = (F, extra) => V.makeVoiceStudy({ C: F.C, FieldPath: F.FieldPath, lo
 
   console.log('⑥ 🧯 무거운 일 죽음 고리 끊기(HV)');
   { const a = SRC.indexOf('const HV_BOOT'); const b = SRC.indexOf('const BUSYX = new Set();'); ok(a > 0 && b > a, 'HV 구역 찾음');
-    const mk = (data, boot) => { const F = mkFS(data); const L = []; const f = new Function('C', 'log', 'nowIso', 'BUSYX', 'Date0', SRC.slice(a, b).replace('const HV_BOOT = new Date().toISOString();', 'const HV_BOOT = Date0;') + '\nreturn HV;'); return { HV: f(F.C, (...m) => L.push(m.join(' ')), () => new Date().toISOString(), new Set(), boot), L }; };
+    const mk = (data, boot) => { const F = mkFS(data); const L = []; const f = new Function('C', 'log', 'nowIso', 'BUSYX', 'Date0', 'require', SRC.slice(a, b).replace('const HV_BOOT = new Date().toISOString();', 'const HV_BOOT = Date0;') + '\nreturn HV;'); return { HV: f(F.C, (...m) => L.push(m.join(' ')), () => new Date().toISOString(), new Set(), boot, (m) => require(m.startsWith('./') ? path.join(ROOT, 'cloud', m) : m)), L }; }; /* (testfix1 11/19) HV0이 require('./memwatch.js').memLine을 부르게 된 뒤(cloudmem) 구역만 떼어 돌리면 require가 없었음 — cloud/ 기준 require를 넘김 */
     const hd = { app_settings: {} }; const A1 = mk(hd, 'boot1'); let ran = 0; const r1 = await A1.HV('valueLearn', async () => { ran++; return { n: 1 }; }); ok(r1.n === 1 && ran === 1 && hd.app_settings.heavy_run.valueLearn.endAt && hd.app_settings.heavy_run.valueLearn.crashN === 0, '보통은 그대로 돌고 끝 시각을 남김');
     hd.app_settings.heavy_run.valueLearn = { startAt: new Date().toISOString(), boot: 'boot1', endAt: null, crashN: 0 }; /* 앞 판이 도중에 죽음 */
     const A2 = mk(hd, 'boot2'); const r2 = await A2.HV('valueLearn', async () => { ran++; return {}; }); const v2 = hd.app_settings.heavy_run.valueLearn; ok(r2.skip === 'crashRest' && ran === 1 && v2.died && v2.crashN === 1 && Date.parse(v2.restUntil) - Date.now() > 5.9 * 3600e3 && /도중 클라우드가 죽었음/.test(A2.L.join('')), '앞 판이 이 일 도중 죽었으면 6시간 쉼(일은 안 돎)', v2);

@@ -1,5 +1,5 @@
 // (engacc1 11/19) 🎯 팔릴 확률 엔진 정확도 — 무게 배우기 · 대리 표본(시장 매물) · 사라짐 보정 확률 · 새 승격(문턱 = 지금 모델·새 기준선 중 나은 쪽) · 조율 한 걸음
-const ML = require('/home/claude/w/readnow-ml-core.js'); const fs = require('fs'); let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) bad++; };
+const ML = require([__dirname + '/../readnow-ml-core.js', __dirname + '/../../readnow-ml-core.js'].find((f) => require('fs').existsSync(f))); /* (testfix1 11/19) 박혀 있던 /home/claude/w 경로 대신 — 시험 문지기 자리(w/pw → w/)·저장소(src/tests → 뿌리) 둘 다 */ const fs = require('fs'); let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) bad++; };
 ok(ML.VERSION >= '0.10.0', 'ml-core 판 ' + ML.VERSION);
 let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const rows = [], y = []; for (let i = 0; i < 3000; i++) { const r = { price: 2000 + Math.round(rnd() * 150) * 100, grade: i % 3, rank: 1 + (i % 7), sameMin: 3000, minAll: 2500, age: 30 + (i % 200), list: 15000 }; const z = -2.5 + (r.rank === 1 ? 1.3 : 0) - 0.00008 * r.price; rows.push(r); y.push(rnd() < 1 / (1 + Math.exp(-z)) ? 1 : 0); }

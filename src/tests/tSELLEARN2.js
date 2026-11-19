@@ -75,7 +75,7 @@ console.log('⑨ 몰아서 읽은 회차 — 자르지 않고 빈 날에 고르�
   const P = SL.profile(R.map((x) => ({ ...x, goneList: [], addList: [] }))); ok(P && P.days === 9 && P.runs === 4, '주력 셈은 나눈 날로(14일 자르기 없음)', P && [P.days, P.runs, P.spread]); }
 
 console.log('⑧ 연결(클라우드·진단·웹앱)');
-ok(/async function slStudy2\(/.test(SRC) && /sellerAudStudy\(\)/.test(SRC) && /ml_seller_facts/.test(SRC) && /app_settings'\)\.doc\('seller_hyp'\)/.test(SRC), '클라우드: 구성·진화(slStudy2) · 구매자 분포(sellerAudStudy) · 사실 판 · 가설 원장');
+ok(/async function slStudy2\(/.test(SRC) && /sellerAudStudy\(\)|HV\('sellerAudStudy', sellerAudStudy\)/.test(SRC) && /ml_seller_facts/.test(SRC) && /app_settings'\)\.doc\('seller_hyp'\)/.test(SRC), '클라우드: 구성·진화(slStudy2) · 구매자 분포(sellerAudStudy) · 사실 판 · 가설 원장'); /* (testfix1 11/19) 0.35.150부터 HV('sellerAudStudy', sellerAudStudy)로 부름 — 그 꼴도 받음 */
 ok(/if \(q\.saud\)/.test(SRC) && /if \(q\.audx\)/.test(SRC) && !/q\.audx[\s\S]{0,600}(crm_|phone|address|addr)/.test(SRC), '진단 saud(계산만) · audx(엔진용 · 고객 정보 없음)');
 { const A2 = SRC.slice(SRC.indexOf('async function slStudy2'), SRC.indexOf('/* SELLEARN-END */')); ok(!/\.update\(|prd_listings'\)\.doc\([^)]*\)\.set|shp_cmds|prdEdit/.test(A2), '클라우드 새 셈은 값·상태를 바꾸지 않고 PC에 일을 주지 않음(제안만 · 약속 0·36)'); }
 ok(/function slMore\(D\)/.test(APP) && /id="sl_evoord"/.test(APP) && /data-slfw=/.test(APP) && /seller_follow/.test(APP), '웹앱: 🧑‍🏫 카드 안 구성·구매자 분포·진화 제안 · 따라 하기 진행/보류');

@@ -52,7 +52,7 @@ console.log('③ 앞 페이지 연구');
 console.log('④ 연결');
 { ok(/async function sellerLearnStudy\(force, dry\)/.test(SRC) && /C\('app_settings'\)\.doc\('seller_learn'\)/.test(SRC) && /C\('ml_seller_learn'\)/.test(SRC), '클라우드 매일 연구 → app_settings/seller_learn · 날마다 ml_seller_learn');
   const body = SRC.slice(SRC.indexOf('async function sellerLearnStudy('), SRC.indexOf('/* SELLEARN-END */')); ok(body.length > 500 && !/fetch\(|aladin\.co\.kr|shp_cmds|prd_jobs/.test(body), '알라딘을 새로 읽지 않음·PC에 일을 주지 않음(이미 모은 벤치마킹 기록만)');
-  ok(/\.then\(\(\) => sellerLearnStudy\(\)\)/.test(SRC) && /if \(q\.slearn\)/.test(SRC), '3시간 묶음 끝에 붙음(20시간에 한 번) · 진단 slearn(계산만)');
+  ok((/\.then\(\(\) => sellerLearnStudy\(\)\)/.test(SRC) || /setInterval\(\(\) => HV\('sellerLearnStudy', sellerLearnStudy\)/.test(SRC)) && /async function sellerLearnStudy\(force, dry\)[^\n]{0,400}< 20 \* 3600e3\) return/.test(SRC) && /if \(q\.slearn\)/.test(SRC), '정해진 묶음에 붙음(무거운 일 문 HV · 20시간에 한 번) · 진단 slearn(계산만)'); /* (testfix1 11/19) 0.35.150(voice2)부터 sellerLearnStudy를 HV로 감싸 2시간마다 부름 — 옛 '.then(() => sellerLearnStudy())' 꼴만 찾던 기대값을 넓힘 · 20시간 가림은 함수 안에서 확인 */
   ok(/readnow-sellerlearn-core\.js\?v=/.test(APP) && /function slLearnCard\(/.test(APP) && /function slCondBar\(/.test(APP), '웹앱: 공용 파일 · 🧑‍🏫 카드 · 판정 조건 줄');
   const ui = APP.slice(APP.indexOf('/* SELLEARN-UI-START'), APP.indexOf('/* SELLEARN-UI-END */')); ok(ui.length > 500 && !/\b(alert|confirm|prompt)\(/.test(ui), '브라우저 팝업 없음(두 번 눌러 확정)');
   ok(/🧑‍🏫 배울 판매자/.test(APP.slice(APP.indexOf('const FEAT = ['), APP.indexOf('const FEAT = [') + 400000)), '기능 찾기에 바로 가기 줄'); }
