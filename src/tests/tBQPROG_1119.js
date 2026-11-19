@@ -1,4 +1,5 @@
 // tBQPROG_1119 — (11/19 정범님 I-1119-1619-18) 수동 일괄 진행바 — 단계 · 상품마다 줄 · 까닭 풀이 · 실시간 다시 그림
+// (bkprog1 11/19) 진행 칸 글은 공용 부품 bpPanelHtml(blk 안)으로 옮김 — 그룹 화면(drawBatchRes)은 bpCalc·bpPanelHtml을 부름 · 묶음 화면도 같은 부품(tBKPROG1)
 // 실행: node tBQPROG_1119.js · 시험 자료에 손님 정보 없음 · 순수 셈 + 글 검사(값을 바꾸는 동작 없음)
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 500)); } else console.log('  ✓', m); };
@@ -51,9 +52,9 @@ console.log('⑤ 실시간 · 시간 글 · 화면 연결');
   ok(/S\.batchActAt = Date\.now\(\)/.test(T) && /S\.batchSrvAt = Date\.now\(\)/.test(T), '이미 있는 실시간 수신(onSnapshot 둘)에서 받은 시각을 남김');
   ok(/bpTick\(\);/.test(T) && /setInterval\(\(\) => \{ const el = document\.getElementById\('bp_ago'\)/.test(T) && /clearInterval\(S\._bpT\)/.test(T), '5초마다 글자만 고치는 시계 · 칸이 사라지면 스스로 멈춤(새로 읽지 않음)');
   const D = cut('function drawBatchRes(', '\nfunction ');
-  ok(/bpProdHtml\(BP\.rowsP/.test(D) && /bpStages\(BP\.N/.test(D) && /data-bpgo/.test(T) && /querySelectorAll\('\[data-bpgo\]'\)[^\n]*goK\(/.test(D) && /querySelectorAll\('\[data-bpf\]'\)/.test(D), '진행 칸이 단계 줄 + 상품마다 보기를 그리고 단추가 연결됨');
-  ok(/class="bbar" title="샵매니저 반영"/.test(D) && /공개 반영 확인 <b>/.test(D), '옛 두 줄 막대·마일스톤은 그대로 둠');
-  ok(/repeat\(auto-fit,minmax\(150px,1fr\)\)/.test(D) && /word-break:break-all/.test(blk), '휴대폰 폭: 단계 칸은 자동 줄바꿈 격자 · 상품명 줄바꿈');
+  ok(/bpProdHtml\(BP\.rowsP/.test(D) && /bpStages\(BP\.N/.test(blk) && /bpCalc\(\{/.test(D) && /bpPanelHtml\(BP, /.test(D) && /data-bpgo/.test(T) && /querySelectorAll\('\[data-bpgo\]'\)[^\n]*goK\(/.test(D) && /querySelectorAll\('\[data-bpf\]'\)/.test(D), '진행 칸이 단계 줄 + 상품마다 보기를 그리고 단추가 연결됨');
+  ok(/class="bbar" title="샵매니저 반영"/.test(blk) && /공개 반영 확인 <b>/.test(blk), '옛 두 줄 막대·마일스톤은 그대로 둠(bkprog1부터 공용 부품 bpPanelHtml 안)');
+  ok(/repeat\(auto-fit,minmax\(150px,1fr\)\)/.test(blk) && /word-break:break-all/.test(blk), '휴대폰 폭: 단계 칸은 자동 줄바꿈 격자 · 상품명 줄바꿈');
   ok(!/\b(alert|confirm|prompt)\(/.test(blk), '브라우저 팝업 없음'); }
-{ const D2 = cut('function drawBatchRes(', '\nfunction '); ok(/<details class="bpd" \$\{S\.bpBig \? 'open' : ''\}>/.test(D2) && /open: S\.bpOpen === true/.test(D2), '진행 띠는 기본 접힘(한 줄 요약) · 상품마다 보기도 기본 접힘'); }
+{ const D2 = cut('function drawBatchRes(', '\nfunction '); ok(/<details class="bpd" \$\{S\.bpBig \? 'open' : ''\}>/.test(blk) && /open: S\.bpOpen === true/.test(D2), '진행 띠는 기본 접힘(한 줄 요약) · 상품마다 보기도 기본 접힘'); }
 console.log(bad ? `\n❌ ${bad}건 실패` : '\n✓ 전부 통과'); process.exit(bad ? 1 : 0);
