@@ -91,6 +91,6 @@ const F = ctx.F;
   const G = fnBody(PW, 'ctrlGate'); ok(!!G && /F\.pauseCheck\(/.test(G) && /doc\('_bkfold'\)\.set\(\{ ctl: \{ \[fo\.fid\]: \{ \.\.\.r\.write, log: firebase\.firestore\.FieldValue\.arrayUnion\(ent\) \} \} \}, \{ merge: true \}\)/.test(G), 'ctrlGate = 코어 판정 · _bkfold에 merge로만(로그는 덧붙임)');
   ok(G.indexOf("doc('_bkfold').get()") > 0 && G.indexOf("doc('_bkfold').get()") < G.indexOf("doc('_bkfold').set("), '쓰기 전 _bkfold를 새로 읽음(웹앱이 방금 다시 켠 것을 덮지 않음)');
   ok(!/\.delete\(|FieldValue\.delete/.test(G) && !/\.delete\(|FieldValue\.delete/.test(fnBody(PW, 'ctrlDay')), '지우기 없음');
-  ok(/const CG = await ctrlGate\(wg\.id, !!J\.chaser, key, now\)/.test(PW) && /if \(CG && CG\.pause && TGW < cur\) why\.push\(/.test(PW), '멈춘 묶음은 값을 내리는 자동 반영을 선택 대기로(올림은 그대로)');
+  ok(/const CG = (?:DRYW \? null : )?await ctrlGate\(wg\.id, !!J\.chaser, key, now\)/.test(PW) && /if \(CG && CG\.pause && TGW < cur\) why\.push\(/.test(PW), '멈춘 묶음은 값을 내리는 자동 반영을 선택 대기로(올림은 그대로)');
   console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e && e.stack); process.exit(1); });
