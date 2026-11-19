@@ -22,14 +22,14 @@
   "at": "2026-11-19T19:51:43Z",
   "first": "2026-11-19T19:34:00Z"
  },
- "holder": "lead",
- "host": "vm-strat6",
- "what": "strat6 판 ⑥",
- "since": "2026-11-19T19:33:31Z",
- "beat": "2026-11-19T19:42:42Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "allcard1 판 안 냄 — reo1 1.78.821 카드 고침과 겹쳐 밖에서 합친 뒤 다시 줄 섬",
-  "at": "2026-11-19T19:32:48Z"
+  "done": "strat6 웹앱 1.78.823 감시 전략 창 판 ⑥ 엮이는 판매자",
+  "at": "2026-11-19T19:52:12Z"
  }
 }
