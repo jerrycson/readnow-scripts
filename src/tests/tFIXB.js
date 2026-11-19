@@ -20,7 +20,7 @@ function mkStore() { const store = {}; const col = (c) => (store[c] = store[c] |
 const clSrc = fs.readFileSync(path.join(__dirname, '../cloud/index.js'), 'utf8');
 const ca = clSrc.indexOf('const mktForce = new Map(), mktJobs'); const cb = clSrc.indexOf('async function shipNotifyTick'); const wonDef = clSrc.match(/const wonT = [^\n]*/)[0];
 function cloudCtx(F) { const steps = []; const stepOf = (ref) => { const f = (lv, m) => steps.push(lv + ':' + m); f.flush = async () => {}; return f; };
-  const ctx = { C: F.C, db: F.db, W: () => ({ writer: 'cloud' }), FV: { serverTimestamp: () => 'TS', arrayUnion: (...a) => ({ __au: a }) }, nowIso: () => new Date().toISOString(), log: () => {}, VER: '0.t', kickFlag: false, lastConfirm: [], lastConfirmAt: new Date().toISOString(), confirmDocAt: 0, enrichMem: new Map(), stepOf,
+  const ctx = { C: F.C, db: F.db, W: () => ({ writer: 'cloud' }), FV: { serverTimestamp: () => 'TS', arrayUnion: (...a) => ({ __au: a }) }, nowIso: () => new Date().toISOString(), log: () => {}, VER: '0.t', kickFlag: false, lastConfirm: [], lastDelivOrders: [], lastConfirmAt: new Date().toISOString(), confirmDocAt: 0, enrichMem: new Map(), stepOf,
     shipCoreNode: () => SH, mlMod: async () => ML, pushSend: async () => ({ ok: 1 }), Date, Math, String, JSON, Object, Array, Set, Map, Promise, Number };
   vm.runInNewContext(wonDef + '\n' + clSrc.slice(ca, cb) + '\nthis.shipAutoTick = shipAutoTick; this.autoRejudge = autoRejudge; this.mktJobsTick = mktJobsTick; this.mktJobs = mktJobs; this.mktForce = mktForce; this.mem = autoMem; this.reset = () => { amrAt = 0; autoCfgC = null; mktLoadAt = 0; };', ctx); return { ctx, steps }; }
 const colSrc = fs.readFileSync(path.join(__dirname, '../readnow-collector.user.js'), 'utf8');

@@ -1452,7 +1452,7 @@ html.phui-bon .rgvwf,html.phui-bon .rgpill,html.phui-bon .rn-top{right:calc(var(
 .shh-day{padding:6px 10px;margin:6px 0}.shh-day>summary{list-style:none;cursor:pointer;display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 0}.shh-day>summary::-webkit-details-marker{display:none}.shh-day>summary::after{content:'▾';margin-left:auto;color:#6B7A75}.shh-day[open]>summary::after{content:'▴'}.shh-bad{color:#B0322A}.shh-cards{min-width:0}.shh-day .shl-row{overflow-wrap:anywhere}.shl-fold{padding:4px 8px}.shl-foldbar{border:0;background:none;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;padding:6px 2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.shl-foldbar .shl-fx{margin-left:auto}
 #sheet.peek{top:max(14px,3vh);left:max(10px,3vw);right:max(10px,3vw);bottom:max(14px,3vh);border-radius:16px;box-shadow:0 14px 50px rgba(0,0,0,.4);border:2px solid #1F6F5C}body.peekbd::after{content:'';position:fixed;inset:0;background:rgba(10,20,16,.5);z-index:9}.bbpeek-x{position:sticky;top:0;z-index:5;display:block;width:100%;min-height:46px;border:0;border-bottom:1px solid #cfe0d8;background:#1F6F5C;color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer;border-radius:14px 14px 0 0}
 .mktbar{display:flex;justify-content:flex-end;margin:0 0 1px}.mktbar button{border:0;background:none;color:var(--muted,#888);font-size:10.5px;padding:0 2px;cursor:pointer;opacity:.75}.mktbar button:hover{opacity:1;text-decoration:underline}.mktbar .mkta-show{display:none;opacity:1;color:#2a5db0;font-size:11.5px}
-body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:flex-start}body.mkt-off .mktbar .mkta-hide{display:none}body.mkt-off .mktbar .mkta-show{display:inline}
+body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:flex-start}body.mkt-off .mktbar .mkta-hide{display:none}body.mkt-off .mktbar .mkta-show{display:inline}.mktbar .mkpn{color:#6a4a9a;opacity:.85}.mktbar .mkpn.warn{color:#B0322A;opacity:1;font-weight:600}.mktbar .mkpn-st{font-size:10.5px;color:var(--muted,#888);margin-left:4px}.mktbar .mkpn-st .bad{color:#B0322A}body.mkt-off .mktbar .mkpn,body.mkt-off .mktbar .mkpn-st,body.mkt-off .mktbar .mkpn-sp{display:none}
 .pmk-src{margin:0 4px;vertical-align:middle}.pmk-src button{font-size:11px;padding:1px 8px}.pmk-why{font-size:10.5px}.pmk-y24g{margin:2px 0 4px;display:flex;flex-wrap:wrap;gap:4px}.pmk-y24o{font-size:12px;margin:2px 0}.pmk-y24t td,.pmk-y24t th{font-size:11.5px;padding:2px 5px}.pmk-y24me{background:#eaf2ff}
 /* (11/10 ux2) 🧩 화면 고침 — ① 알림 자리 ② 빠른 작업 ④ 머리 칸 점 ⑤ 검색 범위 칩 ⑥ 처리할 주문 줄 ⑧ 설정 묶음 */
 #ux2dock{position:fixed;left:10px;bottom:66px;z-index:9990;display:flex;flex-direction:column;gap:6px;width:min(330px,calc(100vw - 20px));pointer-events:none}#ux2dock.empty{display:none}
@@ -1521,12 +1521,12 @@ html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}htm
 <script src="../readnow-products-core.js?v=0.19.15"></script>
 <script src="../readnow-ext-core.js?v=0.6.27"></script>
 <script src="../readnow-autosched-core.js?v=0.18.33"></script>
-<script src="../readnow-registry.js?v=0.14.216"></script>
+<script src="../readnow-registry.js?v=0.14.217"></script>
 <script src="../readnow-exec-core.js?v=0.1.2"></script>
 <script src="../cloud/shop-stock.js?v=0.1.0"></script>
 <script src="../readnow-ml-core.js?v=0.10.2"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.802'; // (1.78.802 edall3) 🔖 판본 판 ③ 차이 표 — 후보 둘의 판형·출판사·연월 같고 다름을 표로 견줌(edDiff) · 검색 상자에 출판사·연월 · 후보·목록 줄 안 작은 글 · 읽기 0 · 점수는 그대로 // (1.78.800 undo2) ↶ Ctrl+Z 판 ② — 저장 전 화면 칸 고침(가격 칸 값·고르기 상자·체크 상자·선택 칸)도 되돌리기·다시 하기 · 더 나중 것부터 · 그사이 바뀌면 안 함 · 바로 저장된 돈 칸은 띠</script>
-<script src="readnow-webapp.js?v=1.78.802"></script>
+<script>const APP_VER = '1.78.803'; // (1.78.803 mkref1) 📝 오늘 출고 ① 확인·📦 준비 탭 「🔄 전체 시장 지표 갱신」·「📝 유의 사항 전체 갱신」·카드 「📊 이 시장 지표 갱신」 · 모든 시장 지표 블록 「📝 판매자 유의 사항」(클라우드 peerNote · 공개 화면 · 1시간 건너뜀 · 최대 칸) // (1.78.802 edall3) 🔖 판본 판 ③ 차이 표 — 후보 둘의 판형·출판사·연월 같고 다름을 표로 견줌(edDiff) · 검색 상자에 출판사·연월 · 후보·목록 줄 안 작은 글 · 읽기 0 · 점수는 그대로 // (1.78.800 undo2) ↶ Ctrl+Z 판 ② — 저장 전 화면 칸 고침(가격 칸 값·고르기 상자·체크 상자·선택 칸)도 되돌리기·다시 하기 · 더 나중 것부터 · 그사이 바뀌면 안 함 · 바로 저장된 돈 칸은 띠</script>
+<script src="readnow-webapp.js?v=1.78.803"></script>
 </body>
 </html>
