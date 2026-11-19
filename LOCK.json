@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-engfix1119",
-   "why": "판 내기 기다림: 엔진 맥박 칸",
-   "first": "2026-11-19T06:52:27Z",
-   "at": "2026-11-19T07:27:48Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-engimp1",
    "why": "판 내기 기다림: engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
    "first": "2026-11-19T06:57:23Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-engfix1119",
-  "why": "판 내기 기다림: 엔진 맥박 칸",
-  "at": "2026-11-19T07:27:48Z",
-  "first": "2026-11-19T06:52:27Z"
+  "host": "vm-engimp1",
+  "why": "판 내기 기다림: engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
+  "at": "2026-11-19T07:28:39Z",
+  "first": "2026-11-19T06:57:23Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-engfix1119",
+ "what": "엔진 맥박 칸",
+ "since": "2026-11-19T07:28:50Z",
+ "beat": "2026-11-19T07:28:50Z",
  "last": {
   "who": "lead",
   "done": "감시 전략 ③ 엔진 규칙 층 (strat3) · 5b3101997 · 가격 공용 0.17.23 · 웹앱 1.78.784",
