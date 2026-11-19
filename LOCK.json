@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-y24samp1",
-   "why": "판 내기 기다림: y24samp1 예스24 견본 늘리기",
-   "first": "2026-11-19T07:43:32Z",
-   "at": "2026-11-19T09:55:50Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bqfix1",
    "why": "판 내기 기다림: bqfix1 수동 일괄 잠김·이미 부합",
    "first": "2026-11-19T07:55:57Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-y24samp1",
-  "why": "판 내기 기다림: y24samp1 예스24 견본 늘리기",
-  "at": "2026-11-19T09:55:50Z",
-  "first": "2026-11-19T07:43:32Z"
+  "host": "vm-bqfix1",
+  "why": "판 내기 기다림: bqfix1 수동 일괄 잠김·이미 부합",
+  "at": "2026-11-19T09:56:29Z",
+  "first": "2026-11-19T07:55:57Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-y24samp1",
+ "what": "y24samp1 예스24 견본 늘리기",
+ "since": "2026-11-19T09:56:52Z",
+ "beat": "2026-11-19T09:56:52Z",
  "last": {
   "who": "lead",
   "done": "bqsub1 웹앱 1.78.792 세 탭 하위 탭·빠르게 고르기 (b72d05757)",
