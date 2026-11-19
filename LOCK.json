@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-reo1",
-   "why": "판 내기 기다림: reo1 수동 일괄 확정 선택 대기 되돌림 멈춤",
-   "first": "2026-11-19T15:58:10Z",
-   "at": "2026-11-19T19:04:13Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-pxg1",
    "why": "판 내기 기다림: pxg1 조회수 표 판 H(열 지도)",
    "first": "2026-11-19T16:06:13Z",
@@ -24,16 +17,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-reo1",
-  "why": "판 내기 기다림: reo1 수동 일괄 확정 선택 대기 되돌림 멈춤",
-  "at": "2026-11-19T19:04:13Z",
-  "first": "2026-11-19T15:58:10Z"
+  "host": "vm-pxg1",
+  "why": "판 내기 기다림: pxg1 조회수 표 판 H(열 지도)",
+  "at": "2026-11-19T19:04:37Z",
+  "first": "2026-11-19T16:06:13Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-reo1",
+ "what": "reo1 수동 일괄 확정 선택 대기 되돌림 멈춤",
+ "since": "2026-11-19T19:05:15Z",
+ "beat": "2026-11-19T19:05:15Z",
  "last": {
   "who": "lead",
   "done": "strat6 판 ⑤ 웹앱 1.78.820 push",
