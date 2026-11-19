@@ -23,7 +23,7 @@
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.16
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.24
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.25
 // @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.19
 // @require      https://readnow.kr/readnow-registry.js?v=0.14.218
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.27

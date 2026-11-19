@@ -10,7 +10,7 @@
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.16
-// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.24
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.25
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
 // @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
