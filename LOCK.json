@@ -57,14 +57,14 @@
   "at": "2026-11-19T01:15:15Z",
   "first": "2026-11-19T00:53:54Z"
  },
- "holder": "lead",
- "host": "vm-chkdone1",
- "what": "판 1.78.768 push",
- "since": "2026-11-19T00:40:05Z",
- "beat": "2026-11-19T01:15:23Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판 서 1.78.767 냄 (ctrlimp3)",
-  "at": "2026-11-18T22:36:27Z"
+  "done": "판 웹앱 1.78.768·클라우드 0.35.322 냄 (chkdone1 · PC 배치 로그인 카드 · 예스24 검색 쿠키)",
+  "at": "2026-11-19T01:16:17Z"
  }
 }
