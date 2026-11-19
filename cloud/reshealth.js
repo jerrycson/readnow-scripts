@@ -20,6 +20,7 @@ const RH_DEF = {
 /* 일마다: k 이름 · t 보이는 이름 · doc 문서 · at 때 칸 · n 결과 수 칸(0이면 「0」) · maxH 이만큼 넘게 안 돌면 「늦음」 · redo 다시 부르는 열쇠(index.js가 줌 · 없으면 깃발만) · ses 세션 예약이 하는 일 */
 const RH_JOBS = [
   { k: 'engself', t: '🤖 연구 엔진 스스로', doc: 'app_settings/eng_self', at: 'at', n: null, maxH: 32, redo: 'engself' },
+  { k: 'engnet', t: '🕸 엔진 연결망', doc: 'app_settings/eng_net', at: 'lightAt', n: null, maxH: 3, redo: 'engnet' }, /* (engnet1 11/19) 30분마다 박동 · 3시간 넘으면 다시 부름 */
   { k: 'cons', t: '🛒 소비심리', doc: 'app_settings/cons_study', at: 'at', n: 'tot.orders', maxH: 30, redo: 'cons' },
   { k: 'badge', t: '🏷 표시 배지', doc: 'app_settings/badge_study', at: 'at', n: 'runs', maxH: 30, redo: 'badge' },
   { k: 'extras', t: '🎁 덤·미개봉 요소', doc: 'app_settings/extras_study', at: 'at', n: 'priced', maxH: 30, redo: 'extras' },
