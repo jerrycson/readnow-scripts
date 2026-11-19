@@ -21,7 +21,7 @@ function mk(over) {
   const FV = { delete: () => ({ __del: 1 }), arrayUnion: (x) => ({ __union: x }), serverTimestamp: () => ({ __ts: 1 }) };
   const S = { prBatches: [], prCfg: {}, bkfold: { ctl: {} }, user: { email: 'x@y.z' }, ...(over && over.S) };
   const db = { collection: () => ({ doc: (id) => ({ id }) }), runTransaction: async (fn) => fn({ get: async (ref) => ({ exists: !!docs[ref.id], data: () => docs[ref.id] }), update: (ref, u) => calls.upd.push([ref.id, u]) }) };
-  const ctx = { console, S, db, firebase: { firestore: { FieldValue: FV } }, window: { ReadnowChase: CH }, localStorage: { getItem: () => null, setItem: () => {} }, document: { getElementById: (id) => (over && over.ov && id === 'gsw_ov' ? over.ov : null), createElement: () => ({}), addEventListener() {}, removeEventListener() {}, body: { appendChild() {} } }, history: {}, TS: () => ({ __ts: 1 }), esc: (x) => String(x), num: (x) => String(x), toast: (m) => calls.toast.push(m), errKo: (e) => String(e && e.message || e), twiceArm: () => 'go',
+  const ctx = { console, S, db, setTimeout: () => 0, clearTimeout: () => {}, firebase: { firestore: { FieldValue: FV } }, window: { ReadnowChase: CH }, localStorage: { getItem: () => null, setItem: () => {} }, document: { getElementById: (id) => (over && over.ov && id === 'gsw_ov' ? over.ov : null), createElement: () => ({}), addEventListener() {}, removeEventListener() {}, body: { appendChild() {} } }, history: {}, TS: () => ({ __ts: 1 }), esc: (x) => String(x), num: (x) => String(x), toast: (m) => calls.toast.push(m), errKo: (e) => String(e && e.message || e), twiceArm: () => 'go',
     presetsOf: () => S.prCfg.presets || {}, bkcOf: (fid) => ({ def: ((S.bkfold.ctl || {})[fid] || {}).def || {} }), bkcPaint: () => { calls.paint++; }, bkfDirty: () => {}, batchIsOn: () => true, bkfSt: (g) => g, watchEnroll: async (id) => { calls.enroll.push(id); return 3; }, slObsCfg: () => ({ fastLagMin: 45 }), batchLoadOne: async () => null, BKF_MAXG: 100, BKC_LOG: 60, kTime: (x) => x };
   vm.createContext(ctx); vm.runInContext(`${BKFJS}\n${BLK}\n${NORM}\n${NEWL}\nglobalThis.E = { gswPaint, gswChaseNorm, gswChaseCheck, gswSrc, gswWin, gswOps, gswPatch, gswDiff, gswPut, gswGet, gswPrep, gswApply, gswFastLag, gswLayers, bkcNorm, cheNewLine, GSW_K, bkfJs };`, ctx);
   return { E: ctx.E, S, docs, calls, FV };
@@ -109,7 +109,7 @@ const T = mk(); const E = T.E; const plain = (o) => JSON.parse(JSON.stringify(o)
     ok(/data-gswk="maxFollow"/.test(h) && /data-gswi="maxFollow"/.test(h) && !/data-gswi="rangePct"/.test(h), '덮은 칸에만 ↺ 물려받기');
     ok(/gsw-chip gsw-group/.test(h) && /gsw-chip gsw-global/.test(h) && /gsw-chip gsw-default/.test(h), '출처 칩: 이 그룹 · 전체 · 엔진 기본');
     ok((h.match(/class="gsw-i"/g) || []).length >= 14, '칸마다 ⓘ(손잡이 13 + 빨리 따라 내림 기준)');
-    ok(['group', 'fold', 'preset', 'global'].every((k) => h.includes(`data-gswgo="${k}"`)), '바로 가기 넷'); ok(/🔍 미리 보기/.test(h) && /다음 판\(②\)/.test(h), '빈 🔍 미리 보기 자리');
+    ok(['group', 'fold', 'preset', 'global'].every((k) => h.includes(`data-gswgo="${k}"`)), '바로 가기 넷'); ok(/🔍 미리 보기/.test(h) && /📒 기록/.test(h), '🔍 미리 보기 · 📒 기록 구역');
     ok(/data-gswf="fastLag"/.test(h) && /data-gswact="apply"[^>]*disabled/.test(h), '빨리 따라 내림 기준 칸 · 바뀐 것 없으면 적용 막힘');
     ok(/role="dialog"/.test(h) && /bigask-x/.test(h), '닫기 단추·대화 상자 역할'); }
 
