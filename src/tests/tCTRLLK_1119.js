@@ -21,10 +21,10 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.evaluate(require('./seed.js')); await Wt(p, 500);
   const R = await p.evaluate(() => { const now = Date.now(); S.pmetrics = S.pmetrics || new Map(); S.pmetrics.set('bk1', { lastCheckedAt: new Date(now).toISOString() });
     const mk = (code) => ({ l: { listingId: 'L' + code, status: '판매중', bookId: 'bk1', price: 10000, usedCode: code, title: '가짜' + code }, out: false, floor: 0, page1: [], target: 9800 });
-    const xs = { full: mk('uF'), cin: mk('uC1'), cout: mk('uC2'), free: mk('uN') };
-    const lk = { full: { on: true, mode: 'full' }, cin: { on: true, mode: 'cond', cond: { floor: 9500 } }, cout: { on: true, mode: 'cond', cond: { floor: 9500 } } };
+    const xs = { full: mk('uF'), cin: mk('uC1'), cout: mk('uC2'), cx: mk('uC3'), free: mk('uN') };
+    const lk = { full: { on: true, mode: 'full' }, cin: { on: true, mode: 'cond', cond: { floor: 9500 } }, cout: { on: true, mode: 'cond', cond: { floor: 9500 } }, cx: { on: true, mode: 'cond', cond: { until: '2020-01-01T00:00:00Z', floor: 9500 } } };
     const Z = { now }; const key = (x) => 'aladin_' + x.l.usedCode; const C = { keyOf: key, startOf: () => 10000 };
-    const val = { full: 9800, cin: 9800, cout: 9000, free: 9800 };
+    const val = { full: 9800, cin: 9800, cout: 9000, cx: 9800, free: 9800 };
     const setOpt = (o) => { S.bkfold = { ...(S.bkfold || {}), lkopt: o }; };
     const Mrt = (names) => new Map(names.filter((n) => lk[n]).map((n) => [key(xs[n]), lk[n]]));
     const out = {}; out.def = ctrlLkOpt();
@@ -33,19 +33,19 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
         out[tag][n] = { real: rt && rt.out, realPlan: rt && rt.plan, itemReal: bkfItemWhy(xs[n], C, val[n], Z, M), ctrlReal: ctrlLkWhy(xs[n], val[n], M), plan: ctrlLkWhy(xs[n], val[n], M) }; }
       /* 계획(M 없음) — 실시간 잠금 S.plk 에 넣고 본다 */
       S.plk = new Map(Object.keys(lk).map((n) => [key(xs[n]), lk[n]])); out[tag].planned = {};
-      for (const n of Object.keys(xs)) { const w = bqLockWhy(xs[n], val[n], null); out[tag].planned[n] = { out: w ? w.out : null, plan: w ? !!w.plan : null, item: bkfItemWhy(xs[n], C, val[n], Z, null), mark: ctrlLkWhy(xs[n], val[n], null) }; } }
+      for (const n of Object.keys(xs)) { const w = bqLockWhy(xs[n], val[n], null); out[tag].planned[n] = { out: w ? w.out : null, cut: !!(w && w.Q && w.Q.cut), plan: w ? !!w.plan : null, item: bkfItemWhy(xs[n], C, val[n], Z, null), mark: ctrlLkWhy(xs[n], val[n], null) }; } }
     return out; });
   console.log('  ', JSON.stringify(R).slice(0, 900));
   ok(!R.def.full, '기본: 꺼짐(계획에도 안 넣음)', R.def);
   const P0 = R.off.planned, P1 = R.on.planned;
   ok(P0.full.out === true && P0.free.out === null, '기본: 완전 잠금은 계획에서 빠짐 · 잠금 없는 상품은 그대로', P0);
   ok(P0.cin.out === false && !P0.cin.item, '기본: 조건 잠금 선 안은 다른 상품과 같게 대상', P0.cin);
-  ok(P0.cout.out === true || /조건 잠금/.test(P0.cout.item || ''), '기본: 조건 잠금 선 밖은 조건을 지켜 뺌', P0.cout);
+  ok(P0.cout.out === true || /조건 잠금/.test(P0.cout.item || ''), '기본: 조건 잠금 선 밖은 조건을 지켜 뺌', P0.cout); ok(P0.cx.out === true && /조건 잠금|🔒/.test(P0.cx.item || ''), '기본: 기한 지난 조건 잠금은 완전 잠금처럼 막음(세 화면 같음)', P0.cx);
   ok(P1.full.out === false && P1.full.plan === true && !P1.full.item, '스위치 켬: 완전 잠금 상품이 계획·미리 보기에 들어감', P1.full);
   ok(P1.cin.out === P0.cin.out && P1.cout.out === P0.cout.out, '스위치 켬: 조건 잠금은 그대로 조건을 지킴(영향 없음)', { cin: [P0.cin, P1.cin], cout: [P0.cout, P1.cout] });
   // 같은 상품·같은 값 = 같은 답 (그룹 화면 bqLockWhy · 묶음 실행 bkfItemWhy · 모아 보기 ctrlLkWhy)
-  for (const tag of ['off', 'on']) for (const n of ['full', 'cin', 'cout', 'free']) { const e = R[tag].planned[n]; const g = e.out === true, b = !!e.item && /🔒|조건 잠금/.test(e.item), m = !!e.mark;
-    ok(g === b && b === m, `같은 상품·같은 값 같은 답 — 스위치 ${tag} · ${n}: 그룹 화면 ${g} · 묶음 실행 ${b} · 모아 보기 ${m}`, e); }
+  for (const tag of ['off', 'on']) for (const n of ['full', 'cin', 'cout', 'cx', 'free']) { const e = R[tag].planned[n]; const g = e.out === true, b = !!e.item && /🔒|조건 잠금/.test(e.item), m = !!e.mark;
+    if (e.cut) ok(g === false && m === false && /선에 닿음/.test(e.item || ''), `조건 잠금 선에 닿는 값 — 그룹 화면·모아 보기는 남기고 묶음 실행은 「그룹 화면에서 확정」으로 보류(기존 규칙) — 스위치 ${tag} · ${n}`, e); else ok(g === b && b === m, `같은 상품·같은 값 같은 답 — 스위치 ${tag} · ${n}: 그룹 화면 ${g} · 묶음 실행 ${b} · 모아 보기 ${m}`, e); }
   // ㉠ 스위치를 켜도 실제 반영(새로 읽은 잠금 M)은 완전 잠금 상품 0건 · 조건 잠금은 지킴
   const RP = R.on;
   ok(RP.full.real === true && RP.full.itemReal === '🔒 잠금', '스위치 켬 + 실제 반영: 완전 잠금 상품 막힘(🔒 잠금)', RP.full);

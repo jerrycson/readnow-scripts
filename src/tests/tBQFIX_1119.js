@@ -40,7 +40,7 @@ console.log('① 공용 잠금 판정 bqLockWhy');
 console.log('① 그룹 화면·실행·상태판이 모두 bqLockWhy를 부름(잠긴 상품이 선택 대기에 남던 원인 = 「이 그룹에서 뺀」 잠금만 빼던 탭 나누기)');
 { ok(/R\.forEach\(\(x, i\) => \{ if \(PLO\.has\(keyOf\(x\)\)\) return void outI\.push\(i\); const t = cls\(x\); if \(BQ_LKT\.has\(t\)\) \{ const W = bqLockWhy\(x, t === 'ok' \? null : bkfTabP\(x, t, \{ keyOf, st \}\), null\); if \(W && W\.out\) \{ LK\.i\.push\(i\)/.test(T), '탭 나누기 — 잠겨서 빠짐은 탭에 넣지 않음(LK)');
   ok(/const W = bqLockWhy\(p\.x, p\.price, M\); if \(!W\) continue; const v = W\.v; if \(W\.m !== 'cond'\) \{ lk\.push\(p\); continue; \}/.test(T), '실행(결정 대기 확정) — 서버 잠금 M으로 bqLockWhy');
-  ok(/const W = bqLockWhy\(x, p, M\); if \(W\) \{ if \(W\.m !== 'cond'\) return '🔒 잠금';/.test(T), '📊 묶음 상태판(bkfItemWhy)도 같은 판정');
+  ok(/const W = bqLockWhy\(x, p, M\); if \(W\) \{ if \(W\.out\) return W\.m !== 'cond' \? '🔒 잠금' : '🎚 조건 잠금 선 밖';/.test(T), '📊 묶음 상태판(bkfItemWhy)도 같은 판정');
   ok(/if \(\(bqLockWhy\(x, x\.target\) \|\| \{\}\)\.out\) continue;/.test(T), '그룹 칸 선택 대기 수에서도 뺌');
   ok(/\$\{bqLkBarHtml\(LK, R, keyOf\)\}/.test(T) && /data-bqlkv="1"/.test(T) && /closest\('\[data-bqlkv\]'\)[^\n]*plkDrawer\(\{ mark: true \}\)/.test(T), '「🔒 잠겨서 빠짐」 줄 + 잠금 서랍에서 그 상품들 먼저 보기');
   ok(/bqLkSig\(S\.batchRes\) !== S\._bqLkS\) \{ S\._bqLkS = bqLkSig\(S\.batchRes\); S\._plkBRe\(\); \}/.test(T), '잠금·풀기가 생기면 그룹 화면을 다시 셈(plkPaint)');
