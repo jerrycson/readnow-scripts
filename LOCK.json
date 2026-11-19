@@ -1,6 +1,20 @@
 {
- "queue": [],
- "ask": null,
+ "queue": [
+  {
+   "who": "lead",
+   "host": "vm-c2name1",
+   "why": "판 내기 기다림: 번외 켜기 기기 이름 되찾기",
+   "first": "2026-11-19T19:34:00Z",
+   "at": "2026-11-19T19:34:00Z"
+  }
+ ],
+ "ask": {
+  "who": "lead",
+  "host": "vm-c2name1",
+  "why": "판 내기 기다림: 번외 켜기 기기 이름 되찾기",
+  "at": "2026-11-19T19:34:00Z",
+  "first": "2026-11-19T19:34:00Z"
+ },
  "holder": "lead",
  "host": "vm-strat6",
  "what": "strat6 감시 전략 판 ⑥ 엮이는 판매자",
