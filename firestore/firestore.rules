@@ -35,10 +35,21 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 나머지 모두 — 예전 그대로(직원 읽기·쓰기) · 쓰기만 prd_locks를 뺌(규칙은 '또는'으로 묶이므로)
+    // 🎛 관제소 날마다 요약(kpib1 11/19 · 정범님 I-1119-2051-30 · reports/CTRLKPI1_1119.md) — 클라우드만 씀(관리자 SDK는 규칙을 거치지 않음)
+    //  · 웹앱(직원)은 읽기만 · 쓰기·지우기 막힘(지난 날 기록을 웹앱이 고치거나 지우지 못하게)
+    match /ctl_kpi_m/{k} {
+      allow read: if staff();
+      allow write: if false;
+    }
+    match /ctl_kpi_days/{k} {
+      allow read: if staff();
+      allow write: if false;
+    }
+
+    // 나머지 모두 — 예전 그대로(직원 읽기·쓰기) · 쓰기만 prd_locks·관제소 요약을 뺌(규칙은 '또는'으로 묶이므로)
     match /{document=**} {
       allow read: if staff();
-      allow write: if staff() && !(request.path[3] == 'prd_locks');
+      allow write: if staff() && !(request.path[3] in ['prd_locks', 'ctl_kpi_m', 'ctl_kpi_days']);
     }
   }
 }
