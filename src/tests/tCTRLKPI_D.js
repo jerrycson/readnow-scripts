@@ -72,7 +72,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   let w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); return { yd: (ov.querySelector('.ck-yd') || {}).textContent || '', sel: [...ov.querySelectorAll('.ckd-sel button.on')].map((b) => b.dataset.ckset), rows: ov.querySelectorAll('.ckd-t tbody tr[data-ckday]').length, svg: !!ov.querySelector('svg.ckd-line'), water: !!ov.querySelector('svg.ckd-water'), sum: (ov.querySelector('.ckd-sum') || {}).textContent || '' }; });
   ok(/^어제 대비\(01시 기록 \d+\/\d+ → \d+\/\d+\) — 이 묶음 4 · 어제 대비 −1 · 가게 전체 30 · 어제 대비 \+1$/.test(w.yd), '창 맨 위 「어제 대비」 = 01시 기록 날짜 · 이 묶음 · 가게 전체', w.yd);
   ok(w.sel.join() === 'sc:fold,rng:30,per:d,vw:n' && w.rows === 30 && w.svg && w.water, '기본 = 이 묶음 · 30일 · 날 · 수 — 날 줄 30 · 선 그림 · 얻음·잃음 그림', w);
-  ok(/마지막 기록 \d+\/\d+ 01시 4/.test(w.sum) && /기록 있는 날 9\/30일/.test(w.sum), '요약 줄 = 마지막 기록 · 기록 있는 날 수(묶음은 8일 전부터)', w.sum);
+  ok(/마지막 기록 \d+\/\d+ 01시 4/.test(w.sum) && /기록 있는 날 7\/30일/.test(w.sum), '요약 줄 = 마지막 기록 · 기록 있는 날 수(묶음은 8일 전부터 · 5·6일 전 없음 → 7일)', w.sum);
   let r = await row(D.d9); ok(r && r[1] === '없음 — 이 묶음은 이날 기록 없음', '묶음 칸이 없는 날 = 「없음」(0 아님)', r);
   r = await row(D.d5); ok(r && r[1] === '없음 — 기록한 날이 아님', '기록 없는 날 = 「없음 — 기록한 날이 아님」', r);
   r = await row(D.t); ok(r && r[1] === '4' && r[2] === '40%' && r[3] === '1' && r[4] === '0', '묶음 오늘 줄 = 최상단 4 · 비율 4÷10(묶음 시장 지표 있음) · 얻음 1 · 잃음 0', r);
@@ -86,14 +86,14 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   // 주·달 묶기 — 흐름 수 합 = 날 합
   const sums = await p.evaluate(() => { const S1 = (per, k) => ckSeries('top', 'all', 30, per, null).rows.reduce((s, r) => s + (r[k] || 0), 0); const o = {}; for (const k of ['g', 'l', 'sold', 'amt']) o[k] = [S1('d', k), S1('w', k), S1('m', k)]; return o; });
   ok(Object.values(sums).every((a) => a[0] > 0 && a[0] === a[1] && a[0] === a[2]), '주·달로 묶어도 얻음·잃음·판매 권수·금액 합 = 날 합', sums);
-  await set('per:w'); w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); return { n: ov.querySelectorAll('.ckd-t tbody tr').length, wk: [...ov.querySelectorAll('.ckd-t tbody tr td:first-child')].every((td) => / 주/.test(td.textContent)), day: ov.querySelectorAll('tr[data-ckday]').length }; });
+  await set('per:w'); w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); return { n: ov.querySelectorAll('.ckd-tw .ckd-t tbody tr').length, wk: [...ov.querySelectorAll('.ckd-tw .ckd-t tbody tr td:first-child')].every((td) => / 주/.test(td.textContent)), day: ov.querySelectorAll('tr[data-ckday]').length }; });
   ok(w.n >= 5 && w.n <= 6 && w.wk && w.day === 0, '주로 묶기 = 주 줄(월요일부터) · 날 누름 없음', w); await set('per:d');
   // 유효 최저가 — 되살린 날 = 거르지 않은 동급 최저(lowU) 딱지
   await p.keyboard.press('Escape'); await Wt(p, 150); await win('low');
   r = await row(D.d10); ok(r && /^50 거르지 않은 동급 최저/.test(r[1]) && r[3] === '—', '되살린 날 = lowU 50 + 「거르지 않은 동급 최저」 딱지 · 얻음·잃음 비움', r);
   r = await row(D.t); ok(r && r[1] === '50' && r[2] === '71.4%' && r[6] === '20' && r[7] === '10', '보통 날 = 유효 최저가 50 · 비율 ÷ 견줄 수 있던 수(70) · 더 싸야만 20 · 견줄 것 없음 10', r);
   w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); return { dash: !!ov.querySelector('svg.ckd-line path[stroke-dasharray]'), hol: !!ov.querySelector('svg.ckd-line circle[fill="#fff"]'), gap: ov.querySelectorAll('svg.ckd-line rect.ckd-gap').length }; });
-  ok(w.dash && w.hol && w.gap === 2, '그림 = 거르지 않음 점선 · 되살린 날 속 빈 점 · 기록 없는 날 2개는 바닥 눈금(선 끊김)', w);
+  ok(w.dash && w.hol && w.gap === 11, '그림 = 거르지 않음 점선 · 되살린 날 속 빈 점 · 기록 없는 날 11개(5·6일 전 + 첫 기록 전 9일)는 바닥 눈금(선 끊김)', w);
   await p.keyboard.press('Escape'); await Wt(p, 150);
   // 그날 누름 — 날 문서 정확히 1번
   await win('top'); const d0 = await R('ctl_kpi_days');
