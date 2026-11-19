@@ -73,9 +73,9 @@
  },
  "holder": "lead",
  "host": "vm-bkftop1",
- "what": "관제소 맨 위 줄(bkftop1)",
+ "what": "관제소 맨 위 줄(bkftop1) · 빌드",
  "since": "2026-11-19T13:29:33Z",
- "beat": "2026-11-19T13:29:33Z",
+ "beat": "2026-11-19T13:30:16Z",
  "last": {
   "who": "lead",
   "done": "",
