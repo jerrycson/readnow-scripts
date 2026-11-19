@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-fxfix1",
-   "why": "판 내기 기다림: fxfix1 💱 넘긴 환율 열쇠·지킴 (번외 0.1.79 · 클라우드)",
-   "first": "2026-11-19T01:56:35Z",
-   "at": "2026-11-19T03:06:34Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-invimp2",
    "why": "판 내기 기다림: 재고 품목 판 ③ 🔖 키워드 상품 탭 (invimp2)",
    "first": "2026-11-19T02:06:03Z",
@@ -45,16 +38,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-fxfix1",
-  "why": "판 내기 기다림: fxfix1 💱 넘긴 환율 열쇠·지킴 (번외 0.1.79 · 클라우드)",
-  "at": "2026-11-19T03:06:34Z",
-  "first": "2026-11-19T01:56:35Z"
+  "host": "vm-invimp2",
+  "why": "판 내기 기다림: 재고 품목 판 ③ 🔖 키워드 상품 탭 (invimp2)",
+  "at": "2026-11-19T03:07:16Z",
+  "first": "2026-11-19T02:06:03Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-fxfix1",
+ "what": "fxfix1 💱 넘긴 환율 열쇠·지킴 (번외 0.1.79 · 클라우드)",
+ "since": "2026-11-19T03:07:37Z",
+ "beat": "2026-11-19T03:07:37Z",
  "last": {
   "who": "lead",
   "done": "recinh1 🔖 판 옮김 웹앱 1.78.772 냄 (옛 상품 기록 물려받기 · 한 권씩 판 옮김)",
