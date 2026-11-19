@@ -28,7 +28,7 @@ require('./harness.js')(G(async (p) => {
   await p.evaluate(() => { S.tab = 'home'; S.q = ''; renderTabs(); renderMainNow(); ux2Apply(); }); await p.waitForTimeout(400);
   const hd = await p.evaluate(() => { const h = document.querySelector('header.top'); const vis = (s) => { const e = h.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; }; const q = document.getElementById('q').getBoundingClientRect(); const w = document.getElementById('ux2qa'); const wr = w && w.getBoundingClientRect(); return { h: h.offsetHeight, hf: document.documentElement.classList.contains('ux2-hf'), sync: vis('.sync'), colbar: vis('.colbar'), jobs: vis('.jobs'), dot: !!document.getElementById('ux2hdot'), qa: w ? [...w.querySelectorAll('button')].map((b) => b.textContent) : null, sameRow: wr && Math.abs(wr.top - q.top) < 12 }; });
   ok(hd.hf && !hd.sync && !hd.colbar && !hd.jobs && hd.dot, '④ 상태 세 줄이 접히고 이름 옆 점 하나', hd);
-  ok(hd.qa && hd.qa.length === 3 && /📥 등록/.test(hd.qa[0]) && /🚚 오늘 출고/.test(hd.qa[1]) && /＋ 매입/.test(hd.qa[2]) && hd.sameRow, '② 검색창 옆에 빠른 작업 3개(넓은 화면은 같은 줄)', hd);
+  ok(hd.qa && hd.qa.length >= 3 && (hd.qa.length === 3 || /🛰 관제소/.test(hd.qa[3])) && /📥 등록/.test(hd.qa[0]) && /🚚 오늘 출고/.test(hd.qa[1]) && /📋 매입목록/.test(hd.qa[2]) && hd.sameRow, '② 검색창 옆에 빠른 작업 3개(넓은 화면은 같은 줄)', hd);
   await p.click('#ux2hdot'); await p.waitForTimeout(200);
   const hd2 = await p.evaluate(() => ({ h: document.querySelector('header.top').offsetHeight, hf: document.documentElement.classList.contains('ux2-hf') }));
   ok(!hd2.hf && hd2.h > hd.h, '④ 점을 누르면 세 줄이 펼쳐짐', [hd.h, hd2.h]); await p.click('#ux2hdot'); await p.waitForTimeout(200);
@@ -44,7 +44,7 @@ require('./harness.js')(G(async (p) => {
   await shut(p);
   await p.click('[data-ux2qa="ship"]'); await p.waitForTimeout(700); ok(await p.evaluate(() => !!(S.detail && S.detail.ship)), '② 🚚 오늘 출고 → 오늘 출고 화면(열기만)');
   await shut(p);
-  await p.click('[data-ux2qa="pur"]'); await p.waitForTimeout(700); ok(await p.evaluate(() => !!document.querySelector('#sheet.on, #modal.on') && /매입/.test((document.querySelector('#sheet.on') || document.querySelector('#modal.on')).innerText)), '② ＋ 매입 → 새 매입 기록');
+  await p.click('[data-ux2qa="pur"]'); await p.waitForTimeout(700); ok(await p.evaluate(() => !!(S.detail && S.detail.purAll) && !!document.getElementById('pa_new')), '② 📋 매입목록 → 매입 전체 목록(맨 위 ＋ 새매입) (buyp0 11/19 — 예전 ＋ 매입 → 새 매입 기록)');
   await shut(p);
   // ① 알림 자리
   await p.waitForFunction(() => DLP.m.size === 0 && !DLP.t && !S.upd.size && !document.getElementById('dlp') && !document.getElementById('updpill'), null, { timeout: 20000 }).catch(() => {}); /* (kfail3 11/17) 앱 자신의 ⬇ 내려받기 띠·받는 중 알림(같은 id)이 끝나 사라진 뒤에 시험용 둘을 넣음 — 예전엔 부하 때 늦게 끝난 앱 받기가 시험 것을 지우거나(DLP.draw) 같은 id가 둘이 되어 ①이 흔들렸음 · 기대 그대로 */

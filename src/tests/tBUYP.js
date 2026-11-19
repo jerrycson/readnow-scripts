@@ -151,6 +151,7 @@ require('./harness.js')(async (p) => { let dialogs = 0; p.on('dialog', (d) => { 
   const snap = () => ev(() => ({ rr: __rr, open: [...(S._regOpen || [])].join(), cur: S._regCur || '', y: Math.round(document.getElementById('sheet').scrollTop), ov: document.querySelectorAll('.buyp-ov').length, bo: __bo }));
   for (const view of ['compact', 'full']) {
     await ev((v) => { localStorage.setItem('rn-reg-view', v); S._regOpen = new Set(); regRerender(); }, view); await wait(700);
+    await ev(() => { const sp = document.getElementById('seenp'); if (sp) sp.style.visibility = 'hidden'; }); /* (buyp0 11/19) 시험 창(좁은 화면)에선 오른쪽 👁 살핀 상품 패널이 한눈에 보기 카드의 💰 칸을 덮음 — 이 확인은 카드 💰 칸 누름만 보므로 잠시 숨김 · 패널 확인(⑩)은 아래에서 되돌린 뒤 */
     await ev(() => { const L = [...document.querySelectorAll('#sheet [data-buypc]')].filter((c) => c.offsetParent && !(S._regCur && c.dataset.buypc === S._regCur)); const c = L[1] || L[0]; if (c) c.scrollIntoView({ block: 'center' }); }); await wait(500);
     const pt = await ev(() => { for (const c of document.querySelectorAll('#sheet [data-buypc]')) { const r = c.getBoundingClientRect(); if (!r.width) continue; const x = r.left + r.width / 2, y = r.top + r.height / 2; const t = document.elementFromPoint(x, y); if (t && t.closest('[data-buypc]') === c && !(S._regCur && c.dataset.buypc === S._regCur)) return { x, y, id: c.dataset.buypc }; } return null; }); /* 위에 덮인 것이 없는 칸을 그 자리에서 바로 누름(도구가 다시 스크롤하지 않게) */
     ok(!!pt, `${view === 'compact' ? '📋 한눈에' : '🔎 자세히'} — 카드에 💰 칸`, pt); if (!pt) continue;
@@ -159,6 +160,7 @@ require('./harness.js')(async (p) => { let dialogs = 0; p.on('dialog', (d) => { 
     await p.mouse.dblclick(pt.x, pt.y); await wait(600); const a2 = await snap();
     ok(a2.ov === 1 && a2.bo - a1.bo === 1 && a2.open === a0.open && Math.abs(a2.y - a0.y) < 2, `${view} — 두 번 누름: 창 한 번만 · 카드는 그대로`, { a0, a2 });
     await p.keyboard.press('Escape'); await wait(200); }
+  await ev(() => { const sp = document.getElementById('seenp'); if (sp) sp.style.visibility = ''; });
   { const r = await ev(() => { const el = document.getElementById('seenp'); const b = el && el.querySelector('[data-spbuyp]'); const h = el && el.querySelector('.seenp-h'); const bt = b && b.querySelector('[data-sp="buyp"]'); const dis = [...el.querySelectorAll('button:disabled')]; return { has: !!b, txt: b ? b.innerText : '', bt: bt && bt.disabled, op: el && getComputedStyle(el).opacity, bg: el && getComputedStyle(el).backgroundColor, hbg: h && getComputedStyle(h).backgroundColor, dop: dis.map((x) => getComputedStyle(x).opacity), sep: b && getComputedStyle(b).borderTopStyle }; });
     ok(r.has && /💰 매입가 기입/.test(r.txt) && /고른 상품 0개/.test(r.txt) && /살핀 상품과 따로/.test(r.txt) && r.sep === 'solid', '⑩ 살핀 상품 패널 안에 💰 매입가 기입 구획(구분선·작은 제목·고른 수)', r); ok(r.bt === true, '고른 것이 없으면 단추 꺼짐', r.bt);
     ok(r.op === '1' && r.bg === 'rgb(255, 255, 255)' && r.hbg === 'rgb(47, 93, 80)' && r.dop.every((x) => x === '1'), '⑩ 패널·머리 불투명 · 꺼진 단추도 비치지 않음', r); }
