@@ -36068,12 +36068,12 @@ const edKwState = (l) => { const pk = edPickOf(l); if (pk) return pk.none ? '�
 /* ◆bqsamep (bqfix1 · 정범님 I-1119-1619-18 「3개이하에 여전히 이미 부합 상품이 골라내지지 않는」) 추천가 = 지금 판매가인가 — 숫자로 견줌(글자 "12000"·소수 12000.0001도 같은 값) · 둘 중 하나라도 없으면 아님 */
 /*  함수 몸은 bqCls와 같은 줄(bqCls 줄만 떼어 쓰는 시험·도구도 그대로 돌게) */
 /* ◆bqlockwhy (bqfix1 · 정범님 I-1119-1619-18 「선택대기에 잠김 상품이 그대로 있어」) 🔒 수동 일괄 공용 잠금 판정 — 그룹 화면 탭 나누기(drawBatchRes)·그룹 칸 선택 대기 수·📊 묶음 상태판(bkfItemWhy)·실행(batchExec 결정 대기 확정)이 모두 이것 하나를 부름
- *  x = 계산 결과 한 줄 · p = 그 탭이 정할 가격(모르면 null) · M = 서버에서 막 읽은 잠금(plkFreshMany · 없으면 실시간 듣기 값 S.plk)
+ *  x = 계산 결과 한 줄 · p = 그 탭이 정할 가격(모르면 null) · M = 서버에서 막 읽은 잠금(plkFreshMany · 없으면 실시간 듣기 값 S.plk) · O = 잠금 실행 설정(자리만 · 뒤에 관제소 lkopt)
  *  돌려줌: null(잠기지 않음) 또는 { out, m, why, v, X, Q } — out = 선택 대기·결정 대기·실행에서 빠짐 · m = plkMode 갈래(new·full·cond)
  *   🆕 새로 잠금 · 🔒 완전 잠금(옛 잠금 포함) · 조건이 비었거나 기한이 지난 조건 잠금(plkMode가 새로 잠금으로 봄) → 언제나 빠짐
  *   🎚 조건 잠금 → 그 가격이 조건 선 밖일 때만 빠짐(plkClamp) · 선 안이면 남음 · 선에 닿으면 남고 실행 때 선까지만(Q.cut) · 가격을 아직 모르면(추천 못 함·판본 키워드·이미 부합) 남음(실행 때 다시 봄)
  *  상품·그룹 기록은 건드리지 않음(보이는 탭만 나눔) */
-function bqLockWhy(x, p, M) { if (!x || !x.l) return null; const v = bkfLkOf(x, M, 'aladin_' + x.l.usedCode); if (!v) return null; const m = plkMode(v) || 'full';
+function bqLockWhy(x, p, M, O) { /* O = 잠금 실행 설정(넷째 자리 · 비워 둠 — ctrlroom1이 관제소 잠금 설정 lkopt를 이 안으로 옮겨 넣음 · 없으면 지금 규칙 그대로) */ O = O || null; if (!x || !x.l) return null; const v = bkfLkOf(x, M, 'aladin_' + x.l.usedCode); if (!v) return null; const m = plkMode(v) || 'full';
   if (m !== 'cond') return { out: true, m, why: PLK_ML[m] || '🔒 잠금', v, X: null, Q: null };
   const X = plkCtx(x.l, x.page1); if (p == null || p === '' || !isFinite(+p)) return { out: false, m, why: '🎚 조건 잠금 — 가격을 정하면 조건 선으로 봄', v, X, Q: null };
   const Q = plkClamp(v, +p, X); return { out: !Q.ok, m, why: !Q.ok ? Q.why || '🎚 조건 잠금 선 밖' : Q.cut ? '🎚 조건 잠금 선에 닿음 — 실행 때 선까지만' : '🎚 조건 잠금 선 안', v, X, Q }; }
