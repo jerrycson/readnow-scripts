@@ -43,14 +43,14 @@
   "at": "2026-11-19T06:55:24Z",
   "first": "2026-11-19T05:11:56Z"
  },
- "holder": "lead",
- "host": "vm-engimp1",
- "what": "engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
- "since": "2026-11-19T06:55:31Z",
- "beat": "2026-11-19T06:55:31Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판본 판 ⓪ 읽기 0 진단 (edall0)",
-  "at": "2026-11-19T06:54:44Z"
+  "done": "engimp1 판 2 못 냄 — 다시 얹기 실패(U src/tests/tCTRLIMP3_SEO.js Recorded preimage for 'src/tests/tCTRLIMP3_SEO.js' )",
+  "at": "2026-11-19T06:55:39Z"
  }
 }
