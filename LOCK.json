@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-edall3",
-   "why": "판 내기 기다림: 판본 판 ③(edall3)",
-   "first": "2026-11-19T11:02:42Z",
-   "at": "2026-11-19T12:35:13Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-mkref1",
    "why": "판 내기 기다림: 📝 출고 확인·준비 탭 시장·유의 사항 전체 갱신 · 시장 블록 판매자 유의 사항 (mkref1)",
    "first": "2026-11-19T11:03:00Z",
@@ -66,16 +59,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-edall3",
-  "why": "판 내기 기다림: 판본 판 ③(edall3)",
-  "at": "2026-11-19T12:35:13Z",
-  "first": "2026-11-19T11:02:42Z"
+  "host": "vm-mkref1",
+  "why": "판 내기 기다림: 📝 출고 확인·준비 탭 시장·유의 사항 전체 갱신 · 시장 블록 판매자 유의 사항 (mkref1)",
+  "at": "2026-11-19T12:36:10Z",
+  "first": "2026-11-19T11:03:00Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-edall3",
+ "what": "판본 판 ③(edall3)",
+ "since": "2026-11-19T12:36:15Z",
+ "beat": "2026-11-19T12:36:15Z",
  "last": {
   "who": "lead",
   "done": "",
