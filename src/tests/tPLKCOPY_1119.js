@@ -37,10 +37,10 @@ ok(/runTransaction/.test(fnIn(T, 'plkTabTx')) && !/\.set\(\s*\{\s*v:\s*1,\s*tabs
 console.log('④ 풀림 · 갈래 밖 — 참조는 남고 안 보이다가 다시 잠그면 보임');
 const mk = (m) => new Map(m.map(([k, on, mode]) => [k, { id: k, on, mode }]));
 d = ap(base(), drop('a1', ['k1', 'k2', 'k3', 'k4'])).d; let M = mk([['k1', true, 'full'], ['k2', false, 'full'], ['k3', true, 'cond']]); let g = gone(d.tabs[0].keys, 'full', M);
-ok(g.vis.join() === 'k1' && g.off.join() === 'k2,k4' && g.out.join() === 'k3', '「🔒 완전」 칸 — 보이는 k1 · 풀림 k2(잠금 문서에 없는 k4 포함) · 갈래 밖 k3');
+ok(g.vis.join() === 'k1,k3' && g.off.join() === 'k2,k4' && g.out.length === 0, '「🔒 완전」 칸 — 보이는 k1·k3(plkui2 — 탭에 담은 상품은 갈래가 달라도 남음) · 풀림 k2(잠금 문서에 없는 k4 포함) · 갈래 밖 0');
 ok(gone(d.tabs[0].keys, 'all', M).out.length === 0 && gone(d.tabs[0].keys, 'all', M).vis.join() === 'k1,k3', '「모든 잠금」 칸은 갈래를 안 봄');
 ok(d.tabs[0].keys.length === 4, '자동으로 참조를 지우지 않음');
-M = mk([['k1', true, 'full'], ['k2', true, 'full'], ['k3', true, 'cond']]); ok(gone(d.tabs[0].keys, 'full', M).vis.join() === 'k1,k2', '다시 잠그면 다시 보임');
+M = mk([['k1', true, 'full'], ['k2', true, 'full'], ['k3', true, 'cond']]); ok(gone(d.tabs[0].keys, 'full', M).vis.join() === 'k1,k2,k3', '다시 잠그면 다시 보임');
 ok(/plkGoneTxt/.test(fnIn(T, 'plkTabsHtml')) && /·풀림 /.test(T) && /·갈래 밖 /.test(T), '칩 글자 「·풀림 n」 「·갈래 밖 n」');
 ok(/twiceArm\(cl,/.test(fnIn(T, 'plkTabBind3')) && /id="plkclean"/.test(T), '🧹 모두 정리는 두 번 눌러야(되돌리기 있음)');
 console.log('⑤ 새 키 따라가기(재등록) — 옛 키는 그대로');

@@ -12,7 +12,7 @@ const NORM = fnIn(T, 'plkTabNorm'), APPLY = fnIn(T, 'plkTabApply');
 const ap = new Function('PLK_TOPS', NORM + '\n' + APPLY + '\nreturn plkTabApply;')(['new', 'full', 'cond', 'all']);
 let d = {}; let r = ap(d, { t: 'add', top: 'all', id: 'a1', nm: ' 탭A ', ds: '설명A' }); ok(r.d && r.d.tabs.length === 1 && r.d.tabs[0].nm === '탭A' && r.d.tabs[0].ds === '설명A', '탭 만들기(이름 앞뒤 공백 정리 · 설명 저장)'); d = r.d;
 ok(ap(d, { t: 'add', top: 'all', id: 'a2', nm: '탭A' }).err, '같은 칸에 같은 이름은 거절');
-ok(!ap(d, { t: 'add', top: 'full', id: 'a2', nm: '탭A' }).err, '다른 칸에는 같은 이름 가능');
+ok(!!ap(d, { t: 'add', top: 'full', id: 'a2', nm: '탭A' }).err, '다른 칸에도 같은 이름은 거절(plkui2 — 탭이 모든 칸에 보이므로 이름이 겹치면 헷갈림)');
 ok(ap(d, { t: 'add', top: 'all', id: 'a3', nm: '  ' }).err, '이름 없으면 거절');
 ok(ap(d, { t: 'add', top: 'zz', id: 'a3', nm: 'x' }).err, '모르는 칸 거절');
 d = ap(d, { t: 'add', top: 'all', id: 'a2', nm: '탭B' }).d; d = ap(d, { t: 'add', top: 'all', id: 'a3', nm: '탭C' }).d;
