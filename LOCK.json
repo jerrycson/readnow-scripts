@@ -57,14 +57,14 @@
   "at": "2026-11-19T05:47:37Z",
   "first": "2026-11-19T04:17:04Z"
  },
- "holder": "lead",
- "host": "vm",
- "what": "regcand2 등록 후보 판본",
- "since": "2026-11-19T05:29:43Z",
- "beat": "2026-11-19T05:39:54Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
-  "who": "cloudlink1",
-  "done": "클라우드 0.35.328 냄 — 재등록 옛 기록 물려받기 클라우드·R04 그림자 (main 6b813fca5)",
-  "at": "2026-11-19T05:28:44Z"
+  "who": "lead",
+  "done": "등록 후보 판본 — 웹앱 1.78.778 (regcand2)",
+  "at": "2026-11-19T05:47:55Z"
  }
 }
