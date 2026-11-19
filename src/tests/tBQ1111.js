@@ -59,7 +59,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     q('[data-bqsub="all"]').click(); await W(250); q('[data-bqwhy="none"]').click(); await W(250); out.noneCards = cards(); out.noneOn = ((q('[data-bqsub].on') || {}).textContent || '').trim();
     q('[data-bqsub="down"]').click(); await W(250); out.downCards = cards(); q('#b_pickpct').click(); await W(300); out.downPicked = [K(0), K(1)].every((k) => S.batchSt.picks[k]) && !S.batchSt.picks[K(2)];
     // ③ 카드 강조 줄
-    S.batchSub = 'all'; delete S.batchSt.picks[K(0)]; delete S.batchSt.picks[K(1)]; await window.__open(); const c0 = res().querySelector(`.card.pq.bq[data-mk="${K(0)}"]`); out.hi = c0 ? { bqhi: !!c0.querySelector('.bqhi'), gsq: !!c0.querySelector('.bqhi .gsq'), oos: ((c0.querySelector('.bqhi .rgi.oos') || {}).textContent || ''), sp: /SP 1,234/.test((c0.querySelector('.bqhi') || {}).textContent || '') } : null;
+    S.batchSub = 'all'; delete S.batchSt.picks[K(0)]; delete S.batchSt.picks[K(1)]; await window.__open(); const c0 = res().querySelector(`.card.pq.bq[data-mk="${K(0)}"]`); out.hi = c0 ? { bqhi: !!c0.querySelector('.bqhi'), gsq: !!c0.querySelector('.bqhi .gsq, .bqhi .bqbig.gr'), /* (mktui1 11/19) 작은 등급 칩 → 큰 「상태 …」 띠(.bqbig.gr) */ oos: ((c0.querySelector('.bqhi .rgi.oos') || {}).textContent || ''), sp: /SP 1,234/.test((c0.querySelector('.bqhi') || {}).textContent || '') } : null;
     // ④ 보류 · 휴지통
     q(`.card[data-mk="${K(2)}"] [data-bqht="hold"]`).click(); await W(300); out.held = !!S.batchSt.held[K(2)] && !cards().includes(K(2));
     const shardOf = (k) => Object.entries(FS.prd_price_batches || {}).find(([id, v]) => /^bQ~s/.test(id) && v.held && v.held[k]); out.heldSaved = !!shardOf(K(2));
@@ -99,7 +99,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(r.upCards.length === 2 && r.upPctn === '0', '② ⬆ 오름 하위 탭 = 그 2개만 · 빠르게 고르기도 이 보기 기준(0개)', r.upCards);
   ok(r.noneCards.length === 1 && /추천가 없음/.test(r.noneOn), '② [그 상품 보기] → 그 하위 탭으로', r);
   ok(r.downCards.length === 2 && r.downPicked, '② ⬇ 내림 하위 탭에서 빠르게 고르기 = 그 2개만 결정 대기로');
-  ok(r.hi && r.hi.bqhi && r.hi.gsq && /품절/.test(r.hi.oos) && r.hi.sp, '③ 카드 강조 줄 — 등록 카드 함수(등급 칩·새책 품절 띠·SP)', r.hi);
+  ok(r.hi && r.hi.bqhi && r.hi.gsq && /품절/.test(r.hi.oos) && r.hi.sp, '③ 카드 강조 줄 — 등록 카드 함수(등급 칩(11/19부터 큰 「상태」 띠)·새책 품절 띠·SP)', r.hi);
   ok(r.held && r.heldSaved && r.holdTab.cards.length === 1 && r.holdTab.btn && r.unheld, '④ ⏸ 보류 → 보류 탭(그룹 나눔 문서에 저장 · 모든 기기) → ↩ 선택 대기로', r);
   ok(r.trash1 && r.trash2 && r.trashTab.length === 1 && r.untrash, '④ ✖ 빼기 = 두 번 누름 → 🗑 휴지통(결정 대기에서 빠짐) → ↩ 되돌리기', r);
   ok(/hold/.test(r.log) && /unhold/.test(r.log) && /trash/.test(r.log) && /untrash/.test(r.log), '④ 기록 남김(그룹 문서 listLog)', r.log);
