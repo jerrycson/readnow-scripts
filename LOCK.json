@@ -43,14 +43,14 @@
   "at": "2026-11-19T06:57:03Z",
   "first": "2026-11-19T05:48:58Z"
  },
- "holder": "lead",
- "host": "vm-y24res1",
- "what": "예스24 멈춤 풀기",
- "since": "2026-11-19T06:56:26Z",
- "beat": "2026-11-19T06:57:26Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "engimp1 판 2 못 냄 — 다시 얹기 실패(U src/tests/tCTRLIMP3_SEO.js Recorded preimage for 'src/tests/tCTRLIMP3_SEO.js' )",
-  "at": "2026-11-19T06:55:39Z"
+  "done": "실패(종료 1) — 예스24 멈춤 풀기",
+  "at": "2026-11-19T06:57:51Z"
  }
 }
