@@ -15,8 +15,8 @@ const COL = rd('src/readnow-collector.src.js'), CL = rd('cloud/index.js'), WT = 
 const fnIn = (S, name, pre) => { const i = S.indexOf((pre || 'function ') + name + '('); if (i < 0) throw new Error('함수 없음 ' + name); let d = 0; const k = S.indexOf('{', i); for (let j = k; j < S.length; j++) { if (S[j] === '{') d++; else if (S[j] === '}') { d--; if (!d) return S.slice(i, j + 1); } } return S.slice(i); };
 const lineOf = (S, pre, from) => { const i = S.indexOf(pre, from || 0); if (i < 0) return ''; return S.slice(i, S.indexOf('\n', i)); };
 const AF = 'async function ';
-// 웹앱 몫(서버 읽기·트랜잭션)은 관제소 판 ①-3 뒤에 따로 들어옴 — 그 전에는 세 곳(가격 감시기·수집기·클라우드)만 봄. 웹앱 몫을 낼 때 WEB_MUST를 true로.
-const WEB_MUST = false; const WEB = T.includes('const PLK_SRV = ');
+// 웹앱 몫(서버 읽기·트랜잭션)은 관제소 판 ①-3 뒤에 따로 들어옴 — 세 곳만 먼저 낼 때를 위한 틀(지금은 네 곳 모두 봄).
+const WEB_MUST = true; const WEB = T.includes('const PLK_SRV = ');
 const tick = () => new Promise((r) => setImmediate(r));
 const kst = (t) => new Date((t == null ? Date.now() : t) + 9 * 3600e3).toISOString().slice(0, 10);
 
