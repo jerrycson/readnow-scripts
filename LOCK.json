@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bkprog1",
-   "why": "판 내기 기다림: bkprog1 관제소 모두 확정 진행바",
-   "first": "2026-11-19T13:55:03Z",
-   "at": "2026-11-19T17:28:22Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-mktui1",
    "why": "판 내기 기다림: mktui1 시장 지표 쌍둥이 블록",
    "first": "2026-11-19T14:24:24Z",
@@ -73,16 +66,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bkprog1",
-  "why": "판 내기 기다림: bkprog1 관제소 모두 확정 진행바",
-  "at": "2026-11-19T17:28:22Z",
-  "first": "2026-11-19T13:55:03Z"
+  "host": "vm-mktui1",
+  "why": "판 내기 기다림: mktui1 시장 지표 쌍둥이 블록",
+  "at": "2026-11-19T17:28:37Z",
+  "first": "2026-11-19T14:24:24Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bkprog1",
+ "what": "bkprog1 관제소 모두 확정 진행바",
+ "since": "2026-11-19T17:29:23Z",
+ "beat": "2026-11-19T17:29:23Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.813 잠금 서랍 자동 탭 빼기·설명 접기 올림(0fcd2526d)",
