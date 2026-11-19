@@ -15,6 +15,8 @@ const COL = rd('src/readnow-collector.src.js'), CL = rd('cloud/index.js'), WT = 
 const fnIn = (S, name, pre) => { const i = S.indexOf((pre || 'function ') + name + '('); if (i < 0) throw new Error('함수 없음 ' + name); let d = 0; const k = S.indexOf('{', i); for (let j = k; j < S.length; j++) { if (S[j] === '{') d++; else if (S[j] === '}') { d--; if (!d) return S.slice(i, j + 1); } } return S.slice(i); };
 const lineOf = (S, pre, from) => { const i = S.indexOf(pre, from || 0); if (i < 0) return ''; return S.slice(i, S.indexOf('\n', i)); };
 const AF = 'async function ';
+// 웹앱 몫(서버 읽기·트랜잭션)은 관제소 판 ①-3 뒤에 따로 들어옴 — 그 전에는 세 곳(가격 감시기·수집기·클라우드)만 봄. 웹앱 몫을 낼 때 WEB_MUST를 true로.
+const WEB_MUST = false; const WEB = T.includes('const PLK_SRV = ');
 const tick = () => new Promise((r) => setImmediate(r));
 const kst = (t) => new Date((t == null ? Date.now() : t) + 9 * 3600e3).toISOString().slice(0, 10);
 
@@ -39,10 +41,11 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
   console.log('① 도우미 글 — 네 곳 같은 글');
   const NAMES = ['PLK_MKT_MAX_H', 'plkDayKst', 'plkDayStep', 'plkDayMine', 'plkMktOld', 'plkPickOn', 'plkTkNew'];
   const hp = (S, n) => { const out = []; let i = 0; for (;;) { const j = S.indexOf('const ' + n + ' = ', i); if (j < 0) break; out.push(S.slice(j, S.indexOf('\n', j)).trimEnd()); i = j + 10; } return out; };
-  const HA = NAMES.map((n) => hp(T, n)), HW = NAMES.map((n) => hp(WT, n)), HK = NAMES.map((n) => hp(CL, n)), HC = NAMES.map((n) => hp(COL, n));
+  const HA = NAMES.map((n) => hp(WEB ? T : WT, n)), HW = NAMES.map((n) => hp(WT, n)), HK = NAMES.map((n) => hp(CL, n)), HC = NAMES.map((n) => hp(COL, n));
   ok(HA.every((a) => a.length === 1) && HW.every((a) => a.length === 1) && HK.every((a) => a.length === 1), '웹앱·가격 감시기·클라우드에 일곱 줄이 한 번씩', [HA.map((a) => a.length), HW.map((a) => a.length), HK.map((a) => a.length)]);
   ok(NAMES.every((n, i) => HW[i][0] === HA[i][0] && HK[i][0] === HA[i][0] && HC[i].length >= 1 && HC[i].every((x) => x === HA[i][0])), '네 곳이 한 글자도 다르지 않음', NAMES.filter((n, i) => !(HW[i][0] === HA[i][0] && HK[i][0] === HA[i][0] && HC[i].every((x) => x === HA[i][0]))));
   ok(hp(COL, 'plkPickOn').length === 2 && hp(COL, 'plkDayStep').length === 1, '수집기 — 잠금 읽기 두 벌 앞에 plkPickOn · 세는 도우미는 고치는 쪽 한 벌');
+  if (WEB || WEB_MUST) ok(WEB, '웹앱 몫이 들어 있음'); if (!WEB) console.log('  · 웹앱 몫은 아직 없음 — 가격 감시기·수집기·클라우드만 봄');
   const HELP = HA.map((a) => a[0]).join('\n') + '\n';
   const H = new Function(HELP + 'return { PLK_MKT_MAX_H, plkDayKst, plkDayStep, plkDayMine, plkMktOld, plkPickOn, plkTkNew };')();
   const clampL = (T.match(/const plkClamp = \(lk, p, x\) => \{.*\};/) || [''])[0]; const blockL = lineOf(T, 'const plkBlock = ');
@@ -67,6 +70,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
   const mk = (src, db) => new Function('db', 'C', 'firebase', 'S', HELP + 'const plkMap = () => S.plk || (S.plk = new Map());\n' + src)(db, (n) => db.collection(n), FB, { plk: new Map(), plist: new Map() });
   const CNT = { '가격 감시기 plkCntW': (db) => mk(fnIn(WT, 'plkCntW', AF) + '\nreturn plkCntW;', db), '수집기 plkCntPc': (db) => mk(fnIn(COL, 'plkCntPc', AF) + '\nreturn plkCntPc;', db), '클라우드 plkCntCl': (db) => mk(fnIn(CL, 'plkCntCl', AF) + '\nreturn plkCntCl;', db),
     '웹앱 plkNote': (db) => { const f = mk(fnIn(T, 'plkNote', AF) + '\nreturn plkNote;', db); return async (k, tk, cur, p) => (await f(k, { id: k, on: true, mode: 'cond' }, { cur, p, tk })) || { ok: false, err: 1 }; } };
+  if (!WEB) delete CNT['웹앱 plkNote'];
   for (const [name, make] of Object.entries(CNT)) {
     let db = mkDb(); db.seed('prd_locks', 'K1', LK({ dayN: 5, dayAmt: 5000 })); let f = make(db);
     let R = await Promise.all([f('K1', 'a', 10000, 9500), f('K1', 'b', 10000, 9500)]); let v = db.val('prd_locks', 'K1');
@@ -77,11 +81,11 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
     db = mkDb(); db.seed('prd_locks', 'K3', LK({ dayN: 5 }, { day: { d: '2000-01-01', n: 5, amt: 100 } })); f = make(db); await f('K3', 'a', 10000, 9000); v = db.val('prd_locks', 'K3'); ok(v.day.d === kst() && v.day.n === 1 && v.day.amt === 1000, name + ' — 날짜가 바뀌면 0부터', v.day);
     db = mkDb(); db.seed('prd_locks', 'K4', LK({ dayN: 5 })); f = make(db); db._st.fail = true; R = await f('K4', 'a', 10000, 9000); ok(R && R.ok === false && R.err === 1, name + ' — 못 세면 「못 셈」으로 알림(조용히 넘어가지 않음)', R);
   }
-  { const db = mkDb(); db.seed('prd_locks', 'K5', LK({ dayN: 5 })); const f = mk(fnIn(T, 'plkNote', AF) + '\nreturn plkNote;', db);
-    await Promise.all([f('K5', { id: 'K5', on: true }, { hit: 1, p: 9000, want: 8000, why: '선 밖' }), f('K5', { id: 'K5', on: true }, { hit: 1, p: 9000, want: 8100, why: '선 밖' })]); const v = db.val('prd_locks', 'K5'); ok(v.hit.n === 2 && v.hit.by === 'web', '웹앱 — 막은 횟수도 서버에서 더함(둘이 함께 2)', v.hit);
-    ok(/hit: \{ n: firebase\.firestore\.FieldValue\.increment\(1\)/.test(fnIn(WT, 'plkNoteW', AF)) && !/day:/.test(fnIn(WT, 'plkNoteW', AF)), '가격 감시기 plkNoteW — 막은 횟수는 increment · 하루 횟수는 여기서 안 씀(plkCntW 한 곳)'); }
-  ok(/const o = \{ at: Date\.now\(\), tk: plkTkNew\('web'\)/.test(fnIn(T, 'plkCtx')) && /at: Date\.now\(\), tk: plkTkNew\('w'\)/.test(WT), '결정마다 시장 값을 찍은 때(at)·표(tk)를 plkx에 실음(웹앱·가격 감시기)');
-  ok((T.match(/plkNote\([^\n;]*?tk: /g) || []).length === 4, '웹앱 — 하루 횟수를 세는 네 곳이 모두 표를 넘김', (T.match(/plkNote\([^\n;]*?tk: /g) || []).length);
+  if (WEB) { const db = mkDb(); db.seed('prd_locks', 'K5', LK({ dayN: 5 })); const f = mk(fnIn(T, 'plkNote', AF) + '\nreturn plkNote;', db);
+    await Promise.all([f('K5', { id: 'K5', on: true }, { hit: 1, p: 9000, want: 8000, why: '선 밖' }), f('K5', { id: 'K5', on: true }, { hit: 1, p: 9000, want: 8100, why: '선 밖' })]); const v = db.val('prd_locks', 'K5'); ok(v.hit.n === 2 && v.hit.by === 'web', '웹앱 — 막은 횟수도 서버에서 더함(둘이 함께 2)', v.hit); }
+  { ok(/hit: \{ n: firebase\.firestore\.FieldValue\.increment\(1\)/.test(fnIn(WT, 'plkNoteW', AF)) && !/day:/.test(fnIn(WT, 'plkNoteW', AF)), '가격 감시기 plkNoteW — 막은 횟수는 increment · 하루 횟수는 여기서 안 씀(plkCntW 한 곳)'); }
+  ok((!WEB || /const o = \{ at: Date\.now\(\), tk: plkTkNew\('web'\)/.test(fnIn(T, 'plkCtx'))) && /at: Date\.now\(\), tk: plkTkNew\('w'\)/.test(WT), '결정마다 시장 값을 찍은 때(at)·표(tk)를 plkx에 실음(웹앱·가격 감시기)');
+  if (WEB) ok((T.match(/plkNote\([^\n;]*?tk: /g) || []).length === 4, '웹앱 — 하루 횟수를 세는 네 곳이 모두 표를 넘김', (T.match(/plkNote\([^\n;]*?tk: /g) || []).length);
   ok(/if \(PLKQ && !raced && rec\.approval && rec\.approval\.plkx && rec\.approval\.plkx\.tk === PLKQ\.tk\)/.test(WT) && WT.indexOf('PLKQ = PLKD') < WT.indexOf('if (PLKQ && !raced'), '가격 감시기 — 자동 승인이 실제로 적힌 뒤에만 셈(승인이 안 되면 안 늘어남)');
   ok(/approvalState: 'pending'[^\n]*autoBlock/.test(lineOf(WT, 'if (PLKQ && !raced')), '가격 감시기 — 세다 한도를 넘으면 그 자동 승인을 거둠(선택 대기로)');
 
@@ -118,7 +122,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
 
   console.log('④ 끊긴 때는 잠긴 것으로 — 서버에서만 읽기 · 나눠 읽기 · 상품 번호 잠금');
   const mkApp = (db, plist) => new Function('db', 'firebase', 'S', HELP + 'const plkMap = () => S.plk || (S.plk = new Map());\n' + lineOf(T, 'const PLK_SRV = ') + '\n' + [['plkFresh'], ['plkChunks'], ['plkFreshMany'], ['plkLockedIds']].map(([n]) => fnIn(T, n, AF)).join('\n') + '\nreturn { plkFresh, plkFreshMany, plkLockedIds, S };')(db, FB, { plk: new Map(), plist: plist || new Map() });
-  { const db = mkDb(); db.seed('prd_locks', 'A', { on: true, mode: 'full' }); db.seed('prd_locks', 'B', { on: false }); db.seed('prd_locks', 'Lx', { on: true, mode: 'cond', cond: { dayN: 1 }, lid: '777' }); db.seed('prd_locks', 'Ly', { on: false, lid: '888' });
+  if (WEB) { const db = mkDb(); db.seed('prd_locks', 'A', { on: true, mode: 'full' }); db.seed('prd_locks', 'B', { on: false }); db.seed('prd_locks', 'Lx', { on: true, mode: 'cond', cond: { dayN: 1 }, lid: '777' }); db.seed('prd_locks', 'Ly', { on: false, lid: '888' });
     const A = mkApp(db, new Map([['B', { listingId: '777' }], ['D', { listingId: '888' }], ['E', { listingId: '777' }]]));
     let v = await A.plkFresh('A'); ok(v && v.on === true && v.id === 'A', 'plkFresh — 자기 문서가 켜져 있으면 그것', v);
     ok(db._st.gets.length > 0 && db._st.gets.every((o) => o && o.source === 'server'), 'plkFresh — 읽기는 모두 서버에서(source server)', db._st.gets);
@@ -131,7 +135,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
     let L = await A.plkLockedIds(['A', 'B', '777', '888', 'none']); ok(L && L.has('A') && L.has('777') && !L.has('B') && !L.has('888') && L.size === 2, 'plkLockedIds — 키·상품 번호 섞여도 켜진 것만', L && [...L]);
     db._st.fail = true; v = await A.plkFresh('B', { listingId: '888' }); ok(v && v.on === true && v.unk === 1, '끊긴 때 plkFresh → 잠긴 것으로(unk)', v);
     ok((await A.plkFreshMany(['A', 'B'])) === null && (await A.plkLockedIds(['A'])) === null, '끊긴 때 plkFreshMany·plkLockedIds → null(부른 쪽이 멈춤)'); }
-  { const db = mkDb(); const keys = []; for (let i = 0; i < 420; i++) { keys.push('k' + i); if (i % 7 === 0) db.seed('prd_locks', 'k' + i, { on: true, mode: 'full' }); } db.seed('prd_locks', 'far', { on: true, mode: 'full', lid: 'L419' });
+  if (WEB) { const db = mkDb(); const keys = []; for (let i = 0; i < 420; i++) { keys.push('k' + i); if (i % 7 === 0) db.seed('prd_locks', 'k' + i, { on: true, mode: 'full' }); } db.seed('prd_locks', 'far', { on: true, mode: 'full', lid: 'L419' });
     const A = mkApp(db, new Map(keys.map((k, i) => [k, { listingId: 'L' + i }]))); const M = await A.plkFreshMany(keys);
     ok(M && [...M.values()].filter((v) => v.on === true).length === 61 && M.get('k419').id === 'far' && db._st.q === 84, '420개 — 300개가 넘어도 서버에서 열 개씩 나눠 읽음(키 42번 + 상품 번호 42번)', { n: M && M.size, q: db._st.q });
     ok(!/keys\.length > 300/.test(fnIn(T, 'plkFreshMany', AF)) && !/ids\.length > 300/.test(fnIn(T, 'plkLockedIds', AF)), '「300개 넘으면 실시간 듣기 값」 지름길을 없앰'); }
@@ -143,7 +147,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
     db = mkDb(); db._st.fail = true; W = mkW(db); ok((await W.plkSetW()) === null, '가격 감시기 — 잠금 목록을 한 번도 못 읽으면 null(자동 승인 안 만듦)'); ok((await W.plkReadW({ key: 'A' })) === undefined, '가격 감시기 plkReadW — 못 읽으면 undefined(잠긴 것으로)');
     ok(/if \(!LSW\) why\.push\('🔒 잠금 목록을 못 읽음/.test(WT) && /LSW\.has\('lid:' \+ listing\.listingId\)/.test(WT), '가격 감시기 — 못 읽으면 자동 반영하지 않음 · 판정에서 lid 잠금도 봄'); }
   for (const [n, S0, fn] of [['수집기', COL, 'plkReadPc'], ['클라우드', CL, 'plkReadCl']]) { const b = fnIn(S0, fn, AF); ok(/where\('lid', '==',/.test(b) && /plkPickOn\(own, by\)/.test(b) && /_k/.test(b), n + ' ' + fn + ' — 꺼진 자기 문서보다 켜진 lid 잠금 · 문서 이름 _k'); }
-  { const b = fnIn(T, 'batchExec0', AF); const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5) 잠금도 저장 바로 앞에서 한 번 더'), i2 = b.indexOf('const M2 = await plkFreshMany(pickL.map('), i3 = b.indexOf('plkNote(keyOf(p.x), p.plkv');
+  if (WEB) { const b = fnIn(T, 'batchExec0', AF); const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5) 잠금도 저장 바로 앞에서 한 번 더'), i2 = b.indexOf('const M2 = await plkFreshMany(pickL.map('), i3 = b.indexOf('plkNote(keyOf(p.x), p.plkv');
     ok(i1 > 0 && i2 > i1 && i3 > i2, '수동 일괄 batchExec0 — 저장 바로 앞에서 잠금을 다시 읽음', [i1, i2, i3]);
     const seg = b.slice(i1, b.indexOf('\n', b.indexOf('if (lk2.length)', i1))); ok(/if \(!M2\) return toast\(/.test(seg) && /if \(!plkCondOk\(v\)\) \{ lk2\.push\(p\); continue; \}/.test(seg) && /if \(!Q\.ok \|\| Q\.p !== p\.price\) \{ lk2\.push\(p\); continue; \}/.test(seg) && /pickL = pickL\.filter\(\(p\) => !lk2\.includes\(p\)\)/.test(seg), '— 못 읽으면 멈춤 · 그 사이 잠긴 것·조건 선 밖은 빼고 확정'); }
 
@@ -158,7 +162,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
 
   console.log('⑥ 잠금 실행 스위치와 상관없이 반영 직전 다시 셈이 늘 돎');
   { const SW = /ctrlLkOpt|lkopt/; const b = fnIn(T, 'batchExec0', AF); const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5)');
-    ok(![fnIn(T, 'plkFresh', AF), fnIn(T, 'plkFreshMany', AF), fnIn(T, 'plkLockedIds', AF), fnIn(T, 'plkNote', AF), b.slice(i1, i1 + 1500)].some((s) => SW.test(s)), '웹앱 — 서버 읽기·저장 직전 다시 보기·하루 세기가 스위치를 보지 않음');
+    if (WEB) ok(![fnIn(T, 'plkFresh', AF), fnIn(T, 'plkFreshMany', AF), fnIn(T, 'plkLockedIds', AF), fnIn(T, 'plkNote', AF), b.slice(i1, i1 + 1500)].some((s) => SW.test(s)), '웹앱 — 서버 읽기·저장 직전 다시 보기·하루 세기가 스위치를 보지 않음');
     ok(!SW.test(WT) && !SW.test(COL) && !SW.test(CL), '가격 감시기·수집기·클라우드 — 스위치를 읽지 않음(실제 반영은 늘 잠금대로)'); }
 
   console.log(bad ? `\n❌ 실패 ${bad}` : '\n✅ 모두 통과'); process.exit(bad ? 1 : 0);
