@@ -1,0 +1,35 @@
+// tSTKSEL — (11/19 정범님 I-1118-2245-28.4 판 ②) 📦 재고 품목: 📋 한눈에/🔎 자세히 · 체크 하나(STK.sel) · 아래 고정 줄 · 시장 지표 다시 읽기 200권·24시간 · 👁 살핀 상품 패널
+// 실행: node tSTKSEL_1119.js · 시험 자료는 가짜 상품만(손님 정보 없음)
+const fs = require('fs'); const path = require('path');
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 400)); } else console.log('  ✓', m); };
+const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
+const T = fs.readFileSync(APP, 'utf8');
+const a0 = T.indexOf('/* ◆stksel 시작'); const a1 = T.indexOf('/* ◆stksel 끝 */', a0); if (a0 < 0 || a1 < 0) throw new Error('◆stksel 못 찾음'); const BLK = T.slice(a0, a1);
+const a = T.indexOf('function openStockView(keep)'); const V = T.slice(a, T.indexOf('\nfunction ', a + 20));
+let mm = false; const LS = {}; const localStorage = { getItem: (k) => (k in LS ? LS[k] : null), setItem: (k, v) => (LS[k] = String(v)) };
+const S = { app: {}, pbooks: new Map(), plist: new Map() }; const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';'); const num = (n) => String(n); const won = (n) => n + '원'; const pgChip = (g) => `<i>${g}</i>`; const PS_CLS = { 판매중: 'on' }; const imgUrl = (x) => x;
+const F = new Function('localStorage', 'matchMedia', 'S', 'esc', 'num', 'won', 'pgChip', 'PS_CLS', 'imgUrl', 'db', 'toast', 'askText', 'TS', BLK + '\nreturn { stkView, stkViewBar, stkChk, stkRowHtml, stkSelBar, STK_MET_MS, stkMetMax, stkMetMem, stkMetPlan };');
+const X = F(localStorage, () => ({ matches: mm }), S, esc, num, won, pgChip, PS_CLS, imgUrl, null, () => {}, async () => null, () => 0);
+console.log('1 보기 기억'); ok(X.stkView() === 'full', '넓은 화면 첫 방문 = 자세히'); mm = true; ok(X.stkView() === 'compact', '휴대폰 첫 방문 = 한눈에'); X.stkView('full'); ok(X.stkView() === 'full' && LS['rn-stk-view'] === 'full', '고른 보기를 기기에 기억(rn-stk-view)');
+const vb = X.stkViewBar('compact'); ok(/data-stkview="compact"/.test(vb) && /data-stkview="full"/.test(vb) && /class="on" data-stkview="compact"/.test(vb) && /Alt\+V/.test(vb), '보기 단추 둘 · 지금 보기 켜짐 · Alt+V 안내');
+console.log('2 한 줄 카드'); const l = { id: 'p1', title: '가짜 책 <1>', status: '판매중', price: 9000, qty: 1, sku: 'S-1', grade: '상' };
+const rh = X.stkRowHtml(l, true, { chk: X.stkChk('p1', true), pend: true, ed: true, prob: ' probc' });
+ok(/class="stkc sel probc"/.test(rh) && /data-mk="p1"/.test(rh) && /data-stkexp="p1"/.test(rh) && /data-stkc="p1" checked/.test(rh) && /가짜 책 &#60;1&#62;/.test(rh) && /9000원/.test(rh) && /⏳/.test(rh) && /🔖/.test(rh) && !/👀/.test(rh), '☐·제목(가림)·판매가·⏳·🔖 표 · 펼침 표지', rh);
+console.log('3 아래 고정 줄'); ok(X.stkSelBar(0, {}) === '', '고른 것 없으면 줄 없음');
+const sb = X.stkSelBar(3, { GR: [{ id: 'g1', name: '그룹1' }], gCur: { name: '그룹1' }, nDel: 2, max: 200 });
+ok(/3개 고름/.test(sb) && /data-stkgput/.test(sb) && /value="__new"/.test(sb) && /value="g1"/.test(sb) && /data-stkgout="1"/.test(sb) && /data-stkedl="1"/.test(sb) && /data-stkmet="1" data-arm/.test(sb) && /data-stkgo="1"\s*title/.test(sb) && /삭제 검토 2/.test(sb) && /data-stknone="1"/.test(sb) && /data-stkmore/.test(sb), '그룹 넣기(새 그룹)·빼기·판본·시장 지표(두 번)·삭제 검토 n·✕ 풀기(A100)·⋯', sb);
+ok(/disabled/.test(X.stkSelBar(1, { nDel: 0 }).match(/data-stkgo[^>]*>/)[0]), '지울 수 있는 것 0이면 삭제 검토 꺼짐');
+console.log('4 시장 지표 200권·24시간'); ok(X.stkMetMax() === 200, '기본 200권'); S.app.stkMetMax = 50; ok(X.stkMetMax() === 50, '설정 값 따름'); S.app.stkMetMax = 5000; ok(X.stkMetMax() === 200, '범위 밖이면 200');
+const ids = Array.from({ length: 300 }, (_, i) => 'k' + i); const tOf = (k) => 1000 - +k.slice(1); const P = X.stkMetPlan(ids, { k0: 1, k1: 1 }, 200, tOf);
+ok(P.go.length === 200 && P.skip === 2 && P.later === 98 && !P.go.includes('k0') && P.go[0] === 'k299', '24시간 안 맡긴 2개 뺌 · 오래된 지표부터 200 · 남은 98', P);
+const now = 1e12; LS['rn-stk-met'] = JSON.stringify({ old: now - X.STK_MET_MS - 1, fresh: now - 1000 }); const m = X.stkMetMem(['n1'], now); ok(!m.old && m.fresh && m.n1 === now && JSON.parse(LS['rn-stk-met']).n1 === now, '24시간 지난 기억은 지우고 새로 맡긴 것 기억');
+ok(/type: 'metrics', keys: P\.go/.test(BLK) && !/batchId/.test(BLK.replace(/batchId 없음/g, '')), '시장 지표 맡김 = shp_cmds metrics 한 건 · batchId 없음(수동 일괄 그룹 안 건드림)');
+console.log('5 화면 연결'); const has = (re) => re.test(V);
+ok(has(/STK\.sel\.has\(l\.id\)/) && has(/stkChk\(l\.id, on\)/) && !has(/STK\.gm \?/) && !has(/data-stkgsel/), '체크 하나(STK.sel) — 모든 알라딘 카드에 ☐ · 옛 그룹 고르기 체크 없음');
+ok(has(/VW === 'compact' && !STK\.open\.has\(l\.id\)/) && has(/data-stkfold/) && has(/rgfoldbar/) && has(/STK\.open\.add\(b\.dataset\.stkexp\)/), '한눈에 → 누르면 그 자리에서 자세히 · ▲ 접기');
+ok(has(/prdDelReview\('__prd', selNow\(\)\.filter\(\(k\) => canDel/) && has(/stkGPut\(id, selNow\(\)\)/) && has(/openEdCheckList\(false, ids\)/) && has(/stkMetSend\(selNow\(\)\)/), '고른 것 → 삭제 검토·그룹·판본 확인 목록·시장 지표');
+ok(has(/seenPanelUse\(\{ key: 'stock'/) && has(/살핀 것 체크/) && has(/살핀 것 🗂 그룹에 넣기/) && has(/살핀 것 🗑 삭제 검토/) && !has(/tabAct/), '👁 살핀 상품 패널 · 액션 셋 · tabAct는 판 ③');
+ok(/S\.detail && S\.detail\.stock\)\) return; ev\.preventDefault\(\)[^\n]*stkView\(stkView\(\) === 'compact' \? 'full' : 'compact'\)/.test(T), 'Alt+V 재고 화면에서 보기 바꿈');
+ok(/async function openEdCheckList\(re, ids\)/.test(T) && /재고에서 고른 \$\{num\(rows\.length\)\}개/.test(T) && /edHide\(l\) \|\| edKwOn\(l\)/.test(T), '판본 확인 목록 — 고른 상품만 받기');
+ok(/id="st_stkmet"/.test(T) && /stkMetMax: v/.test(T), '⚙ 설정 — 한 번 최대 권수');
+console.log(bad ? '❌ ' + bad + '개 틀림' : '✓ tSTKSEL_1119 통과'); process.exit(bad ? 1 : 0);

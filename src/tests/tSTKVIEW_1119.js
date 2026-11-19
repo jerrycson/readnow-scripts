@@ -1,0 +1,32 @@
+// tSTKVIEW — (11/19 정범님 I-1118-2245-28.4 판 ②) 📦 재고 품목 브라우저 확인: ☐ 고르기 → 아래 줄 · 📋 한눈에 → 그 자리 펼침·▲ 접기 · Alt+V · 시장 지표 두 번 → shp_cmds 한 건(batchId 없음) · 오류 0
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); const R = {};
+  await p.evaluate(() => { try { localStorage.removeItem('rn-stk-view'); localStorage.removeItem('rn-stk-met'); localStorage.removeItem('rn-stk-tab'); } catch (e) {} STK.tab = 'all'; STK.sel = new Set(); openStockView(); }); await p.waitForTimeout(900);
+  R.full = await p.evaluate(() => ({ rows: document.querySelectorAll('#sheet .stk-row[data-mk]').length, chk: document.querySelectorAll('#sheet [data-stkc]').length, bar: !!document.querySelector('#stk_selbar'), vbar: document.querySelectorAll('#sheet [data-stkview]').length }));
+  await p.click('#sheet [data-stkc]'); await p.waitForTimeout(400);
+  R.sel = await p.evaluate(() => ({ n: STK.sel.size, bar: (document.querySelector('#stk_selbar') || {}).textContent || '', on: document.querySelectorAll('#sheet .stk-row.sel').length }));
+  const metN = () => p.evaluate(async () => (await db.collection('shp_cmds').get()).docs.map((x) => x.data()).filter((x) => x.type === 'metrics' && /재고 품목/.test(x.label || '')).length);
+  for (let t = 0; t < 3 && !(await metN()); t++) { await p.click('#sheet [data-stkmet]'); await p.waitForTimeout(700); if ((await p.getAttribute('#sheet [data-stkmet]', 'data-armed').catch(() => '')) !== '1') continue; await p.click('#sheet [data-stkmet]'); for (let w = 0; w < 60 && !(await metN()); w++) await p.waitForTimeout(250); } /* 둘째 누름은 0.4초 뒤에(무장 0.4초 안 누름은 겹누름으로 버림 — ux2 전역 장치) · 다시 그려지면 무장이 풀림 — 무장 확인 뒤 둘째 누름 · 느린 기계는 맡김 글이 늦게 들어와 15초까지 기다림(같은 상품은 24시간 기억이라 다시 눌러도 두 건이 안 됨) */
+  R.met = await p.evaluate(async () => { const q = await db.collection('shp_cmds').get(); const d = q.docs.map((x) => x.data()).filter((x) => x.type === 'metrics' && /재고 품목/.test(x.label || '')); return { n: d.length, keys: d[0] && d[0].keys.length, batch: d[0] && 'batchId' in d[0], mem: Object.keys(JSON.parse(localStorage.getItem('rn-stk-met') || '{}')).length }; });
+  await p.click('#sheet [data-stkview="compact"]'); await p.waitForTimeout(500);
+  R.cmp = await p.evaluate(() => ({ v: localStorage.getItem('rn-stk-view'), rows: document.querySelectorAll('#sheet .stkc[data-mk]').length, full: document.querySelectorAll('#sheet .stk-row[data-mk]').length, sel: document.querySelectorAll('#sheet .stkc.sel').length }));
+  await p.click('#sheet .stkc .stkc-t'); await p.waitForTimeout(500);
+  R.exp = await p.evaluate(() => ({ full: document.querySelectorAll('#sheet .stk-row[data-mk]').length, fold: document.querySelectorAll('#sheet [data-stkfold]').length }));
+  await p.click('#sheet [data-stkfold]'); await p.waitForTimeout(400);
+  R.fold = await p.evaluate(() => document.querySelectorAll('#sheet .stk-row[data-mk]').length);
+  await p.keyboard.down('Alt'); await p.keyboard.press('KeyV'); await p.keyboard.up('Alt'); await p.waitForTimeout(500);
+  R.altv = await p.evaluate(() => ({ v: localStorage.getItem('rn-stk-view'), full: document.querySelectorAll('#sheet .stk-row[data-mk]').length }));
+  await p.click('#sheet [data-stknone]'); await p.waitForTimeout(400);
+  R.none = await p.evaluate(() => ({ n: STK.sel.size, bar: !!document.querySelector('#stk_selbar') }));
+  console.log(JSON.stringify(R)); let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
+  ok(R.full.rows > 0 && R.full.chk >= R.full.rows && !R.full.bar && R.full.vbar === 2, '자세히: 모든 알라딘 카드에 ☐ · 고르기 전엔 아래 줄 없음 · 보기 단추 둘');
+  ok(R.sel.n === 1 && /1개 고름/.test(R.sel.bar) && R.sel.on === 1, '☐ 하나 → 아래 줄 「1개 고름」 · 카드 표시');
+  ok(R.met.n === 1 && R.met.keys === 1 && R.met.batch === false && R.met.mem === 1, '📈 두 번 → shp_cmds metrics 한 건 · batchId 없음 · 24시간 기억');
+  ok(R.cmp.v === 'compact' && R.cmp.rows > 0 && R.cmp.full === 0 && R.cmp.sel === 1, '📋 한눈에: 한 줄 카드 · 고른 표시 그대로 · 기기 기억');
+  ok(R.exp.full === 1 && R.exp.fold === 1, '한 줄 누름 → 그 자리에서 자세히 + ▲ 접기');
+  ok(R.fold === 0, '▲ 접기 → 다시 한 줄');
+  ok(R.altv.v === 'full' && R.altv.full > 0, 'Alt+V → 자세히');
+  ok(R.none.n === 0 && !R.none.bar, '✕ 풀기 → 고르기 풂 · 아래 줄 닫힘');
+  ok(!errs.length, '페이지 오류 0 ' + errs.join(' | '));
+  if (bad) throw new Error(bad + '개 틀림'); console.log('✓ tSTKVIEW_1119 통과');
+});
