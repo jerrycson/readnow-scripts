@@ -10,7 +10,7 @@ console.log('① 글');
 { const names = ['ctrlFullK', 'ctrlFullCard', 'ctrlFullFill', 'ctrlFullIt', 'ctrlFullVal', 'ctrlBqClick', 'ctrlBqInput', 'ctrlSelSet', 'bkfPopCp', 'bkfPopInput', 'kbaOvBox', 'kbaBqBox'];
   const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 한 번만 선언`, dup); }
 ok(/^function ctrlCard\(P, it\) \{ \{ const F = ctrlFullCard\(P, it\); if \(F\) return F; \}/m.test(T), '관제 카드는 먼저 실제 카드(ctrlFullCard)를 그림');
-ok(/function bqRefChip1\(K, x, k\) \{ if \(K\.bqRefChipH\) return K\.bqRefChipH\(k\);/.test(T) && /BQK\.bqRefChipH = bqRefChipH;/.test(T) && /bqRefChip1\(K, x, k\)/.test(fn('batchCardHtml')), '🔎 참고 탭 표지(reo1): 그룹 화면 셈 그대로 · 관제창은 같은 bqRefOf');
+ok(/function bqRefChip1\(K, x, k\) \{ if \(K\.bqRefChipH\) return K\.bqRefChipH\(k\);/.test(T) && /BQK\.bqRefChipH = bqRefChipH;/.test(T) && /const bqRefChipH = \(kk\) => bqRefChip1\(K, x, kk\);/.test(fn('batchCardHtml')), '🔎 참고 탭 표지(reo1): 그룹 화면 셈 그대로 · 관제창은 같은 bqRefOf');
 ok(/batchCardK\(\{ id: it\.gid/.test(fn('ctrlFullK')) && /batchCardHtml\(K, i, j0\)/.test(fn('ctrlFullCard')), '실제 카드 = 그룹 화면 batchCardK·batchCardHtml 그대로');
 { const B = fn('ctrlBqClick'); const need = ['bto', 'bnowp', 'bstep', 'bqrec', 'bback', 'bto2', 'bcancel', 'bre', 'breo', 'brep', 'brex', 'bunfew', 'bunedkw', 'bundo', 'bqht', 'bqmet', 'bused', 'bqexp2', 'bqfold']; const miss = need.filter((n) => !new RegExp('d\\.' + n + '\\b').test(B)); ok(!miss.length, '카드 단추 모두 받음', miss);
   ok(/twiceArm\(b, '이 그룹에서 빼기'[^)]*\); if \(r !== 'go'\) return true;/.test(B), '빼기는 두 번 누름(twiceArm)');
