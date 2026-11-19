@@ -43,14 +43,14 @@
   "at": "2026-11-19T10:37:15Z",
   "first": "2026-11-19T08:19:13Z"
  },
- "holder": "lead",
- "host": "vm-bqfix1",
- "what": "bqfix1 수동 일괄 잠김·이미 부합",
- "since": "2026-11-19T10:04:47Z",
- "beat": "2026-11-19T10:32:39Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "y24samp1 예스24 견본 늘리기 — 클라우드 0.35.332 (9c48c6574)",
-  "at": "2026-11-19T10:04:37Z"
+  "done": "bqfix1 수동 일괄 잠김·이미 부합 — 웹앱 1.78.793 (9c5825875)",
+  "at": "2026-11-19T10:38:00Z"
  }
 }
