@@ -129,7 +129,7 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
     await until((fid) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[fid] && S.bkfold.folds[fid].gids.length === 1), 60, r0.fid);
     await p.setViewportSize({ width: 420, height: 860 });
     await p.evaluate((fid) => bkfTbAll(fid, 'done'), r0.fid);
-    const hasB = await until(() => !!document.querySelector('#bkf_ctrl [data-brex]'), 120); ok(!!hasB, '모아 보기 확정 탭 카드에 「다시 확정」 단추(반영 안 됨)');
+    const hasB = await until(() => !!document.querySelector('#bkf_ctrl [data-brex]'), 120); ok(!!hasB, '모아 보기 확정 탭 카드에 「다시 확정」 단추(반영 안 됨)', hasB ? undefined : await p.evaluate(() => { const c = document.querySelector('#bkf_ctrl'); return { ctrl: c ? c.innerText.slice(0, 700) : null, g: (S.prBatches || []).map((b) => b.id + ':' + Object.keys(b.decided || {}).length) }; }));
     const docOf = () => p.evaluate(async (k) => { const d = (await batchLoadOne('rA')) || {}; return { dec: (d.decided || {})[k] || null, pick: (d.picks || {})[k] || null, undone: (d.undone || {})[k] || null, ex: (d.execLog || []).length }; }, r0.k);
     const before = await docOf();
     if (hasB) { await p.locator('#bkf_ctrl [data-brex]').first().click();
