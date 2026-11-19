@@ -109,7 +109,7 @@ const T = mk(); const E = T.E; const plain = (o) => JSON.parse(JSON.stringify(o)
     ok(/data-gswk="maxFollow"/.test(h) && /data-gswi="maxFollow"/.test(h) && !/data-gswi="rangePct"/.test(h), '덮은 칸에만 ↺ 물려받기');
     ok(/gsw-chip gsw-group/.test(h) && /gsw-chip gsw-global/.test(h) && /gsw-chip gsw-default/.test(h), '출처 칩: 이 그룹 · 전체 · 엔진 기본');
     ok((h.match(/class="gsw-i"/g) || []).length >= 14, '칸마다 ⓘ(손잡이 13 + 빨리 따라 내림 기준)');
-    ok(['group', 'fold', 'preset', 'global'].every((k) => h.includes(`data-gswgo="${k}"`)), '바로 가기 넷'); ok(/🔍 미리 보기/.test(h) && /다음 판\(②\)/.test(h), '빈 🔍 미리 보기 자리');
+    ok(['group', 'fold', 'preset', 'global'].every((k) => h.includes(`data-gswgo="${k}"`)), '바로 가기 넷'); ok(/🔍 미리 보기/.test(h) && /📒 기록/.test(h), '🔍 미리 보기 · 📒 기록 구역');
     ok(/data-gswf="fastLag"/.test(h) && /data-gswact="apply"[^>]*disabled/.test(h), '빨리 따라 내림 기준 칸 · 바뀐 것 없으면 적용 막힘');
     ok(/role="dialog"/.test(h) && /bigask-x/.test(h), '닫기 단추·대화 상자 역할'); }
 
