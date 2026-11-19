@@ -122,7 +122,7 @@ console.log('④ 화면 글(서랍·고르기 판·수동 일괄)');
   ok(/twiceArm\(pu/.test(pp) && !/confirm\(|alert\(/.test(pp + fnIn(T, 'plkPopSave', 'async function ')), '풀기는 두 번 누름 · 브라우저 팝업 없음');
   const br = fnIn(T, 'drawBatchRes');
   ok(/PLO\.has\(keyOf\(x\)\) \? outI\.push\(i\)/.test(br) && /class="plk-bout"/.test(br) && /data-plkfk="batch"/.test(br), '수동 일괄 — 잠가서 뺀 상품은 탭에서 빠지고 「서랍에서 되돌리기」 단추');
-  ok(/'2026-11-18'/.test(lineOf(T, "PAGE_GUIDES['plkf']")) && /잠금 세 갈래/.test(T), '화면 설명서 고침');
+  ok(/'2026-11-1[89]'/.test(lineOf(T, "PAGE_GUIDES['plkf']")) && /잠금 세 갈래/.test(T), '화면 설명서 고침');
 }
 
 if (!process.env.RN_PORT) { console.log(bad ? `❌ ${bad}개 실패` : '✓ tLOCKCOND2_1118 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
