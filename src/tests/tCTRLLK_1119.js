@@ -74,7 +74,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const wn = await p.evaluate(async () => { const before = (S.prBatches || []).filter((g) => g.watch && g.watch.on).length; await ctrlLkSet(false); await ctrlLkSet(true); return { before, after: (S.prBatches || []).filter((g) => g.watch && g.watch.on).length }; });
   ok(wn.before === wn.after, '스위치를 켜고 꺼도 감시 실행 켜진 그룹 수가 그대로(관제소에는 감시를 켜는 길이 없음)', wn);
   // 설정 창
-  await p.evaluate(() => { S.bkfold = { ...(S.bkfold || {}), lkopt: null }; S.tab = 'products'; renderTabs(); renderMainNow(); });
+  await p.evaluate(async () => { await ctrlLkSet(false); S.tab = 'products'; renderTabs(); renderMainNow(); });
   await p.evaluate(async () => { const a = await bkfTx({ t: 'new', name: '묶음A' }); openCtrlRoom(a.fid); }); await Wt(p, 800);
   ok(await p.evaluate(() => !!document.querySelector('#bkf_scr [data-cswlk]')), '띠에 ⚙ 잠금 설정 단추');
   await p.evaluate(() => document.querySelector('#bkf_scr [data-cswlk]').click()); await Wt(p, 300);
