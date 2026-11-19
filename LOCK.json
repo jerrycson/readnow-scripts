@@ -71,14 +71,14 @@
   "at": "2026-11-19T12:35:13Z",
   "first": "2026-11-19T11:02:42Z"
  },
- "holder": "lead",
- "host": "vm-plktab1",
- "what": "plktab1 판 ④·자동 탭",
- "since": "2026-11-19T12:25:48Z",
- "beat": "2026-11-19T12:25:48Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.799·1.78.800 — undo2 Ctrl+Z 되돌리기 넓힘 판 ①②",
-  "at": "2026-11-19T12:25:07Z"
+  "done": "",
+  "at": "2026-11-19T12:36:06Z"
  }
 }
