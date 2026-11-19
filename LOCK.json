@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-plkui2",
-   "why": "판 내기 기다림: plkui2 잠금 서랍 선택·검색·거르기·탭 지킴",
-   "first": "2026-11-19T14:44:56Z",
-   "at": "2026-11-19T18:04:43Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-kpia1",
    "why": "판 내기 기다림: kpia1 관제소 카드 판 D·E 차례로 냄",
    "first": "2026-11-19T15:01:27Z",
@@ -59,16 +52,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-plkui2",
-  "why": "판 내기 기다림: plkui2 잠금 서랍 선택·검색·거르기·탭 지킴",
-  "at": "2026-11-19T18:04:43Z",
-  "first": "2026-11-19T14:44:56Z"
+  "host": "vm-kpia1",
+  "why": "판 내기 기다림: kpia1 관제소 카드 판 D·E 차례로 냄",
+  "at": "2026-11-19T18:05:39Z",
+  "first": "2026-11-19T15:01:27Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-plkui2",
+ "what": "plkui2 잠금 서랍 선택·검색·거르기·탭 지킴",
+ "since": "2026-11-19T18:05:46Z",
+ "beat": "2026-11-19T18:05:46Z",
  "last": {
   "who": "lead",
   "done": "mktui1 웹앱 1.78.815 — 시장 지표 결정 가격 쌍둥이 줄·수동 일괄 카드 큰 띠·희귀본 판정 낱말 띠·출고 Alt+Shift+U (main 43754c3a6)",
