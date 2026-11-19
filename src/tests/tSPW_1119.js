@@ -81,14 +81,14 @@ const STOCK = async (p, nm) => {
 };
 const DOMFIND = async (p, nm) => {
   const r = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); try { closeSheet && closeSheet(); } catch (e) {} await W(300);
-    const root = document.createElement('div'); root.id = 'spwT'; root.innerHTML = ['가나 책', '다라 책', '마바 책'].map((t, i) => `<div class="card spwTc" data-k="K${i}"><b>${t}</b><button type="button" data-spwTb="K${i}">값 올리기</button><span class="v">0</span></div>`).join(''); document.body.appendChild(root);
-    window.__SPWT = {}; const bind = () => root.querySelectorAll('[data-spwTb]').forEach((b) => (b.onclick = () => { const k = b.dataset.spwTb; window.__SPWT[k] = (window.__SPWT[k] || 0) + 1; b.parentElement.querySelector('.v').textContent = window.__SPWT[k]; })); bind();
+    const root = document.createElement('div'); root.id = 'spwT'; root.innerHTML = ['가나 책', '다라 책', '마바 책'].map((t, i) => `<div class="card spwTc" data-k="K${i}"><b>${t}</b><button type="button" data-spwtb="K${i}">값 올리기</button><span class="v">0</span></div>`).join(''); document.body.appendChild(root);
+    window.__SPWT = {}; const bind = () => root.querySelectorAll('[data-spwtb]').forEach((b) => (b.onclick = () => { const k = b.dataset.spwtb; window.__SPWT[k] = (window.__SPWT[k] || 0) + 1; b.parentElement.querySelector('.v').textContent = window.__SPWT[k]; })); bind();
     const cfg = { key: 'spwT', title: '시험 등록', alive: () => !!document.getElementById('spwT'), root: () => document.getElementById('spwT'), sel: '.spwTc', keyOf: (e) => e.dataset.k, nameOf: (e) => e.querySelector('b').textContent, has: () => true };
     seenPanelUse(cfg); await W(400); return { find: typeof cfg.find === 'function', dom: cfg.findDom === 1, spw: !!cfg.spw }; });
   ok(r.find && r.dom && r.spw, `${nm} ⑤ 찾기가 없던 화면(등록 등)도 그려진 카드에서 찾는 길이 저절로 붙음`, r);
   const a = await SEARCH(p, '다라', '다라'); const w = await WIN(p, 'K1');
   ok(a.k === 'K1' && w.open && w.n === 1 && w.key === 'K1', `${nm} ⑤ 그 카드만 안쪽 창에`, { a, w });
-  const c = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const b = document.querySelector('.spw [data-spwTb="K1"]'); b && b.click(); const v = document.querySelector('.spw .v') && document.querySelector('.spw .v').textContent;
+  const c = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const b = document.querySelector('.spw [data-spwtb="K1"]'); b && b.click(); const v = document.querySelector('.spw .v') && document.querySelector('.spw .v').textContent;
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await W(400); const kids = [...document.getElementById('spwT').children].map((e) => e.dataset.k || e.className);
     const o = { n: window.__SPWT.K1, v, gone: !document.querySelector('.spw'), order: kids.join(',') }; document.getElementById('spwT').remove(); try { seenStop && seenStop(); } catch (e) {} return o; });
   ok(c.n === 1 && c.v === '1', `${nm} ⑤ 창 안 단추가 원래 손잡이 그대로 동작(값 바로 반영)`, c);
