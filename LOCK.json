@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-allcard1",
-   "why": "판 내기 기다림: 모아 보기 실제 수동 일괄 카드",
-   "first": "2026-11-19T17:21:29Z",
-   "at": "2026-11-19T19:31:04Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-strat6",
    "why": "판 내기 기다림: strat6 감시 전략 판 ⑥ 엮이는 판매자",
    "first": "2026-11-19T19:11:41Z",
@@ -17,16 +10,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-allcard1",
-  "why": "판 내기 기다림: 모아 보기 실제 수동 일괄 카드",
-  "at": "2026-11-19T19:31:04Z",
-  "first": "2026-11-19T17:21:29Z"
+  "host": "vm-strat6",
+  "why": "판 내기 기다림: strat6 감시 전략 판 ⑥ 엮이는 판매자",
+  "at": "2026-11-19T19:31:27Z",
+  "first": "2026-11-19T19:11:41Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-allcard1",
+ "what": "모아 보기 실제 수동 일괄 카드",
+ "since": "2026-11-19T19:32:06Z",
+ "beat": "2026-11-19T19:32:06Z",
  "last": {
   "who": "lead",
   "done": "pxg1 조회수 열 지도 판 H 올림 1.78.822",
