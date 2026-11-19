@@ -121,7 +121,7 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
       const k = 'aladin_U581000010'; const at = new Date(Date.now() - 3600e3).toISOString();
       await db.collection('prd_price_batches').doc('rA').set({ name: '다시 확정 시험 그룹', cond: { ...BATCH_DEF, name: '다시 확정 시험 그룹', pmin: 6900, pmax: 7900, recentDays: 0, kw: '다시 확정 시험' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: [], lastCount: 0, start: {}, on: true,
         decided: { [k]: { price: 7300, from: 7000, at, by: 't@x', listingId: '508100000' } } });
-      await db.collection('prd_price_decisions').doc(k).set({ listingId: '508100000', approvalState: 'failed', execNote: '시험 — 반영 안 됨', approval: { batchId: 'rA', at, decision: 'batch', price: 7300, by: 't@x' } });
+      await db.collection('prd_price_decisions').doc(k).set({ listingId: '508100000', approvalState: 'failed', execNote: '시험 — 반영 안 됨', approval: { batchId: 'rA', at, decision: 'batch', price: 7300, by: 't@x' }, 'approval.batchId': 'rA' }); /* 시험 틀 가짜 db는 점 경로 거름(where('approval.batchId'))을 못 해 같은 이름 칸을 덧둠 */
       await db.collection('prd_system').doc('pricing').set({ mode: 'manual', watchVer: '9.9.9', watchTab: 't', watchBeat: new Date().toISOString() });
       S.prBatches = undefined; S.bkfold = undefined; S.tab = 'products'; renderTabs(); renderMainNow();
       for (let i = 0; i < 40 && !(S.prBatches || []).find((b) => b.id === 'rA'); i++) await new Promise((r) => setTimeout(r, 150));
