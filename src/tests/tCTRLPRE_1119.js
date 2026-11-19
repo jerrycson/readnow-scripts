@@ -30,8 +30,8 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
       led: { runs: { r1: { op: 'execAll', endAt: 'x', at: '2026-11-10', res: { gA: { st: 'ok', n: 1 } } }, r2: { op: 'execAll', endAt: 'x', at: '2026-11-11', res: { gA: { st: 'ok', n: 2 } } } } } };
     const S1 = ctrlPreSum(P); const line = ctrlPreLine(P); const A = ctrlPreAvg(P); return { S1, line, A }; });
   ok(L.S1.n === 4 && L.S1.dn === -1600 && L.S1.up === 1000 && L.S1.dnN === 3 && L.S1.upN === 1, '바뀔 상품 4 · 내림 합 −1,600 · 올림 합 +1,000', L.S1);
-  ok(L.S1.floor === 3 && L.S1.lock === 3, '바닥가에 닿음 3 · 잠겨 건너뜀 3', L.S1);
-  ok(/바뀔 상품 4/.test(L.line) && /내림 합 −₩1,600/.test(L.line) && /올림 합 \+₩1,000/.test(L.line) && /🔒 잠겨 건너뜀 3/.test(L.line), '한 줄 글', L.line);
+  ok(L.S1.floor === 2 && L.S1.lock === 4, '바닥가에 닿음 2 · 잠금으로 빠짐 4(완전·조건 잠금 합)', L.S1);
+  ok(/바뀔 상품 4/.test(L.line) && /내림 합 −₩1,600/.test(L.line) && /올림 합 \+₩1,000/.test(L.line) && /🔒 잠금으로 빠짐 4/.test(L.line), '한 줄 글', L.line);
   ok(L.A && Math.abs(L.A.avg - 1.5) < 1e-9 && L.A.k === 2 && /평소의 2\.7배/.test(L.line), '평균 1.5개의 2배(3개)를 넘는 4개 → 「평소의 2.7배입니다」', { A: L.A, line: L.line });
   const L2 = await p.evaluate(() => ctrlPreLine({ todo: [{ info: { keys: [['a', 9000, 10000]], blkBy: {} } }], X: { opk: 'execAll' }, led: { runs: { r1: { op: 'execAll', endAt: 'x', at: '2026-11-10', res: { gA: { st: 'ok', n: 1 } } } } } }));
   ok(!/평소의/.test(L2), '평균의 2배 이하면 경고 없음', L2);
