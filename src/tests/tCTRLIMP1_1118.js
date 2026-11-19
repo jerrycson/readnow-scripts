@@ -15,7 +15,7 @@ ok(!/\b(alert|confirm|prompt)\s*\(/.test(BLK), '브라우저 창 없음(확인�
 ok(!/\.delete\(\)\s*;?\s*$/m.test(BLK.replace(/FV\.delete\(\)/g, '')) && !/collection\('prd_price_batches'\)(?!\.doc\('_bkfc'\))/.test(BLK), '그룹 문서를 지우지 않음(칸만 batchSave · 판 마 개별 설정 문서 _bkfc만 따로)');
 ok(/function bkfTbAll\(fid, tab\) \{ return openBkfCtrl\(fid, tab \|\| 'done'\); \}/.test(T) && /data-bkfctrl="1"/.test(T) && /ctrlOnTb\(gid\); \} \}/.test(T), '「모두」 줄 칸·📊 상태판 머리 → 관제창 · 상태판이 그룹을 다 세면 ctrlOnTb');
 ok(/const rows = opt\.only \? rows0\.filter\(\(l\) => opt\.only\.has\('aladin_' \+ l\.usedCode\)\) : rows0;[^\n]*const R0? = batchCompute\(c, rows\)/.test(T), 'bqCtx only = 계산 전에 그 열쇠들만 남김(계산기는 그대로)');
-ok(/BQ_TABACT\(/.test(BLK) && /bqPxGate\(/.test(BLK) && /plkFreshMany\(/.test(BLK) && /bkfLkOf\(/.test(BLK) && /bkfCancelDec\(/.test(BLK) && /bkfRun\(fid, 'pickAll', tab\)/.test(BLK), '이음새 부름 — 탭 동작 BQ_TABACT · 바닥 검사 bqPxGate · 잠금 다시 읽음 · 확정 취소 bkfCancelDec · 탭 전체 bkfRun');
+ok(/BQ_TABACT\(/.test(BLK) && /bqPxGate\(/.test(BLK) && /plkFreshMany\(/.test(BLK) && /ctrlLkWhy\(/.test(BLK) && /bkfCancelDec\(/.test(BLK) && /bkfRun\(fid, 'pickAll', tab\)/.test(BLK), '이음새 부름 — 탭 동작 BQ_TABACT · 바닥 검사 bqPxGate · 잠금 다시 읽음 · 확정 취소 bkfCancelDec · 탭 전체 bkfRun');
 ok(/twiceArm\(t, '이 그룹에서 빼기'/.test(BLK) && /twiceArm\(t, `고른 \$\{L\.length\}개 → 결정 대기로`/.test(BLK) && /v === 'auto' && twiceArm\(/.test(BLK), '빼기·고른 것 보내기·자동 취소 설정은 두 번 누름');
 ok(/Escape/.test(BLK) && /popstate/.test(BLK) && /e\.target === ov/.test(BLK), '닫기: Esc·뒤로·바깥 누름');
 ok(/max-width:600px\)\{#bkf_ctrl \.bigask\.bkf-ctrl\{width:100vw/.test(T), '휴대폰 꽉 찬 창 꾸밈');
@@ -44,7 +44,7 @@ const ctx = { S, console, Map, Set, Date, Math, JSON, Object, String, Number, Ar
   bqReoMv: (d) => !!(d && d.reo && !d.reo.stay), /* (판 라) 관제창 카드가 부름 */
   bqCls: (x, c) => { const k = 'aladin_' + x.l.usedCode; if (c.st.trashed[k]) return 'trash'; if (c.st.held[k]) return 'hold'; if (c.st.picks[k]) return 'pick'; if (c.st.decided[k]) return 'done'; return (x.l.usedCode.startsWith('U8') ? cls2 : cls).get(k); },
   bkfDirty: () => {}, errKo: (e) => String((e && e.message) || e), bkfTabP: (x, T) => (T === 'keep' ? null : x.target != null ? Math.round(x.target) : null), plkOn: () => false, bkfItemWhy: () => null, bkfSIdx: () => null, batchIsOn: () => true, bkfName: () => '시험 묶음', bkfTbPaint() {}, openBatchGroup() {},
-  twiceArm: () => 'go', bkfRun: async () => {}, batchSave: async (gid, p) => { SAVES.push([gid, p]); }, bkfGlSet() {}, plkFreshMany: async () => new Map(), bkfLkOf: (x, M, k) => M.get(k) || null,
+  twiceArm: () => 'go', bkfRun: async () => {}, batchSave: async (gid, p) => { SAVES.push([gid, p]); }, bkfGlSet() {}, plkFreshMany: async () => new Map(), ctrlLkWhy: (x, v, M) => (M && M.get('aladin_' + x.l.usedCode) ? '🔒 잠금' : null), /* (판 ①-3) 잠금 판단은 한 곳(bqLockWhy 경유) */
   bqPxGate: (x, v) => (!(+v >= 10) ? (x && x.target == null ? '추천가가 없는 상품' : '가격이 없음') : ''), bqFewOf: () => '유효 상품 2개', bkfCancelDec: async () => [true, ''] };
 vm.createContext(ctx); vm.runInContext(BLK + '\n;this.__C = { openBkfCtrl, ctrlLoad, ctrlClick, ctrlAct, ctrlCfg, ctrlChg, ctrlPickMany, CTRL_PAGE, CTRL_CAP };', ctx);
 const C = ctx.__C; const P = () => S._bkfCtrl; const tick = () => new Promise((r) => setTimeout(r, 0)); const settle = async () => { for (let i = 0; i < 50 && P() && P().load; i++) await tick(); await tick(); };
