@@ -75,7 +75,7 @@
  "host": "vm-bqprog1",
  "what": "bqprog1 수동 일괄 진행바",
  "since": "2026-11-19T08:35:55Z",
- "beat": "2026-11-19T08:35:55Z",
+ "beat": "2026-11-19T08:57:49Z",
  "last": {
   "who": "lead",
   "done": "",
