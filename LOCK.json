@@ -80,14 +80,14 @@
   "first": "2026-11-19T04:17:28Z",
   "prio": 1
  },
- "holder": "lead",
- "host": "vm-engimp1",
- "what": "engimp1 판 2 시험 다시",
- "since": "2026-11-19T04:01:50Z",
- "beat": "2026-11-19T04:24:45Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "엔진 지도 접기/펼치기 — 웹앱 1.78.776 (enfold1)",
-  "at": "2026-11-19T04:00:54Z"
+  "done": "engimp1 잠시 비킴 — 급한 판 먼저",
+  "at": "2026-11-19T04:31:40Z"
  }
 }
