@@ -1,4 +1,4 @@
-// tBKFOLD3_1118 — (정범님 11/18 I-1118-2059-24.3~24.7 · I-1118-2156-27) 📁 묶음 폴더: 탭 표 모두 셈·안쪽 창·탭별 손익 합·「한꺼번에」(두 번 확인·막힘 건너뜀·되돌리기)·🔁 다시 계산 후 옮기기·🛰 감시·전략 · 꺼진 원본(복사로 바뀐 그룹)을 묶음에서 뺌
+// tBKFOLD3_1118 — (정범님 11/18 I-1118-2059-24.3~24.7 · I-1118-2156-27) 📁 묶음 폴더: 탭 표 모두 셈·안쪽 창·탭별 손익 합·「한꺼번에」(두 번 확인·막힘 건너뜀·되돌리기)·🔁 다시 계산 후 옮기기·🛰 감시·전략 · 꺼진 원본(복사로 바뀐 그룹)은 저절로 빼지 않고 「빼려면 누르세요」 제안만(1.78.777 bkpin1 · 정범님 11/19 13:10 「지금 상태로 고정」)
 //  ① 글: 새 이름 한 번 선언 · 브라우저 창 없음 · 전화번호 모양 없음 · 겹침 정리(bkfDupFix)·바뀐 그룹 찾기(bkfReplOf) 셈
 //  ② 화면(RN_PORT): 꺼진 그룹도 셈 · 칸 → 안쪽 창(Esc·바깥 누름 닫힘) · 한꺼번에 단추 · 두 번째 확인에서 멈추면 아무것도 안 씀 · 바뀐 그룹 자동 빼기(그룹 문서는 그대로)
 // 실행: pw/ 안 RN_PORT=<포트> node tBKFOLD3_1118.js · 시험 자료에 손님 정보 없음
@@ -62,9 +62,14 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     try { await bkfRun(fid, 'pickAll', 'sel'); } catch (e) { asks.push('오류 ' + e.message); } window.ask = keep;
     const pk = (S.prBatches || []).filter((g) => ['hA', 'hB', 'hC'].includes(g.id)).map((g) => Object.values(g.picks || {}).filter((x) => x && /📁/.test(x.why || '')).length).reduce((a, b) => a + b, 0); return { asks, pk }; }, fid);
   ok(tw.pk === 0 && (tw.asks.length === 0 || (tw.asks.length === 2 && /두 번째/.test(tw.asks[1]))), '한꺼번에: 첫 확인 뒤 둘째 확인 · 둘째에서 멈추면 고른 가격을 쓰지 않음', tw);
-  /* 27 — 꺼진 원본(hA) + 사본(hB) 겹침 → 원본만 묶음에서 빠짐 · 그룹 문서 그대로 */
-  await p.evaluate((fid) => bkfReplFix(fid, { pairs: [{ a: 'hA', b: 'hB', n: 6 }], per: { hA: 6, hB: 6 } }), fid);
+  /* 27 — (1.78.777 bkpin1 · 정범님 11/19 13:10) 꺼진 원본(hA) + 사본(hB) 겹침 → 저절로 빼지 않음 · 제안 띠만 · 누르면 그때 뺌 · 그룹 문서 그대로 */
+  await p.evaluate((fid) => { try { localStorage.removeItem('rn-bkf-keep'); } catch (e) {} S._bkfRF = new Set(); bkfReplFix(fid, { pairs: [{ a: 'hA', b: 'hB', n: 6 }], per: { hA: 6, hB: 6 } }); }, fid);
+  const bar = await until(() => { const b = document.getElementById('bkf-bar'); return b && /빼려면 누르세요/.test(b.textContent) ? { t: b.textContent, btn: !!b.querySelector('button') } : null; }, 40);
+  await p.waitForTimeout(600);
+  const kept = await p.evaluate(async (fid) => { const f = S.bkfold.folds[fid]; const d = await db.collection('prd_price_batches').doc('hA').get(); return { gids: f.gids.slice(), doc: d.exists }; }, fid);
+  ok(bar && bar.btn && kept.doc && kept.gids.join() === 'hA,hB,hC', '꺼진 원본은 묶음에 그대로 남고(저절로 안 뺌) 「빼려면 누르세요」 띠만 뜸 · 그룹 문서 그대로', { bar, kept });
+  await p.locator('#bkf-bar button').click();
   const rf = await until(async (fid) => { const f = S.bkfold.folds[fid]; if (f.gids.includes('hA')) return null; const d = await db.collection('prd_price_batches').doc('hA').get(); return { gids: f.gids, doc: d.exists }; }, 80, fid);
-  ok(rf && rf.doc && rf.gids.join() === 'hB,hC', '꺼진 원본은 묶음에서 빠지고(검사·실행·표에서 사라짐) 그룹 문서는 그대로', rf);
+  ok(rf && rf.doc && rf.gids.join() === 'hB,hC', '띠의 「묶음에서 빼기」를 누르면 그때 원본만 빠짐 · 그룹 문서는 그대로', rf);
   ok(!dlg.length, '브라우저 창(alert·confirm·prompt) 한 번도 안 뜸', dlg);
   console.log(bad ? `❌ tBKFOLD3_1118 ${bad}개 실패` : '✓ tBKFOLD3_1118 통과'); return bad; });

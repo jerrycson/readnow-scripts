@@ -45,7 +45,9 @@ console.log('① 순수 셈');
   ok(F.BKF_DIM.length === 17 && new Set(F.BKF_DIM.map((d) => d.id)).size === 17, '조건 칸 17개 · 이름 겹침 없음');
   const io = cut('/* ◆bkfold-io 시작', '/* ◆bkfold-io 끝 */');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(io + blk) && !/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/.test(io + blk), '새 코드에 브라우저 창·휴대전화 번호 꼴 없음');
-  ok(!/prd_price_decisions|batchApply|approvalState|applyPrice|batchRun\(|prPush/.test(io + blk), '가격을 바꾸는 코드 0줄(결정 문서·실행 함수를 안 부름)');
+  /* (1.78.777 bkpin1) 1.78.747부터 묶음에 '일괄 처리'(bkfBulkAsk~bkfExecOne · 확정·취소 · tBKFOLD3_1118·tCTRLIMP*가 지킴)가 일부러 들어옴 → 이 판 ③ 시험의 '가격 코드 0줄'은 그 앞(진단·고침·빼기·되돌리기)에만 */
+  const ioP3 = io.slice(0, io.indexOf('function bkfNone')); ok(io.indexOf('function bkfNone') > 0 && /function bkfPP\b/.test(ioP3), '판 ③ 구간(진단·고침·빼기·되돌리기)을 찾음');
+  ok(!/prd_price_decisions|batchApply|approvalState|applyPrice|batchRun\(|prPush/.test(ioP3 + blk), '가격을 바꾸는 코드 0줄(판 ③ 구간 · 결정 문서·실행 함수를 안 부름)');
   const names = ['BKF_DIM', 'BKF_TXT', 'bkfN0', 'bkfNz', 'bkfNv', 'bkfDimHas', 'bkfBound', 'bkfStepV', 'bkfSameCond', 'bkfCands', 'bkfSelfBad', 'bkfTag', 'bkfKeepOf', 'bkfCond', 'bkfSt', 'bkfX', 'bkfCause', 'bkfPairKey', 'bkfPairRun', 'bkfTgOf', 'BKF_TAGH', 'bkfPairHtml', 'bkfFixList', 'bkfFixHtml', 'bkfBadHtml', 'bkfPP', 'bkfMirror', 'bkfCondFix', 'bkfCondUndo', 'bkfTrash', 'bkfUntrash', 'bkfUndoAll', 'bkfDirtyAll', 'bkfGoField', 'bkfPairBind', 'bkfDOf', 'bkfCid', 'bkfCut', 'bkfReG'];
   const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 파일 전체에서 한 번만 선언`, dup); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tBKFOLD3_1117 ${bad}개 실패` : '✓ tBKFOLD3_1117 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
