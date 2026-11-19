@@ -50,14 +50,14 @@
   "at": "2026-11-19T06:54:29Z",
   "first": "2026-11-19T04:33:29Z"
  },
- "holder": "lead",
- "host": "vm-edall0",
- "what": "판본 판 ⓪ 읽기 0 진단 (edall0)",
- "since": "2026-11-19T06:45:50Z",
- "beat": "2026-11-19T06:46:01Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "판본 판 ① 근거 틀 (edall1b)",
-  "at": "2026-11-19T06:45:28Z"
+  "done": "판본 판 ⓪ 읽기 0 진단 (edall0)",
+  "at": "2026-11-19T06:54:44Z"
  }
 }
