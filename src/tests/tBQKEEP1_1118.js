@@ -10,7 +10,7 @@ const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.inde
 const blk = cut('const BQ_TABDEF = [', 'function bqSoldHtml(') + cut('const BKF_TB = BQ_TABDEF', 'const BKF_TBQ = [];');
 const M = new Function('unregOf', 'OBS_VALID', 'needSearch', 'edOf', 'edPickOf', 'edUse', 'bbNearX', 'lotCheck', blk + '\nreturn { BQ_TABDEF, BQ_TABACT, bqTabsOf, bqPxGate, bqCls };')(
   () => false, new Set(['green', 'blue']), () => false, () => null, () => null, () => null, () => false, () => false);
-const D = cut('function drawBatchRes(', '\nfunction ');
+const D = cut('function drawBatchRes(', '\nfunction ') + cut('function batchCardK(', '\nfunction drawBatchRes('); /* (allcard1) 카드 도우미·카드 글은 batchCardK·batchCardHtml로 옮김(그룹 화면·관제소 안쪽 창이 함께 씀) */
 console.log('① 탭 동작 칸(BQ_TABDEF 여섯째 칸)');
 { ok(M.BQ_TABDEF.every((d) => d.length === 6 && d[5] && typeof d[5] === 'object'), '탭마다 여섯째 칸 = 탭 동작 표시');
   const K = M.BQ_TABACT('keep'), S = M.BQ_TABACT('sel'), F = M.BQ_TABACT('few');

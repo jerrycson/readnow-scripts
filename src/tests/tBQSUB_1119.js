@@ -9,7 +9,7 @@ const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.inde
 const blk = cut('const BQ_TABDEF = [', 'function bqSoldHtml(');
 const M = new Function('unregOf', 'OBS_VALID', 'needSearch', 'edOf', 'edPickOf', 'edUse', 'bbNearX', 'lotCheck', blk + '\nreturn { BQ_TABDEF, BQ_TABACT, BQ_TABACT_G, bqTabsOf, bqPxGate };')(
   () => false, new Set(['green', 'blue']), () => false, () => null, () => null, () => null, () => false, () => false);
-const D = cut('function drawBatchRes(', '\nfunction ');
+const D = cut('function drawBatchRes(', '\nfunction ') + cut('function batchCardK(', '\nfunction drawBatchRes('); /* (allcard1) 카드 도우미·카드 글은 batchCardK·batchCardHtml로 옮김(그룹 화면·관제소 안쪽 창이 함께 씀) */
 console.log('① 탭 동작 표시');
 { for (const t of ['sel', 'few', 'keep']) { const a = M.BQ_TABACT_G(t); ok(a.sub && a.quick && a.edit, `${t} = 하위 탭(sub) · 빠르게 고르기(quick) · 값 고침(edit)`, a); }
   const H = M.BQ_TABACT_G('hold'); ok(H.edit && H.sub && H.quick && H.chk === 'holdsel', '보류(그룹 화면) = 선택 대기와 같은 동작 + 고르기(holdsel)', H);
