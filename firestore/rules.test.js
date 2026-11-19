@@ -57,6 +57,20 @@ async function main() {
   ok(!(await allowed(S.doc('prd_locks/aladin_9/sub/x').set({ a: 1 }))), '잠금 아래 하위 칸 쓰기 막힘(뒷길 없음)');
   let left; await env.withSecurityRulesDisabled(async (c) => { left = (await c.firestore().doc('prd_locks/aladin_9').get()).data(); }); /* withSecurityRulesDisabled는 값을 돌려주지 않음 */
   ok(left && left.hist.length === 2 && left.on === true, '막힌 시도 뒤 잠금 문서 그대로(기록 2 · 잠김)');
+  console.log('③ 🎛 관제소 날마다 요약(ctl_kpi_m·ctl_kpi_days · kpib1)');
+  await env.withSecurityRulesDisabled(async (c) => { const d = c.firestore(); await d.doc('ctl_kpi_m/2026-11').set({ ym: '2026-11', ver: 1, d: { 19: { T: { n: 3, top: 1 } } } }); await d.doc('ctl_kpi_days/2026-11-19').set({ day: '2026-11-19', ver: 1, lowS: '1,2' }); });
+  for (const p of ['ctl_kpi_m/2026-11', 'ctl_kpi_days/2026-11-19']) {
+    ok(await allowed(S.doc(p).get()), `직원 읽기 ${p}`);
+    ok(!(await allowed(X.doc(p).get())), `목록 밖 계정 읽기 막힘 ${p}`);
+    ok(!(await allowed(S.doc(p).set({ ver: 9 }, { merge: true }))), `직원 고치기 막힘 ${p}`);
+    ok(!(await allowed(S.doc(p).delete())), `직원 지우기 막힘 ${p}`);
+    ok(!(await allowed(S.doc(p + '/sub/x').set({ a: 1 }))), `요약 아래 하위 칸 쓰기 막힘 ${p}`);
+  }
+  ok(!(await allowed(S.doc('ctl_kpi_days/2026-11-20').set({ day: '2026-11-20' }))), '직원 새 요약 만들기 막힘');
+  ok(!(await allowed(S.collection('ctl_kpi_m').doc('2026-12').set({ ym: '2026-12' }))), '직원 새 달 문서 만들기 막힘');
+  let kd; await env.withSecurityRulesDisabled(async (c) => { kd = (await c.firestore().doc('ctl_kpi_m/2026-11').get()).data(); });
+  ok(kd && kd.ver === 1 && kd.d && kd.d['19'], '막힌 시도 뒤 요약 문서 그대로');
+  ok(await allowed(S.doc('prd_listings/aladin_1').set({ price: 1200 }, { merge: true })), '다른 칸(prd_listings) 직원 쓰기는 예전 그대로 됨');
   await env.cleanup();
 }
 

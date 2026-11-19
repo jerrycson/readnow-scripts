@@ -140,7 +140,7 @@ function mkStore(init) { const M = new Map(Object.entries(init || {}).map(([k, v
   const RU = rd('firestore/firestore.rules'); const RUc = RU.replace(/\/\/.*$/gm, '');
   ok(RU.length > 500 && RUc.includes("'__STAFF_EMAILS__'") && !/@[a-z0-9-]+\.[a-z.]{2,}/i.test(RUc), '규칙 원본 있음 · 직원 목록은 자리 표시만(실제 전자우편 없음)');
   ok(/match \/prd_locks\/\{k\} \{[\s\S]*?allow delete: if false;/.test(RUc) && /hist', \[\]\)\.size\(\) >= resource\.data\.get\('hist', \[\]\)\.size\(\)/.test(RUc), '🔒 잠금 — 지우기 금지 · 기록은 늘기만');
-  ok(/match \/\{document=\*\*\} \{\s*allow read: if staff\(\);\s*allow write: if staff\(\) && !\(request\.path\[3\] == 'prd_locks'\);/.test(RUc), '나머지는 예전 그대로(직원 읽기·쓰기) · 쓰기만 잠금 칸을 뺌');
+  ok(/match \/\{document=\*\*\} \{\s*allow read: if staff\(\);\s*allow write: if staff\(\) && !\(request\.path\[3\] (== 'prd_locks'|in \['prd_locks'(, '[a-z_0-9]+')*\])\);/.test(RUc), '나머지는 예전 그대로(직원 읽기·쓰기) · 쓰기만 잠금 칸(과 클라우드만 쓰는 관제소 요약 칸 · kpib1 11/19)을 뺌');
   const PK = (RUc.match(/function plockKeys\(\) \{\s*return \[([^\]]+)\]/) || [])[1] || ''; const pk = new Set([...PK.matchAll(/'([^']+)'/g)].map((x) => x[1]));
   const PS = cutOf(APP, 'async function plkSet(', 'await db.collection(\'prd_locks\').doc(k).set(doc'); const wk = new Set([...PS.matchAll(/[{,] ?(\w+):/g)].map((x) => x[1]).filter((k) => !['act', 'dev', 'price', 'qty', 'state', 'grade', 'code'].includes(k)));
   ok(pk.size >= 15 && [...wk].every((k) => pk.has(k)), '웹앱 plkSet이 쓰는 칸이 모두 규칙의 허락 칸 안', { rule: [...pk], app: [...wk].filter((k) => !pk.has(k)) });
