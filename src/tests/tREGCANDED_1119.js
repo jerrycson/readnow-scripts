@@ -67,4 +67,4 @@ ok(!/const auto = top && \(\(top\.cov >= 0\.95 && \(!second/.test(APP), '예전 
 ok(/rgcand-edband/.test(APP) && /regCandChip\(cd, EDM, it\.q\)/.test(APP), '카드 띠·칩');
 ok(/regEdTruth\(it0, b\.dataset\.iid\)/.test(APP) && /edHold: null/.test(APP), '고를 때 정답 표본 · edHold 풀기');
 
-console.log(`\n${bad ? '❌' : '✅'} tREGCANDED_1119 ${n - bad}/${n}`); process.exit(bad ? 1 : 0);
+console.log(`\n${bad ? "❌ tREGCANDED_1119 실패" : "✅ tREGCANDED_1119 통과"} ${n - bad}/${n}`); process.exit(bad ? 1 : 0);
