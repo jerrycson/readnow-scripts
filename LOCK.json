@@ -94,9 +94,9 @@
  },
  "holder": "lead",
  "host": "vm-gperf1",
- "what": "gperf1 관제소 그룹 성과·묶음 성과 안쪽 창",
+ "what": "gperf1 판 내기 — 최신 받기·빌드",
  "since": "2026-11-19T16:17:01Z",
- "beat": "2026-11-19T16:17:01Z",
+ "beat": "2026-11-19T16:19:01Z",
  "last": {
   "who": "lead",
   "done": "kpib1 판 B 냄 — 클라우드 0.35.335 2af4ca5bc",
