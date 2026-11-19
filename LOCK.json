@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-plktab1",
-   "why": "판 내기 기다림: plktab1 판 ④·자동 탭",
-   "first": "2026-11-19T10:56:18Z",
-   "at": "2026-11-19T12:24:46Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edall3",
    "why": "판 내기 기다림: 판본 판 ③(edall3)",
    "first": "2026-11-19T11:02:42Z",
@@ -59,16 +52,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-plktab1",
-  "why": "판 내기 기다림: plktab1 판 ④·자동 탭",
-  "at": "2026-11-19T12:24:46Z",
-  "first": "2026-11-19T10:56:18Z"
+  "host": "vm-edall3",
+  "why": "판 내기 기다림: 판본 판 ③(edall3)",
+  "at": "2026-11-19T12:25:44Z",
+  "first": "2026-11-19T11:02:42Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-plktab1",
+ "what": "plktab1 판 ④·자동 탭",
+ "since": "2026-11-19T12:25:48Z",
+ "beat": "2026-11-19T12:25:48Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.799·1.78.800 — undo2 Ctrl+Z 되돌리기 넓힘 판 ①②",
