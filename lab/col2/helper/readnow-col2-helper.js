@@ -47,9 +47,11 @@ const kst = (ms) => new Date((ms || now()) + 9 * 3600e3).toISOString().slice(0, 
 const isLoggerPc = () => /^LOGGER/i.test(String((typeof CFG !== 'undefined' && CFG && CFG.pc) || os.hostname() || ''));
 /* (0.1.10) 🔑 운영 키 — 웹앱이 메모리로만 넘김(POST /relay/keys) · 파일(col2.json·jobs.json·relay-out.json·col2.log)·기록창·상태·col2_*에 값을 남기지 않음 · 로거 PC는 받지 않음 */
 const KEYS = { v: null, at: 0, n: 0, by: '' };
-const keyVals = () => (KEYS.v ? Object.values(KEYS.v).filter((x) => typeof x === 'string' && x.length >= 4).sort((a, b) => b.length - a.length) : []);
+/* (fxfix1 11/19) 💱 환율 열쇠(eximKey) 하나만 — 🔀 환율을 넘겨받은 사무실 PC가 웹앱 탭 없이도 클라우드 홀로 연결로 받음(메모리에만 · 12시간 뒤 버림 · 로거는 받지 않음) */
+const FXK = { v: '', at: 0 };
+const keyVals = () => [...(KEYS.v ? Object.values(KEYS.v) : []), ...(FXK.v ? [FXK.v] : [])].filter((x) => typeof x === 'string' && x.length >= 4).sort((a, b) => b.length - a.length);
 const redact = (t) => { let s0 = String(t == null ? '' : t); for (const k of keyVals()) s0 = s0.split(k).join('«키»'); for (const k of keyVals()) { const e = encodeURIComponent(k); if (e !== k) s0 = s0.split(e).join('«키»'); } return s0; };
-const redactV = (v) => (KEYS.v ? JSON.parse(redact(JSON.stringify(v === undefined ? null : v))) : v);
+const redactV = (v) => (KEYS.v || FXK.v ? JSON.parse(redact(JSON.stringify(v === undefined ? null : v))) : v);
 const clean = (m) => { const t = JR.scrub(redact(m)); return isLoggerPc() ? JR.loggerScrub(t) : t; };
 const log = (m) => { const line = `${kst()} 🧪 ${clean(m)}\n`; try { fs.appendFileSync(LOG_F, line); } catch (e) {} try { process.stdout.write(line); } catch (e) {} };
 const JRN = JR.makeJournal({ home: HOME, isLogger: () => isLoggerPc() }); const note = (m, o) => { const e = JRN.add(redact(m), o); if (e) log(e.x); return e; };
@@ -339,9 +341,16 @@ function keysPut(o, org) { if (isLoggerPc()) { note('🔑 로거 PC는 운영 �
   const was = keyVals(); KEYS.v = Object.keys(v).length ? v : null; KEYS.at = now(); KEYS.n = Object.keys(v).length; KEYS.by = String((o && o.by) || '').slice(0, 60);
   if (!was.length || was.join('|') !== keyVals().join('|')) note(`🔑 운영 키 ${KEYS.n}개를 메모리에만 받음(${Object.keys(v).join('·') || '없음'} — 값은 어디에도 남기지 않음 · ${Math.round(KTTL() / 3600e3)}시간 뒤 버리고 다시 부탁)`, { k: 'sys', m: '키' });
   return { code: 200, body: { ok: true, n: KEYS.n, names: Object.keys(v) } }; }
-const keysWant = () => { if (isLoggerPc() || keysLive() && now() - KEYS.at < KTTL() * 0.8) return null; let pl = []; try { pl = JOBS.plan(); } catch (e) {} const ks = pl.filter((k) => TK.byK[k] && TK.byK[k].keys); if (!ks.length) return null; return TK.KEY_OK.filter((k) => !TK.keyLogger(k)); };
-function keysFor(src) { if (isLoggerPc() || !keysLive()) return {}; const X = CORE.ext; const names = new Set(); try { for (const k of (X && X.SOURCES[src] && X.SOURCES[src].keys) || []) names.add(k); for (const e of (X && X.KEYS) || []) if ((e.for || []).includes(src)) names.add(e.k); } catch (e) {} const o = {}; for (const k of names) if (KEYS.v[k] && !TK.keyLogger(k)) o[k] = KEYS.v[k]; return o; }
-const keysSum = () => (isLoggerPc() ? { logger: true, n: 0, names: [] } : { n: keysLive() ? KEYS.n : 0, names: keysLive() ? Object.keys(KEYS.v) : [], at: KEYS.at ? kst(KEYS.at) : null, want: !!keysWant() });
+const keysWant = () => { if (isLoggerPc() || keysLive() && now() - KEYS.at < KTTL() * 0.8) return null; let pl = []; try { pl = JOBS.plan(); } catch (e) {} const ks = pl.filter((k) => TK.byK[k] && TK.byK[k].keys || k === 'ext.fx' && hoMine('ext.fx')); if (!ks.length) return null; /* (fxfix1 11/19) 넘겨받은 환율도 열쇠가 있어야 읽음 */ return TK.KEY_OK.filter((k) => !TK.keyLogger(k)); };
+function keysFor(src) { if (isLoggerPc()) return {}; const o = {}; if (keysLive()) { const X = CORE.ext; const names = new Set(); try { for (const k of (X && X.SOURCES[src] && X.SOURCES[src].keys) || []) names.add(k); for (const e of (X && X.KEYS) || []) if ((e.for || []).includes(src)) names.add(e.k); } catch (e) {} for (const k of names) if (KEYS.v[k] && !TK.keyLogger(k)) o[k] = KEYS.v[k]; }
+  if (src === 'fx' && !o.eximKey && fxkLive()) o.eximKey = FXK.v; /* (fxfix1 11/19) 웹앱이 안 줬으면 클라우드 홀로 연결로 받은 환율 열쇠 */ return o; }
+/* (fxfix1 11/19) 💱 환율 열쇠 — 11/17 환율을 JS-MAIN 번외로 넘긴 뒤 그 PC 웹앱 탭이 닫혀 있어 열쇠(6시간 메모리)가 안 와 정해진 시각에 못 읽음 → 소식 0 · 11/18 환율이 로거 30시간 한도 뒤에야 들어옴
+ *  넘겨받은 동안(hoMine)·웹앱 열쇠가 없을 때만 홀로 연결에 부탁(6시간마다 새로) · 클라우드는 넘김 표 그 PC에만 그 열쇠 하나를 줌(cloud/col2solo.js) · 값은 메모리에만 */
+const FXK_TTL = 12 * 3600e3;
+const fxkLive = () => !!(FXK.v && now() - FXK.at < FXK_TTL);
+const fxkWant = () => !isLoggerPc() && hoMine('ext.fx') && !(keysLive() && KEYS.v.eximKey) && !(fxkLive() && now() - FXK.at < FXK_TTL / 2);
+function fxkTake(v) { if (isLoggerPc() || !hoMine('ext.fx') || typeof v !== 'string' || v.trim().length < 4 || v.length > 400) return false; const was = FXK.v; FXK.v = v.trim(); FXK.at = now(); if (was !== FXK.v) note('🔑 💱 환율 열쇠 1개를 클라우드 홀로 연결로 메모리에만 받음(넘겨받은 환율 — 값은 어디에도 남기지 않음 · 12시간 뒤 버리고 다시 부탁)', { k: 'sys', m: '키' }); return true; }
+const keysSum = () => (isLoggerPc() ? { logger: true, n: 0, names: [] } : { n: keysLive() ? KEYS.n : 0, names: keysLive() ? Object.keys(KEYS.v) : [], at: KEYS.at ? kst(KEYS.at) : null, want: !!keysWant(), fx: fxkLive() ? { at: kst(FXK.at), by: 'solo' } : null /* (fxfix1) 홀로 연결로 받은 환율 열쇠 — 있음·때만 */ });
 /* (0.1.10) 운영 문서 목록 부탁 — 🔍 새상품 없는 시세(사무실 PC만): 운영이 이미 본 prd_market_nobook 문서 listN개 · everyH시간에 한 번 */
 const LW2 = { at: {}, ask: new Set() };
 /* (11/12 handoff2) 🔀 숍 요약을 이 PC(로거)로 넘겼는데 🗣 판매자 글이 목록을 안 부탁할 때 — 판매자 목록을 6시간마다 한 바퀴(200곳씩 · 숍 번호·이름·평가 수·rev6mAt만) */
@@ -707,9 +716,9 @@ const SOLO = require('./col2-solo.js').makeSolo({ HOME, TEST, ver: VERSION, cfg:
     const poolAsk = AU.poolAskAt && t - AU.poolAskAt < 10 * 60e3 ? 0 : isLoggerPc() ? 0 : poolNeed(); if (poolAsk) AU.poolAskAt = t;
     const lists = soloLists(); /* (11/12 handoff3) 판매자 목록(🗣 · 🏪 넘긴 숍 요약 차례)도 이 길로 — 웹앱 탭 없이 홀로 연결만 된 로거도 받음 */
     const y24reg = y24SoloGather(); /* (headless1 11/14) 🤖 예스24 자동 올림 — 웹앱 탭 없이 클라우드가 판단(cloud/y24auto.js) */
-    return { st: soloStPick(), out, setPend: SET.pend(), sharedAt: SET.sharedAt(), handBeat: HO.beat, want, fields: PROD_FIELDS, ...(lists.length ? { lists } : {}), ...(poolAsk ? { pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n } : {}), ...(y24reg ? { y24reg } : {}) }; },
+    return { st: soloStPick(), out, setPend: SET.pend(), sharedAt: SET.sharedAt(), handBeat: HO.beat, want, fields: PROD_FIELDS, ...(fxkWant() ? { fxKey: 1 } : {}), ...(lists.length ? { lists } : {}), ...(poolAsk ? { pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n } : {}), ...(y24reg ? { y24reg } : {}) }; },
   apply: (j) => { let more = false; if (j.alDocs) SOLO_AL.at = now(); if (j.ack) { if (soloAck(j.ack) && RL.out.length) more = true; }
-    if (j.shared || j.sharedAck) SET.take(j.shared, j.sharedAck); if (j.handoff) hoTake(j.handoff); if (j.y24reg && y24SoloTake(j.y24reg)) more = true;
+    if (j.shared || j.sharedAck) SET.take(j.shared, j.sharedAck); if (j.handoff) hoTake(j.handoff); if (j.fxKey) fxkTake(j.fxKey); if (j.y24reg && y24SoloTake(j.y24reg)) more = true;
     const a = {}; if (Array.isArray(j.docs) && j.docs.length) a.docs = j.docs; if (Array.isArray(j.pool)) { a.pool = j.pool; a.poolFor = j.poolFor; a.poolLap = j.poolLap; a.poolNext = j.poolNext; a.poolEnd = j.poolEnd; }
     if (j.lists && typeof j.lists === 'object' && Array.isArray(j.lists.sellers)) a.lists = { sellers: j.lists.sellers };
     if (a.docs || a.pool || a.lists) { const r = relayAnswer(a); if (AU.pool.length && r.n) autoKick(); } return more; },

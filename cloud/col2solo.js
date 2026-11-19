@@ -9,6 +9,8 @@
  *  · 서명이 맞으면 **그 PC 칸만** 씀 — col2_ctl/<그 PC> · col2_* 허용 칸(PC 이름이 든 문서는 그 PC 이름만) · 🔀 넘긴 일(그 PC로 넘긴 일 · 넘김 표 안만 · 운영 쓰기 규칙 그대로)
  *    · 모든 PC 공통 설정(app_settings/col2_cfg — 설정 표 안 값만) · 넘김 맥박 · 🟩 네이버(로거 PC만 — 받는 열쇠·상태·봉투 넘기기·읽은 것)
  *  · 견줄 운영 값(읽기만)은 웹앱과 같은 칸·같은 로거 규칙(약속 0)만 — 손님 정보가 든 칸(prd_listings·shp_state·crm_interactions)과 운영 키(app_secrets)는 이 길로 주지 않음(웹앱만)
+ *    · (fxfix1 11/19) 예외 하나 — 💱 환율 수출입은행 열쇠(app_secrets/ext keys.eximKey) 한 개만: 🔀 환율(ext.fx)을 넘겨받은 사무실 PC(로거 아님 · 넘김 표 그 PC)가 부탁할 때만 답에 실어 줌
+ *      (11/17 넘김 뒤 JS-MAIN 웹앱 탭이 닫혀 열쇠가 안 와 이틀 환율 못 받음 — 번외는 메모리에만 두고 파일·기록창에 안 남김 · 다른 키·다른 PC·로거엔 주지 않음)
  * 겹침: 번외가 홀로 연결이 살아 있으면(3분 안 성공) 웹앱·수집기 다리에 같은 일을 내주지 않음(번외 쪽에서 막음) — 한 일은 한 길로만
  * 로거(약속 0): 로거 번외가 우리 클라우드(우리 서버)에 닿을 뿐 — 알라딘·예스24 계정·쿠키·우리 숍 화면·우리 상품 목록은 오가지 않음(로거에는 표본·운영 키·우리 상품 칸을 주지 않음) */
 'use strict';
@@ -67,7 +69,7 @@ const nbTrim = (v) => { if (!v || typeof v !== 'object') return null; const o = 
 const tsOf = (v) => (v && typeof v.toDate === 'function' ? v.toDate().toISOString() : v);
 const tsFix = (o) => { if (!o || typeof o !== 'object') return o; if (Array.isArray(o)) return o.map(tsFix); if (typeof o.toDate === 'function') return o.toDate().toISOString(); const r = {}; for (const [k, v] of Object.entries(o)) r[k] = tsFix(v); return r; };
 
-function makeSolo({ db, C, FV, log, mods, now, y24 }) { /* (headless1 11/14) y24 = cloud/y24auto.js — 예스24 자동 올림 판단(웹앱 없이) */
+function makeSolo({ db, C, FV, log, mods, now, y24, fxKey }) { /* (fxfix1 11/19) fxKey = async () => 수출입은행 열쇠(app_secrets/ext keys.eximKey · 10분 기억) */ /* (headless1 11/14) y24 = cloud/y24auto.js — 예스24 자동 올림 판단(웹앱 없이) */
   now = now || Date.now; log = log || (() => {});
   const M = { seen: new Map(), pubs: null, pubAt: 0, stSig: new Map(), seenW: new Map(), nvSig: null, nvAt: 0, nvPub: null };
   const iso = () => new Date(now()).toISOString();
@@ -195,6 +197,7 @@ function makeSolo({ db, C, FV, log, mods, now, y24 }) { /* (headless1 11/14) y24
     const md = await mods(); const F = Array.isArray(b.fields) ? b.fields.filter((f) => /^\w{1,40}$/.test(String(f))).slice(0, 40) : null; const errs = [];
     try { res.st = await putSt(pc, b); } catch (e) { errs.push('상태: ' + (e.code || e.message)); }
     let hoDoc = { jobs: {} }; try { const d = await C('app_settings').doc('col2_handoff').get(); const v = d.exists ? d.data() || {} : {}; hoDoc = { jobs: tsFix(v.jobs || {}) }; res.handoff = { jobs: Object.fromEntries(Object.entries(hoDoc.jobs).filter(([k]) => !!(md.HOF && md.HOF.JOBS[k] && md.HOF.JOBS[k].lg) === !!lg)) }; } /* (11/12 handoff2 · 약속 0) 로거엔 로거 칸 일만 · 사무실엔 사무실 일만 */ catch (e) { errs.push('넘김 문서: ' + (e.code || e.message)); }
+    if (b.fxKey && !lg && typeof fxKey === 'function' && md.HOF && md.HOF.mine(hoDoc, 'ext.fx', pc)) { try { const v = await fxKey(); if (typeof v === 'string' && v.trim().length >= 4 && v.length <= 400) res.fxKey = v.trim(); } catch (e) { errs.push('환율 열쇠: ' + (e.code || e.message)); } } /* (fxfix1 11/19) 💱 환율을 넘겨받은 사무실 PC에만 그 열쇠 하나 */
     if (Array.isArray(b.out) && b.out.length) { if (!md.HOF) errs.push('넘김 표 파일을 못 받음'); res.ack = await putOut(pc, b.out, hoDoc, md.X, md.HOF || { JOBS: {}, writeOk: () => ({ ok: false, why: '넘김 표 없음' }) }); }
     if (b.handBeat && typeof b.handBeat === 'object' && md.HOF) for (const [k, tb] of Object.entries(b.handBeat).slice(0, 20)) { if (!md.HOF.mine(hoDoc, k, pc) || !(+tb > 0) || +tb > now() + 60e3) continue; const x = hoDoc.jobs[k] || {}; const was = Date.parse(x.beat || '') || 0; if (+tb - was < 30 * 60e3) continue;
       try { await C('app_settings').doc('col2_handoff').set({ jobs: { [k]: { beat: new Date(+tb).toISOString() } } }, { merge: true }); } catch (e) {} }

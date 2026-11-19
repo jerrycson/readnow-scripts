@@ -72,11 +72,29 @@ function decide(s, doc, days, solo, now) {
   if (s.needSame) { const T = d.tasks[s.task || s.k] || {}; if (!((+T.same || 0) >= s.needSame)) return { act: 'wait', why: `${pc} 번외가 운영과 같은 값을 아직 ${+T.same || 0}/${s.needSame}건${(T.why || {}).ext ? ' (출처 다름 ' + T.why.ext + ' — 번외가 운영 키를 못 받음)' : ''}` }; } /* (11/14 col2seed) */
   return { act: 'on', why: s.why || '넘길 수 있음' };
 }
+/* (fxfix1 11/19 · 정범님 I-1119-0805 '설계에서 끝내지 말고 작동까지') 🛟 넘김 지킴 — 차례표가 켠 줄(사람 값 아님)인데 넘겨받은 PC가 그날 정해진 시각 뒤 소식이 없으면 예전 담당으로 저절로 되돌림
+ *  왜: 11/17 12:46Z 환율을 JS-MAIN으로 넘긴 뒤 소식(beat) 0 — 운영 수집기의 30시간 한도(c2HoLive)만 기다려 11/18 환율이 하루 가까이 비었음(진단 ext_run.fx 11/19 00:48Z LOGGER가 늦게 씀)
+ *  규칙: WATCH 표의 일만 · 그 일 줄이 on이고 by가 '클라우드 차례표…'이고 PC가 로거가 아님 · 한국 시각 upto 뒤인데 소식(beat·at 늦은 쪽)이 그날 since(첫 시각)보다 앞
+ *    → jobs.<일> = { on:false, offAt, offBy } + log 한 줄(웹앱 되돌리기와 같은 꼴) · 운영 로거 수집기가 5분 안에 다시 받음(c2HoLive가 on:false를 봄) · 다시 켜는 것은 사람(⚙ 🔀 넘기기)만 — 차례표 줄은 이미 끝(seeds) 표시라 다시 켜지 않음
+ *  사람이 넘긴 줄(by가 차례표가 아님)은 건드리지 않음(헌장 제7조) · 지우는 쓰기 없음 */
+const WATCH = { 'ext.fx': { since: '11:35', upto: '16:30', why: '💱 환율 — 넘겨받은 PC가 오늘 11:35 뒤 한 번도 못 읽음(16:30까지 소식 없음) → 운영 로거 수집기(와이파이)로 되돌림' } };
+const kmin = (t) => { const d = new Date(t + 9 * 3600e3); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
+const hm = (x) => { const [h, m] = String(x).split(':').map(Number); return h * 60 + (m || 0); };
+const kAt = (t, x) => Date.parse(kday(t) + 'T00:00:00+09:00') + hm(x) * 60e3; /* 그날(한국) x시각의 ms */
+function watch(doc, now, W) { W = W || WATCH; const jobs = (doc && doc.jobs) || {}; const out = [];
+  for (const [k, w] of Object.entries(W)) { const cur = jobs[k]; if (!cur || cur.on !== true || !/^클라우드 차례표/.test(String(cur.by || ''))) continue; const pc = String(cur.pc || '').toUpperCase(); if (!pc || pc === 'LOGGER') continue;
+    if (kmin(now) < hm(w.upto)) continue; const ref = Math.max(Date.parse(cur.beat || '') || +cur.beat || 0, Date.parse(cur.at || '') || +cur.at || 0); if (ref >= kAt(now, w.since)) continue;
+    out.push({ k, pc, why: w.why + ` · ${pc} 마지막 소식 ${ref ? new Date(ref).toISOString().slice(0, 16) + 'Z' : '없음'}` }); }
+  return out; }
 function makeSeed({ db, C, log, seed }) {
   const L = seed || SEED; const lastWhy = {};
   async function tick() {
     const out = []; const now = Date.now(); const ref = C('app_settings').doc(DOC);
     let solo = {}; try { solo = ((await C('app_settings').doc('col2_solo').get()).data() || {}).pcs || {}; } catch (e) {}
+    try { let wk = []; await db.runTransaction(async (tx) => { const g = await tx.get(ref); const doc = g.exists ? g.data() || {} : {}; wk = watch(doc, now); if (!wk.length) return; const at = new Date(now).toISOString(); const lg = Array.isArray(doc.log) ? doc.log.slice(0, 40 - wk.length) : [];
+        const jobs = {}; for (const w of wk) { const by = '클라우드 지킴(' + w.k + ' 소식 없음)'; lg.unshift({ k: w.k, on: false, pc: null, at, by, why: w.why.slice(0, 200) }); jobs[w.k] = { on: false, offAt: at, offBy: by, offWhy: w.why.slice(0, 200) }; }
+        tx.set(ref, { jobs, log: lg }, { merge: true }); });
+      for (const w of wk) { log('🛟 번외 넘김 지킴 — 되돌림', w.k, w.pc, w.why); out.push({ id: 'watch-' + w.k, act: 'off', why: w.why }); } } catch (e) { log('🛟 번외 넘김 지킴 실패', e.message); }
     for (const s of L) {
       const pc = String(s.pc || '').toUpperCase(); let days = [];
       try { days = (await Promise.all([0, 1].map((o) => C('col2_jday').doc(`${kday(now, o)}_${pc.replace(/[^\w.-]/g, '_')}`).get()))).map((g) => (g.exists ? g.data() || null : null)); } catch (e) {}
@@ -94,4 +112,4 @@ function makeSeed({ db, C, log, seed }) {
     return out; }
   return { tick };
 }
-module.exports = { SEED, decide, makeSeed, verGE, DOC };
+module.exports = { SEED, decide, makeSeed, verGE, DOC, WATCH, watch };
