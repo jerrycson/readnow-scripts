@@ -50,7 +50,7 @@ ok(/id="plkgrp"/.test(DRAW), '옛 묶음 거르기 칸도 그대로');
 ok(/plkTabsHtml\(FF, all0, 'all'\)/.test(FOLD) && /plkTabRows\(all0, 'all'/.test(FOLD) && /plkTabBind\(sh, FF, 'all', plkFolderDraw\)/.test(FOLD), '폴더: 같은 줄을 쓰고 거르고 연결');
 ok(/plkTabListen\(true\)/.test(fnIn(T, 'plkDrawer')) && /plkTabListen\(true\)/.test(fnIn(T, 'openPlkFolder')) && /plkTabListen\(false\)/.test(fnIn(T, 'plkDrClose')), '서랍·폴더를 열 때 듣기 시작 · 서랍을 닫으면 멈춤');
 { const st = { plkTabs: { ok: true, d: { tabs: [{ id: 'a1', top: 'all', nm: '탭A', ds: '설명A', keys: ['k1'], trash: '' }, { id: 'a2', top: 'all', nm: '탭B', ds: '', keys: [], trash: '2026-11-19' }] } } };
-  const f = new Function('S', 'esc', 'num', 'PLK_TOPS', 'plkMode', 'plkGoneTxt', 'plkGoneHtml', 'plkPickHtml', 'plkAutoChips', 'plkAutoOn', NORM + '\n' + fnIn(T, 'plkSubOf') + '\n' + fnIn(T, 'plkTabsOf') + '\n' + fnIn(T, 'plkTabsHtml') + '\nreturn plkTabsHtml;')(st, esc, num, ['new', 'full', 'cond', 'all'], () => 'new', () => '', () => '', () => '', () => '', () => false);
+  const f = new Function('S', 'esc', 'num', 'PLK_TOPS', 'plkMode', 'plkGoneTxt', 'plkGoneHtml', 'plkPickHtml', NORM + '\n' + fnIn(T, 'plkSubOf') + '\n' + fnIn(T, 'plkTabsOf') + '\n' + fnIn(T, 'plkTabsHtml') + '\nreturn plkTabsHtml;')(st, esc, num, ['new', 'full', 'cond', 'all'], () => 'new', () => '', () => '', () => '');
   const all = [{ id: 'k1' }, { id: 'k2' }]; const F = { subs: { all: 'a1' } };
   const h = f(F, all, 'all'); ok(/data-plksub=""/.test(h) && /전체 2/.test(h) && /탭A 1/.test(h) && /title="설명A"/.test(h), '「전체」와 사용자 탭(상품 수) · 설명이 말풍선', h.slice(0, 300));
   ok(/class="plk-tdesc">설명A</.test(h), '고른 탭의 설명 줄(.plk-tdesc)'); ok(!/탭B 0/.test(h) && /🗑 1/.test(h), '휴지통 탭은 줄에 안 나오고 🗑 칩에 개수');
