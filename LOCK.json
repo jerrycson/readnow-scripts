@@ -43,14 +43,14 @@
   "at": "2026-11-19T07:19:09Z",
   "first": "2026-11-19T06:36:38Z"
  },
- "holder": "lead",
- "host": "vm-panel3",
- "what": "panel3 살핀 패널 검색 결과 → 그 상품만 안쪽 창 (I-1119-1438-13)",
- "since": "2026-11-19T07:09:26Z",
- "beat": "2026-11-19T07:17:48Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "등록 카드 판본 다시 고르기 — 웹앱 1.78.782 (regcand2b · main 993e573ad)",
-  "at": "2026-11-19T07:08:36Z"
+  "done": "살핀 패널 검색 결과 → 그 상품 카드 하나만 안쪽 창 — 웹앱 1.78.783 (panel3)",
+  "at": "2026-11-19T07:19:15Z"
  }
 }
