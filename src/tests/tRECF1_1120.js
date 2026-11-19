@@ -134,14 +134,17 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
     const docOf = () => p.evaluate(async (k) => { const d = (await batchLoadOne('rA')) || {}; return { dec: (d.decided || {})[k] || null, pick: (d.picks || {})[k] || null, undone: (d.undone || {})[k] || null, ex: (d.execLog || []).length }; }, r0.k);
     const before = await docOf();
     await p.evaluate(() => { window.__RT = []; for (const n of ['toast', 'rnNoteW', 'ctrlRex', 'bqExecCore', 'bqExecAsk']) { const f = window[n]; if (typeof f !== 'function') continue; window[n] = function (...a) { window.__RT.push(n + ':' + String(a[0] && a[0].k || a[0]).slice(0, 120)); return f.apply(this, a); }; } });
-    if (hasB) { await p.locator('#bkf_ctrl [data-brex]').first().click();
-      const ASKQ = () => { const b = document.querySelector('.askbox') || [...document.querySelectorAll('#sheet')].find((s) => /확정할까요/.test(s.textContent || '')); return b ? (b.textContent || '').slice(0, 200) : null; };
+    const ASKQ = () => { const b = document.querySelector('.askbox') || [...document.querySelectorAll('#sheet')].find((s) => /확정할까요/.test(s.textContent || '')); return b ? (b.textContent || '').slice(0, 200) : null; };
+    /* 누름: 시작 때 다른 일이 관제창을 다시 그리는 사이 누름이 사라질 수 있어(부하 때) — ctrlRex가 불리지 않았고 확인 창도 없으면 다시 누름(최대 6번) */
+    const pressBrex = async () => { for (let t = 0; t < 6; t++) { const n0 = await p.evaluate(() => (window.__RT || []).filter((x) => x.startsWith('ctrlRex')).length); await p.locator('#bkf_ctrl [data-brex]').first().click().catch(() => null); const got = await until((n) => (window.__RT || []).filter((x) => x.startsWith('ctrlRex')).length > n || !!document.querySelector('.askbox'), 20, n0); if (got) return true; } return false; };
+    if (hasB) { await pressBrex();
+      const ASKQ0 = () => { const b = document.querySelector('.askbox') || [...document.querySelectorAll('#sheet')].find((s) => /확정할까요/.test(s.textContent || '')); return b ? (b.textContent || '').slice(0, 200) : null; };
       const box = await until(ASKQ, 300); ok(!!box && /확정할까요/.test(box), '웹앱 확인 창이 뜸(브라우저 창 아님)', box || await p.evaluate(() => ({ calls: (window.__RT || []).filter((x) => !/^toast:(📋 수동 일괄에|매입 연결|상품 ↔ 매입)/.test(x)).map((x) => x.slice(0, 70)), toast: [...document.querySelectorAll('#toast, .toast, [class*=toast]')].map((e) => (e.textContent || '').slice(0, 160)), run: !!S._bExecRun, busy: (S._bkfCtrl || {}).busy || null})).catch(() => null));
       await Wt(p, 300); try { const dir = path.resolve(__dirname, '..', '..', '..', 'readnow-chats', 'reports', 'img'); const out = process.env.RN_RECF1_SHOT || (fs.existsSync(dir) && process.env.RN_RECF1_SHOT_DIR ? path.join(dir, 'RECF1_1120_confirm.png') : ''); if (out) { await p.screenshot({ path: out }); console.log('  · 그림', out); } } catch (e) { console.log('  · 그림 못 찍음', e.message); }
       await p.evaluate(() => { const b = document.querySelector('.askbox .ask-no') || [...document.querySelectorAll('#sheet button')].find((x) => x.textContent.trim() === '취소'); b && b.click(); });
       await Wt(p, 800); const after = await docOf(); ok(JSON.stringify(after) === JSON.stringify(before) && !!after.dec, '취소 → 그 그룹 문서 그대로(여전히 확정 · 결정 대기·되돌림 기록 없음)', { before, after });
       ok(!!(await p.evaluate(() => !!document.querySelector('#bkf_ctrl [data-brex]'))), '취소 뒤 카드도 그대로(다시 확정 단추 남음)');
-      await p.locator('#bkf_ctrl [data-brex]').first().click(); await until(ASKQ, 120);
+      await pressBrex(); await until(ASKQ, 300);
       await p.evaluate(() => { const b = document.querySelector('.askbox .ask-ok') || [...document.querySelectorAll('#sheet button')].find((x) => /확인 — 확정/.test(x.textContent)); b && b.click(); });
       const fin = await until(async (k) => { const d = (await batchLoadOne('rA')) || {}; const v = (d.decided || {})[k]; return v && v.at !== undefined && (d.undone || {})[k] && (d.execLog || []).length ? { at: v.at, price: v.price } : null; }, 120, r0.k);
       ok(!!fin && fin.price === 7300 && fin.at !== before.dec.at, '확인 → 그 그룹 문서에 다시 확정(새 확정 시각 · 되돌림 기록 · 실행 기록)', { fin, before });
