@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-pxg1",
-   "why": "판 내기 기다림: pxg1 조회수 표 판 H(열 지도)",
-   "first": "2026-11-19T16:06:13Z",
-   "at": "2026-11-19T19:17:05Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-allcard1",
    "why": "판 내기 기다림: 모아 보기 실제 수동 일괄 카드",
    "first": "2026-11-19T17:21:29Z",
@@ -24,16 +17,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-pxg1",
-  "why": "판 내기 기다림: pxg1 조회수 표 판 H(열 지도)",
-  "at": "2026-11-19T19:17:05Z",
-  "first": "2026-11-19T16:06:13Z"
+  "host": "vm-allcard1",
+  "why": "판 내기 기다림: 모아 보기 실제 수동 일괄 카드",
+  "at": "2026-11-19T19:17:27Z",
+  "first": "2026-11-19T17:21:29Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-pxg1",
+ "what": "pxg1 조회수 표 판 H(열 지도)",
+ "since": "2026-11-19T19:18:08Z",
+ "beat": "2026-11-19T19:18:08Z",
  "last": {
   "who": "lead",
   "done": "reo1 웹앱 1.78.821 올림 · main 3e4ef8a98 · 수동 일괄 확정 표시만·참고 탭 7가지·빠진 것도 함께 확정·이번엔 비교군 없이",
