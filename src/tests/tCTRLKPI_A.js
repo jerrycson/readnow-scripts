@@ -11,7 +11,8 @@ const T = fs.readFileSync(APP, 'utf8');
 console.log('① 글');
 { const a = T.indexOf('/* CTRLKPI-START'), b = T.indexOf('/* CTRLKPI-END */'); const B = a > 0 && b > a ? T.slice(a, b) : '';
   ok(B.length > 2000 && T.lastIndexOf('/* ◆ctrlhist 끝 */', a) > a - 40, 'CTRLKPI 덩어리 하나 · ◆ctrlhist 끝 바로 뒤', { a, b });
-  ok(!/db\.collection|onSnapshot|\.get\(\)|firestore\(/.test(B), 'CTRLKPI 덩어리에 Firestore 읽기 없음(이미 받아 둔 것만)');
+  const DC = [...B.matchAll(/db\.collection\(([^)]*)\)\.doc\([^)]*\)\.(\w+)\(/g)].map((m) => m[1] + '.' + m[2]); /* (판 D) 날마다 기록 두 칸만 읽음 — 그 밖 읽기·실시간 듣기·쓰기 없음 */
+  ok(DC.length >= 2 && DC.length === (B.match(/db\.collection\(/g) || []).length && DC.every((x) => /^'ctl_kpi_(m|days)'\.get$/.test(x)) && !/onSnapshot|firestore\(|runTransaction|\.batch\(\)|FieldValue/.test(B), 'CTRLKPI 덩어리 Firestore = 날마다 기록(ctl_kpi_m·ctl_kpi_days) 읽기(get)만 · 실시간 듣기·쓰기 없음', DC);
   const P = B.slice(B.indexOf('function ckPref('), B.indexOf('\n', B.indexOf('function ckPref(')));
   ok(/'rn-ck'/.test(P) && (P.match(/try \{/g) || []).length >= 2, '기기 저장 rn-ck · 읽기·쓰기 모두 try/catch');
   ok(/function ckP1\(l\) \{ const p0 = S\._nbmP; if \(!S\.nbmLoaded\) S\._nbmP = true;[\s\S]{0,200}finally \{ S\._nbmP = p0; \}/.test(B), '시장 지표 셈 중 판본 대조 기록을 저절로 읽지 않음(ckP1)');
@@ -72,10 +73,10 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   // 유효 최저가 창 — ≤·< 따로 · 어제 대비 · 읽는 법
   await p.evaluate(() => document.querySelector('#bkf_kpi [data-ctrlkpi="low"]').click()); await Wt(p, 150);
   let w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const tx = ov ? ov.textContent : ''; const st = ov && ov.querySelector('.ck-strict'); const K = ctrlKpiCalc(S.detail.bkfold); const d = ov && ov.querySelector('details.ck-how');
-    return { ov: !!ov, strict: st ? st.textContent : '', K: { low: K.low, lowS: K.lowS }, all: (ov.querySelector('#ck_all') || {}).textContent || '', yd: /어제 대비 — 오늘 밤부터 기록/.test(tx), how: !!d, howOpen: d ? d.open : null, more: /오늘 밤부터 기록/.test((ov.querySelector('[data-ctrlkpimore]') || {}).textContent || '') }; });
+    return { ov: !!ov, strict: st ? st.textContent : '', K: { low: K.low, lowS: K.lowS }, all: (ov.querySelector('#ck_all') || {}).textContent || '', yd: /어제 대비 — 오늘 밤부터 기록/.test(tx), how: !!d, howOpen: d ? d.open : null, more: /오늘 밤부터 기록|아직 기록한 날이 없습니다|날마다 기록 읽는 중/.test((ov.querySelector('[data-ctrlkpimore]') || {}).textContent || '') }; });
   ok(w.ov && w.strict.includes(`더 싸야만(<) 센 수 ${w.K.lowS.toLocaleString('ko-KR')}개`) && w.strict.includes(`같은 값 겨룸 ${(w.K.low - w.K.lowS).toLocaleString('ko-KR')}개`), '유효 최저가 창 — 더 싸야만(<) 수·같은 값 겨룸 수 따로', w);
   ok(w.all.includes(`더 싸야만(<) ${exp.lowS.toLocaleString('ko-KR')}개`) && w.all.includes('가게 전체'), '창 안 가게 전체 줄', w.all);
-  ok(w.yd && w.more, '날마다 기록 없음 — 「어제 대비 — 오늘 밤부터 기록」', w);
+  ok(w.yd && w.more, '날마다 기록 없음 — 「어제 대비 — 오늘 밤부터 기록」 · 창 아래 「아직 기록한 날이 없습니다」', w);
   ok(w.how && w.howOpen === false, '「이 숫자를 읽는 법」 처음엔 접힘', w);
   await p.evaluate(() => { const d = document.querySelector('#ctrl_kpi details.ck-how'); d.open = true; }); await Wt(p, 150);
   let pf = await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('rn-ck') || '{}'); } catch (_) { return null; } }); ok(pf && pf.how === 1, '펼침 → 기기에 기억(rn-ck)', pf);
