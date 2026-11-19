@@ -1,7 +1,7 @@
 // tBQSIMP1118 — (정범님 11/18 I-1118-1947-22.1·22.3·22.4) 🧮 수동 일괄 간소화 셋
 //  ① 22.1 적용(반영) 개념 없앰 — 꺼진 그룹도 단추 하나 [✅ N개 확정 — 두 번 누름] · 한 번 = 「확정할까요?」 무장만 · 두 번 = 확정 + 이번 확정만 반영(옛 ⚡ 이번만 길 · 다 반영되면 저절로 다시 꺼짐)
 //     옛 적용 칸·고르기 칸은 ⚙ 「수동 일괄 '적용' 켜고 끄기 되살리기」(기본 꺼짐)를 켤 때만 다시 보임 · 확정 탭(조건 이미 부합)도 두 번 누름 단추
-//  ② 22.3 👁 살핀 상품 패널 찾기 — 제목·ISBN·SKU·관리코드 · 이 탭이면 그 카드로 가서 잠깐 빛남 · 다른 탭이면 탭 이름이 보이고 누르면 그 탭으로 가서 그 카드
+//  ② 22.3 👁 살핀 상품 패널 찾기 — 제목·ISBN·SKU·관리코드 · 이 탭·다른 탭 모두 누르면 안쪽 창에 그 카드 하나(panel3 11/19) · 다른 탭이면 탭 이름이 보임
 //  ③ 22.4 패널 「이 목록을 선택 대기로」(두 번 누름 · 조건 이미 부합·추천 못 함·매입가 하한·보류·휴지통 탭) · 「그래도 바꾸기 → 선택 대기」는 탭을 바꾸지 않고 그 자리에 머묾
 // 실행: pw/ 안(harness.js·seed.js 옆) RN_PORT=<포트> node tBQSIMP1118.js · 시험 자료에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
@@ -55,15 +55,15 @@ const SCAN = async ([tab, until]) => { const W = (ms) => new Promise((r) => setT
     const r2 = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const sh = document.getElementById('sheet'); const out = {}; const inp = () => document.querySelector('#seenp [data-sp="q"]');
       const type = async (v) => { const i = inp(); if (!i) return null; i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); await W(500); return [...document.querySelectorAll('#seenp .seenp-qi')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()); };
       out.box = !!inp(); const okK = window.__K(4), selK = window.__K(10); const tOk = S.plist.get(okK).title, tSel = S.plist.get(selK).title;
-      out.selRes = await type(tSel); const g1 = document.querySelector('#seenp .seenp-qi[data-spgo]'); if (g1) g1.click(); await W(500); const c1 = sh.querySelector(`[data-mk="${CSS.escape(selK)}"]`);
-      const R0 = sh.getBoundingClientRect(); out.sel = { T: S.batchT, card: !!c1, flash: !!(c1 && c1.classList.contains('bq-flash')), vis: !!c1 && c1.getBoundingClientRect().top < R0.bottom && c1.getBoundingClientRect().bottom > R0.top };
-      out.isbnRes = await type(S.plist.get(okK).isbn13); out.okRes = await type(tOk); const g2 = document.querySelector('#seenp .seenp-qi[data-spgo]'); if (g2) g2.click(); await W(900); const c2 = sh.querySelector(`[data-mk="${CSS.escape(okK)}"]`);
-      out.ok = { T: S.batchT, card: !!c2, flash: !!(c2 && c2.classList.contains('bq-flash')), vis: !!c2 && c2.getBoundingClientRect().top < sh.getBoundingClientRect().bottom && c2.getBoundingClientRect().bottom > sh.getBoundingClientRect().top };
+      out.selRes = await type(tSel); const g1 = document.querySelector('#seenp .seenp-qi[data-spgo]'); if (g1) g1.click(); await W(500); /* (panel3 11/19 I-1119-1438-13) 누르면 탭 이동·빛남 대신 안쪽 창에 그 카드 하나 */ const WB = () => document.querySelector('.spw .spw-b'); const shut = async () => { const x = document.querySelector('.spw .spw-x'); if (x) x.click(); await W(600); };
+      const b1 = WB(); const c1 = b1 && b1.querySelector(`[data-mk="${CSS.escape(selK)}"]`); out.sel = { T: S.batchT, win: !!b1, card: !!c1, one: !!b1 && b1.children.length === 1 }; await shut(); out.sel.back = !document.querySelector('.spw') && !!sh.querySelector(`[data-mk="${CSS.escape(selK)}"]`) && S.batchT === 'sel';
+      out.isbnRes = await type(S.plist.get(okK).isbn13); out.okRes = await type(tOk); const g2 = document.querySelector('#seenp .seenp-qi[data-spgo]'); if (g2) g2.click(); await W(900); const b2 = WB(); const c2 = b2 && b2.querySelector(`[data-mk="${CSS.escape(okK)}"]`);
+      out.ok = { win: !!b2, card: !!c2, one: !!b2 && b2.children.length === 1 }; await shut(); out.ok.back = !document.querySelector('.spw') && S.batchT === 'sel';
       return out; });
     ok(r2.box, '② 살핀 상품 패널에 🔎 찾기 칸', r2);
-    ok(r2.selRes && r2.selRes.length === 1 && /이 탭/.test(r2.selRes[0]) && r2.sel.T === 'sel' && r2.sel.card && r2.sel.flash && r2.sel.vis, '② 이 탭 상품 = 「이 탭」 · 누르면 그 카드로 가서 잠깐 빛남', r2.sel);
+    ok(r2.selRes && r2.selRes.length === 1 && /이 탭/.test(r2.selRes[0]) && r2.sel.T === 'sel' && r2.sel.win && r2.sel.card && r2.sel.one && r2.sel.back, '② 이 탭 상품 = 「이 탭」 · 누르면 안쪽 창에 그 카드 하나 · 닫으면 제자리', r2.sel);
     ok(r2.isbnRes && r2.isbnRes.length === 1 && /조건 이미 부합 탭/.test(r2.isbnRes[0]), '② ISBN으로도 찾음 · 다른 탭 상품은 그 탭 이름이 보임', r2.isbnRes);
-    ok(r2.okRes && /조건 이미 부합 탭 →/.test(r2.okRes[0]) && r2.ok.T === 'ok' && r2.ok.card && r2.ok.flash && r2.ok.vis, '② 다른 탭 상품을 누르면 그 탭으로 바뀌고 그 카드가 보이며 빛남', r2.ok);
+    ok(r2.okRes && /조건 이미 부합 탭 →/.test(r2.okRes[0]) && r2.ok.win && r2.ok.card && r2.ok.one && r2.ok.back, '② 다른 탭 상품을 누르면 탭을 바꾸지 않고 안쪽 창에 그 카드 하나 · 닫으면 원래 탭', r2.ok);
     // ③ 이 목록을 선택 대기로 · 그래도 바꾸기 그 자리
     const seenOk = await p.evaluate(SCAN, ['ok', 900]);
     const r3 = await p.evaluate(async (seen) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const sh = document.getElementById('sheet'); const out = {}; const okK = window.__K(4);
