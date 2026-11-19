@@ -135,13 +135,14 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
     if (!hasB && process.env.RN_RECF1_DBG) fs.writeFileSync(process.env.RN_RECF1_DBG, JSON.stringify(await p.evaluate(() => { const c = document.querySelector('#bkf_ctrl'); return { ctrl: c ? c.innerText.slice(0, 4000) : null, g: (S.prBatches || []).map((b) => [b.id, b.decided, b.on]), tb: S._bkfTb }; }), null, 1));
     const before = await docOf();
     if (hasB) { await p.locator('#bkf_ctrl [data-brex]').first().click();
-      const box = await until(() => { const b = document.querySelector('.askbox, #sheet'); return b ? (b.textContent || '').slice(0, 200) : null; }, 80); ok(!!box && /확정할까요/.test(box), '웹앱 확인 창이 뜸(브라우저 창 아님)', box);
+      const ASKQ = () => { const b = document.querySelector('.askbox') || [...document.querySelectorAll('#sheet')].find((s) => /확정할까요/.test(s.textContent || '')); return b ? (b.textContent || '').slice(0, 200) : null; };
+      const box = await until(ASKQ, 120); ok(!!box && /확정할까요/.test(box), '웹앱 확인 창이 뜸(브라우저 창 아님)', box);
       await Wt(p, 300); try { const dir = path.resolve(__dirname, '..', '..', '..', 'readnow-chats', 'reports', 'img'); const out = process.env.RN_RECF1_SHOT || (fs.existsSync(dir) && process.env.RN_RECF1_SHOT_DIR ? path.join(dir, 'RECF1_1120_confirm.png') : ''); if (out) { await p.screenshot({ path: out }); console.log('  · 그림', out); } } catch (e) { console.log('  · 그림 못 찍음', e.message); }
-      await p.evaluate(() => { const b = document.querySelector('.askbox .ask-no') || [...document.querySelectorAll('#sheet button')].find((x) => /취소/.test(x.textContent)); b && b.click(); });
+      await p.evaluate(() => { const b = document.querySelector('.askbox .ask-no') || [...document.querySelectorAll('#sheet button')].find((x) => x.textContent.trim() === '취소'); b && b.click(); });
       await Wt(p, 800); const after = await docOf(); ok(JSON.stringify(after) === JSON.stringify(before) && !!after.dec, '취소 → 그 그룹 문서 그대로(여전히 확정 · 결정 대기·되돌림 기록 없음)', { before, after });
       ok(!!(await p.evaluate(() => !!document.querySelector('#bkf_ctrl [data-brex]'))), '취소 뒤 카드도 그대로(다시 확정 단추 남음)');
-      await p.locator('#bkf_ctrl [data-brex]').first().click(); await until(() => !!document.querySelector('.askbox, #sheet'), 80);
-      await p.evaluate(() => { const b = document.querySelector('.askbox .ask-ok') || [...document.querySelectorAll('#sheet button')].find((x) => /확인/.test(x.textContent)); b && b.click(); });
+      await p.locator('#bkf_ctrl [data-brex]').first().click(); await until(ASKQ, 120);
+      await p.evaluate(() => { const b = document.querySelector('.askbox .ask-ok') || [...document.querySelectorAll('#sheet button')].find((x) => /확인 — 확정/.test(x.textContent)); b && b.click(); });
       const fin = await until(async (k) => { const d = (await batchLoadOne('rA')) || {}; const v = (d.decided || {})[k]; return v && v.at !== undefined && (d.undone || {})[k] && (d.execLog || []).length ? { at: v.at, price: v.price } : null; }, 120, r0.k);
       ok(!!fin && fin.price === 7300 && fin.at !== before.dec.at, '확인 → 그 그룹 문서에 다시 확정(새 확정 시각 · 되돌림 기록 · 실행 기록)', { fin, before });
       const sv = await p.evaluate(async (k) => { const s = await db.collection('prd_price_decisions').doc(k).get(); const v = s.data() || {}; return { st: v.approvalState, b: (v.approval || {}).batchId }; }, r0.k); ok(sv.st === 'manual' && sv.b === 'rA', '결정 문서 = 반영 대기(manual · 이 그룹)', sv); }
