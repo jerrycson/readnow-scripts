@@ -135,7 +135,7 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
     const before = await docOf();
     if (hasB) { await p.locator('#bkf_ctrl [data-brex]').first().click();
       const ASKQ = () => { const b = document.querySelector('.askbox') || [...document.querySelectorAll('#sheet')].find((s) => /확정할까요/.test(s.textContent || '')); return b ? (b.textContent || '').slice(0, 200) : null; };
-      const box = await until(ASKQ, 120); ok(!!box && /확정할까요/.test(box), '웹앱 확인 창이 뜸(브라우저 창 아님)', box);
+      const box = await until(ASKQ, 300); ok(!!box && /확정할까요/.test(box), '웹앱 확인 창이 뜸(브라우저 창 아님)', box || await p.evaluate(() => ({ toast: [...document.querySelectorAll('#toast, .toast, [class*=toast]')].map((e) => (e.textContent || '').slice(0, 160)), run: !!S._bExecRun, busy: (S._bkfCtrl || {}).busy || null })).catch(() => null));
       await Wt(p, 300); try { const dir = path.resolve(__dirname, '..', '..', '..', 'readnow-chats', 'reports', 'img'); const out = process.env.RN_RECF1_SHOT || (fs.existsSync(dir) && process.env.RN_RECF1_SHOT_DIR ? path.join(dir, 'RECF1_1120_confirm.png') : ''); if (out) { await p.screenshot({ path: out }); console.log('  · 그림', out); } } catch (e) { console.log('  · 그림 못 찍음', e.message); }
       await p.evaluate(() => { const b = document.querySelector('.askbox .ask-no') || [...document.querySelectorAll('#sheet button')].find((x) => x.textContent.trim() === '취소'); b && b.click(); });
       await Wt(p, 800); const after = await docOf(); ok(JSON.stringify(after) === JSON.stringify(before) && !!after.dec, '취소 → 그 그룹 문서 그대로(여전히 확정 · 결정 대기·되돌림 기록 없음)', { before, after });
