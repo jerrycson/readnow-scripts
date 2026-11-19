@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-edall3",
-   "why": "판 내기 기다림: 판본 판 ②(edall3)",
-   "first": "2026-11-19T08:32:11Z",
-   "at": "2026-11-19T10:47:45Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-ctrlroom1",
    "why": "판 내기 기다림: 관제소 판 ①-2",
    "first": "2026-11-19T08:35:12Z",
@@ -38,16 +31,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-edall3",
-  "why": "판 내기 기다림: 판본 판 ②(edall3)",
-  "at": "2026-11-19T10:47:45Z",
-  "first": "2026-11-19T08:32:11Z"
+  "host": "vm-ctrlroom1",
+  "why": "판 내기 기다림: 관제소 판 ①-2",
+  "at": "2026-11-19T10:47:59Z",
+  "first": "2026-11-19T08:35:12Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-edall3",
+ "what": "판본 판 ②(edall3)",
+ "since": "2026-11-19T10:48:48Z",
+ "beat": "2026-11-19T10:48:48Z",
  "last": {
   "who": "lead",
   "done": "",
