@@ -4,7 +4,8 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v250 (지금) | 2026-11-19 | `2b2fce4d5fa6ce79` | [펼쳐 보기](https://readnow.kr/manual/v250_2026-11-19.html) · [파일](v250_2026-11-19.html) |
+| v251 (지금) | 2026-11-19 | `a97b7a7c27fc08a0` | [펼쳐 보기](https://readnow.kr/manual/v251_2026-11-19.html) · [파일](v251_2026-11-19.html) |
+| v250 | 2026-11-19 | `2b2fce4d5fa6ce79` | [펼쳐 보기](https://readnow.kr/manual/v250_2026-11-19.html) · [파일](v250_2026-11-19.html) |
 | v249 | 2026-11-19 | `19d43fc81cea7bc6` | [펼쳐 보기](https://readnow.kr/manual/v249_2026-11-19.html) · [파일](v249_2026-11-19.html) |
 | v248 | 2026-11-19 | `28f46dcfeee9c3ab` | [펼쳐 보기](https://readnow.kr/manual/v248_2026-11-19.html) · [파일](v248_2026-11-19.html) |
 | v247 | 2026-11-19 | `c1d0387d9e8e88df` | [펼쳐 보기](https://readnow.kr/manual/v247_2026-11-19.html) · [파일](v247_2026-11-19.html) |
