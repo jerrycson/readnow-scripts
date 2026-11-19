@@ -32,7 +32,7 @@ const SEED = async function (d10) { if (!S.user) S.user = { email: 't@x', uid: '
   S.plist.set('yes24_T58', { id: 'yes24_T58', listingId: 'Y58', title: '예스24 책', price: 9000, qty: 1, grade: '상', status: '판매중', active: true, bookId: 'bk58y' });
   if (!(S.pbooks instanceof Map)) S.pbooks = new Map(); if (!(S.pmetrics instanceof Map)) S.pmetrics = new Map(); let n = 0;
   for (const l of S.plist.values()) { if (!/^aladin_U58/.test(l.id)) continue; n++; const dp = [0, -400, 400][n % 3]; /* 같은 값 · 남이 더 쌈 · 우리가 더 쌈 */
-    if (!S.pbooks.has(l.bookId)) S.pbooks.set(l.bookId, { priceList: 12000 + n * 900, pubDate: '2001-03-01' }); if (!S.pmetrics.has(l.bookId)) S.pmetrics.set(l.bookId, { lastCheckedAt: new Date().toISOString(), usedFirstPage: [{ usedCode: 'OTH' + n, grade: l.grade, price: (+l.price || 5000) + dp, sellerCode: '1', listingId: '9' + n }] }); }
+    if (!S.pbooks.has(l.bookId)) S.pbooks.set(l.bookId, { priceList: 12000 + n * 900, pubDate: '2001-03-01' }); if (!S.pmetrics.has(l.bookId)) S.pmetrics.set(l.bookId, { lastCheckedAt: new Date().toISOString(), usedFirstPage: [{ usedCode: 'OTH' + n, grade: l.grade, price: (+l.price || 5000) + dp, sellerCode: '0', sellerName: '알라딘', listingId: '9' + n }] }); }
   S.pmLoaded = true; S.sellersLoaded = true;
   const day = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); /* 가짜 주문 셋 — 손님 칸 없음 */
   S.orders.set('t_ck1', { id: 't_ck1', kind: 'sale', platform: 'aladin', orderedAt: day(Date.now()) + ' 09:00', items: [{ aladinUsedCode: 'U580000010', qty: 2, price: 7000, lineStatus: 'normal' }, { aladinUsedCode: 'U580000011', qty: 1, price: 7250, lineStatus: 'cancel' }] });
