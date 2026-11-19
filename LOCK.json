@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-bqprog1",
-   "why": "판 내기 기다림: bqprog1 수동 일괄 진행바",
-   "first": "2026-11-19T07:26:51Z",
-   "at": "2026-11-19T08:34:53Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-strat4",
    "why": "판 내기 기다림: strat4 감시 전략 판 ①",
    "first": "2026-11-19T07:40:38Z",
@@ -59,16 +52,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-bqprog1",
-  "why": "판 내기 기다림: bqprog1 수동 일괄 진행바",
-  "at": "2026-11-19T08:34:53Z",
-  "first": "2026-11-19T07:26:51Z"
+  "host": "vm-strat4",
+  "why": "판 내기 기다림: strat4 감시 전략 판 ①",
+  "at": "2026-11-19T08:35:14Z",
+  "first": "2026-11-19T07:40:38Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-bqprog1",
+ "what": "bqprog1 수동 일괄 진행바",
+ "since": "2026-11-19T08:35:55Z",
+ "beat": "2026-11-19T08:35:55Z",
  "last": {
   "who": "lead",
   "done": "",
