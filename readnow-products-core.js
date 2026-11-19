@@ -674,7 +674,7 @@
    *  kcode: 지표가 978 책인데 표지 코드가 K코드 → 같은 ISBN의 둘째 상품(특별판)일 수 있음(중 −1 · 판 ⓪ 가설 0.472 ≥ 0.3이라 무게 유지 · 979+K·978+ISBN-10 코드는 조용)
    *  rev: 지표 제목·부제·시리즈·제본에만 판본 낱말이 있고 우리 제목·유의 사항엔 없음(중 −1 · 거꾸로 견주기)
    *  단계 o.sig = { scan:'check', code:'shadow', kcode:'shadow', rev:'shadow' } (off·shadow·check·auto) · off면 그 줄을 안 만듦 · 돌려주는 것 = [{ k, v, w, d }] */
-  const ED_SIG_DEF = { scan: 'check', code: 'shadow', kcode: 'shadow', rev: 'shadow', tbl: 'shadow' }, ED_SIG_ST = ['off', 'shadow', 'check', 'auto'];
+  const ED_SIG_DEF = { scan: 'check', code: 'shadow', kcode: 'shadow', rev: 'shadow', tbl: 'shadow', split: 'shadow', add: 'shadow' }, ED_SIG_ST = ['off', 'shadow', 'check', 'auto'];
   const edSigCfg = (opt) => { const x = opt ? opt.sig : undefined; if (x === false || (opt && opt.idSig === false)) return null; const c = { ...ED_SIG_DEF }; if (x && typeof x === 'object') for (const k of Object.keys(c)) if (ED_SIG_ST.includes(x[k])) c[k] = x[k]; return c; };
   const edIsbnOf = (v) => { const d = String(v == null ? '' : v).replace(/[^0-9Xx]/g, ''); return d.length === 13 || d.length === 10 ? isbnNorm(d) : null; };
   /* (0.19.15 edall3) 🔖 판본 판 ③ — edDiff(a, b): 두 책(우리 쪽 a · 견줄 쪽 b)의 차이 표(순수 · 읽기 0 · 이미 쌓인 값만). 칸: 정가 price · 쪽수 pages · 크기 size · 제본 bind · 출판사 pub · 출간 연월 ym · 지은이 au · 옮긴이 tr · 상태 st(구판·절판).
@@ -709,6 +709,22 @@
     const hint = sameIsbn && diff.length === 1 && diff[0] === 'price' ? 'price' : null; /* 번호가 같고 정가만 다름 = 같은 책의 값 올림(다른 판 아님) */
     const txt = rows.map((x) => x.txt).filter(Boolean).join(' · ') + (hint ? ' · 같은 번호 값 올림' : '');
     return { rows, diff, same, unk, pages: { a: pa, b: pb, ratio: pr }, pub: { same: ps }, hint, txt: txt.slice(0, 120) }; }
+  /* (0.19.16 edall3 · 판본 판 ④) edSplit(rows, o) — 같은 지표 안 중고 값이 두 무리로 갈리는지(순수 · 읽기 0 · 이미 쌓인 usedFirstPage 줄만)
+   *  rows = [{ price, grade, soldOut }] 우리 줄은 부르는 쪽이 뺌 · 같은 등급끼리만 셈(등급 섞임은 등급별로 — 값 없는 줄·판매중지는 뺌) · 값에 로그를 씌워 줄 세우고 가장 큰 틈 하나를 찾음
+   *  양쪽에 minSide(3)개 이상 · 틈(위 무리 최저 ÷ 아래 무리 최고)이 ratio(1.8)배 이상이면 on · 문턱은 어림값(방안 10 표본으로 맞춤)
+   *  돌려줌 { on, grade, lo:{n,min,max}, hi:{n,min,max}, ratio, msg } · msg = 「이 시장은 값이 두 무리(6,000원대 6 · 28,000원대 3)」 · 셋 이상 무리는 가장 큰 틈 하나만 */
+  const ED_SPLIT_DEF = { ratio: 1.8, minSide: 3 };
+  function edSplit(rows, o) { const c = { ...ED_SPLIT_DEF, ...(o || {}) }; const G = new Map(); for (const r of Array.isArray(rows) ? rows : []) { const p = +(r && r.price); if (!(p > 0) || (r && r.soldOut)) continue; const g = String((r && r.grade) || ''); if (!G.has(g)) G.set(g, []); G.get(g).push(p); }
+    let best = null; for (const [g, L] of G) { if (L.length < c.minSide * 2) continue; const v = L.slice().sort((a, b) => a - b); let at = -1, big = 0; for (let i = c.minSide; i <= v.length - c.minSide; i++) { const q = v[i] / v[i - 1]; if (q > big) { big = q; at = i; } }
+      if (at < 0 || big < c.ratio) continue; const lo = v.slice(0, at), hi = v.slice(at); if (!best || big > best.ratio) best = { g, lo, hi, ratio: big }; }
+    if (!best) return { on: false, grade: null, lo: null, hi: null, ratio: null, msg: '' };
+    const st = (a) => ({ n: a.length, min: a[0], max: a[a.length - 1] }); const lo = st(best.lo), hi = st(best.hi); const band = (x) => { const t = Math.floor(x.min / 1000) * 1000; return `${t.toLocaleString('en-US')}원대 ${x.n}`; };
+    return { on: true, grade: best.g || null, lo, hi, ratio: Math.round(best.ratio * 100) / 100, msg: `이 시장은 값이 두 무리(${band(lo)} · ${band(hi)})`.slice(0, 80) }; }
+  /* 값 두 무리 → 근거 줄(그림자 · 약 0.2) — 우리 값이 위 무리이고 우리 제목에 판본 낱말이 있으면 「자동 시장(보통 아래 무리)이 우리 판이 아닐 수 있음」 쪽(−1) · 그 밖엔 알림(0) */
+  function edSplitEv(S, our, kw) { if (!S || !S.on) return []; const p = +(our && our.price) || 0; const up = p > 0 && p >= S.hi.min * 0.9; const hasKw = Array.isArray(kw) && kw.length > 0; return [{ k: 'split', v: up && hasKw ? -1 : 0, w: ED_W.w, d: edEvD(S.msg + (up ? ' · 우리 값은 위 무리' : '')) }]; }
+  /* 부가기호 둘째 자리(add) — 우리 값·지표 값이 둘 다 넘어올 때만(없으면 줄 없음) · 둘째 자리가 다르면 문고판·단행본·세트·전자책이 갈릴 수 있어 다른 판 쪽(약 −1) · 같으면 약한 같은 판 쪽(+1) */
+  const edAdd2 = (v) => { const d = String(v == null ? '' : v).replace(/\D/g, ''); return d.length === 5 ? d[1] : null; };
+  function edAddEv(our, book) { const a = edAdd2(our && our.addCode), b = edAdd2(book && book.addCode); if (a == null || b == null) return []; return [a === b ? { k: 'add', v: 1, w: ED_W.w, d: edEvD(`부가기호 둘째 자리 ${a} 같음`) } : { k: 'add', v: -1, w: ED_W.w, d: edEvD(`부가기호 둘째 자리 ${a} ↔ ${b} 다름(판형·세트 구분)`) }]; }
   /* 차이 표 → 근거 줄(그림자) — 제본·크기가 다르면 다른 판 쪽 · 쪽수가 ±2쪽 밖이면 약하게 · 정가만 다르고 번호 같음은 값 올림이라 같은 책 쪽 */
   function edDiffEv(D) { const out = []; if (!D || !D.rows) return out; const g = (k) => D.rows.find((x) => x.k === k) || {}; const add = (k, v, w, d) => out.push({ k, v, w, d: edEvD(d) });
     if (g('bind').r === 'diff') add('bind', -1, ED_W.m, `제본 ${g('bind').a} ↔ ${g('bind').b}`); if (g('size').r === 'diff') add('size', -1, ED_W.w, '크기가 다름');
@@ -725,10 +741,11 @@
     if (on('rev') && !ours.kw.length && !ours.note.length) { const bx = edSuspect(String(book.title || ''), kws, { extra: [book.sub, book.series, book.bind] }); if (bx.kw.length) add('rev', -1, ED_W.m, `지표에만 「${bx.kw.slice(0, 3).join('·')}」`); }
     return out; }
   function edDecide(our, doc, opt) { const R0 = edDecide0(our, doc, opt); if (!R0) return R0; const cfg = edSigCfg(opt); const book = doc && doc.book && typeof doc.book === 'object' ? doc.book : null;
-        const sig = (cfg && book ? edIdSig(our, book, { ...(opt || {}), cfg }) : []).concat(cfg && cfg.tbl !== 'off' && doc && doc.diff && doc.diff.rows ? edDiffEv(doc.diff) : []); if (!R0.on && !sig.length) return R0;
+    const spl = cfg && cfg.split !== 'off' && doc ? (doc.split && typeof doc.split === 'object' ? doc.split : Array.isArray(doc.rows) ? edSplit(doc.rows, opt && opt.splitCfg) : null) : null;
+    const sig = (cfg && book ? edIdSig(our, book, { ...(opt || {}), cfg }) : []).concat(cfg && cfg.tbl !== 'off' && doc && doc.diff && doc.diff.rows ? edDiffEv(doc.diff) : [], spl ? edSplitEv(spl, our, R0.kw) : [], cfg && cfg.add !== 'off' && book ? edAddEv(our, book) : []); if (!R0.on && !sig.length) return R0;
     let R = R0; /* 단계가 check·auto인 신호가 다른 판 쪽(−1)이고 우리 제목에 판본 낱말이 있으며 자동 지표를 그대로 쓰려던 판정이면 → 사람 확인(값은 안 움직임) */
-    if (R0.on && R0.use === 'auto' && R0.kw && R0.kw.length) { const hit = sig.find((e) => e.v < 0 && (cfg[e.k] === 'check' || cfg[e.k] === 'auto')); if (hit) R = { ...R0, use: 'check', hold: true, idsig: hit.k, why: `${hit.d} — 다른 판에 붙었을 수 있음(우리 제목에 ${R0.kw.slice(0, 3).join('·')}) · 사람 확인 · 가격을 바꾸지 않음` }; }
-    const ev = (R.on ? edEvOf(R) : []).concat(sig).slice(0, ED_EVMAX); let same = 0, diff = 0; for (const e of ev) { if (e.v > 0) same += e.w; else if (e.v < 0) diff += e.w; } const r2 = (x) => Math.round(x * 100) / 100; return { ...R, ev, sc: { same: r2(same), diff: r2(diff) }, evV: ED_EVV }; }
+    if (R0.on && R0.use === 'auto' && R0.kw && R0.kw.length) { const hit = sig.find((e) => e.v < 0 && e.k !== 'split' && e.k !== 'add' && e.k !== 'tbl' && (cfg[e.k] === 'check' || cfg[e.k] === 'auto')); /* (판 ④) 값 두 무리·부가기호·차이 표는 약한 보조 근거 — 혼자서는 판정을 안 바꿈(설정을 올려도 그림자 줄로만) */ if (hit) R = { ...R0, use: 'check', hold: true, idsig: hit.k, why: `${hit.d} — 다른 판에 붙었을 수 있음(우리 제목에 ${R0.kw.slice(0, 3).join('·')}) · 사람 확인 · 가격을 바꾸지 않음` }; }
+    const ev = (R.on ? edEvOf(R) : []).concat(sig).slice(0, ED_EVMAX); let same = 0, diff = 0; for (const e of ev) { if (e.v > 0) same += e.w; else if (e.v < 0) diff += e.w; } const r2 = (x) => Math.round(x * 100) / 100; return { ...R, ev, sc: { same: r2(same), diff: r2(diff) }, evV: ED_EVV, ...(spl && spl.on ? { split: { grade: spl.grade, lo: spl.lo, hi: spl.hi, ratio: spl.ratio, msg: spl.msg } } : {}) }; }
   function edDecide0(our, doc, opt) { const o = { ...ED_DEF, ...(opt || {}) }; const t = String((our && our.title) || ''); const sus = edSuspect(t, o.kws, { note: our && our.note, extra: our && our.extra }); if (!sus.on) return { on: false, kw: [], br: [], use: null };
     const self = our.bookId ? String(our.bookId).replace(/^bk_/, '') : null; const bm = our.bookTitle ? edMatch(t, our.bookTitle, o.kws) : null; const code = our.code ? String(our.code).toUpperCase() : null;
     const book = bm ? { t: String(our.bookTitle).slice(0, 80), ok: bm.ok, miss: bm.miss, extra: bm.extra, setDiff: bm.setDiff, volDiff: bm.volDiff, sim: bm.sim } : null; const multi = !!(our.unreg || our.set || !our.bookId);
@@ -1118,7 +1135,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13, isbnNorm, isbnFromCover, isbnFromPage,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, ED_KW, ED_TBL, ED_ALL, ED_GRP, ED_DEF, edKwOf, edBrOf, edBrxOf, edBrKind, edSuspect, edNoteKw, edSim, edMatch, edDecide, edIdSig, edDiff, edDiffEv, edSigCfg, ED_SIG_DEF, edEvOf, ED_EVV, edCands, edCodeOf, edOurCode, volInfo, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA, UNIT, unitKind, unitOf, qtyTxt, qtyMix,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, ED_KW, ED_TBL, ED_ALL, ED_GRP, ED_DEF, edKwOf, edBrOf, edBrxOf, edBrKind, edSuspect, edNoteKw, edSim, edMatch, edDecide, edIdSig, edDiff, edDiffEv, edSplit, edSplitEv, edAddEv, edSigCfg, ED_SIG_DEF, edEvOf, ED_EVV, edCands, edCodeOf, edOurCode, volInfo, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA, UNIT, unitKind, unitOf, qtyTxt, qtyMix,
     parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, PP_V, photoKind, isProductPhoto, parseUsedItemProductPhotos, productPhotosOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
