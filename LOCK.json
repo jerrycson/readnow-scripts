@@ -1,25 +1,11 @@
 {
- "queue": [
-  {
-   "who": "lead",
-   "host": "vm-strat6",
-   "why": "판 내기 기다림: strat6 감시 전략 판 ⑥ 엮이는 판매자",
-   "first": "2026-11-19T19:11:41Z",
-   "at": "2026-11-19T19:32:29Z"
-  }
- ],
- "ask": {
-  "who": "lead",
-  "host": "vm-strat6",
-  "why": "판 내기 기다림: strat6 감시 전략 판 ⑥ 엮이는 판매자",
-  "at": "2026-11-19T19:32:29Z",
-  "first": "2026-11-19T19:11:41Z"
- },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "queue": [],
+ "ask": null,
+ "holder": "lead",
+ "host": "vm-strat6",
+ "what": "strat6 감시 전략 판 ⑥ 엮이는 판매자",
+ "since": "2026-11-19T19:33:31Z",
+ "beat": "2026-11-19T19:33:31Z",
  "last": {
   "who": "lead",
   "done": "allcard1 판 안 냄 — reo1 1.78.821 카드 고침과 겹쳐 밖에서 합친 뒤 다시 줄 섬",
