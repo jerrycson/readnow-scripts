@@ -50,14 +50,14 @@
   "at": "2026-11-19T18:15:02Z",
   "first": "2026-11-19T15:01:27Z"
  },
- "holder": "lead",
- "host": "vm-plkui2",
- "what": "plkui2 판 1.78.816 push",
- "since": "2026-11-19T18:05:46Z",
- "beat": "2026-11-19T18:15:08Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "mktui1 웹앱 1.78.815 — 시장 지표 결정 가격 쌍둥이 줄·수동 일괄 카드 큰 띠·희귀본 판정 낱말 띠·출고 Alt+Shift+U (main 43754c3a6)",
-  "at": "2026-11-19T18:05:23Z"
+  "done": "웹앱 1.78.816 — plkui2 잠금 서랍 크게 보기·카드 눌러 고르기·Shift 이어 고르기·찾기·거르기·탭 지킴 · main 91d464b06",
+  "at": "2026-11-19T18:15:42Z"
  }
 }
