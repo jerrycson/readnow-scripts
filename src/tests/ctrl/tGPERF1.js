@@ -80,6 +80,9 @@ require('../harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { 
   await p.evaluate(() => history.back()); await until(() => !(S.detail && S.detail.gperf), 40);
   await until(() => !!(S.detail && S.detail.bkfold) || null, 20); await p.evaluate((fid) => { if (!(S.detail && S.detail.bkfold)) openBkfold(fid); }, ids.fid);
   await until(() => !!document.getElementById('bkf_gperf'), 60);
+  /* 자리 — bkftop1 맨 위 줄(#bkf_top · ← 닫기 줄) 안 · 그 줄 단추(data-bkftool) 셈에는 안 듦 · 묶음 머리 카드에는 없음 */
+  const pos = await p.evaluate(() => { const b = document.getElementById('bkf_gperf'); return { inTop: !!(b && b.closest('#bkf_top')), tool: !!(b && b.dataset.bkftool), inHead: !!document.querySelector('.bkf-head #bkf_gperf'), n: document.querySelectorAll('#bkf_gperf').length }; });
+  ok(pos.inTop && !pos.tool && !pos.inHead && pos.n === 1, '「📊 묶음 성과」는 맨 위 줄(← 닫기 줄)에 하나', pos);
   /* ⓒ 묶음 성과 — 읽기 셈 */
   await p.evaluate(() => { window.__RD = {}; S._gpActs = null; });
   await p.locator('#bkf_gperf').click();

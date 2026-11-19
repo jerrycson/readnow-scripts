@@ -1,6 +1,6 @@
 // tBKFIT1119 — (정범님 I-1119-1304-10) 📁 묶음 페이지: 창 크기에 맞춤 · 🛰 감시·전략 단추 = 안쪽 창
 //  ① 글: 안쪽 창 함수·닫기 길·바깥 누름 연결 · 브라우저 창 없음 · 전화번호 모양 없음
-//  ② 화면(RN_PORT): 폭 360·768·1024·1280·1680·1920에서 문서 가로 넘침 없음(구역 오른쪽 끝도 창 안) · 5개 단추가 묶음 위 안쪽 창으로 열림 · 뒤로·Esc·바깥 누름·✕로 닫히고 묶음으로 돌아옴
+//  ② 화면(RN_PORT): 폭 360·768·1024·1280·1680·1920에서 문서 가로 넘침 없음(구역 오른쪽 끝도 창 안) · 7개 단추(🛰 감시·전략 5 + 🎯 종합 비교 + 👀 조회수 분석)가 묶음 위 안쪽 창으로 열림 · 뒤로·Esc·바깥 누름·✕로 닫히고 묶음으로 돌아옴
 // 실행: pw/ 안 RN_PORT=<포트> node tBKFIT1119.js · 시험 자료(가짜 그룹 5개)에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
@@ -43,7 +43,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.setViewportSize({ width: 1280, height: 900 }); await p.evaluate((f) => openBkfold(f), f); await Wt(p, 600);
   const open = (n) => p.evaluate((n) => { const b = document.querySelector('[data-bkftool="' + n + '"]'); if (!b) return false; b.click(); return true; }, n);
   const st = () => p.evaluate(() => ({ win: document.getElementById('sheet').classList.contains('bkfwin'), bd: document.body.classList.contains('peekbd'), x: !!document.getElementById('bkfwin_x'), det: Object.keys(S.detail || {}).join(), back: !!document.getElementById('bkf_scr') }));
-  const keys = { watch: 'prmon', strat: 'strat', lock: 'plkf', res: 'research', found: 'found' };
+  const keys = { watch: 'prmon', strat: 'strat', lock: 'plkf', res: 'research', found: 'found', cmp: 'benchHub', px: 'pxexp' }; /* (bkftop1) 맨 위 줄로 옮긴 뒤 🎯 종합 비교·👀 조회수 분석도 안쪽 창 */
   for (const n of Object.keys(keys)) {
     ok(await open(n), `「${n}」 단추가 있음`); await Wt(p, 700); let s = await st();
     ok(s.win && s.bd && s.x && !s.back, `「${n}」 = 안쪽 창으로 열림(묶음 위 · 바깥 어둡게 · ✕)`, s);

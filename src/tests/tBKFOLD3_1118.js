@@ -48,9 +48,9 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     const a = await bkfTx({ t: 'new', name: '전체 시험 묶음' }); await bkfTx({ t: 'put', fid: a.fid, gids: ['hA', 'hB', 'hC'] }); return a.fid; }, new Date(Date.now() - 10 * 864e5).toISOString());
   await until((fid) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[fid] && S.bkfold.folds[fid].gids.length === 3), 60, fid);
   await p.evaluate((fid) => openBkfold(fid), fid);
-  const tb = await until(() => { const c = S._bkfTb || {}; const el = document.getElementById('bkf_tb'); if (!el || !(c.hA && c.hA.n && c.hC && c.hC.n)) return null; return { off: !!el.querySelector('[data-bkftbr="hA"] [data-bkftb]'), dis: el.querySelectorAll('[data-bkftb][disabled]').length, bulk: el.querySelectorAll('[data-bkfbulk]').length, tot: !!el.querySelector('[data-bkftb="*"]'), r2: !!document.querySelector('[data-bkfrun="recalc2"]'), tool: !!document.querySelector('.bkf-tools') }; }, 200);
+  const tb = await until(() => { const c = S._bkfTb || {}; const el = document.getElementById('bkf_tb'); if (!el || !(c.hA && c.hA.n && c.hC && c.hC.n)) return null; return { off: !!el.querySelector('[data-bkftbr="hA"] [data-bkftb]'), dis: el.querySelectorAll('[data-bkftb][disabled]').length, bulk: el.querySelectorAll('[data-bkfbulk]').length, tot: !!el.querySelector('[data-bkftb="*"]'), r2: !!document.querySelector('[data-bkfrun="recalc2"]'), tool: !!document.querySelector('#bkf_top [data-bkftool="watch"]') && !document.querySelector('#bkf_act [data-bkftool]') }; /* (bkftop1 · 정범님 I-1119-1955-27) 🛰 감시·전략 단추는 실행 카드 아래 띠(.bkf-tools)에서 관제소 맨 위 줄(#bkf_top)로 옮김 */ }, 200);
   ok(tb && tb.off && tb.dis === 0 && tb.tot, '꺼진 그룹도 셈 · 모든 칸이 눌림 · 모두 합계 줄', tb);
-  ok(tb && tb.bulk >= 2 && tb.r2 && tb.tool, '「한꺼번에」 단추 · 🔁 다시 계산 후 옮기기 · 🛰 감시·전략 띠', tb);
+  ok(tb && tb.bulk >= 2 && tb.r2 && tb.tool, '「한꺼번에」 단추 · 🔁 다시 계산 후 옮기기 · 🛰 감시·전략 단추는 맨 위 줄', tb);
   /* 칸 → 안쪽 창 · Esc 닫힘 · 바깥 누름 닫힘 · 묶음 화면 그대로 */
   await p.locator('[data-bkftb="hC"][data-bkftbt="sel"]').click(); const o1 = await until(() => (document.getElementById('bkf_pop') ? { g: S._bkfPop && S._bkfPop.gid, t: S._bkfPop && S._bkfPop.tab, bid: S.batchId || null } : null), 60);
   ok(o1 && o1.g === 'hC' && o1.t === 'sel', '칸을 누르면 그 그룹·그 탭 안쪽 창(그룹 화면으로 가지 않음)', o1);
