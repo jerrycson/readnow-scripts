@@ -29,14 +29,14 @@
   "at": "2026-11-19T21:56:07Z",
   "first": "2026-11-19T21:24:45Z"
  },
- "holder": "lead",
- "host": "vm-mkcloud1",
- "what": "mkcloud1 main push",
- "since": "2026-11-19T21:40:01Z",
- "beat": "2026-11-19T21:45:10Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "benchfix1 웹앱 1.78.827·클라우드 0.35.336(머리 그대로)",
-  "at": "2026-11-19T21:39:08Z"
+  "done": "mkcloud1 웹앱 1.78.828·클라우드 0.35.337(머리 그대로)",
+  "at": "2026-11-19T21:56:42Z"
  }
 }
