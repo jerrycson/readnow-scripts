@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-kpia1",
-   "why": "판 내기 기다림: kpia1 관제소 카드 판 A (bkftop1 뒤)",
-   "first": "2026-11-19T12:13:17Z",
-   "at": "2026-11-19T13:58:01Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-strat6",
    "why": "판 내기 기다림: strat6 감시 전략 판 ② 그룹 전략 창 미리 보기",
    "first": "2026-11-19T12:16:36Z",
@@ -73,16 +66,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-kpia1",
-  "why": "판 내기 기다림: kpia1 관제소 카드 판 A (bkftop1 뒤)",
-  "at": "2026-11-19T13:58:01Z",
-  "first": "2026-11-19T12:13:17Z"
+  "host": "vm-strat6",
+  "why": "판 내기 기다림: strat6 감시 전략 판 ② 그룹 전략 창 미리 보기",
+  "at": "2026-11-19T13:58:54Z",
+  "first": "2026-11-19T12:16:36Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-kpia1",
+ "what": "kpia1 관제소 카드 판 A (bkftop1 뒤)",
+ "since": "2026-11-19T13:59:04Z",
+ "beat": "2026-11-19T13:59:04Z",
  "last": {
   "who": "lead",
   "done": "",
