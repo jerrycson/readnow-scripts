@@ -19,6 +19,7 @@ console.log('① 글');
   ok(/history\.pushState\(\{ gperf/.test(cut('async function openGroupPerf(gid)', 'async function gpPaint(')), '시트는 예전처럼 뒤로 가기 자리를 만듦');
   ok(/data-gperf="\$\{esc\(g\.id\)\}" data-gpwin="1"[^>]*>📊 이 그룹 성과</.test(T) && /id="bkf_gperf"[^>]*>📊 묶음 성과</.test(T), '관제소 그룹 줄 「📊 이 그룹 성과」 · 「📊 묶음 성과」 단추');
   ok(/t: '📊 묶음 성과 — [^']*', w: '[^']*', k: '[^']*', go: \{ fn: \(\) => gpwFeat\(\) \}/.test(T), '기능 찾기(FEAT)에 「📊 묶음 성과」');
+  ok(/if \(!fid\) \{ toast\([^)]*\); return openCtrlRoom\(\); \}/.test(cut('function gpwFeat(', '\nfunction gpwClose(')), '묶음이 없으면 기능 찾기 「📊 묶음 성과」가 알림만 띄우지 않고 🛰 관제소를 엶');
   ok(/\['foldPerf', '📊 묶음 성과'/.test(T), '🚪 바로 가기(GO_PAGES)에 묶음 성과');
   const man = T.indexOf('📊 묶음 성과', T.indexOf('const UPDATE_LOG') > 0 ? 0 : 0); ok(man >= 0 && (T.match(/📊 이 그룹 성과/g) || []).length >= 3, '설명서·안내에 두 단추 글이 있음');
   ok(/app: '웹앱', v: '[0-9.]+', n: \["📊 🛰 관제소 그룹 줄마다 「📊 이 그룹 성과」/.test(T), '고친 기록(UPDATE_LOG)에 한 줄');
