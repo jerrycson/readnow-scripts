@@ -64,14 +64,14 @@
   "at": "2026-11-19T18:04:43Z",
   "first": "2026-11-19T14:44:56Z"
  },
- "holder": "lead",
- "host": "vm-mktui1",
- "what": "mktui1 판 1.78.815 push(검사 중)",
- "since": "2026-11-19T17:51:29Z",
- "beat": "2026-11-19T18:05:12Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.814 관제소 모두 확정 진행바 올림(defaaed31) · Hosting 한 번 fetch 실패해 다시 돌림",
-  "at": "2026-11-19T17:50:58Z"
+  "done": "mktui1 웹앱 1.78.815 — 시장 지표 결정 가격 쌍둥이 줄·수동 일괄 카드 큰 띠·희귀본 판정 낱말 띠·출고 Alt+Shift+U (main 43754c3a6)",
+  "at": "2026-11-19T18:05:23Z"
  }
 }
