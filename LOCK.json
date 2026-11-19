@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-buyp0",
-   "why": "판 내기 기다림: buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판",
-   "first": "2026-11-19T11:03:13Z",
-   "at": "2026-11-19T13:15:28Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bkftop1",
    "why": "판 내기 기다림: 관제소 맨 위 줄(bkftop1)",
    "first": "2026-11-19T11:13:52Z",
@@ -73,16 +66,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-buyp0",
-  "why": "판 내기 기다림: buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판",
-  "at": "2026-11-19T13:15:28Z",
-  "first": "2026-11-19T11:03:13Z"
+  "host": "vm-bkftop1",
+  "why": "판 내기 기다림: 관제소 맨 위 줄(bkftop1)",
+  "at": "2026-11-19T13:15:44Z",
+  "first": "2026-11-19T11:13:52Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-buyp0",
+ "what": "buyp0 💰 매입가 0원·빈칸 모름 · 머리 📋 매입목록 판",
+ "since": "2026-11-19T13:16:30Z",
+ "beat": "2026-11-19T13:16:30Z",
  "last": {
   "who": "lead",
   "done": "",
