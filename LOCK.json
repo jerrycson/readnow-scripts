@@ -103,7 +103,7 @@
  "host": "vm-pxg1",
  "what": "pxg1 조회수 표 판 G",
  "since": "2026-11-19T15:50:13Z",
- "beat": "2026-11-19T15:50:13Z",
+ "beat": "2026-11-19T15:59:30Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.808 — hmf1 공용 열 지도 판 F · main a2d8aa6be",
