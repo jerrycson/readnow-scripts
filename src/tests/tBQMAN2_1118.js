@@ -35,7 +35,13 @@ console.log('③ bqCls — 분류만');
   ok(M.bqCls(x, { st: st({ edkw: { [k]: { from: 'few' } }, trashed: { [k]: 1 } }) }) === 'trash', '휴지통이 판본 키워드보다 먼저');
   ok(M.bqCls(x, { st: st({ picks: { [k]: { price: 8000 } } }) }) === 'pick', '결정 대기가 3개이하보다 먼저');
   const y = { l: { usedCode: 'U2', price: 9000 }, target: 8000, page1: [{ c: 'green' }, { c: 'green' }, { c: 'blue' }, { c: 'green' }] };
-  ok(M.bqCls(y, { st: st() }) === 'sel', '시장이 넉넉하면 그대로 선택 대기'); }
+  ok(M.bqCls(y, { st: st() }) === 'sel', '시장이 넉넉하면 그대로 선택 대기');
+  // (fewok1 · I-1119-1456-14) 이미 추천가인 상품은 시장이 얇아도 조건 이미 부합
+  const z = { l: { usedCode: 'U3', price: 8000 }, target: 8000, page1: [{ c: 'green' }, { c: 'red' }, { c: 'red' }] };
+  ok(M.bqCls(z, { st: st() }) === 'ok', '이미 추천가(±0) + 유효 3개 이하 → 조건 이미 부합(ok)');
+  ok(M.bqCls({ ...z, l: { usedCode: 'U3', price: 9000 } }, { st: st() }) === 'few', '추천가와 다르면 그대로 3개이하/미등록');
+  ok(M.bqCls({ ...z, target: null }, { st: st() }) === 'few', '추천가가 없으면 그대로 3개이하/미등록');
+  ok(/T === 'few' \|\| T === 'ok'\) \{ const w = bqFewOf\(x\)/.test(T), '조건 이미 부합 카드에도 📉 얇은 시장 칩'); }
 console.log('④ 판본 키워드 = edOf 그대로');
 { ok(M.edKwOn({ title: 'A 리커버 한정판' }) && !M.edKwOn({ title: '보통 책' }), 'edOf가 on일 때만 모음');
   const h = M.edKwHits({ title: 'B (사인본)' }); ok(h.includes('(사인본)') && h.includes('유의:친필'), '근거 = 낱말·괄호·유의 사항', h);
