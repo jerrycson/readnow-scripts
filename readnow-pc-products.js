@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.375의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.376의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.375' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.375', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.376' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.376', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -4415,6 +4415,10 @@
       const multi = !!d.multi; for (const c of cands) { const e = E.get(String(c.itemId)); c.match = multi || d.use === 'srch' ? ids.has(String(c.itemId)) : !!(c.match && (!e || e.ok)); /* 미등록·세트·srch = 판단이 고른 것만 · 그 밖(자동 지표 그대로·사람 확인) = 예전 같은 상품 가운데 판본 낱말이 같은 것만(참고 시세) */ if (e) { c.edOk = e.ok; c.edSim = e.sim; if (e.miss.length) c.edMiss = e.miss; if (e.extra.length) c.edExtra = e.extra; if (e.self) c.self = true; } }
       const lows = cands.filter((c) => c.match && !c.ours && !c.self).map(nbLowOf).filter((x) => x != null); const srchLow = lows.length ? Math.min(...lows) : null;
       return { use: d.use, hold: !!d.hold, why: d.why || null, kw: d.kw, br: d.br, tier: d.tier ?? null, ...(d.human ? { human: true } : {}), ...(d.gap ? { gap: d.gap } : {}), autoN, book: d.book, multi: d.multi, good: d.good ?? 0, cut: d.cut ?? 0, pick: d.pick, alt: d.alt, n: ids.size, autoLow, srchLow, diff: autoLow != null && srchLow != null ? srchLow - autoLow : null, our: l.price ?? null, at: nowIso() }; }
+    /* (invimp2 판 ④ 걸음 (나) · 정범님 I-1118-2245-28.3) 🔗 주소로 정한 판 → 검색 후보 한 줄 — 그 상품의 온라인 중고 화면(공개 · 로그인 없음) 최저가를 판매자·알라딘 직접·매장으로 나눔(검색 후보 channels와 같은 꼴) · 제목은 웹앱이 확인한 것(edPick.t) */
+    async function nbUrlCand(hp) { const id = String(hp.itemId).replace(/\D/g, ''); if (!id) throw new Error('상품 번호 없음'); const g = await getDoc(`https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0`); const us = P.parseUsedPage(g.doc) || {}; const ch = {};
+      for (const [k, v] of Object.entries(us.mins || {})) { const t = /직접/.test(k) ? 'aladin' : /우주|매장/.test(k) ? 'store' : /판매자|회원|개인/.test(k) ? 'seller' : null; if (t && v && !ch[t]) ch[t] = { name: k, min: v.min ?? null, count: v.count ?? 0 }; }
+      return { itemId: id, title: String(hp.t || ''), img: null, used: false, cov: 1, vol: true, channels: Object.keys(ch).length ? ch : null, byUrl: true, match: false }; }
     const nbAU = (x) => (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue ? firebase.firestore.FieldValue.arrayUnion(x) : [x]);
     const nbEdTally = (t, ed) => { const o = { ...(t || { n: 0 }) }; o.n++; o[ed.use] = (o[ed.use] || 0) + 1; if (ed.hold) o.hold = (o.hold || 0) + 1; if (ed.use === 'srch' && ed.diff != null) { o.dN = (o.dN || 0) + 1; o.dSum = (o.dSum || 0) + ed.diff; } return o; };
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
@@ -4440,7 +4444,7 @@
           const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);
           const th = SET.photoMatch ?? 0.9; const all = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(l.title, r.title) /* (edkw2 판 ②) 검색어(qy)는 괄호를 떼서 (1)·(2)·(2disc)를 못 가름 → 우리 제목 그대로 */ }));
           const cands = all.filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ ...r, match: r.cov >= th && r.vol && !(l.bookId && String(r.itemId) === String(l.bookId)) })); // 같은 상품 = 이름 일치 + 권 번호 같음 (세트의 새책 상세 = 첫 페이지에 이미 있으니 뺌)
-          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const ed = edOn && P.edDecide && P.edSuspect(l.title).on ? await nbEdJudge(l, cands, th, old && old.edPick) : null; if (ed) prog.ed = nbEdTally(prog.ed, ed);
+          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const hpU = old && old.edPick && old.edPick.src === 'url' && old.edPick.itemId ? old.edPick : null; if (hpU && edOn && !cands.some((c) => String(c.itemId) === String(hpU.itemId).replace(/\D/g, ''))) { try { cands.push(await nbUrlCand(hpU)); } catch (e) { log(`🔖 주소로 정한 판(${hpU.itemId}) 중고 화면을 못 읽음 — ${e.message} · 이번엔 기계 판단`, 1); } } /* (invimp2 판 ④ 걸음 (나)) 웹앱에서 알라딘 주소로 정한 판이 검색 후보에 없으면 그 상품 중고 화면을 한 장 더 읽어 후보에 더함 → edDecide가 사람 판으로 따름 */ const ed = edOn && P.edDecide && P.edSuspect(l.title).on ? await nbEdJudge(l, cands, th, old && old.edPick) : null; if (ed) prog.ed = nbEdTally(prog.ed, ed);
           const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price }); const sig = `${M.median}|${M.low}|${M.n}`;
           const edHist = ed && (!old || !old.ed || old.ed.use !== ed.use || ((old.ed.pick || {}).itemId || null) !== ((ed.pick || {}).itemId || null)) ? { edHist: nbAU({ at: nowIso(), use: ed.use, pick: (ed.pick || {}).itemId || null, autoLow: ed.autoLow, srchLow: ed.srchLow, our: l.price ?? null }) } : {}; /* 어느 시장을 쓸지가 바뀐 때만 기록 */
           const cSig = JSON.stringify(cands.map((x) => [x.itemId, x.price, x.title])); if (!old || old.candSig !== cSig) await ref.collection('v').doc(nowIso().replace(/[:.]/g, '-')).set({ at: nowIso(), query: qy, cands, market: { median: M.median, low: M.low, n: M.n }, ...W() }); // 후보 목록이 바뀌면 그 판을 통째로 보관
