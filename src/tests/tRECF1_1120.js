@@ -24,7 +24,7 @@ ok(/bqExecCore\(E, \[i\], \{ onOk \}\)/.test(RX) && !/armed\s*:/.test(RX), 'ctrl
 ok(/\{ if \(!await askSheet\(\{[^\n]*\)\) return false; \}/.test(EX) && /else if \(!quiet && !await ask\(askMsg\)\) return false; \}/.test(EX), '확인 창 = 웹앱 자체 창(askSheet·ask) · 취소면 false');
 ok(/return bqExecCore\(\{ BP, L, PRC, R, bqWaitK, c, cancelOne, id, keyOf, nLate, redraw, save, st, startOf, meta: \(\) => S\.batchMeta \|\| \(S\.batchMeta = \{\}\) \}, only, opt\);/.test(G_EXEC0), '그룹 화면 batchExec0 = 그 화면 값 그대로 넘기는 껍데기');
 ok(/data-brex[\s\S]{0,40}/.test(T) && T.includes('toPick(k, d.price); await batchExec([i]); redraw();'), '그룹 화면 data-brex 손잡이 글자 그대로(toPick → batchExec([i]))');
-ok(/ \(gate && |o\.gate && !o\.gate\(\) \? Promise\.resolve\(true\)/.test(RX), '관제 저장은 확인 전엔 막힘(gate) — 확인 창 앞 빠짐 까닭(dropWhy)도 안 씀');
+ok(/ \(gate && |o\.gate && !o\.gate\(\) \? Promise\.resolve\(true\)/.test(EX), '관제 저장은 확인 전엔 막힘(gate) — 확인 창 앞 빠짐 까닭(dropWhy)도 안 씀');
 ok(![EX, RX, FZB].some((s) => /(^|[^.\w])(alert|confirm|prompt)\s*\(/.test(s.replace(/'[^'\n]*'|`[^`]*`/g, ''))), '새 덩어리에 브라우저 alert/confirm/prompt 없음');
 { const n = (re) => (T.match(re) || []).length; ok(n(/\nasync function bqExecAsk\(/g) === 1 && n(/\nasync function bqExecCore\(/g) === 1 && n(/\nfunction bqExecEnvC\(/g) === 1 && n(/\nasync function ctrlRex\(/g) === 1, '새 이름은 한 번씩만 선언'); }
 
