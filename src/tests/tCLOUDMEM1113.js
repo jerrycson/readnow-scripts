@@ -25,7 +25,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await d0; const after = await H.HVG('next', work('next', 1)); ok(after && after.name === 'next', '건너뛴 뒤에도 줄이 막히지 않고 다음 일이 돎');
   const dup = await Promise.all([H.HV('same', work('s1', 10)), H.HV('same', work('s2', 10))]); ok(dup[1].skip === 'busy', '같은 이름 두 번은 예전처럼 busy');
   BUSYX.add('sl:fill'); await H.HV('x', async () => 1); ok(![...BUSYX].some((k) => k.startsWith('sl:')), 'HV가 끝나면 단계 이름표(sl:)를 치움');
-  ok(/HVG\('voice', \(\) => VOICE\.run\(\)\)/.test(CL) && (CL.match(/HVG\('voice'/g) || []).length === 2, '구매평 요약 두 길 모두 같은 문');
+  ok(/HVG\('voice', \(\) => VOICE\.run\(\)\)/.test(CL) && (CL.match(/HVG\('voice'/g) || []).length >= 2 && !/[^G]\(\s*'voice'\s*,\s*\(\) => VOICE\.run/.test(CL.replace(/HVG\('voice'/g, '')), '구매평 요약 길 모두 같은 문(HVG · 0.35.323 resauto2가 /tick 다시 부르는 길을 같은 문으로 하나 더함 — 2 → 2 이상)');
 
   console.log('② 채운 정보 나눠 받기');
   const ITEMS = Array.from({ length: 23 }, (_, i) => ({ id: 'b' + String(i).padStart(3, '0'), spAt: '2026-11-0' + (1 + (i % 9)) + 'T00:00:00Z', fillAt: i % 3 ? '2026-11-05T00:00:00Z' : null, sc: '9000001', isbn: '97911' + String(i).padStart(8, '0') }));

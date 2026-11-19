@@ -14,7 +14,7 @@ console.log('① 가격 코어');
 const G = {}; G.window = G; vm.createContext(G); vm.runInContext(rd('readnow-pricing-core.js'), G);
 const PR = G.ReadnowPricing || G.window.ReadnowPricing; const CH = G.ReadnowChase;
 const CORE_V = (rd('readnow-pricing-core.js').match(/VERSION\s*=\s*'([0-9.]+)'/) || [])[1];
-ok(CORE_V === '0.17.21' && CH && typeof CH.lagMin === 'function' && typeof CH.logEntry === 'function', '가격 코어 0.17.21 · ReadnowChase.lagMin 있음', CORE_V);
+ok(CORE_V.split('.').map(Number)[0] === 0 && +CORE_V.split('.')[1] >= 17 && (+CORE_V.split('.')[1] > 17 || +CORE_V.split('.')[2] >= 21) && CH && typeof CH.lagMin === 'function' && typeof CH.logEntry === 'function', '가격 코어 0.17.21 이상 · ReadnowChase.lagMin 있음', CORE_V);
 { const L = CH.lagMin; const t0 = '2026-11-19T00:00:00Z'; const at = (m) => new Date(Date.parse(t0) + m * 60000).toISOString(); const pv = { lastMoveAt: t0 };
   const cases = [
     [[pv, 10000, 9900, at(42)], 42, '추격자가 내림 → 42분'],
@@ -34,13 +34,13 @@ ok(CORE_V === '0.17.21' && CH && typeof CH.lagMin === 'function' && typeof CH.lo
 
 console.log('② 가격 감시기 · 판 번호');
 const PW = rd('readnow-price-watch.user.js');
-ok(/@version\s+0\.10\.63\b/.test(PW) && /readnow-pricing-core\.js\?v=0\.17\.21\b/.test(PW), '가격 감시기 0.10.63 · 코어 0.17.21');
+ok(/@version\s+0\.10\.(6[3-9]|[7-9]\d)\b/.test(PW) && /readnow-pricing-core\.js\?v=0\.17\.(2[1-9]|[3-9]\d)\b/.test(PW), '가격 감시기 0.10.63 · 코어 0.17.21');
 { const line = (PW.split('\n').find((l) => /b\.set\(C\('chase_rel'\)/.test(l)) || '');
   ok(/\.\.\.\(L\.lag != null \? \{ lagSum: FV\.increment\(L\.lag\), lagN: FV\.increment\(1\) \} : \{\}\)/.test(line) && /\{ merge: true \}/.test(line), 'chase_rel 같은 문서에 lagSum·lagN 더함(merge · lag 없으면 칸 없음)');
   const sets = (PW.match(/C\('chase_rel'\)/g) || []).length; ok(sets === 1, 'chase_rel 쓰기는 한 곳 그대로(쓰기 횟수 안 늚)', sets); }
 const vGe = (a, b) => { const x = String(a || '').split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return true; }; // (engr04) 뒤 판이 수집기·등록부 번호를 올려도 통과 — 「이상」 비교
-{ const COL = rd('src/readnow-collector.src.js'); const cv = (COL.match(/@version\s+([0-9.]+)/) || [])[1], rv = (COL.match(/readnow-registry\.js\?v=([0-9.]+)/) || [])[1]; ok(vGe(cv, '1.89.374') && /readnow-pricing-core\.js\?v=0\.17\.21\b/.test(COL) && vGe(rv, '0.14.210'), '수집기 본 글 1.89.374 이상 · 코어 0.17.21 · 등록부 0.14.210 이상', [cv, rv]); }
-for (const f of ['readnow-registry.js', 'cloud/readnow-registry.js']) { const R = rd(f); const v = (R.match(/VERSION = '([0-9.]+)'/) || [])[1]; ok(vGe(v, '0.14.210') && /'readnow-pricing-core\.js': '0\.17\.21'/.test(R), `${f} 0.14.210 이상 · 코어 핀 0.17.21`, v); }
+{ const COL = rd('src/readnow-collector.src.js'); const cv = (COL.match(/@version\s+([0-9.]+)/) || [])[1], rv = (COL.match(/readnow-registry\.js\?v=([0-9.]+)/) || [])[1]; ok(vGe(cv, '1.89.374') && /readnow-pricing-core\.js\?v=0\.17\.(2[1-9]|[3-9]\d)\b/.test(COL) && vGe(rv, '0.14.210'), '수집기 본 글 1.89.374 이상 · 코어 0.17.21 이상 · 등록부 0.14.210 이상', [cv, rv]); }
+for (const f of ['readnow-registry.js', 'cloud/readnow-registry.js']) { const R = rd(f); const v = (R.match(/VERSION = '([0-9.]+)'/) || [])[1]; ok(vGe(v, '0.14.210') && /'readnow-pricing-core\.js': '0\.17\.(2[1-9]|[3-9]\d)'/.test(R), `${f} 0.14.210 이상 · 코어 핀 0.17.21`, v); }
 
 console.log('③ 웹앱');
 ok(+((T.match(/const APP_VER = '1\.78\.(\d+)'/) || [])[1] || 0) >= 767 && /'1\.78\.767': '2026-11-19'/.test(T) && /\{ d: '2026-11-19', app: '가격 감시기', v: '0\.10\.63'/.test(T) && /\{ d: '2026-11-19', app: '수집기', v: '1\.89\.374'/.test(T), '웹앱 1.78.767 · 기록 줄(감시기 0.10.63 · 수집기 1.89.374)');
