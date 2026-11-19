@@ -70,15 +70,22 @@ const T = mk(); const E = T.E; const plain = (o) => JSON.parse(JSON.stringify(o)
     T2.S._gsw = { fid: 'f', gid: 'g1', base: JSON.parse(JSON.stringify(w0)), draft: next, auto: false, band: null, busy: false }; await T2.E.gswApply(null);
     ok(T2.calls.upd.length === 1, '같을 때 update 한 번'); const u = (T2.calls.upd[0] || [])[1] || {}; ok(u['watch.chase.maxFollow'] === 5 && !('watch' in u) && u.watchLog && u.watchLog.__union.how === 'gsw' && u.watchLog.__union.what === '🎚 그룹 전략 창', '바뀐 칸 + watchLog how gsw');
     ok(T2.S.prBatches[0].watch.chase.maxFollow === 5, '화면 쪽 사본도 맞춤'); ok(T2.calls.enroll.length === 0, '이미 켜진 그룹은 감시에 다시 안 붙임'); }
+  /* ⑦ 셈만 상태 → 쓰기 0 · 저절로 넘어가는 길 없음 (정범님 11/19 17:17) */
+  { const wt = { ...w0, firstTry: { since: '2026-11-01T00:00:00.000Z', mode: 'dry', by: 'x', noAuto: true } }; const T2 = mkG(wt); T2.docs.g1 = { watch: JSON.parse(JSON.stringify(wt)) }; const next = JSON.parse(JSON.stringify(wt)); next.chase.maxFollow = 6;
+    T2.S._gsw = { fid: 'f', gid: 'g1', base: JSON.parse(JSON.stringify(wt)), draft: next, auto: false, band: null, busy: false }; await T2.E.gswApply(null);
+    const ks = T2.calls.upd.flatMap(([id, u]) => Object.keys(u).map((k) => id + ':' + k)); ok(T2.calls.upd.every(([id]) => id === 'g1') && ks.every((k) => /^g1:(watch\.|watchLog$|uploadedAt$)/.test(k)), '셈만 상태에서 적용해도 쓰는 곳은 그룹 감시 설정뿐(가격·상태 쓰기 0건)');
+    ok(!ks.some((k) => /firstTry/.test(k)) && T2.docs.g1.watch.firstTry, '적용만으로 셈만이 끝나지 않음(날짜·횟수 없음)');
+    const e = T2.E.gswPrep({ fid: 'f', gid: 'g1', base: wt, draft: { ...wt } }, T2.S.prBatches[0]); ok(e.next.firstTry && !e.next.firstTry.days, '다시 다듬어도 셈만 그대로');
+    const dEnd = { ...wt }; delete dEnd.firstTry; const e2 = T2.E.gswPrep({ fid: 'f', gid: 'g1', base: wt, draft: dEnd }, T2.S.prBatches[0]); ok(!e2.next.firstTry && Object.keys(T2.E.gswDiff(wt, e2.next)).every((k) => k.startsWith('firstTry')), '셈만 끝내기는 정범님이 직접 눌러야만(그 칸만 지움)'); }
   { const T2 = mkG(w0); const srv = JSON.parse(JSON.stringify(w0)); srv.apply = 'auto'; T2.docs.g1 = { watch: srv }; const next = JSON.parse(JSON.stringify(w0)); next.chase.maxFollow = 5;
     T2.S._gsw = { fid: 'f', gid: 'g1', base: JSON.parse(JSON.stringify(w0)), draft: next, auto: false, band: null, busy: false }; await T2.E.gswApply(null);
     ok(T2.calls.upd.length === 0, '그 사이 서버가 바뀌었으면 쓰지 않음'); ok(T2.S._gsw.band && T2.S._gsw.band.k === 'conflict', '창 안 띠(conflict)로 알림'); ok(T2.S._gsw.draft.chase.maxFollow === 5, '고치던 값은 그대로 둠'); }
 
   /* ⑤ 기본값 셋 + 운영 중 값 안 바뀜 */
   { const T2 = mkG({}); const P = { fid: 'f', gid: 'g1', base: {}, draft: { on: true, mode: 'auto', apply: 'approve', guardPct: 15 } }; const R = T2.E.gswPrep(P, T2.S.prBatches[0]);
-    ok(!R.err && R.next.firstTry && R.next.firstTry.days === 7 && R.next.firstTry.mode === 'dry', '처음 켜는 그룹은 셈만 7일(엔진 tryDefault)'); ok(R.enroll === true && R.first === true, '처음 켬 → 감시에 붙임');
-    const T3 = mkG({}); T3.S.prCfg.ctrlCfg = { tryMode: 'live' }; const R3 = T3.E.gswPrep({ fid: 'f', gid: 'g1', base: {}, draft: { on: true, mode: 'auto', apply: 'approve', guardPct: 15 } }, T3.S.prBatches[0]); ok(!R3.next.firstTry, '관제창 설정이 「바로 반영」이면 셈만 안 붙임');
-    const T4 = mkG({}); T4.S.prCfg.ctrlCfg = { tryMode: 'dry', tryDays: 3 }; const R4 = T4.E.gswPrep({ fid: 'f', gid: 'g1', base: {}, draft: { on: true, mode: 'auto', apply: 'approve', guardPct: 15 } }, T4.S.prBatches[0]); ok(R4.next.firstTry && R4.next.firstTry.days === 3, '설정에 일수가 있으면 그 값');
+    ok(!R.err && R.next.firstTry && R.next.firstTry.mode === 'dry' && R.next.firstTry.noAuto === true && R.next.firstTry.days === undefined, '처음 켜는 그룹은 셈만 — 날짜·횟수 없음(저절로 넘어가는 길 없음)'); ok(R.enroll === true && R.first === true, '처음 켬 → 감시에 붙임');
+    const T3 = mkG({}); T3.S.prCfg.ctrlCfg = { tryMode: 'live' }; const R3 = T3.E.gswPrep({ fid: 'f', gid: 'g1', base: {}, draft: { on: true, mode: 'auto', apply: 'approve', guardPct: 15 } }, T3.S.prBatches[0]); ok(R3.next.firstTry && R3.next.firstTry.mode === 'dry', '관제창 설정이 「바로 반영」이어도 처음은 셈만(정범님 11/19 17:17)');
+    const T4 = mkG({}); T4.S.prCfg.ctrlCfg = { tryMode: 'dry', tryDays: 3 }; const R4 = T4.E.gswPrep({ fid: 'f', gid: 'g1', base: {}, draft: { on: true, mode: 'auto', apply: 'approve', guardPct: 15 } }, T4.S.prBatches[0]); ok(R4.next.firstTry && R4.next.firstTry.days === undefined && R4.next.firstTry.noAuto, '설정에 일수가 있어도 날짜로 넘어가는 길을 안 만듦');
     const R5 = T2.E.gswPrep({ fid: 'f', gid: 'g1', base: w0, draft: JSON.parse(JSON.stringify(w0)) }, T2.S.prBatches[0]); ok(!R5.next.firstTry && !R5.first && !R5.enroll, '이미 운영 중인 그룹은 셈만 7일을 안 붙임');
     const w1 = { ...w0, on: false }; const R6 = T2.E.gswPrep({ fid: 'f', gid: 'g1', base: w1, draft: { ...w1, on: true } }, T2.S.prBatches[0]); ok(!R6.next.firstTry && R6.enroll, '꺼 뒀다 다시 켠 그룹도 셈만 안 붙임(처음이 아님) · 감시엔 붙임');
     const f = T2.E.cheNewLine('판매자A'); ok(f.name === '판매자A' && f.stance === 'flexible' && f.cond.maxFollow === 0 && f.cond.backPct === 15 && f.strat === '' && f.condSet === '', '새 판매자 전략 줄 = 유동 · 2위 간격 15% · 따를 횟수 0');
