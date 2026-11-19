@@ -15,14 +15,14 @@
   "at": "2026-11-19T20:51:28Z",
   "first": "2026-11-19T20:01:56Z"
  },
- "holder": "lead",
- "host": "vm-allcard1",
- "what": "모아 보기 실제 수동 일괄 카드 — 판 내는 중",
- "since": "2026-11-19T20:40:21Z",
- "beat": "2026-11-19T20:48:57Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "c2name1 웹앱 1.78.824 번외 켜기 기기 이름 되찾기",
-  "at": "2026-11-19T20:39:41Z"
+  "done": "allcard1 웹앱 1.78.825 관제소 모아 보기·그룹 창 실제 수동 일괄 카드 올림",
+  "at": "2026-11-19T20:52:25Z"
  }
 }
