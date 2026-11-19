@@ -14,7 +14,7 @@ ok(/\['px', '👀 조회수'/.test(TAB) && has(/px: pxMark/) && has(/STK\.tab ==
 ok(has(/거르기 · 구분[^`]*chip\('grp'/) && has(/거르기 · 분야[^`]*chip\('fld'/) && has(/slice\(0, 40\)/) && has(/stkCat|r\.c\.g/), '6 구분·분야: 「거르기」 줄(구분·분야 칩 · 분야 40개 한도)');
 ok(has(/const SO = \{ new:[^}]*price:[^}]*title:[^}]*code:[^}]*qty:/) && has(/STK\.dir = -STK\.dir/), '7 정렬 5종(등록 최신·판매가·제목·관리코드·수량) · 다시 누르면 반대');
 ok(/\['grp', '🗂 그룹'/.test(TAB) && has(/data-stkg="/) && has(/data-stkgm/) && has(/stkSelBar\(nSel/) && /data-stkgput/.test(T) && /__new/.test(T) && has(/stkGPut\(/) && has(/data-stkgadd="1"/) && has(/data-stkgren/) && has(/data-stkgdel/) && has(/data-stkgrm1/) && has(/data-stkgadd1/) && has(/data-stkc\]/) && has(/stkGSet\(/) && has(/stkGAdd\(/), '8 그룹: 그룹 탭 · 만들기·넣기·더하기·이름·지우기(두 번)·빼기');
-ok(has(/data-stkdel1/) && has(/prdDel1Twice\(/) && has(/data-stkdel="1"/) && has(/data-stkall/) && has(/data-stkgo/) && has(/prdDelReview\('__prd'/) && has(/ux2TwMove\(/), '9 삭제: 카드 🗑 두 번 · 삭제 고르기 → 모두 고르기 → 삭제 검토');
+ok(has(/data-stkdel1/) && has(/prdDel1Twice\(/) && !has(/data-stkdel="1"/) && has(/data-stkall/) && has(/data-stkgo/) && has(/prdDelReview\('__prd'/) && has(/ux2TwMove\(/), '9 삭제: 카드 🗑 두 번 · (판 ⑤) 옛 「삭제 고르기」 모드 단추 없이 체크 하나 → 모두 고르기 → 삭제 검토');
 ok(has(/bt-sum/) && has(/isTestL\(r\.l\)/) && has(/시험 \$\{num\(nTst\)\}개 뺌/) && has(/합계/) && has(/판매가 합/), '10 합계 줄: 개수·수량·판매가 합 · 🧪 시험 뺌 · 탭 이름 붙은 합계');
 ok(has(/prodCard2\(l\)/) && has(/probPin\(/) && has(/data-y24pid/), '11 카드: prodCard2 · 문제 상품 맨 위 · 예스24 카드');
 ok(has(/STK\.lim \+= 60/) && has(/R\.slice\(0, STK\.lim\)/), '12 60개씩 더 보기');
