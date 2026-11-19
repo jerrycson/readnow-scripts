@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-engimp1",
-   "why": "판 내기 기다림: engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
-   "first": "2026-11-19T04:33:29Z",
-   "at": "2026-11-19T06:54:29Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-y24res1",
    "why": "판 내기 기다림: 예스24 멈춤 풀기",
    "first": "2026-11-19T05:11:56Z",
@@ -45,16 +38,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-engimp1",
-  "why": "판 내기 기다림: engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
-  "at": "2026-11-19T06:54:29Z",
-  "first": "2026-11-19T04:33:29Z"
+  "host": "vm-y24res1",
+  "why": "판 내기 기다림: 예스24 멈춤 풀기",
+  "at": "2026-11-19T06:55:24Z",
+  "first": "2026-11-19T05:11:56Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-engimp1",
+ "what": "engimp1 판정 엔진 판 2 (웹앱 카드·가격 코어 울타리 · 비켜 준 뒤 다시)",
+ "since": "2026-11-19T06:55:31Z",
+ "beat": "2026-11-19T06:55:31Z",
  "last": {
   "who": "lead",
   "done": "판본 판 ⓪ 읽기 0 진단 (edall0)",
