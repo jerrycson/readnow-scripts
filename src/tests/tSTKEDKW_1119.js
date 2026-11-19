@@ -14,7 +14,7 @@ const S = { app: {}, nbmLoaded: true, nbm: new Map(), pmetrics: new Map() };
 // 가짜 판본 함수 — 진짜 판단은 tEDKW1117·tEDKW2_1117이 봄 · 여기선 탭 틀만
 const ED = { a: { kw: ['리커버'], br: [], note: [] }, b: { kw: [], br: [], note: ['사인본'] }, c: { kw: [], br: ['양장'], note: [] } };
 const PICK = { c: { itemId: '9' } }; const USE = { a: 'check', b: 'auto', c: 'srch' }; const CANDS = { a: [{ itemId: '1', title: 'x', channels: { seller: { min: 9000, n: 3 } } }], b: [], c: [{ itemId: '9', channels: { seller: { min: 7000, n: 2 } } }] };
-const env = { S, db, firebase, PRDF: () => P, localStorage: LS, toast: (m, e) => toasts.push([m, e]), num: (n) => String(n), won: (n) => n + '원', esc: (x) => String(x), regAgo: (ms) => Math.round(ms / 6e4) + '분',
+const env = { S, db, firebase, edSplitTxt: () => "", PRDF: () => P, localStorage: LS, toast: (m, e) => toasts.push([m, e]), num: (n) => String(n), won: (n) => n + '원', esc: (x) => String(x), regAgo: (ms) => Math.round(ms / 6e4) + '분',
   edOf: (l) => (S.app.edSearch === false ? null : ED[l.id] || null), edPickOf: (l) => PICK[l.id] || null, edUse: (l) => USE[l.id] || null, edCandsOf: (l) => CANDS[l.id] || [], edRec: () => null, edHide: (l) => USE[l.id] === 'check',
   edChMin: (c) => c.channels.seller.min, edChN: (c) => c.channels.seller.n, edKwHits: (l) => { const r = ED[l.id]; return r ? [...r.kw, ...r.br.map((b) => `(${b})`), ...r.note] : []; }, edKwState: () => '', edCandRow: (l, c) => `<div data-edpick="${l.id}|${c.itemId}">후보 ${c.itemId}</div>`,
   loadNbm: async () => { S.nbmLoaded = true; }, STK_MET_MS: 24 * 36e5, edUrlOut: () => false, edUrlBtn: (l) => `<button data-edurl="${l.id}">＋ 후보에 없는 판</button>` }; /* (판 ④) 주소 붙여 정함 단추 — 자세한 것은 tEDPICKURL_1119 */

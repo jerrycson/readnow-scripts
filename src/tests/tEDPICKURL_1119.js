@@ -10,7 +10,7 @@ const T = fs.readFileSync(APP, 'utf8'); const cut = (src, a, b) => { const i = s
 const P = require(path.join(ROOT, 'readnow-products-core.js'));
 const BLK = cut(T, '/* (invimp2 판 ④ 걸음 (나)', 'function edCandHead()');
 const S = { plist: new Map(), nbm: new Map(), user: { email: 't@x' } }; const toasts = []; const picks = []; const looks = []; let asks = []; let askAns = []; let textAns = null; let LOOK = {};
-const env = { S, PRDF: () => P, toast: (m, e) => toasts.push([m, e]), num: (n) => String(n), won: (n) => n + '원', esc: (x) => String(x), errKo: (e) => e.message,
+const env = { S, PRDF: () => P, edSplitTxt: () => "", toast: (m, e) => toasts.push([m, e]), num: (n) => String(n), won: (n) => n + '원', esc: (x) => String(x), errKo: (e) => e.message,
   edChMin: (c) => (c.channels && c.channels.seller ? c.channels.seller.min : null), edChN: (c) => (c.channels && c.channels.seller ? c.channels.seller.count : 0), hlSpecial: (x) => x,
   edCandsOf: (l) => l._C || [], edPickOf: (l) => ((S.nbm.get(l.id) || {}).edPick) || null, edCandRow: (l, c) => `<div data-edpick="${l.id}" data-edit="${c.itemId}"></div>`, edHideHtml: () => '',
   edSetPick: async (id, pick) => { picks.push([id, pick]); S.nbm.set(id, { ...(S.nbm.get(id) || {}), edPick: pick }); },
