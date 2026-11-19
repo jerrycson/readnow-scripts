@@ -90,6 +90,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(w.n >= 5 && w.n <= 6 && w.wk && w.day === 0, '주로 묶기 = 주 줄(월요일부터) · 날 누름 없음', w); await set('per:d');
   // 유효 최저가 — 되살린 날 = 거르지 않은 동급 최저(lowU) 딱지
   await p.keyboard.press('Escape'); await Wt(p, 150); await win('low');
+  if (process.env.RN_SHOT) { await p.evaluate(() => { const c = document.querySelector('#ctrl_kpi .bigask-c'); const el = c.querySelector('.ckd'); c.scrollTop = el ? el.offsetTop - 20 : 0; }); await p.screenshot({ path: process.env.RN_SHOT + '_low.png' }); }
   r = await row(D.d10); ok(r && /^50 거르지 않은 동급 최저/.test(r[1]) && r[3] === '—', '되살린 날 = lowU 50 + 「거르지 않은 동급 최저」 딱지 · 얻음·잃음 비움', r);
   r = await row(D.t); ok(r && r[1] === '50' && r[2] === '71.4%' && r[6] === '20' && r[7] === '10', '보통 날 = 유효 최저가 50 · 비율 ÷ 견줄 수 있던 수(70) · 더 싸야만 20 · 견줄 것 없음 10', r);
   w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); return { dash: !!ov.querySelector('svg.ckd-line path[stroke-dasharray]'), hol: !!ov.querySelector('svg.ckd-line circle[fill="#fff"]'), gap: ov.querySelectorAll('svg.ckd-line rect.ckd-gap').length }; });
@@ -101,6 +102,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   w = await p.evaluate(() => { const el = document.getElementById('ckd_day'); return { tx: el ? el.textContent : '', li: el ? [...el.querySelectorAll('.ckd-li button')].map((b) => b.dataset.ckprd) : [], sel: !!document.querySelector('#ctrl_kpi tr.sel') }; });
   ok((await R('ctl_kpi_days')) - d0 === 1, '날 줄 누름 = 날 문서 읽기 정확히 1번', await R('ctl_kpi_days') - d0);
   ok(w.li.length === 4 && w.li.includes('aladin_UZZZ99999') && /잃음 8/.test(w.tx) && /5개 더 있음/.test(w.tx) && /1500개까지만/.test(w.tx) && w.sel, '가게 전체 = 얻음 1·잃음 3 목록 · 잃음 8 = 3 + 클라우드가 자른 5(「5개 더 있음」)', w);
+  if (process.env.RN_SHOT) { await p.screenshot({ path: process.env.RN_SHOT + '_day.png' }); await p.evaluate(() => { document.querySelector('#ctrl_kpi .bigask-c').scrollTop = 0; }); await p.screenshot({ path: process.env.RN_SHOT + '_top.png' }); } /* 사람 눈 확인용(시험 문은 안 씀) */
   ok(/남이 더 쌈/.test(w.tx) && /우리 7,250원 · 견준 7,000원/.test(w.tx) && /견준 —/.test(w.tx), '목록 줄 = 까닭 이름 · 우리 값 · 견준 값(없으면 —)', w.tx.slice(0, 400));
   await p.evaluate((d) => document.querySelector(`#ctrl_kpi tr[data-ckday="${d}"]`).click(), D.t); await Wt(p, 300);
   ok((await R('ctl_kpi_days')) - d0 === 1, '같은 날 다시 누름 = 더 읽지 않음(메모)', await R('ctl_kpi_days') - d0);
