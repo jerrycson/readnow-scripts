@@ -99,14 +99,14 @@
   "at": "2026-11-19T16:05:15Z",
   "first": "2026-11-19T12:39:25Z"
  },
- "holder": "lead",
- "host": "vm-pxg1",
- "what": "pxg1 조회수 표 판 G",
- "since": "2026-11-19T15:50:13Z",
- "beat": "2026-11-19T15:59:30Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.808 — hmf1 공용 열 지도 판 F · main a2d8aa6be",
-  "at": "2026-11-19T15:49:47Z"
+  "done": "pxg1 조회수 표 판 G 1.78.809 냄(54e80919e · 운영 확인)",
+  "at": "2026-11-19T16:06:00Z"
  }
 }
