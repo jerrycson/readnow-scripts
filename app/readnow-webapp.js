@@ -35503,7 +35503,7 @@ async function ctrlAct(it, a, o) { o = o || {}; const P = S._bkfCtrl; if (!P || 
   P.busy = it.id; ctrlPaint();
   try {
     if (a === 'pick') { const raw = P.val.has(it.id) ? P.val.get(it.id) : bkfTabP(x, T, C); const v = Math.round(+raw); const gate = bqPxGate(x, raw === '' || raw == null ? '' : v); if (gate) throw new Error(gate);
-      const M = await plkFreshMany([k]); if (!M) throw new Error('잠금 목록을 못 읽음'); { const lw = ctrlLkWhy(x, v, M); if (lw) throw new Error(lw + ' — 값을 바꾸지 않음'); }
+      const M = await plkFreshMany([k]); if (!M) throw new Error('잠금 목록을 못 읽음'); { const lw = ctrlLkWhy(x, v, M); if (lw) throw new Error((lw === '🔒 잠금' ? '🔒 잠긴 상품' : lw) + ' — 값을 바꾸지 않음'); }
       st.picks[k] = { price: v, at: now, by, why: '🗼 관제창에서', via: 'ctrl', ...(typeof ctrlRecOf === 'function' ? ctrlRecOf(bkfTabP(x, T, C)) : {}) }; patch.picks = { [k]: st.picks[k] }; if ((st.edkw || {})[k]) { delete st.edkw[k]; patch.edkw = { [k]: FV.delete() }; } msg = `→ ${won(v)} 결정 대기로`; }
     else if (a === 'unpick') { delete st.picks[k]; patch.picks = { [k]: FV.delete() }; msg = '↩ 선택 대기로 되돌림'; }
     else if (a === 'hold' || a === 'trash') { const f = a === 'hold' ? 'held' : 'trashed'; st[f] = st[f] || {}; st[f][k] = { at: now, by, from: T, ...(st.picks[k] ? { pick: st.picks[k].price } : {}) }; patch[f] = { [k]: st[f][k] }; if (st.picks[k]) { delete st.picks[k]; patch.picks = { [k]: FV.delete() }; } if (a === 'trash' && (st.held || {})[k]) { delete st.held[k]; patch.held = { [k]: FV.delete() }; } patch.listLog = logE(a); msg = a === 'hold' ? '⏸ 보류 탭으로' : '✖ 이 그룹에서 뺌 — 🗑 휴지통에서 되돌리기'; }
