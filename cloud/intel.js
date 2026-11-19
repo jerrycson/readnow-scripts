@@ -34,7 +34,10 @@ function intelCalc(days, state, day, H) {
   const anom = []; const dow = [0, 0, 0, 0, 0, 0, 0]; const dowN = [0, 0, 0, 0, 0, 0, 0]; let base = 0;
   for (const [sc, L] of bySc) {
     L.sort((a, b) => (a.day < b.day ? -1 : 1));
-    const rate = (v) => (runUse(v) && +v.total > 0 && goneEff(v) != null ? +goneEff(v) / +v.spanDays / +v.total : null);
+    /* (benchfix1 · 11/20) 판매율의 기간은 '실제 일어난 간격' — 앞 숍 전체 회차의 '처음 안 보임'을 이번에 두 번 확인해 확정했으면(±35% · 자료 이상 엔진과 같은 셈) 앞 간격(예 4일치)으로 나눔 · 예전엔 이번 간격(1일)으로 나눠 z가 부풀었음(곰돌이책방 z=3.4) */
+    const fullRun = (v) => v && !v.base && !v.light && !v.partial && v.complete !== false && v.full !== false;
+    const winOf = (v) => { const i = L.indexOf(v); let p = null; for (let j = i - 1; j >= 0; j--) if (fullRun(L[j]) && L[j] !== v) { p = L[j]; break; } const sp = +v.spanDays || 0; if (!p) return sp; const moP = +p.missOnce || 0, spP = +p.spanDays || 0, g = +v.gone || 0; return p.full !== false && moP > 0 && spP > 0 && Math.abs(g - moP) <= Math.max(30, 0.35 * moP) ? spP : sp; };
+    const rate = (v) => (runUse(v) && +v.total > 0 && goneEff(v) != null ? +goneEff(v) / winOf(v) / +v.total : null);
     const reg = (v) => (v.light && +v.total > 0 && v.newN != null ? +v.newN / +v.total : null);
     for (const v of L) { const r = rate(v); if (r != null) { const w = new Date(Date.parse(v.day + 'T00:00:00Z')).getUTCDay(); dow[w] += r; dowN[w]++; } if (v.base) base++; }
     const cur = L.filter((v) => v.day === day); if (!cur.length) continue;
@@ -58,7 +61,7 @@ function intelCalc(days, state, day, H) {
 function makeIntel({ C, FV, log, W, H }) {
   const META = () => C('app_settings').doc('research_intel_meta');
   async function load(day) {
-    const since = addDay(day, -35); const F = ['sc', 'name', 'day', 'base', 'complete', 'full', 'light', 'partial', 'newN', 'total', 'seen', 'gone', 'goneLow', 'lowNow', 'pages', 'pc', 'resumes', 'anchorLost', 'spanDays', 'excl', 'edit', 'fill'];
+    const since = addDay(day, -35); const F = ['sc', 'name', 'day', 'base', 'complete', 'full', 'light', 'partial', 'newN', 'total', 'seen', 'gone', 'goneLow', 'lowNow', 'pages', 'pc', 'resumes', 'anchorLost', 'spanDays', 'missOnce', 'excl', 'edit', 'fill'];
     const qs = await C('bench_days').where('day', '>=', since).select(...F).get(); const days = []; qs.forEach((d) => days.push(d.data() || {}));
     const ss = await C('bench_state').select('name', 'complete', 'runAt', 'endAt', 'skip', 'off').get(); const state = []; ss.forEach((d) => state.push({ id: d.id, ...(d.data() || {}) }));
     return { days, state };
