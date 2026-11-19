@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-strat4",
-   "why": "판 내기 기다림: strat4 감시 전략 판 ①",
-   "first": "2026-11-19T07:40:38Z",
-   "at": "2026-11-19T09:27:26Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-bqsub1",
    "why": "판 내기 기다림: bqsub1 세 탭 하위 탭·빠르게 고르기",
    "first": "2026-11-19T07:41:10Z",
@@ -59,16 +52,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-strat4",
-  "why": "판 내기 기다림: strat4 감시 전략 판 ①",
-  "at": "2026-11-19T09:27:26Z",
-  "first": "2026-11-19T07:40:38Z"
+  "host": "vm-bqsub1",
+  "why": "판 내기 기다림: bqsub1 세 탭 하위 탭·빠르게 고르기",
+  "at": "2026-11-19T09:22:32Z",
+  "first": "2026-11-19T07:41:10Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-strat4",
+ "what": "strat4 감시 전략 판 ①",
+ "since": "2026-11-19T09:28:28Z",
+ "beat": "2026-11-19T09:28:28Z",
  "last": {
   "who": "lead",
   "done": "bqprog1 수동 일괄 진행바 1.78.790 · 21fe36f5a",
