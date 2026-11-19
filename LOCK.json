@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-testfix1",
-   "why": "판 내기 기다림: testfix1 실패 시험 7개 바로잡음(시험만)",
-   "first": "2026-11-19T01:00:17Z",
-   "at": "2026-11-19T02:04:47Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-engimp1",
    "why": "판 내기 기다림: engimp1 판정 엔진 판 1 (클라우드 0.35.322)",
    "first": "2026-11-19T01:04:26Z",
@@ -38,16 +31,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-testfix1",
-  "why": "판 내기 기다림: testfix1 실패 시험 7개 바로잡음(시험만)",
-  "at": "2026-11-19T02:04:47Z",
-  "first": "2026-11-19T01:00:17Z"
+  "host": "vm-engimp1",
+  "why": "판 내기 기다림: engimp1 판정 엔진 판 1 (클라우드 0.35.322)",
+  "at": "2026-11-19T02:05:10Z",
+  "first": "2026-11-19T01:04:26Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-testfix1",
+ "what": "testfix1 실패 시험 7개 바로잡음(시험만)",
+ "since": "2026-11-19T02:05:50Z",
+ "beat": "2026-11-19T02:05:50Z",
  "last": {
   "who": "lead",
   "done": "재고 품목 판 ② 냄 — 웹앱 1.78.770 (invimp2)",
