@@ -105,7 +105,7 @@ ok(!P.edNoteKw('사인펜 자국').length && !P.edNoteKw('사인본 아님').len
 { const d = P.edDecide({ title: '어느 가수 정규 8집', note: '사인본', bookId: 'bk_1' }, null); ok(d.on && d.use === 'check' && d.hold && /유의 사항/.test(d.why), '판정: 유의 사항 사인본 → 사람 확인 · 판매가 그대로');
   const d2 = P.edDecide({ title: '어느 가수 정규 8집', note: '사인본', bookId: 'bk_1' }, { src: 'usedSearch', cands: [{ itemId: '9', title: '어느 가수 정규 8집', cov: 0.95 }] }); ok(d2.use === 'check' && d2.hold, '검색에 같은 이름 상품이 있어도 사람 확인(보통판일 수 있음)');
   const d3 = P.edDecide({ title: '어느 가수 정규 8집', note: '사인본', bookId: 'bk_1' }, { src: 'usedSearch', cands: [{ itemId: '9', title: '어느 가수 정규 8집', cov: 0.95 }] }, { pick: { itemId: '9' } }); ok(d3.use === 'srch' && d3.human, '사람이 고르면 그 판'); }
-ok(/R = await edNoteFix\(c, batchCompute\(c, rows\)\)/.test(APP) && /async function edNotePrefetch\(ls, cap\)/.test(APP), '수동 일괄: 판매가를 바꾸려는 줄만 유의 사항을 받아 다시 계산');
+ok(/R = await edNoteFix\(c, batchCompute\(c, rows\)\)/.test(APP) && /async function edNotePrefetch\(ls, cap(, o)?\)/.test(APP), '수동 일괄: 판매가를 바꾸려는 줄만 유의 사항을 받아 다시 계산');
 ok(/!ed && edNw\.length && edUse\(l\) === 'check'/.test(APP), '일괄 계산: 유의 사항 판본 낱말 → 추천가 내지 않음');
 { const pw = rd('readnow-price-watch.user.js'); ok(/async function edNoteOfL\(l, uinfo\)/.test(pw) && /edBlockOf\(l, key, uinfo\)/.test(pw), '가격 감시기: 유의 사항 판본 낱말이면 자동 반영 막음'); }
 { const fl = ['🔖 판본 확인 중', '판본 알아보는 중']; ok(!fl.some((w) => APP.includes(w)), '「판본 확인 중」·「알아보는 중」 문구 없음'); }
