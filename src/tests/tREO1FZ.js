@@ -5,8 +5,8 @@ const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8');
-const i0 = T.indexOf('  async function batchExec0('), i1 = T.indexOf('\n/* ══════════ 📷 사진으로 가격 매기기', i0);
-let EX = i0 > 0 && i1 > i0 ? T.slice(i0, i1) : ''; EX = EX.replace(/\n\}\s*$/, '\n'); /* 바깥 닫는 괄호(그룹 화면 함수 끝) 뺌 */
+const i0 = T.indexOf('/* ◆bqexec ('), i1 = T.indexOf('/* ◆bqexec 끝 */', i0); /* (recf1) 확정 본문은 바깥 bqExecCore(E, only, opt) · 확인 창 bqExecAsk — 그룹 화면 batchExec0은 그 화면 값을 넘기는 얇은 껍데기 */
+const EX = i0 > 0 && i1 > i0 ? T.slice(i0, i1) + '\nconst batchExec0 = (only, opt) => bqExecCore(__E, only, opt);\n' : '';
 const f0 = T.indexOf('/* ◆bqfz '), f1 = T.indexOf('/* ◆bqfz 끝 */'); const FZB = f0 > 0 && f1 > f0 ? T.slice(f0, f1) : '';
 ok(!!EX && !!FZB, '확정 함수·확인 판 덩어리를 찾음');
 ok(!/\b(alert|confirm|prompt)\s*\(/.test(FZB), '새 덩어리에 브라우저 창 없음');
@@ -29,10 +29,11 @@ async function run(opt, mk) {
     window: { addEventListener() {}, removeEventListener() {} }, document: { getElementById: () => null },
     firebase: { firestore: { FieldPath: { documentId: () => '__id' }, FieldValue: { delete: () => '__del', arrayUnion: (x) => x } } },
     db: { collection: (n) => ({ doc: (d) => ({ get: async () => ({ exists: n === 'prd_system', data: () => ({ watchVer: '9.9.9', watchTab: 't', watchBeat: new Date().toISOString() }) }) }), where: () => ({ get: async () => ({ forEach() {} }) }) }), batch: () => ({ set() {}, commit: async () => {} }) },
-    pxMark: () => false, ctrlRecOf: () => ({}), bqBaseOf: () => ({}), bqOnceStart: async () => {}, bqWaitK: () => [], cancelOne: async () => [true],
+    meta: () => env.S.batchMeta, pxMark: () => false, ctrlRecOf: () => ({}), bqBaseOf: () => ({}), bqOnceStart: async () => {}, bqWaitK: () => [], cancelOne: async () => [true],
   };
   const has = (t, k) => typeof k === 'string' && (k in env || !(k in globalThis));
   const P = new Proxy(env, { has, get: (t, k) => (k === Symbol.unscopables ? undefined : k in t ? t[k] : (() => undefined)) });
+  env.__E = P; /* (recf1) with 안에서 이름 env는 흉내 덩어리로 풀리지 않음 — 흉내 판 자체를 __E로 넘김 */
   const F = new Function('env', `with (env) { ${FZB}\n${EX}\n return { batchExec0, bqFzHtml }; }`)(P);
   env.twiceArm = () => 'go';
   await F.batchExec0(null, opt);

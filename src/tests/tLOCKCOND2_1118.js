@@ -97,7 +97,7 @@ console.log('③ 쓰는 길마다 고치기 직전 다시 셈');
   const pd = fnIn(T, 'prDecide', 'async function ');
   ok(/plkCondOk\(lk\) && \['approve', 'manual', 'revert'\]\.includes\(decision\)\) lkC = lk/.test(pd) && /plkClamp\(lkC, o\.price/.test(pd) && /\.\.\.\(lkC \? \{ plkx: PX \} : \{\}\)/.test(pd), '가격 결정 — 조건 잠금은 선 안에서만 결정 · 승인에 plkx');
   ok(/plkSkipped\(\[x\.key\], '가격 결정'\); throw/.test(pd), '가격 결정 — 완전·새로 잠금은 그대로 막음');
-  const be = fnIn(T, 'batchExec0', 'async function ');
+  const be = fnIn(T, 'bqExecCore', 'async function ') /* (recf1) 확정 본문은 바깥 bqExecCore */;
   ok(/const W = bqLockWhy\(p\.x, p\.price, M\); if \(!W\) continue; const v = W\.v; if \(W\.m !== 'cond'\) \{ lk\.push\(p\); continue; \}/.test(be) && /plkClamp\(v, p\.price, X\)/.test(be) /* (bqfix1 11/19) 갈래 판정은 공용 bqLockWhy(plkMode: 조건이 비었거나 기한 지남 = 새로 잠금) */ && /drop\(cdL,/.test(be), '수동 일괄 — 완전·새로 잠금은 건너뜀 · 조건 잠금은 선 밖이면 뺌');
   ok(/drop\(cut\.filter\(\(p\) => lotCheck\(p\.x\.l, p\.price\)\)/.test(be) && /plkx \? \{ plkx: \{ \.\.\.plkx \} \}/.test(be), '수동 일괄 — 줄인 값도 묶음 경계·하한선 다시 봄 · 승인에 plkx');
   ok(/plkClamp\(/.test(COL) && /\.plkx/.test(COL) && /noDay: (true|1|!0)/.test(COL), '수집기 — 고치기 직전 plkx로 다시 셈(하루 횟수는 또 세지 않음)');

@@ -147,7 +147,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
     db = mkDb(); db._st.fail = true; W = mkW(db); ok((await W.plkSetW()) === null, '가격 감시기 — 잠금 목록을 한 번도 못 읽으면 null(자동 승인 안 만듦)'); ok((await W.plkReadW({ key: 'A' })) === undefined, '가격 감시기 plkReadW — 못 읽으면 undefined(잠긴 것으로)');
     ok(/if \(!LSW\) why\.push\('🔒 잠금 목록을 못 읽음/.test(WT) && /LSW\.has\('lid:' \+ listing\.listingId\)/.test(WT), '가격 감시기 — 못 읽으면 자동 반영하지 않음 · 판정에서 lid 잠금도 봄'); }
   for (const [n, S0, fn] of [['수집기', COL, 'plkReadPc'], ['클라우드', CL, 'plkReadCl']]) { const b = fnIn(S0, fn, AF); ok(/where\('lid', '==',/.test(b) && /plkPickOn\(own, by\)/.test(b) && /_k/.test(b), n + ' ' + fn + ' — 꺼진 자기 문서보다 켜진 lid 잠금 · 문서 이름 _k'); }
-  if (WEB) { const b = fnIn(T, 'batchExec0', AF); const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5) 잠금도 저장 바로 앞에서 한 번 더'), i2 = b.indexOf('const M2 = await plkFreshMany(pickL.map('), i3 = b.indexOf('plkNote(keyOf(p.x), p.plkv');
+  if (WEB) { const b = fnIn(T, 'bqExecCore', AF) /* (recf1) 확정 본문은 바깥 bqExecCore */; const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5) 잠금도 저장 바로 앞에서 한 번 더'), i2 = b.indexOf('const M2 = await plkFreshMany(pickL.map('), i3 = b.indexOf('plkNote(keyOf(p.x), p.plkv');
     ok(i1 > 0 && i2 > i1 && i3 > i2, '수동 일괄 batchExec0 — 저장 바로 앞에서 잠금을 다시 읽음', [i1, i2, i3]);
     const seg = b.slice(i1, b.indexOf('\n', b.indexOf('if (lk2.length)', i1))); ok(/if \(!M2\) return toast\(/.test(seg) && /if \(!plkCondOk\(v\)\) \{ lk2\.push\(p\); continue; \}/.test(seg) && /if \(!Q\.ok \|\| Q\.p !== p\.price\) \{ lk2\.push\(p\); continue; \}/.test(seg) && /pickL = pickL\.filter\(\(p\) => !lk2\.includes\(p\)\)/.test(seg), '— 못 읽으면 멈춤 · 그 사이 잠긴 것·조건 선 밖은 빼고 확정'); }
 
@@ -161,7 +161,7 @@ const FB = { firestore: { FieldPath: { documentId: () => '__id__' }, FieldValue:
     ok(H.plkMktOld({ on: true, mode: 'full' }, {}, null, now) === '' && H.plkMktOld({ on: false, mode: 'cond', cond: { lowOff: 0 } }, {}, null, now) === '', '조건 잠금이 아니면 보지 않음'); }
 
   console.log('⑥ 잠금 실행 스위치와 상관없이 반영 직전 다시 셈이 늘 돎');
-  { const SW = /ctrlLkOpt|lkopt/; const b = fnIn(T, 'batchExec0', AF); const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5)');
+  { const SW = /ctrlLkOpt|lkopt/; const b = fnIn(T, 'bqExecCore', AF) /* (recf1) 확정 본문은 바깥 bqExecCore */; const i1 = b.indexOf('(11/19 lkday1 · 검토 1-5)');
     if (WEB) ok(![fnIn(T, 'plkFresh', AF), fnIn(T, 'plkFreshMany', AF), fnIn(T, 'plkLockedIds', AF), fnIn(T, 'plkNote', AF), b.slice(i1, i1 + 1500)].some((s) => SW.test(s)), '웹앱 — 서버 읽기·저장 직전 다시 보기·하루 세기가 스위치를 보지 않음');
     ok(!SW.test(WT) && !SW.test(COL) && !SW.test(CL), '가격 감시기·수집기·클라우드 — 스위치를 읽지 않음(실제 반영은 늘 잠금대로)'); }
 
