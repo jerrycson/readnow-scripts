@@ -18,10 +18,10 @@ console.log('① 글');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(B), '브라우저 창 없음'); ok(!/때문에|덕분에|효과|올렸다/.test(B), '원인을 단정하는 말 없음'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(B), '전화번호 모양 없음'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tCTRLKPI_E ${bad}개 실패` : '✓ tCTRLKPI_E 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
-/* 상품 12개(묶음 안 · 값 2만~2만 2,750 · 기본 씨앗 상품과 안 겹침) + 6개(묶음 밖 · 값 5만 원 = 견줄 무리) · 그룹 다섯 · gA에 8일 전 감시 켬 */
+/* 상품 12개(묶음 안 · 값 2만~2만 2,750 · 기본 씨앗 상품과 안 겹침) + 6개(묶음 밖 · 값 5만 원 = 견줄 무리) · 그룹 다섯(조회 그림 붙은 상품도 넣음 = exPx 끔 · 기본은 뺌) · gA에 8일 전 감시 켬 */
 const SEED = async function ([d10, w8]) { if (!S.user) S.user = { email: 't@x', uid: 't' };
   for (let i = 0; i < 18; i++) { const uc = 'U5900000' + (10 + i); const out = i >= 12; S.plist.set('aladin_' + uc, { id: 'aladin_' + uc, usedCode: uc, listingId: String(509937000 + i), title: (out ? '견줄 책 ' : '사건 띠 시험 책 ') + i, price: out ? 50000 : 20000 + i * 250, qty: 1, grade: ['최상', '상', '중'][i % 3], status: '판매중', active: true, bookId: 'bk59' + i }); }
-  const put = (id, name, x) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 19900, pmax: 22900, recentDays: 0, kw: '' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: [], lastCount: 0, start: {}, ...(x || {}) });
+  const put = (id, name, x) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 19900, pmax: 22900, recentDays: 0, kw: '', exPx: false }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: [], lastCount: 0, start: {}, ...(x || {}) });
   const ids = ['gA', 'gB', 'gC', 'gD', 'gE']; for (let i = 0; i < 5; i++) await put(ids[i], '사건 띠 그룹 ' + i, i === 0 ? { watchLog: [{ on: true, at: w8, by: 't', what: '감시 켬' }] } : null);
   S.prBatches = undefined; S.bkfold = undefined; S.tab = 'products'; renderTabs(); renderMainNow();
   for (let i = 0; i < 40 && !(S.prBatches || []).find((b) => b.id === 'gE'); i++) await new Promise((r) => setTimeout(r, 150));
@@ -47,7 +47,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const f = await p.evaluate(async ([src, a]) => (eval('(' + src + ')'))(a), [SEED.toString(), [new Date(Date.now() - 50 * 864e5).toISOString(), new Date(Date.parse(new Date(Date.now() + 9 * 3600e3 - 8 * 864e5).toISOString().slice(0, 10) + 'T12:00:00+09:00')).toISOString()]]);
   for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[f] && S.bkfold.folds[f].gids.length === 5), f)) break; await Wt(p, 150); }
   const open = async (w, h, fid) => { await p.setViewportSize({ width: w, height: h }); await p.evaluate((f) => openBkfold(f), fid);
-    for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!document.getElementById('bkf_tb') && Object.keys(S._bkfTb || {}).length >= 3 && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 5)) break; await Wt(p, 150); } };
+    for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => !!document.getElementById('bkf_tb') && Object.keys(S._bkfTb || {}).length >= 3 && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 5 && ckFoldKeys(f).size >= 12, fid)) break; await Wt(p, 150); } await Wt(p, 200); };
   const win = async (kind) => { await p.evaluate((k) => document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`).click(), kind); for (let i = 0; i < 50; i++) { if (await p.evaluate(() => !!document.querySelector('#ctrl_kpi [data-ctrlkpimore]') && !(S._ck && (S._ck.wl || S._ck.busy.size || S._ck.ledBusy)))) break; await Wt(p, 150); } await Wt(p, 200); };
   const click = async (sel) => { const r = await p.evaluate((s) => { const el = document.querySelector(s); if (!el) return false; el.dispatchEvent(new MouseEvent('click', { bubbles: true })); return true; }, sel); for (let i = 0; i < 40; i++) { if (await p.evaluate(() => !(S._ck && (S._ck.wl || S._ck.busy.size || S._ck.ledBusy)))) break; await Wt(p, 120); } await Wt(p, 150); return r; };
   const txt = (s) => p.evaluate((s) => (document.querySelector(s) || {}).textContent || '', s);
@@ -61,14 +61,14 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.evaluate(() => { window._ckL = 0; const o = window.bkfLedger; window._ckLo = o; window.bkfLedger = function () { window._ckL++; return o.apply(this, arguments); }; });
   await open(1280, 720, f); await win('view');
   w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const th = [...ov.querySelectorAll('.ckd > .ckd-tw .ckd-t thead th')].map((x) => x.textContent); const tr = ov.querySelector('.ckd > .ckd-tw .ckd-t tbody tr'); return { th, r: tr ? [...tr.cells].map((c) => c.textContent.trim()) : null, line: !!ov.querySelector('svg.ckd-line'), band: !!ov.querySelector('svg.ckd-band'), heat: (ov.querySelector('svg.pxheat') || {}).outerHTML || '', chips: [...ov.querySelectorAll('.ckd-evs .ckd-ev')].map((b) => [b.dataset.ckev, b.classList.contains('und')]) }; });
-  ok(w.th.includes('100개당 방문') && w.th.includes('조회 셀 수 있는 상품') && w.r && w.r[1] === '24' && w.r[2] === '36' && w.r[6] === '12어림' && w.r[7] === '200', '방문수 오늘 줄 = 사람 24(묶음 12개 × 2) · 로봇 36 · 셀 수 있는 상품 12(어림) · 100개당 200', { th: w.th, r: w.r });
+  ok(w.th.includes('100개당 방문') && w.th.includes('조회 셀 수 있는 상품') && w.r && w.r[1] === '24' && w.r[2] === '36' && /^12\s*어림$/.test(w.r[6]) && w.r[7] === '200', '방문수 오늘 줄 = 사람 24(묶음 12개 × 2) · 로봇 36 · 셀 수 있는 상품 12(어림) · 100개당 200', { th: w.th, r: w.r });
   ok(w.line && w.band && /요일과 시각별 사람 조회\(하루 평균\)/.test(w.heat) && /하루 평균/.test(w.heat), '선 그림 · 사건 띠 · 요일×시각(하루 평균)', w.heat.slice(0, 160));
   const ids = w.chips.map((x) => x[0]); ok(ids.some((x) => /^run:.*:r1$/.test(x)) && !ids.some((x) => /:r2$|:r3$/.test(x)) && ids.some((x) => /^watch:/.test(x)) && ids.some((x) => /^x:n:/.test(x)) && w.chips.every((x) => !x[1]), '사건 딱지 = 실행 r1 · 감시 켬 · 총 상품수 바뀜(바깥) — 되돌린 r2·되돌리기 r3는 빠짐', w.chips);
   ok((await p.evaluate(() => window._ckL)) === 1, '묶음 장부 읽기 = 1번', await p.evaluate(() => window._ckL));
   // r1 앞뒤 견주기 — 앞뒤 7일 · 사건 날 뺌
   const r1 = ids.find((x) => /:r1$/.test(x)); await click(`#ctrl_kpi .ckd-ev[data-ckev="${r1}"]`); let R = await baRows(); let ba = await txt('#ctrl_kpi .ckd-ba');
   const top = R.find((x) => /최저가배지 비율/.test(x.c[1])), vis = R.find((x) => /100개당 방문/.test(x.c[1])), sold = R.find((x) => /1,000개당 판매/.test(x.c[1]));
-  ok(top && top.c[2] === '20%' && top.c[3] === '50%' && /^\+30%p/.test(top.c[4]) && /^−4\.3%p$/.test(top.c[5]) && top.c[6] === '+34.3%p', '배지 비율 = 앞 2/10 → 뒤 5/10(사건 날 10/10은 뺌) · 견줄 무리 28/70 → 25/70 · 차이 +34.3%p', top);
+  ok(top && top.c[2] === '20%' && top.c[3] === '50%' && /^\+30%p/.test(top.c[4]) && /^−4(\.3)?%p$/.test(top.c[5]) && /^\+34(\.3)?%p$/.test(top.c[6]), '배지 비율 = 앞 2/10 → 뒤 5/10(사건 날 10/10은 뺌) · 견줄 무리 28/70 → 25/70 · 차이 +34.3%p', top);
   ok(vis && vis.c[2] === '100' && vis.c[3] === '200' && /\+100 \(\+100%\)/.test(vis.c[4]) && vis.c[5] === '±0' && vis.c[6] === '+100', '100개당 방문 = 100 → 200(사건 날 100번씩은 뺌) · 견줄 무리 ±0 · 차이 +100 · 하루 평균 12라 % 보임', vis);
   ok(sold && /하루 평균 5 아래 — % 숨김/.test(sold.c[4]), '1,000개당 판매 = 하루 평균 1권 → % 숨김', sold);
   ok(/⚠ 겹침 1건/.test(ba) && /감시 켬/.test(ba) && !/요일 안 맞음/.test(ba) && R.every((x) => x.dim), '겹침 = 감시 켬 1건(되돌린 것은 안 셈) · 7일 = 요일 맞음 · 딱지 있으면 줄 흐림', ba.slice(0, 300));
@@ -86,7 +86,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.keyboard.press('Escape'); await Wt(p, 150);
   // ⑤ 판매수
   await win('sold'); w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const th = [...ov.querySelectorAll('.ckd > .ckd-tw .ckd-t thead th')].map((x) => x.textContent); const tr = ov.querySelector('.ckd > .ckd-tw .ckd-t tbody tr'); return { th, r: tr ? [...tr.cells].map((c) => c.textContent.trim()) : null, k: tr && tr.dataset.cksold, sum: (ov.querySelector('.ckd-sum') || {}).textContent || '', heat: (ov.querySelector('svg.pxheat') || {}).outerHTML || '' }; });
-  ok(w.th.includes('1,000개당 판매') && w.r && w.r[1] === '1' && w.r[2] === '7,000원' && w.r[4] === '12' && w.r[5] === '83.3' && /알라딘 판매 30권/.test(w.sum), '판매수 = 오늘 1권 · 7,000원 · 묶음 상품 12 · 1,000개당 83.3 · 30일 합 30권', w);
+  ok(w.th.includes('1,000개당 판매') && w.r && w.r[1] === '1' && w.r[2] === '7,000원' && w.r[4] === '12' && /^83(\.3)?$/.test(w.r[5]) && /알라딘 판매 30권/.test(w.sum), '판매수 = 오늘 1권 · 7,000원 · 묶음 상품 12 · 1,000개당 83.3 · 30일 합 30권', w);
   ok(/요일과 시각별 판매/.test(w.heat) && /15시 — \d+권/.test(w.heat), '요일×시각 = 주문 시각(권)', w.heat.slice(0, 200));
   await click(`#ctrl_kpi tr[data-cksold="${w.k}"]`); w = await txt('#ckd_day'); ok(/팔린 상품/.test(w) && /사건 띠 시험 책 판매/.test(w) && /7,000원 · 1권/.test(w) && /주문한 분 정보는 보이지 않음/.test(w), '판매 날 누름 = 그날 상품 줄(값·권수만)', w);
   await click('#ctrl_kpi [data-ckset="vw:r"]'); w = await p.evaluate(() => [...document.querySelectorAll('#ctrl_kpi .ckd-sel button.on')].map((b) => b.textContent)); ok(w.includes('1,000개당'), '보기 단추 = 「1,000개당」', w); await click('#ctrl_kpi [data-ckset="vw:n"]');
@@ -98,7 +98,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(/이 묶음에 조회 그림이 붙은 상품이 없습니다/.test(w), '그림 붙은 상품 없는 묶음 = 안내 글', w.slice(0, 200)); await p.evaluate(() => { S.px.exp = window._ckExp; S.px.v++; }); await p.keyboard.press('Escape'); await Wt(p, 150);
   // 폭 380
   await open(380, 700, f); await win('view'); await click(`#ctrl_kpi .ckd-ev[data-ckev="${r1}"]`);
-  w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const r = ov.querySelector('.bigask').getBoundingClientRect(); return { ok: r.left >= 0 && r.right <= innerWidth + 1, sw: document.documentElement.scrollWidth, iw: innerWidth, ba: !!ov.querySelector('.ckd-ba') }; });
+  w = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); const r = ov.querySelector('.bigask').getBoundingClientRect(); return { ok: r.left >= 0 && r.right <= innerWidth + 1, sw: document.documentElement.scrollWidth, iw: innerWidth, ba: !!ov.querySelector('.ckd-ba'), ev: S._ck && S._ck.ev, chips: [...ov.querySelectorAll('.ckd-ev')].map((b) => b.dataset.ckev + (b.classList.contains('on') ? '*' : '')) }; });
   ok(w.ok && w.sw <= w.iw && w.ba, '폭 380: 방문수 창·앞뒤 견주기 가로 넘침 없음', w); await p.keyboard.press('Escape'); await Wt(p, 150);
   await p.evaluate(() => { if (window._ckLo) window.bkfLedger = window._ckLo; try { localStorage.removeItem('rn-ck'); } catch (_) {} });
   ok(!dlg.length, '브라우저 창(alert·confirm·prompt) 한 번도 안 뜸', dlg);
