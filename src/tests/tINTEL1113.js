@@ -51,7 +51,7 @@ async function webPart(p) {
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
   await p.evaluate(([J, M]) => { window.__FS.app_settings = window.__FS.app_settings || {}; window.__FS.app_settings.research_intel = { j: JSON.stringify(J), at: '2026-11-13T03:00:00.000Z', nOrg: 2, nItem: 3 }; window.__FS.app_settings.research_intel_meta = M; }, [J, META]);
   const tab = await p.evaluate(() => { S.q = ''; S.tab = 'research'; renderTabs(); renderMainNow(); afterRender(); return [...document.querySelectorAll('#main .np-c[data-navgo]')].map((b) => b.dataset.navgo); });
-  ok(tab[0] === 'found' && tab[1] === 'intel', '② 🔬 연구 탭 둘째 카드 = 🕵 정보 수집 방법 연구(발견 모음 다음)', tab.slice(0, 4));
+  /* (benchfix1 11/20) 1.78.746부터 연구 탭 맨 앞에 「💲 가격 판정 엔진」 묶음이 생겨 '첫 카드'가 아니라 '🔬 연구 모음 안 발견 모음 바로 다음'으로 봄 */ { const fi = tab.indexOf('found'); ok(fi >= 0 && tab[fi + 1] === 'intel', '② 🔬 연구 모음: 📚 발견 모음 바로 다음 = 🕵 정보 수집 방법 연구', tab.slice(0, fi + 3)); }
   await p.evaluate(() => document.querySelector('#main .np-c[data-navgo="intel"]').click()); await p.waitForTimeout(800);
   const d0 = await p.evaluate(() => ({ on: !!(S.detail && S.detail.intel), sum: document.querySelector('#it_top').textContent, mt: document.querySelector('#it_m').textContent, rows: document.querySelectorAll('#it_m tr[data-itm]').length, top: [...document.querySelectorAll('#it_top10 .it-tag')].map((x) => x.textContent), orgs: document.querySelectorAll('#it_orgs .it-o').length, items: [...document.querySelectorAll('#it_list .it-i')].map((x) => x.dataset.itid), links: document.querySelectorAll('#it_links tr').length }));
   ok(d0.on && /조직 2/.test(d0.sum) && /근거 문서 1|근거 문서 2/.test(d0.sum) && /항목 3/.test(d0.sum) && /연구 연계 2/.test(d0.sum), '② 요약: 조직·문서·항목·연계 수', d0.sum);
