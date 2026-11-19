@@ -4,6 +4,7 @@ const fs = require('fs'); const src = fs.readFileSync(__dirname + '/../../cloud/
 const a = src.indexOf('function pulseClean('), b = src.indexOf('async function pulseIn(');
 if (a < 0 || b < a) { console.log('❌ 실패: pulseClean을 못 찾음'); process.exit(1); }
 const pulseClean = new Function(src.slice(a, b) + '\nreturn pulseClean;')();
+const pulseStaleDel = new Function(src.slice(a, b) + '\nreturn pulseStaleDel;')();
 let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ✗', m); } else console.log('  ✓', m); };
 
 const at = Date.UTC(2026, 10, 11, 5, 0, 0);
@@ -23,4 +24,10 @@ ok(S.C01.value === null && !('champ' in S.C01) && S.C01.metric.length === 80 && 
 ok(Object.keys(pulseClean(null).studies).length === 0 && Object.keys(pulseClean({ studies: 5 }).studies).length === 0, '빈·이상한 입력은 아무것도 안 넣음');
 const many = {}; for (let i = 0; i < 120; i++) many['R' + String(i % 100).padStart(2, '0') ] = { value: i, trend: Array.from({ length: 200 }, (_, k) => ['2026-01-01', k]) };
 const m = pulseClean({ studies: many }); ok(Object.keys(m.studies).length <= 80 && m.studies.R01.trend.length === 90, '연구 80개·추세 90점 넘게는 안 받음');
+const DEL = { del: 1 }; const sd = pulseStaleDel({ R02: { value: 0.05, champ: 0.05 }, R20: { value: 1.8, swapAt: '2026-10-18' }, N05: { value: null }, C01: { value: 1, champ: 1, chall: 2 } }, DEL);
+ok(sd.R02.champ === 0.05 && sd.R02.chall === DEL, '새 줄에 champ만 있으면 chall만 지움(챔피언은 그대로)');
+ok(sd.R20.champ === DEL && sd.R20.chall === DEL && sd.R20.swapAt === '2026-10-18', '값만 있는 새 줄은 남은 champ·chall을 지우고 swapAt(바꾼 날 기록)은 그대로');
+ok(!('champ' in sd.N05) && !('chall' in sd.N05), '값 없는 줄은 건드리지 않음');
+ok(sd.C01.champ === 1 && sd.C01.chall === 2, '둘 다 있으면 그대로');
+ok(Object.keys(pulseStaleDel(null, DEL)).length === 0, '빈 입력 안전');
 console.log(bad ? `❌ ${bad}개 실패` : '✓ tPULSE1111 모두 통과'); process.exit(bad ? 1 : 0);

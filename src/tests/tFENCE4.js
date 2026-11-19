@@ -14,7 +14,7 @@ if (MODE) return pwRun(MODE);
 let bad = 0; const ok = (c, m, x) => { console.log((c ? '  ✓ ' : '  ❌ ') + m + (c || x === undefined ? '' : ' — ' + JSON.stringify(x).slice(0, 400))); if (!c) bad++; };
 const SRC = fs.readFileSync(find(['../cloud/index.js', '../../cloud/index.js', 'repo/cloud/index.js']), 'utf8');
 const MLP = find(['../readnow-ml-core.js', '../../readnow-ml-core.js', 'repo/readnow-ml-core.js']); const ML = require(MLP); const MLSRC = fs.readFileSync(MLP, 'utf8');
-const MLC = find(['../cloud/readnow-ml-core.js', '../../cloud/readnow-ml-core.js']); const PWP = find(['readnow-price-watch.user.js', '../readnow-price-watch.user.js', '../../readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
+const MLC = find(['../cloud/readnow-ml-core.js', '../../cloud/readnow-ml-core.js']); const PWP = find(['../readnow-price-watch.user.js', '../../readnow-price-watch.user.js', 'readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
 const AS = require(find(['../readnow-autosched-core.js', '../../readnow-autosched-core.js', 'repo/readnow-autosched-core.js'])).AS;
 const COLP = find(['../readnow-collector.user.js', '../readnow-collector.src.js', '../../src/readnow-collector.src.js']); const COL = COLP ? fs.readFileSync(COLP, 'utf8') : '';
 const APPP = find(['../app.html', '../../src/app.html', '../../app.html']); const APP = APPP ? fs.readFileSync(APPP, 'utf8') : '';
@@ -159,7 +159,7 @@ function pwRun(mode) {
   L('M1'); dec('M1', 'manual', { decision: 'batch', batchId: 'b1', by: 'a@b.c', price: 7500, expectPrice: 10000 });
   if (mode === 'pw1') { L('R3'); dec('R3', 'approved', { decision: 'approve', by: 'a@b.c', price: 8800, expectPrice: 10000 }, { group: 'treat', watch: { gid: 'G1', startPrice: 10000, since: ago(100) } }); }
   if (mode === 'pw2') { L('R4'); dec('R4', 'approved', { decision: 'approve', by: 'a@b.c', price: 6000, expectPrice: 10000 }, { group: 'treat' }); L('R5', { registeredAt: kdt(T0 - 20 * 864e5) }); dec('R5', 'approved', { decision: 'approve', by: 'a@b.c', price: 9500, expectPrice: 10000 }, { group: 'treat' }); }
-  const src = fs.readFileSync(find(['readnow-price-watch.user.js', '../readnow-price-watch.user.js', '../../readnow-price-watch.user.js']), 'utf8');
+  const src = fs.readFileSync(find(['../readnow-price-watch.user.js', '../../readnow-price-watch.user.js', 'readnow-price-watch.user.js']), 'utf8');
   w.eval(src);
   setTimeout(() => { const decs = {}; for (const [k, v] of store) if (k.startsWith('prd_price_decisions/aladin_')) decs[k.slice('prd_price_decisions/aladin_'.length)] = { approvalState: v.approvalState, execNote: v.execNote || null };
     console.log('RESULT ' + JSON.stringify({ dec: decs, sent, led: store.get('eng_fence_ledger/' + day) || null, pops, prv: PRV })); process.exit(0); }, +process.env.PW_WAIT || 75000);
