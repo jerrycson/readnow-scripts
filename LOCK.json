@@ -50,14 +50,14 @@
   "at": "2026-11-19T10:03:44Z",
   "first": "2026-11-19T07:55:57Z"
  },
- "holder": "lead",
- "host": "vm-y24samp1",
- "what": "y24samp1 예스24 견본 늘리기",
- "since": "2026-11-19T09:56:52Z",
- "beat": "2026-11-19T09:56:52Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "bqsub1 웹앱 1.78.792 세 탭 하위 탭·빠르게 고르기 (b72d05757)",
-  "at": "2026-11-19T09:56:35Z"
+  "done": "y24samp1 예스24 견본 늘리기 — 클라우드 0.35.332 (9c48c6574)",
+  "at": "2026-11-19T10:04:37Z"
  }
 }
