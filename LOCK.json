@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-enfold1",
-   "why": "판 내기 기다림: 엔진 지도 접기",
-   "first": "2026-11-19T02:31:00Z",
-   "at": "2026-11-19T03:50:36Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-fpb2",
    "why": "판 내기 기다림: fpb2 재등록 막힘 풀기(웹앱 후보 걸름)",
    "first": "2026-11-19T02:33:59Z",
@@ -38,16 +31,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-enfold1",
-  "why": "판 내기 기다림: 엔진 지도 접기",
-  "at": "2026-11-19T03:50:36Z",
-  "first": "2026-11-19T02:31:00Z"
+  "host": "vm-fpb2",
+  "why": "판 내기 기다림: fpb2 재등록 막힘 풀기(웹앱 후보 걸름)",
+  "at": "2026-11-19T03:51:32Z",
+  "first": "2026-11-19T02:33:59Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-enfold1",
+ "what": "엔진 지도 접기",
+ "since": "2026-11-19T03:51:38Z",
+ "beat": "2026-11-19T03:51:38Z",
  "last": {
   "who": "lead",
   "done": "재고 품목 판 ③④⑤ 냄 — 웹앱 1.78.773·774·775 · 수집기 1.89.376 (invimp2)",
