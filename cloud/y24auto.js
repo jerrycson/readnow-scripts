@@ -423,13 +423,27 @@ function makeY24Auto(o) { const { C, db, log = () => {} } = o; const now = o.now
       if (sp && /1건짜리 맡김만 받음/.test(why0) && !(sp.state && sp.state !== 'fail')) { try { const rv = {}; for (const [lid, e] of Object.entries(led.r || {})) { if (!e || e.st !== 'autofail' || !/1건짜리 맡김만 받음/.test(String(e.why || '')) || Object.keys(rv).length >= 60) continue;
           rv[lid] = { st: 'retry', ok: null, markAt: iso(), markBy: '🤖 클라우드 — 번외가 맡김 크기로 거절(아무것도 안 누름) · 1건부터 다시', hist: [...(e.hist || []), { st: e.st, ok: e.ok || null, at: e.markAt || e.failAt || e.at, by: e.markBy || e.by }].slice(-10) }; }
         await ref().set({ auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 번외가 맡김 크기로 거절한 멈춤 풂(1건부터 다시)' }, ...(Object.keys(rv).length ? { r: rv } : {}) }, { merge: true }); led.auto.stop = null; for (const [lid, p] of Object.entries(rv)) Object.assign(led.r[lid], p); log('🤖 예스24 자동 올림', pc, '맡김 크기 거절 멈춤 풂 · 다시 후보 ' + Object.keys(rv).length + '줄'); } catch (e) {} }
+      /* (y24res1 11/19) 한 권 때문에 전체가 멈추던 것 — 11/18 13:27Z 1건짜리 일 하나(ISBN 1권)가 예스24 엑셀 확인에서 0줄(답 S000·HTTP 200·칸 값은 앞서 올라간 책들과 같음)로 멈춘 뒤
+       *  번외 판이 새로 나오기 전까지 다른 책도 하나도 못 올라갔음(멈춤 풀기가 '번외 새 판'일 때만이라)
+       *  → 1건짜리 일 · 아무것도 누르지 않음(fired 없음) · 예스24가 정상 답(S000)으로 0줄을 돌려준 멈춤 · 그 전 건너뜀 뒤에 성공한 올림이 있을 때만 그 책만 건너뛰고(장부엔 실패로 남음 · 다시 고르지 않음) 멈춤을 풂
+       *  · 두 권이 연달아 0줄이면 우리 엑셀·예스24 쪽 문제일 수 있어 그대로 사람에게 · 예스24 오류코드가 붙은 멈춤도 그대로 · ⚙ skip0(기본 켬)으로 끔 · 지우는 것 없음(hist·auto.skip0) */
+      if (sp && cfg0.skip0 !== 0 && sp.state === 'fail' && sp.job && /결과 표에 없음/.test(why0) && /누르기 전 멈춤/.test(why0) && !/오류코드/.test(why0)) { try {
+        const L = led.auto.last || {}; const raw = L.job === sp.job ? L.raw || null : null; const vs = (raw && raw.vs) || {}; const rs = raw ? JSON.stringify(raw) : '';
+        const s000 = !!raw && !raw.fired && (vs.rc === 'S000' && +vs.nRes === 0 && !+vs.reg || (/ReadExcelFile/.test(rs) && /RESULT_CODE[\\":]{1,8}S000/.test(rs) && /TOTAL_COUNT[\\":]{1,8}0\b/.test(rs)));
+        const J = Object.entries(led.r || {}).filter(([, e]) => e && e.job === sp.job); const sk = led.auto.skip0 || {}; const t0 = Date.parse(sk.at || 0) || 0;
+        const okAfter = Object.values(led.r || {}).some((e) => e && e.st === 'sent' && e.ok && (Date.parse(e.okAt || e.at || 0) || 0) > t0);
+        if (s000 && J.length === 1 && J[0][1].st === 'autofail' && okAfter && sk.job !== sp.job) { const [lid, e] = J[0];
+          const row = { skip0: 1, skipAt: iso(), skipBy: '🤖 클라우드 — 예스24 엑셀 확인이 이 책만 0줄(S000) · 이 책만 건너뜀(다시 고르지 않음 · 사람이 「↩ 다시 올릴 수 있게」로 되살릴 수 있음)' };
+          const hs = [...(sk.hist || []), { job: sk.job || null, lid: sk.lid || null, at: sk.at || null }].filter((h) => h.job).slice(-10);
+          await ref().set({ r: { [lid]: row }, auto: { stop: null, resumeAt: iso(), resumeBy: 'cloud y24auto — 한 권 0줄 멈춤 풂(' + String(e.isbn || lid) + ' 건너뜀)', skip0: { job: sp.job, lid, isbn: e.isbn || null, at: iso(), n: (+sk.n || 0) + 1, why: why0.slice(0, 200), hist: hs } } }, { merge: true });
+          Object.assign(led.r[lid], row); led.auto.stop = null; log('🤖 예스24 자동 올림', pc, '한 권 0줄 멈춤 풂 · 건너뜀 ' + lid); } } catch (e) {} }
       const spVer = (sp && sp.hv) || (/\(표 /.test(why0) ? '0.1.71' : '0.1.66'); /* 판을 적지 않던 옛 멈춤: 표 줄 수가 붙으면 0.1.68~0.1.71 · 아니면 0.1.66까지 */
       if (preStop && st.ver && vn(st.ver) > vn(spVer) && String((led.auto && led.auto.resumeVer) || '') !== String(st.ver)) { try { await ref().set({ auto: { stop: null, resumeAt: iso(), resumeVer: String(st.ver), resumeBy: 'cloud y24auto — 번외 ' + st.ver + ' 새 판(멈춘 판 ' + spVer + ') · 아무것도 누르지 않은 멈춤을 판마다 한 번 풂' } }, { merge: true }); led.auto.stop = null; led.auto.resumeVer = String(st.ver); log('🤖 예스24 자동 올림', pc, '아무것도 안 누른 멈춤 풂(번외 ' + st.ver + ')'); } catch (e) {}
         /* (y24reg3 11/17 고침 2) 같은 때 그 멈춤으로 실패한 줄도 판마다 한 번 「↩ 다시 올릴 수 있게」(사람 단추 y24RegMark와 같은 모양 · 예전 상태는 hist · 지우지 않음)
          *  — 우리 엑셀 탓(머리글·칸 값)으로 예스24가 줄을 못 읽은 것이라 상품 탓이 아님 · 예스24가 오류 코드(-N)를 알려 준 줄은 그대로 사람에게 · 한 번에 최대 5줄 */
         const rv = {}; for (const [lid, e] of Object.entries(led.r || {})) { if (Object.keys(rv).length >= 5) break; const w = String((e && e.why) || '');
           const ours = /오류코드 -(?:4|5|6|7|9|13)\b/.test(w) && !/오류코드 -(?:1|2|3|8|10|11|12|14|15|16|17|18)\b/.test(w); /* (y24reg4 11/17) -4~-7 상태정보·사용흔적·손상여부·부속물(품질등급 칸에서 나옴)·-9 판매형태·-13 판매가 입력값 = 우리 엑셀 칸 값 탓 · 상품 탓(바코드·신간·재고·값 범위·미등록·금지어)이 하나라도 섞이면 그대로 사람에게 */
-          if (!e || e.st !== 'autofail' || (/오류코드 -?\d/.test(w) && !ours) || !(ours || /미리보기 목록에 우리 줄이 안 보임|결과 표에 없음|모두 버려짐/.test(w)) || String(e.revVer || '') === String(st.ver)) continue;
+          if (!e || e.st !== 'autofail' || e.skip0 /* (y24res1) 한 권 0줄로 건너뛴 책은 새 판에도 되살리지 않음(사람 손으로만) */ || (/오류코드 -?\d/.test(w) && !ours) || !(ours || /미리보기 목록에 우리 줄이 안 보임|결과 표에 없음|모두 버려짐/.test(w)) || String(e.revVer || '') === String(st.ver)) continue;
           rv[lid] = { st: 'retry', ok: null, revVer: String(st.ver), markAt: iso(), markBy: '🤖 클라우드 — 번외 ' + st.ver + ' 새 판 · 아무것도 안 누른 실패 한 번 풂', hist: [...(e.hist || []), { st: e.st, ok: e.ok || null, at: e.markAt || e.failAt || e.at, by: e.markBy || e.by }].slice(-10) }; }
         if (Object.keys(rv).length) { try { await ref().set({ r: rv }, { merge: true }); for (const [lid, p] of Object.entries(rv)) Object.assign(led.r[lid], p); log('🤖 예스24 자동 올림', pc, '안 누른 실패 줄 다시 후보 ' + Object.keys(rv).join(',')); } catch (e) {} } } }
     try { const v = await vfStep(led, m, cfg0); if (v) out.vf = v; } catch (e) { out.vf = { err: [String((e && e.message) || e).slice(0, 120)] }; } /* (y24reg5) 🔎 확인 필요 줄을 공개 자료에서 다시 찾음 — 찾으면 그 묶음 멈춤도 풂 */
