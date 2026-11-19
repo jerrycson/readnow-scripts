@@ -42,7 +42,7 @@ function seedOk(M) { for (const j of R.RH_JOBS) { const d = {}; const put = (p, 
     M.set('app_settings/research_pulse', { studies: { R05: { at: iso(T - 50 * H), src: '진단 …' }, N05: { at: iso(T - H), src: 'cloud engself 1.0.0' }, N15: { at: iso(T - H), src: 'app_settings/ed_study' } } });
     const RH = R.makeResHealth({ C, W: () => ({}), log: () => {}, nowIso: () => iso(T), now: () => T, notes: async (o) => notes.push(o), redo: {} });
     const d = await RH.check({ force: true }); ok(d.jobs.voice.st === 'late' && d.jobs.voice.fail === 0 && d.sess.st === 'late' && d.sess.ageH === 50, '구매평 늦음(깃발만) · 세션 맥박 50시간(클라우드 src는 뺌)');
-    ok(notes.length === 1 && /세션/.test(notes[0][0].data.body) && /R05/.test(notes[0][0].data.body), '세션 맥박 48시간 넘음 → 카드'); }
+    ok(notes.length === 1 && /세션/.test(notes[0][0].data.body) && /N04·R13/.test(notes[0][0].data.body), '세션 맥박 48시간 넘음 → 카드(1.1.0 세션 몫은 N04·R13만)'); }
 
   console.log('④ dailyJobs 실패 남김');
   { const { M, C } = fakeDb(); seedOk(M); const notes = []; M.set('app_settings/research_pulse', { studies: { R05: { at: iso(T - H), src: 'x' } } });
@@ -77,6 +77,50 @@ function seedOk(M) { for (const j of R.RH_JOBS) { const d = {}; const put = (p, 
   console.log('⑦ 끄기');
   { const { M, C } = fakeDb(); M.set('app_settings/research_health_cfg', { on: false }); const RH = R.makeResHealth({ C, W: () => ({}), log: () => {}, nowIso: () => iso(T), now: () => T });
     ok((await RH.check({ force: true })).skip === 'off' && (await RH.relay({ force: true })).skip === 'off' && !M.has('app_settings/research_health'), 'research_health_cfg.on=false면 아무것도 안 씀'); }
+
+  console.log('⑧ (1.1.0 resauto2) 다시 부르는 길 16개 · 일부러 늦게 둔 상태 → 스스로 다시 돎 · 꺼짐·기다림은 실패 아님');
+  { ok(R.RH_JOBS.every((j) => j.redo), '16개 일 모두 다시 부르는 열쇠가 있음');
+    const { M, C } = fakeDb(); seedOk(M); M.set('app_settings/research_pulse', { studies: { R05: { at: iso(T - H), src: 'x' } } });
+    for (const k of ['voice', 'adapt', 'oop', 'aisum', 'edition', 'px']) { const j = R.RH_JOBS.find((x) => x.k === k); const d = {}; d[j.at.split('.')[0]] = j.at.includes('.') ? { [j.at.split('.')[1]]: iso(T - 200 * H) } : iso(T - 200 * H); if (j.n) { const s = j.n.split('.'); if (s.length === 1) d[s[0]] = 3; else d[s[0]] = { ...(d[s[0]] || {}), [s[1]]: 3 }; } M.set(j.doc, d); }
+    const called = []; const fresh = (k) => { const j = R.RH_JOBS.find((x) => x.k === k); const d = M.get(j.doc); const s = j.at.split('.'); if (s.length === 1) d[s[0]] = iso(T); else d[s[0]][s[1]] = iso(T); M.set(j.doc, d); };
+    const redo = { voice: async () => { called.push('voice'); fresh('voice'); return { ok: 1 }; }, adapt: async () => { called.push('adapt'); fresh('adapt'); return { score: 1 }; }, oop: async () => { called.push('oop'); fresh('oop'); return {}; },
+      aisum: async () => { called.push('aisum'); return { skip: '꺼짐(app_settings/aisum_cfg.on)' }; }, edition: async () => { called.push('edition'); return { skip: 'gate:x' }; }, px: async () => { called.push('px'); return { off: true }; } };
+    const RH = R.makeResHealth({ C, W: () => ({}), log: () => {}, nowIso: () => iso(T), now: () => T, notes: async () => {}, redo });
+    const d = await RH.check({ force: true }); const x = M.get('app_settings/research_health').jobs;
+    ok(['voice', 'adapt', 'oop', 'aisum', 'edition', 'px'].every((k) => called.includes(k)), '늦은 6개 일을 모두 다시 부름');
+    ok(x.voice.st === 'ok' && x.adapt.st === 'ok' && x.oop.st === 'ok' && x.voice.tries === 1 && x.voice.fail === 0 && x.voice.redoAt, '구매평·화면 맞춤·품절: 다시 돈 뒤 ok · 장부에 redoAt·tries 남음');
+    ok(x.px.off === true && x.px.fail === 0 && x.aisum.off === true && x.aisum.fail === 0, '조회수 실험·요약(꺼 둠) → off · 실패 0');
+    ok(x.edition.wait === true && x.edition.fail === 0 && x.edition.tries === 0, '판본 추적: 문 쓰는 중 → 기다림 · 다시 부른 수로 안 셈 · 실패 0');
+    ok(R.RH_SKIP_OFF.test('pause') && R.RH_SKIP_WAIT.test('때가 아님') && R.RH_SKIP_WAIT.test('도는 중') && !R.RH_SKIP_WAIT.test('오늘 함'), 'skip 글 나누기(오늘 함은 기다림 아님)'); }
+
+  console.log('⑨ (1.1.0) 옮긴 score.py 셈 — 파이썬과 같은 값(합성 자료 · 실제 장부 15일·6판·417날로도 맞대 같음)');
+  { const sp = { '2026-11-01': { a: 100, b: 3000, c: 10 }, '2026-11-08': { a: 120, b: 2500, c: 10 }, '2026-11-15': { a: 90, b: 2600, c: 30 } };
+    const f = R.rhForecast(sp, 7, [50, 200, 1000, 5000]); // 파이썬 forecast_score 같은 자료: n 6 · base 0.3215547 · n_last 3 · base_last 0.4614452
+    ok(f && f.n === 6 && f.n_last === 3 && f.last_day === '2026-11-15' && Math.abs(f.base - f.chall) < 1e-12 && f.moved_last === 3, `R06 짝 6 · 마지막 날 3짝 · 앞선 짝 30 미만이면 비율 1(도전자=기준) ${f && f.base.toFixed(6)}`);
+    const P = R.rhPrecNew([['d1', { 'oop|가': [40, 1, 1, 1, 0.5], 'oop|나': [10, 1, 1, 1, 0.9], 'x|다': [50, 1, 1, 1, 0.5], 'oop|*': [99, 1, 1, 1, 0.9] }], ['d2', { 'oop|가': [50, 1, 1, 1, 0.6], 'oop|나': [20, 1, 1, 1, 0.9] }]], 30, 0.2, 'oop|');
+    ok(P.new === 10 && P.hit === 10 && P.prec === 1 && P.steps[0].groups === 1, 'R05 문턱(n≥30·몫≥20%·접두·넓은 무리 뺌) · 새 10권 중 정가 이상 10(50×0.6−40×0.5)');
+    const daily = {}; for (let d = 1; d <= 30; d++) daily[`2026-09-${String(d).padStart(2, '0')}`] = 100; for (let d = 1; d <= 31; d++) daily[`2026-10-${String(d).padStart(2, '0')}`] = d <= 15 ? 100 : 200; for (let d = 1; d <= 10; d++) daily[`2026-11-${String(d).padStart(2, '0')}`] = 150;
+    const B = R.rhMonthBT(daily); ok(B && B.months === 1 && B.n === 30 && B.per[0][0] === '2026-10', `R14 끝난 달 1개(10월 · 9월은 지난달 없음) · ${B && B.base.toFixed(4)}/${B && B.chall.toFixed(4)}`);
+    const LV = R.rhMonthLive(daily, '2026-11-11'); ok(LV && LV.ym === '2026-11' && LV.upto === '2026-11-10' && LV.cum === 1500 && LV.chall === 4500 && LV.due === '2026-12-01', 'R14 이번 달 예측 · 어제까지만');
+    const rows = ['A\u0001978\u00012026-11-02T10:00\u00015000\u00012\u0001normal\u0001x\u0001y', 'B\u0001978\u00012026-11-02T11:00\u00013000\u0001\u0001normal\u0001x\u0001y', 'C\u0001978\u00012026-11-02T11:00\u00013000\u00011\u0001cancel\u0001x\u0001y', 'D\u0001978\u0001\u00011\u00011\u0001normal\u0001x', 'E\u0001978\u00012026-11-03\u0001값\u00011\u0001normal\u0001x'];
+    const SD = R.rhSalesDaily(rows); ok(SD['2026-11-02'] === 13000 && !SD['2026-11-03'] && Object.keys(SD).length === 1, '판매 장부 줄 → 날마다 정상 판매 합(빈 권수 1 · 취소·시각 없음·숫자 아님 뺌)'); }
+
+  console.log('⑩ (1.1.0) 대신 넣기 — 예전 세션 몫(R05·R06·R14·N11·N14·R01) · Firestore 목록 읽기');
+  { const { M, C } = fakeDb(); const calls = []; const lists = { sp_daily: [], ml_oop_study: [], ml_sales: [] };
+    for (let i = 0; i < 30; i++) { const day = new Date(Date.parse('2026-10-20') + i * 864e5).toISOString().slice(0, 10); const v = {}; for (let k = 0; k < 60; k++) v['97800' + k] = [100 + k + (i % 3), 1, 's', 'mkt']; lists.sp_daily.push([day, { day, v }]); }
+    lists.ml_oop_study.push(['2026-11-17', { dist: { 'oop|가': { conf: [40, 1, 1, 1, 0.5], all: [1] } } }], ['2026-11-18', { dist: { 'oop|가': { conf: [50, 1, 1, 1, 0.6] } } }]);
+    const sr = []; for (let m = 9; m <= 11; m++) for (let d = 1; d <= (m === 11 ? 15 : 28); d++) sr.push(`c\u0001i\u00012026-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T10:00\u00011000\u00011\u0001normal\u0001p\u0001h`); lists.ml_sales.push(['_meta', { rows: ['x'] }], ['2026-09', { rows: sr }]);
+    M.set('app_settings/seller_aud', { at: iso(T), ledger: { sup: 6, n: 20, cand: 10, rej: 4 }, coSell: { lift: 1.9 } }); M.set('app_settings/aisum_state', { sc: { rub: 0.7, kw: 0.4, n: 3, wt: 2 }, st: { stage: 2 } }); M.set('app_settings/value_model', { trainedAt: iso(T), n: 900, pos: 30, all: 0.03 });
+    M.set('app_settings/research_pulse', { studies: { R06: { at: iso(T - 50 * H), src: '진단 sp_daily' }, N11: { at: iso(T - 2 * H), src: '세션', value: 6 } } });
+    const RH = R.makeResHealth({ C, W: () => ({}), log: () => {}, nowIso: () => iso(T), now: () => T, list: async (c) => lists[c] || [], pulse: async (P) => { calls.push(P); return { n: Object.keys(P.studies).length }; } });
+    const r = await RH.relay(); const S = calls[0].studies;
+    ok(S.R06 && typeof S.R06.value === 'number' && S.R06.chall != null && /Firestore sp_daily/.test(S.R06.note), `R06 수요 지수 클라우드가 셈 ${S.R06 && S.R06.value}`);
+    ok(S.R05 && S.R05.value === 1 && S.R14 && typeof S.R14.value === 'number' && S.N14 && S.N14.value === 0.7 && S.N14.chall === 0.4, 'R05 · R14 · N14(구조·키워드)');
+    ok(!S.N11 && r.skipped.includes('N11'), 'N11은 세션이 2시간 전 넣음 → 안 덮음');
+    ok(S.R01 && S.R01.value === null && /ECE/.test(S.R01.note) && S.R01.trend.length === 0, 'R01 상태 알림만(값 없음 · trend에 안 넣음)');
+    ok(!r.err, '재료 읽기 오류 없음');
+    const { M: M2, C: C2 } = fakeDb(); const RH2 = R.makeResHealth({ C: C2, W: () => ({}), log: () => {}, nowIso: () => iso(T), now: () => T, list: async () => { throw new Error('읽기 막힘'); }, pulse: async () => ({ n: 0 }) });
+    const r2 = await RH2.relay(); ok(r2 && /spErr/.test(r2.err) && M2.get('app_settings/research_health').relay.err, '목록 읽기가 실패해도 대신 넣기는 끝나고 장부에 err'); }
 
   console.log(bad ? `❌ ${bad}개 실패` : '✓ tRESHEALTH1119 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 예외', e.stack); process.exit(1); });
