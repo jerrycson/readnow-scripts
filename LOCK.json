@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-benchfix1",
+ "what": "benchfix1 벤치 보고 휴대폰 바닥 날 두 대 합·며칠치 하루치(웹앱+클라우드)",
+ "since": "2026-11-19T21:14:54Z",
+ "beat": "2026-11-19T21:14:54Z",
  "last": {
   "who": "lead",
   "done": "strat6 웹앱 1.78.826 감시 전략 창 판 ⑦ 판매자 유형·추천·예외(엔진 0.17.25 · 수집기 1.89.385 · 머리 그대로)",
