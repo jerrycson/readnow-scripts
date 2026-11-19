@@ -31,9 +31,9 @@
  },
  "holder": "lead",
  "host": "vm-mkcloud1",
- "what": "mkcloud1 — 수동 일괄 시장 지표 갱신을 클라우드 먼저로(웹앱+클라우드 판)",
+ "what": "mkcloud1 시험 돌림",
  "since": "2026-11-19T21:40:01Z",
- "beat": "2026-11-19T21:40:01Z",
+ "beat": "2026-11-19T21:42:35Z",
  "last": {
   "who": "lead",
   "done": "benchfix1 웹앱 1.78.827·클라우드 0.35.336(머리 그대로)",
