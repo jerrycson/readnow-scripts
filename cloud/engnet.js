@@ -34,7 +34,7 @@ const ENGINES = [
   { id: 'saud', t: '👥 판매자 가치', file: 'cloud/index.js sellerAudStudy', can: ['판매자 무게(비교 대상)'], out: ['app_settings/seller_aud'], needs: ['bench'], hb: { doc: 'app_settings/seller_aud', at: 'at', n: 'items', maxH: 30 } },
   { id: 'edition', t: '📚 판본 추적', file: 'cloud/edition.js', can: ['리커버·한정판 판본 가려냄'], out: ['app_settings/ed_study'], needs: [], hb: { doc: 'app_settings/ed_study', at: 'at', n: null, maxH: 30 } },
   { id: 'strat', t: '🎯 전략 실행', file: 'cloud/index.js stratRun', can: ['배정된 전략 실행'], out: ['app_settings/strat_run'], needs: ['judge', 'ctrl'], hb: { doc: 'app_settings/strat_run', at: 'lastRun', n: null, maxH: 2 } },
-  { id: 'jledger', t: '📒 판정 장부(engimp1)', file: 'cloud/judge.js · readnow-judge-core.js (engimp1 몫)', can: ['판정마다 결과 채점'], out: ['app_settings/judge_ledger'], needs: ['judge'], hb: { doc: 'app_settings/judge_ledger', at: 'at', n: null, maxH: 30 }, pending: true },
+  { id: 'jledger', t: '📒 판정 장부(engimp1)', file: 'engimp1 몫 — eng_judge_days 장부 · app_settings/eng_judge 채점 요약(reports/ENGIMP1_1119.md 0-2)', can: ['판정마다 7·14·30일 결과 채점', '규칙별 좋음·나쁨·아직 모름'], out: ['app_settings/eng_judge', 'eng_judge_days'], needs: ['judge'], hb: { doc: 'app_settings/eng_judge', at: 'at', n: 'rows', maxH: 30 }, pending: true },
   { id: 'net', t: '🕸 엔진 연결망', file: 'cloud/engnet.js', can: ['서로 보고 개입', '규칙 채점·올림·되돌림'], out: ['app_settings/eng_net', 'eng_net_day'], needs: ['judge', 'ctrl', 'learn', 'engself', 'health'], hb: { doc: 'app_settings/eng_net', at: 'lightAt', n: null, maxH: 2 } },
 ];
 /* ② 개입 규칙 — watch 보는 엔진 · act 개입하는 엔진 · via 거치는 엔진 · score 채점(없으면 cand에서 못 나감) */
@@ -134,7 +134,9 @@ function makeEngNet(D) {
     if (fz.noLossMode) for (const [wid, v] of Object.entries(ws)) { if (!money.has(wid)) continue; for (const L of (v && v.log) || []) if (L && +L.to >= 3 && +L.to > +L.from && (!nlDay || String(L.d) >= nlDay)) clash.push({ w: wid, d: L.d, to: L.to }); }
     { const k = 'N4:' + today; if (!E.rules.N4.lastDay || E.rules.N4.lastDay !== today) { E.rules.N4.lastDay = today; scoreAdd(E, 'N4', clash.length === 0, { clash: clash.length }, today); if (clash.length) { act.push({ rule: 'N4', why: `무손해 모드인데 돈 배선 ${clash.map((c) => c.w + '→' + c.to).join('·')} 올라감 → 2단계로 되돌림 권고`, clash }); failAdd(E, 'N4', 'clash', clash.map((c) => c.w).join('·')); } } void k; }
     // N5 판정 장부(engimp1) — 있으면 읽기만
-    const jl = eng.jledger || {}; E.rules.N5.note = jl.st === 'wait' ? 'engimp1 판정 장부(app_settings/judge_ledger)가 아직 없음 — 생기면 그 채점을 N1 무게로 읽음(채점 없이는 후보에 머묾)' : `판정 장부 ${jl.st} · ${jl.ageH}시간 전`;
+    const jl = eng.jledger || {}; let jv = '';
+    if (jl.st === 'ok' || jl.st === 'zero') { try { const J = (await get('app_settings/eng_judge', ['rules', 'rows', 'value'])) || {}; const rr = Array.isArray(J.rules) ? J.rules : []; const cnt = (w) => rr.filter((r) => r && r.verdict === w).length; jv = ` · 장부 ${+J.rows || 0}줄 · 규칙 좋음 ${cnt('좋음')}·나쁨 ${cnt('나쁨')}·아직 모름 ${cnt('아직 모름')}${J.value && J.value.auc != null ? ' · 값 AUC ' + r3(+J.value.auc) : ''}`; E.rules.N5.judge = { rows: +J.rows || 0, good: cnt('좋음'), bad: cnt('나쁨'), unk: cnt('아직 모름') }; } catch (e) { jv = ''; } }
+    E.rules.N5.note = jl.st === 'wait' ? 'engimp1 판정 장부 요약(app_settings/eng_judge)이 아직 없음 — 생기면 규칙별 좋음·나쁨을 N1 무게로 읽음(채점 없이는 후보에 머묾)' : `판정 장부 ${jl.st} · ${jl.ageH}시간 전${jv}`;
     if (jl.st === 'ok' && E.rules.N5.stage === 'cand') { E.rules.N5.stage = 'shadow'; logAdd(E, { rule: 'N5', k: 'up', why: '판정 장부가 생김 → 그림자(채점 읽기 시작)' }); }
     return { eng, act, fence: { noLoss: !!fz.noLossMode } }; }
   function scoreAdd(E, rid, pass, x, day) { const R = E.rules[rid]; R.hist = [{ d: day, at: D.nowIso(), pass: !!pass, ...x }, ...(R.hist || [])].slice(0, 60); R.n = (R.n || 0) + 1; R.hit = (R.hit || 0) + (pass ? 1 : 0);

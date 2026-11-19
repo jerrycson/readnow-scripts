@@ -22742,8 +22742,8 @@ async function engNetPaint(m) { try {
   if (!v) body = '<p class="hint">아직 첫 회차 전입니다 — 클라우드가 30분 안에 첫 지도를 씁니다.</p>';
   else {
     const E = v.engines || []; const nm = new Map(E.map((x) => [x.id, x.t || x.id]));
-    const st = (x) => (x.pending ? EN_ST.pending : EN_ST[x.st] || EN_ST.none);
-    const eng = E.map((x) => { const [i, w] = st(x); return `<span class="en-e" title="${esc((x.can || '') + (x.needs && x.needs.length ? ' · 재료: ' + x.needs.map((n) => nm.get(n) || n).join(', ') : ''))}">${i} ${esc(x.t || x.id)} <small>${esc(w)}${x.ageH != null && !x.pending ? ' · ' + (+x.ageH).toFixed(1) + '시간' : ''}</small></span>`; }).join('');
+    const st = (x) => (x.st === 'wait' ? EN_ST.pending : EN_ST[x.st] || EN_ST.none);
+    const eng = E.map((x) => { const [i, w] = st(x); return `<span class="en-e" title="${esc((x.can || '') + (x.needs && x.needs.length ? ' · 재료: ' + x.needs.map((n) => nm.get(n) || n).join(', ') : ''))}">${i} ${esc(x.t || x.id)} <small>${esc(w)}${x.ageH != null && x.st !== 'wait' ? ' · ' + (+x.ageH).toFixed(1) + '시간' : ''}</small></span>`; }).join('');
     const rules = (v.rules || []).map((r) => `<tr><td><b>${esc(r.id)}</b> ${esc(r.t || '')}</td><td>${esc((r.watch || []).map((w) => (w === '*' ? '모든 엔진' : nm.get(w) || w)).join(', '))} → <b>${esc(nm.get(r.act) || r.act || '')}</b>${r.via && r.via.length ? ' <small>(거침: ' + esc(r.via.map((w) => nm.get(w) || w).join(', ')) + ')</small>' : ''}</td><td>${esc(EN_STAGE[r.stage] || r.stage || '—')}</td><td>${+r.today || 0}</td><td>${r.score ? esc(r.score) : '<small>채점 없음 → 후보에 머묾</small>'}${r.n ? ` <small>· 채점 ${r.hit || 0}/${r.n} · 연속 통과 ${r.passRun || 0}·실패 ${r.failRun || 0}</small>` : ''}</td></tr>`).join('');
     const acts = (v.acts || []).slice(0, 8).map((a) => `<li><small>${esc(ageM(a.at))}</small> <b>${esc(a.rule || '')}</b> ${esc(a.why || a.t || a.what || '')}</li>`).join('') || '<li class="hint">아직 개입 없음</li>';
     const evo = (v.evo || []).slice(0, 5).map((x) => `<li><small>${esc(ageM(x.at))}</small> <b>${esc(x.rule || '')}</b> ${esc(EN_EVO[x.k] || x.k || '')} <small>${esc(x.why || '')}</small></li>`).join('');
