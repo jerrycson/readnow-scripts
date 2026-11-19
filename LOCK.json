@@ -43,14 +43,14 @@
   "at": "2026-11-19T02:19:38Z",
   "first": "2026-11-19T01:04:26Z"
  },
- "holder": "lead",
- "host": "vm-testfix1",
- "what": "testfix1 실패 시험 7개 바로잡음(시험만)",
- "since": "2026-11-19T02:05:50Z",
- "beat": "2026-11-19T02:10:13Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "재고 품목 판 ② 냄 — 웹앱 1.78.770 (invimp2)",
-  "at": "2026-11-19T02:05:36Z"
+  "done": "실패 시험 7개 바로잡음 2d020d834(시험만 · 판 번호 그대로 · testfix1)",
+  "at": "2026-11-19T02:20:08Z"
  }
 }
