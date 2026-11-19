@@ -57,14 +57,14 @@
   "at": "2026-11-19T09:55:50Z",
   "first": "2026-11-19T07:43:32Z"
  },
- "holder": "lead",
- "host": "vm-bqsub1",
- "what": "bqsub1 세 탭 하위 탭·빠르게 고르기",
- "since": "2026-11-19T09:48:26Z",
- "beat": "2026-11-19T09:49:01Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "strat4 감시 전략 판 ① 1.78.791 85a1bf9bd",
-  "at": "2026-11-19T09:48:02Z"
+  "done": "bqsub1 웹앱 1.78.792 세 탭 하위 탭·빠르게 고르기 (b72d05757)",
+  "at": "2026-11-19T09:56:35Z"
  }
 }
