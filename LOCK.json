@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-mktui1",
-   "why": "판 내기 기다림: mktui1 시장 지표 쌍둥이 블록",
-   "first": "2026-11-19T14:24:24Z",
-   "at": "2026-11-19T17:50:27Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-plkui2",
    "why": "판 내기 기다림: plkui2 잠금 서랍 선택·검색·거르기·탭 지킴",
    "first": "2026-11-19T14:44:56Z",
@@ -66,16 +59,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-mktui1",
-  "why": "판 내기 기다림: mktui1 시장 지표 쌍둥이 블록",
-  "at": "2026-11-19T17:50:27Z",
-  "first": "2026-11-19T14:24:24Z"
+  "host": "vm-plkui2",
+  "why": "판 내기 기다림: plkui2 잠금 서랍 선택·검색·거르기·탭 지킴",
+  "at": "2026-11-19T17:51:10Z",
+  "first": "2026-11-19T14:44:56Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-mktui1",
+ "what": "mktui1 시장 지표 쌍둥이 블록",
+ "since": "2026-11-19T17:51:29Z",
+ "beat": "2026-11-19T17:51:29Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.814 관제소 모두 확정 진행바 올림(defaaed31) · Hosting 한 번 fetch 실패해 다시 돌림",
