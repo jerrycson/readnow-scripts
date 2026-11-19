@@ -11,7 +11,7 @@
  *  지키는 것: 관찰·기록만 — 값·등록·돈을 바꾸지 않음(제33조 무손해) · 알라딘은 클라우드 공개 화면만(로거·사무실 PC에 일 없음 · 제5조) · 사람처럼 쉬엄쉬엄(화면 사이 2.5~6초 · 하루 상한 · 막히면 쉼)
  *          사람이 넣은 설정(app_settings/ed_cfg)은 읽기만 · 지우지 않음(묶음이 바뀌면 hist에 남김) · 손님 정보 없음 */
 'use strict';
-const ED_V = '0.1.6'; // (0.1.6 cap2x 11/18 · 정범님 16:24 「알라딘 부르는 횟수가 이렇게 비약적으로 많으면 두 배까지만 늘려」 · 16:32 큰 몫(원래 500 이상)만 2배 — 이 엔진 원래 600) 바닥 1,800→1,200 · 빌림 끝 7,200→4,800 · 막힘 바닥 600·다시 보기 몫 300은 그대로 // (0.1.5 cap3x 11/18 · 정범님 노트 「하루 몫 600쪽을 3배로 · 그중 일부를 이 엔진에」) 바닥 600→1,800 · 빌림 끝 2,400→7,200 · 다시 보기 몫 60→300 · 막힘 바닥 blkCap 600(막히면 옛 바닥으로 · 두 번이면 그 절반)
+const ED_V = '0.1.7'; // (0.1.7 edall3 11/19 판본 판 ③) edSame의 쪽수 비율·출판사 같음을 상품 공용 edDiff 한 곳에서(점수 그대로 · 공용 파일이 없으면 옛 셈) // (0.1.6 cap2x 11/18 · 정범님 16:24 「알라딘 부르는 횟수가 이렇게 비약적으로 많으면 두 배까지만 늘려」 · 16:32 큰 몫(원래 500 이상)만 2배 — 이 엔진 원래 600) 바닥 1,800→1,200 · 빌림 끝 7,200→4,800 · 막힘 바닥 600·다시 보기 몫 300은 그대로 // (0.1.5 cap3x 11/18 · 정범님 노트 「하루 몫 600쪽을 3배로 · 그중 일부를 이 엔진에」) 바닥 600→1,800 · 빌림 끝 2,400→7,200 · 다시 보기 몫 60→300 · 막힘 바닥 blkCap 600(막히면 옛 바닥으로 · 두 번이면 그 절반)
 const ED_DEF = {
   on: true, tickMs: 95e3, dayCap: 1200, gapMin: 2500, gapMax: 6000, // 근거: 없음(설정 app_settings/ed_cfg로 바꿈) — 하루 1,200쪽(0.1.6 cap2x · 정범님 11/18 16:24 「두 배까지만」 · 0.1.5 cap3x 1,800 · 그 전 600) · 화면 사이 2.5~6초(bookinfo 알라딘 간격과 비슷)
   maxEds: 24, maxLinkHops: 14, searchTop: 6, accept: 0.72, maybe: 0.52, // 받아들임 문턱 0.72 · 후보 0.52(첫 값 — 매일 스스로 맞춤 edTune)
@@ -32,6 +32,7 @@ function edCapOf(o) { o = o || {}; const base = Math.max(0, +o.base || 0); const
   const spare = Math.max(0, total - base - want); const hi = Math.max(base, +o.capMax || base); const extra = Math.max(0, Math.min(hi - base, Math.floor(spare * frac)));
   return { cap: base + extra, base, extra, total, spare, why: extra ? `남는 몫 ${spare}쪽 중 하루 지난 만큼 ${extra}쪽을 빌림` : '남는 몫 없음 — 바닥' }; }
 const EDKW = /(개정|신판|구판|최신\s*판|이전\s*판|초판|증보|판본|새\s*버전|새\s*판|리커버|특별판|보급판|합본|양장|다른\s*판|기념판|완역판|결정판|\d+\s*판)/;
+let EDD = null; try { for (const f of ['./cores_readnow-products-core.js', '../readnow-products-core.js']) { try { const P = require(f); if (P && typeof P.edDiff === 'function') { EDD = P.edDiff; break; } } catch (e) {} } } catch (e) {} /* (0.1.7 edall3) 상품 공용 파일의 차이 표(edDiff) — 이미지엔 cores_ 사본 · 없으면 null이라 옛 셈 */
 const NEWER = /(개정판|신판|최신|새\s*버전|새\s*판|새\s*상품|개정\s*증보)/;
 const OLDER = /(구판|이전\s*판|초판|옛\s*판)/;
 
@@ -60,8 +61,8 @@ function edSame(a, b, ev, o) { o = { accept: ED_DEF.accept, ...(o || {}) }; cons
   if (a.isbn && b.isbn && a.isbn === b.isbn) return { s: 1, kind: 'self', why: ['ISBN 같음'] };
   if (a.iid && b.iid && String(a.iid) === String(b.iid)) return { s: 1, kind: 'self', why: ['상품 번호 같음'] };
   const t = dice(edCore(a.title), edCore(b.title)); const au = nameOv(a.authors, b.authors); const tr = nameOv(a.translators, b.translators);
-  const oa = origN(a.orig), ob = origN(b.orig); const og = oa && ob ? (oa === ob || dice(oa, ob) >= 0.9 ? 1 : 0) : null; const ps = pubSame(a, b);
-  const pa = +a.pages || 0, pb = +b.pages || 0; const pr = pa && pb ? Math.min(pa, pb) / Math.max(pa, pb) : null;
+  const oa = origN(a.orig), ob = origN(b.orig); const og = oa && ob ? (oa === ob || dice(oa, ob) >= 0.9 ? 1 : 0) : null; const DF = EDD ? EDD(a, b) : null; /* (0.1.7 edall3 판본 판 ③) 쪽수 비율·출판사 같음은 상품 공용 edDiff 한 곳에서(없으면 아래 옛 셈 — 점수는 그대로) */ const ps = DF ? DF.pub.same : pubSame(a, b);
+  const pa = +a.pages || 0, pb = +b.pages || 0; const pr = DF ? DF.pages.ratio : (pa && pb ? Math.min(pa, pb) / Math.max(pa, pb) : null);
   let s = 0.45 * t + 0.3 * (au == null ? 0.5 : au); why.push(`제목 ${t.toFixed(2)}`); if (au != null) why.push(`지은이 ${au.toFixed(2)}`); else why.push('지은이 모름');
   if (og === 1) { s += 0.2; why.push('원제 같음'); } else if (og === 0) { s -= 0.25; why.push('원제 다름'); }
   if (ps) { s += 0.1; why.push('출판사 같음'); } if (tr != null && tr > 0) { s += 0.05; why.push('옮긴이 같음'); }

@@ -19,7 +19,7 @@ const sp = cp.spawnSync('node', [SPLIT, path.join(T, 'c.user.js'), path.join(T, 
 const hs = fs.readFileSync(path.join(T, 'out/pc-live-head.txt'), 'utf8').split('\n')[0].trim(); ok(hs === '8ab2f661d1d8afa8', '머리 서명 8ab2f661d1d8afa8 그대로', hs);
 const RT = fs.readFileSync(path.join(T, 'out/readnow-pc-runtime.js'), 'utf8'); const blk = (t) => t.slice(t.indexOf('/* ◆AG-BEGIN'), t.indexOf('/* ◆AG-END */'));
 ok(RT.includes(blk(fs.readFileSync(ACF, 'utf8'))) && RT.indexOf('ReadnowAdaptAg') < RT.indexOf('__rnModQ'), '◆AG 덩어리를 글자 그대로 · 모듈 줄보다 앞');
-const col = fs.readFileSync(path.join(T, 'out/readnow-collector.user.js'), 'utf8'); ok(!/readnow-adapt-core/.test(col) && (col.match(/^\/\/ @require/gm) || []).length === (fs.readFileSync(find(['readnow-collector.user.js']), 'utf8').match(/^\/\/ @require/gm) || []).length, '@require 줄 수가 지금 GitHub 본체와 같음(새로 늘지 않음)', (col.match(/^\/\/ @require/gm) || []).length);
+const col = fs.readFileSync(path.join(T, 'out/readnow-collector.user.js'), 'utf8'); ok(!/readnow-adapt-core/.test(col) && (col.match(/^\/\/ @require/gm) || []).length === (fs.readFileSync(path.join(__dirname, '../..', 'readnow-collector.user.js'), 'utf8').match(/^\/\/ @require/gm) || []).length, '@require 줄 수가 지금 GitHub 본체와 같음(새로 늘지 않음)', (col.match(/^\/\/ @require/gm) || []).length);
 const sb0 = { console }; sb0.globalThis = sb0; sb0.window = sb0; require('vm').createContext(sb0); require('vm').runInContext(RT, sb0); const AG = sb0.ReadnowAdaptAg;
 ok(AG && AG.VERSION === A.VERSION && ['agRecord', 'agAdapt', 'agFill', 'agFillTally', 'agSummary', 'agPick'].every((k) => typeof AG[k] === 'function'), `수집기 틀 ReadnowAdaptAg ${AG && AG.VERSION} = 공용 ${A.VERSION}`);
 fs.rmSync(T, { recursive: true, force: true });
