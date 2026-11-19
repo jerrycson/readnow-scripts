@@ -68,7 +68,7 @@
  "host": "vm-mktui1",
  "what": "mktui1 판 1.78.815 push(검사 중)",
  "since": "2026-11-19T17:51:29Z",
- "beat": "2026-11-19T17:56:07Z",
+ "beat": "2026-11-19T18:05:12Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.814 관제소 모두 확정 진행바 올림(defaaed31) · Hosting 한 번 fetch 실패해 다시 돌림",
