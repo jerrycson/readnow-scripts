@@ -43,7 +43,7 @@ const blockLines = (S) => S.split('\n').filter((x) => /const plkBlock = \(lk, ks
   has(K, 'regDelCmd', /plkReadPc\([\s\S]*🔒 잠김 — 건너뜀/, '수집기 등록 삭제 — 잠기면 「🔒 잠김 — 건너뜀」', 'async function ');
   has(CL, 'prdEditRun', /plkReadCl\(v\)[\s\S]*plkBlock\(lk === undefined \? \{ on: true \} : lk[\s\S]*mark\(k, 'claim'\)/, '클라우드 상품 고치기 — 알라딘을 고치기 직전(claim 앞) 다시 읽음', 'async function ');
   has(CL, 'pxExpRun', /prd_locks[\s\S]*plkL\.has\(String\(lid\)\)/, '클라우드 그림 붙이기 — 잠긴 상품 건너뜀', 'async function ');
-  ok(/plkSetW\(\)\)\.has\(key\)/.test(W) && /plkReadW\(/.test(W) && /🔒 잠김 — 건너뜀/.test(W), '가격 감시기 — 자동 승인에서 빼고 보내기 직전 다시 읽어 건너뜀');
+  ok(/const LSW = await plkSetW\(\); if \(!LSW\)/.test(W) && /LSW\.has\(key\)/.test(W) /* (11/19 lkday1) 목록을 못 읽으면 자동 승인 안 만듦 · lid 잠금도 봄 */ && /plkReadW\(/.test(W) && /🔒 잠김 — 건너뜀/.test(W), '가격 감시기 — 자동 승인에서 빼고 보내기 직전 다시 읽어 건너뜀');
   { const m = K.match(/@version\s+\S+/); ok(!!m, '수집기 머리 그대로(머리 글은 release.js가 HSIG로 검사)'); }
   { // 웹앱 상품 고치기 — 잠긴 상품 판매가를 맡기지 않음(작동)
     const calls = []; const toasts = []; const skipped = [];
