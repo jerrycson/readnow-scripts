@@ -22,14 +22,14 @@
   "at": "2026-11-19T22:49:50Z",
   "first": "2026-11-19T22:12:15Z"
  },
- "holder": "lead",
- "host": "vm-recf1",
- "what": "recf1 1.78.830 빠른 시험",
- "since": "2026-11-19T22:12:29Z",
- "beat": "2026-11-19T22:49:44Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-19T22:11:30Z"
+  "done": "recf1 웹앱 1.78.830 관제창 다시 확정 = 그룹 화면과 같은 확인 창 뒤 한 번에 확정(머리 그대로)",
+  "at": "2026-11-19T22:49:54Z"
  }
 }
