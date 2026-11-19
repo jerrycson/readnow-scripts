@@ -50,14 +50,14 @@
   "at": "2026-11-19T02:34:55Z",
   "first": "2026-11-19T01:08:11Z"
  },
- "holder": "lead",
- "host": "vm-engimp1",
- "what": "engimp1 판정 엔진 판 1 (클라우드 0.35.325) 시험 중",
- "since": "2026-11-19T02:20:40Z",
- "beat": "2026-11-19T02:31:24Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "실패 시험 7개 바로잡음 2d020d834(시험만 · 판 번호 그대로 · testfix1)",
-  "at": "2026-11-19T02:20:08Z"
+  "done": "engimp1 판정 장부·채점·그림자·올림 엔진 클라우드 0.35.325 냄 (cd08da77b)",
+  "at": "2026-11-19T02:35:28Z"
  }
 }
