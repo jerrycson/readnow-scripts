@@ -64,14 +64,14 @@
   "at": "2026-11-19T12:24:46Z",
   "first": "2026-11-19T10:56:18Z"
  },
- "holder": "lead",
- "host": "vm-undo2",
- "what": "undo2 Ctrl+Z 되돌리기 넓힘 판 ①",
- "since": "2026-11-19T12:06:11Z",
- "beat": "2026-11-19T12:16:31Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-19T12:05:49Z"
+  "done": "웹앱 1.78.799·1.78.800 — undo2 Ctrl+Z 되돌리기 넓힘 판 ①②",
+  "at": "2026-11-19T12:25:07Z"
  }
 }
