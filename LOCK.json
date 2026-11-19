@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-pxg1",
-   "why": "판 내기 기다림: pxg1 조회수 표 판 G",
-   "first": "2026-11-19T12:35:17Z",
-   "at": "2026-11-19T15:49:11Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-kpib1",
    "why": "판 내기 기다림: 판 내기 기다림: kpib1 클라우드 관제소 요약 판 B",
    "first": "2026-11-19T12:39:25Z",
@@ -94,16 +87,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-pxg1",
-  "why": "판 내기 기다림: pxg1 조회수 표 판 G",
-  "at": "2026-11-19T15:49:11Z",
-  "first": "2026-11-19T12:35:17Z"
+  "host": "vm-kpib1",
+  "why": "판 내기 기다림: 판 내기 기다림: kpib1 클라우드 관제소 요약 판 B",
+  "at": "2026-11-19T15:50:06Z",
+  "first": "2026-11-19T12:39:25Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-pxg1",
+ "what": "pxg1 조회수 표 판 G",
+ "since": "2026-11-19T15:50:13Z",
+ "beat": "2026-11-19T15:50:13Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.808 — hmf1 공용 열 지도 판 F · main a2d8aa6be",
