@@ -57,14 +57,14 @@
   "at": "2026-11-19T08:22:11Z",
   "first": "2026-11-19T07:21:03Z"
  },
- "holder": "lead",
- "host": "vm-edall2",
- "what": "판본 판 ②",
- "since": "2026-11-19T08:13:40Z",
- "beat": "2026-11-19T08:13:40Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-19T08:13:38Z"
+  "at": "2026-11-19T08:22:53Z"
  }
 }
