@@ -100,7 +100,7 @@ H(async (p) => { await seedReg(p, 'full');
   // ⑨ 🧮 수동 일괄 처리 — 같은 장치
   await p.evaluate(require('./seed.js')); await W(p, 500); await p.addStyleTag({ content: '#seenp{display:none!important}' });
   await p.evaluate(async () => { localStorage.removeItem('rn-kba'); const sh = document.getElementById('sheet'); sh.classList.add('on'); sh.innerHTML = '<div id="b_res"></div>'; S.detail = { batch: 1 };
-    const P1 = [{ r: 1, n: '판매자A', sc: '1', g: '상', p: 4000, s: 2500, lid: 'Q1', c: 'green' }, { r: 2, n: '판매자B', sc: '2', g: '상', p: 5200, s: 2500, lid: 'Q2', c: 'green' }, { r: 3, n: '판매자C', sc: '3', g: '상', p: 7000, s: 2500, lid: 'Q3', c: 'green' }];
+    const P1 = [{ r: 1, n: '판매자A', sc: '1', g: '상', p: 4000, s: 2500, lid: 'Q1', c: 'green' }, { r: 2, n: '판매자B', sc: '2', g: '상', p: 5200, s: 2500, lid: 'Q2', c: 'green' }, { r: 3, n: '판매자C', sc: '3', g: '상', p: 7000, s: 2500, lid: 'Q3', c: 'green' }, { r: 4, n: '판매자D', sc: '4', g: '상', p: 4000, s: 2500, lid: 'Q4', c: 'green' }, { r: 5, n: '판매자E', sc: '5', g: '상', p: 5200, s: 2500, lid: 'Q5', c: 'green' }, { r: 6, n: '판매자F', sc: '6', g: '상', p: 7000, s: 2500, lid: 'Q6', c: 'green' }];
     S.batchRes = [...S.plist.values()].filter((l) => l.active).map((l) => ({ l, target: 9000, reasons: ['시험'], page1: P1, at: '2026-11-09' })); S.batchSt = { picks: {}, decided: {} }; S.batchMeta = {}; S.batchT = 'sel'; S.batchEdit = {};
     const c = { ...JSON.parse(JSON.stringify(BATCH_DEF)), name: '시험 그룹' }; window.__c = c; drawBatchRes(sh, c, 'g1'); sh.scrollTop = 0; await new Promise((r) => setTimeout(r, 600)); });
   await blur(p); await W(p, 300); { const o = await ovl(p); ok(o.inside && o.pos === 'static' && !o.hits.length && !o.mkHit.length, '수동 일괄: ⌨ 띠·활성 시장 지표 이름표가 카드 안 제자리(겹침 없음)', o); } let A = await act(p); const first = await p.evaluate(() => { const L = [...document.querySelectorAll('#b_res .card.pq.bq[data-mk]')]; return L.map((x) => x.dataset.mk); });
@@ -117,7 +117,7 @@ H(async (p) => { await seedReg(p, 'full');
   const mkp = await p.evaluate((k) => { const m = document.querySelector(`#b_res .card.pq.bq[data-mk="${k}"] .pq-r .pblk.mark:not(.head) .pp`); return m ? m.textContent : ''; }, first[1]);
   ok(m1 === 5200 && m2 === 7000 && m3 === 5200 && /5,200/.test(mkp), 'Alt+Z 한 매물 위(7,000을 넘어 5,200) · Alt+C 한 매물 아래(7,000) · 노란 ▶ 줄도 그 자리로', { m1, m2, m3, mkp });
   await p.keyboard.press('Alt+a'); await W(p, 500); const al = await p.evaluate(() => !!document.querySelector('.alpv')); await p.evaluate(() => { try { alPvClose(); } catch (e) {} }); ok(al, 'Alt+A = 활성 카드의 🪟 알라딘 창(지금 있는 함수 그대로)', al);
-  await p.keyboard.press('Alt+b'); await W(p, 700); const pk = await p.evaluate((k) => ({ pick: (S.batchSt.picks[k] || {}).price, cur: (document.querySelector('.kbcur') || {}).dataset ? document.querySelector('.kbcur').dataset.mk : null }), first[1]);
+  await p.keyboard.press('Alt+b'); await W(p, 2000); const pk = await p.evaluate((k) => ({ pick: (S.batchSt.picks[k] || {}).price, cur: (document.querySelector('.kbcur') || {}).dataset ? document.querySelector('.kbcur').dataset.mk : null }), first[1]);
   ok(pk.pick === 5200 && pk.cur && pk.cur !== first[1], 'Alt+B = 활성 카드를 그 가격으로 결정 대기로 · 그 자리에 온 다음 카드가 활성', pk);
   // 키 바꾸기 — 겹침(이 화면 · 브라우저) · Esc 그만
   await p.evaluate(() => kbaOpen('batch')); await W(p, 150); await p.click('.kba-pan [data-kbarec="batch:dn"]'); await p.keyboard.press('Alt+x'); await W(p, 120); const k1 = await p.evaluate(() => (document.querySelector('.kba-pan .kba-warn') || {}).textContent || '');
