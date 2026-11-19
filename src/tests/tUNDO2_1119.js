@@ -19,7 +19,7 @@ const flush = async () => { for (let i = 0; i < 30; i++) await new Promise((r) =
 
 // ── 가짜 화면(아주 작게)
 const mkEl = (tag) => { const el = { tagName: String(tag || 'div').toUpperCase(), children: [], parentNode: null, classList: null, attrs: {}, _html: '', textContent: '', id: '', className: '', onclick: null, style: {},
-  setAttribute(k, v) { this.attrs[k] = v; }, appendChild(c) { if (c.parentNode) c.remove(); c.parentNode = this; this.children.push(c); return c; },
+  setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k] == null ? null : this.attrs[k]; }, closest() { return null; }, dispatchEvent(ev) { (this.evs = this.evs || []).push(ev.type); return true; }, appendChild(c) { if (c.parentNode) c.remove(); c.parentNode = this; this.children.push(c); return c; },
   insertBefore(c, ref) { if (c.parentNode) c.remove(); c.parentNode = this; const i = ref ? this.children.indexOf(ref) : -1; if (i < 0) this.children.push(c); else this.children.splice(i, 0, c); return c; },
   remove() { const p = this.parentNode; if (p) { const i = p.children.indexOf(this); if (i >= 0) p.children.splice(i, 1); } this.parentNode = null; },
   get firstChild() { return this.children[0] || null; }, get lastChild() { return this.children[this.children.length - 1] || null; },
@@ -30,7 +30,7 @@ const mkEl = (tag) => { const el = { tagName: String(tag || 'div').toUpperCase()
 const BODY = mkEl('body'); const RNAS = mkEl('div'); RNAS.id = 'rnas';
 const find = (n, id) => { if (n.id === id) return n; for (const c of n.children) { const f = find(c, id); if (f) return f; } return null; };
 const KEYH = [];
-const document = { body: BODY, createElement: mkEl, getElementById: (id) => find(BODY, id), addEventListener: (t, f) => { if (t === 'keydown') KEYH.push(f); } };
+const document = { body: BODY, createElement: mkEl, getElementById: (id) => find(BODY, id), querySelector: (q) => (q[0] === '#' ? find(BODY, q.slice(1)) : null), addEventListener: (t, f) => { if (t === 'keydown') KEYH.push(f); } };
 const band = () => document.getElementById('bkband'); const bandTxt = () => { const b = band(); return b && b.firstChild ? b.firstChild._html : ''; };
 
 // ── 가짜 Firestore (compat 모양 · 프로토타입에 덧씌움이 걸리게)
@@ -66,13 +66,14 @@ const firebase = { firestore: { DocumentReference, WriteBatch, Transaction, Fire
 const db = new Firestore(); const doc = (p) => new DocumentReference(p);
 
 // ── 나머지 이름
+const WL = {}; const fire = (t, el) => (WL[t] || []).forEach((f) => f({ type: t, target: el, isTrusted: true }));
 const toasts = []; let draws = 0; const S = { detail: null, auto: null }; const KB_G = [], FEAT = [];
 const LOCK = new Map(); const lockCalls = []; const plkMap = () => LOCK;
 let plkSet = async function (l, on, o) { lockCalls.push([l.id, on, o]); await doc('prd_locks/' + l.id).set({ on: !!on, hist: FV.arrayUnion({ on }) }, { merge: true }); LOCK.set(l.id, { ...(LOCK.get(l.id) || {}), on: !!on, why: (o && o.why) || '', ...(o && o.mode ? { mode: o.mode } : {}) }); return { on }; };
-const env = { firebase, db, S, document, toast: (m) => toasts.push(m), esc: (x) => String(x), errKo: (e) => (e && e.message) || String(e), renderMain: () => draws++, addEventListener: () => {}, setTimeout: fakeSet, clearTimeout: fakeClr, innerWidth: 1000, innerHeight: 800,
+const env = { firebase, db, S, document, toast: (m) => toasts.push(m), esc: (x) => String(x), errKo: (e) => (e && e.message) || String(e), renderMain: () => draws++, addEventListener: (t, f) => (WL[t] = WL[t] || []).push(f), setTimeout: fakeSet, clearTimeout: fakeClr, innerWidth: 1000, innerHeight: 800,
   KB_G, FEAT, uxHelp: () => {}, plkMap };
 const names = Object.keys(env);
-const F = new Function(...names, 'let plkSet = arguments[arguments.length - 1];\n' + BLK + '\n; return { UNDO, undoDo, undoKey, undoSkip, undoOk, undoMoney, getPlk: () => plkSet, UNDO_SCOPES };')(...names.map((k) => env[k]), plkSet);
+const F = new Function(...names, 'let plkSet = arguments[arguments.length - 1];\n' + BLK + '\n; return { UNDO, UNDO_F, undoFNote, undoDo, undoKey, undoSkip, undoOk, undoMoney, getPlk: () => plkSet, UNDO_SCOPES };')(...names.map((k) => env[k]), plkSet);
 const U = F.UNDO; const user = () => { U.lastIn = NOW; }; const newGrp = () => { NOW += 2000; U.grp = null; };
 const st = (p) => STORE.get(p); const last = () => toasts[toasts.length - 1] || '';
 const key = (o) => { const e = { key: o.key || 'z', ctrlKey: o.ctrl !== false, metaKey: false, shiftKey: !!o.shift, altKey: !!o.alt, repeat: !!o.repeat, defaultPrevented: !!o.dp, target: o.target || BODY, pd: 0, preventDefault() { this.pd = 1; } }; KEYH.forEach((h) => h(e)); return e; };
@@ -157,6 +158,32 @@ const key = (o) => { const e = { key: o.key || 'z', ctrlKey: o.ctrl !== false, m
   ok(LOCK.get('aladin_1').on === false && lockCalls[lockCalls.length - 1][1] === false && lockCalls[lockCalls.length - 1][2].act === 'unlock', '두 번째 = 같은 함수로 풀기', lockCalls[lockCalls.length - 1]);
   ok(U.hist.length === 0 && U.fut.length === 1, '다시 하기 목록으로');
   LOCK.set('aladin_1', { on: true }); /* 다른 기기가 다시 잠금 */ const n0 = lockCalls.length; await F.undoDo(true); await flush(); NOW += 600; await F.undoDo(true); await flush(); ok(lockCalls.length === n0 && /그사이 다른 기기/.test(last()), '그사이 바뀌었으면 다시 하지 않음', last());
+
+  console.log('⑪ 판 ② 저장 전 칸 고침 — 가격 칸·체크 상자·고르기 상자 · 그사이 바뀌면 안 함 · 저장된 고침은 전체 기록이 · 새것 먼저');
+  U.hist.length = 0; U.fut.length = 0; U.skip = null; U.arm = null; newGrp(); const inp = mkEl('input'); inp.type = 'text'; inp.value = '1000'; inp.title = '판매가'; BODY.appendChild(inp);
+  fire('focusin', inp); inp.value = '1200'; fire('change', inp); ok(F.UNDO_F.h.length === 1, '사람이 바꾼 칸 = 칸 기록 하나', F.UNDO_F.h.length);
+  e = key({}); await flush(); ok(e.pd && inp.value === '1000' && (inp.evs || []).join() === 'input,change' && /칸 되돌림: '판매가'/.test(last()), 'Ctrl+Z(칸 밖) = 바로 전 값 · 화면이 알게 input·change 보냄', [inp.value, inp.evs, last()]);
+  ok(U.lastIn === 0, '칸이 다시 저장해도 사람 고침으로 또 기억하지 않음(lastIn 0)');
+  e = key({ key: 'y' }); await flush(); ok(inp.value === '1200' && /칸 다시/.test(last()), 'Ctrl+Y = 칸 다시', inp.value);
+  e = key({}); await flush(); inp.value = '999'; /* 화면이 다른 값으로 바꿈 */ e = key({ key: 'y' }); await flush(); ok(inp.value === '999' && /그사이 칸 값이 바뀌어/.test(last()), '그사이 칸 값이 바뀌었으면 다시 하지 않음', [inp.value, last()]);
+  const cb = mkEl('input'); cb.type = 'checkbox'; cb.checked = false; BODY.appendChild(cb); cb.checked = true; fire('change', cb);
+  e = key({ target: cb }); await flush(); ok(e.pd && cb.checked === false, '체크 상자 위 Ctrl+Z = 체크 되돌림(수동 일괄 고르기 같은 저장 전 선택)', cb.checked);
+  const sel = mkEl('select'); sel.value = 'a'; BODY.appendChild(sel); fire('focusin', sel); sel.value = 'b'; fire('change', sel);
+  e = key({ target: sel }); await flush(); ok(e.pd && sel.value === 'a', '고르기 상자는 글자 되돌리기가 없어 웹앱이 되돌림', sel.value);
+  const gone = mkEl('input'); gone.type = 'text'; gone.value = 'x'; BODY.appendChild(gone); fire('focusin', gone); gone.value = 'y'; fire('change', gone); gone.remove();
+  newGrp(); STORE.set('app_settings/tabs', { o: 5 }); user(); await doc('app_settings/tabs').set({ o: 6 }, { merge: true }); await flush();
+  F.UNDO_F.h.length = 0; F.UNDO_F.f.length = 0; const p2 = mkEl('input'); p2.type = 'text'; p2.value = '10'; BODY.appendChild(p2); NOW += 3000; fire('focusin', p2); p2.value = '20'; fire('change', p2);
+  e = key({}); await flush(); ok(p2.value === '10' && st('app_settings/tabs').o === 6, '칸 고침이 더 새것 = 칸 먼저'); e = key({}); await flush(); ok(st('app_settings/tabs').o === 5, '그다음 Ctrl+Z = 웹앱 전체 기록', st('app_settings/tabs'));
+  e = key({ key: 'y' }); await flush(); ok(st('app_settings/tabs').o === 6 && p2.value === '10', '다시 하기는 마지막에 되돌린 것부터(전체 기록)'); e = key({ key: 'y' }); await flush(); ok(p2.value === '20', '그다음 다시 = 칸', p2.value);
+  U.hist.length = 0; U.fut.length = 0; F.UNDO_F.h.length = 0; F.UNDO_F.f.length = 0; newGrp(); STORE.set('app_settings/tabs', { o: 7 }); const p3 = mkEl('input'); p3.type = 'text'; p3.value = '7'; BODY.appendChild(p3); fire('focusin', p3); p3.value = '8'; fire('change', p3); user(); await doc('app_settings/tabs').set({ o: 8 }, { merge: true }); await flush();
+  e = key({}); await flush(); ok(st('app_settings/tabs').o === 7 && F.UNDO_F.h.length === 0, '바로 저장된 칸 고침 = 전체 기록이 되돌리고 칸 기록은 버림(두 번 되돌리지 않음)', [st('app_settings/tabs'), F.UNDO_F.h.length]);
+  ok(F.undoFNote && (F.undoFNote(p3, '8', '9'), F.UNDO_F.h.length === 1), 'undoFNote = 다른 곳(listux1 입력 준비)이 칸 기록에 더하는 입구');
+  const n0b = gone.evs ? gone.evs.length : 0; F.UNDO_F.h.unshift({ el: gone, b: 'x', a: 'y', at: 0 }); F.UNDO_F.h.length = 1; e = key({}); await flush(); ok((gone.evs ? gone.evs.length : 0) === n0b, '다시 그려져 없어진 칸은 건너뜀');
+  F.UNDO_F.h.length = 0; const r1 = mkEl('input'); r1.type = 'text'; r1.id = 'bqp_1'; r1.value = '500'; BODY.appendChild(r1); fire('focusin', r1); r1.value = '600'; fire('change', r1); r1.remove();
+  const r2 = mkEl('input'); r2.type = 'text'; r2.id = 'bqp_1'; r2.value = '600'; BODY.appendChild(r2); /* 화면이 다시 그려 같은 칸이 새로 생김 */ e = key({}); await flush(); ok(r2.value === '500', '다시 그려진 같은 칸(id·name·data-…)을 찾아 되돌림', r2.value);
+  U.hist.length = 0; U.fut.length = 0; F.UNDO_F.h.length = 0; F.UNDO_F.f.length = 0; newGrp(); const pz = mkEl('input'); pz.type = 'text'; pz.value = '9000'; pz.title = '알라딘 판매가'; BODY.appendChild(pz); fire('focusin', pz); pz.value = '8000'; fire('change', pz);
+  user(); await doc('prd_listings/a1').set({ price: 8000 }, { merge: true }); await flush(); NOW += 600; await flush(); /* 되돌리기 기록에 없는 곳(밖으로 나가는 가격)으로 저장됨 */
+  e = key({}); await flush(); ok(pz.value === '8000' && /이미 저장됐습니다/.test(bandTxt()) && (pz.evs || []).length === 0, '저장까지 된 칸(기록에 없는 곳·밖으로 나가는 가격) = 칸만 되돌리지 않고 띠로 알림', [pz.value, bandTxt()]);
 
   console.log('⑩ 설명 — ⌨ 단축키 표·🔍 찾기·설명서·백과');
   ok(KB_G.some(([k]) => k === 'Ctrl + Z') && KB_G.some(([k]) => /Ctrl \+ Y/.test(k)), '⌨ 단축키 표에 Ctrl+Z · Ctrl+Shift+Z/Ctrl+Y');
