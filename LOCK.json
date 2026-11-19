@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-strat5",
-   "why": "판 내기 기다림: strat5 감시기 셈만 지킴 판 ④",
-   "first": "2026-11-19T09:52:04Z",
-   "at": "2026-11-19T11:50:53Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-undo2",
    "why": "판 내기 기다림: undo2 Ctrl+Z 되돌리기 넓힘 판 ①",
    "first": "2026-11-19T10:44:08Z",
@@ -59,16 +52,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-strat5",
-  "why": "판 내기 기다림: strat5 감시기 셈만 지킴 판 ④",
-  "at": "2026-11-19T11:50:53Z",
-  "first": "2026-11-19T09:52:04Z"
+  "host": "vm-undo2",
+  "why": "판 내기 기다림: undo2 Ctrl+Z 되돌리기 넓힘 판 ①",
+  "at": "2026-11-19T11:51:34Z",
+  "first": "2026-11-19T10:44:08Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-strat5",
+ "what": "strat5 감시기 셈만 지킴 판 ④",
+ "since": "2026-11-19T11:51:55Z",
+ "beat": "2026-11-19T11:51:55Z",
  "last": {
   "who": "lead",
   "done": "lkday1 조건 잠금 하루 한도 — 웹앱 1.78.797 · 수집기 1.89.381 · 가격 감시기 0.10.68 · 클라우드 0.35.333 (8cadc6bf6)",
