@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-engimp1",
-   "why": "판 내기 기다림: engimp1 판정 엔진 판 1 (클라우드 0.35.322)",
-   "first": "2026-11-19T01:04:26Z",
-   "at": "2026-11-19T02:19:38Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-engr04",
    "why": "판 내기 기다림: engr04 사라짐 보정 고름 + R04 그림자 대조",
    "first": "2026-11-19T01:08:11Z",
@@ -38,16 +31,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-engimp1",
-  "why": "판 내기 기다림: engimp1 판정 엔진 판 1 (클라우드 0.35.322)",
-  "at": "2026-11-19T02:19:38Z",
-  "first": "2026-11-19T01:04:26Z"
+  "host": "vm-engr04",
+  "why": "판 내기 기다림: engr04 사라짐 보정 고름 + R04 그림자 대조",
+  "at": "2026-11-19T02:20:12Z",
+  "first": "2026-11-19T01:08:11Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-engimp1",
+ "what": "engimp1 판정 엔진 판 1 (클라우드 0.35.322)",
+ "since": "2026-11-19T02:20:40Z",
+ "beat": "2026-11-19T02:20:40Z",
  "last": {
   "who": "lead",
   "done": "실패 시험 7개 바로잡음 2d020d834(시험만 · 판 번호 그대로 · testfix1)",
