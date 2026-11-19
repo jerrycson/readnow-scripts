@@ -64,14 +64,14 @@
   "at": "2026-11-19T09:27:26Z",
   "first": "2026-11-19T07:40:38Z"
  },
- "holder": "lead",
- "host": "vm-bqprog1",
- "what": "bqprog1 수동 일괄 진행바",
- "since": "2026-11-19T08:35:55Z",
- "beat": "2026-11-19T09:27:46Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-19T08:35:02Z"
+  "done": "bqprog1 수동 일괄 진행바 1.78.790 · 21fe36f5a",
+  "at": "2026-11-19T09:28:03Z"
  }
 }
