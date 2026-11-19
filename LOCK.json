@@ -78,14 +78,14 @@
   "at": "2026-11-19T13:58:01Z",
   "first": "2026-11-19T12:13:17Z"
  },
- "holder": "lead",
- "host": "vm-listux1",
- "what": "listux1 목록 번호·가로 휠·Alt+↑/↓·입력 준비·Alt+L 잠금·Alt+I 조회·일괄 키 판",
- "since": "2026-11-19T13:43:31Z",
- "beat": "2026-11-19T13:57:45Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "🛰 관제소 맨 위 줄·두 줄 붙음·묶음 줄 접기·수치 카드 다섯 — 웹앱 1.78.804 (bkftop1 · 044497323)",
-  "at": "2026-11-19T13:42:40Z"
+  "done": "",
+  "at": "2026-11-19T13:58:06Z"
  }
 }
