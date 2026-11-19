@@ -2,7 +2,7 @@
 //  ① 글 검사: 확정 길(bkfRun·bkfExecOne·BKF_OPS·batchExec0)은 main과 글자 하나까지 같음(main에 이 판이 들어가기 전) · 두 화면 모두 bpCalc·bpPanelHtml을 부름
 //     · 옛 잠금 줄·「이 기기」 줄은 bpRunLine 한 곳(같은 실행을 두 모양으로 안 보임) · 새 코드에 쓰기·브라우저 팝업 없음
 //  ② 화면: 다른 기기가 돌리는 「모두 확정」 → 묶음 화면 실행 한 줄(그룹 k/N · 다른 기기) + 진행 칸(단계 이름 = BP_STG) · 그룹마다 줄 · 실행 고르기
-//     · 끝난 뒤 묶음 진행 칸 단계 수 = 그 그룹 화면 진행 칸 단계 수(같은 셈) · 「카드로 가기」 → 그 그룹 화면의 그 카드 · 그룹 화면 실행 한 줄
+//     · 끝난 뒤 묶음 진행 칸 단계 수 = 그 그룹 화면 진행 칸 단계 수(같은 셈) · 「🔎 카드 보기」 → 관제소 위 안쪽 창에 그 카드 하나만(화면 안 옮김 · 닫으면 관제소로 · pubv1 정범님 I-1119-2332-43) · 그룹 화면 실행 한 줄
 //     · 화면을 떠나면 듣기·시계 끊김 · Firestore 쓰기 0 · 380px 가로 넘침 없음 · 브라우저 창 없음
 // 실행: 시험 문지기(test-gate)가 pw/ctrl 안에서 RN_PORT=<포트> node ctrl/tBKPROG1.js · 시험 자료에 손님 정보 없음
 const fs = require('fs'); const path = require('path'); const cp = require('child_process');
@@ -100,11 +100,17 @@ require(firstOf([path.join(__dirname, '..', 'harness.js'), path.join(__dirname, 
   ok(fin && SF.length === 4 && /① 확정 2 \/ 2 \(100%\)/.test(SF[0]) && /④ 알라딘 공개 반영 확인 1 \/ 2 \(50%\)/.test(SF[3]), '끝난 실행 — 잠금 줄 사라짐 · 단계 수(① 2/2 · ④ 1/2)', SF);
   const subs = () => p.evaluate(() => [...window.__SUB.values()]);
   const s0 = await subs(); ok(s0.some((x) => /prd_price_decisions\|approval\.fold\.run/.test(x)) && s0.some((x) => /prd_price_actions\|confirmedAt/.test(x)), '묶음 진행바가 그 실행 결정·반영 기록을 듣는 중', s0);
-  /* ⓕ 「카드로 가기」 → 그 그룹 화면의 그 카드 · 그룹 화면 진행 칸 = 같은 수 */
+  /* ⓕ 「🔎 카드 보기」 → 관제소 위 안쪽 창(#sheet.bkfwin)에 그 카드 하나만(spw) · ✕로 닫으면 관제소로 · 그다음 그룹 화면 진행 칸 = 같은 수 */
   await p.evaluate(() => { window.__TO = []; const T0 = window.toast; window.toast = (...x) => { window.__TO.push(String(x[0]).slice(0, 120)); return T0(...x); }; window.__FL = []; new MutationObserver((ms) => ms.forEach((m) => { const t = m.target; if (t.classList && t.classList.contains('bq-flash')) window.__FL.push(t.getAttribute('data-mk')); })).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] }); });
   await p.locator('#bkf_act details[data-bkpg="gA"] [data-bpgo="aladin_U470000010"]').click();
-  const g = await until(() => S.detail && S.detail.batch && S.batchId === 'gA' && document.querySelector('#b_res .bprog') && S._bkpGo === null && (window.__FL || []).includes('aladin_U470000010') ? 1 : null, 100);
-  ok(!!g, '「카드로 가기」 → 그 그룹 화면을 열고 그 상품 카드로(번쩍임)', await p.evaluate(() => ({ b: S.batchId, go: S._bkpGo, fl: window.__FL, to: window.__TO, mk: [...document.querySelectorAll('#b_res [data-mk]')].map((e) => e.getAttribute('data-mk')).slice(0, 8), T: S.batchT })));
+  const spwSt = () => { const b = document.querySelector('.spw .spw-b'); const e = b && b.firstElementChild; const k = e ? e.getAttribute('data-mk') || ((e.querySelector('[data-mk]') || null) && e.querySelector('[data-mk]').getAttribute('data-mk')) : null; return { b: S.batchId, batch: !!(S.detail && S.detail.batch), go: S._bkpGo, win: !!document.querySelector('#sheet.bkfwin'), spw: k, fl: window.__FL, T: S.batchT }; };
+  const g = await until((f) => { const st = new Function('return ' + f)()(); return st.batch && st.b === 'gA' && st.win && st.go === null && st.spw === 'aladin_U470000010' ? 1 : null; }, 100, spwSt.toString());
+  ok(!!g, '「🔎 카드 보기」 → 관제소 위 안쪽 창에 그 상품 카드 하나만(화면 옮기지 않음)', await p.evaluate((f) => new Function('return ' + f)()(), spwSt.toString()));
+  await p.locator('.spw .spw-x').click();
+  const gb = await until(() => S.detail && S.detail.bkfold && !S.detail.batch && !document.querySelector('#sheet.bkfwin') && !document.querySelector('.spw') ? 1 : null, 60);
+  ok(!!gb, '안쪽 창 ✕ → 바로 관제소로(안쪽 창 모양·카드 창 사라짐)', await p.evaluate(() => ({ d: Object.keys(S.detail || {}), win: !!document.querySelector('#sheet.bkfwin'), spw: !!document.querySelector('.spw') })));
+  await p.evaluate((fid) => bkfGoGroup(fid, 'gA'), fid);
+  await until(() => S.detail && S.detail.batch && S.batchId === 'gA' && document.querySelector('#b_res .bprog') && !document.querySelector('#sheet.bkfwin') ? 1 : null, 100);
   const SG = await card('#b_res');
   ok(SG.length === 4 && JSON.stringify(SG) === JSON.stringify(SF), '묶음 진행 칸 단계 수 = 그룹 화면 진행 칸 단계 수(같은 셈 bpCalc)', { SF, SG });
   ok(await p.evaluate(() => !!S._bpGL && S._bpGL.gid === 'gA'), '그룹 화면은 이 그룹이 든 묶음 장부 하나만 들음');

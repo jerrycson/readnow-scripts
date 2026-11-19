@@ -15,7 +15,8 @@ console.log('① 까닭 코드 풀이 — 감시기가 남기는 state 전부');
 { const pw = fs.readFileSync(path.resolve(path.dirname(APP), '..', 'readnow-price-watch.user.js'), 'utf8'); const used = new Set([...pw.matchAll(/'(noitem|notfound|other|timeout)'/g)].map((m) => m[1]));
   ['noitem', 'notfound', 'other', 'timeout'].forEach((k) => ok(used.has(k), '감시기 코드 ' + k + ' 존재', [...used]));
   ok([...used].filter((u) => ['noitem', 'notfound', 'other', 'timeout'].includes(u)).every((u) => M.BP_VWHY[u] && M.BP_VWHY[u][1].length > 20), '코드마다 쉬운 풀이가 있음');
-  ok(/ItemId/.test(M.BP_VWHY.noitem[1]) && /품절·내려감과는 상관없음/.test(M.BP_VWHY.noitem[1]), 'noitem = 책 번호(ItemId)가 없어 확인을 못 한 것 — 품절 뜻이 아님'); }
+  ok(/ItemId/.test(M.BP_VWHY.noitem[1]) && /품절·내려감과는 상관없음/.test(M.BP_VWHY.noitem[1]), 'noitem = 책 번호(ItemId)가 없어 확인을 못 한 것 — 품절 뜻이 아님');
+  ok(Object.values(M.BP_VWHY).every((w) => !/직접 열어 보세요|직접 열어/.test(w[1])) && /ISBN/.test(M.BP_VWHY.noitem[1]) && M.BP_VWHY.hand, '풀이에 「직접 열어 보세요」 없음 · noitem은 ISBN으로 찾아 채움 · hand 풀이 있음'); }
 console.log('② bpRowOf — 상품마다 단계·상태·까닭');
 { const ap = { batchId: 'g1', decision: 'batch', at: iso(0) };
   const r1 = M.bpRowOf('k1', { title: '국수 1-6 세트', approvalState: 'manual', approval: ap }, null, { from: 9000, price: 8000 });
@@ -27,7 +28,12 @@ console.log('② bpRowOf — 상품마다 단계·상태·까닭');
   const rn = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act(undefined), null); ok(rn.st === 'wait' && /공개 확인 시작/.test(rn.txt), '반영됨 + 확인 기록 없음 = 대기');
   const rw = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: 'wait', n: 3, old: 2, next: iso(60) }), null); ok(rw.st === 'run' && rw.stage === 4 && /옛 값 2번/.test(rw.why) && /다음 확인/.test(rw.next), '공개 확인 중 = 진행 중(확인 횟수·옛 값·다음 확인)', rw);
   const ro = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: 'ok', seenAt: iso(25), lagLoSec: 600, lagHiSec: 1200 }), null); ok(ro.st === 'ok' && /10분~20분/.test(ro.why), '공개 확인됨 = 성공 · 걸린 시간 범위', ro);
-  for (const s of ['noitem', 'notfound', 'other', 'timeout']) { const rp = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: s, doneAt: iso(90), lastSeenPrice: 8500 }), null); ok(rp.st === 'prob' && rp.txt === M.BP_VWHY[s][0] && rp.why.indexOf(M.BP_VWHY[s][1]) === 0, s + ' = 문제 + 쉬운 풀이', rp.txt); }
+  /* (pubv1 정범님 I-1119-2332-43) 옛 끝 상태는 「직접 열어 보세요」로 끝내지 않음 — 감시기 0.10.72이 한 번 다시 줄 세울 때까지 진행 중 · 다시 확인까지 다 쓴 것(hand)만 문제 + 해 본 것·다시 확인 단추 */
+  for (const s of ['noitem', 'notfound', 'other', 'timeout']) { const rp = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: s, doneAt: iso(90), lastSeenPrice: 8500, n: 7 }), null); ok(rp.st === 'run' && rp.txt === M.BP_VWHY[s][0] && rp.why.indexOf(M.BP_VWHY[s][1]) === 0 && /확인 7번/.test(rp.why) && /다시 확인 바퀴/.test(rp.next) && !/직접 열어/.test(rp.why + rp.next), s + ' (옛 끝 상태) = 진행 중 · 다시 확인 맡김 기다림 · 「직접 열어 보세요」 없음', rp); }
+  const rh = M.bpRowOf('k', { approvalState: 'done', approval: ap }, { ...act({ state: 'hand', why: 'timeout', doneAt: iso(90), n: 30, old: 30, round: 2 }), id: 'A1' }, null);
+  ok(rh.st === 'prob' && rh.txt.indexOf(M.BP_VWHY.hand[0]) === 0 && /확인 30번/.test(rh.why) && /2바퀴째/.test(rh.why) && rh.aid === 'A1' && /다시 확인 맡기기/.test(rh.next), 'hand = 문제 + 해 본 것(횟수·바퀴) + 다시 확인 맡기기', rh);
+  ok(M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: 'moved', note: '뒤에 이 상품 가격을 또 바꿈', doneAt: iso(90) }), null).st === 'ok', 'moved(뒤 반영이 이어 받음) = 문제 아님');
+  const rq = M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: 'wait', n: 9, round: 2, rb: iso(100), prev: 'noitem', next: iso(160) }), null); ok(rq.st === 'run' && /2바퀴째/.test(rq.txt) && /다시 확인 바퀴/.test(rq.next), '다시 확인 바퀴 = 진행 중 · n바퀴째 · 앞 바퀴 까닭', rq);
   ok(M.bpRowOf('k', { approvalState: 'done', approval: ap }, act({ state: 'zzz' }), null).why.indexOf('알 수 없는') === 0, '모르는 코드도 숨기지 않고 코드를 보임'); }
 console.log('③ 단계 줄 — 수·% · 시작/끝 · 걸린 시간 · 지금 단계');
 { const tA = [iso(5), iso(6), iso(7), iso(8)]; const G = M.bpStages(4, { done: 4, applying: 0, wait: 0, bad: 0 }, { ok: 1, wait: 3, bad: 0, none: 0 }, tA, [iso(20)], [iso(0), iso(1)], Date.parse(iso(30)), 900, null);
@@ -38,21 +44,21 @@ console.log('③ 단계 줄 — 수·% · 시작/끝 · 걸린 시간 · 지금 
   ok(G2.cur === 1 && /남은 6개/.test(G2.L[1].eta) && /끝 예상 30분/.test(G2.L[2].eta), '반영 중간 → 지금 단계 = ② · 남은 개수 · 끝 예상', [G2.cur, G2.L[1].eta, G2.L[2].eta]); }
 console.log('④ 상품마다 줄 — 정렬·거르기·더 보기·끝 요약');
 { const ap = { batchId: 'g1', at: iso(0) }; const mk = (i, vs) => M.bpRowOf('k' + i, { title: '상품' + i, approvalState: 'done', approval: ap }, { from: 1000, to: 900, at: iso(5), verify: vs }, null);
-  const rows = [mk(1, { state: 'ok', seenAt: iso(20), lagLoSec: 60, lagHiSec: 120 }), mk(2, { state: 'noitem', doneAt: iso(9) }), mk(3, { state: 'wait', n: 1, lastCheckAt: iso(10) }), M.bpRowOf('k4', { title: '상품4', approvalState: 'manual', approval: ap }, null, null)];
+  const rows = [mk(1, { state: 'ok', seenAt: iso(20), lagLoSec: 60, lagHiSec: 120 }), mk(2, { state: 'hand', why: 'noitem', doneAt: iso(9) }), mk(3, { state: 'wait', n: 1, lastCheckAt: iso(10) }), M.bpRowOf('k4', { title: '상품4', approvalState: 'manual', approval: ap }, null, null)];
   const sm = M.bpSummary(rows); ok(sm.c.ok === 1 && sm.c.prob === 1 && sm.c.run === 1 && sm.c.wait === 1 && !sm.done, '요약 개수', sm.c);
   const h = M.bpProdHtml(rows, { filt: 'all', lim: 30, open: true, id: 'g1' }); const i2 = h.indexOf('상품2'), i3 = h.indexOf('상품3'), i4 = h.indexOf('상품4'), i1 = h.indexOf('상품1');
   ok(i2 < i3 && i3 < i4 && i4 < i1, '문제 → 진행 중 → 대기 → 성공 순서');
   ok(/data-bpgo="k2"/.test(h) && /data-bpf="bad"/.test(h) && /까닭: /.test(h), '카드로 가기 단추 · 거르기 단추 · 까닭 글');
   const hb = M.bpProdHtml(rows, { filt: 'bad', lim: 30, open: true }); ok(/상품2/.test(hb) && !/상품1/.test(hb) && !/상품3/.test(hb), '문제·실패만 거르기');
   const many = Array.from({ length: 70 }, (_, i) => mk(100 + i, { state: 'ok', seenAt: iso(20), lagLoSec: 1, lagHiSec: 2 })); const hm = M.bpProdHtml(many, { filt: 'all', lim: 30 }); ok((hm.match(/class="bprow"/g) || []).length === 30 && /data-bpmore/.test(hm) && /40개 더 보기/.test(hm), '30개씩 · 더 보기(40개 남음)');
-  const done = M.bpSummary([mk(1, { state: 'ok', seenAt: iso(20), lagLoSec: 1, lagHiSec: 2 }), mk(2, { state: 'timeout', doneAt: iso(50) })]); ok(done.done && done.c.prob === 1 && done.t1 === iso(50), '다 끝남 = 요약 줄 상태 · 마지막 갱신 시각'); }
+  const done = M.bpSummary([mk(1, { state: 'ok', seenAt: iso(20), lagLoSec: 1, lagHiSec: 2 }), mk(2, { state: 'hand', why: 'timeout', doneAt: iso(50) })]); ok(done.done && done.c.prob === 1 && done.t1 === iso(50), '다 끝남 = 요약 줄 상태 · 마지막 갱신 시각'); }
 console.log('⑤ 실시간 · 시간 글 · 화면 연결');
 { ok(M.bpAgo(Date.now() - 7000) === '7초 전' && /^1분 \d+초 전$/.test(M.bpAgo(Date.now() - 70000)) && M.bpAgo(0) === '아직 못 받음', '마지막 갱신 n초 전');
   ok(M.bpDur(90 * 1000) === '2분' && M.bpDur(3 * 3600e3 + 5 * 60e3) === '3시간 5분', '걸린 시간 글');
   ok(/S\.batchActAt = Date\.now\(\)/.test(T) && /S\.batchSrvAt = Date\.now\(\)/.test(T), '이미 있는 실시간 수신(onSnapshot 둘)에서 받은 시각을 남김');
   ok(/bpTick\(\);/.test(T) && /setInterval\(\(\) => \{ const el = document\.getElementById\('bp_ago'\)/.test(T) && /clearInterval\(S\._bpT\)/.test(T), '5초마다 글자만 고치는 시계 · 칸이 사라지면 스스로 멈춤(새로 읽지 않음)');
   const D = cut('function drawBatchRes(', '\nfunction ');
-  ok(/bpProdHtml\(BP\.rowsP/.test(D) && /bpStages\(BP\.N/.test(blk) && /bpCalc\(\{/.test(D) && /bpPanelHtml\(BP, /.test(D) && /data-bpgo/.test(T) && /querySelectorAll\('\[data-bpgo\]'\)[^\n]*goK\(/.test(D) && /querySelectorAll\('\[data-bpf\]'\)/.test(D), '진행 칸이 단계 줄 + 상품마다 보기를 그리고 단추가 연결됨');
+  ok(/bpProdHtml\(BP\.rowsP/.test(D) && /bpStages\(BP\.N/.test(blk) && /bpCalc\(\{/.test(D) && /bpPanelHtml\(BP, /.test(D) && /data-bpgo/.test(T) && /querySelectorAll\('\[data-bpgo\]'\)[^\n]*goK\(/.test(D) && /querySelectorAll\('\[data-bpgo\]'\)[^\n]*spwOpen\(b\.dataset\.bpgo\)/.test(D) && /querySelectorAll\('\[data-bpf\]'\)/.test(D), '진행 칸이 단계 줄 + 상품마다 보기를 그리고 단추가 연결됨');
   ok(/class="bbar" title="샵매니저 반영"/.test(blk) && /공개 반영 확인 <b>/.test(blk), '옛 두 줄 막대·마일스톤은 그대로 둠(bkprog1부터 공용 부품 bpPanelHtml 안)');
   ok(/repeat\(auto-fit,minmax\(150px,1fr\)\)/.test(blk) && /word-break:break-all/.test(blk), '휴대폰 폭: 단계 칸은 자동 줄바꿈 격자 · 상품명 줄바꿈');
   ok(!/\b(alert|confirm|prompt)\(/.test(blk), '브라우저 팝업 없음'); }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.71
+// @version      0.10.72
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -540,7 +540,7 @@
         if (!ok2) { await fail(`관리코드는 ${newSku}로 바뀌었지만 일시판매중지 변경 실패(${err2}) — 샵매니저에서 확인`); continue; }
         n++; await xEnd(xo, 'done', `${x.sku} → ${newSku}, 일시판매중지`); xo = null; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀로 옮김: ${x.sku} → ${newSku}, 일시판매중지`, holdInfo: { origSku: x.sku || null, minPrice: (x.approval && x.approval.price) || null, at: now }, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, kind: 'hold', fromSku: x.sku || null, toSku: newSku, fromStatus: '판매중', toStatus: '일시판매중지', from: x.current ?? null, to: x.current ?? null, minPrice: (x.approval && x.approval.price) || null, at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀: ${x.title || x.usedCode} (${x.sku} → ${newSku}, 일시판매중지)`); await sleep(GAP()); continue;
       }
-      const price = Math.round(kind === 'manual' ? +(x.approval && x.approval.price) : (x.approval && x.approval.price) || x.target); if (!(price >= 10)) { await fail('가격이 없음', true); continue; }
+      const price0 = Math.round(kind === 'manual' ? +(x.approval && x.approval.price) : (x.approval && x.approval.price) || x.target); const price = ceil10(price0); const p10 = price !== price0; /* (0.10.72 pubv1 · 정범님 I-1119-2332-43) 알라딘 판매가는 10원 단위 — 수동 일괄 입력칸 값(예 12001원)이 그대로 와서 알라딘이 12,010원으로 올려 받고 「돌려준 값이 다름」으로 막혔음 → 보내기 전에 알라딘과 같게 10원 단위 올림 · 잠금 검사·반영 기록도 이 값으로 */ if (!(price >= 10)) { await fail('가격이 없음', true); continue; }
       if (lkW && lkW.on === true) { const ap = x.approval || {}, x0 = ap.plkx || {}, curW = ap.expectPrice != null ? +ap.expectPrice : x0.cur; const Q = plkClamp(lkW, price, { ...x0, cur: curW, noDay: 1 }); if (!Q.ok || Q.p !== price) { await fail(Q.ok ? '🎚 조건 잠금 — 정한 값 ' + price + '원이 선 밖(' + Q.p + '원까지)' : Q.why, true); continue; }
         if (plkBlock(lkW, ['price']).cond) { /* (11/19 lkday1 · 검토 1-3·1-6) 반영 직전 — ① 조건이 시장 값에 기대는데 그 값이 오래됐으면 ② 하루 한도(내 몫은 빼고 셈 — 두 번 세지 않음)를 넘으면 「다시 결정」으로 ③ 내 몫이 아직 안 세어졌으면(날이 바뀜·옛 결정) 지금 셈 */
           const again = async (m) => { await d.ref.set({ approvalState: 'stale', execNote: m + ' — 반영하지 않음, 다시 결정', ...W() }, { merge: true }); log(`🎚 조건 잠금 — 다시 결정으로: ${x.title || x.usedCode} (${m})`, 1); };
@@ -573,7 +573,7 @@
       if (!res.ok && !/돌려준 값/.test(res.error || '')) await fzEnd(false); /* (11/10 fence2) 안 들어감 → 예약 풂 · 알라딘이 다른 값으로 받았으면 예약 그대로(수집기가 다시 읽은 값으로 클라우드가 정리 — 안전 쪽) */
       if (!res.ok) { await fail(res.error, /돌려준 값/.test(res.error || '')); /* 알라딘이 다른 값으로 받았으면 다시 보내지 않음 */ if (/로그인/.test(res.error || '')) { state('<b style="color:#B0322A">알라딘 로그인 풀림</b> — 수집기가 다시 로그인할 때까지 기다림'); return; } continue; }
       n++; await fzEnd(true, price); await xEnd(xo, 'done', `${price} (알라딘 답: ${res.value})`); xo = null; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
-      const fine = Math.random() < 0.1; const vNew = { state: 'wait', n: 0, si: 0, fine, next: new Date(Date.parse(now) + (fine ? V_FINE : V_STEPS)[0] * 60000).toISOString() }; const actDoc = { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, from: fromP, to: price, engineTarget: x.target ?? null, kind: (x.approval && x.approval.decision) || kind, batchId: (x.approval && x.approval.batchId) || null, batchName: (x.approval && x.approval.batchName) || null, at: now, day: today, kst: kstOf(now), confirmedAt: (x.approval && x.approval.at) || null, by: (x.approval && x.approval.by) || null, pc: PC, result: res.value, engine: PR.VERSION, verify: vNew, ...(fine && x.listingId ? { verifyPg: { state: 'wait', n: 0, si: 0, next: vNew.next } } : {}), ...W() };
+      const fine = Math.random() < 0.1; const vNew = { state: 'wait', n: 0, si: 0, fine, next: new Date(Date.parse(now) + (fine ? V_FINE : V_STEPS)[0] * 60000).toISOString() }; const actDoc = { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, from: fromP, to: price, engineTarget: x.target ?? null, kind: (x.approval && x.approval.decision) || kind, batchId: (x.approval && x.approval.batchId) || null, batchName: (x.approval && x.approval.batchName) || null, at: now, day: today, kst: kstOf(now), confirmedAt: (x.approval && x.approval.at) || null, by: (x.approval && x.approval.by) || null, pc: PC, result: res.value, ...(p10 ? { asked: price0 } : {}), engine: PR.VERSION, verify: vNew, ...(fine && x.listingId ? { verifyPg: { state: 'wait', n: 0, si: 0, next: vNew.next } } : {}), ...W() };
       const ap0 = x.approval || {}; const wgA = ap0.decision === 'batch' && ap0.batchId ? (await wgLoad()).get(ap0.batchId) : null; // (0.8.0) 감시 켠 그룹의 첫 가격이 반영되면 그 상품은 이제부터 그 그룹으로 감시
       const oldG = x.watch && x.watch.gid && wgA && x.watch.gid !== wgA.id ? x.watch.gid : null; if (oldG) log(`감시 그룹 바뀜: ${x.title || x.usedCode} — ${oldG} → ${wgA.id}(수동 일괄 확정이 붙임 · 앞 그룹 기록은 watchPrev에)`, 1); /* (10/30 위험 12) */
       const humanAp = /@/.test(String(ap0.by || '')) && ['batch', 'manual'].includes(ap0.decision || kind); /* (11/10 fence3) 사람(정범님·관리자)이 정한 값 — 막지 않음 · 손해 셈 기준(나)으로 남김 */
@@ -581,7 +581,7 @@
       if (humanAp) enroll.humanPx = { p: price, at: now, by: ap0.by || null, how: ap0.decision || kind, gid: ap0.batchId || null };
       if (humanAp) fenceRun('note', { key: x.key, start: price, price, src: wgA ? 'pw:' + wgA.id : null, make: !!wgA, reset: true }).catch(() => {}); /* (11/10 fence3 · 손해 셈 (나)) 사람이 확정한 값 = 기준 → 사람이 내린 몫은 손해가 아님(걸린 손해 0) · 예전(fence2)엔 일괄 전 값을 기준으로 사람이 내린 몫까지 손해로 셈 */
       else if (!fz && fSrc && fromP != null && price > fromP) fenceRun('note', { key: x.key, price, make: false }).catch(() => {}); /* 엔진이 값을 올림 → 걸린 손해를 줄여 적음(원장에 있는 상품만) */
-      try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
+      try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value}${p10 ? ` · 정한 값 ${price0}원 → 알라딘 10원 단위 ${price}원` : ''})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); continue; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
       await sleep(GAP(((x.approval || {}).decision === 'auto') ? 'auto' : null)); await verifyStep(2, 30000); // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
     }
@@ -602,6 +602,55 @@
   function kstOf(iso) { const d = new Date(Date.parse(iso) + 9 * 3600e3); return { day: d.toISOString().slice(0, 10), hour: d.getUTCHours(), dow: d.getUTCDay() }; }
   const vSteps = (v) => (v && v.fine ? V_FINE : V_STEPS);
   function vNext(at, steps, si) { const t0 = Date.parse(at); for (let j = si; j < steps.length; j++) { const tt = t0 + Math.round(steps[j] * 60000 * (0.85 + Math.random() * 0.3)); /* (사람처럼) 바꾼 뒤 꼭 2·5·10…분이 아니게 ±15% */ if (tt > Date.now() + 60000) return { si: j, next: new Date(tt).toISOString() }; } return null; } // 지금 이후 첫 확인 때 (놓친 때는 건너뜀)
+  /* (0.10.72 pubv1 · 정범님 I-1119-2332-43 「공개 반영 실패로 끝내고 직접 열어 보라 하지 말고 반영될 때까지」) 첫 바퀴(반영 뒤 48시간)에 못 보면 끝내지 않고 다시 확인 바퀴(rb = 바퀴 시작 · 1·3·6·12시간 · 1~14일)
+   *  · 다시 확인 바퀴도 다 쓰면 그때만 'hand'(why = 마지막 까닭 · 해 본 것은 n·notFound·old·other·errs·round · 웹앱 「다시 확인」으로 또 맡김) · 뒤에 같은 상품 가격을 또 바꿨으면 'moved'(새 반영의 확인이 이어 받음) */
+  const V_RETRY = [60, 180, 360, 720, 1440, 2160, 2880, 4320, 5760, 7200, 10080, 14400, 20160];
+  const ceil10 = (p) => Math.ceil(+p / 10) * 10; /* 알라딘 판매가 10원 단위(올림 — 12001원을 보내면 12,010원으로 받음) */
+  function vNextOf(a, v, si, noRetry) { if (v && v.rb) return vNext(v.rb, V_RETRY, si); const nx = vNext(a.at, vSteps(v), si); if (nx || noRetry) return nx; const rb = new Date().toISOString(); const n2 = vNext(rb, V_RETRY, 0); return n2 ? { ...n2, rb, round: ((v && v.round) || 1) + 1 } : null; }
+  const vNx = (nx) => ({ si: nx.si, next: nx.next, ...(nx.rb ? { rb: nx.rb, round: nx.round } : {}) });
+  const VMV = new Map(); /* 상품 → { t, moved } (10분 기억) */
+  async function vMoved(a) { const c = VMV.get(a.key); if (c && Date.now() - c.t < 10 * 60000 && c.at === a.at) return c.moved; let moved = null;
+    try { const q = await C('prd_price_actions').where('key', '==', a.key).get(); const later = q.docs.map((d) => ({ id: d.id, ...d.data() })).filter((b) => b.id !== a.id && b.at && String(b.at) > String(a.at) && b.to != null && !['hold', 'unhold'].includes(b.kind)); if (later.length) moved = `뒤에 이 상품 가격을 또 바꿈(${later.sort((p, q2) => String(q2.at).localeCompare(String(p.at)))[0].to}원) — 새 반영의 확인이 이어 받음`; } catch (e) {}
+    if (!moved) { try { const L = (await C('prd_listings').doc(a.key).get()).data(); if (L && L.price != null && +L.price !== +a.to && L.editAt && String(L.editAt) > String(a.at) && !/^price-watch/.test(String(L.editBy || ''))) moved = `뒤에 웹앱에서 가격을 직접 고침(${L.price}원)`; } catch (e) {} }
+    VMV.set(a.key, { t: Date.now(), at: a.at, moved }); return moved; }
+  /* (0.10.72) 새상품 번호(ItemId)가 없는 반영 — 예전엔 'noitem'으로 바로 끝냄 → ① 상품 기록의 책(prd_books) ② ISBN13·ISBN10·알라딘 코드로 알라딘 상품 페이지(wproduct.aspx?ISBN=) — 찾던 ISBN과 다르면 쓰지 않음
+   *  찾으면 반영 기록·결정·책 기록(비어 있을 때만 · itemIdFill 표)에 채워 다음부터 바로 씀 · 못 찾으면 우리 상품 페이지(wproduct.aspx?ItemId=우리 상품번호)의 판매가로 확인 */
+  const VID = new Map();
+  async function vFindItem(a) { const c = VID.get(a.key); if (c && (c.id || Date.now() - c.t < 6 * 3600e3)) return c.id ? c : null;
+    let L = null, B = null, id = null, by = null; try { const s0 = await C('prd_listings').doc(a.key).get(); L = s0.exists ? s0.data() || {} : null; } catch (e) {}
+    if (L && L.bookId) { try { const b = await C('prd_books').doc(String(L.bookId)).get(); B = b.exists ? b.data() || {} : null; if (B && B.aladinItemId) { id = String(B.aladinItemId); by = 'book'; } } catch (e) {} }
+    if (!id && L && L.aladinItemId) { id = String(L.aladinItemId); by = 'listing'; }
+    const want = (L && L.isbn13) || (B && B.isbn13) || null; const tried = [];
+    if (!id) for (const q of [want, L && L.isbn10, B && B.isbn10, L && L.aladinCode].filter(Boolean).map(String).filter((v, i, A) => A.indexOf(v) === i)) { tried.push(q); try { const pp = P.parseProductPage(await aladinDoc(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(q)}`), ''); if (pp && pp.aladinItemId && (!want || !pp.isbn13 || String(pp.isbn13) === String(want))) { id = String(pp.aladinItemId); by = 'isbn:' + q; break; } } catch (e) {} }
+    const r = { id, by, L, B, tried, t: Date.now() }; VID.set(a.key, r); return id ? r : null; }
+  async function vFill(acts, f) { const at = new Date().toISOString(); const tag = { by: f.by, at, ver: VER }; for (const a of acts) { a.aladinItemId = f.id; try { await a.ref.set({ aladinItemId: f.id, itemIdFill: tag, ...W() }, { merge: true }); } catch (e) {} }
+    try { const dr = C('prd_price_decisions').doc(acts[0].key); const ds = await dr.get(); if (ds.exists && !(ds.data() || {}).aladinItemId) await dr.set({ aladinItemId: f.id, itemIdFill: tag, ...W() }, { merge: true }); } catch (e) {}
+    if (f.L && f.L.bookId && !(f.B && f.B.aladinItemId)) { try { const br = C('prd_books').doc(String(f.L.bookId)); const bs = await br.get(); if (bs.exists && !(bs.data() || {}).aladinItemId) await br.set({ aladinItemId: f.id, itemIdFill: { ...tag, from: 'price-watch' }, ...W() }, { merge: true }); } catch (e) {} } log(`공개 반영 확인: 새상품 번호를 찾아 채움 — ${acts[0].title || acts[0].usedCode || acts[0].key} (${f.by})`); }
+  async function vPage(a) { const pr = P.parseUsedItemPrice(await aladinDoc(`/shop/wproduct.aspx?ItemId=${a.listingId}`)); return { price: pr && pr.price, found: !!(pr && pr.price != null && (!pr.sellerCode || pr.sellerCode === '996008')) }; } /* 우리 상품 페이지 판매가 (판매자 = 우리 996008) */
+  /* (0.10.72) 한 번만: 예전에 'noitem'·'notfound'·'other'·'timeout'으로 끝난 확인을 다시 확인 바퀴로 — verifyRequeue 표(다시 안 돌림) · 옛 확인은 verifyHist에 덧붙임(지우지 않음) · 같은 상품은 가장 늦은 반영만(앞의 것은 'moved') */
+  async function vRequeue() { const q = await C('prd_price_actions').where('verify.state', 'in', ['noitem', 'notfound', 'other', 'timeout']).get(); const D = q.docs.filter((d) => !(d.data() || {}).verifyRequeue); if (!D.length) return 0;
+    const last = new Map(); D.forEach((d) => { const a = d.data(); const p = last.get(a.key); if (!p || String(a.at) > String(p.data().at)) last.set(a.key, d); }); let n = 0;
+    for (const d of D) { const go = last.get(d.data().key) === d; try { await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const a = sn.data() || {}; const old = a.verify || {}; if (a.verifyRequeue || !['noitem', 'notfound', 'other', 'timeout'].includes(old.state)) return; const now = new Date().toISOString();
+          const nv = go ? { ...old, state: 'wait', si: -1, rb: now, round: (old.round || 1) + 1, late: true, next: new Date(Date.now() + Math.round((1 + Math.random() * 29) * 60000)).toISOString(), prev: old.state } : { ...old, state: 'moved', doneAt: now, prev: old.state, note: '뒤에 이 상품 가격을 또 바꿈 — 새 반영의 확인이 이어 받음' };
+          tx.set(d.ref, { verify: nv, verifyRequeue: { at: now, from: old.state, ver: VER, by: PC }, verifyHist: firebase.firestore.FieldValue.arrayUnion({ ...old, endAt: old.doneAt || null }), ...W() }, { merge: true }); n++; }); } catch (e) { log('공개 반영 다시 확인 맡기기 실패: ' + e.message, 1); } }
+    if (n) log(`공개 반영 확인: 예전에 끝난 ${n}건을 다시 확인 바퀴로 맡김(한 번만)`); return n; }
+  /* (0.10.72) 한 번만: 「알라딘이 돌려준 값(12,010)이 보낸 가격(12001)과 다름」으로 막힌 결정 중 돌려준 값 = 보낸 값을 10원 단위로 올린 값인 것 — 알라딘엔 이미 들어감
+   *  → 다시 보내지 않고 '반영됨'으로 고치고 반영 기록(prd_price_actions)을 남겨 ④ 공개 반영 확인을 이어 감 · roundFix 표(옛 까닭 was 그대로 · 다시 안 함) · 한 PC만(prd_system/pricing.roundFix) */
+  const RT_RE = /돌려준 값\(([\d,]+)\)이 보낸 가격\((\d+)\)과 다름/;
+  function roundFixOf(v) { const m = String((v && v.execNote) || '').match(RT_RE); if (!m) return null; const ret = parseInt(m[1].replace(/\D/g, ''), 10), sent = parseInt(m[2], 10); return ret > 0 && ret !== sent && ret === ceil10(sent) ? { ret, sent } : null; }
+  async function roundFixOne(ref) { const aref = C('prd_price_actions').doc(); let ok = false;
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data(); const R = roundFixOf(v); if (!v || v.approvalState !== 'blocked' || v.roundFix || !R) return; const key = sn.id; const lref = C('prd_listings').doc(key); const ls = await tx.get(lref); const L = ls.exists ? ls.data() || {} : null; const ap = v.approval || {}; const now = new Date().toISOString(); const at = v.execFailAt || ap.at || now;
+      const seenAfter = !!(L && [L.lastSeenAt, L.editAt, L.watchSyncAt].some((t) => t && String(t) > String(at))); /* 그 뒤 수집기·웹앱·다른 반영이 그 상품을 봤으면 상품 기록 값은 그쪽이 맞음 — 건드리지 않음 */
+      const a = { key, usedCode: v.usedCode || (L && L.usedCode) || null, listingId: v.listingId || (L && L.listingId) || null, title: v.title || (L && L.title) || null, grade: v.grade || null, aladinItemId: v.aladinItemId || null, from: ap.expectPrice ?? v.current ?? null, to: R.ret, asked: R.sent, engineTarget: v.target ?? null, kind: ap.decision || 'manual', batchId: ap.batchId || null, batchName: ap.batchName || null, at, day: kstOf(at).day, kst: kstOf(at), confirmedAt: ap.at || null, by: ap.by || null, pc: PC, result: String(R.ret), engine: PR.VERSION, roundFix: true, verify: { state: 'wait', n: 0, si: -1, late: true, rb: now, next: now }, ...W() };
+      tx.set(aref, a); if (!seenAfter) listingSync(tx, lref, ls, a, aref.id);
+      tx.set(ref, { approvalState: 'done', executedAt: at, pendingChange: { at, price: R.ret }, execNote: `반영됨 — 알라딘이 10원 단위로 맞춰 받음(보낸 ${R.sent}원 → ${R.ret.toLocaleString()}원) · 감시기 ${VER}이 막힘을 풀고 공개 반영 확인을 이어 감`, roundFix: { at: now, by: PC, ver: VER, from: 'blocked', was: v.execNote || null, sent: R.sent, ret: R.ret, actionId: aref.id }, ...W() }, { merge: true }); ok = true; });
+    if (ok && VQ) { try { const s1 = await aref.get(); VQ.push({ id: aref.id, ref: aref, ...s1.data() }); } catch (e) {} } return ok; }
+  async function roundFixOnce() { const VERK = '0.10.72'; let mine = false;
+    try { await db.runTransaction(async (tx) => { const d = await tx.get(SREF); const rf = (d.data() || {}).roundFix || {}; if (rf.ver === VERK && (rf.state === 'done' || (rf.state === 'running' && Date.now() - Date.parse(rf.at || 0) < 30 * 60000))) return; tx.set(SREF, { roundFix: { ver: VERK, state: 'running', by: PC, at: new Date().toISOString() } }, { merge: true }); mine = true; }); } catch (e) { return; }
+    if (!mine) return; let n = 0, seen = 0;
+    try { const q = await C('prd_price_decisions').where('approvalState', '==', 'blocked').get(); for (const d of q.docs) { const v0 = d.data(); if (v0.roundFix || !roundFixOf(v0)) continue; seen++; try { if (await roundFixOne(d.ref)) n++; } catch (e) { log('10원 단위 막힘 고치기 실패: ' + (v0.title || d.id) + ' — ' + e.message, 1); } }
+      const rq = await vRequeue(); await SREF.set({ roundFix: { ver: VERK, state: 'done', by: PC, at: new Date().toISOString(), n, seen, requeue: rq } }, { merge: true }); if (n) log(`10원 단위로 막혔던 반영 ${n}개를 반영됨으로 고치고 공개 반영 확인을 이어 감`); VQAt = 0; }
+    catch (e) { log('10원 단위 막힘·옛 확인 다시 맡기기 실패(다음에 다시): ' + e.message, 1); try { await SREF.set({ roundFix: { ver: VERK, state: 'fail', by: PC, at: new Date().toISOString(), err: String(e.message).slice(0, 200) } }, { merge: true }); } catch (e2) {} } }
   let VQ = null, VQAt = 0, vqBusy = false;
   async function vqLoad() { if (VQ && Date.now() - VQAt < 10 * 60000) return;
     const [q, qp] = await Promise.all([C('prd_price_actions').where('verify.state', '==', 'wait').get(), C('prd_price_actions').where('verifyPg.state', '==', 'wait').get()]); const M = new Map(); [...q.docs, ...qp.docs].forEach((d) => M.set(d.id, { id: d.id, ref: d.ref, ...d.data() })); const L = [...M.values()];
@@ -615,22 +664,28 @@
     try { await vqLoad(); const due = VQ.filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).sort((a, b) => String(Math.min(Date.parse((a.verify || {}).next || 9e15), Date.parse((a.verifyPg || {}).next || 9e15))).localeCompare(String(Math.min(Date.parse((b.verify || {}).next || 9e15), Date.parse((b.verifyPg || {}).next || 9e15))))); let n = 0;
       while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine() || quietNow()) break; const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); if (due.length && n < max) await sleep(GAP('read')); } /* (사람처럼) 밤에는 공개 반영 확인도 쉼(놓친 확인 때는 다음 때로 넘어감) · 책 사이 쉼 */
     } catch (e) { log('공개 반영 확인 오류: ' + e.message, 1); } finally { vqBusy = false; } }
-  function vJudge(x, a, seen, found, nowIso) { // 한 번 확인 결과로 목록·상품 페이지 확인 상태를 고침 (같은 규칙)
-    const n = (x.n || 0) + 1; const steps = vSteps(a.verify); const nx = vNext(a.at, steps, (x.si || 0) + 1); const base = { n, lastCheckAt: nowIso };
+  function vJudge(x, a, seen, found, nowIso, noRetry) { // 한 번 확인 결과로 목록·상품 페이지 확인 상태를 고침 (같은 규칙) · noRetry = 정밀 표본 상품 페이지(verifyPg)는 예전처럼 48시간에서 끝
+    const n = (x.n || 0) + 1; const nx = vNextOf(a, noRetry ? { ...x, fine: (a.verify || {}).fine, rb: null } : x, (x.si || 0) + 1, noRetry); const base = { n, lastCheckAt: nowIso };
     if (found && seen === a.to) return { ...x, ...base, state: 'ok', seenAt: nowIso, seenPrice: seen, lagLoSec: Math.max(0, Math.round((Date.parse(x.lastMissAt || a.at) - Date.parse(a.at)) / 1000)), lagHiSec: Math.round((Date.now() - Date.parse(a.at)) / 1000) };
     const kind = !found ? 'notFound' : seen === a.from ? 'old' : 'other'; const cnt = { notFound: x.notFound || 0, old: x.old || 0, other: x.other || 0 }; cnt[kind]++;
-    return { ...x, ...base, ...cnt, lastSeenPrice: seen ?? null, lastMissAt: nowIso, ...(nx ? { si: nx.si, next: nx.next } : { state: kind === 'other' ? 'other' : kind === 'notFound' ? 'notfound' : 'timeout', doneAt: nowIso }) }; }
+    const fin = kind === 'other' ? 'other' : kind === 'notFound' ? 'notfound' : 'timeout'; return { ...x, ...base, ...cnt, lastSeenPrice: seen ?? null, lastMissAt: nowIso, ...(nx ? vNx(nx) : noRetry ? { state: fin, doneAt: nowIso } : { state: 'hand', why: fin, doneAt: nowIso }) }; }
   async function verifyBook(acts) { const nowIso = new Date().toISOString(); const a0 = acts[0]; const needList = acts.filter((a) => dueOf(a.verify));
-    if (needList.length && !a0.aladinItemId) { for (const a of needList) { a.verify = { ...a.verify, state: 'noitem', doneAt: nowIso, note: '새상품 번호(ItemId)가 없어 온라인 중고 목록을 열 수 없음' }; await vSave(a); } }
+    if (needList.length) { const mv = []; for (const a of needList) { if (!(a.verify || {}).rb) continue; const m = await vMoved(a); if (m) { a.verify = { ...a.verify, state: 'moved', doneAt: nowIso, note: m }; await vSave(a); mv.push(a); } } mv.forEach((a) => needList.splice(needList.indexOf(a), 1)); } /* 다시 확인 바퀴 — 뒤에 같은 상품 가격을 또 바꿨으면 이 확인은 그만(새 반영 확인이 이어 받음) */
+    if (needList.length && !a0.aladinItemId) { let f = null; try { f = await vFindItem(a0); } catch (e) {} if (f) await vFill(acts, f); }
+    if (needList.length && !a0.aladinItemId) { const c = VID.get(a0.key) || {}; /* 새상품 번호를 끝내 못 찾음 → 우리 상품 페이지 판매가로 확인 (끝내지 않음) */
+      for (const a of needList) { const v = a.verify || {}; let pg = null, err = null; if (a.listingId) { try { pg = await vPage(a); } catch (e) { err = e.message; } } else err = '새상품 번호(ItemId)도 우리 상품번호도 없음';
+        if (pg) a.verify = { ...vJudge(v, a, pg.price, pg.found, nowIso), via: 'page', noItem: { tried: c.tried || [], at: nowIso } };
+        else { const nx = vNextOf(a, v, (v.si || 0) + 1); a.verify = nx ? { ...v, n: (v.n || 0) + 1, errs: (v.errs || 0) + 1, lastErr: err, lastCheckAt: nowIso, ...vNx(nx) } : { ...v, state: 'hand', why: 'noitem', doneAt: nowIso, lastErr: err }; } await vSave(a); } }
     else if (needList.length) { const rows = []; let err = null, pages = 0; let url = `/shop/UsedShop/wuseditemall.aspx?ItemId=${a0.aladinItemId}&TabType=0`;
       try { for (let pg = 1; pg <= 5 && url; pg++) { const doc = await aladinDoc(url); pages = pg; const u = P.parseUsedPage(doc); rows.push(...u.listings); if (needList.every((a) => rows.some((r) => vMatch(r, a)))) break;
           const nx = [...doc.querySelectorAll('.Ere_usedsell_num_box a')].find((x) => (x.textContent || '').trim() === String(pg + 1)); const h = nx && nx.getAttribute('href'); url = h && /wuseditemall/i.test(h) ? h : null; } } catch (e) { err = e.message; }
-      for (const a of needList) { const v = a.verify || {}; if (err) { const nx = vNext(a.at, vSteps(v), (v.si || 0) + 1); a.verify = nx ? { ...v, n: (v.n || 0) + 1, errs: (v.errs || 0) + 1, lastErr: err, si: nx.si, next: nx.next } : { ...v, state: 'timeout', doneAt: nowIso, lastErr: err }; }
-        else { const r = rows.find((x) => vMatch(x, a)); a.verify = { ...vJudge(v, a, r ? r.price : null, !!r, nowIso), pages }; } await vSave(a); } }
+      for (const a of needList) { const v = a.verify || {}; if (err) { const nx = vNextOf(a, v, (v.si || 0) + 1); a.verify = nx ? { ...v, n: (v.n || 0) + 1, errs: (v.errs || 0) + 1, lastErr: err, lastCheckAt: nowIso, ...vNx(nx) } : { ...v, state: 'hand', why: 'timeout', doneAt: nowIso, lastErr: err }; }
+        else { const r = rows.find((x) => vMatch(x, a)); let pg = null; if (!r && a.listingId && (v.notFound || 0) >= 1) { try { pg = await vPage(a); } catch (e) {} } /* (0.10.72) 목록에서 두 번째로 못 찾으면 우리 상품 페이지도 봄 — 거기 새 가격이면 공개 반영됨 */
+          a.verify = pg && pg.found && pg.price === a.to ? { ...vJudge(v, a, pg.price, true, nowIso), pages, via: 'page' } : { ...vJudge(v, a, r ? r.price : null, !!r, nowIso), pages }; } await vSave(a); } }
     for (const a of acts) { if (!dueOf(a.verifyPg) || !a.listingId) continue; // 정밀 표본: 우리 상품 페이지 판매가
       let pr = null, err = null; try { pr = P.parseUsedItemPrice(await aladinDoc(`/shop/wproduct.aspx?ItemId=${a.listingId}`)); } catch (e) { err = e.message; }
       const x = a.verifyPg; if (err) { const nx = vNext(a.at, V_FINE, (x.si || 0) + 1); a.verifyPg = nx ? { ...x, n: (x.n || 0) + 1, errs: (x.errs || 0) + 1, lastErr: err, si: nx.si, next: nx.next } : { ...x, state: 'timeout', doneAt: nowIso }; }
-      else a.verifyPg = vJudge(x, a, pr && pr.price, !!(pr && pr.price != null && (!pr.sellerCode || pr.sellerCode === '996008')), nowIso); await vSave(a); } }
+      else a.verifyPg = vJudge(x, a, pr && pr.price, !!(pr && pr.price != null && (!pr.sellerCode || pr.sellerCode === '996008')), nowIso, true); await vSave(a); } }
   const vMatch = (r, a) => (r.listingId && a.listingId && String(r.listingId) === String(a.listingId)) || (r.usedCode && a.usedCode && r.usedCode === a.usedCode);
 
   /* ── (0.8.0) 감시 그룹: 수동 일괄 그룹 중 '감시 켬'(watch.on) — 그 그룹에서 첫 가격이 반영된 상품(결정 문서 watch.gid)을 매일 판정
@@ -786,7 +841,7 @@
     } catch (e) { log('오류: ' + e.message, 1); if (/permission/i.test(e.message)) state('<b style="color:#B0322A">Firestore 쓰기 권한 없음</b><br>규칙에 prd_price_decisions · prd_price_actions · prd_market_watch 허용 필요'); }
     finally { ticking = false; }
   }
-  await adoptHandoff(); paintOwner(); buttons(); log('준비됨'); listingBackfill().catch(() => {}); tick(); (async () => { for (;;) { await sleep(60 * 1000); tick(); } })(); // 1분마다 (숨은 탭에서도)
+  await adoptHandoff(); paintOwner(); buttons(); log('준비됨'); listingBackfill().catch(() => {}); roundFixOnce().catch(() => {}); tick(); (async () => { for (;;) { await sleep(60 * 1000); tick(); } })(); // 1분마다 (숨은 탭에서도)
   /* (0.10.33 정범님 11/04 '이유 없는 지연은 바로') 웹앱에서 가격을 승인하면 다음 1분 차례를 기다리지 않고 2초 뒤 바로 한 바퀴 — 승인 대기(approved) 결정을 듣기만 함(알라딘에 보내는 속도·사람다움 간격·실행 문은 그대로) · 1분 차례는 받침으로 남김 */
   try { C('prd_price_decisions').where('approvalState', '==', 'approved').limit(20).onSnapshot((q) => { if (q.metadata && q.metadata.hasPendingWrites) return; if (!q.docChanges().some((c) => c.type === 'added')) return; clearTimeout(window.__rnPwSoon); window.__rnPwSoon = setTimeout(() => { tick(); }, 2000); }, () => {}); } catch (e) {}
 })();
