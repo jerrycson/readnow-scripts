@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-strat3",
-   "why": "판 내기 기다림: 감시 전략 ③ 엔진 규칙 층 (strat3) 다시",
-   "first": "2026-11-19T06:36:38Z",
-   "at": "2026-11-19T07:19:09Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-engfix1119",
    "why": "판 내기 기다림: 엔진 맥박 칸",
    "first": "2026-11-19T06:52:27Z",
@@ -45,16 +38,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-strat3",
-  "why": "판 내기 기다림: 감시 전략 ③ 엔진 규칙 층 (strat3) 다시",
-  "at": "2026-11-19T07:19:09Z",
-  "first": "2026-11-19T06:36:38Z"
+  "host": "vm-engfix1119",
+  "why": "판 내기 기다림: 엔진 맥박 칸",
+  "at": "2026-11-19T07:19:30Z",
+  "first": "2026-11-19T06:52:27Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-strat3",
+ "what": "감시 전략 ③ 엔진 규칙 층 (strat3) 다시",
+ "since": "2026-11-19T07:20:11Z",
+ "beat": "2026-11-19T07:20:11Z",
  "last": {
   "who": "lead",
   "done": "살핀 패널 검색 결과 → 그 상품 카드 하나만 안쪽 창 — 웹앱 1.78.783 (panel3)",
