@@ -112,5 +112,11 @@ function mkDec(key, ourPrice, others, S, at) { const rows = [{ rank: 1, sellerNa
     const d = await JG3.diag(); ok(d.rows === 31 && Array.isArray(d.rules) && d.shadow.length >= 1, '진단 요약');
     const smp = await JG3.diag('sample'); ok(smp.rows.length && smp.rows.every((x) => x.k.endsWith('…')), '진단 표본은 열쇠 앞 8자만'); }
 
+  // ⑦ 값 주인 하나 — 가격 코어 fence(있으면)가 장부 안 셈과 같은 답
+  if (typeof PR.fence === 'function') { let diff = 0, n = 0; let s = 7; const rnd = () => ((s = (s * 48271) % 2147483647) / 2147483647);
+    for (let i = 0; i < 2000; i++) { const cur = Math.round(1000 + rnd() * 20000); const v = rnd() < 0.05 ? null : Math.round(cur * (0.4 + rnd() * 1.4)); const others = Array.from({ length: Math.floor(rnd() * 6) }, () => Math.round(rnd() * 15000)); const S0 = rnd() < 0.5 ? {} : { maxAutoDropPct: 0.2, maxAutoRaisePct: 0.3, insaneMult: 2 }; const o = { others, floor: rnd() < 0.3 ? Math.round(cur * 0.8) : null };
+      n++; if (JSON.stringify(PR.fence(cur, v, S0, o)) !== JSON.stringify(J.fenceLocal(cur, v, S0, o))) diff++; }
+    ok(diff === 0, `⑦ 가격 코어 fence = 장부 안 셈 (${n}개 중 다름 ${diff})`); } else console.log('  · 가격 코어에 fence 없음(옛 판) — 장부 안 셈만 씀');
+
   console.log(bad ? `❌ 실패 ${bad}` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
