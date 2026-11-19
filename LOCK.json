@@ -92,14 +92,14 @@
   "at": "2026-11-19T15:00:52Z",
   "first": "2026-11-19T12:16:36Z"
  },
- "holder": "lead",
- "host": "vm-kpia1",
- "what": "kpia1 관제소 카드 판 A·D·E 차례로 냄",
- "since": "2026-11-19T13:59:04Z",
- "beat": "2026-11-19T14:57:14Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-19T13:58:06Z"
+  "done": "kpia1 판 A 웹앱 1.78.806 냄(main 036613705 · 운영 확인) · 관제소 바로 가기·설명서 소제목 다시 맞춤(main에서도 실패하던 tNAV1111·tMAN 고침) · D·E는 줄 다시 섬",
+  "at": "2026-11-19T15:01:09Z"
  }
 }
