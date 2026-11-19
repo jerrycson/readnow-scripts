@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-strat3",
-   "why": "판 내기 기다림: 감시 전략 ③ 엔진 규칙 층 (strat3)",
-   "first": "2026-11-19T04:25:48Z",
-   "at": "2026-11-19T06:21:19Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-edall1b",
    "why": "판 내기 기다림: 판본 판 ① 근거 틀 (edall1b)",
    "first": "2026-11-19T04:30:23Z",
@@ -52,16 +45,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-strat3",
-  "why": "판 내기 기다림: 감시 전략 ③ 엔진 규칙 층 (strat3)",
-  "at": "2026-11-19T06:21:19Z",
-  "first": "2026-11-19T04:25:48Z"
+  "host": "vm-edall1b",
+  "why": "판 내기 기다림: 판본 판 ① 근거 틀 (edall1b)",
+  "at": "2026-11-19T06:21:33Z",
+  "first": "2026-11-19T04:30:23Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-strat3",
+ "what": "감시 전략 ③ 엔진 규칙 층 (strat3)",
+ "since": "2026-11-19T06:21:47Z",
+ "beat": "2026-11-19T06:21:47Z",
  "last": {
   "who": "lead",
   "done": "묶음 페이지 창 크기 맞춤 + 감시·전략 안쪽 창 + 조건 이미 부합 되살림(1.78.780)",
