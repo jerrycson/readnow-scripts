@@ -10,12 +10,13 @@ console.log('① 글');
 { const names = ['ctrlFullK', 'ctrlFullCard', 'ctrlFullFill', 'ctrlFullIt', 'ctrlFullVal', 'ctrlBqClick', 'ctrlBqInput', 'ctrlSelSet', 'bkfPopCp', 'bkfPopInput', 'kbaOvBox', 'kbaBqBox'];
   const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 한 번만 선언`, dup); }
 ok(/^function ctrlCard\(P, it\) \{ \{ const F = ctrlFullCard\(P, it\); if \(F\) return F; \}/m.test(T), '관제 카드는 먼저 실제 카드(ctrlFullCard)를 그림');
+ok(/function bqRefChip1\(K, x, k\) \{ if \(K\.bqRefChipH\) return K\.bqRefChipH\(k\);/.test(T) && /BQK\.bqRefChipH = bqRefChipH;/.test(T) && /bqRefChip1\(K, x, k\)/.test(fn('batchCardHtml')), '🔎 참고 탭 표지(reo1): 그룹 화면 셈 그대로 · 관제창은 같은 bqRefOf');
 ok(/batchCardK\(\{ id: it\.gid/.test(fn('ctrlFullK')) && /batchCardHtml\(K, i, j0\)/.test(fn('ctrlFullCard')), '실제 카드 = 그룹 화면 batchCardK·batchCardHtml 그대로');
-{ const B = fn('ctrlBqClick'); const need = ['bto', 'bnowp', 'bstep', 'bqrec', 'bback', 'bto2', 'bcancel', 'bre', 'breo', 'bunfew', 'bunedkw', 'bundo', 'bqht', 'bqmet', 'bused', 'bqexp2', 'bqfold']; const miss = need.filter((n) => !new RegExp('d\\.' + n + '\\b').test(B)); ok(!miss.length, '카드 단추 모두 받음', miss);
+{ const B = fn('ctrlBqClick'); const need = ['bto', 'bnowp', 'bstep', 'bqrec', 'bback', 'bto2', 'bcancel', 'bre', 'breo', 'brep', 'brex', 'bunfew', 'bunedkw', 'bundo', 'bqht', 'bqmet', 'bused', 'bqexp2', 'bqfold']; const miss = need.filter((n) => !new RegExp('d\\.' + n + '\\b').test(B)); ok(!miss.length, '카드 단추 모두 받음', miss);
   ok(/twiceArm\(b, '이 그룹에서 빼기'[^)]*\); if \(r !== 'go'\) return true;/.test(B), '빼기는 두 번 누름(twiceArm)');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(B + fn('ctrlBqInput') + fn('bkfPopClick') + fn('ctrlFullCard')), '브라우저 창 없음');
   ok(!/batchSave|db\.collection/.test(B + fn('ctrlBqInput')), '카드 단추는 직접 쓰지 않고 ctrlAct 한 길로'); }
-{ const A = fn('ctrlAct'); ok(/a === 're'/.test(A) && /a === 'unfew' \|\| a === 'unedkw'/.test(A) && /o\.P \|\| S\._bkfCtrl/.test(A) && /patch\.held = \{ \[k\]: FV\.delete\(\) \}/.test(A), 'ctrlAct: 다시 결정·표지 풂·보류 풂 · 칸 창 P도 같은 길'); }
+{ const A = fn('ctrlAct'); ok(/a === 'reopick'/.test(A) && /what: 'reopick', from: 'done'/.test(A) && /x\.target \?\? d\.reo\.p/.test(A), 'ctrlAct: 🔁 다시 결정 대기로(reo1 data-brep와 같은 기록·값)'); ok(/a === 're'/.test(A) && /a === 'unfew' \|\| a === 'unedkw'/.test(A) && /o\.P \|\| S\._bkfCtrl/.test(A) && /patch\.held = \{ \[k\]: FV\.delete\(\) \}/.test(A), 'ctrlAct: 다시 결정·표지 풂·보류 풂 · 칸 창 P도 같은 길'); }
 ok(/bkfPopCp\(P, L\)/.test(fn('bkfPopPaint')) && /ctrlCard\(cp, it\)/.test(fn('bkfPopPaint')) && !/<table class="bkf-tb">/.test(fn('bkfPopPaint')), '그룹 칸 창도 표 대신 같은 실제 카드');
 ok(/ctrlBqClick\(P\.cp, e, bkfPopPaint\)/.test(fn('bkfPopClick')) && /openBkfCtrl\(fid, tab, \{ gf: \[d\.cpopctrl\] \}\)/.test(fn('bkfPopClick')), '칸 창 카드 단추 · 「모아 보기에서 열기」');
 ok(/'bkf_pop'/.test(fn('kbaOvBox')) && /'bkf_ctrl'/.test(fn('kbaOvBox')) && /kbaOvBox\(\)/.test(T.slice(T.indexOf('function kbaScr'), T.indexOf('function kbaScr') + 600)), '단축키가 안쪽 창 카드에도');
