@@ -2,7 +2,7 @@
 //  ① 글: 맨 위 줄 단추 7종(🛰 가격 감시·⚡ 전략·🔒 잠금·🔬 연구·📚 발견·🎯 종합 비교·👀 조회수 분석) · 맨 위 줄·묶음 고르기 줄 붙음(sticky) CSS · 접기 기억(rn- 열쇠 · try) · 실행 카드 아래 옛 띠 없음 · 브라우저 창 없음
 //  ② 화면(RN_PORT): 폭 360·768·1280·1920 — 단추 7개가 맨 위 줄에만 한 벌 · ⌨ 단축키·📖 설명서도 맨 위 줄(맨 아래엔 없음) · 끝까지 내려도 두 줄이 위에 붙음 · 가로 넘침 없음
 //     · ▾ 접기/▸ 펼치기가 이 기기에 기억됨 · 내린 채로 🎯·👀를 누르면 안쪽 창 → 뒤로 가기로 묶음
-//  ③ (정범님 I-1119-2051-30.1) 왼쪽 = ← 닫기 바로 옆부터 단추 · 오른쪽 = 수치 카드 다섯(총 상품수·최상단(최저가 배지)·동급 유효 최저가·상품 방문수·판매수) · 누르면 안쪽 창(지금 숫자·출처·기준·「자세한 기록은 다음 판」) · Firestore 새 읽기 0
+//  ③ (정범님 I-1119-2051-30.1) 왼쪽 = ← 닫기 바로 옆부터 단추 · 오른쪽 = 수치 카드 다섯(총 상품수·최상단(최저가 배지)·동급 유효 최저가·상품 방문수·판매수) · 누르면 안쪽 창(지금 숫자·출처·기준·「📋 날마다 기록」 — kpia1 판 D·E가 채움) · 카드 셈은 Firestore 새 읽기 0 · 창은 날마다 기록 달 문서·묶음 장부만
 // 실행: pw/ 안 RN_PORT=<포트> node tBKFTOP1119.js · 시험 자료(가짜 그룹 5개)에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
@@ -115,11 +115,11 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.C[4] === kc.sold.toLocaleString('ko-KR'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 = 생성후판매완료 합(겹침 뺌)', kc);
   ok(kc.reads === 0, '카드 셈이 Firestore를 새로 읽지 않음', kc);
   for (const k of ['tot', 'top', 'low', 'view', 'sold']) {
-    const o = await p.evaluate((k) => { let reads = 0; const dc = db.collection; db.collection = function () { reads++; return dc.apply(this, arguments); }; const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight;
+    const o = await p.evaluate((k) => { let reads = 0; const nm = []; const dc = db.collection; db.collection = function (c) { if (!/^(ctl_kpi_m|ctl_kpi_days|prd_price_batches)$/.test(String(c))) reads++; nm.push(String(c)); return dc.apply(this, arguments); }; const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight;
       document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`).click(); db.collection = dc; const ov = document.getElementById('ctrl_kpi'); const tx = ov ? ov.textContent : '';
       const r = ov ? ov.querySelector('.bigask').getBoundingClientRect() : null;
-      return { ov: !!ov, now: !!(ov && ov.querySelector('.ctrlkpi-now .pxtb')), src: /출처·기준/.test(tx), more: !!(ov && ov.querySelector(`[data-ctrlkpimore="${k}"]`)) && /다음 판/.test(tx), pxBtn: !!(ov && ov.querySelector('[data-ctrlkpigo="px"]')), inV: !!r && r.left >= 0 && r.right <= innerWidth + 1, reads, det: Object.keys(S.detail || {}).join(), bkf: !!document.getElementById('bkf_scr') }; }, k);
-    ok(o.ov && o.now && o.src && o.more && o.inV && o.reads === 0 && o.det === 'bkfold' && o.bkf, `카드 「${k}」 누름 → 안쪽 창(지금 숫자·출처·기준·자세한 기록은 다음 판) · 관제소는 그대로 · 새 읽기 0`, o);
+      return { ov: !!ov, now: !!(ov && ov.querySelector('.ctrlkpi-now .pxtb')), src: /출처·기준/.test(tx), more: !!(ov && ov.querySelector(`[data-ctrlkpimore="${k}"]`)) && /📋 날마다 기록/.test(tx), nm, pxBtn: !!(ov && ov.querySelector('[data-ctrlkpigo="px"]')), inV: !!r && r.left >= 0 && r.right <= innerWidth + 1, reads, det: Object.keys(S.detail || {}).join(), bkf: !!document.getElementById('bkf_scr') }; }, k);
+    ok(o.ov && o.now && o.src && o.more && o.inV && o.reads === 0 && o.det === 'bkfold' && o.bkf, `카드 「${k}」 누름 → 안쪽 창(지금 숫자·출처·기준·📋 날마다 기록) · 관제소는 그대로 · 다른 읽기 0(kpia1 판 D·E: 날마다 기록 달 문서·묶음 장부만 · 30분 메모)`, o);
     if (k === 'view') ok(o.pxBtn === !(await p.evaluate(() => !!(S._pxVwOn && S.px && S.px.vw))), '방문수 — 조회수 기록이 없으면 「👀 조회수 분석 열기」 단추', o);
     await p.keyboard.press('Escape'); await Wt(p, 150);
     const gone = await p.evaluate(() => ({ ov: !!document.getElementById('ctrl_kpi'), det: Object.keys(S.detail || {}).join(), bkf: !!document.getElementById('bkf_scr') }));
