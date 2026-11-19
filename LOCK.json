@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-kpia1",
-   "why": "판 내기 기다림: kpia1 관제소 카드 판 D·E 차례로 냄",
-   "first": "2026-11-19T15:01:27Z",
-   "at": "2026-11-19T18:15:02Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-pubv1",
    "why": "판 내기 기다림: pubv1 공개 반영 끝까지·카드로 가기 안쪽 창",
    "first": "2026-11-19T15:03:25Z",
@@ -45,16 +38,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-kpia1",
-  "why": "판 내기 기다림: kpia1 관제소 카드 판 D·E 차례로 냄",
-  "at": "2026-11-19T18:15:02Z",
-  "first": "2026-11-19T15:01:27Z"
+  "host": "vm-pubv1",
+  "why": "판 내기 기다림: pubv1 공개 반영 끝까지·카드로 가기 안쪽 창",
+  "at": "2026-11-19T18:15:16Z",
+  "first": "2026-11-19T15:03:25Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-kpia1",
+ "what": "kpia1 관제소 카드 판 D·E 차례로 냄",
+ "since": "2026-11-19T18:16:04Z",
+ "beat": "2026-11-19T18:16:04Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.816 — plkui2 잠금 서랍 크게 보기·카드 눌러 고르기·Shift 이어 고르기·찾기·거르기·탭 지킴 · main 91d464b06",
