@@ -9,7 +9,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 console.log('① 순수 함수 — 만들기·고치기·순서·휴지통·되살리기');
 const NORM = fnIn(T, 'plkTabNorm'), APPLY = fnIn(T, 'plkTabApply');
-const ap = new Function('PLK_TOPS', NORM + '\n' + APPLY + '\nreturn plkTabApply;')(['new', 'full', 'cond', 'all']);
+const CAPS = /const PLK_TAB_KEYS_MAX = (\d+), PLK_DOC_KEYS_MAX = (\d+);/.exec(T); const ap = new Function('PLK_TOPS', 'PLK_TAB_KEYS_MAX', 'PLK_DOC_KEYS_MAX', NORM + '\n' + APPLY + '\nreturn plkTabApply;')(['new', 'full', 'cond', 'all'], +(CAPS || [])[1], +(CAPS || [])[2]);
 let d = {}; let r = ap(d, { t: 'add', top: 'all', id: 'a1', nm: ' 탭A ', ds: '설명A' }); ok(r.d && r.d.tabs.length === 1 && r.d.tabs[0].nm === '탭A' && r.d.tabs[0].ds === '설명A', '탭 만들기(이름 앞뒤 공백 정리 · 설명 저장)'); d = r.d;
 ok(ap(d, { t: 'add', top: 'all', id: 'a2', nm: '탭A' }).err, '같은 칸에 같은 이름은 거절');
 ok(!ap(d, { t: 'add', top: 'full', id: 'a2', nm: '탭A' }).err, '다른 칸에는 같은 이름 가능');
@@ -26,6 +26,16 @@ ok(ap(d, { t: 'keys', id: 'a1', add: ['k1', 'k2', 'k1'] }).d.tabs[0].keys.join()
 ok(ap(d, { t: 'edit', id: 'nope', nm: 'x' }).err, '없는 탭은 거절');
 for (let i = 0; i < 70; i++) { const q = ap(d, { t: 'add', top: 'cond', id: 'z' + i, nm: '탭' + i }); if (q.err) { ok(/60개/.test(q.err), '탭 60개 상한'); break; } d = q.d; }
 
+/* (ctrlfix1 11/19 · 2-N3) 한 탭·한 문서 상품 수 상한 — 넘으면 저장 대신 알림 글(err) */
+ok(CAPS && +CAPS[1] > 0 && +CAPS[2] >= +CAPS[1], '상한 두 값이 코드에 있음(탭 ≤ 문서)', CAPS && CAPS.slice(1));
+{ const TM = +CAPS[1], DM = +CAPS[2]; const many = (n, pre) => Array.from({ length: n }, (_, i) => pre + i);
+  let q = { tabs: [{ id: 'c1', top: 'all', nm: '탭X', keys: many(TM - 1, 'k') }, { id: 'c2', top: 'all', nm: '탭Y', keys: [] }] };
+  ok(!ap(q, { t: 'keys', id: 'c1', add: ['새1'] }).err, '탭 상한 딱 맞춰 담기는 됨');
+  const e1 = ap(q, { t: 'keys', id: 'c1', add: ['새1', '새2'] }); ok(e1.err && /한 탭에는/.test(e1.err) && !e1.d, '탭 상한을 넘기면 거절 + 알림 글(아무것도 안 바꿈)', e1.err);
+  ok(!ap(q, { t: 'keys', id: 'c1', add: ['k0', 'k1'] }).err, '이미 있는 상품만 다시 담는 것은 상한에 안 걸림');
+  const parts = Math.floor(DM / TM); const big = { tabs: Array.from({ length: parts + 1 }, (_, i) => ({ id: 'd' + i, top: 'all', nm: '큰탭' + i, keys: i < parts ? many(TM, 'p' + i + '_') : [] })) };
+  const e2 = ap(big, { t: 'keys', id: 'd' + parts, add: many(DM - parts * TM + 1, 'q') }); ok(e2.err && /모든 탭/.test(e2.err), '문서 전체 상한을 넘기면 거절 + 알림 글', e2.err);
+  ok(!ap(big, { t: 'keys', id: 'd' + parts, add: many(DM - parts * TM, 'q') }).err, '문서 전체 상한 딱 맞춰 담기는 됨'); }
 console.log('② 옛 묶음(grp) → 「모든 잠금」 탭 옮김');
 r = ap({}, { t: 'mig', items: [{ nm: '묶음A', keys: ['k1', 'k2'] }, { nm: '묶음B', keys: ['k3'] }, { nm: '묶음A', keys: ['k4'] }] }, '2026-11-19T01:02:03Z');
 ok(r.d.tabs.length === 2 && r.d.tabs.every((t) => t.top === 'all' && t.from === 'grp') && r.d.tabs[0].keys.join() === 'k1,k2,k4' && !!r.d.mig, '이름마다 탭 하나 · 담긴 상품 모음 · 옮김 표시');
