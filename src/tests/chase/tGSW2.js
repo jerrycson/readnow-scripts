@@ -94,5 +94,6 @@ const O = (S, W, D, extra) => ({ g: { id: 'g1', name: '그룹1' }, saved: W, dra
   const T4 = mk({ S: { prBatches: [g], prDec: decs2 }, ctx: { bkfMembers: () => ({ rows: big.map((f) => f.l), keys: big.map((f) => f.k), out: new Set() }), batchCompute: (c, rows) => rows.map((l) => ({ l, ...xs2.get(l.usedCode) })) } });
   const P4 = { fid: 'f1', gid: 'g1', base: g.watch, draft: { ...g.watch }, band: null }; T4.S._gsw = P4; await T4.E.gswPvRun(P4); ok(P4.pv.rows.length === 450 && P4.pv.total === 450, '450개도 덩어리로 끝까지 셈'); P4.draft = { ...g.watch, chase: { name: 'match' } }; const h4 = T4.E.gswPvHtml(P4, g);
   ok(/data-gswpv="again"/.test(T4.E.gswPvHtml({ ...P4, pv: { ...P4.pv, stale: true } }, g)), '300개 넘는 그룹은 「다시」 단추'); void h4;
+  ok(/값이 실제로 바꿀 수 있음 — 미리 보기 기준/.test(BLK), '바로 반영은 두 번 눌러야 하고 「값이 실제로 바꿀 수 있음 — 미리 보기 기준 n개」를 보임'); ok(/how: 'gsw', diff: Object\.fromEntries[^\n]*\]\)\)\)? \}\]/.test(BLK) || /g\.watchLog = \[\.\.\.\(Array\.isArray\(g\.watchLog\)/.test(BLK), '적용하면 이 화면의 기록(watchLog)에도 바로 보임');
   console.log(bad ? `❌ tGSW2 실패 ${bad}/${n}` : `✅ tGSW2 통과 ${n}건`); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('  ❌ 예외', e && e.stack); process.exit(1); });
