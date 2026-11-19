@@ -2,6 +2,7 @@
 //  ① 글: 맨 위 줄 단추 7종(🛰 가격 감시·⚡ 전략·🔒 잠금·🔬 연구·📚 발견·🎯 종합 비교·👀 조회수 분석) · 맨 위 줄·묶음 고르기 줄 붙음(sticky) CSS · 접기 기억(rn- 열쇠 · try) · 실행 카드 아래 옛 띠 없음 · 브라우저 창 없음
 //  ② 화면(RN_PORT): 폭 360·768·1280·1920 — 단추 7개가 맨 위 줄에만 한 벌 · ⌨ 단축키·📖 설명서도 맨 위 줄(맨 아래엔 없음) · 끝까지 내려도 두 줄이 위에 붙음 · 가로 넘침 없음
 //     · ▾ 접기/▸ 펼치기가 이 기기에 기억됨 · 내린 채로 🎯·👀를 누르면 안쪽 창 → 뒤로 가기로 묶음
+//  ③ (정범님 I-1119-2051-30.1) 왼쪽 = ← 닫기 바로 옆부터 단추 · 오른쪽 = 수치 카드 다섯(총 상품수·최상단(최저가 배지)·동급 유효 최저가·상품 방문수·판매수) · 누르면 안쪽 창(지금 숫자·출처·기준·「자세한 기록은 다음 판」) · Firestore 새 읽기 0
 // 실행: pw/ 안 RN_PORT=<포트> node tBKFTOP1119.js · 시험 자료(가짜 그룹 5개)에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 900)); } else console.log('  ✓', m); };
@@ -21,6 +22,12 @@ console.log('① 글');
   ok(!/bkfToolHtml|data-bkftool/.test(A) && !/bkf-tools/.test(T), '실행 카드 아래 옛 「🛰 감시·전략」 띠 없음');
   ok(/#bkf_top \[data-bkftool\]/.test(T), '맨 위 줄 단추 누름을 받음');
   const NEW = T.slice(T.indexOf('function bkfToolHtml('), T.indexOf('/* ◆ctrl 시작'));
+  const KP = T.slice(T.indexOf('/* ◆ctrlkpi'), T.indexOf('/* ◆ctrl 시작'));
+  ok(KP.length > 500 && ['ctrlKpiCalc', 'ctrlKpiCards', 'ctrlKpiOpen', 'ctrlKpiBody', 'ctrlKpiMore', 'ctrlKpiClose'].every((n) => KP.includes('function ' + n + '(')), '수치 카드 함수 나눔(ctrlKpiCalc·Cards·Open(kind)·Body·More·Close)');
+  ok(['tot', 'top', 'low', 'view', 'sold'].every((k) => KP.includes(`['${k}', `)), '카드 다섯 종류(총 상품수·최상단·동급 유효 최저가·방문수·판매수)');
+  ok(!/db\.collection|onSnapshot|\.get\(\)|firestore\(/.test(KP), '수치 카드 코드에 Firestore 읽기 없음(이미 받아 둔 것만)');
+  ok(/return \{ n, amt, blk, stale, lk, lkx, cls, sk \}/.test(T), '상태판 셈이 팔린 상품 열쇠(sk)도 돌려줌 — 판매수 겹침 뺌');
+  ok(/id="bkf_kpi"/.test(H) && /\.sh\.bkfsh>\.bkf-kpis\{order:5;margin-left:auto/.test(T), '카드 자리 = 맨 위 줄 오른쪽(margin-left:auto)');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(NEW + F), '새 코드에 브라우저 창 없음'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(NEW + F), '전화번호 모양 없음'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tBKFTOP1119 ${bad}개 실패` : '✓ tBKFTOP1119 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
@@ -60,6 +67,15 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     ok(m.pos === 'sticky' && +m.zi < 60, `폭 ${w}: 맨 위 줄 붙음 · z-index ${m.zi} < 안쪽 창 ✕`, m);
     ok(!m.outR.length, `폭 ${w}: 맨 위 줄 단추가 화면 안(좁으면 줄바꿈)`, m);
     if (w === 360) ok(m.topH > 60, '폭 360: 맨 위 줄이 여러 줄로 줄바꿈', m.topH);
+    const kp = await p.evaluate(() => { const top = document.getElementById('bkf_top'); const iw = innerWidth; const C = [...top.querySelectorAll('#bkf_kpi [data-ctrlkpi]')]; const bk = top.querySelector('#back'), t1 = top.querySelector('[data-bkftool="watch"]'), t7 = top.querySelector('[data-bkftool="px"]');
+      const R = (e) => (e ? e.getBoundingClientRect() : null); const tr = R(top), br = R(bk), r1 = R(t1), r7 = R(t7), kr = R(document.getElementById('bkf_kpi'));
+      return { n: C.length, kinds: C.map((c) => c.dataset.ctrlkpi).join(), txt: C.map((c) => c.querySelector('.pxtb').textContent), out: C.filter((c) => R(c).right > iw + 1 || R(c).left < -1).length, nextToBack: !!(br && r1 && r1.left > br.right - 1 && r1.left - br.right < 16 && Math.abs(r1.top - br.top) < 8), kRight: kr ? tr.right - kr.right : null, kLeft: kr ? kr.left : null, t7R: r7 ? r7.right : null, sameRow: kr && r7 ? kr.top < r7.bottom : null, iw }; });
+    ok(kp.n === 5 && kp.kinds === 'tot,top,low,view,sold', `폭 ${w}: 맨 위 줄에 수치 카드 다섯`, kp);
+    ok(kp.nextToBack, `폭 ${w}: 단추가 ← 닫기 바로 오른쪽부터`, kp);
+    ok(!kp.out, `폭 ${w}: 카드가 화면 안`, kp);
+    if (w >= 1280) ok(kp.kRight != null && kp.kRight <= 16, `폭 ${w}: 카드가 맨 위 줄 오른쪽 끝에 붙음`, kp);
+    if (w === 1920) ok(kp.sameRow && kp.kLeft > kp.t7R, '폭 1920: 단추(왼쪽)와 카드(오른쪽)가 한 줄', kp);
+    ok(/^[0-9]/.test(kp.txt[0] || ''), `폭 ${w}: 총 상품수 카드에 숫자`, kp.txt);
     const s = await p.evaluate(() => { const sh = document.getElementById('sheet'); const sc = document.getElementById('bkf_scr'); const pad = document.createElement('div'); pad.id = 't_pad'; pad.style.height = '2400px'; sc.appendChild(pad);
       sh.scrollTop = sh.scrollHeight; return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => { const top = document.getElementById('bkf_top'), csw = document.querySelector('#bkf_scr > .csw'); const R = sh.getBoundingClientRect(), a = top.getBoundingClientRect(), b = csw.getBoundingClientRect();
         const cx = Math.min(innerWidth - 4, b.left + 30), cy = b.top + Math.min(10, b.height / 2); const hit = document.elementFromPoint(cx, cy);
@@ -90,6 +106,29 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     s = await p.evaluate(() => ({ win: document.getElementById('sheet').classList.contains('bkfwin'), bkf: !!document.getElementById('bkf_scr'), top: !!document.getElementById('bkf_top'), det: Object.keys(S.detail || {}).join() }));
     ok(!s.win && s.bkf && s.top && s.det === 'bkfold', `「${k}」 뒤로 가기 → 묶음 화면(맨 위 줄 그대로)`, s);
   }
+  // ③ 수치 카드 — 숫자 맞음 · 누르면 안쪽 창 · Firestore 새 읽기 0
+  await open(1280, 700);
+  const kc = await p.evaluate(() => { const fid = S.detail.bkfold; const f = bkfNorm(S.bkfold, null).folds[fid]; const ks = new Set(), sk = new Set(); for (const g of f.gids) { const c = (S._bkfTb || {})[g]; if (!c || !c.cls) continue; for (const [k, t] of c.cls) if (!['sold', 'gone', 'trash'].includes(t)) ks.add(k); (c.sk || []).forEach((k) => sk.add(k)); }
+    let reads = 0; const dc = db.collection; db.collection = function () { reads++; return dc.apply(this, arguments); }; S._ctrlKpi = null; let err = null; try { ctrlKpiPaint(); } catch (e) { err = String(e); } db.collection = dc;
+    const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((c) => c.querySelector('.pxtb').textContent);
+    return { want: ks.size, sold: sk.size, C, reads, err }; });
+  ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.C[4] === kc.sold.toLocaleString('ko-KR'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 = 생성후판매완료 합(겹침 뺌)', kc);
+  ok(kc.reads === 0, '카드 셈이 Firestore를 새로 읽지 않음', kc);
+  for (const k of ['tot', 'top', 'low', 'view', 'sold']) {
+    const o = await p.evaluate((k) => { let reads = 0; const dc = db.collection; db.collection = function () { reads++; return dc.apply(this, arguments); }; const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight;
+      document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`).click(); db.collection = dc; const ov = document.getElementById('ctrl_kpi'); const tx = ov ? ov.textContent : '';
+      const r = ov ? ov.querySelector('.bigask').getBoundingClientRect() : null;
+      return { ov: !!ov, now: !!(ov && ov.querySelector('.ctrlkpi-now .pxtb')), src: /출처·기준/.test(tx), more: !!(ov && ov.querySelector(`[data-ctrlkpimore="${k}"]`)) && /다음 판/.test(tx), pxBtn: !!(ov && ov.querySelector('[data-ctrlkpigo="px"]')), inV: !!r && r.left >= 0 && r.right <= innerWidth + 1, reads, det: Object.keys(S.detail || {}).join(), bkf: !!document.getElementById('bkf_scr') }; }, k);
+    ok(o.ov && o.now && o.src && o.more && o.inV && o.reads === 0 && o.det === 'bkfold' && o.bkf, `카드 「${k}」 누름 → 안쪽 창(지금 숫자·출처·기준·자세한 기록은 다음 판) · 관제소는 그대로 · 새 읽기 0`, o);
+    if (k === 'view') ok(o.pxBtn === !(await p.evaluate(() => !!(S._pxVwOn && S.px && S.px.vw))), '방문수 — 조회수 기록이 없으면 「👀 조회수 분석 열기」 단추', o);
+    await p.keyboard.press('Escape'); await Wt(p, 150);
+    const gone = await p.evaluate(() => ({ ov: !!document.getElementById('ctrl_kpi'), det: Object.keys(S.detail || {}).join(), bkf: !!document.getElementById('bkf_scr') }));
+    ok(!gone.ov && gone.det === 'bkfold' && gone.bkf, `카드 「${k}」 창 Esc → 닫히고 관제소 그대로`, gone);
+  }
+  await p.evaluate(() => { document.querySelector('#bkf_kpi [data-ctrlkpi="top"]').click(); }); await Wt(p, 100);
+  let cl = await p.evaluate(() => { document.querySelector('#ctrl_kpi .bigask-x').click(); return !!document.getElementById('ctrl_kpi'); }); ok(!cl, '✕ 누름 → 닫힘', cl);
+  await p.evaluate(() => { document.querySelector('#bkf_kpi [data-ctrlkpi="low"]').click(); }); await Wt(p, 100);
+  cl = await p.evaluate(() => { const ov = document.getElementById('ctrl_kpi'); ov.dispatchEvent(new MouseEvent('click', { bubbles: true })); return !!document.getElementById('ctrl_kpi'); }); ok(!cl, '바깥 누름 → 닫힘', cl);
   await p.evaluate(() => { try { localStorage.removeItem('rn-bkf-swfold'); } catch (_) {} });
   ok(!dlg.length, '브라우저 창(alert·confirm·prompt) 한 번도 안 뜸', dlg);
   console.log(bad ? `❌ tBKFTOP1119 ${bad}개 실패` : '✓ tBKFTOP1119 통과'); return bad; });
