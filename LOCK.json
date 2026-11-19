@@ -1,6 +1,20 @@
 {
- "queue": [],
- "ask": null,
+ "queue": [
+  {
+   "who": "lead",
+   "host": "vm-cost0cnt",
+   "why": "판 내기 기다림: cost0cnt 클라우드 읽기 전용 진단 물음",
+   "first": "2026-11-19T23:08:35Z",
+   "at": "2026-11-19T23:08:35Z"
+  }
+ ],
+ "ask": {
+  "who": "lead",
+  "host": "vm-cost0cnt",
+  "why": "판 내기 기다림: cost0cnt 클라우드 읽기 전용 진단 물음",
+  "at": "2026-11-19T23:08:35Z",
+  "first": "2026-11-19T23:08:35Z"
+ },
  "holder": "lead",
  "host": "vm-strat6",
  "what": "감시 전략 판 ⑨ 감시기 규칙 읽기·판매자 움직이는 때",
