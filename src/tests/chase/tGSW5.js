@@ -11,6 +11,7 @@ const cut = (a, b) => { const i = APP.indexOf(a), j = APP.indexOf(b, i + 1); if 
 const BLK = cut('/* ◆gsw 시작', '/* ◆gsw 끝 */'); const JIN = cut('function ctrlJudgeIn(', 'function ctrlPeek('); const WGS = cut('function wgStratOf(', 'const wgSrcTag');
 const BKFJS = APP.split('\n').find((l) => l.startsWith('const bkfJs = '));
 ok(!!BLK && !!JIN && !!WGS && !!BKFJS, '원본에서 시험할 조각을 찾음'); ok(!/\b(alert|confirm|prompt)\(/.test(BLK), '창 블록에 브라우저 팝업 없음');
+const PMC = /function pmCost0\(/.test(APP) ? cut('function pmZ(m)', '\n') + '\n' + cut('function pmCost0(m)', '\n') : ''; /* (buyp1) 미리 보기 매입가 = 웹앱 pmCost0(진짜 0·모름 가름) */
 const FN = ['gswLimHtml', 'gswTimeHtml', 'gswWhenHtml', 'gswWhenRow', 'gswWhenAdd', 'gswWhenMove', 'gswWhenDel', 'gswLadHtml', 'gswBackHtml', 'gswFloorBar', 'gswCheckHtml', 'gswRuleCheck', 'gswRuleEff', 'gswRuleFacts', 'gswLadEx'];
 for (const f of FN) ok(new RegExp('function ' + f + '\\(').test(BLK), '함수 ' + f + ' 있음');
 ok(!!CH.ruleCheck && !!CH.judgeRule && !!CH.RULE_INFO && !!CH.WHEN_K, '판정 엔진에 규칙 층이 내보내짐(0.17.24+)');
@@ -22,7 +23,7 @@ function mk(over) {
   const ctx = { console, S, db, setTimeout, clearTimeout, firebase: { firestore: { FieldValue: { delete: () => ({ __del: 1 }), arrayUnion: (x) => ({ __union: x }) } } }, window: { ReadnowChase: CH, ReadnowPricing: PR }, localStorage: { getItem: () => null, setItem: () => {} }, document: { getElementById: (id) => (id === 'gsw_ov' ? ov : null), createElement: () => ({}) },
     presetsOf: () => S.prCfg.presets || {}, wgStratExt: () => ({}), bkcPaint: () => {}, bkfDirty: () => {}, batchIsOn: () => true, bkfSt: (g) => g, bkfCond: (g) => g.cond || {}, bkcOf: () => ({ def: { rule: S._fold || {} } }), esc: (s) => String(s ?? ''), num: (v) => String(v), won: (v) => (v == null ? '-' : v + '원'), kTime: (s) => String(s || '').slice(5, 16), twiceArm: () => 'go', toast: () => {}, errKo: (e) => String(e), TS: () => 0, slObsCfg: () => ({ fastLagMin: 60 }), ...(over && over.ctx) };
   vm.createContext(ctx); const names = [...FN, 'gswPvOne', 'gswPvRow', 'gswPvSum', 'gswPvHtml', 'gswChange', 'gswClick', 'gswPrep', 'gswPaint', 'gswPvRun', 'ctrlJudgeIn'].filter((f) => new RegExp('function ' + f + '\\(').test(BLK + JIN));
-  vm.runInContext(`${BKFJS}\n${BLK}\n${JIN}\n${WGS}\nglobalThis.E = { ${names.join(', ')} };`, ctx); return { E: ctx.E, S, html, ctx };
+  vm.runInContext(`${BKFJS}\n${BLK}\n${JIN}\n${WGS}\n${PMC}\nglobalThis.E = { ${names.join(', ')} };`, ctx); return { E: ctx.E, S, html, ctx };
 }
 const NOOP = { setTimeout: () => 0 };
 const g0 = () => ({ id: 'g1', name: '그룹1', watch: { on: true, mode: 'auto', apply: 'approve', since: '2026-11-01T00:00:00Z' } });

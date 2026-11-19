@@ -141,6 +141,6 @@ const SALES = () => new Map([['108', [{ ono: 'o1', at: y0 + 10 * 36e5, price: 40
     const blk = SRC.slice(SRC.indexOf('/* CTRLKPI-START'), SRC.indexOf('/* CTRLKPI-END */')); const cols = [...blk.matchAll(/C\('([a-z_0-9]+)'\)/g)].map((x) => x[1]); const wr = [...blk.matchAll(/b\.set\(([^,]+),/g)].map((x) => x[1]);
     ok(cols.every((c) => ['sellers', 'prd_price_batches', 'ctl_kpi_days', 'px_exp', 'prd_locks', 'ctl_kpi_m'].includes(c)) && wr.every((w) => /mref|ctl_kpi_m|ctl_kpi_days/.test(w)), `요약은 읽기 ${[...new Set(cols)].join('·')} · 쓰기는 ctl_kpi_m·ctl_kpi_days뿐`, wr);
     ok(!/crm_orders|phone|addr|buyer|customer/i.test(blk), '요약 구역은 주문·손님 칸을 읽지 않음(판매 장부 mlSales의 상품 코드·값·때만)');
-    ok(/const VERSION = '0\.10\.2'/.test(fs.readFileSync(findUp('readnow-ml-core.js'), 'utf8')), '공용 학습 파일은 그대로(0.10.2 · 수집기 @require 핀을 바꾸지 않음)'); }
+    { const mv = (fs.readFileSync(findUp('readnow-ml-core.js'), 'utf8').match(/const VERSION = '([0-9.]+)'/) || [])[1]; const cs = [path.resolve(__dirname, '..', 'readnow-collector.src.js'), path.resolve(__dirname, '..', '..', 'readnow-collector.user.js')].filter((x) => x && fs.existsSync(x)).map((x) => fs.readFileSync(x, 'utf8')); ok(!!mv && cs.length > 0 && cs.every((c) => c.includes('readnow-ml-core.js?v=' + mv)), `공용 학습 파일 판(${mv})과 수집기 @require 핀이 같음(이 일은 핀을 따로 바꾸지 않음 · buyp1 0.10.3에서 고정 판 대신 같은지로)`); } }
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e && (e.stack || e.message)); process.exit(1); });
