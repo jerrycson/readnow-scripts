@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm-strat6",
- "what": "strat6 웹앱 감시 전략 창 판 ⑦ 판매자 유형·추천·예외",
- "since": "2026-11-19T20:52:30Z",
- "beat": "2026-11-19T21:12:27Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "allcard1 웹앱 1.78.825 관제소 모아 보기·그룹 창 실제 수동 일괄 카드 올림",
-  "at": "2026-11-19T20:52:25Z"
+  "done": "strat6 웹앱 1.78.826 감시 전략 창 판 ⑦ 판매자 유형·추천·예외(엔진 0.17.25 · 수집기 1.89.385 · 머리 그대로)",
+  "at": "2026-11-19T21:12:33Z"
  }
 }
