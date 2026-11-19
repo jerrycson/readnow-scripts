@@ -127,6 +127,7 @@ function screen() { return new Promise((resolve) => { console.log('② 화면');
       for (let i = 0; i < 40 && !(S.prBatches || []).find((b) => b.id === 'rA'); i++) await new Promise((r) => setTimeout(r, 150));
       const a = await bkfTx({ t: 'new', name: '다시 확정 시험 묶음' }); await bkfTx({ t: 'put', fid: a.fid, gids: ['rA'] }); return { fid: a.fid, k }; }, new Date(Date.now() - 10 * 864e5).toISOString());
     await until((fid) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[fid] && S.bkfold.folds[fid].gids.length === 1), 60, r0.fid);
+    await p.evaluate((fid) => openBkfold(fid), r0.fid); const tb = await until(() => { const c = S._bkfTb || {}; return c.rA && c.rA.n ? c.rA.n : null; }, 160); ok(!!tb, '묶음 상태판이 셈', tb);
     await p.setViewportSize({ width: 420, height: 860 });
     await p.evaluate((fid) => bkfTbAll(fid, 'done'), r0.fid);
     const hasB = await until(() => !!document.querySelector('#bkf_ctrl [data-brex]'), 120); ok(!!hasB, '모아 보기 확정 탭 카드에 「다시 확정」 단추(반영 안 됨)', hasB ? undefined : await p.evaluate(() => { const c = document.querySelector('#bkf_ctrl'); return { ctrl: c ? c.innerText.slice(0, 3000) : null, g: (S.prBatches || []).map((b) => b.id + ':' + Object.keys(b.decided || {}).length) }; }));
