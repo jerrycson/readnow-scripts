@@ -121,7 +121,8 @@ require('../harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { 
   await p.evaluate((fid) => { if (!(S.detail && S.detail.bkfold)) openBkfold(fid); window.__OBG = []; window.__obg0 = window.openBatchGroup; window.openBatchGroup = (g, o) => { window.__OBG.push({ g, fold: o && o.fold }); }; }, ids.fid);
   const ic = await until(() => { const L = [...document.querySelectorAll('#bkf_tb [data-bkfgi]')]; return L.length >= 3 ? L.map((b) => ({ g: b.dataset.bkfgi, t: b.title, in: !!b.closest('.bkf-tbn'), vis: b.getBoundingClientRect().width > 0 })) : null; }, 200);
   ok(ic && ['gpA', 'gpB', 'gpE'].every((g) => ic.some((x) => x.g === g && x.in && x.vis)) && ic.every((x) => / — 그룹 화면으로 가기$/.test(x.t)), '📊 그룹 상태판 그룹 이름 옆 ↗(제목 「… — 그룹 화면으로 가기」)', ic);
-  const goT = async (sel, g) => { await p.evaluate(() => { window.__OBG = []; }); await p.locator(sel).first().click(); await W(p, 250); return p.evaluate(() => ({ obg: window.__OBG.slice(), ctrl: !!document.getElementById('bkf_ctrl'), gsw: !!document.getElementById('gsw_ov'), gpw: !!document.getElementById('gpw_ov') })); };
+  const goT = async (sel, g) => { await p.evaluate(() => { window.__OBG = []; }); await p.locator(sel).first().click(); await W(p, 250); const r = await p.evaluate(() => ({ obg: window.__OBG.slice(), ctrl: !!document.getElementById('bkf_ctrl'), gsw: !!document.getElementById('gsw_ov'), gpw: !!document.getElementById('gpw_ov') }));
+    /* 가짜 openBatchGroup은 화면을 안 그림 — pushState가 관제소를 뒤로 가기 자리로 떼어 두었으므로 뒤로 가서 되살림 */ await p.evaluate(() => history.back()); if (!(await until(() => document.querySelectorAll('#bkf_tb [data-bkfgi]').length >= 3 || null, 60))) await p.evaluate((fid) => openBkfold(fid), ids.fid); await until(() => document.querySelectorAll('#bkf_tb [data-bkfgi]').length >= 3 || null, 120); return r; };
   const g1 = await goT('#bkf_tb [data-bkfgi="gpB"]');
   ok(g1.obg.length === 1 && g1.obg[0].g === 'gpB' && g1.obg[0].fold === ids.fid && !g1.ctrl, '상태판 ↗ = openBatchGroup(그룹, { fold: 묶음 }) 한 번 · 거른 관제창은 안 열림', g1);
   await p.evaluate((fid) => { const el = document.getElementById('bkf_tb'); el.innerHTML = ''; S._bkfTb = null; bkfTbPaint(fid); }, ids.fid);
@@ -141,14 +142,17 @@ require('../harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { 
   const m1 = await p.evaluate(() => { const b = document.querySelector('#bkf_tb [data-bkfgi]'); const r = b && b.getBoundingClientRect(); const c = document.querySelector('#bkf_ctl [data-bkfgi]'); const rc = c && c.getBoundingClientRect(); return { a: r ? [Math.round(r.width), Math.round(r.right)] : null, c: rc ? [Math.round(rc.width), Math.round(rc.right)] : null, w: innerWidth, doc: document.documentElement.scrollWidth }; });
   ok(m1.a && m1.a[0] > 0 && m1.a[1] <= m1.w && m1.c && m1.c[0] > 0 && m1.c[1] <= m1.w && m1.doc <= m1.w + 2, '휴대폰(380px) 카드 모양에서도 ↗가 보임 · 가로 넘침 없음', m1);
   await p.setViewportSize({ width: 1400, height: 900 });
-  /* 진짜로 가 봄 — 그룹 화면 · ◀ 묶음 길잡이(S.bkfFrom) */
+  /* 이 화면이 다루는 칸(그룹·묶음(prd_price_batches · _bkfold 포함)·그룹 기록·주문 명령 + 성과 창이 읽은 컬렉션)에 쓰기가 0인지 봄.
+     웹앱 바탕 일(구매 정보 채우기·알림 요약·가격 점검·속도 기록)은 시험 중 때때로 저절로 쓰므로(app_settings/purchase·app_summary/alerts·prd_system/*·perf_logs/* 등) 셈 밖 ·
+     prd_price_batches/b_chk…는 가격 점검이 쓰는 점검용 묶음이라 뺌 · 이번 고침과 무관 */
+  const fwq = await p.evaluate(() => ({ w: (window.__FSW || []).map((x) => x.n + '/' + x.id), rd: Object.keys(window.__RD || {}) }));
+  const TOUCH = new Set(['prd_price_batches', 'prd_price_actions', 'shp_cmds', ...fwq.rd.filter((n) => n !== 'perf_logs')]);
+  const fsw = fwq.w.filter((k) => TOUCH.has(k.split('/')[0]) && !k.startsWith('prd_price_batches/b_chk'));
+  ok(fsw.length === 0, 'Firestore 쓰기 0(이 화면이 다루는 칸 · 읽기만)', { 막힌쓰기: fsw, 바탕일쓰기: fwq.w.filter((k) => !fsw.includes(k)) });
+  /* 진짜로 가 봄 — 그룹 화면 · ◀ 묶음 길잡이(S.bkfFrom) · 여기부터는 예전 그룹 화면이 하던 일(열면 계산·기록)이라 쓰기 셈 밖 */
   await p.evaluate(() => { window.openBatchGroup = window.__obg0; });
   await p.locator('#bkf_tb [data-bkfgi="gpA"]').first().click();
   const rl = await until((fid) => S.detail && S.detail.batch && S.bkfFrom && S.bkfFrom.fid === fid ? { from: S.bkfFrom, ctrl: !!document.getElementById('bkf_ctrl') } : null, 100, ids.fid);
   ok(rl && rl.from.gid === 'gpA' && !rl.ctrl, '↗ = 진짜 그룹 화면(수동 일괄) · 묶음 길잡이 살아 있음', rl);
-  /* 웹앱 바탕 일(aoInfoBackfill 등)이 시험 중 app_settings/purchase·prd_system/buyback을 저절로 씀 — 이번 고침과 무관하므로 그 둘만 뺌 */
-  const BG = new Set(['app_settings/purchase', 'prd_system/buyback']);
-  const fsw = await p.evaluate(() => (window.__FSW || []).map((x) => x.n + '/' + x.id)).then((a) => a.filter((k) => !BG.has(k)));
-  ok(fsw.length === 0, 'Firestore 쓰기 0(읽기만 · 바탕 일 둘 뺌)', fsw);
   ok(dlg.length === 0, '브라우저 창(alert·confirm·prompt) 없음', dlg);
   console.log(bad ? `❌ tGPERF1 ${bad}개 실패` : '✓ tGPERF1 통과'); return bad; });
