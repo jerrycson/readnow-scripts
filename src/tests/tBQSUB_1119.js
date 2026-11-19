@@ -29,4 +29,4 @@ console.log('② 화면 글 검사');
   ok(/S\.batchSubX = \{\}/.test(D), '탭·그룹을 바꾸면 하위 탭 기억을 비움'); }
 console.log('③ 판 글 · 안내');
 { const h = T.match(/'나중에 볼 상품 — 카드의[^']*'/); ok(h && /하위 탭/.test(h[0]) && /빠르게 고르기/.test(h[0]) && /보류는 풀림/.test(h[0]), '보류 탭 안내글에 하위 탭 · 빠르게 고르기 · 보류 풀림 설명', h && h[0].slice(0, 120)); }
-console.log(bad ? `\n❌ ${bad}개 실패` : '\n전부 통과'); process.exit(bad ? 1 : 0);
+console.log(bad ? `\n❌ ${bad}개 실패` : '\n✓ tBQSUB_1119 전부 통과'); process.exit(bad ? 1 : 0);
