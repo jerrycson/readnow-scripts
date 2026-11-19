@@ -98,7 +98,7 @@ console.log('③ 쓰는 길마다 고치기 직전 다시 셈');
   ok(/plkCondOk\(lk\) && \['approve', 'manual', 'revert'\]\.includes\(decision\)\) lkC = lk/.test(pd) && /plkClamp\(lkC, o\.price/.test(pd) && /\.\.\.\(lkC \? \{ plkx: PX \} : \{\}\)/.test(pd), '가격 결정 — 조건 잠금은 선 안에서만 결정 · 승인에 plkx');
   ok(/plkSkipped\(\[x\.key\], '가격 결정'\); throw/.test(pd), '가격 결정 — 완전·새로 잠금은 그대로 막음');
   const be = fnIn(T, 'batchExec0', 'async function ');
-  ok(/if \(!plkCondOk\(v\)\) \{ lk\.push\(p\); continue; \}/.test(be) && /plkClamp\(v, p\.price, X\)/.test(be) && /drop\(cdL,/.test(be), '수동 일괄 — 완전·새로 잠금은 건너뜀 · 조건 잠금은 선 밖이면 뺌');
+  ok(/const W = bqLockWhy\(p\.x, p\.price, M\); if \(!W\) continue; const v = W\.v; if \(W\.m !== 'cond'\) \{ lk\.push\(p\); continue; \}/.test(be) && /plkClamp\(v, p\.price, X\)/.test(be) /* (bqfix1 11/19) 갈래 판정은 공용 bqLockWhy(plkMode: 조건이 비었거나 기한 지남 = 새로 잠금) */ && /drop\(cdL,/.test(be), '수동 일괄 — 완전·새로 잠금은 건너뜀 · 조건 잠금은 선 밖이면 뺌');
   ok(/drop\(cut\.filter\(\(p\) => lotCheck\(p\.x\.l, p\.price\)\)/.test(be) && /plkx \? \{ plkx: \{ \.\.\.plkx \} \}/.test(be), '수동 일괄 — 줄인 값도 묶음 경계·하한선 다시 봄 · 승인에 plkx');
   ok(/plkClamp\(/.test(COL) && /\.plkx/.test(COL) && /noDay: (true|1|!0)/.test(COL), '수집기 — 고치기 직전 plkx로 다시 셈(하루 횟수는 또 세지 않음)');
   ok(/plkClamp\(/.test(CL) && /\.plkx/.test(CL), '클라우드 — 고치기 직전 plkx로 다시 셈');
@@ -121,7 +121,7 @@ console.log('④ 화면 글(서랍·고르기 판·수동 일괄)');
   ok(/data-plkpm="full"/.test(pp) && /data-plkpm="cond"/.test(pp) && /PLK_CF\.map/.test(pp) && /id="plkPv"/.test(pp) && /data-plkpo/.test(pp), '고르기 판 — 완전·조건 · 조건 칸 · 미리 보기 · 그룹에서 빼기');
   ok(/twiceArm\(pu/.test(pp) && !/confirm\(|alert\(/.test(pp + fnIn(T, 'plkPopSave', 'async function ')), '풀기는 두 번 누름 · 브라우저 팝업 없음');
   const br = fnIn(T, 'drawBatchRes');
-  ok(/PLO\.has\(keyOf\(x\)\) \? outI\.push\(i\)/.test(br) && /class="plk-bout"/.test(br) && /data-plkfk="batch"/.test(br), '수동 일괄 — 잠가서 뺀 상품은 탭에서 빠지고 「서랍에서 되돌리기」 단추');
+  ok(/if \(PLO\.has\(keyOf\(x\)\)\) return void outI\.push\(i\)/.test(br) && /class="plk-bout"/.test(br) && /data-plkfk="batch"/.test(br), '수동 일괄 — 잠가서 뺀 상품은 탭에서 빠지고 「서랍에서 되돌리기」 단추');
   ok(/'2026-11-1[89]'/.test(lineOf(T, "PAGE_GUIDES['plkf']")) && /잠금 세 갈래/.test(T), '화면 설명서 고침');
 }
 
@@ -166,8 +166,9 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(a4.on === true && a4.mode === 'full' && a4.out === false, '서랍 「↩ 원래 자리로」 → 잠금은 그대로 · 그룹으로 돌아감', a4);
   await shot(p, '4_서랍_완전잠금', '#plkDr');
   await p.evaluate(async () => { plkDrClose(); await new Promise((r) => setTimeout(r, 500)); });
-  const a5 = await p.evaluate((k) => ({ inGroup: !!document.querySelector(`#sheet .bqc [data-plk="${k}"]`), bout: !!document.querySelector('#sheet .plk-bout') }), k0);
-  ok(a5.inGroup && !a5.bout, '되돌린 상품이 수동 일괄 그룹에 다시 보임', a5);
+  const a5 = await p.evaluate((k) => ({ inGroup: !!document.querySelector(`#sheet .bqc [data-plk="${k}"]`), bout: !!document.querySelector('#sheet .plk-bout'), lk: ((document.querySelector('#sheet #b_lkbar') || {}).textContent || '').replace(/\s+/g, ' ') }), k0);
+  /* (bqfix1 · 정범님 I-1119-1619-18 「선택대기에 잠김 상품이 그대로 있어」) 그룹으로 되돌려도 🔒 완전 잠금이면 탭(선택 대기 등)에는 안 들어가고 「🔒 잠겨서 빠짐」에 셈 */
+  ok(!a5.inGroup && !a5.bout && /잠겨서 빠짐 1개/.test(a5.lk) && /완전 잠금 1/.test(a5.lk), '되돌린 상품은 그룹으로 돌아오되 완전 잠금이라 탭이 아닌 「🔒 잠겨서 빠짐 1개」에', a5);
   /* 휴대폰 너비 — 아래 판 */
   await p.setViewportSize({ width: 360, height: 760 }); await wait(p, 300);
   await p.evaluate(async () => { const o = document.querySelector('#sheet [data-plkopt]'); o.click(); await new Promise((r) => setTimeout(r, 300)); });
