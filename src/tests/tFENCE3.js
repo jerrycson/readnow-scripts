@@ -10,7 +10,8 @@ let bad = 0; const ok = (c, m, x) => { console.log((c ? '  ✓ ' : '  ❌ ') + m
 const find = (L) => L.map((x) => path.join(__dirname, x)).find((x) => fs.existsSync(x));
 const SRC = fs.readFileSync(find(['../cloud/index.js', '../../cloud/index.js']), 'utf8');
 const MLP = find(['../readnow-ml-core.js', '../../readnow-ml-core.js']); const ML = require(MLP); const MLSRC = fs.readFileSync(MLP, 'utf8');
-const PWP = find(['readnow-price-watch.user.js', '../readnow-price-watch.user.js', '../../readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
+// (engimp1 11/19) 감시기는 저장소 사본을 먼저 찾음 — 시험 관문의 시험 틀 폴더(session-kit/pw)에 옛 감시기 사본(0.10.34)이 있어 그것을 먼저 집으면 거짓 실패
+const PWP = find(['../readnow-price-watch.user.js', '../../readnow-price-watch.user.js', 'readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
 const AS = require(find(['../readnow-autosched-core.js', '../../readnow-autosched-core.js'])).AS;
 const RS = require(find(['../readnow-sellers-core.js', '../../readnow-sellers-core.js']));
 const COLP = find(['../readnow-collector.user.js', '../readnow-collector.src.js', '../../src/readnow-collector.src.js']); const COL = COLP ? fs.readFileSync(COLP, 'utf8') : '';

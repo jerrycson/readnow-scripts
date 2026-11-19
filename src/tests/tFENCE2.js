@@ -10,7 +10,7 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
 const find = (L) => L.map((x) => path.join(__dirname, x)).find((x) => fs.existsSync(x));
 const SRC = fs.readFileSync(find(['../cloud/index.js', '../../cloud/index.js', '../../src/cloud/index.js']), 'utf8');
 const MLP = find(['../readnow-ml-core.js', '../../readnow-ml-core.js']); const ML = require(MLP); const MLSRC = fs.readFileSync(MLP, 'utf8');
-const PWP = find(['readnow-price-watch.user.js', '../readnow-price-watch.user.js', '../../readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
+const PWP = find(['../readnow-price-watch.user.js', '../../readnow-price-watch.user.js', 'readnow-price-watch.user.js']); const PW = fs.readFileSync(PWP, 'utf8');
 const APPP = find(['../app.html', '../../src/app.html', '../../app.html']); const APP = APPP ? fs.readFileSync(APPP, 'utf8') : '';
 const H = 3600e3;
 
@@ -55,8 +55,8 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
   /* ── ② 두 사본이 같음 · 감시기 머리 그대로 ── */
   { const cut = (s) => { const a = s.indexOf('/* FENCE-PURE-START'), b = s.indexOf('/* FENCE-PURE-END */'); return a > 0 && b > a ? s.slice(a, b) : null; }; const A = cut(MLSRC), B = cut(PW);
     ok(A && B && A === B, `하루 손해 셈 사본이 학습 공용과 가격 감시기에 글자 그대로 같음(${A ? A.length : 0}자)`);
-    const hd = (s) => s.slice(0, s.indexOf('// ==/UserScript==')).split('\n').filter((l) => !/@version/.test(l)).join('\n'); const orig = (() => { try { return require('child_process').execSync('git show origin/main:readnow-price-watch.user.js', { cwd: path.dirname(PWP), stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) { return null; } })();
-    const vOf = (s) => (String(s).match(/@version\s+(\S+)/) || [])[1] || null; if (orig) ok(hd(orig) === hd(PW) && vOf(PW) === vOf(orig), '감시기 머리(@match·@grant·@connect·@require) 그대로 · @version도 그대로(올리는 것은 메인 세션)'); else console.log('  (감시기 머리 비교: git 기록을 못 읽어 건너뜀)'); }
+    const hd = (s) => s.slice(0, s.indexOf('// ==/UserScript==')).split('\n').filter((l) => !/@version/.test(l)).map((l) => l.replace(/\?v=[\d.]+/, '?v=')).join('\n'); /* (engimp1 11/19) ?v= 판 번호는 머리 서명에서도 빠짐 — 가격 코어 새 판마다 막지 않게 */ const orig = (() => { try { return require('child_process').execSync('git show origin/main:readnow-price-watch.user.js', { cwd: path.dirname(PWP), stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) { return null; } })();
+    const vOf = (s) => (String(s).match(/@version\s+(\S+)/) || [])[1] || null; if (orig) ok(hd(orig) === hd(PW) && String(vOf(PW)).localeCompare(String(vOf(orig)), undefined, { numeric: true }) >= 0, '감시기 머리(@match·@grant·@connect·@require) 그대로 · @version은 main 이상(판 내는 쪽이 올림)'); else console.log('  (감시기 머리 비교: git 기록을 못 읽어 건너뜀)'); }
 
   /* ── ③ 원장 트랜잭션 · 동시성 · 날짜 경계 ── */
   const cA = SRC.indexOf('/* FENCE2-START'), cB = SRC.indexOf('/* FENCE2-END */'); ok(cA > 0 && cB > cA, '클라우드에 하루 손해 원장 칸(FENCE2)이 있음');
