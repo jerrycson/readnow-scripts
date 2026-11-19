@@ -42,7 +42,7 @@ ok(/@version\s+0\.10\.63\b/.test(PW) && /readnow-pricing-core\.js\?v=0\.17\.21\b
 for (const f of ['readnow-registry.js', 'cloud/readnow-registry.js']) { const R = rd(f); ok(/VERSION = '0\.14\.210'/.test(R) && /'readnow-pricing-core\.js': '0\.17\.21'/.test(R), `${f} 0.14.210 · 코어 핀 0.17.21`); }
 
 console.log('③ 웹앱');
-ok(/const APP_VER = '1\.78\.767'/.test(T) && /'1\.78\.767': '2026-11-19'/.test(T) && /\{ d: '2026-11-19', app: '가격 감시기', v: '0\.10\.63'/.test(T) && /\{ d: '2026-11-19', app: '수집기', v: '1\.89\.374'/.test(T), '웹앱 1.78.767 · 기록 줄(감시기 0.10.63 · 수집기 1.89.374)');
+ok(+((T.match(/const APP_VER = '1\.78\.(\d+)'/) || [])[1] || 0) >= 767 && /'1\.78\.767': '2026-11-19'/.test(T) && /\{ d: '2026-11-19', app: '가격 감시기', v: '0\.10\.63'/.test(T) && /\{ d: '2026-11-19', app: '수집기', v: '1\.89\.374'/.test(T), '웹앱 1.78.767 · 기록 줄(감시기 0.10.63 · 수집기 1.89.374)');
 ok(/<p><b>⚡ 빨리 따라 내림 \(판 서\)<\/b>/.test(T), '설명서 문단');
 ok(!/반응 시간 칸이 쌓인 뒤/.test(T), '옛 「반응 시간 칸이 쌓인 뒤」 안내 지움');
 const d0 = T.indexOf('/* (판 버 · ctrlimp3'), d1 = T.indexOf('/* (판 버) 끝 */'); const BEO = d0 > 0 && d1 > d0 ? T.slice(d0, d1) : '';

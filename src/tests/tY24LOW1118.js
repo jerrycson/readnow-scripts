@@ -71,4 +71,17 @@ ok(/prev\.none && !prev\.noneHow \? \{ none: null, noneTry: at \}/.test(tick), '
 ok(/noneHow: v\.noneHow \|\| null/.test(YA) && /noneHow: v\.noneHow \|\| null/.test(T), '웹앱·클라우드 자동 올림이 시장 지표를 줄여 담을 때 noneHow를 함께 담음');
 ok(!/\balert\(|\bconfirm\(/.test(cut('/* ◆y24reg 시작', '/* ◆y24reg 끝 */')), '브라우저 팝업 0');
 
+console.log('③ (chkdone1 11/19) 첫 화면으로 넘어간 검색 — 예스24가 준 쿠키만 담아 한 번 다시');
+{ const i = CL.indexOf('const y24Jar = '); const j = CL.indexOf('async function y24MktTick', i); ok(i > 0 && j > i, '쿠키 통 덩어리 있음');
+  const J = new Function(CL.slice(i, j) + '\nreturn { y24Jar, y24JarTake, y24JarHdr, y24ToMain };')();
+  const R = (L) => ({ headers: { getSetCookie: () => L, get: () => null } });
+  ok(J.y24JarHdr() === '', '처음엔 빈 쿠키(아무것도 만들지 않음)');
+  J.y24JarTake(R(['yes24_glbola_redirect=validationcheck=true|nation_id=x; path=/; secure', 'WMONID=abc; expires=Thu, 01 Jan 2099 00:00:00 GMT']));
+  ok(J.y24JarHdr() === 'yes24_glbola_redirect=validationcheck=true|nation_id=x; WMONID=abc', '예스24가 준 이름=값만 그대로 담음(속성은 버림)', J.y24JarHdr());
+  J.y24Jar.at = Date.now() - 7 * 36e5; ok(J.y24JarHdr() === '' && !Object.keys(J.y24Jar.m).length, '6시간 지나면 버림');
+  ok(J.y24ToMain('https://www.yes24.com/Main/default.aspx') && !J.y24ToMain('https://www.yes24.com/product/search?q=1'), '첫 화면 주소 알아봄');
+  const tk = CL.slice(j, CL.indexOf('const ref = C(\'y24_mkt\').doc(isbn)', j));
+  ok(/y24ToMain\(lastU\) && !y24ToMain\(u\) && y24JarHdr\(\) && pages < tickMax && used < G\.cap/.test(tk), '다시 읽기는 한 번만 · 화면 수 한도 안 · 쿠키를 받았을 때만');
+  ok(/H\.Cookie = ck/.test(tk) && !/Cookie: ['"]/.test(tk), '쿠키 머리는 쿠키 통에서만(손으로 적은 값 0)'); }
+
 console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);
