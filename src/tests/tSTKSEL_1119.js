@@ -30,6 +30,6 @@ ok(has(/VW === 'compact' && !STK\.open\.has\(l\.id\)/) && has(/data-stkfold/) &&
 ok(has(/prdDelReview\('__prd', selNow\(\)\.filter\(\(k\) => canDel/) && has(/stkGPut\(id, selNow\(\)\)/) && has(/openEdCheckList\(false, ids\)/) && has(/stkMetSend\(selNow\(\)\)/), '고른 것 → 삭제 검토·그룹·판본 확인 목록·시장 지표');
 ok(has(/seenPanelUse\(\{ key: 'stock'/) && has(/살핀 것 체크/) && has(/살핀 것 🗂 그룹에 넣기/) && has(/살핀 것 🗑 삭제 검토/) && !has(/tabAct/), '👁 살핀 상품 패널 · 액션 셋 · tabAct는 판 ③');
 ok(/S\.detail && S\.detail\.stock\)\) return; ev\.preventDefault\(\)[^\n]*stkView\(stkView\(\) === 'compact' \? 'full' : 'compact'\)/.test(T), 'Alt+V 재고 화면에서 보기 바꿈');
-ok(/async function openEdCheckList\(re, ids\)/.test(T) && /재고에서 고른 \$\{num\(rows\.length\)\}개/.test(T) && /edHide\(l\) \|\| edKwOn\(l\)/.test(T), '판본 확인 목록 — 고른 상품만 받기');
+ok(/async function openEdCheckList\(re, ids(, lab)?\)/.test(T) && /재고에서 고른'?\}? \$\{num\(rows\.length\)\}개/.test(T) /* (panel3 11/19) 수동 일괄 그룹 이름표(lab)도 받음 · 없으면 그대로 '재고에서 고른' */ && /edHide\(l\) \|\| edKwOn\(l\)/.test(T), '판본 확인 목록 — 고른 상품만 받기');
 ok(/id="st_stkmet"/.test(T) && /stkMetMax: v/.test(T), '⚙ 설정 — 한 번 최대 권수');
 console.log(bad ? '❌ ' + bad + '개 틀림' : '✓ tSTKSEL_1119 통과'); process.exit(bad ? 1 : 0);
