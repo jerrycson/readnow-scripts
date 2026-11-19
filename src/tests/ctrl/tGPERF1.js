@@ -52,7 +52,8 @@ require('../harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { 
     const a = await bkfTx({ t: 'new', name: '성과 시험 묶음' }); await bkfTx({ t: 'put', fid: a.fid, gids: ['gpA', 'gpB', 'gpE'] }); const e = await bkfTx({ t: 'new', name: '빈 시험 묶음' });
     return { fid: a.fid, efid: e.fid }; });
   const until = async (fn, n, arg) => { for (let i = 0; i < (n || 60); i++) { const v = await p.evaluate(fn, arg).catch(() => null); if (v) return v; await W(p, 150); } return null; };
-  await until((fid) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[fid] && S.bkfold.folds[fid].gids.length === 3), 60, ids.fid);
+  /* 묶음 + 그룹 목록(S.prBatches)이 다 읽힌 뒤 엶 — 그룹 목록이 늦으면 그룹 줄이 아직 없어 흔들렸음 */
+  await until((fid) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[fid] && S.bkfold.folds[fid].gids.length === 3 && Array.isArray(S.prBatches) && ['gpA', 'gpB', 'gpE'].every((g) => S.prBatches.some((x) => x.id === g))), 200, ids.fid);
   /* 여기부터 쓰기 0 · 읽기 셈 */
   await p.evaluate(() => { window.__FSW = []; window.__RD = {}; const oc = db.collection; db.collection = function (n) { const q = oc.call(db, n); const tag = (o) => { const g = o.get; o.get = function () { window.__RD[n] = (window.__RD[n] || 0) + 1; return g.apply(this, arguments); }; const w = o.where; if (w) o.where = function () { return tag(w.apply(this, arguments)); }; return o; }; return tag(q); }; S._gpActs = null; });
   await p.evaluate((fid) => openBkfold(fid), ids.fid);
