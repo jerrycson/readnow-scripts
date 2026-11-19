@@ -62,5 +62,5 @@ const ctxMk = () => { const S = { plist: new Map(), pmetrics: new Map(), prBatch
   { ok(T.E.gswSlLine([{ at: '2026-11-01T00:00:00Z', to: 100, chP: 90 }]) === '', '한 점이면 그림 없음'); const sv = T.E.gswSlLine([{ at: '2026-11-01T00:00:00Z', to: 100, chP: 90 }, { at: '2026-11-02T00:00:00Z', to: 90, chP: 85 }, { at: '2026-11-03T00:00:00Z', to: 90, chP: 80 }]); ok(/<svg/.test(sv) && (sv.match(/<path/g) || []).length === 2 && /H/.test(sv) && /V/.test(sv), '두 줄 계단 선'); }
   /* ⑦ 정렬·거르기 */
   { const V = T.E.gswSlView(P); V.s = 'cheap'; let L = T.E.gswSlRows(P).list; ok(L[0].cheap === 8 && L.every((r, i) => !i || L[i - 1].cheap >= r.cheap) && L.find((r) => r.sc === 'A').cheap === 3, '싼 책 많은 차례(E·F 8권 → A 3권)'); V.s = 'chase'; L = T.E.gswSlRows(P).list; ok(L[0].sc === 'A', '추격 기록 많은 순 첫째 A(관계를 읽은 뒤)'); V.f = 'chased'; L = T.E.gswSlRows(P).list; ok(L.length === 1 && L[0].sc === 'A', '추격한 판매자만'); V.f = 'cheap'; L = T.E.gswSlRows(P).list; ok(L.every((r) => r.cheap > 0), '우리보다 싼 판매자만'); }
-  console.log(`tGSW6: ${n - bad}/${n} ${bad ? '실패 ' + bad : '통과'}`); process.exit(bad ? 1 : 0);
+  console.log(bad ? `❌ tGSW6 실패 ${bad}/${n}건` : `✅ tGSW6 통과 ${n}건`); process.exit(bad ? 1 : 0);
 })();
