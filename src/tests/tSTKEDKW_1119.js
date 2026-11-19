@@ -17,7 +17,7 @@ const PICK = { c: { itemId: '9' } }; const USE = { a: 'check', b: 'auto', c: 'sr
 const env = { S, db, firebase, PRDF: () => P, localStorage: LS, toast: (m, e) => toasts.push([m, e]), num: (n) => String(n), won: (n) => n + '원', esc: (x) => String(x), regAgo: (ms) => Math.round(ms / 6e4) + '분',
   edOf: (l) => (S.app.edSearch === false ? null : ED[l.id] || null), edPickOf: (l) => PICK[l.id] || null, edUse: (l) => USE[l.id] || null, edCandsOf: (l) => CANDS[l.id] || [], edRec: () => null, edHide: (l) => USE[l.id] === 'check',
   edChMin: (c) => c.channels.seller.min, edChN: (c) => c.channels.seller.n, edKwHits: (l) => { const r = ED[l.id]; return r ? [...r.kw, ...r.br.map((b) => `(${b})`), ...r.note] : []; }, edKwState: () => '', edCandRow: (l, c) => `<div data-edpick="${l.id}|${c.itemId}">후보 ${c.itemId}</div>`,
-  loadNbm: async () => { S.nbmLoaded = true; }, STK_MET_MS: 24 * 36e5 };
+  loadNbm: async () => { S.nbmLoaded = true; }, STK_MET_MS: 24 * 36e5, edUrlOut: () => false, edUrlBtn: (l) => `<button data-edurl="${l.id}">＋ 후보에 없는 판</button>` }; /* (판 ④) 주소 붙여 정함 단추 — 자세한 것은 tEDPICKURL_1119 */
 const names = Object.keys(env); const F = new Function(...names, PF + '\n' + BLK + '; return { edNotePrefetch, stkEkKind, stkEkIn, stkEkCount, stkEkLeft, stkEkAt, stkEkLock, stkEkGather, stkEkMkt, stkEkPanel, stkEkBar, stkEkTag, STK_EK_CAP, STK_EKF };')(...names.map((k) => env[k]));
 const L = (id, o) => ({ id, listingId: 'L' + id, title: '책 ' + id, status: '판매중', price: 10000, qty: 1, ...o });
 (async () => {
