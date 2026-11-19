@@ -64,14 +64,14 @@
   "at": "2026-11-19T05:09:54Z",
   "first": "2026-11-19T03:22:19Z"
  },
- "holder": "lead",
- "host": "vm-y24res1",
- "what": "예스24 멈춤 풀기",
- "since": "2026-11-19T05:08:59Z",
- "beat": "2026-11-19T05:10:10Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "📁 묶음 지킴 — 웹앱 1.78.777 (bkpin1)",
-  "at": "2026-11-19T05:08:54Z"
+  "done": "실패(종료 1) — 예스24 멈춤 풀기",
+  "at": "2026-11-19T05:10:14Z"
  }
 }
