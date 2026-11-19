@@ -21346,6 +21346,7 @@ const NAV_X = {
   shopBo: ['📊 우리숍 백오피스', '방문·유입·깔때기 · 손님 목록·문의·공지 · 상품 조회→주문 전환(로거 PC에서는 열지 않음)', () => openShopBo()], /* (ord5 11/17) 🔍 기능 찾기에만 있고 탭 묶음에서 닿지 않던 화면 */
   purForm: ['＋ 새 매입 기록', '품목 찾기·추천 매입가로 매입 한 건 적기', () => openPurForm()],
   batch: ['🧮 수동 일괄 처리', '그룹마다 값·판매 상태를 한꺼번에', () => openBatch()],
+  bkfold: ['🛰 관제소', '모든 📁 수동 일괄 묶음을 한곳에서 — 묶음 고르기 띠·맨 위 줄·수치 카드 다섯', () => openCtrlRoom()], /* (kpia1 11/19) 관제소를 상품 탭 💹 가격 묶음 카드에 — 🔍 기능 찾기 관제소 두 항목이 2번 누름 안(tNAV1111 ⑤) */
   chase: ['🎯 추격자 엔진', '지정 판매자를 따라 값 정하기(무시·공격·방어·유동)', () => openChaseEngine()],
   lost: ['🔎 소재불명 수색', '서가에 없는 책 찾기 · 사건 기록', () => openLost()],
   salesRank: ['🏆 매출 순위', '일별 주문 매출 1위부터', () => openSalesRank()],
@@ -21676,7 +21677,7 @@ FEAT.push({ t: '💲 판정 장부 — 엔진이 낸 값이 실제로 팔렸나(
 FEAT.push({ t: '💲 가격 판정 엔진 한눈 — 판정 엔진·스스로 배우기 판 · 챔피언·후보·승격 기록 · 실제 결과 대조 · 빠진 고리', w: '🔬 연구 탭 › 💲 가격 판정 엔진', k: '가격 판정 엔진 판정 pricing 머신러닝 스스로 배우기 진화 승격 챔피언 도전자 기준선 로그 손실 AUC 채점 빠진 고리', go: { fn: () => openEngPx() } });
 const NAV_HUB = {
   purchase: [['🛒 매입 기록', ['purForm', 'purAll', 'purItems', 'suppliers', 'matchNone', 'kimiso', 'hdCalc']], ['🔭 살 책 찾기', ['benchLookup', 'photoPrice', 'aladinPool']], ['📥 등록으로', ['register', 'regNote', 'relink', 'unclear']], ['🏷 처분', ['aladinSell', 'holdPool']]],
-  products: [['📦 재고', ['prodAll', 'edition', 'stockView', 'stopList', 'plkFold', 'shelfmap', 'lost', 'dupes', 'bookSearch', 'unknownCats', 'probs']], ['📥 등록', ['register', 'regNote', 'relink']], ['💹 가격', ['value', 'priceQueue', 'batch', 'chase', 'stratRun', 'priceMon', 'priceHist', 'presets', 'exclude', 'groupPerf', 'sevList']], ['🛒 판매처로', ['ledger', 'y24Ops', 'y24Reg', 'y24All', 'y24Link']], ['📊 분석', ['keywords', 'mktCount', 'pxExp']]],
+  products: [['📦 재고', ['prodAll', 'edition', 'stockView', 'stopList', 'plkFold', 'shelfmap', 'lost', 'dupes', 'bookSearch', 'unknownCats', 'probs']], ['📥 등록', ['register', 'regNote', 'relink']], ['💹 가격', ['value', 'priceQueue', 'batch', 'bkfold', 'chase', 'stratRun', 'priceMon', 'priceHist', 'presets', 'exclude', 'groupPerf', 'sevList']], ['🛒 판매처로', ['ledger', 'y24Ops', 'y24Reg', 'y24All', 'y24Link']], ['📊 분석', ['keywords', 'mktCount', 'pxExp']]],
   channels: [['🧾 한 장부', ['ledger', 'ledOrd']], ['🟥 알라딘', ['alTerms', 'aladinSell', 'refund']], ['🟦 예스24', ['y24Ops', 'y24Reg', 'y24All', 'y24Link']], ['🛍 우리숍', ['shopAdm', 'shopBo']], ['🟩 네이버', ['naver', 'nvTodo', 'chSales']], ['📚 규칙·비용', ['facts', 'costBasis', 'benchCase']]],
   orders: [['📦 출고', ['ship', 'shipDay', 'shipHist', 'invBatch', 'pickup', 'lblCfg']], ['🧾 주문', ['ordAll', 'ledOrd', 'shopAdm', 'cancelHits', 'refund']], ['💰 매출', ['shipSales', 'salesRank', 'forecast', 'sevList']], ['🗺 손님 분포', ['region', 'audience']]],
   search: [['👥 손님 이해', ['audience', 'region', 'voice', 'cons']]],
@@ -24525,7 +24526,11 @@ function mnvGo(k, j, o) { o = o || {}; const sh = MNV.sh; if (!sh) return false;
   if (!String(MSR.q || '').trim() && MSR.open) { MSR.open = false; try { msrDraw(sh); } catch (e) {} }
   const y = el.getBoundingClientRect().top - mnvTopLine(); sh.scrollTop += y; if (el !== x.det || o.flash) { el.classList.remove('msr-hit'); void el.offsetWidth; el.classList.add('msr-hit'); setTimeout(() => el.classList.remove('msr-hit'), 2600); }
   mnvSeen(x.det, 1); try { history.replaceState(history.state, '', location.pathname + location.search + '#man=' + encodeURIComponent(x.k) + (j != null && j >= 0 ? '~' + j : '')); } catch (e) {}
-  MNV.cur = x.k; mnvMark(); if (!MNV.wide && MNV.drawer) mnvDrawer(false); mnvRc(); return true; }
+  MNV.cur = x.k; mnvMark(); if (!MNV.wide && MNV.drawer) mnvDrawer(false); mnvRc();
+  /* (kpia1 11/19) 고른 장·소제목으로 간 뒤 곧바로(30ms 안) 설명서 창이 30~90px 도로 올라가 소제목이 기준선 아래로 밀리던 것(휴대폰에서 잦음 · tMAN ▸ 소제목 흔들림) — 다음 그림 때와 0.12초 뒤 한 번 더 맞춤. 그 사이 사람이 굴리거나 누르거나 크게 옮기면 손대지 않음 */
+  const t0 = performance.now(); MNV.goAt = t0; if (!sh._mnvUsr) { sh._mnvUsr = 1; ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => sh.addEventListener(ev, () => { MNV.usrAt = performance.now(); }, { passive: true })); }
+  const top0 = sh.scrollTop; const fix = () => { if (MNV.sh !== sh || MNV.goAt !== t0 || (MNV.usrAt || 0) > t0 || !el.isConnected || Math.abs(sh.scrollTop - top0) > 250) return; const d = el.getBoundingClientRect().top - mnvTopLine(); if (Math.abs(d) > 2) sh.scrollTop += d; };
+  requestAnimationFrame(fix); setTimeout(fix, 120); return true; }
 function mnvUrl(k) { return location.origin + location.pathname + location.search + '#man=' + encodeURIComponent(k); }
 async function mnvCopy(k) { const u = mnvUrl(k); let ok = false; try { await navigator.clipboard.writeText(u); ok = true; } catch (e) { try { const ta = document.createElement('textarea'); ta.value = u; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (er) {} }
   try { history.replaceState(history.state, '', '#man=' + encodeURIComponent(k)); } catch (e) {} toast(ok ? '🔗 이 장 주소를 복사함 — 붙여 넣어 열면 설명서 이 장으로' : '🔗 주소: ' + u); return u; }
