@@ -157,7 +157,10 @@ function rhRelayCalc(docs, today) {
   put('N10', g('app_settings/adapt_health').score, { metric: '칸 건강 점수(높을수록 좋음)', note: `읽은 쪽 ${g('app_settings/adapt_health').pages || '?'}` });
   const M = getP(g('app_settings/ml_state'), 'learn.metrics') || {}; const ll = (x) => (x && typeof x.logloss === 'number' ? x.logloss : null);
   if (ll(M.champ) != null) { put('R02', ll(M.champ), { metric: '로그 손실(시간 분할 검증)', note: `챔피언 ${r4(ll(M.champ))} · 도전자 ${r4(ll(M.chall))} · 기준 ${r4(ll(M.base))} · 학습 줄 ${getP(g('app_settings/ml_state'), 'learn.rows') || '?'}` }); if (out.R02 && ll(M.chall) != null) out.R02.chall = r4(ll(M.chall)); }
-  if (docs['app_settings/strat_run']) put('R04', +g('app_settings/strat_run').n || 0, { metric: '실행한 전략 수', note: `켜짐 ${g('app_settings/strat_run').on ? '예' : '아니오'} · ${g('app_settings/strat_run').idle || ''}` });
+  /* (engr04 11/19) R04 — 무손해 모드로 ⚡ 전략 실행이 0인 동안은 그림자 대조(값 안 바꿈 · eng_shadow/R04)의 처리 무리 수를 셈 · 없으면 옛 셈(실행한 전략 수) */
+  const S4 = docs['eng_shadow/R04']; const SR = g('app_settings/strat_run');
+  if (S4 && S4.cnt && S4.day) { const c = S4.cnt, e = getP(S4, 'score.eff30') || getP(S4, 'score.eff7'); put('R04', +c.treat || 0, { mfix: 1, metric: '그림자 대조 — 엔진이 내리자고 했지만 그대로 둔 상품 수(값 안 바꿈 · 손해 0)', note: `대조 ${c.control || 0} · 빠짐 ${c.out || 0} · 오늘 새 ${c.newTreat || 0}(짝 ${c.paired || 0}) · ${getP(S4, 'score.verdict') || '?'}${e && typeof e.d === 'number' ? ` · 판매율 차 ${r4(e.d)}` : ''} · ${S4.day} · 실행한 전략 ${+SR.n || 0}(${SR.idle || ''})` }); if (out.R04 && e && typeof e.d === 'number') out.R04.chall = r4(e.d); }
+  else if (docs['app_settings/strat_run']) put('R04', +g('app_settings/strat_run').n || 0, { metric: '실행한 전략 수', note: `켜짐 ${g('app_settings/strat_run').on ? '예' : '아니오'} · ${g('app_settings/strat_run').idle || ''}` });
   const plan = getP(g('app_settings/pxDaily'), 'lastPlan.plan'); if (Array.isArray(plan)) put('R07', plan.reduce((a, x) => a + (+(x && x.addLeft) || 0), 0), { metric: '조회수 실험 남은 권수', note: `묶음 ${plan.length}` });
   if (docs['app_settings/eng_fence']) put('R18', g('app_settings/eng_fence').noLossMode ? 1 : 0, { metric: '무손해 모드(1=켬)', note: '' });
   put('R19', getP(g('app_settings/extras_study'), 'comp.sealed.premium'), { metric: '미개봉 웃돈', note: `값 아는 것 ${g('app_settings/extras_study').priced || '?'}` });
@@ -216,7 +219,7 @@ function makeResHealth(D) {
   /* 하루 한 번 — 클라우드가 셀 수 있는 연구 맥박을, 세션이 relayStaleH시간 넘게 안 넣은 것만 */
   async function relay(o) { o = o || {}; const nowMs = now(); const C0 = await cfg(); if (C0.on === false || (D.jobsOn && !(await D.jobsOn()))) return { skip: 'off' }; const today = kstDay(nowMs);
     const prev = (await get('app_settings/research_health')) || {}; if (!o.force && ((prev.relay && prev.relay.day === today) || kstHour(nowMs) < C0.relayHourKST)) return null;
-    const docs = {}; for (const p of ['app_settings/voice_study', 'app_settings/adapt_health', 'app_settings/ml_state', 'app_settings/strat_run', 'app_settings/pxDaily', 'app_settings/eng_fence', 'app_settings/extras_study', 'app_settings/badge_study', 'app_settings/buyback_stats']) { try { docs[p] = await get(p, null); } catch (e) {} }
+    const docs = {}; for (const p of ['app_settings/voice_study', 'app_settings/adapt_health', 'app_settings/ml_state', 'app_settings/strat_run', 'app_settings/pxDaily', 'app_settings/eng_fence', 'app_settings/extras_study', 'app_settings/badge_study', 'app_settings/buyback_stats', 'eng_shadow/R04']) { try { docs[p] = await get(p, null); } catch (e) {} }
     for (const dd of [today, kstDay(nowMs - 864e5)]) { try { const x = await get(`seller_fp_runs/${dd}_deep`, ['pairs', 'day']); if (x && Array.isArray(x.pairs)) { docs.deep = { ...x, day: x.day || dd }; break; } } catch (e) {} }
     for (const p of ['app_settings/seller_aud', 'app_settings/aisum_state', 'app_settings/value_model']) { try { docs[p] = await get(p, RELAY_FIELDS[p]); } catch (e) {} }
     /* (1.1.0) 예전 세션(git 장부) 몫 재료 — Firestore에 같은 것이 있음 · 실패해도 다른 연구는 그대로 */
@@ -227,7 +230,7 @@ function makeResHealth(D) {
     for (const [id, v] of Object.entries(calc)) { const cur = S[id] || {}; const t = toMs(cur.at); const src = String(cur.src || ''); const fromUs = /^cloud reshealth/.test(src);
       if (!o.force && !fromUs && t != null && nowMs - t < C0.relayStaleH * 36e5) { skipped.push(id); continue; } // 세션이 넣은 새 값은 그대로 둠
       const trend = (Array.isArray(cur.trend) ? cur.trend : []).filter((x) => x && x.d !== today).concat(v.value == null ? [] : [{ d: today, v: v.value }]).slice(-90);
-      P.studies[id] = { at: D.nowIso(), metric: cur.metric || v.metric, value: v.value, champ: v.champ, ...(v.chall != null ? { chall: v.chall } : {}), trend, changed: `클라우드가 대신 셈(세션 회차가 ${t == null ? '넣은 적 없음' : Math.round((nowMs - t) / 36e5) + '시간 전'})`, note: v.note || '', src: `cloud reshealth ${RH_V}` }; }
+      P.studies[id] = { at: D.nowIso(), metric: v.mfix ? v.metric : cur.metric || v.metric, value: v.value, champ: v.champ, ...(v.chall != null ? { chall: v.chall } : {}), trend, changed: `클라우드가 대신 셈(세션 회차가 ${t == null ? '넣은 적 없음' : Math.round((nowMs - t) / 36e5) + '시간 전'})`, note: v.note || '', src: `cloud reshealth ${RH_V}` }; }
     const ids = Object.keys(P.studies); let r = { n: 0 }; if (ids.length && D.pulse) r = await D.pulse(P, 'engine:health');
     const errs = ['spErr', 'oopErr', 'salesErr'].filter((k) => docs[k]).map((k) => `${k} ${docs[k]}`); const rel = { day: today, at: D.nowIso(), ids, skipped, n: r && r.n || 0, ...(errs.length ? { err: errs.join(' · ') } : {}) }; await REF().set(rhClean({ relay: rel }), { merge: true }); if (ids.length) D.log('🩺 연구 건강 맥박 대신 넣음', ids.join('·')); return rel; }
   return { check, noteRun, relay, _busy: () => busy };

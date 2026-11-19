@@ -30,7 +30,7 @@ function mkFS(data, hook) { const st = { reads: 0 };
 /* 지어낸 자료 — D일 × 조각 S개 × 줄 R개 */
 function mkData(o) { let seed = o.seed || 7; const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648); const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const kst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); const now = Date.now(); const N = o.S * o.R; const keys = Array.from({ length: N + 600 }, (_, i) => 'aladin_' + (7000000 + i)); const isb = (i) => '979' + String(1000000000 + i).slice(-10);
-  const D = { ml_days: {}, ml_sales: {}, prd_listings: {}, sp_daily: {}, app_settings: { buyback_stats: {}, value_cfg: o.benchOff ? { benchUse: false } : {} }, bench_days: {}, bench_state: {}, bench_items: {}, prd_books: {}, prd_book_metrics: {}, ml_value_models: {}, ml_sp_obs: {} };
+  const D = { ml_days: {}, ml_sales: {}, prd_listings: {}, sp_daily: {}, app_settings: { buyback_stats: {}, value_cfg: { ...(o.benchOff ? { benchUse: false } : {}), goneP: o.goneP || 'off' } }, bench_days: {}, bench_state: {}, bench_items: {}, prd_books: {}, prd_book_metrics: {}, ml_value_models: {}, ml_sp_obs: {} };
   for (let i = 0; i < keys.length; i++) D.prd_listings[keys[i]] = { isbn13: i % 5 ? isb(i) : null, status: i % 40 === 0 ? '판매완료' : '판매중', active: i % 40 !== 0, usedCode: String(i) };
   const sales = {}; for (let d = o.D; d >= 0; d--) { const day = kst(now - d * 864e5); const off = (o.D - d) * 37; D.ml_days[day] = { day, shards: o.S, n: N, colNames: ['key'] };
     for (let s = 0; s < o.S; s++) { const c = { key: [], sp: [], used: [], rank: [], price: [], sameMin: [], list: [], p1: [], top: [], mkt: [], grade: [], age: [], cat: [] };
@@ -56,7 +56,7 @@ async function runOnce(kind, o) { const S = kind === 'old' ? oldSrc() : SRC; if 
   let r2 = null; const p1 = X.valueLearn(true); if (o.twice) r2 = await X.valueLearn(true); const r = await p1; if (meas) { G(); const h = process.memoryUsage().heapUsed - base; if (h > peak) peak = h; }
   const vm = D.app_settings.value_model; const so = D.app_settings.sp_obs; return { r, r2, vm, so, peakMB: Math.round(peak / 1048576), logs, reads: F.st.reads }; }
 
-const strip = (m) => { if (!m) return m; const o = JSON.parse(JSON.stringify(m)); for (const k of ['trainedAt', 'uploadedAt', 'learnMem', 'at']) delete o[k]; if (o.benchSt) { delete o.benchSt.ms; } return o; };
+const strip = (m) => { if (!m) return m; const o = JSON.parse(JSON.stringify(m)); for (const k of ['trainedAt', 'uploadedAt', 'learnMem', 'at', 'benchGone', 'goneSel']) delete o[k]; /* (engr04 11/19) 사라짐 보정 고름 칸은 새 판에만 — 견줌은 보정 끔(goneP 'off')으로 */ if (o.benchSt) { delete o.benchSt.ms; } return o; };
 /* 칸마다 수 견줌(상대 오차) */
 function near(a, b, tol, p) { p = p || ''; if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b)) ? null : p + ` ${a}≠${b}`; if (Array.isArray(a) || (a && typeof a === 'object')) { if (!b || typeof b !== 'object') return p + ' 모양 다름'; const ks = new Set([...Object.keys(a), ...Object.keys(b)]); for (const k of ks) { const e = near(a[k], b[k], tol, p + '.' + k); if (e) return e; } return null; } return a === b ? null : p + ` ${JSON.stringify(a)}≠${JSON.stringify(b)}`; }
 
@@ -74,6 +74,9 @@ function near(a, b, tol, p) { p = p || ''; if (typeof a === 'number' && typeof b
     const { oursOnly: x1, benchOnly: x2, benchSt: x3, ours: x4, ...ra } = a; const { oursOnly: y1, benchOnly: y2, benchSt: y3, ours: y4, ...rb } = b; const e = near(ra, rb, 1e-9); ok(!e, `[${tag}] 합친 표(src ${b.src}) 칸마다 상대 오차 1e-9 안`, e);
     ok(JSON.stringify(strip(O.so)) === JSON.stringify(strip(N.so)) && N.so && N.so.books > 0, `[${tag}] SP 변화 관찰(sp_obs) 똑같음 (책 ${N.so && N.so.books})`);
     if (o.nonAdd) ok(N.vm.learnMem.mode === 'whole' && N.logs.some((l) => /예전처럼 한 번에/.test(l)), '더할 수 없는 칸이 생기면 예전처럼 한 번에 배움(mode whole)'); else ok(N.vm.learnMem && N.vm.learnMem.mode === 'merge' && N.vm.learnMem.docs === o.D * o.S, `[${tag}] 조각마다 흘려 셈(mode merge · 조각 ${N.vm.learnMem && N.vm.learnMem.docs}개)`); }
+  /* (engr04 11/19) 🎯 사라짐 보정 auto — 켠 쪽·끈 쪽을 같은 시험 기간(마지막 3일)으로 채점해 이긴 쪽을 씀 · value_gone 기록 */
+  for (const gp of ['auto', 'on']) { const o = { D: 12, S: 3, R: 300, sold: 40, bench: 120, seed: 3, goneP: gp }; const N = await runOnce('new', o); const g = N.vm && N.vm.goneSel;
+    ok(g && g.mode === gp && g.scored && g.hoDays.length === 3 && g.on && g.off && g.on.auc != null && g.off.auc != null && g.s === 0.167 && (gp === 'on' ? g.use === 'on' : g.use === g.pick) && N.vm.benchGone === (g.use === 'on'), `[사라짐 보정 ${gp}] 같은 시험 기간으로 켬·끔 채점 · ${gp === 'auto' ? '이긴 쪽(' + (g && g.pick) + ')' : '늘 켬'}을 씀`, g && { mode: g.mode, pick: g.pick, use: g.use, on: g.on, off: g.off, hoDays: g.hoDays }); }
   /* ④ 두 번 겹치지 않음 · 진단 길 */
   { const T = await runOnce('new', { D: 3, S: 1, R: 50, sold: 5, bench: 10, twice: true }); ok(T.r2 && T.r2.skip === 'busy' && T.r && T.r.n > 0, '같은 때 두 번 부르면 뒤의 것은 skip busy'); }
   ok(/if \(q\.vlearn\)/.test(SRC) && /HV\('valueLearn', \(\) => valueLearn\(true\)\)/.test(SRC) && /HV\('valueLearn', valueLearn\)/.test(SRC), '진단 vlearn=1(HV로 지금 한 번) · 3시간 사슬은 그대로 HV');
