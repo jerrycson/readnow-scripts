@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-hmf1",
-   "why": "판 내기 기다림: hmf1 공용 열 지도 판 F",
-   "first": "2026-11-19T12:31:03Z",
-   "at": "2026-11-19T15:36:05Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-pxg1",
    "why": "판 내기 기다림: pxg1 조회수 표 판 G",
    "first": "2026-11-19T12:35:17Z",
@@ -94,16 +87,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-hmf1",
-  "why": "판 내기 기다림: hmf1 공용 열 지도 판 F",
-  "at": "2026-11-19T15:36:05Z",
-  "first": "2026-11-19T12:31:03Z"
+  "host": "vm-pxg1",
+  "why": "판 내기 기다림: pxg1 조회수 표 판 G",
+  "at": "2026-11-19T15:37:02Z",
+  "first": "2026-11-19T12:35:17Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-hmf1",
+ "what": "hmf1 공용 열 지도 판 F",
+ "since": "2026-11-19T15:37:08Z",
+ "beat": "2026-11-19T15:37:08Z",
  "last": {
   "who": "lead",
   "done": "strat6 감시 전략 판 ② 웹앱 1.78.807 냄 (main afb4fb974)",
