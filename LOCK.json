@@ -2,13 +2,6 @@
  "queue": [
   {
    "who": "lead",
-   "host": "vm-strat6",
-   "why": "판 내기 기다림: strat6 감시 전략 판 ② 그룹 전략 창 미리 보기",
-   "first": "2026-11-19T12:16:36Z",
-   "at": "2026-11-19T15:00:52Z"
-  },
-  {
-   "who": "lead",
    "host": "vm-hmf1",
    "why": "판 내기 기다림: hmf1 공용 열 지도 판 F",
    "first": "2026-11-19T12:31:03Z",
@@ -94,16 +87,16 @@
  ],
  "ask": {
   "who": "lead",
-  "host": "vm-strat6",
-  "why": "판 내기 기다림: strat6 감시 전략 판 ② 그룹 전략 창 미리 보기",
-  "at": "2026-11-19T15:00:52Z",
-  "first": "2026-11-19T12:16:36Z"
+  "host": "vm-hmf1",
+  "why": "판 내기 기다림: hmf1 공용 열 지도 판 F",
+  "at": "2026-11-19T15:01:18Z",
+  "first": "2026-11-19T12:31:03Z"
  },
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm-strat6",
+ "what": "strat6 감시 전략 판 ② 그룹 전략 창 미리 보기",
+ "since": "2026-11-19T15:01:54Z",
+ "beat": "2026-11-19T15:01:54Z",
  "last": {
   "who": "lead",
   "done": "kpia1 판 A 웹앱 1.78.806 냄(main 036613705 · 운영 확인) · 관제소 바로 가기·설명서 소제목 다시 맞춤(main에서도 실패하던 tNAV1111·tMAN 고침) · D·E는 줄 다시 섬",
