@@ -75,4 +75,4 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
   const h = await p.evaluate(() => { S.devConflict = { name: 'HOME', ageMin: 3, stale: false, ua: 'x' }; S.devTry = 'HOME'; return devConflictHtml(); });
   ok(/브라우저 자료를 지운 뒤\(이지클린 등\)라면 같은 PC일 가능성이 큼 — 27분 뒤 '🖥 이 PC가 맞음 — 이름 가져오기' 단추가 생김/.test(h), '안내 글에 N분 뒤 가져오기 단추가 생김(30-3=27)', h.slice(0, 600));
   await p.evaluate(() => { S.devConflict = null; });
-}); console.log(bad ? '\n실패 ' + bad : '\n모두 통과'); process.exit(bad ? 1 : 0); })();
+}); console.log(bad ? '\n❌ tC2NAME1_1120 실패 ' + bad + '건' : '\n✅ tC2NAME1_1120 모두 통과'); process.exit(bad ? 1 : 0); })();
