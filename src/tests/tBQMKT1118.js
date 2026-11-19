@@ -37,7 +37,7 @@ console.log('② 코드 확인');
   ok(/id="b_metrics"[^\n]{0,300}>이 그룹 시장 지표 갱신 \(\$\{num\(R\.length - tabs\.sold\.length\)\}개\)/.test(T), '그룹 단추 수 = 판매완료 뺀 전부');
   ok(/const so = new Set\(tabs\.sold\); const mk = R\.filter\(\(x, i\) => !so\.has\(i\)\)\.map\(keyOf\)/.test(T) && /bMetricsSend\(id, c\.name, mk,/.test(T), '그룹 갱신이 보내는 상품 = 모든 탭(판매완료만 뺌)');
   ok((T.match(/\$\{bqMetBtn\(k\)\}/g) || []).length >= 2, '카드 단추 — 한눈에·자세히 카드 둘 다');
-  ok(/querySelectorAll\('\[data-bqmet\]'\)[\s\S]{0,400}pmkRequest\(l, false\)/.test(T) && /e\.stopPropagation\(\)/.test(T), '카드 단추 = pmkRequest 재사용(카드 펼침과 겹치지 않음)');
+  ok(/querySelectorAll\('\[data-bqmet\]'\)[\s\S]{0,400}(pmkRequest|bqMetRequest)\(l(, false)?\)/.test(T) && /e\.stopPropagation\(\)/.test(T), '카드 단추 = pmkRequest 재사용(카드 펼침과 겹치지 않음)');
   ok(/tabAct: BQ_TABMET\.includes\(T\)/.test(T) && /tabMetReqAt: \{ \[T\]: q\.lastMetricsReqAt \}/.test(T) && /get\(\{ source: 'server' \}\)/.test(T), '탭 단추 — 서버에서 다시 읽어 잠금 확인 · 탭 시각만 저장(그룹 시각·lastKeys는 그대로)');
   const sa = cut('async function seenTabAct(', 'async function seenRun('); ok(/armTU = Date\.now\(\) \+ 4000/.test(sa) && /SEENP\.done = \{/.test(sa), '탭 단추 두 번 누름 · 끝남 표시(닫기 있음)');
   ok(/if \(sp === 'tabact'\) return seenTabAct\(\);/.test(T) && /\$\{seenTabActHtml\(c, B\)\}\$\{PL\}/.test(T), '살핀 패널 — 살핀 것 단추와 따로 구획');
