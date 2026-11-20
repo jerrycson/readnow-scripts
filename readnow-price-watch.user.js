@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.74
+// @version      0.10.75
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -486,16 +486,16 @@
   const EXW = () => window.ReadnowExec || globalThis.ReadnowExec;
   async function xBegin(kind, key, detail) { const X = EXW(); if (!X) return { ok: true, none: true }; try { return await X.begin(db, { kind, key, by: PC, detail }); } catch (e) { log(`⚠ 실행 기록을 못 적음 — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''} · 반영은 예전처럼 하고 기록만 빠짐`, 1); return { ok: true, none: true }; } }
   const xEnd = (o, status, msg) => { const X = EXW(); if (!X || !o || o.none) return Promise.resolve(); return X.finish(db, { kind: o.kind, key: o.key }, status, { msg }).catch(() => {}); };
-  let apMore = false, apVAt = 0; const AP_V_EVERY = 5 * 60000; /* (0.10.74) apMore = 반영 대기가 한 번에 다 못 할 만큼 남음 → 판정 바퀴가 상품 하나마다 반영부터(사람이 확정한 값이 먼저) */
+  let apMore = false, apWant = false; /* (0.10.75 정범님 I-1120-0937-10 「샵매니저 반영의 모든 작업을 최우선 · 공개 반영 확인 같은 덜 중요한 것은 그 순간 자리를 내어줌」) apWant = 새 확정이 들어옴(실시간 듣기) → 확인·판정 바퀴가 그 자리에서 비킴 */ /* (0.10.74) apMore = 반영 대기가 한 번에 다 못 할 만큼 남음 → 판정 바퀴가 상품 하나마다 반영부터(사람이 확정한 값이 먼저) */
   async function executeApproved() {
     await unstick();
     const st = ['approved', 'manual', 'hold', 'unhold']; const docs = [];
     for (const k of st) { const q = await C('prd_price_decisions').where('approvalState', '==', k).get(); q.docs.forEach((d) => docs.push(d)); }
-    apMore = false; if (!docs.length) return; log(`반영할 관리자 결정 ${docs.length}건`);
+    apMore = false; apWant = false; if (!docs.length) return; log(`반영할 관리자 결정 ${docs.length}건`);
     const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); let n = 0; // (0.10.19) 정범님 10/26: 한국 날짜(예전 UTC — 같은 문서 kst와 달랐음) // (0.6.0) 하루 반영 상한 없음 — 확정한 것은 모두 차례로 (정범 결정 2026-10-07)
     const offOf = (x) => { const a = x.approval || {}; return a.decision === 'batch' && a.batchId && (SET.batchOff || {})[a.batchId]; }; // (0.6.0) 꺼진 수동 일괄 그룹: 그 그룹이 확정한 것은 건드리지 않고 기다림 (설정은 실시간 — 도는 중에 꺼도 다음 상품부터)
     let offN = 0;
-    const post = async (url, body) => { await PACE.wait(sleep); return fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body }); };
+    const post = async (url, body) => { await PACE.wait(sleep, 1, true); return fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body }); };
     let nDone = 0; for (const d0 of docs) { if (++nDone > 200) { apMore = true; log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); break; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */
       if (stop || SET.killSwitch || !isMine()) return; const x = d0.data(); const kind = x.approvalState; const now = new Date().toISOString(); const d = d0;
       let xo = null; // 이 결정의 실행 기록 (열려 있으면 실패 때 '실패'로 닫음)
@@ -569,7 +569,7 @@
           if (!fz || !fz.ok) { await back('🧪 하루 손해 한도: ' + ((fz && fz.why) || '모름'), apF.decision === 'auto'); continue; } } }
       const fzEnd = (ok, p) => (fz && fz.e ? fenceRun('settle', { key: x.key, id: fzId, ok, price: p }).catch((e) => log('하루 손해 원장 정리 실패(클라우드가 20분 안에 정리): ' + (e.code || e.message), 1)) : Promise.resolve());
       if (!(await xGate('price'))) { await fzEnd(false); continue; }
-      let res; try { await PACE.wait(sleep); const r = await fetch(P.scmAction.price(x.listingId, price).url, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); res = P.parseAjaxResult(await r.text()); } catch (e) { res = { ok: false, error: e.message }; }
+      let res; try { await PACE.wait(sleep, 1, true); const r = await fetch(P.scmAction.price(x.listingId, price).url, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); res = P.parseAjaxResult(await r.text()); } catch (e) { res = { ok: false, error: e.message }; }
       if (res.ok) PACE.ok(); else PACE.fail(/로그인/.test(res.error || '') ? 'login' : 'error');
       if (res.ok && parseInt(String(res.value || '').replace(/\D/g, ''), 10) !== price) res = { ok: false, error: `알라딘이 돌려준 값(${res.value})이 보낸 가격(${price})과 다름` };
       if (!res.ok && !/돌려준 값/.test(res.error || '')) await fzEnd(false); /* (11/10 fence2) 안 들어감 → 예약 풂 · 알라딘이 다른 값으로 받았으면 예약 그대로(수집기가 다시 읽은 값으로 클라우드가 정리 — 안전 쪽) */
@@ -585,7 +585,7 @@
       else if (!fz && fSrc && fromP != null && price > fromP) fenceRun('note', { key: x.key, price, make: false }).catch(() => {}); /* 엔진이 값을 올림 → 걸린 손해를 줄여 적음(원장에 있는 상품만) */
       try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value}${p10 ? ` · 정한 값 ${price0}원 → 알라딘 10원 단위 ${price}원` : ''})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); continue; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
-      await sleep(GAP(((x.approval || {}).decision === 'auto') ? 'auto' : null)); if (Date.now() - apVAt > AP_V_EVERY) { apVAt = Date.now(); await verifyStep(2, 20000); } /* (0.10.74 정범님 I-1120-0913-09 · 확정 뒤 샵매니저 반영이 멈춘 듯 느림) 예전엔 한 건 보낼 때마다 공개 확인(알라딘 목록 최대 5쪽+상품 페이지 × 2권)을 해서 알라딘 간격에 묶여 한 건 1~5분 → 5분에 한 번만(반영이 먼저) · 확인은 tick의 verifyStep(60)이 이어 받음 */ // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
+      await sleep(GAP(((x.approval || {}).decision === 'auto') ? 'auto' : null)); /* (0.10.75) 반영 중에는 공개 확인을 아예 하지 않음 — 반영 대기가 0이 된 뒤 tick이 이어 받음 · 알라딘 요청도 먼저 받기(prio)로 다른 탭·수집기 읽기보다 앞섬 */ /* (0.10.74 정범님 I-1120-0913-09 · 확정 뒤 샵매니저 반영이 멈춘 듯 느림) 예전엔 한 건 보낼 때마다 공개 확인(알라딘 목록 최대 5쪽+상품 페이지 × 2권)을 해서 알라딘 간격에 묶여 한 건 1~5분 → 5분에 한 번만(반영이 먼저) · 확인은 tick의 verifyStep(60)이 이어 받음 */ // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
     }
     if (offN) log(`꺼진 수동 일괄 그룹의 확정 ${offN}건은 반영하지 않고 기다림 (웹앱에서 그룹을 켜면 반영)`); void n;
   }
@@ -664,7 +664,7 @@
   const dueOf = (x) => x && x.state === 'wait' && Date.parse(x.next || 0) <= Date.now();
   async function verifyStep(max, budgetMs) { if (vqBusy) return; vqBusy = true; const t0 = Date.now();
     try { await vqLoad(); const due = VQ.filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).sort((a, b) => String(Math.min(Date.parse((a.verify || {}).next || 9e15), Date.parse((a.verifyPg || {}).next || 9e15))).localeCompare(String(Math.min(Date.parse((b.verify || {}).next || 9e15), Date.parse((b.verifyPg || {}).next || 9e15))))); let n = 0;
-      while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine() || quietNow()) break; const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); if (due.length && n < max) await sleep(GAP('read')); } /* (사람처럼) 밤에는 공개 반영 확인도 쉼(놓친 확인 때는 다음 때로 넘어감) · 책 사이 쉼 */
+      while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine() || quietNow() || apWant || apMore) break; /* (0.10.75) 새 확정이 들어오면 그 자리에서 비킴 */ const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); if (due.length && n < max) await sleep(GAP('read')); } /* (사람처럼) 밤에는 공개 반영 확인도 쉼(놓친 확인 때는 다음 때로 넘어감) · 책 사이 쉼 */
     } catch (e) { log('공개 반영 확인 오류: ' + e.message, 1); } finally { vqBusy = false; } }
   function vJudge(x, a, seen, found, nowIso, noRetry) { // 한 번 확인 결과로 목록·상품 페이지 확인 상태를 고침 (같은 규칙) · noRetry = 정밀 표본 상품 페이지(verifyPg)는 예전처럼 48시간에서 끝
     const n = (x.n || 0) + 1; const nx = vNextOf(a, noRetry ? { ...x, fine: (a.verify || {}).fine, rb: null } : x, (x.si || 0) + 1, noRetry); const base = { n, lastCheckAt: nowIso };
@@ -793,7 +793,7 @@
         try { if (l && l.status === '판매중') { const r = await processOne(l); run.done++; if (/승인대기/.test(r)) log(`승인 대기: ${l.title || l.usedCode}`); } }
         catch (e) { run.fail++; log(`실패: ${(l && l.title) || run.keys[i]} — ${e.message}`, 1); }
         if ((i + 1) % 5 === 0 || i === run.keys.length - 1) await RREF.set({ idx: i + 1, done: run.done, fail: run.fail, lastAt: new Date().toISOString() }, { merge: true });
-        if (i % 10 === 9 || apMore) { await loadSet(); await executeApproved(); if (i % 10 === 9) await followUps(5, true); } /* (0.10.74) 반영 대기가 남았으면 상품마다 반영부터 */
+        if (i % 10 === 9 || apMore || apWant) { await loadSet(); await executeApproved(); if (i % 10 === 9) await followUps(5, true); } /* (0.10.74) 반영 대기가 남았으면 상품마다 반영부터 */
         await sleep(GAP('read'));
       }
       await RREF.set({ doneAt: new Date().toISOString(), idx: run.keys.length }, { merge: true }); log(`한 바퀴 끝: 성공 ${run.done} · 실패 ${run.fail}`); prog(''); await sliceClose();
@@ -848,11 +848,11 @@
       const judging = !!SET.enabled && !SET.judgeOff;
       state(judging ? `<b style="color:#1F5FAF">감시 중</b> · ${SET.phase || 'A'}단계 · 적용 ${(SET.rollout || {}).treatPct ?? 1}% / 비교 ${(SET.rollout || {}).controlPct ?? 0}%` : '<b style="color:#1F5FAF">반영만 하는 중</b> · 엔진 판정 쉼 (확정한 가격만 반영)');
       if (!rulesOk) { rulesOk = await checkRules(); if (!rulesOk) return; }
-      stop = false; await executeApproved(); await verifyStep(60, 4 * 60000); if (!judging) return; await followUps(20); await runCycle();
+      stop = false; await executeApproved(); for (let k = 0; apMore && k < 500 && !stop && !SET.killSwitch && isMine(); k++) await executeApproved(); /* (0.10.75) 반영 대기가 남아 있는 동안은 반영만 — 공개 확인·판정 바퀴는 다 끝난 뒤 */ if (apMore || apWant) return; await verifyStep(60, 4 * 60000); if (!judging) return; await followUps(20); await runCycle();
     } catch (e) { log('오류: ' + e.message, 1); if (/permission/i.test(e.message)) state('<b style="color:#B0322A">Firestore 쓰기 권한 없음</b><br>규칙에 prd_price_decisions · prd_price_actions · prd_market_watch 허용 필요'); }
     finally { ticking = false; }
   }
   await adoptHandoff(); paintOwner(); buttons(); log('준비됨'); listingBackfill().catch(() => {}); roundFixOnce().catch(() => {}); tick(); (async () => { for (;;) { await sleep(60 * 1000); tick(); } })(); // 1분마다 (숨은 탭에서도)
   /* (0.10.33 정범님 11/04 '이유 없는 지연은 바로') 웹앱에서 가격을 승인하면 다음 1분 차례를 기다리지 않고 2초 뒤 바로 한 바퀴 — 승인 대기(approved) 결정을 듣기만 함(알라딘에 보내는 속도·사람다움 간격·실행 문은 그대로) · 1분 차례는 받침으로 남김 */
-  try { C('prd_price_decisions').where('approvalState', 'in', ['approved', 'manual']).limit(20).onSnapshot((q) => { if (q.metadata && q.metadata.hasPendingWrites) return; if (!q.docChanges().some((c) => c.type === 'added')) return; clearTimeout(window.__rnPwSoon); window.__rnPwSoon = setTimeout(() => { tick(); }, 2000); }, () => {}); } catch (e) {}
+  try { C('prd_price_decisions').where('approvalState', 'in', ['approved', 'manual']).limit(20).onSnapshot((q) => { if (q.metadata && q.metadata.hasPendingWrites) return; if (!q.docChanges().some((c) => c.type === 'added')) return; apWant = true; clearTimeout(window.__rnPwSoon); window.__rnPwSoon = setTimeout(() => { tick(); }, 2000); }, () => {}); } catch (e) {}
 })();
