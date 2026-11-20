@@ -20,7 +20,7 @@ console.log('① 탭 동작 칸(BQ_TABDEF 여섯째 칸)');
   ok(JSON.stringify(M.BQ_TABACT('없는탭')) === '{}', '없는 탭 = 빈 표시');
   ok(M.bqTabsOf('chk').join(',') === 'few,keep', 'bqTabsOf(chk) = 고르기 탭 few·keep', M.bqTabsOf('chk'));
   ok(['sel', 'few', 'keep', 'bb', 'lot'].every((t) => M.bqTabsOf('edit').includes(t)) && !M.bqTabsOf('edit').includes('pick'), 'bqTabsOf(edit) = 선택 대기처럼 고치는 탭', M.bqTabsOf('edit'));
-  ok(/const TA = BQ_TABACT_G\(T\); const SELT = !!TA\.edit;/.test(D), '화면은 탭 이름 대신 탭 동작 칸으로 켬(SELT = TA.edit)'); }
+  ok(/const TA = BQ_TABACT_GS\(T\); const SELT = !!TA\.edit;/.test(D), '화면은 탭 이름 대신 탭 동작 칸으로 켬(SELT = TA.edit)'); }
 console.log('② bqPxGate — 값 바닥 검사(돈이 걸림)');
 { const nr = { target: null }, hr = { target: 9000 };
   ok(/추천가가 없는 상품/.test(M.bqPxGate(nr, 0)) && /추천가가 없는 상품/.test(M.bqPxGate(nr, NaN)) && /추천가가 없는 상품/.test(M.bqPxGate(nr, 5)), '추천가 없음 + 값 없음/10원 미만 → 막음');

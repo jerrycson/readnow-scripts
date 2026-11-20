@@ -20,11 +20,11 @@ console.log('① 재고 품목 탭 줄 — 예전 판(판 ①) 글과 같음');
 
 console.log('② 수동 일괄 탭 줄 — 예전 drawBatchRes 글과 같음');
 { const line = T.split('\n').find((x) => x.includes('tabBarHtml(TT, T,')); ok(!!line, '수동 일괄이 공용 부품을 부름');
-  const NEW = new Function('tabBarHtml', 'TT', 'T', 'SOLD', 'tabs', 'tabSum', 'return `' + line.trim().replace(/^`|`$/g, '') + '`;');
+  const NEW = new Function('tabBarHtml', 'TT', 'T', 'SOLD', 'tabs', 'tabSum', 'refBarHtml', 'refPanelHtml', 'return `' + line.trim().replace(/^`|`$/g, '') + '`;');
   const OLD = (TT, T, SOLD, tabs, tabSum) => `<div class="btabs">${TT.map(([k, l], j) => `${j === 3 ? '<span class="bsep"></span>' : j > 3 ? ' ' : j ? '<span class="barr">›</span>' : ''}<button class="${T === k ? 'on' : ''}" data-btab="${k}">${l} <b>${k === 'sold' ? SOLD.rows.length : tabs[k].length}</b>${tabSum(k)}</button>`).join('')}</div>`;
   const BQ = evalConst('BQ_TABDEF'); const TT = BQ.map((d) => [d[0], d[1], d[3]]); const tabs = Object.fromEntries(BQ.map((d, i) => [d[0], new Array(i * 2).fill(0)])); const SOLD = { rows: [1, 2, 3] }; const tabSum = (k) => (k === 'pick' ? ' <small>₩9,000 · 손실 1,200</small>' : '');
-  for (const cur of ['sel', 'pick', 'edkw', 'sold', 'trash']) ok(NEW(tabBarHtml, TT, cur, SOLD, tabs, tabSum) === OLD(TT, cur, SOLD, tabs, tabSum), `지금 탭 ${cur}`);
-  ok(NEW(tabBarHtml, TT.slice(0, 2), 'sel', SOLD, tabs, tabSum) === OLD(TT.slice(0, 2), 'sel', SOLD, tabs, tabSum), '탭 일부만 보일 때(상품 없는 탭 숨김)'); }
+  for (const cur of ['sel', 'pick', 'edkw', 'sold', 'trash']) ok(NEW(tabBarHtml, TT, cur, SOLD, tabs, tabSum, () => '', () => '') === OLD(TT, cur, SOLD, tabs, tabSum), `지금 탭 ${cur}`);
+  ok(NEW(tabBarHtml, TT.slice(0, 2), 'sel', SOLD, tabs, tabSum, () => '', () => '') === OLD(TT.slice(0, 2), 'sel', SOLD, tabs, tabSum), '탭 일부만 보일 때(상품 없는 탭 숨김)'); }
 
 console.log('③ 등록 탭 줄 — 예전 등록 화면 글과 같음');
 { const line = T.split('\n').find((x) => x.includes('tabBarHtml(REG_TABS, T,')); ok(!!line, '등록이 공용 부품을 부름');
