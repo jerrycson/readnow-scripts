@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.389
+// @version      1.89.390
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -10488,7 +10488,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if ('subtitle' in ch) setV('itemSubTitle', String(ch.subtitle || '').slice(0, 100)); if (noteHtml != null) W.EditorManager.loadContent(noteHtml); try { W.calcSummaryC2C && W.calcSummaryC2C(); } catch (e) {}
         const nc = W.confirm, na = W.alert; W.confirm = (m) => { al.push('(확인✓) ' + String(m).slice(0, 120)); return true; }; W.alert = (m) => al.push(String(m).slice(0, 200)); const nav = loaded(60000); const c2wF = window.__rnC2wForm ? window.__rnC2wForm(d.getElementById('frmRecord')) : null; try { W.frmRecord_submit_C2C(false, '6', true); } catch (e) { al.push('보내기 오류: ' + e.message); } const went = await nav;
         try { if (c2wF) window.__rnC2w('info', { lid, ch: { price: ch.price, qty: ch.qty, code: ch.code, state: ch.state, grade: ch.grade }, base: { price: B.price, qty: B.qty, code: B.code, state: B.state }, itemSubTitle: 'subtitle' in ch ? String(ch.subtitle || '').slice(0, 100) : undefined, ups: c2wUp }, [...c2wUR, c2wF], !!went); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(W6 — 사진 올림 + 수정 양식 · 보내기 직전 양식 값) */ try { W.confirm = nc; W.alert = na; } catch (e) {}
-        const bad = al.filter((a) => !/^\(확인✓\)|^\(사진 창\)/.test(a) && /실패|오류|입력해|선택해|확인해|없습니다|불가|잘못|초과/.test(a)); if (bad.length) throw new Error('알라딘이 막음: ' + bad.join(' / ')); if (!went) throw new Error('보낸 뒤 화면이 바뀌지 않음'); }
+        const bad = al.filter((a) => !/^\(확인✓\)|^\(사진 창\)/.test(a) && /실패|오류|입력해|선택해|확인해|없습니다|불가|잘못|초과/.test(a)); if (bad.length) throw new Error('알라딘이 막음: ' + bad.join(' / ')); if (!went) { let dz = ''; try { const dd = fr.contentDocument; const lay = dd ? [...dd.querySelectorAll('[class*=layer],[class*=pop],[class*=modal],[id*=layer],[id*=pop]')].filter((e) => e.offsetParent && String(e.innerText || '').trim()).map((e) => String(e.innerText).replace(/\s+/g, ' ').trim().slice(0, 60)).slice(0, 2) : []; dz = `화면 ${dd ? dd.readyState : '없음'}${dd && dd.getElementById('frmRecord') ? '·양식 그대로' : ''}${lay.length ? '·떠 있는 글 ' + lay.join(' | ') : ''}`; } catch (e) { dz = '화면 못 봄'; } al.push(`보낸 뒤 1분 안에 화면이 안 바뀜(${dz}) — 다시 읽어 확인`); } /* (1.89.390 정범님 I-1120-1012-12 · 약속 A칸 108) 11/20 HOME 10:01~10:11 ✏ 설명 수정 6번이 이것만으로 실패 처리됨 — 알라딘 응답이 느려(429 무렵) 1분 안에 안 넘어가도 실제로는 저장됐을 수 있어, 실패로 끝내지 않고 아래 확인 읽기(샵매니저 수정 화면)로 됐는지 가림 · 안 됐으면 '보냈는데 샵매니저 값이 그대로'로 실패 */ }
       catch (e) { err = e.message; } finally { fr.__rnLive = 0; setTimeout(() => peFrameDispose(fr), 3000); } /* (4시간 점검 10/30) 수정 화면 iframe은 지우기 전에 빈 쪽으로 돌려 편집기를 놓게 함 — 🔬 조회수 실험 매일 일이 돌기 시작한 09:04부터 HOME 힙이 180MB에서 시간당 약 2GB씩 늘어 99%에서 메모리 정리 새로고침(10/30 10:50) */
       for (const k of fk) mark(k, err ? 'fail' : 'sent', err || al.join(' / ')); await save(); }
     await sleep(Math.round(1500 * (0.85 + Math.random() * 0.3))); let now2 = await peReadPc(lid); if (!now2.ok) { await sleep(Math.round(3000 * (0.85 + Math.random() * 0.3))); /* (정범님 11/02 · 고정 간격 흩기) 확인 읽기 앞 쉼 ±15% */ now2 = await peReadPc(lid); } if (ref && typeof ref === 'object' && 'now2' in ref && !ref.id) ref.now2 = now2; /* (사람처럼) 🔬 실험(받이 sink)에 확인 읽기를 넘겨 같은 화면을 또 받지 않게 */ const sm = peSame(ch); const done = [];
