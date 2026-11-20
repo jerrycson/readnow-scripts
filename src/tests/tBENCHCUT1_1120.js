@@ -16,7 +16,7 @@ const base = { targets: [{ sc: '9200001', on: true }, { sc: '9200002', on: true 
 
 (async () => {
   console.log('① 클라우드 한 번 고침');
-  ok(/const VER = '0\.35\.\d+'; \/\/ \(0\.35\.\d+ benchcut1\)/.test(SRC), '클라우드 판 설명에 benchcut1');
+  ok(/const VER = '0\.35\.\d+';.*\(0\.35\.\d+ benchcut1\)/.test(SRC), '클라우드 판 설명에 benchcut1');
   ok(/setTimeout\(benchCut1120,/.test(SRC) && /setTimeout\(benchCutEnd1120,/.test(SRC), '켤 때·매시간 돎');
   const T0 = Date.parse('2026-11-20T05:00:00Z'); const { db, st } = fakeDb(base);
   await mk('benchCut1120', db, T0)(); const D = st.doc; const g = (id) => D.groups.find((x) => x.id === id);

@@ -7,14 +7,14 @@
  * 쓰는 곳: PC 수집기 · 가격 감시기(브라우저 Firebase) · 클라우드(firebase-admin) — 둘 다 db.collection().doc() · db.runTransaction(tx.get/tx.set) 만 씀.
  * 기록은 지우지 않음. 실패 뒤 다시 하면 tries가 늘고 지난 결과는 hist에 쌓임. */
 (function (root) {
-  const VERSION = '0.1.2';
+  const VERSION = '0.1.3';
   const COL = 'exec_log';
   const KINDS = { price: '가격 반영', hold: '판매보류풀로', unhold: '판매보류풀 해제', startDelivery: '발송준비시작', invoice: '송장 입력', c2bAdd: '팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지' };
   const safeId = (s) => String(s).replace(/[\/#?\[\]*.]/g, '_').slice(0, 300);
   const docId = (kind, key) => safeId(kind) + '__' + safeId(key);
   const iso = () => new Date().toISOString();
   const canonical = (v) => v === null || typeof v !== 'object' ? JSON.stringify(v) : Array.isArray(v) ? '[' + v.map(canonical).join(',') + ']' : '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}';
-  async function requestHash(v) { const text = canonical(v); const c = root.crypto || (typeof require === 'function' ? require('node:crypto').webcrypto : null); if (!c || !c.subtle) throw new Error('요청 내용을 확인할 실행 도구가 없음'); const bytes = new TextEncoder().encode(text); return Array.from(new Uint8Array(await c.subtle.digest('SHA-256', bytes)), (b) => b.toString(16).padStart(2, '0')).join(''); }
+  async function requestHash(v) { const text = canonical(v); const c = root.crypto || (typeof require === 'function' ? require('node:crypto').webcrypto : null); if (!c || !c.subtle) throw new Error('요청 내용을 확인할 실행 도구가 없음'); const bytes = new TextEncoder().encode(text); const u = new Uint8Array(await c.subtle.digest('SHA-256', bytes)); let h = ''; for (let i = 0; i < u.length; i++) h += (u[i] < 16 ? '0' : '') + u[i].toString(16); return h; } /* (0.1.3 정범님 I-1120-1430-27a) 샵매니저 화면의 옛 도구(Prototype.js)가 Array.from을 바꿔 두 번째 인수(바꾸기 함수)를 무시 → 지문이 숫자 덩어리로 나와 같은 요청도 「내용이 다름」으로 막힐 수 있었음 · 브라우저 기본 함수에 기대지 않고 평범한 for로 */
   const deliveryKey = (v, cmdId, ono) => String((v.operationIds || {})[String(ono)] || ((v.operationId || cmdId) + ':' + ono));
   /* begin(db, { kind, key, by, detail, staleMin }) → { ok: true, id } | { ok: false, why, state, prev }
    *  · 처음: '시작'으로 적고 ok · '실패'였으면: 다시 '시작'(tries+1) ok · '끝남': 이미 함 → 안 함

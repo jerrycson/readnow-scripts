@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.80
+// @version      0.10.81
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -12,7 +12,7 @@
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.16
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.26
 // @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
-// @require      https://readnow.kr/readnow-exec-core.js?v=0.1.2
+// @require      https://readnow.kr/readnow-exec-core.js?v=0.1.3
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js

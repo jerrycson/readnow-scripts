@@ -96,7 +96,7 @@ console.log('⑤ 감시기');
   ok(W.includes("(await (lsP || C('prd_listings').doc(x.key).get())).data()"), '상품 기록 확인은 같은 try 안(못 읽으면 예전 그대로)');
   ok(W.includes("const Q = await Promise.all(st.map((k) => C('prd_price_decisions').where('approvalState', '==', k).get()));") && !W.includes("for (const k of st) { const q = await C('prd_price_decisions')"), '반영 대기 네 갈래 읽기를 함께(차례 그대로)');
   let base = null; try { base = cp.execSync('git show origin/main:readnow-price-watch.user.js', { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }); } catch (e) {}
-  if (base) { const hd = (s) => s.split('\n').slice(0, s.split('\n').findIndex((l) => l.includes('==/UserScript==')) + 1).filter((l) => /@(match|grant|connect|require)/.test(l)).join('\n'); ok(hd(base) === hd(W), '머리 줄(@match·@grant·@connect·@require) main과 같음'); }
+  if (base) { const hd = (s) => s.split('\n').slice(0, s.split('\n').findIndex((l) => l.includes('==/UserScript==')) + 1).filter((l) => /@(match|grant|connect|require)/.test(l)).map((l) => l.replace(/readnow-exec-core\.js\?v=[\d.]+/, 'readnow-exec-core.js?v=*')).join('\n'); /* (11/20) 실행 공용 판 번호만은 정범님 허락(I-1120-1430-27a)으로 바뀜 */ ok(hd(base) === hd(W), '머리 줄(@match·@grant·@connect·@require) main과 같음'); }
   else console.log('  (main을 못 읽어 머리 비교는 건너뜀)');
 }
 
