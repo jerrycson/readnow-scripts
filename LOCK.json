@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "웹앱 1.78.842 수동 일괄 모든 탭 고르기·옮기기·탭 안 일괄 갱신",
+ "since": "2026-11-20T09:58:59Z",
+ "beat": "2026-11-20T09:58:59Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.840·1.78.841 0326b062c · 클라우드 0.35.343",
