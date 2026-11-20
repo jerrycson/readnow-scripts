@@ -21,7 +21,7 @@ const SALES = new Map(); const CASH = new Map(); const BUMP = { to: new Map(), f
 const ctx = { console, Map, Set, Date, Math, JSON, Object, String, Number, Array, Promise, Error, isFinite, setTimeout: () => 0, S, db, firebase,
   document: { addEventListener: () => {} }, localStorage: { _v: null, getItem() { return this._v; }, setItem(k, v) { this._v = v; } },
   esc: (s) => String(s), won: (n) => n + '원', num: (n) => String(n), errKo: (e) => String(e && e.message || e), toast: (m) => toasts.push(m), TS: () => 'TS',
-  pxZ: () => ({ n: 0 }), sxH: (k) => k, saleIdx: () => SALES, cashIdx: () => CASH, fbIdx: () => BUMP, kMs: (v) => Date.parse(v) || 0, prodOffKind: (l) => l.__off || null, plkOnL: (l) => !!l.__lock, edPickOf: (l) => l.__pick || null,
+  pxZ: () => ({ n: 0 }), sxH: (k) => k, saleIdx: () => SALES, saleIdxX: () => SALES, /* (11/20 isbnall1) 판 옮김 주문 수 = saleIdxX */ cashIdx: () => CASH, fbIdx: () => BUMP, kMs: (v) => Date.parse(v) || 0, prodOffKind: (l) => l.__off || null, plkOnL: (l) => !!l.__lock, edPickOf: (l) => l.__pick || null,
   fbSoldSince: () => null, isAdminDevice: () => true, deviceName: () => 'TESTPC', askSheet: async (o) => { sheets.push(o); return sheetAns; }, regCfg: () => ({ branch: 1, grade: 2, source: '' }), regWsCur: () => 'ws1', regPickLookup: (id) => looked.push(id), regPlkKey: (it) => it.__key || '',
   peNoteParts: () => ({ text: '' }), loadRelinks: async () => {}, batchSaveItems: async () => {}, batchAssemble: () => [], twiceArm: () => 'go', prdDelQueue: async () => {}, openProduct: () => {}, openListView: () => {} };
 vm.createContext(ctx); vm.runInContext(BLK, ctx); const run = (s) => vm.runInContext(s, ctx);

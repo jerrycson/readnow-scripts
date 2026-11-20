@@ -31,7 +31,7 @@ const S = { user: { email: 'test@example.invalid' }, px: { vw: new Map(), old: n
 const ctx = { console, Map, Set, Date, Math, JSON, Object, String, Number, Array, Promise, Error, isFinite, parseInt, setTimeout: () => 0, clearTimeout: () => 0,
   S, db, firebase, batchSaveItems, document: { addEventListener: () => {} }, localStorage: { getItem: () => null, setItem: () => {} },
   esc: (s) => String(s), won: (n) => n + '원', num: (n) => String(n), errKo: (e) => String(e && e.message || e), toast: (m) => toasts.push(m), TS: () => ({ __ts: 1 }),
-  pxZ: () => ({ n: 0, human: 0, bot: 0, uniq: 0, al: 0, oth: 0, mob: 0, ours: 0, ck: 0, noCk: 0, nt: 0 }), sxH: (k) => 'h' + k, saleIdx: () => new Map([['OLD1', [{ ms: 1 }, { ms: 2 }]]]),
+  pxZ: () => ({ n: 0, human: 0, bot: 0, uniq: 0, al: 0, oth: 0, mob: 0, ours: 0, ck: 0, noCk: 0, nt: 0 }), sxH: (k) => 'h' + k, saleIdx: () => new Map([['OLD1', [{ ms: 1 }, { ms: 2 }]]]), saleIdxX: () => new Map([['OLD1', [{ ms: 1 }, { ms: 2 }]]]), /* (11/20 isbnall1) */
   batchAssemble: () => [], loadRelinks: async () => {}, fbIdx: () => ctx.__B, kMs: (v) => Date.parse(v) || 0, prodOffKind: (l) => l.__off || null, plkOnL: (l) => !!l.__lock, edPickOf: (l) => l.__pick || null, cashIdx: () => new Map(), fbSoldSince: () => null, isAdminDevice: () => true };
 ctx.__B = { to: new Map(), from: new Map() };
 vm.createContext(ctx); vm.runInContext(BLK, ctx);
