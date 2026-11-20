@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "🚨 가격 감시기 0.10.75 — 샵매니저 반영 최우선(정범님 I-1120-0937-10)",
- "since": "2026-11-20T00:40:43Z",
- "beat": "2026-11-20T02:12:03Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "🚨 가격 감시기 0.10.74 main c0d2a4908 · 머리 그대로",
-  "at": "2026-11-20T00:38:04Z"
+  "done": "1.78.835·0.10.77 607c6d241 main 반영(1a72b1636·e0951bcba·7894ef0d5 함께)",
+  "at": "2026-11-20T02:21:25Z"
  }
 }
