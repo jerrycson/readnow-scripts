@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.78
+// @version      0.10.79
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -649,7 +649,7 @@
     };
     const lane = async () => { for (;;) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; const grp = lanesQ.shift(); if (!grp) return; for (const d0 of grp) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; if (++nDone > 200) { apMore = true; if (!APX.halt) log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); APX.halt = true; return; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */ await apOne(d0); } } };
     if (APX.lanes > 1 && docs.length > 1) log(`🚀 반영 ${APX.lanes}줄로 함께 (샵매니저 반영 속도 ${APX.lanes}배 — 웹앱 가격 감시 카드에서 바꿈)`);
-    await Promise.all(Array.from({ length: Math.min(APX.lanes, lanesQ.length) || 1 }, lane));
+    { const LN = []; const nL = Math.min(APX.lanes, lanesQ.length) || 1; for (let i = 0; i < nL; i++) LN.push(lane()); await Promise.all(LN); } /* (0.10.79 정범님 I-1120-1316-22 「또 멈췄어」 진짜 원인) 샵매니저 화면의 옛 도구(Prototype.js)가 Array.from을 바꿔 둬서 두 번째 인수(lane)를 무시 → 0.10.76부터 반영 줄이 하나도 안 떠 바퀴마다 「맡음 0 · 0초」 · 평범한 for로 줄을 띄움(브라우저 기본 함수에 기대지 않음) */
     apSpdW(SPD, APX.lanes).catch(() => {});
     { const left = lanesQ.reduce((a, g) => a + g.length, 0); log(`반영 바퀴 끝: 대기 ${docs.length}건 중 맡음 ${Math.max(0, nDone)} · 반영 ${n} · 잠금 미룸 ${pxN} · 꺼진 그룹 ${offN} · 오류 ${errN} · 3분 넘김 ${toN} · 남음 ${left} · 멈춘 까닭 ${haltWhy || (apMore ? '200건 몫' : '없음')} · ${Math.round((Date.now() - SPD.t0) / 1000)}초`, !!haltWhy || (!n && !pxN && !offN && docs.length > 0)); if (haltWhy && left > 0 && !SET.killSwitch && isMine()) apMore = true; } /* (0.10.78) 까닭 있이 멈췄는데 이 탭이 여전히 감시 탭이면 tick이 바로 다시 돎(500번 한도) */
     if (pxN) log(`⏳ 가격 잠금으로 ${pxN}건은 미룸(실패 아님 · 잠금 끝난 뒤 반영)`); if (offN) log(`꺼진 수동 일괄 그룹의 확정 ${offN}건은 반영하지 않고 기다림 (웹앱에서 그룹을 켜면 반영)`); void n;

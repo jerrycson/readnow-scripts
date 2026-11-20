@@ -17,7 +17,7 @@ ok(i0 > 0 && i1 > i0, '반영 함수를 찾음');
   ok(lanesOf({}) === 2 && lanesOf(null) === 2 && lanesOf({ applySpeed: 'x' }) === 2 && lanesOf({ applySpeed: 0 }) === 2, '① 설정 없음·이상한 값 → 2(추천)');
   ok(lanesOf({ applySpeed: 1 }) === 1 && lanesOf({ applySpeed: 3 }) === 3 && lanesOf({ applySpeed: 9 }) === 4 && lanesOf({ applySpeed: 2.4 }) === 2, '① 1·3 그대로 · 9 → 4 · 2.4 → 2');
   // ②③④⑤ 줄 나누기·함께 돌기 — 실제 줄을 떼어 가짜 one으로 돌림
-  const qL = (EA.match(/\n    const lanesQ = \[\];[^\n]*/) || [])[0], lL = (EA.match(/\n    const lane = async \(\) => [^\n]*/) || [])[0], pL = (EA.match(/\n    await Promise\.all\(Array\.from\(\{ length: Math\.min\(APX\.lanes, lanesQ\.length\) \|\| 1 \}, lane\)\);/) || [])[0];
+  const qL = (EA.match(/\n    const lanesQ = \[\];[^\n]*/) || [])[0], lL = (EA.match(/\n    const lane = async \(\) => [^\n]*/) || [])[0], pL = (EA.match(/\n    \{ const LN = \[\]; const nL = Math\.min\(APX\.lanes, lanesQ\.length\) \|\| 1; for \(let i = 0; i < nL; i\+\+\) LN\.push\(lane\(\)\); await Promise\.all\(LN\); \}/) || [])[0]; /* (0.10.79) Array.from 대신 for로 줄을 띄움 */
   ok(!!(qL && lL && pL), '줄 나누기·줄 돌기·함께 기다리기 세 줄을 떼어 냄');
   const run = async (docs, lanes, oneImpl) => { const g = { apMore: false }; const logs = [];
     await new Function('docs', 'APX', 'one', 'g', 'log', `return (async () => { let nDone = 0; let stop = false; let apMore = false; const SET = {}; const isMine = () => true; const apOk = async () => false; const apOne = (d) => one(d); ${qL}${lL}${pL}; g.apMore = apMore; })();`)(docs, { halt: false, lanes }, (d) => oneImpl(d), g, (m) => logs.push(m));
