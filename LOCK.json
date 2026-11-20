@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "🚨 감시기 0.10.79 반영 줄 안 뜨던 것",
- "since": "2026-11-20T04:55:47Z",
- "beat": "2026-11-20T05:05:06Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "감시기 0.10.78 7f88cddb1",
-  "at": "2026-11-20T04:48:37Z"
+  "done": "감시기 0.10.79 1640369a1",
+  "at": "2026-11-20T05:05:08Z"
  }
 }
