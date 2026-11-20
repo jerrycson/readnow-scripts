@@ -8,7 +8,7 @@
 //  시험 자료의 손님은 '손님A'·010-1234-5678 꼴만(공개 저장소) · 사용: node tC2W.js (src/tests)
 const fs = require('fs'); const path = require('path'); const os = require('os'); const cp = require('child_process');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { try { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); } catch (e2) { try { ({ chromium } = require('/opt/node-tools/node_modules/playwright')); } catch (e3) { ({ chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright')); } } }
-const SRCF = path.join(__dirname, '../readnow-collector.src.js'); const src = fs.readFileSync(SRCF, 'utf8');
+const SRCF = [path.join(__dirname, '../readnow-collector.src.js'), path.join(__dirname, '../../src/readnow-collector.src.js')].find((f) => fs.existsSync(f)) || path.join(__dirname, '../readnow-collector.src.js'); /* (11/20 리드) 시험 문지기 브라우저 자리(w/pw)에선 ../ 에 원본이 없어 1초 만에 죽던 것 — 자리 위 src/ 도 찾음 */ const src = fs.readFileSync(SRCF, 'utf8');
 const cut = (mark, end) => { const a = src.indexOf(mark); const b = src.indexOf(end, a); if (a < 0 || b < 0) { console.log('❌ tC2W — 덩어리를 못 찾음: ' + mark); process.exit(1); } return src.slice(a, b + end.length); };
 const RULE = cut('globalThis.__rnLoginRule = (function', '\n})();'); const CW = cut('(function rnC2w()', '\n})();'); const BR = cut('(function rnC2al()', '\n})();');
 const CORE = require(path.join(__dirname, '../../lab/col2/shadow/col2-alw-core.js'));
