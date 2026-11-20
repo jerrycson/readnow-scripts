@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "strat10",
- "host": "vm",
- "what": "감시 판 ⑩ push",
- "since": "2026-11-20T00:02:17Z",
- "beat": "2026-11-20T00:13:42Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
-  "who": "lead",
-  "done": "수집기 1.89.388 · h4 점검 고침 둘 · 5b3431b3f · 머리 그대로 8ab2f661d1d8afa8",
-  "at": "2026-11-20T00:01:52Z"
+  "who": "strat10",
+  "done": "감시 전략 판 ⑩ 웹앱 1.78.833 · 171aaa756 · 머리 그대로 8ab2f661d1d8afa8",
+  "at": "2026-11-20T00:14:00Z"
  }
 }
