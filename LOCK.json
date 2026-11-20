@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "관제소 수치 카드 (ctrlkpi2)",
+ "since": "2026-11-20T04:01:17Z",
+ "beat": "2026-11-20T04:01:17Z",
  "last": {
   "who": "lead",
   "done": "sijung1 수집기 1.89.392 a30ca88ff main 반영 (시중가 빈 칸 채우기 · 머리 그대로)",
