@@ -1,6 +1,6 @@
-/* readnow-pc-boot.js — 리드나우 수집기 1.89.390의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
+/* readnow-pc-boot.js — 리드나우 수집기 1.89.391의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
  * 본체(로더)가 받아 둔 판/이 판을 고른 뒤 부름 · 빠른 업데이트로 바뀜 (1.72.0) */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.390' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.391' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 globalThis.__rnBoot = function (BI) { const G = globalThis; const CLASSIC = BI.classic; const gv = (k, d) => { try { return GM_getValue(k, d); } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
 /* (1.89.344 · 정범님 11/16 23:37 「버전이 안 맞다는 경고가 오래 떠 방해」) 🔧 판 번호 바로잡기 — Tampermonkey가 본체(로더)는 그대로 두고 @require 모듈 파일만 readnow.kr 최신으로 다시 받아 오면
  *  실제로 도는 코드는 새 판(예 343)인데 로더는 본체 판(예 282)으로 셈 → 빨간 띠 '모듈 판이 맞지 않음' + 판 알림이 '새 판이 있다'며 30분마다 새로고침을 되풀이(새 탭마다 띠가 다시 뜸)
