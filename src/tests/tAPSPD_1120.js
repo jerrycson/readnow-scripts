@@ -47,8 +47,8 @@ ok(i0 > 0 && i1 > i0, '반영 함수를 찾음');
   ok(/const sP = settle\(d\.ref, x, \{[\s\S]*?\}, actDoc\); const aL = settle\.last; await sP; if \(VQ && aL\) VQ\.push\(\{ id: aL\.id, ref: aL, \.\.\.actDoc \}\);/.test(body) && !/VQ\.push\(\{ id: settle\.last/.test(body), '⑥ settle.last를 기다리기 전에 잡음(다른 줄이 덮지 못함)');
   { const settle = async () => { await nap(10); }; let vq = []; const one = async (id) => { const sP = (settle.last = { id }, settle()); const aL = settle.last; await sP; vq.push([id, aL.id]); }; await Promise.all([one('x'), one('y')]); ok(vq.every(([a, b]) => a === b), '⑥ 두 줄이 겹쳐도 확인 대기열에 제 기록이 들어감'); }
   // ⑦⑧
-  ok(/await sleep\(GAP\(\(\(x\.approval \|\| \{\}\)\.decision === 'auto'\) \? 'auto' : null\) \* APX\.lanes\);/.test(body), '⑦ 엔진 자동 반영 쉼 × 줄 수(사람 확정만 빨라짐)');
-  ok((W.match(/P\.makePacer\('aladin'\)/g) || []).length === 1 && /await PACE\.wait\(sleep, 1, true\); const r = await fetch\(P\.scmAction\.price/.test(body), '⑧ 알라딘 요청 간격 장치는 하나 그대로 · 줄마다 그 장치를 거침');
+  ok(/au = \(x\.approval \|\| \{\}\)\.decision === 'auto'; await sleep\(GAP\(au \? 'auto' : null\) \* APX\.lanes\);/.test(body), '⑦ 엔진 자동 반영 쉼 × 줄 수(사람 확정만 빨라짐)');
+  ok((W.match(/P\.makePacer\('aladin'\)/g) || []).length === 1 && /await apPace\(\); const r = await fetch\(P\.scmAction\.price/.test(body) && /const apPace = async \(\) => \{ const t = Date\.now\(\); await PACE\.wait\(sleep, 1, true\);/.test(EA), '⑧ 알라딘 요청 간격 장치는 하나 그대로 · 줄마다 그 장치를 거침');
   ok(/\/\/ @version {6}0\.10\.(7[6-9]|[89]\d)/.test(W), '판 번호 0.10.76 뒤');
   // ⑨ 웹앱
   const A = fs.readFileSync(path.resolve(__dirname, '..', 'app.html'), 'utf8');

@@ -31,7 +31,7 @@ function world(pages) { const F = fakeDb(); const calls = []; const logs = [];
   const P = { parseProductPage: (doc) => doc.prod || {}, parseUsedPage: (doc) => ({ listings: doc.rows || [] }), parseUsedItemPrice: (doc) => doc.item || null };
   const aladinDoc = async (u) => { calls.push(u); const d = pages[u]; if (d instanceof Error) throw d; return { ...(d || {}), querySelectorAll: () => [] }; };
   const firebase = { firestore: { FieldValue: { arrayUnion: (...x) => ({ __au: x }) } } };
-  const env = { C: (n) => F.db.collection(n), db: F.db, P, aladinDoc, W: () => ({ by: 'test' }), VER: '0.10.72', PC: 'PC-T', log: (m) => logs.push(m), firebase, SREF: F.db.collection('prd_system').doc('pricing'), PR: { VERSION: 'p-test' }, stop: false, SET: {}, isMine: () => true, quietNow: () => false };
+  const env = { C: (n) => F.db.collection(n), db: F.db, P, aladinDoc, W: () => ({ by: 'test' }), VER: '0.10.72', PC: 'PC-T', log: (m) => logs.push(m), firebase, SREF: F.db.collection('prd_system').doc('pricing'), PR: { VERSION: 'p-test' }, stop: false, SET: {}, isMine: () => true, quietNow: () => false, pxlLagW: () => Promise.resolve() }; /* (1120) 공개 반영 평균 기록은 덩어리 밖 함수 — 여기선 빈 것(그 셈은 tLAGSTALL_1120·tPRLOCK_1120) */
   const names = Object.keys(env); const M = new Function(...names, RFBLK + '\n' + VBLK + '\nreturn { vJudge, verifyBook, vNextOf, vFindItem, vRequeue, roundFixOf, roundFixOne, roundFixOnce, ceil10, vMoved, V_RETRY, VID, listingSync };')(...names.map((k) => env[k]));
   return { F, M, calls, logs }; }
 const actOf = (F, id, a) => { F.put('prd_price_actions', id, a); const r = F.db.collection('prd_price_actions').doc(id); return { id, ref: r, ...F.get('prd_price_actions', id) }; };

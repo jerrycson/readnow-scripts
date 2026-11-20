@@ -15,7 +15,7 @@ ok(/stop = false; await executeApproved\(\); for \(let k = 0; apMore && k < 500 
 ok(/quietNow\(\) \|\| apWant \|\| apMore\) break;/.test(W), '③ 공개 확인 고리가 새 확정에 비킴');
 ok(/if \(i % 10 === 9 \|\| apMore \|\| apWant\) \{ await loadSet\(\); await executeApproved\(\);/.test(W), '③ 판정 바퀴도 상품마다 새 확정부터');
 ok(/'added'\)\) return; apWant = true;/.test(W) && /where\('approvalState', 'in', \['approved', 'manual'\]\)\.limit\(20\)\.onSnapshot\(/.test(W), '③ 웹앱 확정이 들어오면 apWant');
-ok(/await PACE\.wait\(sleep, 1, true\); const r = await fetch\(P\.scmAction\.price/.test(EA) && /const post = async \(url, body\) => \{ await PACE\.wait\(sleep, 1, true\);/.test(EA), '④ 샵매니저 요청은 먼저 받기(prio)');
+ok(/await apPace\(\); const r = await fetch\(P\.scmAction\.price/.test(EA) && /const post = async \(url, body\) => \{ await apPace\(\);/.test(EA) && /const apPace = async \(\) => \{ const t = Date\.now\(\); await PACE\.wait\(sleep, 1, true\);/.test(EA), '④ 샵매니저 요청은 먼저 받기(prio)');
 ok(/if \(!\(await xGate\('price'\)\)\)/.test(EA) && /72 \* 3600e3/.test(EA) && /plkReadW\(x\)/.test(EA), '⑤ 실행 문·72시간·잠금 검사 그대로');
 // tick 흉내: 반영 대기 450건(한 번에 200) → 확인은 반영이 다 끝난 뒤 한 번
 (async () => {
