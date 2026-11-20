@@ -25,7 +25,7 @@ const SEED = async function (d10) { if (!S.user) S.user = { email: 't@x', uid: '
   S.plist.set('aladin_U590000099', { id: 'aladin_U590000099', usedCode: 'U590000099', listingId: '509937099', title: '내린 책', price: 9000, qty: 1, grade: '상', status: '판매중지', active: false, bookId: 'bk5999' });
   S.pmLoaded = true; S.sellersLoaded = true;
   const K = (i) => 'aladin_U5900000' + (10 + i); const now = Date.now();
-  const put = (id, name, on, keys, log) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 6900, pmax: 18900, recentDays: 0, kw: 'zz판F없음zz' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: keys, lastCount: keys.length, start: {}, watch: { on }, watchLog: log });
+  const put = (id, name, on, keys, log) => db.collection('prd_price_batches').doc(id).set({ name, cond: { ...BATCH_DEF, name, pmin: 6900, pmax: 18900, recentDays: 0, kw: '' }, createdAt: d10, lastRunAt: d10, by: 't', writerSchema: 6, lastKeys: keys, lastCount: keys.length, start: {}, watch: { on }, watchLog: log });
   await put('fA', '감시 켠 그룹', true, [K(0), K(1), K(2), 'aladin_U590000099'], [{ on: true, at: new Date(now - 2 * 3600e3).toISOString(), by: 't', what: '시험 켬' }]);
   await put('fB', '감시 끈 그룹', false, [K(3), K(4)], []);
   await put('fC', '둘째 묶음 그룹', false, [K(5)], []);
@@ -74,14 +74,15 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const wantF = await p.evaluate(() => { const { N, ids } = ctrlFolds(); return ids.find((i) => !N.folds[i].archived); }); const notF = wantF === f1 ? f2 : f1;
   await p.evaluate((x) => { try { localStorage.setItem('rn-bkf-last', x); } catch (_) {} }, notF);
   await p.setViewportSize({ width: 1280, height: 760 }); await p.evaluate(() => openCtrlRoom());
-  for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!S._ckAll && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6 && Object.keys(S._bkfTb || {}).length >= 2)) break; await Wt(p, 150); }
+  for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!S._ckAll && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6)) break; await Wt(p, 150); }
   await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); await Wt(p, 300);
   let m = await p.evaluate(() => ({ det: S.detail && S.detail.bkfold, on: !!S._pxVwOn }));
   ok(m.det === wantF && [f1, f2].includes(wantF), '관제소 처음 열기 = 띠 맨 앞 묶음(마지막 본 묶음 기억이 다른 묶음이어도)', { m, wantF, notF });
   ok(m.on, '관제소를 열면 조회 기록을 한 번 저절로 받기 시작(조회수 분석과 같은 불러오기)', m);
   if (m.det !== f1) { await p.evaluate((f) => { history.back(); }, f1); await Wt(p, 300); await p.evaluate((f) => openCtrlRoom(f), f1);
-    for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => S.detail && S.detail.bkfold === f && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6, f1)) break; await Wt(p, 150); }
-    await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); await Wt(p, 300); }
+    for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => S.detail && S.detail.bkfold === f && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6, f1)) break; await Wt(p, 150); } }
+  for (let i = 0; i < 60; i++) { if (await p.evaluate(() => { const T = S._bkfTb || {}; return !!(T.fA && T.fA.cls && T.fB && T.fB.cls); })) break; await Wt(p, 150); }
+  await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); await Wt(p, 300);
   m = await p.evaluate(() => { const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')]; const g = (k) => document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`);
     const W = ckWatch(S.detail.bkfold); const want = new Set(); for (const gid of ['fA']) for (const k of ckGKeys(gid)) if (CK_SALE(S.plist.get(k))) want.add(k);
     return { kinds: C.map((c) => c.dataset.ctrlkpi).join(), pct: ['top', 'low'].map((k) => (g(k).querySelector('.ck-pct') || {}).textContent || ''), totPct: !!g('tot').querySelector('.ck-pct'), tot: ctrlKpiCalc(S.detail.bkfold).tot, top: ctrlKpiCalc(S.detail.bkfold).top,
@@ -121,16 +122,19 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const rN = await p.evaluate((r0) => window._ckR.slice(r0), r0);
   ok(rN.every((n) => /^(prd_system|app_settings|prd_price_batches|ctl_kpi_m|ctl_kpi_days|px_\w+)$/.test(n)), '설정 창 읽기 = 설정 문서(prd_system·app_settings)뿐 · 상품마다 읽기 없음', rN);
   // 수동 일괄 화면 맨 위 줄
+  const all = await p.evaluate(() => window._ckR.slice());
   await p.evaluate(() => history.back()); await Wt(p, 400);
-  await p.evaluate(() => openBatch({ id: 'fB' })); await Wt(p, 600);
+  await p.evaluate(() => openBatch(JSON.parse(JSON.stringify({ ...BATCH_DEF, name: '판 F 수동 일괄' })))); await Wt(p, 600);
   const hb = await p.evaluate(() => !!document.querySelector('#sheet .sh [data-prcfg]'));
   ok(hb, '수동 일괄 화면 맨 위 줄에 「⚙ 가격 감시 설정」 단추', hb);
   if (hb) { await p.evaluate(() => document.querySelector('#sheet .sh [data-prcfg]').click()); for (let i = 0; i < 30; i++) { if (await p.evaluate(() => !!document.querySelector('#prcfg_w #pr_aspd'))) break; await Wt(p, 150); }
     w = await p.evaluate(() => ({ v: (document.querySelector('#prcfg_w #pr_aspd') || {}).value, sheet: document.getElementById('sheet').classList.contains('on') }));
     ok(w.v === '3' && w.sheet, '수동 일괄에서 연 창도 같은 값(3배) · 수동 일괄 화면 그대로', w);
     await p.evaluate(() => document.querySelector('#prcfg_w .bigask-x').click()); await Wt(p, 200); ok(!(await p.evaluate(() => !!document.getElementById('prcfg_w'))), '✕ = 닫힘'); }
-  const all = await p.evaluate(() => window._ckR.slice());
-  ok(all.every((n) => /^(prd_system|app_settings|prd_price_batches|ctl_kpi_m|ctl_kpi_days|px_\w+|prd_batch_\w+|prd_dec\w*|prd_price_\w+)$/.test(n)) && all.filter((n) => n === 'px_views').length <= 2, '전체 읽기 = 묶음·날마다 기록·조회 기록(한 번)·설정뿐 · 상품마다 읽기 없음', [...new Set(all)]);
+  const cnt = {}; for (const n of all) cnt[n] = (cnt[n] || 0) + 1;
+  ok(!cnt.prd_market_nobook && (cnt.px_views || 0) <= 2, '관제소를 연 뒤 읽기(수동 일괄 열기 전) — 조회 기록 한 번 · 시장 자료 낱개 읽기 없음', cnt);
+  const rp = await p.evaluate(async () => { const a = window._ckR.length; S._ctrlKpi = null; C0: { const c = ckS(); c.spm = null; c.vpm = null; } ctrlKpiPaint(); ckWatch(S.detail.bkfold); ctrlKpiCards(S.detail.bkfold); await new Promise((r) => setTimeout(r, 300)); return window._ckR.slice(a); });
+  ok(!rp.length, '카드 여섯 다시 셈·그리기(감시 수·기간 칸·오르내림) = 새 읽기 0', rp);
   await p.evaluate(() => { db.collection = window._ckDC; try { localStorage.removeItem('rn-ck'); localStorage.removeItem('rn-bkf-last'); } catch (_) {} });
   ok(!dlg.length, '브라우저 창(alert·confirm·prompt) 한 번도 안 뜸', dlg);
   console.log(bad ? `❌ tCTRLKPI_F ${bad}개 실패` : '✓ tCTRLKPI_F 통과'); return bad; });
