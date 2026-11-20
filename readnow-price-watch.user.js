@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.77
+// @version      0.10.78
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -549,9 +549,14 @@
     let nDone = 0; const APX = { halt: false, lanes: applyLanes() }; /* (0.10.76 정범님 I-1120-1027-15 「확정건 반영 시간을 두 배로 빨리 · 내가 언제든 고치게 · 추천 속도 표시」) 반영 줄 수 = 웹앱 가격 감시 카드 「🚀 샵매니저 반영 속도」(prd_system/pricing.applySpeed · 1~4배 · 기본·추천 2배)
      *  한 권에 13~15초(11/20 10:2x HOME 기록) 중 알라딘 요청은 약 1초 · 나머지는 차례로 하는 Firestore 확인·기록 → 같은 상품이 아닌 책을 N줄이 함께 처리(같은 상품은 한 줄에서 차례로) · 알라딘으로 가는 요청 간격 조절(PACE · 429 물러남·쉼)은 그대로 하나로 묶임 */
     const SPD = { t0: Date.now(), n: 0, hold: [], auto: 0 }; const apPace = async () => { const t = Date.now(); await PACE.wait(sleep, 1, true); if (Date.now() - t > 5000) SPD.hold.push([t, Date.now()]); }; /* (0.10.77 I-1120-1055-16) 반영 시간 재기 — 알라딘 간격 장치가 5초 넘게 세운 때(429 물러남·쉼)는 멈춘 시간으로 따로 셈 */
+    /* (0.10.78 정범님 I-1120-1316-22 「또 멈췄어」) 11/20 12:33~ HOME: 바퀴마다 「반영할 관리자 결정 2408건」만 찍고 한 건도 안 보낸 채 소리 없이 끝남(멈춘 까닭을 안 적는 길이 하나 — 상품마다 맨 앞 '멈춤·전체 정지·이 탭 아님' 검사) → ① 그 검사에 걸리면 설정을 한 번 새로 읽어 다시 보고, 정말이면 까닭(값까지)을 적고 멈춤 ② 한 건에서 오류가 나거나 3분 넘게 안 끝나면 그 건만 적고 다음 건으로(바퀴 전체를 세우지 않음) ③ 바퀴마다 끝에 한 줄 요약(맡은·반영·미룸·꺼진 그룹·오류·멈춘 까닭·걸린 시간) */
+    let haltWhy = '', errN = 0, toN = 0, okChk = 0;
+    const apWhy = () => stop ? '멈춤 표시(stop)' : SET.killSwitch ? '전체 정지' : !isMine() ? `이 탭이 감시 탭이 아님(설정 ${SET.watchPc || '?'}/${String(SET.watchTab || '?').slice(0, 8)} · 이 탭 ${PC || '?'}/${String(TAB || '?').slice(0, 8)})` : '';
+    const apOk = async () => { if (APX.halt) return false; if (okChk < 3) { okChk++; try { await loadSet(); } catch (e) {} if (!SET.killSwitch && isMine()) { if (stop && !running) stop = false; if (!stop) return true; } } haltWhy = haltWhy || apWhy() || '모름'; APX.halt = true; return false; };
+    const AP_ONE_MS = 3 * 60000; const apOne = async (d0) => { let tm = null; const t0 = Date.now(); try { const r = await Promise.race([one(d0).then(() => 'ok'), new Promise((res) => { tm = setTimeout(() => res('to'), AP_ONE_MS); })]); if (r === 'to') { toN++; log(`반영 한 건이 3분 넘게 안 끝나 다음 건으로: ${((d0.data() || {}).title || d0.id)} (10분 뒤 '막힘 — 확인'으로 표시될 수 있음)`, 1); } } catch (e) { errN++; log(`반영 중 오류(이 건만 건너뜀): ${((d0.data() || {}).title || d0.id)} — ${e && (e.code || e.message) || e}`, 1); } finally { clearTimeout(tm); } void t0; };
     const lanesQ = []; { const byK = new Map(); for (const d0 of docs) { const k0 = (d0.data() || {}).key || d0.id; if (!byK.has(k0)) { byK.set(k0, []); lanesQ.push(byK.get(k0)); } byK.get(k0).push(d0); } }
     const one = async (d0) => { /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */
-      if (stop || SET.killSwitch || !isMine()) { APX.halt = true; return; } const x = d0.data(); const kind = x.approvalState; const now = new Date().toISOString(); const d = d0;
+      if (stop || SET.killSwitch || !isMine()) { if (!(await apOk())) return; } const x = d0.data(); const kind = x.approvalState; const now = new Date().toISOString(); const d = d0;
       let xo = null; // 이 결정의 실행 기록 (열려 있으면 실패 때 '실패'로 닫음)
       const xGate = async (kind2) => { const key = `${x.key}@${(x.approval && x.approval.at) || x.at || ''}`; const g = await xBegin(kind2, key, { listingId: x.listingId || null, title: x.title || null, price: (x.approval && x.approval.price) ?? null, decision: (x.approval && x.approval.decision) || kind });
         if (!g.ok) { await d.ref.set({ approvalState: g.state === 'done' ? 'done' : 'blocked', execNote: `실행 문: ${g.why}`, ...W() }, { merge: true }); log(`보내지 않음(실행 문): ${x.title || x.usedCode} — ${g.why}`, 1); return false; } xo = { kind: kind2, key, none: !!g.none }; return true; };
@@ -642,10 +647,11 @@
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); return; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
       { const tS = Date.now(), au = (x.approval || {}).decision === 'auto'; await sleep(GAP(au ? 'auto' : null) * APX.lanes); if (au) SPD.auto += Date.now() - tS; } /* (0.10.76) 엔진 자동 반영 사이 쉼은 줄 수만큼 늘려 전체 박자는 예전 그대로(사람이 확정한 것만 빨라짐) */ /* (0.10.75) 반영 중에는 공개 확인을 아예 하지 않음 — 반영 대기가 0이 된 뒤 tick이 이어 받음 · 알라딘 요청도 먼저 받기(prio)로 다른 탭·수집기 읽기보다 앞섬 */ /* (0.10.74 정범님 I-1120-0913-09 · 확정 뒤 샵매니저 반영이 멈춘 듯 느림) 예전엔 한 건 보낼 때마다 공개 확인(알라딘 목록 최대 5쪽+상품 페이지 × 2권)을 해서 알라딘 간격에 묶여 한 건 1~5분 → 5분에 한 번만(반영이 먼저) · 확인은 tick의 verifyStep(60)이 이어 받음 */ // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
     };
-    const lane = async () => { for (;;) { if (APX.halt || stop) return; const grp = lanesQ.shift(); if (!grp) return; for (const d0 of grp) { if (APX.halt || stop) return; if (++nDone > 200) { apMore = true; if (!APX.halt) log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); APX.halt = true; return; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */ await one(d0); } } };
+    const lane = async () => { for (;;) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; const grp = lanesQ.shift(); if (!grp) return; for (const d0 of grp) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; if (++nDone > 200) { apMore = true; if (!APX.halt) log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); APX.halt = true; return; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */ await apOne(d0); } } };
     if (APX.lanes > 1 && docs.length > 1) log(`🚀 반영 ${APX.lanes}줄로 함께 (샵매니저 반영 속도 ${APX.lanes}배 — 웹앱 가격 감시 카드에서 바꿈)`);
     await Promise.all(Array.from({ length: Math.min(APX.lanes, lanesQ.length) || 1 }, lane));
     apSpdW(SPD, APX.lanes).catch(() => {});
+    { const left = lanesQ.reduce((a, g) => a + g.length, 0); log(`반영 바퀴 끝: 대기 ${docs.length}건 중 맡음 ${Math.max(0, nDone)} · 반영 ${n} · 잠금 미룸 ${pxN} · 꺼진 그룹 ${offN} · 오류 ${errN} · 3분 넘김 ${toN} · 남음 ${left} · 멈춘 까닭 ${haltWhy || (apMore ? '200건 몫' : '없음')} · ${Math.round((Date.now() - SPD.t0) / 1000)}초`, !!haltWhy || (!n && !pxN && !offN && docs.length > 0)); if (haltWhy && left > 0 && !SET.killSwitch && isMine()) apMore = true; } /* (0.10.78) 까닭 있이 멈췄는데 이 탭이 여전히 감시 탭이면 tick이 바로 다시 돎(500번 한도) */
     if (pxN) log(`⏳ 가격 잠금으로 ${pxN}건은 미룸(실패 아님 · 잠금 끝난 뒤 반영)`); if (offN) log(`꺼진 수동 일괄 그룹의 확정 ${offN}건은 반영하지 않고 기다림 (웹앱에서 그룹을 켜면 반영)`); void n;
   }
 
@@ -721,10 +727,17 @@
   const vWaiting = (a) => (a.verify && a.verify.state === 'wait') || (a.verifyPg && a.verifyPg.state === 'wait');
   async function vSave(a) { pxlLagW(a).catch(() => {}); try { await a.ref.set({ verify: a.verify, ...(a.verifyPg ? { verifyPg: a.verifyPg } : {}), ...W() }, { merge: true }); } catch (e) { log('공개 반영 확인 저장 실패: ' + e.message, 1); } if (!vWaiting(a) && VQ) { const i = VQ.indexOf(a); if (i >= 0) VQ.splice(i, 1); } }
   const dueOf = (x) => x && x.state === 'wait' && Date.parse(x.next || 0) <= Date.now();
-  async function verifyStep(max, budgetMs) { if (vqBusy) return; vqBusy = true; const t0 = Date.now();
-    try { await vqLoad(); const due = VQ.filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).sort((a, b) => String(Math.min(Date.parse((a.verify || {}).next || 9e15), Date.parse((a.verifyPg || {}).next || 9e15))).localeCompare(String(Math.min(Date.parse((b.verify || {}).next || 9e15), Date.parse((b.verifyPg || {}).next || 9e15))))); let n = 0;
+  /* (0.10.78 정범님 I-1120-1329-24 「공개 반영 확인이 느리거나 적합하지 않음 · 더 세밀히」 · I-1120-1332-25 「헌장 제45조를 잊지 말고 · 샵매니저 반영 최우선을 방해하지 않게」)
+   *  ① 한 번에 볼 수·시간을 prd_system/pricing.verifyCfg { max(10~200 · 기본 60), budgetMin(1~10 · 기본 4) }로 고침(설정은 실시간)
+   *  ② 차례 = 확인 때가 가장 오래 지난 것부터(예전 글자 비교 → 숫자 비교) · 같은 새상품은 한 번에
+   *  ③ 바퀴마다 상태 한 줄을 prd_system/pricing_run.verify에(기다리는 수·때 지난 수·본 수·남은 수·가장 늦은 것 몇 분·걸린 초) → 느린지 숫자로 보임
+   *  지킴: 반영 대기·새 확정이 있으면 그 자리에서 비킴(그대로) · 확인은 보기만 — 값을 다시 바꾸지 않음(제45조: 시장이 알아볼 때까지 다시 안 바꿈 · 확인 결과가 잠금 길이 표본이 됨) */
+  const vCfg = () => { const c = (SET && SET.verifyCfg) || {}; const cl = (v, lo, hi, d) => { const x = Math.round(+v); return Number.isFinite(x) && x >= lo ? Math.min(hi, x) : d; }; return { max: cl(c.max, 10, 200, 60), budgetMs: cl(c.budgetMin, 1, 10, 4) * 60000 }; };
+  const vDueMs = (a) => Math.min(...[a.verify, a.verifyPg].filter((x) => dueOf(x)).map((x) => Date.parse(x.next || 0) || 0).concat([9e15]));
+  async function verifyStep(max0, budget0) { if (vqBusy) return; vqBusy = true; const t0 = Date.now(); const VC = vCfg(); const max = VC.max || max0, budgetMs = VC.budgetMs || budget0; let vSt = null;
+    try { await vqLoad(); const due = VQ.filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).sort((a, b) => vDueMs(a) - vDueMs(b)); vSt = { wait: VQ.length, due: due.length, oldMin: due.length ? Math.round((Date.now() - vDueMs(due[0])) / 60000) : 0 }; let n = 0;
       while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine() || quietNow() || apWant || apMore) break; /* (0.10.75) 새 확정이 들어오면 그 자리에서 비킴 */ const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); if (due.length && n < max) await sleep(GAP('read')); } /* (사람처럼) 밤에는 공개 반영 확인도 쉼(놓친 확인 때는 다음 때로 넘어감) · 책 사이 쉼 */
-    } catch (e) { log('공개 반영 확인 오류: ' + e.message, 1); } finally { vqBusy = false; } }
+    } catch (e) { log('공개 반영 확인 오류: ' + e.message, 1); } finally { vqBusy = false; if (vSt) { const left = (VQ || []).filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).length; RREF.set({ verify: { ...vSt, left, done: Math.max(0, vSt.due - left), max, budgetMin: Math.round(budgetMs / 60000), sec: Math.round((Date.now() - t0) / 1000), yielded: !!(apWant || apMore), at: new Date().toISOString(), pc: PC || null, ver: VER } }, { merge: true }).catch(() => {}); } } }
   function vJudge(x, a, seen, found, nowIso, noRetry) { // 한 번 확인 결과로 목록·상품 페이지 확인 상태를 고침 (같은 규칙) · noRetry = 정밀 표본 상품 페이지(verifyPg)는 예전처럼 48시간에서 끝
     const n = (x.n || 0) + 1; const nx = vNextOf(a, noRetry ? { ...x, fine: (a.verify || {}).fine, rb: null } : x, (x.si || 0) + 1, noRetry); const base = { n, lastCheckAt: nowIso };
     if (found && seen === a.to) return { ...x, ...base, state: 'ok', seenAt: nowIso, seenPrice: seen, lagLoSec: Math.max(0, Math.round((Date.parse(x.lastMissAt || a.at) - Date.parse(a.at)) / 1000)), lagHiSec: Math.round((Date.now() - Date.parse(a.at)) / 1000), stallSec: pxlStall({ ...x, seenAt: nowIso }, a) }; /* (0.10.77) stallSec > 0 = 마지막 확인이 멈춤으로 늦음 → 평균에서 뺌 */

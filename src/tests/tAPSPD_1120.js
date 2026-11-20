@@ -20,7 +20,7 @@ ok(i0 > 0 && i1 > i0, '반영 함수를 찾음');
   const qL = (EA.match(/\n    const lanesQ = \[\];[^\n]*/) || [])[0], lL = (EA.match(/\n    const lane = async \(\) => [^\n]*/) || [])[0], pL = (EA.match(/\n    await Promise\.all\(Array\.from\(\{ length: Math\.min\(APX\.lanes, lanesQ\.length\) \|\| 1 \}, lane\)\);/) || [])[0];
   ok(!!(qL && lL && pL), '줄 나누기·줄 돌기·함께 기다리기 세 줄을 떼어 냄');
   const run = async (docs, lanes, oneImpl) => { const g = { apMore: false }; const logs = [];
-    await new Function('docs', 'APX', 'one', 'g', 'log', `return (async () => { let nDone = 0; let stop = false; let apMore = false; ${qL}${lL}${pL}; g.apMore = apMore; })();`)(docs, { halt: false, lanes }, (d) => oneImpl(d), g, (m) => logs.push(m));
+    await new Function('docs', 'APX', 'one', 'g', 'log', `return (async () => { let nDone = 0; let stop = false; let apMore = false; const SET = {}; const isMine = () => true; const apOk = async () => false; const apOne = (d) => one(d); ${qL}${lL}${pL}; g.apMore = apMore; })();`)(docs, { halt: false, lanes }, (d) => oneImpl(d), g, (m) => logs.push(m));
     return g; };
   const D = (id, key) => ({ id, data: () => ({ key }) });
   const nap = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -34,7 +34,7 @@ ok(i0 > 0 && i1 > i0, '반영 함수를 찾음');
   ok(el < 6 * 40 * 0.8, '③ 6건 × 40ms를 한 줄보다 빨리(' + el + 'ms)');
   live = 0; peak = 0; await run(docs, 1, async () => { live++; peak = Math.max(peak, live); await nap(5); live--; }); ok(peak === 1, '③ 1배면 예전처럼 한 건씩');
   let n4 = 0; const APXs = { halt: false };
-  await new Function('docs', 'APX', 'one', 'log', `return (async () => { let nDone = 0; let stop = false; let apMore = false; ${qL}${lL}${pL} })();`)(docs.concat([D('e1', 'E'), D('f1', 'F')]), Object.assign(APXs, { lanes: 3 }), async () => { n4++; await nap(10); if (n4 >= 2) APXs.halt = true; }, () => {});
+  await new Function('docs', 'APX', 'one', 'log', `return (async () => { let nDone = 0; let stop = false; let apMore = false; const SET = {}; const isMine = () => true; const apOk = async () => false; const apOne = (d) => one(d); ${qL}${lL}${pL} })();`)(docs.concat([D('e1', 'E'), D('f1', 'F')]), Object.assign(APXs, { lanes: 3 }), async () => { n4++; await nap(10); if (n4 >= 2) APXs.halt = true; }, () => {});
   ok(n4 <= 4, '④ 한 줄이 멈춤(halt)을 걸면 다른 줄도 새 건을 안 잡음(' + n4 + '건에서 멈춤)');
   const many = Array.from({ length: 230 }, (_, i) => D('m' + i, 'K' + i)); let n5 = 0;
   const g5 = await run(many, 2, async () => { n5++; });
@@ -42,7 +42,7 @@ ok(i0 > 0 && i1 > i0, '반영 함수를 찾음');
   // 멈춤 길: continue 없이 return · 멈추는 return은 APX.halt
   const body = EA.slice(EA.indexOf('const one = async (d0) => {'), EA.indexOf('\n    const lane = async'));
   ok(!/\bcontinue\b/.test(body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')), '줄 안에 continue가 남지 않음(모두 return)');
-  ok(/if \(stop \|\| SET\.killSwitch \|\| !isMine\(\)\) \{ APX\.halt = true; return; \}/.test(body) && (body.match(/로그인[^\n]{0,160}APX\.halt = true; return;/g) || []).length >= 3, '④ 전체 정지·감시 탭 바뀜·로그인 풀림은 모든 줄을 세움');
+  ok(/if \(stop \|\| SET\.killSwitch \|\| !isMine\(\)\) \{ if \(!\(await apOk\(\)\)\) return; \}/.test(body) && /APX\.halt = true; return false;/.test(EA) && (body.match(/로그인[^\n]{0,160}APX\.halt = true; return;/g) || []).length >= 3, '④ 전체 정지·감시 탭 바뀜·로그인 풀림은 모든 줄을 세움');
   // ⑥ settle.last
   ok(/const sP = settle\(d\.ref, x, \{[\s\S]*?\}, actDoc\); const aL = settle\.last; await sP; if \(VQ && aL\) VQ\.push\(\{ id: aL\.id, ref: aL, \.\.\.actDoc \}\);/.test(body) && !/VQ\.push\(\{ id: settle\.last/.test(body), '⑥ settle.last를 기다리기 전에 잡음(다른 줄이 덮지 못함)');
   { const settle = async () => { await nap(10); }; let vq = []; const one = async (id) => { const sP = (settle.last = { id }, settle()); const aL = settle.last; await sP; vq.push([id, aL.id]); }; await Promise.all([one('x'), one('y')]); ok(vq.every(([a, b]) => a === b), '⑥ 두 줄이 겹쳐도 확인 대기열에 제 기록이 들어감'); }
