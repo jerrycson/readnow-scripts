@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.387
+// @version      1.89.388
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6002,7 +6002,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           w++; prog.got++; if (r.status === 'lt3') prog.lt3 = (prog.lt3 || 0) + 1;
           prog.miss = 0;
         } else { prog.miss = (prog.miss || 0) + 1; log(`SC ${sc}: 숍 화면에서 구매만족도 표를 찾지 못함 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, ...W() }, { merge: true }); w++;
-          if (prog.miss >= 15 && prog.got === 0) { if (w) await b.commit(); await saveProgress(name, prog); log(`6개월 평가 수: 처음부터 ${prog.miss}곳 연속으로 못 읽었습니다. 판매자 숍 화면 구조가 바뀐 것 같아 이 단계를 멈춥니다 (판매자 숍 첫 화면 HTML 확인 필요). 나머지 판매자는 건드리지 않았고, 일괄 수집은 다음 단계로 갑니다`, 1); return 'skip'; } }
+          if (prog.miss >= 15 && prog.got === 0) { if (w) await b.commit(); const missN = prog.miss; prog.i++; prog.miss = 0; /* (h4 11/20 하루 3번 점검) 멈출 때 자리를 다음 판매자로 넘기고 연속 못 읽음 수를 0으로 — 전엔 miss가 저장된 채 같은 판매자(i 그대로)에서 다음 회차마다 1곳만 읽고 곧바로 멈춰 11/18부터 이 단계가 사실상 서지 않았음 */ await saveProgress(name, prog); log(`6개월 평가 수: 처음부터 ${missN}곳 연속으로 못 읽었습니다. 판매자 숍 화면 구조가 바뀐 것 같아 이 단계를 멈춥니다 (판매자 숍 첫 화면 HTML 확인 필요). 나머지 판매자는 건드리지 않았고, 일괄 수집은 다음 단계로 갑니다`, 1); return 'skip'; } }
         ui(mode === 'all' ? '6개월 평가 수 (전체 판매자)' : '6개월 평가 수 (오래된 것)', prog.i + 1, prog.list.length, `SC ${sc} · ${r.grade || ''} · ${r.rev6m != null ? num6(r.rev6m) + '건' : r.status === 'lt3' ? '최근 6개월 3건 미만' : '못 읽음'}`);
         if (w >= 40) { await b.commit(); b = db.batch(); w = 0; await saveProgress(name, prog); }
       }
@@ -9645,7 +9645,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         log(`${reason}: 새 탭(뒤 탭 · 포커스 안 뺏음)으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { const isW = !!(window.__rnWork && window.__rnWork.isWork && window.__rnWork.isWork()); tab = GM_openInTab(location.href.replace(/#.*$/, '') + (window.__rnWork && window.__rnWork.mark ? '#rnWork' : ''), { active: false, insert: true, setParent: isW }); } catch (e) {} lastTab = tab; /* (11/05) 🪟 작업 창 탭이면 새 탭도 작업 창 탭(같은 창 안 옆자리에 열림) · (정범님 11/13 tabfix) 새 탭은 늘 뒤 탭(active:false) — 예전 active:true가 판마다(하루 수십 번) 사람 창 포커스를 뺏음 · 옆자리(insert)라 옛 탭이 닫히면 크롬이 그 자리의 새 탭을 보여 줌 · setParent는 작업 창에서만(사람 창에서 새 탭이 닫힐 때 포커스를 되돌리지 않게) */
         const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
         if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (2분 끝에 확인) — 이 탭을 닫습니다`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; }
-        unq(); const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성${(() => { try { return typeof st !== 'undefined' ? ` · 직전 서버 확인 ${st || '응답 없음'}` : ''; } catch (e) { return ''; } })()}) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
+        unq(); const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성${(() => { try { return typeof st !== 'undefined' ? ` · 직전 서버 확인 ${st || '응답 없음'}` : ''; } catch (e) { return ''; } })()}) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); /* (h4 11/20 하루 3번 점검) 여기는 서버 확인이 200일 때만 오는 길 — 새 탭이 안 뜬 것을 429로 세면 요청 간격이 20초까지 늘어 밤새 이 PC 알라딘 일이 느려졌음(11/20 02:20~08:13 JS-MAIN 30번 남짓) → 429로 세지 않음 */
       } else { log(`${reason}: 알라딘이 ${st || '응답 없음'}(${st === 429 ? '요청 너무 많음' : '아직 안 됨'}) — ${Math.round(wait / 6000) / 10}분 뒤 다시 확인`, 1); if (st === 429) PACE.fail('429'); }
       ui(`${reason} — 알라딘이 다시 받아 줄 때까지 기다리는 중`, 0, 0, `${Math.round(wait / 6000) / 10}분 뒤 다시 확인 (${tryN}번째) · 이 탭을 닫지 마세요`);
       await sleep(wait); wait = Math.min(wait * 2, 15 * 60000);
