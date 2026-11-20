@@ -3,9 +3,9 @@
  "ask": null,
  "holder": "strat10",
  "host": "vm",
- "what": "감시 판 ⑩ 시험",
+ "what": "감시 판 ⑩ push",
  "since": "2026-11-20T00:02:17Z",
- "beat": "2026-11-20T00:04:42Z",
+ "beat": "2026-11-20T00:13:20Z",
  "last": {
   "who": "lead",
   "done": "수집기 1.89.388 · h4 점검 고침 둘 · 5b3431b3f · 머리 그대로 8ab2f661d1d8afa8",
