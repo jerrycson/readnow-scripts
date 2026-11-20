@@ -110,7 +110,7 @@ H(async (p) => {
   const cards = () => p.evaluate(() => [...document.querySelectorAll('#b_res .card.pq.bq[data-mk]')].filter(kbVisEl).map((x) => x.dataset.mk));
   const K = await cards(); const bn = await p.evaluate(() => { const L = [...document.querySelectorAll('#b_res .card.pq.bq[data-mk]')].filter(kbVisEl); return { a: (L[0].querySelector(':scope > .lno') || {}).dataset, n: L.length, rest: kbRestIn(document.querySelector('#b_res')) }; });
   ok(K.length >= 3 && bn.a && bn.a.n === `1/${bn.n + bn.rest}`, `수동 일괄 카드 번호 「1/${bn.n + bn.rest}」(그린 ${bn.n} + 남은 ${bn.rest})`, bn);
-  const pick = (k) => p.evaluate((k) => { const el = document.querySelector(`#b_res .card.pq.bq[data-mk="${k}"]`); kbPick(el, document.getElementById('sheet')); return !!window.rnKbReady(); }, k);
+  const pick = (k) => p.evaluate((k) => { const el = document.querySelector(`#b_res .card.pq.bq[data-mk="${k}"]`); el.scrollIntoView({ block: 'center' }); kbPick(el, document.getElementById('sheet')); return !!window.rnKbReady(); }, k);
   ok(await pick(K[1]), '고른 카드의 가격 칸 = ⌨ 입력 준비(rnKbReady)', K[1]); await blur(p);
   await p.keyboard.type('8800', { delay: 90 }); await W(p, 300); let v = await p.evaluate((k) => document.querySelector(`#b_res [data-mk="${k}"] [data-bpin]`).value, K[1]);
   ok(v === '8800', '숫자 = 그 카드 가격 칸으로(8,800)', v); await p.keyboard.press('Escape'); await W(p, 300); v = await p.evaluate((k) => document.querySelector(`#b_res [data-mk="${k}"] [data-bpin]`).value, K[1]); ok(v === '9000', 'Esc = 처음 값으로 되돌림(9,000)', v);
