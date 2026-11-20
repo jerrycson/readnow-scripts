@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.79
+// @version      0.10.80
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -540,7 +540,7 @@
   async function executeApproved() {
     await unstick();
     const st = ['approved', 'manual', 'hold', 'unhold']; const docs = [];
-    for (const k of st) { const q = await C('prd_price_decisions').where('approvalState', '==', k).get(); q.docs.forEach((d) => docs.push(d)); }
+    { const Q = await Promise.all(st.map((k) => C('prd_price_decisions').where('approvalState', '==', k).get())); Q.forEach((q) => q.docs.forEach((d) => docs.push(d))); } /* (11/20 ctrlopt1) 네 갈래 읽기를 함께(예전엔 하나씩 차례 — 2408건 대기면 바퀴(200건)마다 큰 읽기 넷을 차례로 기다림) · 순서는 예전과 같음(approved→manual→hold→unhold) · 하나라도 못 읽으면 예전처럼 바퀴 오류 */
     apMore = false; apWant = false; if (!docs.length) return; log(`반영할 관리자 결정 ${docs.length}건`);
     const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); let n = 0; // (0.10.19) 정범님 10/26: 한국 날짜(예전 UTC — 같은 문서 kst와 달랐음) // (0.6.0) 하루 반영 상한 없음 — 확정한 것은 모두 차례로 (정범 결정 2026-10-07)
     const offOf = (x) => { const a = x.approval || {}; return a.decision === 'batch' && a.batchId && (SET.batchOff || {})[a.batchId]; }; // (0.6.0) 꺼진 수동 일괄 그룹: 그 그룹이 확정한 것은 건드리지 않고 기다림 (설정은 실시간 — 도는 중에 꺼도 다음 상품부터)
@@ -562,11 +562,13 @@
         if (!g.ok) { await d.ref.set({ approvalState: g.state === 'done' ? 'done' : 'blocked', execNote: `실행 문: ${g.why}`, ...W() }, { merge: true }); log(`보내지 않음(실행 문): ${x.title || x.usedCode} — ${g.why}`, 1); return false; } xo = { kind: kind2, key, none: !!g.none }; return true; };
       const fail = async (msg, block) => { if (xo) { await xEnd(xo, 'failed', msg); xo = null; } const tries = (x.execTries || 0) + 1; if (!block && tries >= 3 && !/로그인/.test(msg)) { block = true; msg += ' (세 번 실패 — 더 보내지 않음)'; } await d.ref.set({ ...(block ? { approvalState: 'blocked' } : { approvalState: kind }), execTries: tries, execNote: `반영 ${block ? '안 함' : '실패'}: ${msg}`, execFailAt: now, ...W() }, { merge: true }); log(`반영 ${block ? '안 함' : '실패'}: ${x.title || x.usedCode} — ${msg}`, 1); };
       if (offOf(x)) { offN++; return; } /* ⏳ 가격 잠금(I-1120-0948-11) — 맡기 전에 봄 · 잠겼으면 미룸(실패 아님 · 세 번 실패에 안 셈 · 200건 몫에도 안 셈 — 맨 먼저 반영할 다른 상품을 굶기지 않음) · 미룬 때(pxWait)를 적어 다음 바퀴엔 읽지 않고 넘김 · 엔진 승인은 잠금 끝난 뒤 48시간이 지났으면 아래에서 다시 판정 */ if ((kind === 'approved' || kind === 'manual') && x.key) { const apAt = (x.approval && x.approval.at) || x.at || null; const w0 = x.pxWait; const fr0 = PXLC && PXLC.fr; if (w0 && w0.apAt === apAt && Date.parse(w0.until) > Date.now() && !(fr0 && fr0.at && String(fr0.at) > String(w0.since))) { pxN++; nDone--; return; } const P1 = await pxlReadW(x); if (P1.lock) { pxN++; nDone--; try { await d.ref.set({ pxWait: { apAt, since: now, until: P1.until, rule: P1.rule, note: pxlNote(P1), held: pxlHeld(w0, apAt, Date.now()) }, execNote: pxlNote(P1), ...W() }, { merge: true }); } catch (e) {} return; } }
+      /* (11/20 ctrlopt1 · 정범님 I-1120-1359 「속도를 늘려」) 맡기(트랜잭션)와 함께 읽기만 하는 두 가지를 먼저 띄움 — 🔒 잠금(plkReadW · 문서 1 + 상품 번호 찾기 1)·관리자 직접 가격의 상품 기록(prd_listings) · 예전엔 맡은 뒤 하나씩 차례로 기다려 한 권에 Firestore 왕복 2~3번 더 · 판단·순서는 그대로(맡은 뒤에 결과를 봄 · 못 읽으면 예전처럼 안전 쪽) */
+      const lkP = x.listingId && x.group !== 'control' ? plkReadW(x) : null; const lsP = kind === 'manual' && x.key ? C('prd_listings').doc(x.key).get() : null; if (lsP) lsP.catch(() => {});
       let got = false; try { got = await claim(d.ref, x, kind); } catch (e) { log('맡기 실패: ' + e.message, 1); return; } if (!got) { log(`그 사이 결정이 바뀌어 건너뜀: ${x.title || x.usedCode}`); return; }
       // ↓ 맡은(반영 중) 뒤에 확인 — 확인하다 막을 때도 그 사이 바뀐 다른 결정을 덮지 않음
       if (!x.listingId) { await d.ref.set({ approvalState: 'blocked', execNote: '샵매니저 상품번호(ItemId)가 없음', ...W() }, { merge: true }); return; }
       if (x.group === 'control') { await d.ref.set({ approvalState: 'blocked', execNote: '비교 묶음은 바꾸지 않음(효과 측정용)', ...W() }, { merge: true }); return; }
-      const lkW = await plkReadW(x); { const lk = lkW; if (lk === undefined || plkBlock(lk, [kind === 'hold' || kind === 'unhold' ? 'code' : 'price']).drop.length) { await d.ref.set({ approvalState: 'blocked', execNote: lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽) — 다시 결정하면 다시 봄' : '🔒 잠금이라 건너뜀 (잠긴 상품은 판매 상태 말고는 바꾸지 않음 · 판매보류풀 포함)', ...W() }, { merge: true }); log(`🔒 잠김 — 건너뜀: ${x.title || x.usedCode}`); return; } } /* (0.10.54 plock1) 판매가·관리코드(보류풀) 모두 — 맡은 뒤 바로 읽음 */
+      const lkW = await (lkP || plkReadW(x)); { const lk = lkW; if (lk === undefined || plkBlock(lk, [kind === 'hold' || kind === 'unhold' ? 'code' : 'price']).drop.length) { await d.ref.set({ approvalState: 'blocked', execNote: lk === undefined ? '🔒 잠금 상태를 못 읽어 건너뜀(안전 쪽) — 다시 결정하면 다시 봄' : '🔒 잠금이라 건너뜀 (잠긴 상품은 판매 상태 말고는 바꾸지 않음 · 판매보류풀 포함)', ...W() }, { merge: true }); log(`🔒 잠김 — 건너뜀: ${x.title || x.usedCode}`); return; } } /* (0.10.54 plock1) 판매가·관리코드(보류풀) 모두 — 맡은 뒤 바로 읽음 */
       if (kind === 'approved') { // 엔진 제안 승인: 옛 엔진·오래된 판정이면 반영하지 않음 (관리자가 직접 정한 가격·보류풀은 그대로 반영)
         if (x.engine !== PR.VERSION) { await d.ref.set({ approvalState: 'stale', execNote: `옛 판정 엔진(${x.engine || '?'})의 제안 — 새 판정 후 다시 결정`, ...W() }, { merge: true }); return; }
         if (Date.now() - Date.parse(x.at) > 48 * 3600e3) { await d.ref.set({ approvalState: 'stale', execNote: '판정이 48시간 넘게 지남 — 다시 판정 후 결정', ...W() }, { merge: true }); return; }
@@ -578,7 +580,7 @@
         const ap = x.approval || {}; const p0 = Math.round(+ap.price);
         if (!(p0 >= 10)) { await fail('관리자가 정한 가격이 없음 (엔진 추천가로 대신하지 않음)', true); return; }
         if (!ap.at || Date.now() - Date.parse(ap.at) - pxlHeld(x.pxWait, ap.at || null) > 72 * 3600e3) /* ⏳ 가격 잠금으로 미룬 시간은 72시간에서 뺌(사람이 확정한 값 · 잠금이 끝나면 반영) */ { await d.ref.set({ approvalState: 'stale', execNote: '결정한 지 72시간이 넘음 — 시장이 바뀌었을 수 있어 반영하지 않음, 다시 확인 후 결정', ...W() }, { merge: true }); log(`오래된 결정이라 반영 안 함: ${x.title || x.usedCode}`, 1); return; }
-        try { const L = (await C('prd_listings').doc(x.key).get()).data(); const seenAfter = L && [L.lastSeenAt, L.editAt, L.watchSyncAt].some((t) => t && String(t) > String(ap.at)); /* (10/30 위험 8) 결정 뒤 수집기가 다시 봤거나 · 웹앱 ✏·전략이 고쳤거나(editAt) · 다른 반영(watchSyncAt)이 있었으면 가격 비교 */
+        try { const L = (await (lsP || C('prd_listings').doc(x.key).get())).data(); const seenAfter = L && [L.lastSeenAt, L.editAt, L.watchSyncAt].some((t) => t && String(t) > String(ap.at)); /* (10/30 위험 8) 결정 뒤 수집기가 다시 봤거나 · 웹앱 ✏·전략이 고쳤거나(editAt) · 다른 반영(watchSyncAt)이 있었으면 가격 비교 */
           if (L && seenAfter && L.status && L.status !== '판매중') { await fail(`결정 뒤 상품 상태가 '${L.status}'로 바뀜`, true); return; }
           if (L && seenAfter && ap.expectPrice != null && L.price != null && +L.price !== +ap.expectPrice && +L.price !== p0) { await fail(`결정 뒤 다른 곳에서 가격이 바뀜 (결정 때 ${(+ap.expectPrice).toLocaleString()} → 지금 ${(+L.price).toLocaleString()})`, true); return; } } catch (e) {}
       }
@@ -647,11 +649,12 @@
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); return; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
       { const tS = Date.now(), au = (x.approval || {}).decision === 'auto'; await sleep(GAP(au ? 'auto' : null) * APX.lanes); if (au) SPD.auto += Date.now() - tS; } /* (0.10.76) 엔진 자동 반영 사이 쉼은 줄 수만큼 늘려 전체 박자는 예전 그대로(사람이 확정한 것만 빨라짐) */ /* (0.10.75) 반영 중에는 공개 확인을 아예 하지 않음 — 반영 대기가 0이 된 뒤 tick이 이어 받음 · 알라딘 요청도 먼저 받기(prio)로 다른 탭·수집기 읽기보다 앞섬 */ /* (0.10.74 정범님 I-1120-0913-09 · 확정 뒤 샵매니저 반영이 멈춘 듯 느림) 예전엔 한 건 보낼 때마다 공개 확인(알라딘 목록 최대 5쪽+상품 페이지 × 2권)을 해서 알라딘 간격에 묶여 한 건 1~5분 → 5분에 한 번만(반영이 먼저) · 확인은 tick의 verifyStep(60)이 이어 받음 */ // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
     };
-    const lane = async () => { for (;;) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; const grp = lanesQ.shift(); if (!grp) return; for (const d0 of grp) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; if (++nDone > 200) { apMore = true; if (!APX.halt) log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); APX.halt = true; return; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */ await apOne(d0); } } };
+    const apJit = async () => { const r = Math.random(); const ms = r < 0.06 ? 9000 + Math.random() * 16000 : r < 0.2 ? 4000 + Math.random() * 5000 : 700 + Math.random() * Math.random() * 3800; SPD.jit = (SPD.jit || 0) + ms; await sleep(ms); }; /* (0.10.80 정범님 I-1120-1440-28 「반영 사이 사이에 랜덤성 · 지금은 2~3초 일정」) 반영 하나하나 사이에 들쭉날쭉한 틈 — 대개 0.7~4.5초(짧은 쪽이 잦음) · 14%는 4~9초 · 6%는 9~25초 쉼 · 줄마다 따로 · 평균 약 +3.4초 */
+    const lane = async () => { for (;;) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; const grp = lanesQ.shift(); if (!grp) return; for (const d0 of grp) { if (APX.halt || ((stop || SET.killSwitch || !isMine()) && !(await apOk()))) return; if (++nDone > 200) { apMore = true; if (!APX.halt) log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); APX.halt = true; return; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */ if (nDone > 1) await apJit(); await apOne(d0); } } };
     if (APX.lanes > 1 && docs.length > 1) log(`🚀 반영 ${APX.lanes}줄로 함께 (샵매니저 반영 속도 ${APX.lanes}배 — 웹앱 가격 감시 카드에서 바꿈)`);
     { const LN = []; const nL = Math.min(APX.lanes, lanesQ.length) || 1; for (let i = 0; i < nL; i++) LN.push(lane()); await Promise.all(LN); } /* (0.10.79 정범님 I-1120-1316-22 「또 멈췄어」 진짜 원인) 샵매니저 화면의 옛 도구(Prototype.js)가 Array.from을 바꿔 둬서 두 번째 인수(lane)를 무시 → 0.10.76부터 반영 줄이 하나도 안 떠 바퀴마다 「맡음 0 · 0초」 · 평범한 for로 줄을 띄움(브라우저 기본 함수에 기대지 않음) */
     apSpdW(SPD, APX.lanes).catch(() => {});
-    { const left = lanesQ.reduce((a, g) => a + g.length, 0); log(`반영 바퀴 끝: 대기 ${docs.length}건 중 맡음 ${Math.max(0, nDone)} · 반영 ${n} · 잠금 미룸 ${pxN} · 꺼진 그룹 ${offN} · 오류 ${errN} · 3분 넘김 ${toN} · 남음 ${left} · 멈춘 까닭 ${haltWhy || (apMore ? '200건 몫' : '없음')} · ${Math.round((Date.now() - SPD.t0) / 1000)}초`, !!haltWhy || (!n && !pxN && !offN && docs.length > 0)); if (haltWhy && left > 0 && !SET.killSwitch && isMine()) apMore = true; } /* (0.10.78) 까닭 있이 멈췄는데 이 탭이 여전히 감시 탭이면 tick이 바로 다시 돎(500번 한도) */
+    { const left = lanesQ.reduce((a, g) => a + g.length, 0); log(`반영 바퀴 끝: 대기 ${docs.length}건 중 맡음 ${Math.max(0, nDone)} · 반영 ${n} · 잠금 미룸 ${pxN} · 꺼진 그룹 ${offN} · 오류 ${errN} · 3분 넘김 ${toN} · 남음 ${left} · 멈춘 까닭 ${haltWhy || (apMore ? '200건 몫' : '없음')} · ${Math.round((Date.now() - SPD.t0) / 1000)}초(무작위 틈 ${Math.round((SPD.jit || 0) / 1000)}초)`, !!haltWhy || (!n && !pxN && !offN && docs.length > 0)); if (haltWhy && left > 0 && !SET.killSwitch && isMine()) apMore = true; } /* (0.10.78) 까닭 있이 멈췄는데 이 탭이 여전히 감시 탭이면 tick이 바로 다시 돎(500번 한도) */
     if (pxN) log(`⏳ 가격 잠금으로 ${pxN}건은 미룸(실패 아님 · 잠금 끝난 뒤 반영)`); if (offN) log(`꺼진 수동 일괄 그룹의 확정 ${offN}건은 반영하지 않고 기다림 (웹앱에서 그룹을 켜면 반영)`); void n;
   }
 

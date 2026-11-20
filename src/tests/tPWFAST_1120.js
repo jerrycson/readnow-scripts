@@ -33,7 +33,7 @@ ok(/if \(!\(await xGate\('price'\)\)\)/.test(EA) && /72 \* 3600e3/.test(EA) && /
   let t = 1e12; const RealNow = Date.now; Date.now = () => t; const sl = async (ms) => { t += ms; };
   const got = []; await pc.wait(sl, 1, true); got.push('반영'); const before = t; await pc.wait(sl); got.push('확인'); Date.now = RealNow;
   ok(got.join(',') === '반영,확인' && t - before >= 300, '④ 먼저 받기 뒤 보통 요청은 기다림(' + (t - before) + 'ms)');
-  ok(/\/\/ @version {6}0\.10\.7[5-9]/.test(W), '판 번호 0.10.75 뒤');
+  ok(/\/\/ @version {6}0\.10\.(7[5-9]|[89]\d|\d{3})/.test(W), '판 번호 0.10.75 뒤');
   const CS = fs.readFileSync([path.resolve(__dirname, '..', 'readnow-collector.src.js'), path.resolve(__dirname, '..', 'readnow-collector.user.js')].find((f) => fs.existsSync(f)), 'utf8'); /* 저장소에선 src/ 원본 · 시험 문지기 자리(pw)에선 ../readnow-collector.user.js가 원본 사본 */
   ok(/await PACE_P\.wait\(sleep\);[^\n]{0,200}await st\(3\); const ac = new AbortController\(\)/.test(CS) && /await PACE_P\.wait\(sleep\); sent = true;/.test(CS), '④ 수집기 대량 등록(올리기·등록 완료)도 먼저 받기');
   console.log(bad ? `❌ ${bad}개 실패` : '✅ 모두 통과'); process.exit(bad ? 1 : 0);

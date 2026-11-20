@@ -74,7 +74,7 @@ console.log('② 셈');
 { ok(M.ctrlAmSince(now) === Date.parse('2026-11-18T21:00:00+09:00'), '밤사이 = 어제 21시 KST 뒤');
   const realNow = Date.now; Date.now = () => now;
   let D = M.ctrlAmData(Pn({}), now); ok(D.sold === null && D.ops === null && D.ch === null, '받은 것 없으면 「아직 못 셈」', D);
-  ctx.S.ordersLoaded = true; ctx.saleIdx = () => new Map([['aladin_1', [{ ms: now - 3600e3, p: 7000, qty: 1 }, { ms: now - 20 * 3600e3, p: 9000, qty: 1 }]], ['aladin_9', [{ ms: now - 60e3, p: 1, qty: 1 }]]]);
+  ctx.S.ordersLoaded = true; ctx.saleIdx = () => new Map([['aladin_1', [{ ms: now - 3600e3, p: 7000, qty: 1 }, { ms: now - 20 * 3600e3, p: 9000, qty: 1 }]], ['aladin_9', [{ ms: now - 60e3, p: 1, qty: 1 }]]]); ctx.saleIdxX = ctx.saleIdx; /* (11/20 ctrlopt1) 밤사이 판매는 이제 saleIdxX(ISBN만 온 줄도) */
   ctx.S.engF = { day: kstDay(now), L: { ops: 1200, done: 300 } };
   ctx.S._ctrlEps = { eps: [{ key: 'aladin_1', sc: '77', startedAt: new Date(now - 3600e3).toISOString() }, { key: 'aladin_2', sc: '77', startedAt: new Date(now - 7200e3).toISOString() }, { key: 'aladin_3', sc: '996008', startedAt: new Date(now - 60e3).toISOString() }, { key: 'aladin_3', sc: '88', startedAt: new Date(now - 30 * 3600e3).toISOString() }, { key: 'aladin_9', sc: '99', startedAt: new Date(now - 60e3).toISOString() }] };
   D = M.ctrlAmData(Pn({}), now); ok(D.sold === 1 && D.amt === 7000, '팔림 — 묶음 상품 · 어제 21시 뒤만', D); ok(D.ops === 1200 && D.done === 300, '내린 몫(원장)'); ok(D.ch === 1 && D.chB === 2, '새 판매자 — 우리 가게·묶음 밖·밤 전은 뺌', D);
