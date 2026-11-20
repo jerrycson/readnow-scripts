@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.388의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.389의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.388' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.388', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.389' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.389', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3597,7 +3597,7 @@
       base = await regNewest(codes, () => st(2));
       await st(3, { base, codes }); const g0 = await lookDoc(BULK_URL); const p0 = RG.parseBulkPage(g0.doc); if (looksLoggedOut(g0.finalUrl, g0.doc) || !p0.loggedIn) throw regNotSent('알라딘 로그인이 풀림 — 샵매니저에 로그인한 뒤 웹앱에서 다시 맡기기'); if (!p0.hasUpload || !p0.excelKey) throw regNotSent('대량 등록 화면에서 올리기 칸(excelKey)을 못 찾음 — 알라딘 화면이 바뀌었을 수 있음');
       const fd = new FormData(); fd.append('excelFileInputText', `readnow_${ref.id}.xls`); fd.append('excelFileInput', new Blob([bytes], { type: 'application/vnd.ms-excel' }), `readnow_${ref.id}.xls`); fd.append('x', '31'); fd.append('y', '11'); fd.append('excelAction', '1'); fd.append('excelKey', p0.excelKey);
-      await PACE.wait(sleep); await st(3); const ac = new AbortController(); const tmo = setTimeout(() => ac.abort(), 120000); let r1; try { r1 = await fetch(BULK_URL, { method: 'POST', body: fd, credentials: 'include', signal: ac.signal }); } catch (e) { throw regNotSent('올리기 응답 없음(2분) — 등록하지 않음: ' + e.message); } finally { clearTimeout(tmo); } const h1 = await r1.text(); const d1 = new DOMParser().parseFromString(h1, 'text/html'); const p1 = RG.parseBulkPage(d1);
+      await PACE_P.wait(sleep); /* (1.89.389 정범님 I-1120-0937-10 · 약속 A칸 108) 등록은 샵매니저 반영 — 알라딘 간격 장치에서 먼저 받기(간격은 그대로) */ await st(3); const ac = new AbortController(); const tmo = setTimeout(() => ac.abort(), 120000); let r1; try { r1 = await fetch(BULK_URL, { method: 'POST', body: fd, credentials: 'include', signal: ac.signal }); } catch (e) { throw regNotSent('올리기 응답 없음(2분) — 등록하지 않음: ' + e.message); } finally { clearTimeout(tmo); } const h1 = await r1.text(); const d1 = new DOMParser().parseFromString(h1, 'text/html'); const p1 = RG.parseBulkPage(d1);
       await st(4, { upload: { http: r1.status, n: p1.count, alerts: p1.alerts.slice(0, 5), token: p1.tokenId || null } });
       if (!r1.ok) throw regNotSent(`올리기 실패 (HTTP ${r1.status})`); if (!p1.hasPreview || !p1.tokenId) throw regNotSent('올린 뒤 미리보기가 없음' + (p1.alerts.length ? ' — 알라딘: ' + p1.alerts.slice(0, 3).join(' / ') : ' (파일을 받지 않았을 수 있음)'));
       const m = RG.matchPreview(p1, rows); if (!m.ok) { await ref.set({ badMiss: m.miss.slice(0, 200), badDiff: m.diff.slice(0, 50), badExtra: m.extra.length, uploadedAt: TS() }, { merge: true }).catch(() => {}); } /* (1.89.37) 웹앱이 문제 상품을 정확히 짚게 — 빠진 ISBN·다른 줄 전부 */ if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
@@ -3612,7 +3612,7 @@
           tx.update(ref, { step: 5, sent: true, sentAt: nowIso(), beatAt: nowIso(), preview: { n: p1.count }, verify: { base, codes, until: new Date(Date.now() + 90 * 60000).toISOString(), tries: 0 }, uploadedAt: TS() }); tx.set(REG_LANE(), { at: nowIso() }, { merge: true }); mine = true; }); }
       catch (e) { throw regNotSent('보내기 전 기록(보냄 표시)을 못 적음 — 두 번 등록을 막으려고 보내지 않음: ' + (e.code || e.message)); }
       if (!mine) { laneOk = false; log('📥 이 일이 그사이 멈춤 처리됐거나 다른 곳이 맡음 — 등록을 보내지 않음', 1); return; }
-      await PACE.wait(sleep); sent = true; const regAt = nowIso(); let h2 = '', http2 = null, al2 = [];
+      await PACE_P.wait(sleep); sent = true; const regAt = nowIso(); let h2 = '', http2 = null, al2 = [];
       try { const r2 = await fetch(BULK_URL + '?' + q.toString(), { credentials: 'include' }); try { window.__rnC2w && window.__rnC2w('bulk', { pairs: m.pairs, n: rows.length, tokenId: p1.tokenId, excelKey: p0.excelKey }, [{ m: 'POST', u: BULK_URL, b: new URLSearchParams([...fd.entries()].map(([k, x]) => [k, typeof x === 'string' ? x : ''])).toString() }, { m: 'GET', u: BULK_URL + '?' + q.toString() }], r2.ok, r2.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(W8 — 올린 엑셀 양식·등록 완료 요청) */ http2 = r2.status; h2 = await r2.text(); al2 = RG.pageAlerts(h2); } catch (e) { al2 = ['응답을 못 받음: ' + e.message]; } /* 화면 자체 안내 알림(등록할 상품이 없습니다 등 늘 있는 글)은 빼고 서버가 넣은 알림만 */
       const bad = http2 !== 200 || al2.some((a) => /실패|오류|불가|잘못|없습니다|초과|error/i.test(a)) || (/로그인|wlogin/i.test(h2.slice(0, 3000)) && !/wC2Cuser_logout/.test(h2)); const stt = bad ? 'unknown' : 'registered';
       rows.forEach((r, i) => (results[r.regItem] = { state: stt, at: nowIso(), pkid: m.pairs[i], msg: bad ? `알라딘 답: ${al2.slice(0, 2).join(' / ') || 'HTTP ' + http2} — 공개 확인으로 판단` : null }));
