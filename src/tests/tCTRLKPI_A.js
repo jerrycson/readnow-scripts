@@ -68,7 +68,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(m.inTop === 7 && m.inRow === 0 && m.back, '단추 = 맨 위 줄(← 닫기 옆)에만 · 묶음 칩 줄엔 없음', m);
   ok(m.n === 6 && m.kinds === 'tot,top,low,view,sold,watch', '카드 여섯(감시 중 상품 수 더함)', m.kinds);
   ok(m.big[0] === m.K.tot.toLocaleString('ko-KR') && m.big[1] === m.K.top.toLocaleString('ko-KR') && m.big[2] === m.K.low.toLocaleString('ko-KR'), '큰 수 = 고른 묶음', m);
-  ok(m.sub[0].includes('전체 ' + exp.tot.toLocaleString('ko-KR')) && m.sub[1].includes('전체 ' + exp.top.toLocaleString('ko-KR')) && m.sub[2].includes('전체 ' + exp.low.toLocaleString('ko-KR')) && /전체 30일 2권/.test(m.sub[4]), '아래 작은 글 = 가게 전체', m.sub);
+  ok(m.sub[0].includes('전체 ' + exp.tot.toLocaleString('ko-KR')) && m.sub[1].includes('전체 ' + exp.top.toLocaleString('ko-KR')) && m.sub[2].includes('전체 ' + exp.low.toLocaleString('ko-KR')) && /최근 30일 알라딘 2권/.test(m.sub[4]), '아래 작은 글 = 가게 전체', m.sub);
   ok(m.on, '(ctrlkpi2) 관제소를 열면 조회 기록을 한 번 저절로 받기 시작', m.on);
   // 유효 최저가 창 — ≤·< 따로 · 어제 대비 · 읽는 법
   await p.evaluate(() => document.querySelector('#bkf_kpi [data-ctrlkpi="low"]').click()); await Wt(p, 150);

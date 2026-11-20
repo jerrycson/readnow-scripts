@@ -112,7 +112,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     let reads = 0; const dc = db.collection; db.collection = function () { reads++; return dc.apply(this, arguments); }; S._ctrlKpi = null; let err = null; try { ctrlKpiPaint(); } catch (e) { err = String(e); } db.collection = dc;
     const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((c) => c.querySelector('.pxtb').textContent); const sub = (document.querySelector('#bkf_kpi [data-ctrlkpi="sold"] .pxts') || {}).textContent || '';
     return { want: ks.size, sold: sk.size, C, sub, reads, err }; });
-  ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.sub.startsWith('생성 뒤 판매 ' + kc.sold.toLocaleString('ko-KR') + ' ·'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 작은 글 「생성 뒤 판매」 = 생성후판매완료 합(겹침 뺌)', kc);
+  ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.sub.startsWith('🏷 생성 뒤 판매 탭 ' + kc.sold.toLocaleString('ko-KR') + '개 ·'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 작은 글 「생성 뒤 판매」 = 생성후판매완료 합(겹침 뺌)', kc);
   ok(kc.reads === 0, '카드 셈이 Firestore를 새로 읽지 않음', kc);
   for (const k of ['tot', 'top', 'low', 'view', 'sold']) {
     const o = await p.evaluate((k) => { let reads = 0; const nm = []; const dc = db.collection; db.collection = function (c) { if (!/^(ctl_kpi_m|ctl_kpi_days|prd_price_batches)$/.test(String(c))) reads++; nm.push(String(c)); return dc.apply(this, arguments); }; const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight;
