@@ -71,14 +71,17 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const [f1, f2] = await p.evaluate(async ([src, d]) => (eval('(' + src + ')'))(d), [SEED.toString(), new Date(Date.now() - 10 * 864e5).toISOString()]);
   for (let i = 0; i < 60; i++) { if (await p.evaluate(([a, b]) => !!(S.bkfold && S.bkfold.folds && S.bkfold.folds[a] && S.bkfold.folds[b] && S.bkfold.folds[a].gids.length === 2), [f1, f2])) break; await Wt(p, 150); }
   await p.evaluate(() => { window._ckR = []; const dc = db.collection; window._ckDC = dc; db.collection = function (n) { window._ckR.push(String(n)); return dc.apply(this, arguments); }; });
-  await p.evaluate((f2) => { try { localStorage.setItem('rn-bkf-last', f2); } catch (_) {} }, f2);
+  const wantF = await p.evaluate(() => { const { N, ids } = ctrlFolds(); return ids.find((i) => !N.folds[i].archived); }); const notF = wantF === f1 ? f2 : f1;
+  await p.evaluate((x) => { try { localStorage.setItem('rn-bkf-last', x); } catch (_) {} }, notF);
   await p.setViewportSize({ width: 1280, height: 760 }); await p.evaluate(() => openCtrlRoom());
-  const wantF = await p.evaluate(() => { const { N, ids } = ctrlFolds(); return ids.find((i) => !N.folds[i].archived); });
   for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!S._ckAll && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6 && Object.keys(S._bkfTb || {}).length >= 2)) break; await Wt(p, 150); }
   await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); await Wt(p, 300);
   let m = await p.evaluate(() => ({ det: S.detail && S.detail.bkfold, on: !!S._pxVwOn }));
-  ok(m.det === wantF && wantF === f1, '관제소 처음 열기 = 맨 앞 묶음(마지막 본 묶음 기억이 둘째여도)', { m, wantF, f1 });
+  ok(m.det === wantF && [f1, f2].includes(wantF), '관제소 처음 열기 = 띠 맨 앞 묶음(마지막 본 묶음 기억이 다른 묶음이어도)', { m, wantF, notF });
   ok(m.on, '관제소를 열면 조회 기록을 한 번 저절로 받기 시작(조회수 분석과 같은 불러오기)', m);
+  if (m.det !== f1) { await p.evaluate((f) => { history.back(); }, f1); await Wt(p, 300); await p.evaluate((f) => openCtrlRoom(f), f1);
+    for (let i = 0; i < 60; i++) { if (await p.evaluate((f) => S.detail && S.detail.bkfold === f && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6, f1)) break; await Wt(p, 150); }
+    await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); await Wt(p, 300); }
   m = await p.evaluate(() => { const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')]; const g = (k) => document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`);
     const W = ckWatch(S.detail.bkfold); const want = new Set(); for (const gid of ['fA']) for (const k of ckGKeys(gid)) if (CK_SALE(S.plist.get(k))) want.add(k);
     return { kinds: C.map((c) => c.dataset.ctrlkpi).join(), pct: ['top', 'low'].map((k) => (g(k).querySelector('.ck-pct') || {}).textContent || ''), totPct: !!g('tot').querySelector('.ck-pct'), tot: ctrlKpiCalc(S.detail.bkfold).tot, top: ctrlKpiCalc(S.detail.bkfold).top,

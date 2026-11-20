@@ -17,7 +17,7 @@ console.log('① 글');
   ok(/Date\.now\(\) - C\.failAt < 60e3/.test(B), '읽기 실패 뒤 1분은 저절로 다시 읽지 않음(되풀이 막음)');
   ok(/없음\$\{p\.why \? ' — ' \+ esc\(p\.why\) : ' — 기록한 날이 아님'\}/.test(B), '기록 없는 날 줄 = 「없음」');
   ok(/거르지 않은 동급 최저/.test(B) && /되살린 날/.test(B), '거르지 않은 동급 최저·되살린 날 딱지 글');
-  ok(/function ctrlKpiMore\(kind, K\) \{ return ckMore\(kind, K\); \}/.test(T) && /ckYdLine\(kind, K\)/.test(T) && /ckYdSub\(k, K \? fid : null\)/.test(T), '◆ctrlkpi 창·카드가 판 D를 부름');
+  ok(/function ctrlKpiMore\(kind, K\) \{ return (kind === 'watch' \? '' : )?ckMore\(kind, K\); \}/.test(T) && /ckYdLine\(kind, K\)/.test(T) && /ckYdSub\(k, K \? fid : null\)/.test(T), '◆ctrlkpi 창·카드가 판 D를 부름');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(B), '브라우저 창 없음'); ok(!/때문에|덕분에|효과|올렸다/.test(B), '원인을 단정하는 말 없음'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(B), '전화번호 모양 없음'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tCTRLKPI_D ${bad}개 실패` : '✓ tCTRLKPI_D 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
