@@ -70,9 +70,9 @@ console.log('① 순수 셈');
   ok(F.bcondSentence(oc, true).startsWith('대상 고정 상품') && !F.bcondList(oc, true).some((x) => x.id === 'grades') && F.bcondList(oc, true).some((x) => x.id === 'exControl'), '대상 고정 그룹: 상품 선정 조건은 안 보이고 빼기만');
   const blank = F.batchCondNorm({}); ok(F.bcondSentence(blank) === '판매중 상품 전부 (빼기: 다른 그룹 비교군 · 🔬 조회수 실험 중)', '빈 그룹 문장', F.bcondSentence(blank));
   /* 정적 검사 */
-  const mine = cut('/* ◆bslr 시작', 'function batchFilter(c, gid) {');
+  const mine = cut('/* ◆bslr 시작', 'function batchFilter(c, gid');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(mine) && !/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/.test(mine), '새 코드에 브라우저 창·휴대전화 번호 꼴 없음');
-  const bf = cut('function batchFilter(c, gid) {', '\nfunction ');
+  const bf = cut('function batchFilter(c, gid', '\nfunction ');
   ok(/slrOn/.test(bf) && /bslrCodesOf\(/.test(bf) && /bslrHit\(/.test(bf), '그룹 대상 셈(batchFilter)에 겹치는 판매자 검사');
   ok(/d\.id === '_bkslr'/.test(T) && (T.match(/batchCondNorm\(/g) || []).length >= 5, '그룹 모음에서 _bkslr 문서는 묶음으로 받음 · 그룹 여는 곳마다 조건 옮기기');
   ok(/MEMO_DEPS[^\n]*\['bslr', 'psmb'\]/.test(T) || /\['bslr', 'psmb'\]/.test(T), '판매자 셈 기억은 시장 지표가 바뀌면 다시 셈(MEMO_DEPS)');

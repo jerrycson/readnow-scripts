@@ -62,7 +62,7 @@ console.log('② 쓰는 곳');
 }
 
 console.log('③ ckSoldPer·ckSoldAgg 기억');
-{ let scans = 0; const ctx = ctxWith(['ckS', 'ckMd', 'ckAdd', 'ckPrevYm', 'ckNowK', 'ckOAt', 'ckSpans', 'CK_PER4', 'ckIsbOf', 'ckLineIn', 'ckSoldPer', 'kMs', 'lineGrade', 'ckIsbPl']); /* (11/20 isbnall1) ckLineIn이 주문 시각·ckIsbPl로 좁힘 */
+{ let scans = 0; const ctx = ctxWith(['ckS', 'ckMd', 'ckAdd', 'ckPrevYm', 'ckNowK', 'ckOAt', 'ckSpans', 'CK_PER4', 'ckIsbOf', 'ckLineIn', 'ckSoldPer', 'kMs', 'lineGrade', 'ckIsbPl', 'ckY24', 'ckCashO', 'ckAlSale']); /* (11/20 ctrlhist1) 알라딘 판매만 셈 */ /* (11/20 isbnall1) ckLineIn이 주문 시각·ckIsbPl로 좁힘 */
   const orders = new Map([['a', { kind: 'sale', orderedAt: new Date(Date.now() - 3600e3).toISOString(), items: [{ lineStatus: 'normal', aladinUsedCode: '1', qty: 1, price: 1000 }] }]]);
   const O = { get size() { return orders.size; }, values() { scans++; return orders.values(); } };
   ctx.S = { orders: O, plist: new Map(), dv: { o: 1 } };

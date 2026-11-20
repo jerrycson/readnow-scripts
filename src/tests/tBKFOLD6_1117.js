@@ -14,7 +14,7 @@ console.log('① 글');
   ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(NEW), '전화번호 모양 없음');
   const names = ['bkfRestEx', 'bkfRestTag']; const dup = names.filter((n) => (T.match(new RegExp(`(?:function\\*? ${n}\\s*\\(|(?:const |let |var |, )${n}\\s*=(?!=))`, 'g')) || []).length !== 1); ok(!dup.length, `새 이름 ${names.length}개는 파일 전체에서 한 번만 선언`, dup);
   ok(!/const BATCH_DEF = \{[^;]*\brest:/.test(T), 'BATCH_DEF에 rest 칸 없음 — 옛 그룹·새 그룹 모두 꺼짐이 기본');
-  ok((T.match(/const restEx = c\.rest && gid \? bkfRestEx\(gid\) : null;/g) || []).length === 1 && /if \(restEx && restEx\.has\('aladin_' \+ l\.usedCode\)\) return false;/.test(T), 'batchFilter 한 곳에서만 뺌(그룹 화면·편집기 개수·겹침 검사 같은 셈)'); }
+  ok((T.match(/const restEx = c\.rest && gid (?:&& !past )?\? bkfRestEx\(gid\) : null;/g) || []).length === 1 && /if \(restEx && restEx\.has\('aladin_' \+ l\.usedCode\)\) return false;/.test(T), 'batchFilter 한 곳에서만 뺌(그룹 화면·편집기 개수·겹침 검사 같은 셈)'); }
 if (!process.env.RN_PORT) { console.log(bad ? `❌ tBKFOLD6_1117 ${bad}개 실패` : '✓ tBKFOLD6_1117 통과 (화면 시험은 RN_PORT가 있을 때)'); process.exit(bad ? 1 : 0); }
 console.log('② 화면');
 const W = (p, ms) => p.waitForTimeout(ms);
