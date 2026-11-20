@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "시중가 빈 칸 채우기 (sijung1) 문지기",
- "since": "2026-11-20T03:30:49Z",
- "beat": "2026-11-20T03:31:47Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "benchcut1 클라우드 0.35.341 6ce6d0308 main 반영",
-  "at": "2026-11-20T03:28:53Z"
+  "done": "sijung1 수집기 1.89.392 a30ca88ff main 반영 (시중가 빈 칸 채우기 · 머리 그대로)",
+  "at": "2026-11-20T03:39:57Z"
  }
 }
