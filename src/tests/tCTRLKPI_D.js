@@ -56,16 +56,16 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await p.evaluate(() => { window._ckR = []; const dc = db.collection; window._ckDC = dc; db.collection = function (n) { window._ckR.push(String(n)); return dc.apply(this, arguments); }; });
   const R = (n) => p.evaluate((n) => window._ckR.filter((x) => x === n).length, n);
   const open = async (w, h, fid) => { await p.setViewportSize({ width: w, height: h }); await p.evaluate((f) => openBkfold(f), fid);
-    for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!document.getElementById('bkf_tb') && Object.keys(S._bkfTb || {}).length >= 3 && !!S._ckAll && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 5)) break; await Wt(p, 150); }
-    await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); for (let i = 0; i < 40; i++) { if (await p.evaluate(() => /어제 대비/.test((document.querySelector('#bkf_kpi [data-ctrlkpi="top"] .pxts') || {}).textContent || ''))) break; await Wt(p, 150); } };
+    for (let i = 0; i < 60; i++) { if (await p.evaluate(() => !!document.getElementById('bkf_tb') && Object.keys(S._bkfTb || {}).length >= 3 && !!S._ckAll && !S._ckAllRun && document.querySelectorAll('#bkf_kpi [data-ctrlkpi]').length === 6)) break; await Wt(p, 150); }
+    await p.evaluate(() => { S._ctrlKpi = null; ctrlKpiPaint(); }); for (let i = 0; i < 40; i++) { if (await p.evaluate(() => /어제 대비 [▲▼±]/.test((document.querySelector('#bkf_kpi [data-ctrlkpi="top"] .ck-tkl') || {}).textContent || ''))) break; await Wt(p, 150); } };
   const win = async (kind) => { await p.evaluate((k) => document.querySelector(`#bkf_kpi [data-ctrlkpi="${k}"]`).click(), kind); for (let i = 0; i < 40; i++) { if (await p.evaluate(() => !!document.querySelector('#ctrl_kpi .ckd-t') || /아직 기록한 날|기록이 없습니다|읽지 못했습니다/.test((document.querySelector('#ctrl_kpi [data-ctrlkpimore]') || {}).textContent || ''))) break; await Wt(p, 150); } };
   const set = async (v) => { await p.evaluate((v) => document.querySelector(`#ctrl_kpi [data-ckset="${v}"]`).click(), v); for (let i = 0; i < 40; i++) { if (await p.evaluate(() => !S._ck.wl && !S._ck.busy.size)) break; await Wt(p, 120); } await Wt(p, 120); };
   const row = (d) => p.evaluate((d) => { const r = document.querySelector(`#ctrl_kpi tr[data-ckday="${d}"]`); return r ? [...r.cells].map((c) => c.textContent.trim()) : null; }, d);
   const D = await p.evaluate(() => { const t = ckDay(); return { t, y: ckAdd(t, -1), d5: ckAdd(t, -5), d10: ckAdd(t, -10), d9: ckAdd(t, -9) }; });
   await open(1280, 720, f);
   // 카드 — 어제 대비(01시 기록 두 날) · 묶음 F.top 오늘 4 · 어제 5 → −1 · 가게 전체 T.top 30 vs 29
-  let c = await p.evaluate(() => [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((x) => x.querySelector('.pxts').textContent));
-  ok(/어제 대비 −1$/.test(c[1]) && /어제 대비 ±0$/.test(c[0]) && !/어제 대비/.test(c[3]) && !/어제 대비/.test(c[4]), '카드 어제 대비 = 묶음 01시 기록 두 날 차이(최상단 −1 · 총 ±0) · 방문수·판매수엔 안 붙음', c);
+  let c = await p.evaluate(() => [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((x) => ({ tk: (x.querySelector('.ck-tkl') || {}).textContent || '', cls: ((x.querySelector('.ck-tkl .ck-tk') || {}).className || ''), sub: x.querySelector('.pxts').textContent })));
+  ok(/^어제 대비 ▼1 \(−20%\)$/.test(c[1].tk) && /dn/.test(c[1].cls) && /^어제 대비 ±0/.test(c[0].tk) && /eq/.test(c[0].cls) && !/어제 대비/.test(c[3].tk + c[3].sub) && !/어제 대비/.test(c[4].tk + c[4].sub), '(ctrlkpi2) 카드 오르내림 = 묶음 01시 기록 두 날 차이(최상단 ▼1 −20% 파랑 · 총 ±0) · 방문수·판매수엔 어제 대비 안 붙음(기간 칸마다 따로)', c);
   ok((await R('ctl_kpi_m')) >= 1 && (await R('ctl_kpi_m')) <= 2 && (await R('ctl_kpi_days')) === 0, '카드 = 달 문서 1~2번만 읽음 · 날 문서 0', await p.evaluate(() => window._ckR.slice()));
   // 최상단 창 — 묶음 범위(기본)
   await win('top'); let n0 = await R('ctl_kpi_m');
@@ -134,8 +134,8 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(w.ok && w.sw <= w.iw, '폭 380: 날마다 기록 창 가로 넘침 없음(표는 칸 안에서만 밀림)', w); await p.keyboard.press('Escape'); await Wt(p, 150);
   // 기록 없음 — 빈 상태 글
   await p.evaluate(async (yms) => { S._ck = null; for (const ym of yms) await db.collection('ctl_kpi_m').doc(ym).set({ ym, ver: 1, d: {} }); }, yms); await open(1280, 720, f); await win('top');
-  w = await p.evaluate(() => ({ tx: (document.querySelector('#ctrl_kpi [data-ctrlkpimore]') || {}).textContent || '', yd: (document.querySelector('#ctrl_kpi .ck-yd') || {}).textContent || '', c: document.querySelector('#bkf_kpi [data-ctrlkpi="top"] .pxts').textContent }));
-  ok(/아직 기록한 날이 없습니다/.test(w.tx) && /오늘 밤부터 기록/.test(w.yd) && !/어제 대비/.test(w.c), '기록 없음 → 「아직 기록한 날이 없습니다」 · 어제 대비 「오늘 밤부터 기록」 · 카드에 어제 대비 안 붙음', w);
+  w = await p.evaluate(() => ({ tx: (document.querySelector('#ctrl_kpi [data-ctrlkpimore]') || {}).textContent || '', yd: (document.querySelector('#ctrl_kpi .ck-yd') || {}).textContent || '', c: (document.querySelector('#bkf_kpi [data-ctrlkpi="top"] .ck-tkl') || {}).textContent || '', na: !!document.querySelector('#bkf_kpi [data-ctrlkpi="top"] .ck-tk.na') }));
+  ok(/아직 기록한 날이 없습니다/.test(w.tx) && /오늘 밤부터 기록/.test(w.yd) && w.c === '어제 대비 –' && w.na, '기록 없음 → 「아직 기록한 날이 없습니다」 · 어제 대비 「오늘 밤부터 기록」 · 카드 오르내림은 「–」(견줄 기록 없음)', w);
   await p.keyboard.press('Escape'); await Wt(p, 150);
   await p.evaluate(() => { db.collection = window._ckDC; try { localStorage.removeItem('rn-ck'); } catch (_) {} });
   ok(!dlg.length, '브라우저 창(alert·confirm·prompt) 한 번도 안 뜸', dlg);

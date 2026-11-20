@@ -70,7 +70,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     const kp = await p.evaluate(() => { const top = document.getElementById('bkf_top'); const iw = innerWidth; const C = [...top.querySelectorAll('#bkf_kpi [data-ctrlkpi]')]; const bk = top.querySelector('#back'), t1 = top.querySelector('[data-bkftool="watch"]'), t7 = top.querySelector('[data-bkftool="px"]');
       const R = (e) => (e ? e.getBoundingClientRect() : null); const tr = R(top), br = R(bk), r1 = R(t1), r7 = R(t7), kr = R(document.getElementById('bkf_kpi'));
       return { n: C.length, kinds: C.map((c) => c.dataset.ctrlkpi).join(), txt: C.map((c) => c.querySelector('.pxtb').textContent), out: C.filter((c) => R(c).right > iw + 1 || R(c).left < -1).length, nextToBack: !!(br && r1 && r1.left > br.right - 1 && r1.left - br.right < 16 && Math.abs(r1.top - br.top) < 8), kRight: kr ? tr.right - kr.right : null, kLeft: kr ? kr.left : null, t7R: r7 ? r7.right : null, sameRow: kr && r7 ? kr.top < r7.bottom : null, iw }; });
-    ok(kp.n === 5 && kp.kinds === 'tot,top,low,view,sold', `폭 ${w}: 맨 위 줄에 수치 카드 다섯`, kp);
+    ok(kp.n === 6 && kp.kinds === 'tot,top,low,view,sold,watch', `폭 ${w}: 맨 위 줄에 수치 카드 여섯(ctrlkpi2 감시 중 상품 수)`, kp);
     ok(kp.nextToBack, `폭 ${w}: 단추가 ← 닫기 바로 오른쪽부터`, kp);
     ok(!kp.out, `폭 ${w}: 카드가 화면 안`, kp);
     if (w >= 1280) ok(kp.kRight != null && kp.kRight <= 16, `폭 ${w}: 카드가 맨 위 줄 오른쪽 끝에 붙음`, kp);
@@ -110,9 +110,9 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   await open(1280, 700);
   const kc = await p.evaluate(() => { const fid = S.detail.bkfold; const f = bkfNorm(S.bkfold, null).folds[fid]; const ks = new Set(), sk = new Set(); for (const g of f.gids) { const c = (S._bkfTb || {})[g]; if (!c || !c.cls) continue; for (const [k, t] of c.cls) if (!['sold', 'gone', 'trash'].includes(t)) ks.add(k); (c.sk || []).forEach((k) => sk.add(k)); }
     let reads = 0; const dc = db.collection; db.collection = function () { reads++; return dc.apply(this, arguments); }; S._ctrlKpi = null; let err = null; try { ctrlKpiPaint(); } catch (e) { err = String(e); } db.collection = dc;
-    const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((c) => c.querySelector('.pxtb').textContent);
-    return { want: ks.size, sold: sk.size, C, reads, err }; });
-  ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.C[4] === kc.sold.toLocaleString('ko-KR'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 = 생성후판매완료 합(겹침 뺌)', kc);
+    const C = [...document.querySelectorAll('#bkf_kpi [data-ctrlkpi]')].map((c) => c.querySelector('.pxtb').textContent); const sub = (document.querySelector('#bkf_kpi [data-ctrlkpi="sold"] .pxts') || {}).textContent || '';
+    return { want: ks.size, sold: sk.size, C, sub, reads, err }; });
+  ok(!kc.err && kc.C[0] === kc.want.toLocaleString('ko-KR') && kc.want > 0 && kc.sub.startsWith('생성 뒤 판매 ' + kc.sold.toLocaleString('ko-KR') + ' ·'), '총 상품수 = 상태판 그룹 상품 합(겹침 뺌) · 판매수 작은 글 「생성 뒤 판매」 = 생성후판매완료 합(겹침 뺌)', kc);
   ok(kc.reads === 0, '카드 셈이 Firestore를 새로 읽지 않음', kc);
   for (const k of ['tot', 'top', 'low', 'view', 'sold']) {
     const o = await p.evaluate((k) => { let reads = 0; const nm = []; const dc = db.collection; db.collection = function (c) { if (!/^(ctl_kpi_m|ctl_kpi_days|prd_price_batches)$/.test(String(c))) reads++; nm.push(String(c)); return dc.apply(this, arguments); }; const sh = document.getElementById('sheet'); sh.scrollTop = sh.scrollHeight;
