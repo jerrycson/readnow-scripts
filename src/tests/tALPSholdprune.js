@@ -29,6 +29,6 @@ ok(/holdPrune\('정해진 시각 확인'\); const L = holdsBrief\(\)/.test(SRC),
 ok(/function holdRun\(id, o\) \{ holdPrune\(/.test(SRC), '보류 다시 출력(사람이 누름 포함) 앞에서 먼저 정리');
 ok((SRC.match(/ono: oKey\(h\.mine\), run: RUN\.id/g) || []).length === 2, '인쇄 기록 두 곳에 주문번호(ono)');
 ok(/jobDone\(RUN\.jobId, P\.hit\.filter\(\(h\) => h\.row\.invNo && !HOv\.has/.test(SRC), '묶음 끝에 운송장 붙은 주문(보류 빼고)을 넘김');
-ok(/^const VERSION = '0\.6\.0'/m.test(SRC), '도우미 판 0.6.0');
+ok(/^const VERSION = '0\.6\.\d+'/m.test(SRC), '도우미 판 0.6.x');
 try { fs.rmSync(process.env.RN_ALPS_HOME, { recursive: true, force: true }); } catch (e) {}
 console.log(bad ? `❌ tALPSholdprune 실패 ${bad}` : '✓ tALPSholdprune 통과'); process.exit(bad ? 1 : 0);
