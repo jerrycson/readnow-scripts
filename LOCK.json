@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "웹앱 1.78.845 출고 멈춘 회차 묶음 닫기",
- "since": "2026-11-21T12:20:38Z",
- "beat": "2026-11-21T12:20:38Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.844 main 올림",
-  "at": "2026-11-21T11:35:20Z"
+  "done": "1.78.845 올림",
+  "at": "2026-11-21T12:29:24Z"
  }
 }
