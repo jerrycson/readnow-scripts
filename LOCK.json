@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "웹앱 1.78.843 출고 사람이 볼 것 셈",
+ "since": "2026-11-21T10:59:26Z",
+ "beat": "2026-11-21T10:59:26Z",
  "last": {
   "who": "lead",
   "done": "클라우드 0.35.344 3b7da74cc 진단 skipped",
