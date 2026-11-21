@@ -1,14 +1,14 @@
 {
  "queue": [],
  "ask": null,
- "holder": "lead",
- "host": "vm",
- "what": "웹앱 1.78.844 출고 멈춤 회차 끝 표시",
- "since": "2026-11-21T11:25:56Z",
- "beat": "2026-11-21T11:25:56Z",
+ "holder": null,
+ "host": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.843 241a01da8 출고 사람이 볼 것 셈",
-  "at": "2026-11-21T11:08:22Z"
+  "done": "웹앱 1.78.844 main 올림",
+  "at": "2026-11-21T11:35:20Z"
  }
 }
