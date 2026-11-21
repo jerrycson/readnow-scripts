@@ -1,5 +1,32 @@
 rules_version = '2';
 service cloud.firestore { match /databases/{db}/documents {
+ // 운영 일일 회차가 작성한 비개인 집계 8칸. 정확한 날짜 1건 조회만 허용한다.
+ match /friend_engine_public/{day} { allow get: if db == 'readnow-research' && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+   && resource.data.keys().hasOnly(['at','day','studioState','photoState','studioCount','photoCount','studioHumanPairs','photoHumanPairs']); }
+ function engineEditor() {
+   return db == 'readnow-research' && request.auth != null
+     && get(/databases/$(db)/documents/readers/$(request.auth.uid)).data.engineEditor == true;
+ }
+ function researchUuid(v) { return v is string && v.matches('[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}'); }
+ function boundedNumber(v) { return v is number && v >= 0 && v < 100000000; }
+ function validEvidence(x, id) {
+   return x.keys().hasAll(['id','episode','at','task','subject','method','outcome','unit','metricBefore','metricAfter'])
+     && x.keys().hasOnly(['id','episode','at','task','subject','method','outcome','unit','metricBefore','metricAfter','yaw','pitch','zone'])
+     && x.id == id && researchUuid(id) && researchUuid(x.episode)
+     && x.at is string && x.at.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z')
+     && x.task in ['surface','alignment','comparison','movement','repeatability'] && x.subject in ['F02','M01','W','world','studio']
+     && x.method in ['direct','learned','baseline','photo','pose','archive','simulation']
+     && x.outcome in ['measured','accepted','rejected','deferred','reverted'] && x.unit in ['px','ratio','step','none']
+     && ((x.metricBefore == null && x.metricAfter == null && x.outcome != 'measured') ||
+         (boundedNumber(x.metricBefore) && boundedNumber(x.metricAfter) && x.unit != 'none'))
+     && (!('yaw' in x) || (x.yaw is number && x.yaw >= -360 && x.yaw <= 360))
+     && (!('pitch' in x) || (x.pitch is number && x.pitch >= -360 && x.pitch <= 360))
+     && (!('zone' in x) || x.zone in ['chin','jaw','throat','mid','cheek','rib','breast','lower']);
+ }
+ match /friend_engine_cases/{id} {
+   allow get, list: if engineEditor();
+   allow create: if engineEditor() && validEvidence(request.resource.data, id);
+ }
  match /readers/{uid} { allow get: if request.auth != null && request.auth.uid == uid; }
  match /releases/{id} { allow read: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
  match /blobs/{id} { allow get: if request.auth != null && exists(/databases/$(db)/documents/readers/$(request.auth.uid)); }
