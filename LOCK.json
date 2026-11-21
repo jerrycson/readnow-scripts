@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "클라우드 0.35.344 진단 skipped",
+ "since": "2026-11-21T10:40:22Z",
+ "beat": "2026-11-21T10:40:22Z",
  "last": {
   "who": "lead",
   "done": "ALPS 도우미 0.6.1 6a841b20f — 이미 끝난 출고면 운송장만 다시 넘김",
