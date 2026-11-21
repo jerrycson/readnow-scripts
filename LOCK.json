@@ -1,11 +1,11 @@
 {
  "queue": [],
  "ask": null,
- "holder": null,
- "host": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "host": "vm",
+ "what": "ALPS 도우미 0.6.1 — 이미 끝난 출고면 운송장만 다시 넘김",
+ "since": "2026-11-21T04:58:51Z",
+ "beat": "2026-11-21T04:58:51Z",
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.842 839058278 — 수동 일괄 모든 탭 고르기·어느 탭으로든 옮기기·탭 안 다시 계산·시장 지표·유의사항·빠르게 고르기 고침",
